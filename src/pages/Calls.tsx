@@ -364,7 +364,7 @@ export default function Calls() {
                           </TableCell>
                           <TableCell className="text-sm text-foreground">
                             {call.scheduled_at
-                              ? format(new Date(call.scheduled_at), "EEE dd MMM - HH'h'mm", { locale: fr })
+                              ? new Date(call.scheduled_at).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
                               : "—"}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
@@ -414,7 +414,7 @@ export default function Calls() {
                           </Badge>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                          <span>{call.scheduled_at ? format(new Date(call.scheduled_at), "EEE dd MMM - HH'h'mm", { locale: fr }) : "—"}</span>
+                          <span>{call.scheduled_at ? new Date(call.scheduled_at).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : "—"}</span>
                           <span>•</span>
                           <span>{call.duration_minutes ? `${call.duration_minutes} min` : "—"}</span>
                           {call.event_type && (
@@ -546,9 +546,9 @@ function CallActions({
       <div className="text-xs text-muted-foreground space-y-0.5">
         <p>
           <XCircle className="h-3 w-3 inline mr-1" />
-          Annulé {c.canceled_at ? format(new Date(c.canceled_at), "dd/MM/yyyy", { locale: fr }) : ""}
+          Annulé {c.canceled_at ? "le " + new Date(c.canceled_at).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ""}
         </p>
-        {c.canceled_by && <p>Par {c.canceled_by}</p>}
+        {c.canceled_by_name && <p>Par {c.canceled_by_name}</p>}
         {c.cancellation_reason && <p className="italic">{c.cancellation_reason}</p>}
       </div>
     );

@@ -187,7 +187,7 @@ export default function ContactSheet({
                             <SaleEvent data={event.data} />
                           )}
                           <p className="text-xs text-muted-foreground">
-                            {event.date ? format(new Date(event.date), "dd MMM yyyy 'à' HH:mm", { locale: fr }) : "—"}
+                            {event.date ? new Date(event.date).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : "—"}
                           </p>
                         </CardContent>
                       </Card>
@@ -276,6 +276,12 @@ function CallEvent({ data }: { data: any }) {
           <span className="text-xs text-muted-foreground">avec {data.assigned_to_name}</span>
         )}
       </div>
+      {data.status === "annule" && data.canceled_at && (
+        <p className="text-xs text-muted-foreground">
+          Annulé le {new Date(data.canceled_at).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+          {data.canceled_by_name ? ` par ${data.canceled_by_name}` : ""}
+        </p>
+      )}
       {data.status === "effectue" && data.outcome && (
         <p className="text-xs text-foreground">Résultat : {data.outcome}</p>
       )}
