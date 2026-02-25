@@ -33,7 +33,7 @@ interface NewSaleModalProps {
   onCreated: () => void;
 }
 
-const PRODUCT_OPTIONS = ["Formation Setting", "Formation Closing", "Pack Complet"];
+const PRODUCT_OPTIONS = ["Business Developer", "Libery"];
 
 export default function NewSaleModal({ open, onOpenChange, onCreated }: NewSaleModalProps) {
   const { profile } = useAuth();
@@ -45,8 +45,8 @@ export default function NewSaleModal({ open, onOpenChange, onCreated }: NewSaleM
   const [showResults, setShowResults] = useState(false);
 
   const [product, setProduct] = useState("");
-  const [customProduct, setCustomProduct] = useState("");
   const [amountHt, setAmountHt] = useState("");
+  const [mensualites, setMensualites] = useState("1");
   const [soldAt, setSoldAt] = useState<Date>(new Date());
   const [paymentStatus, setPaymentStatus] = useState("pending");
   const [submitting, setSubmitting] = useState(false);
@@ -74,17 +74,15 @@ export default function NewSaleModal({ open, onOpenChange, onCreated }: NewSaleM
     setSelectedContact(null);
     setContacts([]);
     setProduct("");
-    setCustomProduct("");
     setAmountHt("");
+    setMensualites("1");
     setSoldAt(new Date());
     setPaymentStatus("pending");
     setShowResults(false);
   };
 
   const handleSubmit = async () => {
-    if (!selectedContact || !amountHt || !profile) return;
-    const finalProduct = product === "__custom" ? customProduct : product;
-    if (!finalProduct) return;
+    if (!selectedContact || !amountHt || !profile || !product) return;
 
     setSubmitting(true);
     try {
@@ -100,8 +98,9 @@ export default function NewSaleModal({ open, onOpenChange, onCreated }: NewSaleM
       const { error } = await supabase.from("sales").insert({
         contact_id: selectedContact.id,
         lead_id: lead?.id || null,
-        product: finalProduct,
+        product: product,
         amount_ht: parseFloat(amountHt),
+        mensualites: parseInt(mensualites) || 1,
         sold_at: soldAt.toISOString(),
         payment_status: paymentStatus,
         closed_by: profile.id,
@@ -185,18 +184,20 @@ export default function NewSaleModal({ open, onOpenChange, onCreated }: NewSaleM
                 {PRODUCT_OPTIONS.map((p) => (
                   <SelectItem key={p} value={p}>{p}</SelectItem>
                 ))}
-                <SelectItem value="__custom">Autre (saisie libre)</SelectItem>
               </SelectContent>
             </Select>
-            {product === "__custom" && (
-              <Input placeholder="Nom du produit" value={customProduct} onChange={(e) => setCustomProduct(e.target.value)} />
-            )}
           </div>
 
           {/* Amount */}
           <div className="space-y-2">
             <Label>Montant HT (€) *</Label>
             <Input type="number" placeholder="0" value={amountHt} onChange={(e) => setAmountHt(e.target.value)} />
+          </div>
+
+          {/* Mensualités */}
+          <div className="space-y-2">
+            <Label>Nombre de mensualités</Label>
+            <Input type="number" min={1} max={24} placeholder="1" value={mensualites} onChange={(e) => setMensualites(e.target.value)} />
           </div>
 
           {/* Date */}
@@ -232,7 +233,7 @@ export default function NewSaleModal({ open, onOpenChange, onCreated }: NewSaleM
           <Button variant="outline" onClick={() => { resetForm(); onOpenChange(false); }}>Annuler</Button>
           <Button
             onClick={handleSubmit}
-            disabled={submitting || !selectedContact || !amountHt || (!product || (product === "__custom" && !customProduct))}
+            disabled={submitting || !selectedContact || !amountHt || !product}
             className="gradient-primary text-primary-foreground"
           >
             {submitting ? "Création…" : "Créer la vente"}

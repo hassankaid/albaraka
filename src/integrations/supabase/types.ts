@@ -496,6 +496,7 @@ export type Database = {
           created_at: string | null
           id: string
           lead_id: string | null
+          mensualites: number | null
           payment_status: string | null
           product: string
           sold_at: string | null
@@ -508,6 +509,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           lead_id?: string | null
+          mensualites?: number | null
           payment_status?: string | null
           product: string
           sold_at?: string | null
@@ -520,6 +522,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           lead_id?: string | null
+          mensualites?: number | null
           payment_status?: string | null
           product?: string
           sold_at?: string | null
