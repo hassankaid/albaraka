@@ -259,11 +259,12 @@ function CallEvent({ data }: { data: any }) {
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm font-medium text-foreground">{typeLabel}</p>
-        {data.event_type && EVENT_TYPE_COLORS[data.event_type] && (
+        {data.event_type && EVENT_TYPE_COLORS[data.event_type] ? (
           <Badge variant="outline" className={`text-xs ${EVENT_TYPE_COLORS[data.event_type]}`}>
             {typeLabel}
           </Badge>
+        ) : (
+          <p className="text-sm font-medium text-foreground">{typeLabel}</p>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
