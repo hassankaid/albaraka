@@ -17,7 +17,7 @@ interface ContactDetail {
 }
 
 interface TimelineEvent {
-  type: "lead" | "call" | "sale";
+  type: "lead" | "call" | "sale" | "call_activity";
   id: string;
   date: string;
   data: any;
@@ -33,6 +33,7 @@ const STATUS_COLORS: Record<string, string> = {
   effectue: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   no_show: "bg-orange-500/20 text-orange-300 border-orange-500/30",
   annule: "bg-red-500/20 text-red-300 border-red-500/30",
+  close: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   pending: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
   paid: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   failed: "bg-red-500/20 text-red-300 border-red-500/30",
@@ -40,8 +41,12 @@ const STATUS_COLORS: Record<string, string> = {
 
 const STATUS_LABELS: Record<string, string> = {
   nouveau: "Nouveau", contacte: "Contacté", call_booke: "Call booké",
-  converti: "Converti", perdu: "Perdu", planifie: "Planifié",
-  effectue: "Effectué", no_show: "No-show", annule: "Annulé",
+  converti: "Close", perdu: "Perdu", planifie: "Planifié",
+  effectue: "Effectué", no_show: "No show", annule: "Annulé",
+  close: "Close", disqualifie: "Disqualifié", pas_interesse: "Pas intéressé",
+  non_close: "Non close", renvoye_pole_vente: "Renvoi Pôle Vente",
+  renvoye_conference: "Renvoi Conférence", rediffusion: "Rediffusion",
+  follow_up: "Follow up",
   pending: "En attente", paid: "Payé", failed: "Échoué",
 };
 
@@ -74,6 +79,19 @@ export default function ContactSheet({
 
     if (contactRes.data) setContact(contactRes.data);
 
+    // Get call IDs to fetch call activities
+    const callIds = callsRes.data?.map((c) => c.id).filter(Boolean) as string[] || [];
+
+    let callActivities: any[] = [];
+    if (callIds.length > 0) {
+      const { data: activitiesData } = await supabase
+        .from("call_activities")
+        .select("*, profiles:user_id(full_name)")
+        .in("call_id", callIds)
+        .order("created_at", { ascending: false });
+      callActivities = activitiesData || [];
+    }
+
     const events: TimelineEvent[] = [];
 
     leadsRes.data?.forEach((l) => {
@@ -86,6 +104,10 @@ export default function ContactSheet({
 
     salesRes.data?.forEach((s) => {
       events.push({ type: "sale", id: s.id, date: s.sold_at || s.created_at || "", data: s });
+    });
+
+    callActivities.forEach((a) => {
+      events.push({ type: "call_activity", id: a.id, date: a.created_at || "", data: a });
     });
 
     events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -171,9 +193,11 @@ export default function ContactSheet({
                           ? "bg-purple-500/20 border border-purple-500/40"
                           : event.type === "call"
                           ? "bg-blue-500/20 border border-blue-500/40"
+                          : event.type === "call_activity"
+                          ? "bg-cyan-500/20 border border-cyan-500/40"
                           : "bg-emerald-500/20 border border-emerald-500/40"
                       }`}>
-                        {event.type === "lead" ? "📥" : event.type === "call" ? "📞" : "💰"}
+                        {event.type === "lead" ? "📥" : event.type === "call" ? "📞" : event.type === "call_activity" ? "🔄" : "💰"}
                       </div>
 
                       {/* Content */}
@@ -184,6 +208,9 @@ export default function ContactSheet({
                           )}
                           {event.type === "call" && (
                             <CallEvent data={event.data} userTz={userTz} contact={contact} />
+                          )}
+                          {event.type === "call_activity" && (
+                            <CallActivityEvent data={event.data} userTz={userTz} />
                           )}
                           {event.type === "sale" && (
                             <SaleEvent data={event.data} />
@@ -248,14 +275,6 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   appel_organique: "Appel Organique",
 };
 
-const EVENT_TYPE_COLORS: Record<string, string> = {
-  appel_offert_vsl_a: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  appel_offert_vsl_b: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  appel_setting_webi: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  inscription_conference: "bg-amber-500/20 text-amber-300 border-amber-500/30",
-  appel_organique: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
-};
-
 function CallEvent({ data, userTz, contact }: { data: any; userTz: string; contact: ContactDetail | null }) {
   const typeLabel = data.event_type ? (EVENT_TYPE_LABELS[data.event_type] || data.event_type) : "Appel";
   return (
@@ -282,8 +301,8 @@ function CallEvent({ data, userTz, contact }: { data: any; userTz: string; conta
       {data.status === "effectue" && data.outcome && (
         <p className="text-xs text-foreground">Résultat : {data.outcome}</p>
       )}
-      {data.status === "effectue" && data.notes && (
-        <p className="text-xs text-muted-foreground italic">{data.notes}</p>
+      {(data.closer_notes || data.notes) && (
+        <p className="text-xs text-muted-foreground italic">{data.closer_notes || data.notes}</p>
       )}
       <div className="space-y-0.5 mt-1">
         {data.raw_full_name && data.raw_full_name !== contact?.full_name && (
@@ -297,6 +316,35 @@ function CallEvent({ data, userTz, contact }: { data: any; userTz: string; conta
         )}
       </div>
     </>
+  );
+}
+
+function CallActivityEvent({ data, userTz }: { data: any; userTz: string }) {
+  const userName = data.profiles?.full_name || "Inconnu";
+
+  if (data.action === "status_change") {
+    return (
+      <div>
+        <p className="text-sm font-medium text-foreground">🔄 Statut call changé</p>
+        <p className="text-xs text-muted-foreground">
+          {STATUS_LABELS[data.old_value] || data.old_value} → {STATUS_LABELS[data.new_value] || data.new_value} par {userName}
+        </p>
+      </div>
+    );
+  }
+
+  if (data.action === "note_added") {
+    return (
+      <div>
+        <p className="text-sm font-medium text-foreground">📝 Note call ajoutée</p>
+        <p className="text-xs text-muted-foreground">par {userName}</p>
+        {data.note && <p className="text-xs text-muted-foreground italic mt-1">{data.note}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <p className="text-sm text-muted-foreground">Activité call : {data.action}</p>
   );
 }
 

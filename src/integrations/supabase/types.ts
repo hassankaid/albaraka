@@ -14,6 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      call_activities: {
+        Row: {
+          action: string
+          call_id: string
+          created_at: string | null
+          id: string
+          new_value: string | null
+          note: string | null
+          old_value: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          call_id: string
+          created_at?: string | null
+          id?: string
+          new_value?: string | null
+          note?: string | null
+          old_value?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          call_id?: string
+          created_at?: string | null
+          id?: string
+          new_value?: string | null
+          note?: string | null
+          old_value?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_activities_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_activities_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls_enriched"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_activities_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["contact_call_id"]
+          },
+          {
+            foreignKeyName: "call_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calls: {
         Row: {
           assigned_to: string | null
@@ -21,6 +83,7 @@ export type Database = {
           canceled_at: string | null
           canceled_by: string | null
           cancellation_reason: string | null
+          closer_notes: string | null
           contact_id: string | null
           created_at: string | null
           duration_minutes: number | null
@@ -43,6 +106,7 @@ export type Database = {
           canceled_at?: string | null
           canceled_by?: string | null
           cancellation_reason?: string | null
+          closer_notes?: string | null
           contact_id?: string | null
           created_at?: string | null
           duration_minutes?: number | null
@@ -65,6 +129,7 @@ export type Database = {
           canceled_at?: string | null
           canceled_by?: string | null
           cancellation_reason?: string | null
+          closer_notes?: string | null
           contact_id?: string | null
           created_at?: string | null
           duration_minutes?: number | null
@@ -522,6 +587,7 @@ export type Database = {
           canceled_by: string | null
           canceled_by_name: string | null
           cancellation_reason: string | null
+          closer_notes: string | null
           contact_email: string | null
           contact_full_name: string | null
           contact_id: string | null
@@ -534,9 +600,13 @@ export type Database = {
           lead_id: string | null
           notes: string | null
           outcome: string | null
+          raw_email: string | null
+          raw_full_name: string | null
+          raw_phone: string | null
           rescheduled_from: string | null
           scheduled_at: string | null
           status: string | null
+          status_label: string | null
           updated_at: string | null
         }
         Relationships: [

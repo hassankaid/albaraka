@@ -10,22 +10,25 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  Phone, RefreshCw, Search, Calendar, Clock, CheckCircle2, XCircle, AlertTriangle, Eye,
+  Phone, RefreshCw, Search, Calendar, Clock, CheckCircle2, Pencil, Eye,
 } from "lucide-react";
 import { isToday, isAfter, isBefore, startOfWeek, endOfWeek, differenceInMinutes } from "date-fns";
 import { formatDateTime } from "@/lib/formatDate";
+import ProcessCallModal, { CALL_STATUS_COLORS, CALL_STATUS_LABELS } from "@/components/calls/ProcessCallModal";
+import ContactSheet from "@/components/ContactSheet";
 
 type CallEnriched = Tables<"calls_enriched">;
 
 const STATUS_OPTIONS = [
   { value: "all", label: "Tous" },
   { value: "planifie", label: "Planifié" },
-  { value: "effectue", label: "Effectué" },
-  { value: "no_show", label: "No-show" },
+  { value: "close", label: "Close" },
+  { value: "no_show", label: "No show" },
+  { value: "follow_up", label: "Follow up" },
+  { value: "non_close", label: "Non close" },
   { value: "annule", label: "Annulé" },
+  { value: "effectue", label: "Effectué" },
 ];
 
 const TYPE_OPTIONS = [
@@ -45,32 +48,6 @@ const TYPE_COLORS: Record<string, string> = {
   appel_organique: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  planifie: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  effectue: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  no_show: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  annule: "bg-red-500/20 text-red-300 border-red-500/30",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  planifie: "Planifié",
-  effectue: "Effectué",
-  no_show: "No-show",
-  annule: "Annulé",
-};
-
-const OUTCOME_LABELS: Record<string, string> = {
-  vente: "Vente",
-  relance: "Relance",
-  perdu: "Perdu",
-};
-
-const OUTCOME_COLORS: Record<string, string> = {
-  vente: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  relance: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  perdu: "bg-red-500/20 text-red-300 border-red-500/30",
-};
-
 export default function Calls() {
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -83,16 +60,9 @@ export default function Calls() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  // Modal state
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalCallId, setModalCallId] = useState<string | null>(null);
-  const [modalOutcome, setModalOutcome] = useState("vente");
-  const [modalNotes, setModalNotes] = useState("");
-  const [modalSaving, setModalSaving] = useState(false);
-
-  // Notes viewer
-  const [notesViewOpen, setNotesViewOpen] = useState(false);
-  const [notesViewContent, setNotesViewContent] = useState("");
+  // Process modal state
+  const [processCall, setProcessCall] = useState<CallEnriched | null>(null);
+  const [contactSheetId, setContactSheetId] = useState<string | null>(null);
 
   const fetchCalls = useCallback(async () => {
     const { data, error } = await supabase
@@ -126,46 +96,6 @@ export default function Calls() {
     toast({ title: "Données actualisées" });
   };
 
-  const handleMarkDone = (callId: string) => {
-    setModalCallId(callId);
-    setModalOutcome("vente");
-    setModalNotes("");
-    setModalOpen(true);
-  };
-
-  const handleSaveOutcome = async () => {
-    if (!modalCallId) return;
-    setModalSaving(true);
-
-    const { error } = await supabase
-      .from("calls")
-      .update({ status: "effectue", outcome: modalOutcome, notes: modalNotes || null })
-      .eq("id", modalCallId);
-
-    if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Call marqué comme effectué" });
-      fetchCalls();
-    }
-    setModalSaving(false);
-    setModalOpen(false);
-  };
-
-  const handleNoShow = async (callId: string) => {
-    const { error } = await supabase
-      .from("calls")
-      .update({ status: "no_show" })
-      .eq("id", callId);
-
-    if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Call marqué no-show" });
-      fetchCalls();
-    }
-  };
-
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
@@ -179,14 +109,13 @@ export default function Calls() {
       return d >= weekStart && d <= weekEnd;
     }).length,
     planned: calls.filter((c) => c.status === "planifie").length,
-    done: calls.filter((c) => c.status === "effectue").length,
+    done: calls.filter((c) => c.status === "effectue" || c.status === "close").length,
   }), [calls, weekStart, weekEnd]);
 
   // Filtered calls
   const filteredCalls = useMemo(() => {
     let result = calls;
 
-    // Tab filter
     if (tab === "aujourdhui") {
       result = result.filter((c) => c.scheduled_at && isToday(new Date(c.scheduled_at)) && c.status === "planifie");
     } else if (tab === "a_venir") {
@@ -194,7 +123,7 @@ export default function Calls() {
     } else if (tab === "passes") {
       result = result.filter((c) =>
         (c.scheduled_at && isBefore(new Date(c.scheduled_at), now)) ||
-        ["effectue", "no_show", "annule"].includes(c.status || "")
+        !["planifie"].includes(c.status || "")
       );
     } else if (tab === "mes_calls" && profile) {
       result = result.filter((c) => c.assigned_to === profile.id);
@@ -222,7 +151,7 @@ export default function Calls() {
     { label: "Aujourd'hui", value: counts.today, icon: Calendar, gradient: "from-orange-500/20 to-yellow-500/20" },
     { label: "Cette semaine", value: counts.thisWeek, icon: Clock, gradient: "from-blue-500/20 to-cyan-500/20" },
     { label: "Planifiés", value: counts.planned, icon: Phone, gradient: "from-purple-500/20 to-blue-500/20" },
-    { label: "Effectués", value: counts.done, icon: CheckCircle2, gradient: "from-emerald-500/20 to-teal-500/20" },
+    { label: "Closés", value: counts.done, icon: CheckCircle2, gradient: "from-emerald-500/20 to-teal-500/20" },
   ];
 
   const isUrgent = (scheduledAt: string | null) => {
@@ -336,7 +265,7 @@ export default function Calls() {
                         <TableHead>Durée</TableHead>
                         <TableHead>Assigné à</TableHead>
                         <TableHead>Statut</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead className="w-[100px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -359,7 +288,7 @@ export default function Calls() {
                           <TableCell>
                             {call.event_type && (
                               <Badge variant="outline" className={`text-xs ${TYPE_COLORS[call.event_type] || ""}`}>
-                                {TYPE_OPTIONS.find((t) => t.value === call.event_type)?.label || call.event_type}
+                                {call.event_type_label || call.event_type}
                               </Badge>
                             )}
                           </TableCell>
@@ -375,17 +304,33 @@ export default function Calls() {
                             {call.assigned_to_name || "—"}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={`text-xs ${STATUS_COLORS[call.status || ""] || ""}`}>
-                              {STATUS_LABELS[call.status || ""] || call.status}
+                            <Badge variant="outline" className={`text-xs ${CALL_STATUS_COLORS[call.status || ""] || ""}`}>
+                              {CALL_STATUS_LABELS[call.status || ""] || call.status}
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <CallActions
-                              call={call}
-                              onMarkDone={handleMarkDone}
-                              onNoShow={handleNoShow}
-                              onViewNotes={(n) => { setNotesViewContent(n); setNotesViewOpen(true); }}
-                            />
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => setProcessCall(call)}
+                                title="Traiter"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              {call.contact_id && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => setContactSheetId(call.contact_id)}
+                                  title="Voir contact"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -410,8 +355,8 @@ export default function Calls() {
                             <p className="font-semibold text-foreground">{call.contact_full_name || "—"}</p>
                             <p className="text-xs text-muted-foreground">{call.contact_email}</p>
                           </div>
-                          <Badge variant="outline" className={`text-xs ${STATUS_COLORS[call.status || ""] || ""}`}>
-                            {STATUS_LABELS[call.status || ""] || call.status}
+                          <Badge variant="outline" className={`text-xs ${CALL_STATUS_COLORS[call.status || ""] || ""}`}>
+                            {CALL_STATUS_LABELS[call.status || ""] || call.status}
                           </Badge>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -420,19 +365,35 @@ export default function Calls() {
                           <span>{call.duration_minutes ? `${call.duration_minutes} min` : "—"}</span>
                           {call.event_type && (
                             <Badge variant="outline" className={`text-xs ${TYPE_COLORS[call.event_type] || ""}`}>
-                              {TYPE_OPTIONS.find((t) => t.value === call.event_type)?.label || call.event_type}
+                              {call.event_type_label || call.event_type}
                             </Badge>
                           )}
                         </div>
                         {call.assigned_to_name && (
                           <p className="text-xs text-muted-foreground">Assigné à {call.assigned_to_name}</p>
                         )}
-                        <CallActions
-                          call={call}
-                          onMarkDone={handleMarkDone}
-                          onNoShow={handleNoShow}
-                          onViewNotes={(n) => { setNotesViewContent(n); setNotesViewOpen(true); }}
-                        />
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => setProcessCall(call)}
+                            title="Traiter"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          {call.contact_id && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => setContactSheetId(call.contact_id)}
+                              title="Voir contact"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
@@ -443,117 +404,21 @@ export default function Calls() {
         ))}
       </Tabs>
 
-      {/* Outcome modal */}
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Résultat du call</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Outcome</label>
-              <Select value={modalOutcome} onValueChange={setModalOutcome}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="vente">Vente</SelectItem>
-                  <SelectItem value="relance">Relance</SelectItem>
-                  <SelectItem value="perdu">Perdu</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Notes (optionnel)</label>
-              <Textarea
-                value={modalNotes}
-                onChange={(e) => setModalNotes(e.target.value)}
-                placeholder="Notes sur le call..."
-                className="bg-background"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setModalOpen(false)}>Annuler</Button>
-            <Button onClick={handleSaveOutcome} disabled={modalSaving} className="gradient-primary text-primary-foreground">
-              {modalSaving ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : null}
-              Enregistrer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Process Call Modal */}
+      <ProcessCallModal
+        call={processCall}
+        open={!!processCall}
+        onClose={() => setProcessCall(null)}
+        onSuccess={fetchCalls}
+        onOpenContact={(id) => setContactSheetId(id)}
+      />
 
-      {/* Notes viewer */}
-      <Dialog open={notesViewOpen} onOpenChange={setNotesViewOpen}>
-        <DialogContent className="bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Notes du call</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-foreground whitespace-pre-wrap">{notesViewContent}</p>
-        </DialogContent>
-      </Dialog>
+      {/* Contact Sheet */}
+      <ContactSheet
+        contactId={contactSheetId}
+        open={!!contactSheetId}
+        onClose={() => setContactSheetId(null)}
+      />
     </div>
   );
-}
-
-// Separate component for call actions
-function CallActions({
-  call,
-  onMarkDone,
-  onNoShow,
-  onViewNotes,
-}: {
-  call: CallEnriched;
-  onMarkDone: (id: string) => void;
-  onNoShow: (id: string) => void;
-  onViewNotes: (notes: string) => void;
-}) {
-  if (call.status === "planifie") {
-    return (
-      <div className="flex items-center gap-1.5">
-        <Button size="sm" variant="outline" onClick={() => onMarkDone(call.id!)} className="text-xs gap-1">
-          <CheckCircle2 className="h-3.5 w-3.5" />
-          Effectué
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => onNoShow(call.id!)} className="text-xs gap-1 text-orange-400 border-orange-500/30 hover:bg-orange-500/10">
-          <AlertTriangle className="h-3.5 w-3.5" />
-          No-show
-        </Button>
-      </div>
-    );
-  }
-
-  if (call.status === "effectue") {
-    return (
-      <div className="flex items-center gap-1.5">
-        {call.outcome && (
-          <Badge variant="outline" className={`text-xs ${OUTCOME_COLORS[call.outcome] || ""}`}>
-            {OUTCOME_LABELS[call.outcome] || call.outcome}
-          </Badge>
-        )}
-        {call.notes && (
-          <Button size="sm" variant="ghost" onClick={() => onViewNotes(call.notes!)} className="text-xs gap-1">
-            <Eye className="h-3.5 w-3.5" />
-            Notes
-          </Button>
-        )}
-      </div>
-    );
-  }
-
-  if (call.status === "annule") {
-    const c = call as any;
-    return (
-      <div className="text-xs text-muted-foreground space-y-0.5">
-        <p>
-          <XCircle className="h-3 w-3 inline mr-1" />
-          Annulé {c.canceled_at ? "le " + formatDateTime(c.canceled_at) : ""}
-        </p>
-        {c.canceled_by_name && <p>Par {c.canceled_by_name}</p>}
-        {c.cancellation_reason && <p className="italic">{c.cancellation_reason}</p>}
-      </div>
-    );
-  }
-
-  return null;
 }
