@@ -183,7 +183,7 @@ export default function ContactSheet({
                             <LeadEvent data={event.data} contact={contact} />
                           )}
                           {event.type === "call" && (
-                            <CallEvent data={event.data} userTz={userTz} />
+                            <CallEvent data={event.data} userTz={userTz} contact={contact} />
                           )}
                           {event.type === "sale" && (
                             <SaleEvent data={event.data} />
@@ -256,7 +256,7 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
   appel_organique: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
 };
 
-function CallEvent({ data, userTz }: { data: any; userTz: string }) {
+function CallEvent({ data, userTz, contact }: { data: any; userTz: string; contact: ContactDetail | null }) {
   const typeLabel = data.event_type ? (EVENT_TYPE_LABELS[data.event_type] || data.event_type) : "Appel";
   return (
     <>
@@ -285,6 +285,17 @@ function CallEvent({ data, userTz }: { data: any; userTz: string }) {
       {data.status === "effectue" && data.notes && (
         <p className="text-xs text-muted-foreground italic">{data.notes}</p>
       )}
+      <div className="space-y-0.5 mt-1">
+        {data.raw_full_name && data.raw_full_name !== contact?.full_name && (
+          <p className="text-xs text-muted-foreground">Prénom saisi : {data.raw_full_name}</p>
+        )}
+        {data.raw_email && data.raw_email !== contact?.email && (
+          <p className="text-xs text-muted-foreground">Email saisi : {data.raw_email}</p>
+        )}
+        {data.raw_phone && data.raw_phone !== contact?.phone_normalized && (
+          <p className="text-xs text-muted-foreground">Tél saisi : {data.raw_phone}</p>
+        )}
+      </div>
     </>
   );
 }
