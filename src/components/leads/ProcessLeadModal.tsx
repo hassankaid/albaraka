@@ -7,47 +7,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Eye, AlertTriangle, Save } from "lucide-react";
+import { AlertTriangle, Save } from "lucide-react";
 import { formatDateTime } from "@/lib/formatDate";
 
 type LeadEnriched = Tables<"leads_enriched">;
 
-const STATUS_GROUPS = [
-  {
-    label: "En cours",
-    items: [
-      { value: "nouveau", label: "Nouveau" },
-      { value: "contacte", label: "Contacté" },
-      { value: "pas_de_reponse", label: "Pas de réponse" },
-      { value: "a_relancer", label: "À relancer" },
-      { value: "faux_numero", label: "Faux numéro" },
-    ],
-  },
-  {
-    label: "Qualification",
-    items: [
-      { value: "qualifie", label: "Qualifié" },
-      { value: "pas_qualifie", label: "Pas qualifié" },
-    ],
-  },
-  {
-    label: "Call réservé (automatique)",
-    items: [
-      { value: "call_vsl", label: "Call VSL", disabled: true },
-      { value: "call_conference", label: "Call Conférence", disabled: true },
-      { value: "pole_vente", label: "Pôle Vente", disabled: true },
-    ],
-  },
-  {
-    label: "Clôturé",
-    items: [
-      { value: "converti", label: "Converti" },
-      { value: "perdu", label: "Perdu" },
-    ],
-  },
+const STATUS_LIST = [
+  { value: "nouveau", label: "Nouveau" },
+  { value: "pas_de_reponse", label: "Pas de réponse" },
+  { value: "a_relancer", label: "À relancer" },
+  { value: "faux_numero", label: "Faux numéro" },
+  { value: "pas_qualifie", label: "Pas qualifié" },
+  { value: "call_vsl", label: "Call VSL" },
+  { value: "call_conference", label: "Call Conférence" },
+  { value: "pole_vente", label: "Pôle Vente" },
+  { value: "converti", label: "Close" },
+  { value: "perdu", label: "Perdu" },
 ];
 
 export const LEAD_STATUS_COLORS: Record<string, string> = {
@@ -76,11 +54,11 @@ export const LEAD_STATUS_LABELS: Record<string, string> = {
   call_vsl: "Call VSL",
   call_conference: "Call Conférence",
   pole_vente: "Pôle Vente",
-  converti: "Converti",
+  converti: "Close",
   perdu: "Perdu",
 };
 
-const READ_ONLY_STATUSES = ["call_vsl", "call_conference", "pole_vente"];
+
 
 interface Props {
   lead: LeadEnriched | null;
@@ -170,7 +148,7 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
     }
   };
 
-  const isReadOnly = READ_ONLY_STATUSES.includes(lead.status || "");
+  
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -200,34 +178,15 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
 
         <Separator />
 
-        {/* Section 2: Contact preview */}
-        {lead.contact_id && (
+        {/* Section 2: Contact alert */}
+        {lead.contact_id && otherLeadsCount > 0 && (
           <>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-foreground">Contact</h4>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1.5 text-xs text-primary"
-                  onClick={() => {
-                    onClose();
-                    onOpenContact(lead.contact_id!);
-                  }}
-                >
-                  <Eye className="h-3.5 w-3.5" />
-                  Voir la fiche complète
-                </Button>
-              </div>
-              {otherLeadsCount > 0 && (
-                <Alert className="border-yellow-500/30 bg-yellow-500/10">
-                  <AlertTriangle className="h-4 w-4 text-yellow-400" />
-                  <AlertDescription className="text-yellow-300 text-xs">
-                    ⚠️ Ce contact a {otherLeadsCount} autre{otherLeadsCount > 1 ? "s" : ""} lead{otherLeadsCount > 1 ? "s" : ""}
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
+            <Alert className="border-yellow-500/30 bg-yellow-500/10">
+              <AlertTriangle className="h-4 w-4 text-yellow-400" />
+              <AlertDescription className="text-yellow-300 text-xs">
+                ⚠️ Ce contact a {otherLeadsCount} autre{otherLeadsCount > 1 ? "s" : ""} lead{otherLeadsCount > 1 ? "s" : ""}
+              </AlertDescription>
+            </Alert>
             <Separator />
           </>
         )}
@@ -235,32 +194,18 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
         {/* Section 3: Status change */}
         <div className="space-y-2">
           <h4 className="text-sm font-semibold text-foreground">Statut</h4>
-          {isReadOnly ? (
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className={`text-xs ${LEAD_STATUS_COLORS[lead.status || ""] || ""}`}>
-                {LEAD_STATUS_LABELS[lead.status || ""] || lead.status}
-              </Badge>
-              <span className="text-xs text-muted-foreground">(défini automatiquement par le call)</span>
-            </div>
-          ) : (
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="bg-background">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_GROUPS.map((group) => (
-                  <SelectGroup key={group.label}>
-                    <SelectLabel className="text-xs text-muted-foreground">{group.label}</SelectLabel>
-                    {group.items.map((item) => (
-                      <SelectItem key={item.value} value={item.value} disabled={item.disabled}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger className="bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_LIST.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <Separator />
