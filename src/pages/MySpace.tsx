@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Users, Clock, CheckCircle2, Euro, UserPlus, RefreshCw, Phone } from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import { formatDateTime, formatDateOnly } from "@/lib/formatDate";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
 
 type LeadEnriched = Tables<"leads_enriched">;
@@ -206,7 +207,7 @@ export default function MySpace() {
                         {lead.has_active_call && lead.call_scheduled_at ? (
                           <Badge variant="outline" className="text-xs bg-blue-500/20 text-blue-300 border-blue-500/30">
                             <Phone className="h-3 w-3 mr-1" />
-                            {format(new Date(lead.call_scheduled_at), "dd/MM à HH:mm", { locale: fr })}
+                            {formatDateTime(lead.call_scheduled_at)}
                           </Badge>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
@@ -240,7 +241,7 @@ export default function MySpace() {
                         <>
                           <span>•</span>
                           <Badge variant="outline" className="text-xs bg-blue-500/20 text-blue-300 border-blue-500/30">
-                            📞 {format(new Date(lead.call_scheduled_at), "dd/MM HH:mm", { locale: fr })}
+                            📞 {formatDateTime(lead.call_scheduled_at)}
                           </Badge>
                         </>
                       )}
@@ -293,7 +294,7 @@ export default function MySpace() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {c.created_at ? format(new Date(c.created_at), "dd MMM yyyy", { locale: fr }) : "—"}
+                        {c.created_at ? formatDateOnly(c.created_at) : "—"}
                       </TableCell>
                     </TableRow>
                   ))}

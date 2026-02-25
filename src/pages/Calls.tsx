@@ -15,8 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Phone, RefreshCw, Search, Calendar, Clock, CheckCircle2, XCircle, AlertTriangle, Eye,
 } from "lucide-react";
-import { format, isToday, isAfter, isBefore, startOfWeek, endOfWeek, differenceInMinutes } from "date-fns";
-import { fr } from "date-fns/locale";
+import { isToday, isAfter, isBefore, startOfWeek, endOfWeek, differenceInMinutes } from "date-fns";
+import { formatDateTime } from "@/lib/formatDate";
 
 type CallEnriched = Tables<"calls_enriched">;
 
@@ -78,6 +78,7 @@ export default function Calls() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState("aujourdhui");
+  const userTz = profile?.timezone || "Europe/Paris";
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -364,7 +365,7 @@ export default function Calls() {
                           </TableCell>
                           <TableCell className="text-sm text-foreground">
                             {call.scheduled_at
-                              ? new Date(call.scheduled_at).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+                              ? formatDateTime(call.scheduled_at, userTz)
                               : "—"}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
@@ -414,7 +415,7 @@ export default function Calls() {
                           </Badge>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                          <span>{call.scheduled_at ? new Date(call.scheduled_at).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : "—"}</span>
+                          <span>{call.scheduled_at ? formatDateTime(call.scheduled_at, userTz) : "—"}</span>
                           <span>•</span>
                           <span>{call.duration_minutes ? `${call.duration_minutes} min` : "—"}</span>
                           {call.event_type && (
@@ -546,7 +547,7 @@ function CallActions({
       <div className="text-xs text-muted-foreground space-y-0.5">
         <p>
           <XCircle className="h-3 w-3 inline mr-1" />
-          Annulé {c.canceled_at ? "le " + new Date(c.canceled_at).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ""}
+          Annulé {c.canceled_at ? "le " + formatDateTime(c.canceled_at) : ""}
         </p>
         {c.canceled_by_name && <p>Par {c.canceled_by_name}</p>}
         {c.cancellation_reason && <p className="italic">{c.cancellation_reason}</p>}

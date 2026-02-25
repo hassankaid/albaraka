@@ -15,6 +15,7 @@ import Calls from "./pages/Calls";
 import Contacts from "./pages/Contacts";
 import Sales from "./pages/Sales";
 import MySpace from "./pages/MySpace";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
                   <Route path="/contacts" element={<Contacts />} />
                   <Route path="/sales" element={<Sales />} />
                   <Route path="/my-space" element={<MySpace />} />
+                  <Route path="/profile" element={<Profile />} />
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />

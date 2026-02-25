@@ -12,6 +12,7 @@ interface Profile {
   is_also_apporteur: boolean | null;
   can_add_instagram_leads: boolean | null;
   avatar_url: string | null;
+  timezone: string | null;
 }
 
 interface AuthContextType {
@@ -34,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, email, full_name, role, phone, is_also_apporteur, can_add_instagram_leads, avatar_url")
+      .select("id, email, full_name, role, phone, is_also_apporteur, can_add_instagram_leads, avatar_url, timezone")
       .eq("id", userId)
       .maybeSingle();
     setProfile(data);

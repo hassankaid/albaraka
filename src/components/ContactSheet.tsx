@@ -1,12 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { RefreshCw } from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { formatDateTime, formatDateOnly } from "@/lib/formatDate";
 
 interface ContactDetail {
   id: string;
@@ -55,6 +55,8 @@ export default function ContactSheet({
   onClose: () => void;
 }) {
   const { toast } = useToast();
+  const { profile: authProfile } = useAuth();
+  const userTz = authProfile?.timezone || "Europe/Paris";
   const [contact, setContact] = useState<ContactDetail | null>(null);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -142,7 +144,7 @@ export default function ContactSheet({
                   </div>
                   {contact.created_at && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      Contact créé le {format(new Date(contact.created_at), "dd MMM yyyy", { locale: fr })}
+                      Contact créé le {formatDateOnly(contact.created_at, userTz)}
                     </p>
                   )}
                 </div>
@@ -181,13 +183,13 @@ export default function ContactSheet({
                             <LeadEvent data={event.data} contact={contact} />
                           )}
                           {event.type === "call" && (
-                            <CallEvent data={event.data} />
+                            <CallEvent data={event.data} userTz={userTz} />
                           )}
                           {event.type === "sale" && (
                             <SaleEvent data={event.data} />
                           )}
                           <p className="text-xs text-muted-foreground">
-                            {event.date ? new Date(event.date).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : "—"}
+                            {event.date ? formatDateTime(event.date, userTz) : "—"}
                           </p>
                         </CardContent>
                       </Card>
@@ -254,7 +256,7 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
   appel_organique: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
 };
 
-function CallEvent({ data }: { data: any }) {
+function CallEvent({ data, userTz }: { data: any; userTz: string }) {
   const typeLabel = data.event_type ? (EVENT_TYPE_LABELS[data.event_type] || data.event_type) : "Appel";
   return (
     <>
@@ -273,7 +275,7 @@ function CallEvent({ data }: { data: any }) {
       </div>
       {data.status === "annule" && data.canceled_at && (
         <p className="text-xs text-muted-foreground">
-          Annulé le {new Date(data.canceled_at).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+          Annulé le {formatDateTime(data.canceled_at, userTz)}
           {data.canceled_by_name ? ` par ${data.canceled_by_name}` : ""}
         </p>
       )}
