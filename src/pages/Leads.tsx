@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
-  Users, UserPlus, RefreshCw, Search, Phone, CheckCircle2, Clock, PartyPopper, Inbox, ChevronDown, Instagram,
+  Users, UserPlus, RefreshCw, Search, Phone, Clock, PartyPopper, Inbox, ChevronDown, Instagram,
 } from "lucide-react";
 import LeadInstagramForm from "@/components/LeadInstagramForm";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
@@ -339,14 +339,14 @@ export default function Leads() {
                       <TableHead>Contact</TableHead>
                       <TableHead>Source</TableHead>
                       <TableHead>Statut</TableHead>
-                      <TableHead>Assignation</TableHead>
+                      <TableHead className="w-[150px]">Setter</TableHead>
+                      <TableHead className="w-[200px]">Call</TableHead>
                       <TableHead>Date</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredLeads.map((lead) => (
                       <TableRow key={lead.id} className="border-border hover:bg-secondary/50 transition-colors">
-                        {/* Contact */}
                         <TableCell>
                           <div>
                             <p className="font-semibold text-foreground">{lead.raw_full_name || lead.contact_full_name || "—"}</p>
@@ -354,8 +354,6 @@ export default function Leads() {
                             <p className="text-xs text-muted-foreground">{lead.raw_phone || lead.contact_phone}</p>
                           </div>
                         </TableCell>
-
-                        {/* Source */}
                         <TableCell>
                           {lead.source_label && (
                             <Badge variant="outline" className={`text-xs ${SOURCE_COLORS[lead.source_label] || ""}`}>
@@ -363,8 +361,6 @@ export default function Leads() {
                             </Badge>
                           )}
                         </TableCell>
-
-                        {/* Status */}
                         <TableCell>
                           {lead.status && (
                             <Badge variant="outline" className={`text-xs ${STATUS_COLORS[lead.status] || ""}`}>
@@ -372,20 +368,52 @@ export default function Leads() {
                             </Badge>
                           )}
                         </TableCell>
-
-                        {/* Assignment */}
                         <TableCell>
-                          <AssignmentCell
-                            lead={lead}
-                            currentUserId={user?.id}
-                            userRole={user?.role}
-                            collaborateurs={collaborateurs}
-                            onAssignToMe={() => handleAssignToMe(lead.id!)}
-                            onReassign={(newUserId) => handleReassign(lead.id!, newUserId)}
-                          />
+                          {lead.assigned_to ? (
+                            user?.role === "ceo" ? (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground h-auto p-0">
+                                    {lead.assigned_to_name || "Assigné"}
+                                    <ChevronDown className="h-3 w-3" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start">
+                                  {collaborateurs
+                                    .filter((c) => c.id !== lead.assigned_to)
+                                    .map((c) => (
+                                      <DropdownMenuItem key={c.id} onClick={() => handleReassign(lead.id!, c.id)}>
+                                        {c.full_name}
+                                      </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            ) : (
+                              <span className="text-sm text-foreground">{lead.assigned_to_name}</span>
+                            )
+                          ) : !lead.has_active_call ? (
+                            <Button size="sm" variant="outline" onClick={() => handleAssignToMe(lead.id!)} className="gap-1.5 text-xs">
+                              <UserPlus className="h-3.5 w-3.5" />
+                              M'affecter
+                            </Button>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )}
                         </TableCell>
-
-                        {/* Date */}
+                        <TableCell>
+                          {lead.has_active_call && lead.contact_call_scheduled_at ? (
+                            <div className="space-y-0.5">
+                              <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">
+                                📞 {formatDateTime(lead.contact_call_scheduled_at)}
+                              </Badge>
+                              {lead.contact_call_assigned_to_name && (
+                                <p className="text-xs text-muted-foreground">avec {lead.contact_call_assigned_to_name}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <span className="text-sm text-muted-foreground">
                             {lead.created_at
@@ -406,84 +434,6 @@ export default function Leads() {
       {/* Forms */}
       <LeadInstagramForm open={igFormOpen} onOpenChange={setIgFormOpen} onSuccess={fetchLeads} />
       <LeadApporteurForm open={apporteurFormOpen} onOpenChange={setApporteurFormOpen} onSuccess={fetchLeads} />
-    </div>
-  );
-}
-
-// Separate component for assignment cell logic
-function AssignmentCell({
-  lead,
-  currentUserId,
-  userRole,
-  collaborateurs,
-  onAssignToMe,
-  onReassign,
-}: {
-  lead: LeadEnriched;
-  currentUserId?: string;
-  userRole?: string;
-  collaborateurs: { id: string; full_name: string }[];
-  onAssignToMe: () => void;
-  onReassign: (userId: string) => void;
-}) {
-  const hasAssignment = !!lead.assigned_to;
-  const hasCall = lead.has_active_call && lead.contact_call_scheduled_at;
-
-  // No assignment and no call → show assign button
-  if (!hasAssignment && !hasCall) {
-    return (
-      <Button size="sm" variant="outline" onClick={onAssignToMe} className="gap-1.5 text-xs">
-        <UserPlus className="h-3.5 w-3.5" />
-        M'affecter
-      </Button>
-    );
-  }
-
-  return (
-    <div className="space-y-1">
-      {/* Line 1: Assignment info */}
-      {hasAssignment && (
-        lead.assigned_to === currentUserId ? (
-          <Badge variant="outline" className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs">
-            <CheckCircle2 className="h-3 w-3 mr-1" />
-            Assigné à moi
-          </Badge>
-        ) : userRole === "ceo" ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground h-auto p-0">
-                {lead.assigned_to_name || "Assigné"}
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {collaborateurs
-                .filter((c) => c.id !== lead.assigned_to)
-                .map((c) => (
-                  <DropdownMenuItem key={c.id} onClick={() => onReassign(c.id)}>
-                    {c.full_name}
-                  </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <span className="text-sm text-muted-foreground">
-            Assigné à {lead.assigned_to_name || "un autre"}
-          </span>
-        )
-      )}
-
-      {/* Line 2: Call info */}
-      {hasCall && (
-        <div className="space-y-0.5">
-          <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">
-            📞 Call le {formatDateTime(lead.contact_call_scheduled_at!)}
-          </Badge>
-          {lead.contact_call_assigned_to_name && lead.contact_call_assigned_to !== currentUserId && (
-            <p className="text-xs text-muted-foreground">avec {lead.contact_call_assigned_to_name}</p>
-          )}
-        </div>
-      )}
     </div>
   );
 }
