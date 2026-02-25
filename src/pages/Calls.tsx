@@ -310,15 +310,27 @@ export default function Calls() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => setProcessCall(call)}
-                                title="Traiter"
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
+                              {(call.assigned_to === profile?.id || profile?.role === "ceo") ? (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => setProcessCall(call)}
+                                  title="Traiter"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => setProcessCall(call)}
+                                  title="Consulter"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
                               {call.contact_id && (
                                 <Button
                                   variant="ghost"
@@ -373,15 +385,27 @@ export default function Calls() {
                           <p className="text-xs text-muted-foreground">Assigné à {call.assigned_to_name}</p>
                         )}
                         <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => setProcessCall(call)}
-                            title="Traiter"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
+                          {(call.assigned_to === profile?.id || profile?.role === "ceo") ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => setProcessCall(call)}
+                              title="Traiter"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => setProcessCall(call)}
+                              title="Consulter"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
                           {call.contact_id && (
                             <Button
                               variant="ghost"

@@ -138,7 +138,8 @@ export default function Leads() {
     }
   };
 
-  const handleReassign = async (leadId: string, newUserId: string) => {
+  const handleReassign = async (leadId: string, oldAssignedTo: string | null, newUserId: string) => {
+    if (!user) return;
     const { error } = await supabase
       .from("leads")
       .update({ assigned_to: newUserId, assigned_at: new Date().toISOString() })
@@ -147,6 +148,13 @@ export default function Leads() {
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
+      await supabase.from("lead_activities").insert({
+        lead_id: leadId,
+        user_id: user.id,
+        action: "reassigned",
+        old_value: oldAssignedTo,
+        new_value: newUserId,
+      });
       toast({ title: "Lead réassigné avec succès" });
       fetchLeads();
     }
@@ -370,7 +378,7 @@ export default function Leads() {
                         </TableCell>
                         <TableCell>
                           {lead.assigned_to ? (
-                            user?.role === "ceo" ? (
+                            (lead.assigned_to === user?.id || user?.role === "ceo") ? (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground h-auto p-0">
@@ -382,7 +390,7 @@ export default function Leads() {
                                   {collaborateurs
                                     .filter((c) => c.id !== lead.assigned_to)
                                     .map((c) => (
-                                      <DropdownMenuItem key={c.id} onClick={() => handleReassign(lead.id!, c.id)}>
+                                      <DropdownMenuItem key={c.id} onClick={() => handleReassign(lead.id!, lead.assigned_to, c.id)}>
                                         {c.full_name}
                                       </DropdownMenuItem>
                                     ))}
@@ -423,15 +431,27 @@ export default function Leads() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => setProcessLead(lead)}
-                              title="Traiter"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
+                            {(lead.assigned_to === user?.id || user?.role === "ceo") ? (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => setProcessLead(lead)}
+                                title="Traiter"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => setProcessLead(lead)}
+                                title="Consulter"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
                             {lead.contact_id && (
                               <Button
                                 variant="ghost"
