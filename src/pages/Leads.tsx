@@ -426,22 +426,11 @@ function AssignmentCell({
   onAssignToMe: () => void;
   onReassign: (userId: string) => void;
 }) {
-  // 1. Active call
-  if (lead.has_active_call) {
-    return (
-      <div className="space-y-0.5">
-        <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">
-          📞 Call le {lead.call_scheduled_at ? formatDateTime(lead.call_scheduled_at) : "—"}
-        </Badge>
-        {lead.call_assigned_to_name && (
-          <p className="text-xs text-muted-foreground">avec {lead.call_assigned_to_name}</p>
-        )}
-      </div>
-    );
-  }
+  const hasAssignment = !!lead.assigned_to;
+  const hasCall = lead.has_active_call && lead.contact_call_scheduled_at;
 
-  // 2. Not assigned
-  if (!lead.assigned_to) {
+  // No assignment and no call → show assign button
+  if (!hasAssignment && !hasCall) {
     return (
       <Button size="sm" variant="outline" onClick={onAssignToMe} className="gap-1.5 text-xs">
         <UserPlus className="h-3.5 w-3.5" />
@@ -450,42 +439,51 @@ function AssignmentCell({
     );
   }
 
-  // 3. Assigned to me
-  if (lead.assigned_to === currentUserId) {
-    return (
-      <Badge variant="outline" className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs">
-        <CheckCircle2 className="h-3 w-3 mr-1" />
-        Assigné à moi
-      </Badge>
-    );
-  }
-
-  // 4. Assigned to someone else
-  if (userRole === "ceo") {
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground">
-            {lead.assigned_to_name || "Assigné"}
-            <ChevronDown className="h-3 w-3" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          {collaborateurs
-            .filter((c) => c.id !== lead.assigned_to)
-            .map((c) => (
-              <DropdownMenuItem key={c.id} onClick={() => onReassign(c.id)}>
-                {c.full_name}
-              </DropdownMenuItem>
-            ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
-  }
-
   return (
-    <span className="text-sm text-muted-foreground">
-      {lead.assigned_to_name || "Assigné à un autre"}
-    </span>
+    <div className="space-y-1">
+      {/* Line 1: Assignment info */}
+      {hasAssignment && (
+        lead.assigned_to === currentUserId ? (
+          <Badge variant="outline" className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs">
+            <CheckCircle2 className="h-3 w-3 mr-1" />
+            Assigné à moi
+          </Badge>
+        ) : userRole === "ceo" ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground h-auto p-0">
+                {lead.assigned_to_name || "Assigné"}
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {collaborateurs
+                .filter((c) => c.id !== lead.assigned_to)
+                .map((c) => (
+                  <DropdownMenuItem key={c.id} onClick={() => onReassign(c.id)}>
+                    {c.full_name}
+                  </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <span className="text-sm text-muted-foreground">
+            Assigné à {lead.assigned_to_name || "un autre"}
+          </span>
+        )
+      )}
+
+      {/* Line 2: Call info */}
+      {hasCall && (
+        <div className="space-y-0.5">
+          <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">
+            📞 Call le {formatDateTime(lead.contact_call_scheduled_at!)}
+          </Badge>
+          {lead.contact_call_assigned_to_name && lead.contact_call_assigned_to !== currentUserId && (
+            <p className="text-xs text-muted-foreground">avec {lead.contact_call_assigned_to_name}</p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
