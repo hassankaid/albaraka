@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Phone, RefreshCw, Search, Calendar, Clock, CheckCircle2, Pencil, Eye,
+  Phone, RefreshCw, Search, Calendar, Clock, CheckCircle2, Pencil, Eye, Info,
 } from "lucide-react";
 import { isToday, isAfter, isBefore, startOfWeek, endOfWeek, differenceInMinutes } from "date-fns";
 import { formatDateTime } from "@/lib/formatDate";
@@ -328,7 +328,7 @@ export default function Calls() {
                                   onClick={() => setProcessCall(call)}
                                   title="Consulter"
                                 >
-                                  <Eye className="h-3.5 w-3.5" />
+                                   <Info className="h-3.5 w-3.5" />
                                 </Button>
                               )}
                               {call.contact_id && (
@@ -403,7 +403,7 @@ export default function Calls() {
                               onClick={() => setProcessCall(call)}
                               title="Consulter"
                             >
-                              <Eye className="h-3.5 w-3.5" />
+                               <Info className="h-3.5 w-3.5" />
                             </Button>
                           )}
                           {call.contact_id && (
