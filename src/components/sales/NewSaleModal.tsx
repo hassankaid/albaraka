@@ -33,7 +33,7 @@ interface NewSaleModalProps {
   onCreated: () => void;
 }
 
-const PRODUCT_OPTIONS = ["Business Developer", "Libery"];
+const PRODUCT_OPTIONS = ["Business Developer", "Liberty"];
 
 export default function NewSaleModal({ open, onOpenChange, onCreated }: NewSaleModalProps) {
   const { profile } = useAuth();
