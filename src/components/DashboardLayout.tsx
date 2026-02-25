@@ -1,6 +1,7 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import logo from "@/assets/ethicarena-logo.png";
 import { Home, Users, Phone, BookUser, BadgeEuro, User, Sun, Moon, LogOut, ChevronDown, Menu, X } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -108,9 +109,10 @@ export default function DashboardLayout() {
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-secondary transition-colors"
               >
-                <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-xs font-bold text-primary-foreground">
-                  {initials}
-                </div>
+                <Avatar className="h-8 w-8 text-xs">
+                  {profile?.avatar_url ? <AvatarImage src={profile.avatar_url} alt={profile.full_name} /> : null}
+                  <AvatarFallback className="gradient-primary text-primary-foreground text-xs font-bold">{initials}</AvatarFallback>
+                </Avatar>
                 <span className="text-sm font-medium text-foreground hidden sm:block">
                   {profile?.full_name || "Utilisateur"}
                 </span>
