@@ -129,13 +129,6 @@ export type Database = {
             columns: ["rescheduled_from"]
             isOneToOne: false
             referencedRelation: "leads_enriched"
-            referencedColumns: ["call_id"]
-          },
-          {
-            foreignKeyName: "calls_rescheduled_from_fkey"
-            columns: ["rescheduled_from"]
-            isOneToOne: false
-            referencedRelation: "leads_enriched"
             referencedColumns: ["contact_call_id"]
           },
         ]
@@ -256,6 +249,61 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_activities: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          lead_id: string
+          new_value: string | null
+          note: string | null
+          old_value: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          lead_id: string
+          new_value?: string | null
+          note?: string | null
+          old_value?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          lead_id?: string
+          new_value?: string | null
+          note?: string | null
+          old_value?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           apporteur_id: string | null
@@ -264,6 +312,7 @@ export type Database = {
           contact_id: string | null
           created_at: string | null
           id: string
+          notes: string | null
           raw_email: string | null
           raw_full_name: string | null
           raw_phone: string | null
@@ -280,6 +329,7 @@ export type Database = {
           contact_id?: string | null
           created_at?: string | null
           id?: string
+          notes?: string | null
           raw_email?: string | null
           raw_full_name?: string | null
           raw_phone?: string | null
@@ -296,6 +346,7 @@ export type Database = {
           contact_id?: string | null
           created_at?: string | null
           id?: string
+          notes?: string | null
           raw_email?: string | null
           raw_full_name?: string | null
           raw_phone?: string | null
@@ -428,13 +479,6 @@ export type Database = {
             columns: ["call_id"]
             isOneToOne: false
             referencedRelation: "leads_enriched"
-            referencedColumns: ["call_id"]
-          },
-          {
-            foreignKeyName: "sales_call_id_fkey"
-            columns: ["call_id"]
-            isOneToOne: false
-            referencedRelation: "leads_enriched"
             referencedColumns: ["contact_call_id"]
           },
           {
@@ -543,13 +587,6 @@ export type Database = {
             columns: ["rescheduled_from"]
             isOneToOne: false
             referencedRelation: "leads_enriched"
-            referencedColumns: ["call_id"]
-          },
-          {
-            foreignKeyName: "calls_rescheduled_from_fkey"
-            columns: ["rescheduled_from"]
-            isOneToOne: false
-            referencedRelation: "leads_enriched"
             referencedColumns: ["contact_call_id"]
           },
         ]
@@ -572,16 +609,12 @@ export type Database = {
           assigned_at: string | null
           assigned_to: string | null
           assigned_to_name: string | null
-          call_assigned_to: string | null
-          call_assigned_to_name: string | null
-          call_event_type: string | null
-          call_id: string | null
-          call_scheduled_at: string | null
-          call_status: string | null
           contact_call_assigned_to: string | null
           contact_call_assigned_to_name: string | null
+          contact_call_event_type: string | null
           contact_call_id: string | null
           contact_call_scheduled_at: string | null
+          contact_call_status: string | null
           contact_email: string | null
           contact_full_name: string | null
           contact_id: string | null
@@ -589,6 +622,7 @@ export type Database = {
           created_at: string | null
           has_active_call: boolean | null
           id: string | null
+          notes: string | null
           raw_email: string | null
           raw_full_name: string | null
           raw_phone: string | null
@@ -596,6 +630,7 @@ export type Database = {
           source_detail: string | null
           source_label: string | null
           status: string | null
+          status_label: string | null
           systeme_io_id: string | null
           updated_at: string | null
         }
@@ -603,13 +638,6 @@ export type Database = {
           {
             foreignKeyName: "calls_assigned_to_fkey"
             columns: ["contact_call_assigned_to"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "calls_assigned_to_fkey"
-            columns: ["call_assigned_to"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

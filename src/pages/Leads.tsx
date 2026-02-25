@@ -12,10 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
-  Users, UserPlus, RefreshCw, Search, Phone, Clock, PartyPopper, Inbox, ChevronDown, Instagram,
+  Users, UserPlus, RefreshCw, Search, Phone, Clock, PartyPopper, Inbox, ChevronDown, Instagram, Pencil, Eye,
 } from "lucide-react";
 import LeadInstagramForm from "@/components/LeadInstagramForm";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
+import ProcessLeadModal, { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS } from "@/components/leads/ProcessLeadModal";
+import ContactSheet from "@/components/ContactSheet";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatDateTime } from "@/lib/formatDate";
@@ -26,7 +28,14 @@ const STATUS_OPTIONS = [
   { value: "all", label: "Tous" },
   { value: "nouveau", label: "Nouveau" },
   { value: "contacte", label: "Contacté" },
-  { value: "call_booke", label: "Call booké" },
+  { value: "pas_de_reponse", label: "Pas de réponse" },
+  { value: "a_relancer", label: "À relancer" },
+  { value: "faux_numero", label: "Faux numéro" },
+  { value: "qualifie", label: "Qualifié" },
+  { value: "pas_qualifie", label: "Pas qualifié" },
+  { value: "call_vsl", label: "Call VSL" },
+  { value: "call_conference", label: "Call Conférence" },
+  { value: "pole_vente", label: "Pôle Vente" },
   { value: "converti", label: "Converti" },
   { value: "perdu", label: "Perdu" },
 ];
@@ -50,21 +59,9 @@ const SOURCE_COLORS: Record<string, string> = {
   "Apporteur": "bg-orange-500/20 text-orange-300 border-orange-500/30",
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  nouveau: "bg-muted text-muted-foreground border-border",
-  contacte: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  call_booke: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  converti: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  perdu: "bg-red-500/20 text-red-300 border-red-500/30",
-};
+const STATUS_COLORS = LEAD_STATUS_COLORS;
 
-const STATUS_LABELS: Record<string, string> = {
-  nouveau: "Nouveau",
-  contacte: "Contacté",
-  call_booke: "Call booké",
-  converti: "Converti",
-  perdu: "Perdu",
-};
+const STATUS_LABELS = LEAD_STATUS_LABELS;
 
 export default function Leads() {
   const { profile: user } = useAuth();
@@ -79,6 +76,8 @@ export default function Leads() {
   const [collaborateurs, setCollaborateurs] = useState<{ id: string; full_name: string }[]>([]);
   const [igFormOpen, setIgFormOpen] = useState(false);
   const [apporteurFormOpen, setApporteurFormOpen] = useState(false);
+  const [processLead, setProcessLead] = useState<LeadEnriched | null>(null);
+  const [contactSheetId, setContactSheetId] = useState<string | null>(null);
 
   const fetchLeads = useCallback(async () => {
     const { data, error } = await supabase
@@ -342,6 +341,7 @@ export default function Leads() {
                       <TableHead className="w-[150px]">Setter</TableHead>
                       <TableHead className="w-[200px]">Call</TableHead>
                       <TableHead>Date</TableHead>
+                      <TableHead className="w-[100px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -421,6 +421,30 @@ export default function Leads() {
                               : "—"}
                           </span>
                         </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => setProcessLead(lead)}
+                              title="Traiter"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            {lead.contact_id && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => setContactSheetId(lead.contact_id)}
+                                title="Voir contact"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -431,9 +455,21 @@ export default function Leads() {
         ))}
       </Tabs>
 
-      {/* Forms */}
+      {/* Forms & Modals */}
       <LeadInstagramForm open={igFormOpen} onOpenChange={setIgFormOpen} onSuccess={fetchLeads} />
       <LeadApporteurForm open={apporteurFormOpen} onOpenChange={setApporteurFormOpen} onSuccess={fetchLeads} />
+      <ProcessLeadModal
+        lead={processLead}
+        open={!!processLead}
+        onClose={() => setProcessLead(null)}
+        onSuccess={fetchLeads}
+        onOpenContact={(id) => setContactSheetId(id)}
+      />
+      <ContactSheet
+        contactId={contactSheetId}
+        open={!!contactSheetId}
+        onClose={() => setContactSheetId(null)}
+      />
     </div>
   );
 }
