@@ -64,7 +64,7 @@ export default function ManageCommissionsModal({
   const [loading, setLoading] = useState(false);
 
   // Form state
-  const [beneficiaryType, setBeneficiaryType] = useState<"collaborateur" | "apporteur" | "skalesy">("collaborateur");
+  const [beneficiaryType, setBeneficiaryType] = useState<"collaborateur" | "apporteur" | "agence">("collaborateur");
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
   const [percentage, setPercentage] = useState("");
@@ -135,15 +135,13 @@ export default function ManageCommissionsModal({
   };
 
   const handleAdd = async () => {
-    if (!saleId || !selectedRole || !percentage || !amount) return;
+    if (!saleId || !selectedRole || !percentage || !amount || !selectedUserId) return;
     setAdding(true);
     try {
-      const isUser = beneficiaryType !== "skalesy";
-
       const { error } = await supabase.from("commissions").insert({
         sale_id: saleId,
-        beneficiary_user_id: isUser ? selectedUserId : null,
-        beneficiary_external: beneficiaryType === "skalesy" ? "Skalesy" : null,
+        beneficiary_user_id: selectedUserId,
+        beneficiary_external: null,
         role: selectedRole,
         percentage: parseFloat(percentage),
         amount: parseFloat(amount),
@@ -232,42 +230,29 @@ export default function ManageCommissionsModal({
               <SelectContent>
                 <SelectItem value="collaborateur">Collaborateur</SelectItem>
                 <SelectItem value="apporteur">Apporteur</SelectItem>
-                <SelectItem value="skalesy">Skalesy</SelectItem>
+                <SelectItem value="agence">Agence</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {beneficiaryType === "collaborateur" && (
-            <div className="space-y-2">
-              <Label>Bénéficiaire</Label>
-              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                <SelectTrigger><SelectValue placeholder="Sélectionner un collaborateur" /></SelectTrigger>
-                <SelectContent>
-                  {profiles.filter((p) => p.role === "collaborateur").map((p) => (
+          <div className="space-y-2">
+            <Label>Bénéficiaire</Label>
+            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+              <SelectTrigger><SelectValue placeholder="Sélectionner un bénéficiaire" /></SelectTrigger>
+              <SelectContent>
+                {profiles
+                  .filter((p) => {
+                    if (beneficiaryType === "collaborateur") return p.role === "collaborateur";
+                    if (beneficiaryType === "apporteur") return p.role === "apporteur" || p.is_also_apporteur;
+                    if (beneficiaryType === "agence") return p.role === "agence";
+                    return false;
+                  })
+                  .map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {beneficiaryType === "apporteur" && (
-            <div className="space-y-2">
-              <Label>Bénéficiaire</Label>
-              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                <SelectTrigger><SelectValue placeholder="Sélectionner un apporteur" /></SelectTrigger>
-                <SelectContent>
-                  {profiles.filter((p) => p.role === "apporteur" || p.is_also_apporteur).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {beneficiaryType === "skalesy" && (
-            <p className="text-sm text-muted-foreground">Bénéficiaire : Skalesy (externe)</p>
-          )}
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="space-y-2">
             <Label>Rôle</Label>
@@ -283,7 +268,7 @@ export default function ManageCommissionsModal({
                 {beneficiaryType === "apporteur" && (
                   <SelectItem value="apporteur">Apporteur</SelectItem>
                 )}
-                {beneficiaryType === "skalesy" && (
+                {beneficiaryType === "agence" && (
                   <SelectItem value="agence marketing">Agence marketing</SelectItem>
                 )}
               </SelectContent>
@@ -303,7 +288,7 @@ export default function ManageCommissionsModal({
 
           <Button
             onClick={handleAdd}
-            disabled={adding || !selectedRole || !percentage || !amount || (beneficiaryType !== "skalesy" && !selectedUserId)}
+            disabled={adding || !selectedRole || !percentage || !amount || !selectedUserId}
             className="w-full"
           >
             {adding ? "Ajout…" : "Ajouter la commission"}
