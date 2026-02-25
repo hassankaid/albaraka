@@ -181,8 +181,11 @@ export default function Leads() {
       const q = search.toLowerCase();
       result = result.filter(
         (l) =>
+          l.raw_full_name?.toLowerCase().includes(q) ||
           l.contact_full_name?.toLowerCase().includes(q) ||
+          l.raw_email?.toLowerCase().includes(q) ||
           l.contact_email?.toLowerCase().includes(q) ||
+          l.raw_phone?.toLowerCase().includes(q) ||
           l.contact_phone?.toLowerCase().includes(q)
       );
     }
@@ -346,9 +349,9 @@ export default function Leads() {
                         {/* Contact */}
                         <TableCell>
                           <div>
-                            <p className="font-semibold text-foreground">{lead.contact_full_name || "—"}</p>
-                            <p className="text-xs text-muted-foreground">{lead.contact_email}</p>
-                            <p className="text-xs text-muted-foreground">{lead.contact_phone}</p>
+                            <p className="font-semibold text-foreground">{lead.raw_full_name || lead.contact_full_name || "—"}</p>
+                            <p className="text-xs text-muted-foreground">{lead.raw_email || lead.contact_email}</p>
+                            <p className="text-xs text-muted-foreground">{lead.raw_phone || lead.contact_phone}</p>
                           </div>
                         </TableCell>
 

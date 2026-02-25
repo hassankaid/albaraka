@@ -226,13 +226,13 @@ function LeadEvent({ data, contact }: { data: any; contact: ContactDetail | null
         <p className="text-xs text-muted-foreground">Apporté par {data.apporteur_name}</p>
       )}
       <div className="space-y-0.5 mt-1">
-        {data.raw_full_name && data.raw_full_name !== contact?.full_name && (
+        {data.raw_full_name && (
           <p className="text-xs text-muted-foreground">Prénom saisi : {data.raw_full_name}</p>
         )}
-        {data.raw_email && data.raw_email !== contact?.email && (
+        {data.raw_email && (
           <p className="text-xs text-muted-foreground">Email saisi : {data.raw_email}</p>
         )}
-        {data.raw_phone && data.raw_phone !== contact?.phone_normalized && (
+        {data.raw_phone && (
           <p className="text-xs text-muted-foreground">Tél saisi : {data.raw_phone}</p>
         )}
       </div>
