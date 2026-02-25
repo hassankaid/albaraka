@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
-  Users, UserPlus, RefreshCw, Search, Phone, Clock, PartyPopper, Inbox, ChevronDown, Instagram, Pencil, Eye,
+  Users, UserPlus, RefreshCw, Search, Phone, Clock, PartyPopper, Inbox, ChevronDown, Instagram, Pencil, Eye, Info,
 } from "lucide-react";
 import LeadInstagramForm from "@/components/LeadInstagramForm";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
@@ -449,7 +449,7 @@ export default function Leads() {
                                 onClick={() => setProcessLead(lead)}
                                 title="Consulter"
                               >
-                                <Eye className="h-3.5 w-3.5" />
+                                <Info className="h-3.5 w-3.5" />
                               </Button>
                             )}
                             {lead.contact_id && (
