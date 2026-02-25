@@ -151,12 +151,15 @@ export default function ProcessCallModal({ call, open, onClose, onSuccess, onOpe
   };
 
   const userTz = user?.timezone || "Europe/Paris";
+  const canEdit = call.assigned_to === user?.id || user?.role === "ceo";
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-lg bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="text-foreground">Traiter le call</DialogTitle>
+          <DialogTitle className="text-foreground">
+            {canEdit ? "Traiter le call" : "Consulter le call"}
+          </DialogTitle>
         </DialogHeader>
 
         {/* Section 1: Call info */}
@@ -208,7 +211,7 @@ export default function ProcessCallModal({ call, open, onClose, onSuccess, onOpe
         {/* Section 3: Status change */}
         <div className="space-y-2">
           <h4 className="text-sm font-semibold text-foreground">Statut</h4>
-          <Select value={status} onValueChange={setStatus}>
+          <Select value={status} onValueChange={setStatus} disabled={!canEdit}>
             <SelectTrigger className="bg-background">
               <SelectValue />
             </SelectTrigger>
@@ -237,14 +240,21 @@ export default function ProcessCallModal({ call, open, onClose, onSuccess, onOpe
             value={note}
             onChange={(e) => setNote(e.target.value)}
             className="bg-background min-h-[80px]"
+            disabled={!canEdit}
           />
         </div>
 
-        {/* Save */}
-        <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
-          <Save className="h-4 w-4" />
-          {saving ? "Enregistrement..." : "Enregistrer"}
-        </Button>
+        {/* Save or read-only message */}
+        {canEdit ? (
+          <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
+            <Save className="h-4 w-4" />
+            {saving ? "Enregistrement..." : "Enregistrer"}
+          </Button>
+        ) : (
+          <p className="text-xs text-muted-foreground text-center py-2">
+            Seul {call.assigned_to_name || "le collaborateur assigné"} ou le CEO peut modifier ce call
+          </p>
+        )}
       </DialogContent>
     </Dialog>
   );
