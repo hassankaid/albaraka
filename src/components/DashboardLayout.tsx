@@ -3,14 +3,15 @@ import logo from "@/assets/ethicarena-logo.png";
 import { Home, Users, Phone, BookUser, BadgeEuro, User, Sun, Moon, LogOut, ChevronDown, Menu, X } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
-const navItems = [
-  { title: "Dashboard", path: "/dashboard", icon: Home },
-  { title: "Leads", path: "/leads", icon: Users },
-  { title: "Calls", path: "/calls", icon: Phone },
-  { title: "Contacts", path: "/contacts", icon: BookUser },
-  { title: "Ventes", path: "/sales", icon: BadgeEuro },
-  { title: "Mon espace", path: "/my-space", icon: User },
+const allNavItems = [
+  { title: "Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur"] },
+  { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"] },
+  { title: "Calls", path: "/calls", icon: Phone, roles: ["ceo", "collaborateur"] },
+  { title: "Contacts", path: "/contacts", icon: BookUser, roles: ["ceo", "collaborateur"] },
+  { title: "Ventes", path: "/sales", icon: BadgeEuro, roles: ["ceo"] },
+  { title: "Mon espace", path: "/my-space", icon: User, roles: ["apporteur"] },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -27,8 +28,14 @@ export default function DashboardLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { profile, signOut } = useAuth();
 
   const pageTitle = pageTitles[location.pathname] || "Dashboard";
+  const userRole = profile?.role || "apporteur";
+  const navItems = allNavItems.filter((item) => item.roles.includes(userRole));
+  const initials = profile?.full_name
+    ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "U";
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -43,7 +50,6 @@ export default function DashboardLayout() {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Logo */}
         <div className="h-16 flex items-center gap-3 px-6 border-b border-border">
           <img src={logo} alt="Ethicarena" className="w-9 h-9 object-contain" />
           <span className="font-bold text-foreground">Ethicarena</span>
@@ -52,7 +58,6 @@ export default function DashboardLayout() {
           </button>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 py-4 px-3 space-y-1">
           {navItems.map((item) => (
             <NavLink
@@ -76,7 +81,6 @@ export default function DashboardLayout() {
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
         <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-card/50 backdrop-blur-sm sticky top-0 z-30">
           <div className="flex items-center gap-3">
             <button className="lg:hidden text-muted-foreground" onClick={() => setSidebarOpen(true)}>
@@ -86,7 +90,6 @@ export default function DashboardLayout() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Theme toggle */}
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
@@ -94,15 +97,17 @@ export default function DashboardLayout() {
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
 
-            {/* User dropdown */}
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-secondary transition-colors"
               >
                 <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-xs font-bold text-primary-foreground">
-                  U
+                  {initials}
                 </div>
+                <span className="text-sm font-medium text-foreground hidden sm:block">
+                  {profile?.full_name || "Utilisateur"}
+                </span>
                 <ChevronDown className="h-3 w-3 text-muted-foreground" />
               </button>
 
@@ -110,10 +115,17 @@ export default function DashboardLayout() {
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
                   <div className="absolute right-0 top-full mt-2 w-48 bg-card border border-border rounded-xl shadow-lg z-50 py-1">
-                    <button className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-secondary flex items-center gap-2">
-                      <User className="h-4 w-4" /> Profil
-                    </button>
-                    <button className="w-full px-4 py-2 text-left text-sm text-destructive hover:bg-secondary flex items-center gap-2">
+                    <NavLink
+                      to="/my-space"
+                      onClick={() => setDropdownOpen(false)}
+                      className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-secondary flex items-center gap-2"
+                    >
+                      <User className="h-4 w-4" /> Mon profil
+                    </NavLink>
+                    <button
+                      onClick={() => { setDropdownOpen(false); signOut(); }}
+                      className="w-full px-4 py-2 text-left text-sm text-destructive hover:bg-secondary flex items-center gap-2"
+                    >
                       <LogOut className="h-4 w-4" /> Déconnexion
                     </button>
                   </div>
@@ -123,7 +135,6 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        {/* Content */}
         <main className="flex-1 p-6">
           <Outlet />
         </main>

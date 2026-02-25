@@ -1,25 +1,57 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/ethicarena-logo.png";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, RefreshCw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const registered = searchParams.get("registered");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      toast({
+        title: "Erreur de connexion",
+        description: error.message === "Invalid login credentials"
+          ? "Email ou mot de passe incorrect"
+          : error.message,
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
+    navigate("/dashboard");
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background bg-grid-pattern p-4">
       <div className="w-full max-w-md space-y-8">
-        {/* Logo placeholder */}
         <div className="flex flex-col items-center space-y-2">
           <img src={logo} alt="Ethicarena" className="w-20 h-20 object-contain" />
           <h1 className="text-2xl font-bold text-foreground mt-6">Connexion</h1>
           <p className="text-muted-foreground text-sm">Espace réservé aux membres Ethicarena</p>
         </div>
 
-        {/* Form */}
-        <div className="bg-card border border-border rounded-xl p-8 space-y-6 shadow-lg">
+        {registered && (
+          <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm rounded-lg p-3 text-center">
+            Compte créé avec succès ! Connectez-vous.
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="bg-card border border-border rounded-xl p-8 space-y-6 shadow-lg">
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Email</label>
             <div className="relative">
@@ -29,6 +61,7 @@ const Login = () => {
                 placeholder="vous@ethicarena.ma"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
                 className="w-full pl-10 pr-4 py-2.5 bg-transparent border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
               />
             </div>
@@ -43,6 +76,7 @@ const Login = () => {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
                 className="w-full pl-10 pr-10 py-2.5 bg-transparent border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
               />
               <button
@@ -55,10 +89,15 @@ const Login = () => {
             </div>
           </div>
 
-          <button className="w-full py-2.5 rounded-full gradient-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2.5 rounded-full gradient-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {loading && <RefreshCw className="h-4 w-4 animate-spin" />}
             Se connecter
           </button>
-        </div>
+        </form>
 
         <p className="text-center text-sm text-muted-foreground">
           Vous êtes apporteur d'affaires ?{" "}
