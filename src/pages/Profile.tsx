@@ -15,6 +15,8 @@ import { RefreshCw, Save, Camera, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 
 const TIMEZONES = [
   { value: "Europe/Paris", label: "Paris", group: "Europe" },
@@ -94,7 +96,7 @@ export default function Profile() {
   const { profile, user } = useAuth();
   const { toast } = useToast();
   const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState<string | undefined>("");
   const [timezone, setTimezone] = useState("Europe/Paris");
   const [saving, setSaving] = useState(false);
   const [tzOpen, setTzOpen] = useState(false);
@@ -201,7 +203,7 @@ export default function Profile() {
 
     const { error } = await supabase
       .from("profiles")
-      .update({ full_name: fullName, phone, timezone })
+      .update({ full_name: fullName, phone: phone || "", timezone })
       .eq("id", user.id);
 
     if (error) {
@@ -283,8 +285,14 @@ export default function Profile() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">Téléphone</Label>
-              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+33 6 12 34 56 78" className="bg-background" />
+              <Label>Téléphone</Label>
+              <PhoneInput
+                international
+                defaultCountry="FR"
+                value={phone}
+                onChange={setPhone}
+                placeholder="6 12 34 56 78"
+              />
             </div>
 
             <div className="space-y-2">

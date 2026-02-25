@@ -115,3 +115,45 @@
     background-size: 40px 40px;
   }
 }
+
+/* react-phone-number-input theming */
+.PhoneInput {
+  @apply flex items-center gap-2 h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background;
+}
+
+.PhoneInput:focus-within {
+  @apply ring-2 ring-ring ring-offset-2;
+}
+
+.PhoneInputCountry {
+  @apply flex items-center gap-1;
+}
+
+.PhoneInputCountryIcon {
+  width: 24px;
+  height: 16px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.PhoneInputCountryIcon--border {
+  box-shadow: none;
+}
+
+.PhoneInputCountrySelect {
+  @apply absolute top-0 left-0 h-full w-full opacity-0 cursor-pointer;
+}
+
+.PhoneInputCountrySelectArrow {
+  @apply border-muted-foreground;
+  width: 6px;
+  height: 6px;
+}
+
+.PhoneInputInput {
+  @apply flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground;
+}
+
+.PhoneInputInput::placeholder {
+  @apply text-muted-foreground;
+}

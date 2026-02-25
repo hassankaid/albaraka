@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RefreshCw } from "lucide-react";
+import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 
 export default function LeadApporteurForm({
   open,
@@ -21,7 +23,7 @@ export default function LeadApporteurForm({
   const { toast } = useToast();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState<string | undefined>("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -34,13 +36,18 @@ export default function LeadApporteurForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile || !fullName.trim() || !phone.trim()) return;
+    if (!profile || !fullName.trim() || !phone) return;
+
+    if (!isValidPhoneNumber(phone)) {
+      toast({ title: "Numéro de téléphone invalide", variant: "destructive" });
+      return;
+    }
 
     setSaving(true);
 
     const { data: contactId, error: rpcError } = await supabase.rpc("find_or_create_contact", {
       p_email: email.trim() || "",
-      p_phone: phone.trim(),
+      p_phone: phone,
       p_full_name: fullName.trim().toUpperCase(),
     });
 
@@ -98,13 +105,12 @@ export default function LeadApporteurForm({
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Téléphone *</label>
-            <Input
-              type="tel"
+            <PhoneInput
+              international
+              defaultCountry="FR"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+212 6XX XXX XXX"
-              required
-              className="bg-background"
+              onChange={setPhone}
+              placeholder="6 12 34 56 78"
             />
           </div>
           <div className="space-y-2">
