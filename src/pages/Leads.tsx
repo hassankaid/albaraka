@@ -36,7 +36,7 @@ const STATUS_OPTIONS = [
   { value: "call_vsl", label: "Call VSL" },
   { value: "call_conference", label: "Call Conférence" },
   { value: "pole_vente", label: "Pôle Vente" },
-  { value: "converti", label: "Converti" },
+  { value: "converti", label: "Close" },
   { value: "perdu", label: "Perdu" },
 ];
 
