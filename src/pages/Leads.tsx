@@ -35,12 +35,18 @@ const SOURCE_OPTIONS = [
   { value: "vsl_a", label: "VSL A" },
   { value: "vsl_b", label: "VSL B" },
   { value: "vsl_webi", label: "VSL Webi" },
+  { value: "instagram_organic", label: "Instagram Organique" },
+  { value: "instagram_ads", label: "Instagram Ads" },
+  { value: "apporteur", label: "Apporteur" },
 ];
 
 const SOURCE_COLORS: Record<string, string> = {
-  vsl_a: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  vsl_b: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  vsl_webi: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  "VSL A": "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  "VSL B": "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  "VSL Webi": "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  "Instagram Organique": "bg-pink-500/20 text-pink-300 border-pink-500/30",
+  "Instagram Ads": "bg-pink-600/20 text-pink-400 border-pink-600/30",
+  "Apporteur": "bg-orange-500/20 text-orange-300 border-orange-500/30",
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -347,9 +353,9 @@ export default function Leads() {
 
                         {/* Source */}
                         <TableCell>
-                          {lead.source && (
-                            <Badge variant="outline" className={`text-xs ${SOURCE_COLORS[lead.source] || ""}`}>
-                              {SOURCE_OPTIONS.find((s) => s.value === lead.source)?.label || lead.source}
+                          {lead.source_label && (
+                            <Badge variant="outline" className={`text-xs ${SOURCE_COLORS[lead.source_label] || ""}`}>
+                              {lead.source_label}
                             </Badge>
                           )}
                         </TableCell>

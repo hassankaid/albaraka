@@ -2,10 +2,9 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Card, CardContent } from "@/components/ui/card";
-import { Copy, Phone as PhoneIcon, Mail, MessageCircle, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -150,33 +149,7 @@ export default function ContactSheet({
               </div>
             </SheetHeader>
 
-            {/* Quick actions */}
-            <div className="flex flex-wrap gap-2 py-4 border-b border-border">
-              {contact.email && (
-                <Button size="sm" variant="outline" onClick={() => copyToClipboard(contact.email!, "Email")} className="text-xs gap-1.5">
-                  <Copy className="h-3.5 w-3.5" /><Mail className="h-3.5 w-3.5" />
-                </Button>
-              )}
-              {contact.phone_normalized && (
-                <>
-                  <Button size="sm" variant="outline" onClick={() => copyToClipboard(contact.phone_normalized!, "Téléphone")} className="text-xs gap-1.5">
-                    <Copy className="h-3.5 w-3.5" /><PhoneIcon className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button size="sm" variant="outline" asChild className="text-xs gap-1.5">
-                    <a href={`tel:${contact.phone_normalized}`}>
-                      <PhoneIcon className="h-3.5 w-3.5" /> Appeler
-                    </a>
-                  </Button>
-                  {waLink && (
-                    <Button size="sm" variant="outline" asChild className="text-xs gap-1.5">
-                      <a href={waLink} target="_blank" rel="noopener noreferrer">
-                        <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
-                      </a>
-                    </Button>
-                  )}
-                </>
-              )}
-            </div>
+            <div className="border-b border-border" />
 
             {/* Timeline */}
             <div className="py-4">
@@ -205,7 +178,7 @@ export default function ContactSheet({
                       <Card className="flex-1 border-border/50 bg-card/50">
                         <CardContent className="p-3 space-y-1.5">
                           {event.type === "lead" && (
-                            <LeadEvent data={event.data} />
+                            <LeadEvent data={event.data} contact={contact} />
                           )}
                           {event.type === "call" && (
                             <CallEvent data={event.data} />
@@ -230,12 +203,12 @@ export default function ContactSheet({
   );
 }
 
-function LeadEvent({ data }: { data: any }) {
+function LeadEvent({ data, contact }: { data: any; contact: ContactDetail | null }) {
   return (
     <>
       <div className="flex items-center gap-2">
         <p className="text-sm font-medium text-foreground">Lead entrant</p>
-        {data.source_detail && <span className="text-xs text-muted-foreground">- {data.source_detail}</span>}
+        {data.source_label && <span className="text-xs text-muted-foreground">- {data.source_label}</span>}
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
         {data.status && (
@@ -250,6 +223,17 @@ function LeadEvent({ data }: { data: any }) {
       {data.apporteur_name && (
         <p className="text-xs text-muted-foreground">Apporté par {data.apporteur_name}</p>
       )}
+      <div className="space-y-0.5 mt-1">
+        {data.raw_full_name && data.raw_full_name !== contact?.full_name && (
+          <p className="text-xs text-muted-foreground">Prénom saisi : {data.raw_full_name}</p>
+        )}
+        {data.raw_email && data.raw_email !== contact?.email && (
+          <p className="text-xs text-muted-foreground">Email saisi : {data.raw_email}</p>
+        )}
+        {data.raw_phone && data.raw_phone !== contact?.phone_normalized && (
+          <p className="text-xs text-muted-foreground">Tél saisi : {data.raw_phone}</p>
+        )}
+      </div>
     </>
   );
 }

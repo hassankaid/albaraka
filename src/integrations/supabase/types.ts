@@ -216,6 +216,9 @@ export type Database = {
           contact_id: string | null
           created_at: string | null
           id: string
+          raw_email: string | null
+          raw_full_name: string | null
+          raw_phone: string | null
           source: string
           source_detail: string | null
           status: string
@@ -229,6 +232,9 @@ export type Database = {
           contact_id?: string | null
           created_at?: string | null
           id?: string
+          raw_email?: string | null
+          raw_full_name?: string | null
+          raw_phone?: string | null
           source: string
           source_detail?: string | null
           status?: string
@@ -242,6 +248,9 @@ export type Database = {
           contact_id?: string | null
           created_at?: string | null
           id?: string
+          raw_email?: string | null
+          raw_full_name?: string | null
+          raw_phone?: string | null
           source?: string
           source_detail?: string | null
           status?: string
@@ -509,8 +518,12 @@ export type Database = {
           created_at: string | null
           has_active_call: boolean | null
           id: string | null
+          raw_email: string | null
+          raw_full_name: string | null
+          raw_phone: string | null
           source: string | null
           source_detail: string | null
+          source_label: string | null
           status: string | null
           systeme_io_id: string | null
           updated_at: string | null
