@@ -450,6 +450,7 @@ export type Database = {
           calendly_event_id: string | null
           canceled_at: string | null
           canceled_by: string | null
+          canceled_by_name: string | null
           cancellation_reason: string | null
           contact_email: string | null
           contact_full_name: string | null
@@ -458,6 +459,7 @@ export type Database = {
           created_at: string | null
           duration_minutes: number | null
           event_type: string | null
+          event_type_label: string | null
           id: string | null
           lead_id: string | null
           notes: string | null
