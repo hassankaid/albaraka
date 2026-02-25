@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import logo from "@/assets/ethicarena-logo.png";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 
 const Login = () => {
@@ -12,8 +13,8 @@ const Login = () => {
       <div className="w-full max-w-md space-y-8">
         {/* Logo placeholder */}
         <div className="flex flex-col items-center space-y-2">
-          <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center text-2xl font-bold text-primary-foreground">
-            EA
+          <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-lg">
+            <img src={logo} alt="Ethicarena" className="w-14 h-14 object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-foreground mt-6">Connexion</h1>
           <p className="text-muted-foreground text-sm">Espace réservé aux membres Ethicarena</p>

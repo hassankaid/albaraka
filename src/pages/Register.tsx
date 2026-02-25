@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import logo from "@/assets/ethicarena-logo.png";
 import { Eye, EyeOff, Mail, Lock, User, Phone } from "lucide-react";
 
 const Register = () => {
@@ -10,8 +11,8 @@ const Register = () => {
     <div className="min-h-screen flex items-center justify-center bg-background bg-grid-pattern p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center space-y-2">
-          <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center text-2xl font-bold text-primary-foreground">
-            EA
+          <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-lg">
+            <img src={logo} alt="Ethicarena" className="w-14 h-14 object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-foreground mt-6">Créer votre compte</h1>
           <p className="text-muted-foreground text-sm">Rejoignez le réseau d'apporteurs Ethicarena</p>
