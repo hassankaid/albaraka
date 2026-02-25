@@ -12,8 +12,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
-  Users, UserPlus, RefreshCw, Search, Phone, CheckCircle2, Clock, PartyPopper, Inbox, ChevronDown,
+  Users, UserPlus, RefreshCw, Search, Phone, CheckCircle2, Clock, PartyPopper, Inbox, ChevronDown, Instagram,
 } from "lucide-react";
+import LeadInstagramForm from "@/components/LeadInstagramForm";
+import LeadApporteurForm from "@/components/LeadApporteurForm";
 import { formatDistanceToNow, format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -68,6 +70,8 @@ export default function Leads() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [collaborateurs, setCollaborateurs] = useState<{ id: string; full_name: string }[]>([]);
+  const [igFormOpen, setIgFormOpen] = useState(false);
+  const [apporteurFormOpen, setApporteurFormOpen] = useState(false);
 
   const fetchLeads = useCallback(async () => {
     const { data, error } = await supabase
@@ -223,15 +227,29 @@ export default function Leads() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Leads</h2>
           <p className="text-sm text-muted-foreground mt-0.5">Gestion des prospects</p>
         </div>
-        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-          Actualiser
-        </Button>
+        <div className="flex items-center gap-2">
+          {user?.can_add_instagram_leads && (
+            <Button size="sm" onClick={() => setIgFormOpen(true)} className="bg-gradient-to-r from-pink-500 to-purple-500 text-primary-foreground text-xs gap-1.5">
+              <Instagram className="h-4 w-4" />
+              Lead Instagram
+            </Button>
+          )}
+          {user?.is_also_apporteur && (
+            <Button size="sm" variant="outline" onClick={() => setApporteurFormOpen(true)} className="text-xs gap-1.5 border-blue-500/40 text-blue-400 hover:bg-blue-500/10">
+              <UserPlus className="h-4 w-4" />
+              Apporter un lead
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+            Actualiser
+          </Button>
+        </div>
       </div>
 
       {/* Counter cards */}
@@ -374,6 +392,10 @@ export default function Leads() {
           </TabsContent>
         ))}
       </Tabs>
+
+      {/* Forms */}
+      <LeadInstagramForm open={igFormOpen} onOpenChange={setIgFormOpen} onSuccess={fetchLeads} />
+      <LeadApporteurForm open={apporteurFormOpen} onOpenChange={setApporteurFormOpen} onSuccess={fetchLeads} />
     </div>
   );
 }
