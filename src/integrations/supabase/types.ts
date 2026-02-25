@@ -29,6 +29,9 @@ export type Database = {
           lead_id: string | null
           notes: string | null
           outcome: string | null
+          raw_email: string | null
+          raw_full_name: string | null
+          raw_phone: string | null
           rescheduled_from: string | null
           scheduled_at: string
           status: string
@@ -48,6 +51,9 @@ export type Database = {
           lead_id?: string | null
           notes?: string | null
           outcome?: string | null
+          raw_email?: string | null
+          raw_full_name?: string | null
+          raw_phone?: string | null
           rescheduled_from?: string | null
           scheduled_at: string
           status?: string
@@ -67,6 +73,9 @@ export type Database = {
           lead_id?: string | null
           notes?: string | null
           outcome?: string | null
+          raw_email?: string | null
+          raw_full_name?: string | null
+          raw_phone?: string | null
           rescheduled_from?: string | null
           scheduled_at?: string
           status?: string
@@ -121,6 +130,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "leads_enriched"
             referencedColumns: ["call_id"]
+          },
+          {
+            foreignKeyName: "calls_rescheduled_from_fkey"
+            columns: ["rescheduled_from"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["contact_call_id"]
           },
         ]
       }
@@ -415,6 +431,13 @@ export type Database = {
             referencedColumns: ["call_id"]
           },
           {
+            foreignKeyName: "sales_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["contact_call_id"]
+          },
+          {
             foreignKeyName: "sales_closed_by_fkey"
             columns: ["closed_by"]
             isOneToOne: false
@@ -522,6 +545,13 @@ export type Database = {
             referencedRelation: "leads_enriched"
             referencedColumns: ["call_id"]
           },
+          {
+            foreignKeyName: "calls_rescheduled_from_fkey"
+            columns: ["rescheduled_from"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["contact_call_id"]
+          },
         ]
       }
       contact_timeline: {
@@ -548,6 +578,10 @@ export type Database = {
           call_id: string | null
           call_scheduled_at: string | null
           call_status: string | null
+          contact_call_assigned_to: string | null
+          contact_call_assigned_to_name: string | null
+          contact_call_id: string | null
+          contact_call_scheduled_at: string | null
           contact_email: string | null
           contact_full_name: string | null
           contact_id: string | null
@@ -566,6 +600,13 @@ export type Database = {
           updated_at: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "calls_assigned_to_fkey"
+            columns: ["contact_call_assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "calls_assigned_to_fkey"
             columns: ["call_assigned_to"]
