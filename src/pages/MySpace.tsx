@@ -204,10 +204,10 @@ export default function MySpace() {
                         )}
                       </TableCell>
                       <TableCell>
-                        {lead.has_active_call && lead.call_scheduled_at ? (
+                        {lead.has_active_call && lead.contact_call_scheduled_at ? (
                           <Badge variant="outline" className="text-xs bg-blue-500/20 text-blue-300 border-blue-500/30">
                             <Phone className="h-3 w-3 mr-1" />
-                            {formatDateTime(lead.call_scheduled_at)}
+                            {formatDateTime(lead.contact_call_scheduled_at)}
                           </Badge>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
@@ -237,11 +237,11 @@ export default function MySpace() {
                     </div>
                     <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                       <span>{lead.created_at ? formatDistanceToNow(new Date(lead.created_at), { addSuffix: true, locale: fr }) : ""}</span>
-                      {lead.has_active_call && lead.call_scheduled_at && (
+                      {lead.has_active_call && lead.contact_call_scheduled_at && (
                         <>
                           <span>•</span>
                           <Badge variant="outline" className="text-xs bg-blue-500/20 text-blue-300 border-blue-500/30">
-                            📞 {formatDateTime(lead.call_scheduled_at)}
+                            📞 {formatDateTime(lead.contact_call_scheduled_at)}
                           </Badge>
                         </>
                       )}
