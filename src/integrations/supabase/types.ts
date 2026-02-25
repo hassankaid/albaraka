@@ -18,6 +18,9 @@ export type Database = {
         Row: {
           assigned_to: string | null
           calendly_event_id: string | null
+          canceled_at: string | null
+          canceled_by: string | null
+          cancellation_reason: string | null
           contact_id: string | null
           created_at: string | null
           duration_minutes: number | null
@@ -26,6 +29,7 @@ export type Database = {
           lead_id: string | null
           notes: string | null
           outcome: string | null
+          rescheduled_from: string | null
           scheduled_at: string
           status: string
           updated_at: string | null
@@ -33,6 +37,9 @@ export type Database = {
         Insert: {
           assigned_to?: string | null
           calendly_event_id?: string | null
+          canceled_at?: string | null
+          canceled_by?: string | null
+          cancellation_reason?: string | null
           contact_id?: string | null
           created_at?: string | null
           duration_minutes?: number | null
@@ -41,6 +48,7 @@ export type Database = {
           lead_id?: string | null
           notes?: string | null
           outcome?: string | null
+          rescheduled_from?: string | null
           scheduled_at: string
           status?: string
           updated_at?: string | null
@@ -48,6 +56,9 @@ export type Database = {
         Update: {
           assigned_to?: string | null
           calendly_event_id?: string | null
+          canceled_at?: string | null
+          canceled_by?: string | null
+          cancellation_reason?: string | null
           contact_id?: string | null
           created_at?: string | null
           duration_minutes?: number | null
@@ -56,6 +67,7 @@ export type Database = {
           lead_id?: string | null
           notes?: string | null
           outcome?: string | null
+          rescheduled_from?: string | null
           scheduled_at?: string
           status?: string
           updated_at?: string | null
@@ -88,6 +100,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "leads_enriched"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_rescheduled_from_fkey"
+            columns: ["rescheduled_from"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_rescheduled_from_fkey"
+            columns: ["rescheduled_from"]
+            isOneToOne: false
+            referencedRelation: "calls_enriched"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_rescheduled_from_fkey"
+            columns: ["rescheduled_from"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["call_id"]
           },
         ]
       }
@@ -149,9 +182,8 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string | null
-          first_name: string | null
+          full_name: string | null
           id: string
-          last_name: string | null
           phone_normalized: string | null
           phone_original: string | null
           updated_at: string | null
@@ -159,9 +191,8 @@ export type Database = {
         Insert: {
           created_at?: string | null
           email?: string | null
-          first_name?: string | null
+          full_name?: string | null
           id?: string
-          last_name?: string | null
           phone_normalized?: string | null
           phone_original?: string | null
           updated_at?: string | null
@@ -169,9 +200,8 @@ export type Database = {
         Update: {
           created_at?: string | null
           email?: string | null
-          first_name?: string | null
+          full_name?: string | null
           id?: string
-          last_name?: string | null
           phone_normalized?: string | null
           phone_original?: string | null
           updated_at?: string | null
@@ -331,6 +361,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sales_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["call_id"]
+          },
+          {
             foreignKeyName: "sales_closed_by_fkey"
             columns: ["closed_by"]
             isOneToOne: false
@@ -368,10 +405,8 @@ export type Database = {
           assigned_to_name: string | null
           calendly_event_id: string | null
           contact_email: string | null
-          contact_first_name: string | null
           contact_full_name: string | null
           contact_id: string | null
-          contact_last_name: string | null
           contact_phone: string | null
           created_at: string | null
           duration_minutes: number | null
@@ -433,13 +468,18 @@ export type Database = {
           assigned_at: string | null
           assigned_to: string | null
           assigned_to_name: string | null
+          call_assigned_to: string | null
+          call_assigned_to_name: string | null
+          call_event_type: string | null
+          call_id: string | null
+          call_scheduled_at: string | null
+          call_status: string | null
           contact_email: string | null
-          contact_first_name: string | null
           contact_full_name: string | null
           contact_id: string | null
-          contact_last_name: string | null
           contact_phone: string | null
           created_at: string | null
+          has_active_call: boolean | null
           id: string | null
           source: string | null
           source_detail: string | null
@@ -448,6 +488,13 @@ export type Database = {
           updated_at: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "calls_assigned_to_fkey"
+            columns: ["call_assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "leads_apporteur_id_fkey"
             columns: ["apporteur_id"]
@@ -474,16 +521,11 @@ export type Database = {
     }
     Functions: {
       find_or_create_contact: {
-        Args: {
-          p_email: string
-          p_first_name?: string
-          p_last_name?: string
-          p_phone: string
-        }
+        Args: { p_email: string; p_full_name?: string; p_phone: string }
         Returns: string
       }
       get_user_role: { Args: never; Returns: string }
-      normalize_phone: { Args: { phone: string }; Returns: string }
+      normalize_phone_e164: { Args: { phone: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
