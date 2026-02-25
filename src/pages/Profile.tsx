@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -9,8 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { RefreshCw, Save, Camera, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Cropper from "react-easy-crop";
+import type { Area } from "react-easy-crop";
 
 const TIMEZONES = [
   { value: "Europe/Paris", label: "Paris", group: "Europe" },
@@ -58,6 +61,34 @@ const TIMEZONES = [
 
 const GROUPS = ["Europe", "Afrique", "Moyen-Orient", "Asie", "Amérique", "Océanie"];
 
+async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
+  const image = new Image();
+  image.crossOrigin = "anonymous";
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = reject;
+    image.src = imageSrc;
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+  const ctx = canvas.getContext("2d")!;
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height,
+    0, 0, pixelCrop.width, pixelCrop.height
+  );
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("Canvas toBlob failed"));
+    }, "image/webp", 0.9);
+  });
+}
+
 export default function Profile() {
   const { profile, user } = useAuth();
   const { toast } = useToast();
@@ -71,6 +102,13 @@ export default function Profile() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Crop modal
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -88,28 +126,48 @@ export default function Profile() {
     .toUpperCase()
     .slice(0, 2);
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onCropComplete = useCallback((_: Area, croppedPixels: Area) => {
+    setCroppedAreaPixels(croppedPixels);
+  }, []);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
       toast({ title: "Fichier trop volumineux", description: "2 Mo maximum", variant: "destructive" });
       return;
     }
-
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       toast({ title: "Format non supporté", description: "JPG, PNG ou WebP uniquement", variant: "destructive" });
       return;
     }
 
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageSrc(reader.result as string);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+    // Reset input so same file can be re-selected
+    e.target.value = "";
+  };
+
+  const handleCropConfirm = async () => {
+    if (!imageSrc || !croppedAreaPixels || !user) return;
+
+    setCropModalOpen(false);
     setUploading(true);
+
     try {
-      const fileExt = file.name.split(".").pop();
-      const filePath = `${user.id}.${fileExt}`;
+      const blob = await getCroppedImg(imageSrc, croppedAreaPixels);
+      const filePath = `${user.id}.webp`;
 
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, blob, { upsert: true, contentType: "image/webp" });
 
       if (uploadError) throw uploadError;
 
@@ -117,7 +175,6 @@ export default function Profile() {
         .from("avatars")
         .getPublicUrl(filePath);
 
-      // Add cache-busting param
       const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
 
       const { error: updateError } = await supabase
@@ -133,6 +190,7 @@ export default function Profile() {
       toast({ title: "Erreur", description: err.message, variant: "destructive" });
     } finally {
       setUploading(false);
+      setImageSrc(null);
     }
   };
 
@@ -177,18 +235,14 @@ export default function Profile() {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Avatar */}
-          <div className="flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center gap-2">
             <div
               className="relative group cursor-pointer"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => !uploading && fileInputRef.current?.click()}
             >
               <Avatar className="h-24 w-24 text-lg">
-                {avatarUrl ? (
-                  <AvatarImage src={avatarUrl} alt={fullName} />
-                ) : null}
-                <AvatarFallback className="text-lg bg-primary/10 text-primary">
-                  {initials || "?"}
-                </AvatarFallback>
+                {avatarUrl ? <AvatarImage src={avatarUrl} alt={fullName} /> : null}
+                <AvatarFallback className="text-lg bg-primary/10 text-primary">{initials || "?"}</AvatarFallback>
               </Avatar>
               <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 {uploading ? (
@@ -197,15 +251,22 @@ export default function Profile() {
                   <Camera className="h-5 w-5 text-white" />
                 )}
               </div>
+              {uploading && (
+                <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
+                  <RefreshCw className="h-5 w-5 animate-spin text-white" />
+                </div>
+              )}
             </div>
+            <p className="text-xs text-muted-foreground">
+              {uploading ? "Upload en cours..." : "JPG, PNG ou WebP • 2 Mo max"}
+            </p>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp"
               className="hidden"
-              onChange={handleAvatarChange}
+              onChange={handleFileSelect}
             />
-            <p className="text-xs text-muted-foreground">JPG, PNG ou WebP • 2 Mo max</p>
           </div>
 
           {/* Fields */}
@@ -245,10 +306,7 @@ export default function Profile() {
                             <CommandItem
                               key={tz.value}
                               value={`${tz.label} ${tz.group}`}
-                              onSelect={() => {
-                                setTimezone(tz.value);
-                                setTzOpen(false);
-                              }}
+                              onSelect={() => { setTimezone(tz.value); setTzOpen(false); }}
                             >
                               <Check className={cn("mr-2 h-4 w-4", timezone === tz.value ? "opacity-100" : "opacity-0")} />
                               {tz.label}
@@ -262,13 +320,44 @@ export default function Profile() {
               </Popover>
             </div>
 
-            <Button onClick={handleSave} disabled={saving} className="w-full gradient-primary text-primary-foreground">
+            <Button onClick={handleSave} disabled={saving || uploading} className="w-full gradient-primary text-primary-foreground">
               {saving ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
               Enregistrer
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Crop Modal */}
+      <Dialog open={cropModalOpen} onOpenChange={(open) => { if (!open) { setCropModalOpen(false); setImageSrc(null); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Recadrer l'image</DialogTitle>
+          </DialogHeader>
+          <div className="relative w-full h-72 bg-muted rounded-lg overflow-hidden">
+            {imageSrc && (
+              <Cropper
+                image={imageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+              />
+            )}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => { setCropModalOpen(false); setImageSrc(null); }}>
+              Annuler
+            </Button>
+            <Button onClick={handleCropConfirm} className="gradient-primary text-primary-foreground">
+              Valider
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
