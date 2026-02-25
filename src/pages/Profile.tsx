@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import { Slider } from "@/components/ui/slider";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { RefreshCw, Save, Camera, Check, ChevronsUpDown } from "lucide-react";
@@ -340,6 +341,8 @@ export default function Profile() {
                 image={imageSrc}
                 crop={crop}
                 zoom={zoom}
+                minZoom={1}
+                maxZoom={5}
                 aspect={1}
                 cropShape="round"
                 onCropChange={setCrop}
@@ -347,6 +350,18 @@ export default function Profile() {
                 onCropComplete={onCropComplete}
               />
             )}
+          </div>
+          <div className="flex items-center gap-3 px-1">
+            <span className="text-xs text-muted-foreground shrink-0">Zoom</span>
+            <Slider
+              value={[zoom]}
+              onValueChange={([v]) => setZoom(v)}
+              min={1}
+              max={5}
+              step={0.05}
+              className="flex-1"
+            />
+            <span className="text-xs text-muted-foreground w-10 text-right">{zoom.toFixed(1)}×</span>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => { setCropModalOpen(false); setImageSrc(null); }}>
