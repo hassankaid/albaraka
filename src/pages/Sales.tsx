@@ -7,8 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BadgeEuro, RefreshCw, Plus, Settings } from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { formatDateOnly } from "@/lib/formatDate";
 import NewSaleModal from "@/components/sales/NewSaleModal";
 import ManageCommissionsModal from "@/components/sales/ManageCommissionsModal";
 
@@ -154,8 +153,9 @@ export default function Sales() {
     : userCommissions.filter((c) => c.status === "paid").reduce((s, c) => s + (c.amount || 0), 0);
   const count = isCeo ? ceoSales.length : userCommissions.length;
 
+  const userTz = profile?.timezone || "Europe/Paris";
   const formatDate = (d: string | null) =>
-    d ? format(new Date(d), "dd MMM yyyy", { locale: fr }) : "—";
+    d ? formatDateOnly(d, userTz) : "—";
 
   return (
     <div className="space-y-6">

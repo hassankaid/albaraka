@@ -324,6 +324,7 @@ export type Database = {
           is_also_apporteur: boolean | null
           phone: string | null
           role: string
+          timezone: string | null
           updated_at: string | null
         }
         Insert: {
@@ -336,6 +337,7 @@ export type Database = {
           is_also_apporteur?: boolean | null
           phone?: string | null
           role?: string
+          timezone?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -348,6 +350,7 @@ export type Database = {
           is_also_apporteur?: boolean | null
           phone?: string | null
           role?: string
+          timezone?: string | null
           updated_at?: string | null
         }
         Relationships: []

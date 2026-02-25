@@ -16,8 +16,9 @@ import {
 } from "lucide-react";
 import LeadInstagramForm from "@/components/LeadInstagramForm";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import { formatDateTime } from "@/lib/formatDate";
 
 type LeadEnriched = Tables<"leads_enriched">;
 
@@ -427,7 +428,7 @@ function AssignmentCell({
     return (
       <div className="space-y-0.5">
         <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">
-          📞 Call le {lead.call_scheduled_at ? format(new Date(lead.call_scheduled_at), "dd/MM à HH:mm", { locale: fr }) : "—"}
+          📞 Call le {lead.call_scheduled_at ? formatDateTime(lead.call_scheduled_at) : "—"}
         </Badge>
         {lead.call_assigned_to_name && (
           <p className="text-xs text-muted-foreground">avec {lead.call_assigned_to_name}</p>
