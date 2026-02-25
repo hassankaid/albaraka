@@ -141,7 +141,16 @@
 }
 
 .PhoneInputCountrySelect {
-  @apply absolute top-0 left-0 h-full w-full opacity-0 cursor-pointer;
+  @apply absolute top-0 left-0 h-full w-full cursor-pointer;
+  opacity: 0;
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+}
+
+.PhoneInputCountrySelect option {
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  padding: 4px 8px;
 }
 
 .PhoneInputCountrySelectArrow {
