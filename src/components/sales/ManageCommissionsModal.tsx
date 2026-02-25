@@ -42,17 +42,17 @@ interface ManageCommissionsModalProps {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  Apporteur: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  Setter: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  Closer: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  "Agence marketing": "bg-orange-500/20 text-orange-300 border-orange-500/30",
+  apporteur: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  setter: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  closer: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  "agence marketing": "bg-orange-500/20 text-orange-300 border-orange-500/30",
 };
 
 const ROLE_SUGGESTED_PCT: Record<string, number> = {
-  Apporteur: 25,
-  Setter: 10,
-  Closer: 15,
-  "Agence marketing": 20,
+  apporteur: 25,
+  setter: 10,
+  closer: 15,
+  "agence marketing": 20,
 };
 
 export default function ManageCommissionsModal({
@@ -276,15 +276,15 @@ export default function ManageCommissionsModal({
               <SelectContent>
                 {beneficiaryType === "collaborateur" && (
                   <>
-                    <SelectItem value="Setter">Setter</SelectItem>
-                    <SelectItem value="Closer">Closer</SelectItem>
+                    <SelectItem value="setter">Setter</SelectItem>
+                    <SelectItem value="closer">Closer</SelectItem>
                   </>
                 )}
                 {beneficiaryType === "apporteur" && (
-                  <SelectItem value="Apporteur">Apporteur</SelectItem>
+                  <SelectItem value="apporteur">Apporteur</SelectItem>
                 )}
                 {beneficiaryType === "skalesy" && (
-                  <SelectItem value="Agence marketing">Agence marketing</SelectItem>
+                  <SelectItem value="agence marketing">Agence marketing</SelectItem>
                 )}
               </SelectContent>
             </Select>
