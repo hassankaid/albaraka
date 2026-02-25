@@ -238,13 +238,33 @@ function LeadEvent({ data, contact }: { data: any; contact: ContactDetail | null
   );
 }
 
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  appel_offert_vsl_a: "Appel VSL A",
+  appel_offert_vsl_b: "Appel VSL B",
+  appel_setting_webi: "Appel Setting Webi",
+  inscription_conference: "Conférence",
+  appel_organique: "Appel Organique",
+};
+
+const EVENT_TYPE_COLORS: Record<string, string> = {
+  appel_offert_vsl_a: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  appel_offert_vsl_b: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  appel_setting_webi: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  inscription_conference: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+  appel_organique: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+};
+
 function CallEvent({ data }: { data: any }) {
+  const typeLabel = data.event_type ? (EVENT_TYPE_LABELS[data.event_type] || data.event_type) : "Appel";
   return (
     <>
-      <div className="flex items-center gap-2">
-        <p className="text-sm font-medium text-foreground">
-          {data.event_type || "Appel"}
-        </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm font-medium text-foreground">{typeLabel}</p>
+        {data.event_type && EVENT_TYPE_COLORS[data.event_type] && (
+          <Badge variant="outline" className={`text-xs ${EVENT_TYPE_COLORS[data.event_type]}`}>
+            {typeLabel}
+          </Badge>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
         {data.status && (

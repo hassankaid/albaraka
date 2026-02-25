@@ -178,6 +178,38 @@ export type Database = {
           },
         ]
       }
+      contact_identifiers: {
+        Row: {
+          contact_id: string
+          created_at: string | null
+          id: string
+          identifier_type: string
+          identifier_value: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string | null
+          id?: string
+          identifier_type: string
+          identifier_value: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string | null
+          id?: string
+          identifier_type?: string
+          identifier_value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_identifiers_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           created_at: string | null
