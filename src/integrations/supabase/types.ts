@@ -404,6 +404,9 @@ export type Database = {
           assigned_to: string | null
           assigned_to_name: string | null
           calendly_event_id: string | null
+          canceled_at: string | null
+          canceled_by: string | null
+          cancellation_reason: string | null
           contact_email: string | null
           contact_full_name: string | null
           contact_id: string | null
@@ -415,6 +418,7 @@ export type Database = {
           lead_id: string | null
           notes: string | null
           outcome: string | null
+          rescheduled_from: string | null
           scheduled_at: string | null
           status: string | null
           updated_at: string | null
@@ -447,6 +451,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "leads_enriched"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_rescheduled_from_fkey"
+            columns: ["rescheduled_from"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_rescheduled_from_fkey"
+            columns: ["rescheduled_from"]
+            isOneToOne: false
+            referencedRelation: "calls_enriched"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_rescheduled_from_fkey"
+            columns: ["rescheduled_from"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["call_id"]
           },
         ]
       }
