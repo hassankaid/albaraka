@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Tables } from "@/integrations/supabase/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,7 +58,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function Leads() {
-  const { user } = useCurrentUser();
+  const { profile: user } = useAuth();
   const { toast } = useToast();
   const [leads, setLeads] = useState<LeadEnriched[]>([]);
   const [loading, setLoading] = useState(true);
