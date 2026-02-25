@@ -243,7 +243,7 @@ export default function ManageCommissionsModal({
               <Select value={selectedUserId} onValueChange={setSelectedUserId}>
                 <SelectTrigger><SelectValue placeholder="Sélectionner un collaborateur" /></SelectTrigger>
                 <SelectContent>
-                  {profiles.filter((p) => p.role === "ceo" || p.role === "collaborateur").map((p) => (
+                  {profiles.filter((p) => p.role === "collaborateur").map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
                   ))}
                 </SelectContent>
