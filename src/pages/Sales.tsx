@@ -6,124 +6,156 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BadgeEuro, RefreshCw, Plus } from "lucide-react";
+import { BadgeEuro, RefreshCw, Plus, Settings } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import NewSaleModal from "@/components/sales/NewSaleModal";
+import ManageCommissionsModal from "@/components/sales/ManageCommissionsModal";
 
-interface SaleRow {
+interface CeoSale {
   id: string;
   product: string;
   amount_ht: number;
   payment_status: string | null;
   sold_at: string | null;
-  created_at: string | null;
-  contact_name?: string | null;
-  contact_email?: string | null;
-  closed_by_name?: string | null;
-  commission_amount?: number | null;
-  commission_role?: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  closed_by_name: string | null;
+  commission_count: number;
+}
+
+interface UserCommission {
+  id: string;
+  role: string;
+  percentage: number;
+  amount: number | null;
+  status: string | null;
+  product: string;
+  amount_ht: number;
+  sold_at: string | null;
+  contact_name: string | null;
 }
 
 const PAYMENT_COLORS: Record<string, string> = {
   pending: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
   paid: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   failed: "bg-red-500/20 text-red-300 border-red-500/30",
+  refunded: "bg-red-500/20 text-red-300 border-red-500/30",
 };
 
 const PAYMENT_LABELS: Record<string, string> = {
   pending: "En attente",
   paid: "Payé",
   failed: "Échoué",
+  refunded: "Remboursé",
+};
+
+const ROLE_COLORS: Record<string, string> = {
+  apporteur: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  setter: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  closer: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  "agence marketing": "bg-orange-500/20 text-orange-300 border-orange-500/30",
 };
 
 export default function Sales() {
   const { profile } = useAuth();
   const { toast } = useToast();
-  const [sales, setSales] = useState<SaleRow[]>([]);
+  const isCeo = profile?.role === "ceo";
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const isCeo = profile?.role === "ceo";
+  // CEO state
+  const [ceoSales, setCeoSales] = useState<CeoSale[]>([]);
+  const [newSaleOpen, setNewSaleOpen] = useState(false);
+  const [commissionsModalSale, setCommissionsModalSale] = useState<CeoSale | null>(null);
 
-  const fetchSales = useCallback(async () => {
+  // Non-CEO state
+  const [userCommissions, setUserCommissions] = useState<UserCommission[]>([]);
+
+  const fetchData = useCallback(async () => {
     if (!profile) return;
 
     if (isCeo) {
-      // CEO: fetch all sales with contact and closer info
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("sales")
         .select(`
-          id, product, amount_ht, payment_status, sold_at, created_at,
+          id, product, amount_ht, payment_status, sold_at,
           contacts!sales_contact_id_fkey(full_name, email),
-          profiles!sales_closed_by_fkey(full_name)
+          profiles!sales_closed_by_fkey(full_name),
+          commissions(id)
         `)
         .order("sold_at", { ascending: false });
 
-      if (!error && data) {
-        setSales(
+      if (data) {
+        setCeoSales(
           data.map((s: any) => ({
             id: s.id,
             product: s.product,
             amount_ht: s.amount_ht,
             payment_status: s.payment_status,
             sold_at: s.sold_at,
-            created_at: s.created_at,
             contact_name: s.contacts?.full_name,
             contact_email: s.contacts?.email,
             closed_by_name: s.profiles?.full_name,
+            commission_count: s.commissions?.length || 0,
           }))
         );
       }
     } else {
-      // Collaborateur/Apporteur: fetch only sales where they have a commission
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("commissions")
         .select(`
-          amount, role,
+          id, role, percentage, amount, status,
           sales!commissions_sale_id_fkey(
-            id, product, amount_ht, payment_status, sold_at, created_at,
-            contacts!sales_contact_id_fkey(full_name, email)
+            product, amount_ht, sold_at,
+            contacts!sales_contact_id_fkey(full_name)
           )
         `)
         .eq("beneficiary_user_id", profile.id)
         .order("created_at", { ascending: false });
 
-      if (!error && data) {
-        setSales(
+      if (data) {
+        setUserCommissions(
           data
             .filter((c: any) => c.sales)
             .map((c: any) => ({
-              id: c.sales.id,
+              id: c.id,
+              role: c.role,
+              percentage: c.percentage,
+              amount: c.amount,
+              status: c.status,
               product: c.sales.product,
               amount_ht: c.sales.amount_ht,
-              payment_status: c.sales.payment_status,
               sold_at: c.sales.sold_at,
-              created_at: c.sales.created_at,
               contact_name: c.sales.contacts?.full_name,
-              contact_email: c.sales.contacts?.email,
-              commission_amount: c.amount,
-              commission_role: c.role,
             }))
         );
       }
     }
-
     setLoading(false);
   }, [profile, isCeo]);
 
-  useEffect(() => {
-    fetchSales();
-  }, [fetchSales]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchSales();
+    await fetchData();
     setRefreshing(false);
     toast({ title: "Données actualisées" });
   };
 
-  const totalHT = sales.reduce((sum, s) => sum + s.amount_ht, 0);
-  const totalPaid = sales.filter((s) => s.payment_status === "paid").reduce((sum, s) => sum + s.amount_ht, 0);
+  // Stats
+  const totalCA = isCeo
+    ? ceoSales.reduce((s, v) => s + v.amount_ht, 0)
+    : userCommissions.reduce((s, c) => s + (c.amount || 0), 0);
+  const totalPaid = isCeo
+    ? ceoSales.filter((v) => v.payment_status === "paid").reduce((s, v) => s + v.amount_ht, 0)
+    : userCommissions.filter((c) => c.status === "paid").reduce((s, c) => s + (c.amount || 0), 0);
+  const count = isCeo ? ceoSales.length : userCommissions.length;
+
+  const formatDate = (d: string | null) =>
+    d ? format(new Date(d), "dd MMM yyyy", { locale: fr }) : "—";
 
   return (
     <div className="space-y-6">
@@ -141,7 +173,7 @@ export default function Sales() {
             Actualiser
           </Button>
           {isCeo && (
-            <Button size="sm" className="gradient-primary text-primary-foreground">
+            <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => setNewSaleOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Nouvelle vente
             </Button>
@@ -149,7 +181,7 @@ export default function Sales() {
         </div>
       </div>
 
-      {/* Stats cards */}
+      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-purple-500/20 to-blue-500/20 border-border/50 backdrop-blur-sm">
           <CardContent className="p-4 flex items-center gap-3">
@@ -157,15 +189,15 @@ export default function Sales() {
               <BadgeEuro className="h-5 w-5 text-foreground" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{sales.length}</p>
-              <p className="text-xs text-muted-foreground">Ventes</p>
+              <p className="text-2xl font-bold text-foreground">{count}</p>
+              <p className="text-xs text-muted-foreground">{isCeo ? "Ventes" : "Commissions"}</p>
             </div>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-border/50 backdrop-blur-sm">
           <CardContent className="p-4">
-            <p className="text-2xl font-bold text-foreground">{totalHT.toLocaleString("fr-FR")} €</p>
-            <p className="text-xs text-muted-foreground">Total HT</p>
+            <p className="text-2xl font-bold text-foreground">{totalCA.toLocaleString("fr-FR")} €</p>
+            <p className="text-xs text-muted-foreground">{isCeo ? "CA total HT" : "Total commissions"}</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-border/50 backdrop-blur-sm">
@@ -181,12 +213,15 @@ export default function Sales() {
         <div className="flex items-center justify-center py-16">
           <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-      ) : sales.length === 0 ? (
+      ) : count === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <BadgeEuro className="h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-lg font-semibold text-foreground">Aucune vente pour le moment</p>
+          <p className="text-lg font-semibold text-foreground">
+            {isCeo ? "Aucune vente pour le moment" : "Aucune commission pour le moment"}
+          </p>
         </div>
-      ) : (
+      ) : isCeo ? (
+        /* CEO TABLE */
         <Card className="border-border/50 overflow-hidden">
           <Table>
             <TableHeader>
@@ -195,13 +230,14 @@ export default function Sales() {
                 <TableHead>Produit</TableHead>
                 <TableHead>Montant HT</TableHead>
                 <TableHead>Paiement</TableHead>
-                {!isCeo && <TableHead>Commission</TableHead>}
-                {isCeo && <TableHead>Closer</TableHead>}
+                <TableHead>Commissions</TableHead>
+                <TableHead>Closer</TableHead>
                 <TableHead>Date</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sales.map((sale) => (
+              {ceoSales.map((sale) => (
                 <TableRow key={sale.id} className="border-border hover:bg-secondary/50 transition-colors">
                   <TableCell>
                     <div>
@@ -218,27 +254,59 @@ export default function Sales() {
                       {PAYMENT_LABELS[sale.payment_status || "pending"] || sale.payment_status}
                     </Badge>
                   </TableCell>
-                  {!isCeo && (
-                    <TableCell>
-                      <div>
-                        <p className="font-semibold text-foreground">
-                          {sale.commission_amount != null ? `${sale.commission_amount.toLocaleString("fr-FR")} €` : "—"}
-                        </p>
-                        {sale.commission_role && (
-                          <p className="text-xs text-muted-foreground">{sale.commission_role}</p>
-                        )}
-                      </div>
-                    </TableCell>
-                  )}
-                  {isCeo && (
-                    <TableCell className="text-sm text-muted-foreground">
-                      {sale.closed_by_name || "—"}
-                    </TableCell>
-                  )}
-                  <TableCell className="text-sm text-muted-foreground">
-                    {sale.sold_at
-                      ? format(new Date(sale.sold_at), "dd MMM yyyy", { locale: fr })
-                      : "—"}
+                  <TableCell>
+                    <Badge variant="secondary" className="text-xs">{sale.commission_count}</Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{sale.closed_by_name || "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{formatDate(sale.sold_at)}</TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" onClick={() => setCommissionsModalSale(sale)}>
+                      <Settings className="h-4 w-4 mr-1" />
+                      Commissions
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      ) : (
+        /* NON-CEO TABLE */
+        <Card className="border-border/50 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead>Vente</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Mon rôle</TableHead>
+                <TableHead>%</TableHead>
+                <TableHead>Montant</TableHead>
+                <TableHead>Statut</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {userCommissions.map((c) => (
+                <TableRow key={c.id} className="border-border hover:bg-secondary/50 transition-colors">
+                  <TableCell>
+                    <div>
+                      <p className="font-semibold text-foreground">{c.product}</p>
+                      <p className="text-xs text-muted-foreground">{c.contact_name}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{formatDate(c.sold_at)}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={`text-xs ${ROLE_COLORS[c.role] || ""}`}>
+                      {c.role}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-foreground">{c.percentage}%</TableCell>
+                  <TableCell className="font-semibold text-foreground">
+                    {c.amount != null ? `${c.amount.toLocaleString("fr-FR")} €` : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={`text-xs ${PAYMENT_COLORS[c.status || "pending"] || ""}`}>
+                      {c.status === "paid" ? "Payée" : "En attente"}
+                    </Badge>
                   </TableCell>
                 </TableRow>
               ))}
@@ -246,6 +314,17 @@ export default function Sales() {
           </Table>
         </Card>
       )}
+
+      {/* Modals */}
+      <NewSaleModal open={newSaleOpen} onOpenChange={setNewSaleOpen} onCreated={fetchData} />
+      <ManageCommissionsModal
+        open={!!commissionsModalSale}
+        onOpenChange={(v) => !v && setCommissionsModalSale(null)}
+        saleId={commissionsModalSale?.id || null}
+        saleAmountHt={commissionsModalSale?.amount_ht || 0}
+        saleProduct={commissionsModalSale?.product || ""}
+        onUpdated={fetchData}
+      />
     </div>
   );
 }
