@@ -1,4 +1,5 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
+import logo from "@/assets/ethicarena-logo.png";
 import { Home, Users, Phone, BookUser, BadgeEuro, User, Sun, Moon, LogOut, ChevronDown, Menu, X } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -44,8 +45,8 @@ export default function DashboardLayout() {
       >
         {/* Logo */}
         <div className="h-16 flex items-center gap-3 px-6 border-b border-border">
-          <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center text-sm font-bold text-primary-foreground">
-            EA
+          <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center">
+            <img src={logo} alt="Ethicarena" className="w-6 h-6 object-contain" />
           </div>
           <span className="font-bold text-foreground">Ethicarena</span>
           <button className="ml-auto lg:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
