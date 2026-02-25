@@ -13,9 +13,7 @@ const Login = () => {
       <div className="w-full max-w-md space-y-8">
         {/* Logo placeholder */}
         <div className="flex flex-col items-center space-y-2">
-          <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-lg">
-            <img src={logo} alt="Ethicarena" className="w-14 h-14 object-contain" />
-          </div>
+          <img src={logo} alt="Ethicarena" className="w-20 h-20 object-contain" />
           <h1 className="text-2xl font-bold text-foreground mt-6">Connexion</h1>
           <p className="text-muted-foreground text-sm">Espace réservé aux membres Ethicarena</p>
         </div>
