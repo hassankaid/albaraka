@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RefreshCw } from "lucide-react";
+import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 
 const SOURCE_OPTIONS = [
   { value: "instagram_organic", label: "Instagram Organique" },
@@ -27,7 +29,7 @@ export default function LeadInstagramForm({
   const { toast } = useToast();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState<string | undefined>("");
   const [source, setSource] = useState("instagram_organic");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -42,13 +44,18 @@ export default function LeadInstagramForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile || !fullName.trim() || !phone.trim()) return;
+    if (!profile || !fullName.trim() || !phone) return;
+
+    if (!isValidPhoneNumber(phone)) {
+      toast({ title: "Numéro de téléphone invalide", variant: "destructive" });
+      return;
+    }
 
     setSaving(true);
 
     const { data: contactId, error: rpcError } = await supabase.rpc("find_or_create_contact", {
       p_email: email.trim() || "",
-      p_phone: phone.trim(),
+      p_phone: phone,
       p_full_name: fullName.trim().toUpperCase(),
     });
 
@@ -107,13 +114,12 @@ export default function LeadInstagramForm({
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Téléphone *</label>
-            <Input
-              type="tel"
+            <PhoneInput
+              international
+              defaultCountry="FR"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+33 6 XX XX XX XX"
-              required
-              className="bg-background"
+              onChange={setPhone}
+              placeholder="6 12 34 56 78"
             />
           </div>
           <div className="space-y-2">
