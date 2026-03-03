@@ -383,28 +383,15 @@ function CallEvent({ data, userTz, contact }: { data: any; userTz: string; conta
     <>
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-sm font-medium text-foreground">{typeLabel}</p>
+        <Badge variant="outline" className={`text-xs ${STATUS_COLORS["planifie"] || ""}`}>
+          {STATUS_LABELS["planifie"]}
+        </Badge>
       </div>
-      <div className="flex flex-wrap items-center gap-1.5">
-        {data.status && (
-          <Badge variant="outline" className={`text-xs ${STATUS_COLORS[data.status] || ""}`}>
-            {STATUS_LABELS[data.status] || data.status}
-          </Badge>
-        )}
-        {data.assigned_to_name && (
-          <span className="text-xs text-muted-foreground">avec {data.assigned_to_name}</span>
-        )}
-      </div>
-      {data.status === "annule" && data.canceled_at && (
-        <p className="text-xs text-muted-foreground">
-          Annulé le {formatDateTime(data.canceled_at, userTz)}
-          {data.canceled_by_name ? ` par ${data.canceled_by_name}` : ""}
-        </p>
+      {data.assigned_to_name && (
+        <span className="text-xs text-muted-foreground">avec {data.assigned_to_name}</span>
       )}
-      {data.status === "effectue" && data.outcome && (
-        <p className="text-xs text-foreground">Résultat : {data.outcome}</p>
-      )}
-      {(data.closer_notes || data.notes) && (
-        <p className="text-xs text-muted-foreground italic">{data.closer_notes || data.notes}</p>
+      {data.scheduled_at && (
+        <p className="text-xs text-muted-foreground">RDV : {formatDateTime(data.scheduled_at, userTz)}</p>
       )}
       <div className="space-y-0.5 mt-1">
         {data.raw_full_name && data.raw_full_name !== contact?.full_name && (
