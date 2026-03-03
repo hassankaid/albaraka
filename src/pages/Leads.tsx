@@ -129,7 +129,7 @@ export default function Leads() {
     if (!user) return;
     const { error } = await supabase
       .from("leads")
-      .update({ assigned_to: user.id, assigned_at: new Date().toISOString(), status: "contacte" })
+      .update({ assigned_to: user.id, assigned_at: new Date().toISOString() })
       .eq("id", leadId);
 
     if (error) {
