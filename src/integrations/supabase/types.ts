@@ -469,6 +469,69 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          contact_id: string | null
+          created_at: string | null
+          due_date: string
+          id: string
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          payment_number: number
+          sale_id: string | null
+          status: string
+          total_payments: number
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          contact_id?: string | null
+          created_at?: string | null
+          due_date: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_number: number
+          sale_id?: string | null
+          status?: string
+          total_payments: number
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          contact_id?: string | null
+          created_at?: string | null
+          due_date?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_number?: number
+          sale_id?: string | null
+          status?: string
+          total_payments?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null

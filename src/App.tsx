@@ -14,6 +14,7 @@ import Leads from "./pages/Leads";
 import Calls from "./pages/Calls";
 import Contacts from "./pages/Contacts";
 import Sales from "./pages/Sales";
+import Payments from "./pages/Payments";
 import MySpace from "./pages/MySpace";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
@@ -39,6 +40,7 @@ const App = () => (
                   <Route path="/calls" element={<Calls />} />
                   <Route path="/contacts" element={<Contacts />} />
                   <Route path="/sales" element={<Sales />} />
+                  <Route path="/payments" element={<Payments />} />
                   <Route path="/my-space" element={<MySpace />} />
                   <Route path="/profile" element={<Profile />} />
                 </Route>
