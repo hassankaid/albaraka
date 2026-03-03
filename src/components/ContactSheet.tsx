@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Card, CardContent } from "@/components/ui/card";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, UserCheck, MessageSquare, UserPlus } from "lucide-react";
 import { formatDateTime, formatDateOnly } from "@/lib/formatDate";
 
 interface ContactDetail {
@@ -17,7 +17,7 @@ interface ContactDetail {
 }
 
 interface TimelineEvent {
-  type: "lead" | "call" | "sale" | "call_activity";
+  type: "lead" | "call" | "sale" | "call_activity" | "lead_activity";
   id: string;
   date: string;
   data: any;
@@ -25,14 +25,26 @@ interface TimelineEvent {
 
 const STATUS_COLORS: Record<string, string> = {
   nouveau: "bg-muted text-muted-foreground border-border",
+  a_qualifier: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  faux_numero: "bg-red-300/20 text-red-300 border-red-300/30",
+  pas_de_reponse: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+  pas_qualifie: "bg-muted text-muted-foreground border-border",
+  a_relancer: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
   contacte: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  call_booke: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  call_booke: "bg-purple-500/20 text-purple-300 border-purple-500/30",
   converti: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   perdu: "bg-red-500/20 text-red-300 border-red-500/30",
   planifie: "bg-blue-500/20 text-blue-300 border-blue-500/30",
   effectue: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  no_show: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  annule: "bg-red-500/20 text-red-300 border-red-500/30",
+  no_show: "bg-red-500/20 text-red-300 border-red-500/30",
+  annule: "bg-muted text-muted-foreground border-border",
+  pas_interesse: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+  disqualifie: "bg-orange-400/20 text-orange-300 border-orange-400/30",
+  non_close: "bg-red-400/20 text-red-300 border-red-400/30",
+  renvoye_pole_vente: "bg-blue-600/20 text-blue-300 border-blue-600/30",
+  renvoye_conference: "bg-violet-500/20 text-violet-300 border-violet-500/30",
+  rediffusion: "bg-purple-400/20 text-purple-300 border-purple-400/30",
+  follow_up: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
   close: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   pending: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
   paid: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
@@ -43,6 +55,9 @@ const STATUS_LABELS: Record<string, string> = {
   nouveau: "Nouveau", contacte: "Contacté", call_booke: "Call booké",
   converti: "Close", perdu: "Perdu", planifie: "Planifié",
   effectue: "Effectué", no_show: "No show", annule: "Annulé",
+  a_qualifier: "À qualifier", faux_numero: "Faux numéro",
+  pas_de_reponse: "Pas de réponse", pas_qualifie: "Pas qualifié",
+  a_relancer: "À relancer",
   close: "Close", disqualifie: "Disqualifié", pas_interesse: "Pas intéressé",
   non_close: "Non close", renvoye_pole_vente: "Renvoi Pôle Vente",
   renvoye_conference: "Renvoi Conférence", rediffusion: "Rediffusion",
@@ -79,18 +94,26 @@ export default function ContactSheet({
 
     if (contactRes.data) setContact(contactRes.data);
 
-    // Get call IDs to fetch call activities
+    const leadIds = leadsRes.data?.map((l) => l.id).filter(Boolean) as string[] || [];
     const callIds = callsRes.data?.map((c) => c.id).filter(Boolean) as string[] || [];
 
-    let callActivities: any[] = [];
-    if (callIds.length > 0) {
-      const { data: activitiesData } = await supabase
-        .from("call_activities")
-        .select("*, profiles:user_id(full_name)")
-        .in("call_id", callIds)
-        .order("created_at", { ascending: false });
-      callActivities = activitiesData || [];
-    }
+    // Fetch both lead_activities and call_activities in parallel
+    const [leadActivitiesRes, callActivitiesRes] = await Promise.all([
+      leadIds.length > 0
+        ? supabase
+            .from("lead_activities")
+            .select("*, profiles:user_id(full_name)")
+            .in("lead_id", leadIds)
+            .order("created_at", { ascending: false })
+        : Promise.resolve({ data: [] }),
+      callIds.length > 0
+        ? supabase
+            .from("call_activities")
+            .select("*, profiles:user_id(full_name)")
+            .in("call_id", callIds)
+            .order("created_at", { ascending: false })
+        : Promise.resolve({ data: [] }),
+    ]);
 
     const events: TimelineEvent[] = [];
 
@@ -106,7 +129,11 @@ export default function ContactSheet({
       events.push({ type: "sale", id: s.id, date: s.sold_at || s.created_at || "", data: s });
     });
 
-    callActivities.forEach((a) => {
+    (leadActivitiesRes.data || []).forEach((a: any) => {
+      events.push({ type: "lead_activity", id: a.id, date: a.created_at || "", data: a });
+    });
+
+    (callActivitiesRes.data || []).forEach((a: any) => {
       events.push({ type: "call_activity", id: a.id, date: a.created_at || "", data: a });
     });
 
@@ -119,18 +146,9 @@ export default function ContactSheet({
     if (open && contactId) fetchData();
   }, [open, contactId, fetchData]);
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: `${label} copié` });
-  };
-
   const initials = contact?.full_name
     ? contact.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "?";
-
-  const waLink = contact?.phone_normalized
-    ? `https://wa.me/${contact.phone_normalized.replace("+", "")}`
-    : null;
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -182,39 +200,19 @@ export default function ContactSheet({
                 <p className="text-sm text-muted-foreground text-center py-8">Aucun événement</p>
               ) : (
                 <div className="relative space-y-0">
-                  {/* Vertical line */}
                   <div className="absolute left-[15px] top-2 bottom-2 w-px bg-border" />
 
-                  {timeline.map((event, i) => (
+                  {timeline.map((event) => (
                     <div key={`${event.type}-${event.id}`} className="relative flex gap-4 pb-6 last:pb-0">
-                      {/* Dot */}
-                      <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${
-                        event.type === "lead"
-                          ? "bg-purple-500/20 border border-purple-500/40"
-                          : event.type === "call"
-                          ? "bg-blue-500/20 border border-blue-500/40"
-                          : event.type === "call_activity"
-                          ? "bg-cyan-500/20 border border-cyan-500/40"
-                          : "bg-emerald-500/20 border border-emerald-500/40"
-                      }`}>
-                        {event.type === "lead" ? "📥" : event.type === "call" ? "📞" : event.type === "call_activity" ? "🔄" : "💰"}
-                      </div>
+                      <TimelineDot type={event.type} action={event.type === "lead_activity" || event.type === "call_activity" ? event.data.action : undefined} />
 
-                      {/* Content */}
                       <Card className="flex-1 border-border/50 bg-card/50">
                         <CardContent className="p-3 space-y-1.5">
-                          {event.type === "lead" && (
-                            <LeadEvent data={event.data} contact={contact} />
-                          )}
-                          {event.type === "call" && (
-                            <CallEvent data={event.data} userTz={userTz} contact={contact} />
-                          )}
-                          {event.type === "call_activity" && (
-                            <CallActivityEvent data={event.data} userTz={userTz} />
-                          )}
-                          {event.type === "sale" && (
-                            <SaleEvent data={event.data} />
-                          )}
+                          {event.type === "lead" && <LeadEvent data={event.data} />}
+                          {event.type === "call" && <CallEvent data={event.data} userTz={userTz} contact={contact} />}
+                          {event.type === "lead_activity" && <LeadActivityEvent data={event.data} userTz={userTz} />}
+                          {event.type === "call_activity" && <CallActivityEvent data={event.data} userTz={userTz} />}
+                          {event.type === "sale" && <SaleEvent data={event.data} />}
                           <p className="text-xs text-muted-foreground">
                             {event.date ? formatDateTime(event.date, userTz) : "—"}
                           </p>
@@ -232,7 +230,45 @@ export default function ContactSheet({
   );
 }
 
-function LeadEvent({ data, contact }: { data: any; contact: ContactDetail | null }) {
+/* ─── Timeline Dot ─── */
+function TimelineDot({ type, action }: { type: string; action?: string }) {
+  let className = "bg-muted border-border";
+  let icon = "📌";
+
+  if (type === "lead") {
+    className = "bg-purple-500/20 border-purple-500/40";
+    icon = "📥";
+  } else if (type === "call") {
+    className = "bg-blue-500/20 border-blue-500/40";
+    icon = "📞";
+  } else if (type === "sale") {
+    className = "bg-emerald-500/20 border-emerald-500/40";
+    icon = "💰";
+  } else if (type === "lead_activity" || type === "call_activity") {
+    if (action === "status_change") {
+      className = "bg-blue-500/20 border-blue-500/40";
+      icon = "🔄";
+    } else if (action === "reassigned" || action === "assigned") {
+      className = "bg-violet-500/20 border-violet-500/40";
+      icon = "👤";
+    } else if (action === "note_added") {
+      className = "bg-yellow-500/20 border-yellow-500/40";
+      icon = "📝";
+    } else {
+      className = "bg-cyan-500/20 border-cyan-500/40";
+      icon = "🔄";
+    }
+  }
+
+  return (
+    <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 border ${className}`}>
+      {icon}
+    </div>
+  );
+}
+
+/* ─── Lead Event ─── */
+function LeadEvent({ data }: { data: any }) {
   return (
     <>
       <div className="flex items-center gap-2">
@@ -253,20 +289,66 @@ function LeadEvent({ data, contact }: { data: any; contact: ContactDetail | null
         <p className="text-xs text-muted-foreground">Apporté par {data.apporteur_name}</p>
       )}
       <div className="space-y-0.5 mt-1">
-        {data.raw_full_name && (
-          <p className="text-xs text-muted-foreground">Prénom saisi : {data.raw_full_name}</p>
-        )}
-        {data.raw_email && (
-          <p className="text-xs text-muted-foreground">Email saisi : {data.raw_email}</p>
-        )}
-        {data.raw_phone && (
-          <p className="text-xs text-muted-foreground">Tél saisi : {data.raw_phone}</p>
-        )}
+        {data.raw_full_name && <p className="text-xs text-muted-foreground">Prénom saisi : {data.raw_full_name}</p>}
+        {data.raw_email && <p className="text-xs text-muted-foreground">Email saisi : {data.raw_email}</p>}
+        {data.raw_phone && <p className="text-xs text-muted-foreground">Tél saisi : {data.raw_phone}</p>}
       </div>
     </>
   );
 }
 
+/* ─── Lead Activity Event ─── */
+function LeadActivityEvent({ data, userTz }: { data: any; userTz: string }) {
+  const userName = data.profiles?.full_name || "Inconnu";
+
+  if (data.action === "status_change") {
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        <RefreshCw className="w-4 h-4 text-blue-400 shrink-0" />
+        <p className="text-sm text-foreground">
+          Statut lead : <strong>{STATUS_LABELS[data.old_value] || data.old_value}</strong> → <strong>{STATUS_LABELS[data.new_value] || data.new_value}</strong>
+        </p>
+        <span className="text-xs text-muted-foreground">par {userName}</span>
+      </div>
+    );
+  }
+
+  if (data.action === "reassigned") {
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        <UserCheck className="w-4 h-4 text-violet-400 shrink-0" />
+        <p className="text-sm text-foreground">Lead réaffecté à <strong>{data.new_value || "—"}</strong></p>
+        <span className="text-xs text-muted-foreground">par {userName}</span>
+      </div>
+    );
+  }
+
+  if (data.action === "assigned") {
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        <UserPlus className="w-4 h-4 text-emerald-400 shrink-0" />
+        <p className="text-sm text-foreground">Lead affecté à <strong>{data.new_value || "—"}</strong></p>
+        <span className="text-xs text-muted-foreground">par {userName}</span>
+      </div>
+    );
+  }
+
+  if (data.action === "note_added") {
+    return (
+      <div className="flex items-start gap-2">
+        <MessageSquare className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm text-muted-foreground">Note lead ajoutée par {userName}</p>
+          {data.note && <p className="text-xs text-muted-foreground italic mt-1">"{data.note}"</p>}
+        </div>
+      </div>
+    );
+  }
+
+  return <p className="text-sm text-muted-foreground">Activité lead : {data.action}</p>;
+}
+
+/* ─── Call Event ─── */
 const EVENT_TYPE_LABELS: Record<string, string> = {
   appel_offert_vsl_a: "Appel VSL A",
   appel_offert_vsl_b: "Appel VSL B",
@@ -319,35 +401,48 @@ function CallEvent({ data, userTz, contact }: { data: any; userTz: string; conta
   );
 }
 
+/* ─── Call Activity Event ─── */
 function CallActivityEvent({ data, userTz }: { data: any; userTz: string }) {
   const userName = data.profiles?.full_name || "Inconnu";
 
   if (data.action === "status_change") {
     return (
-      <div>
-        <p className="text-sm font-medium text-foreground">🔄 Statut call changé</p>
-        <p className="text-xs text-muted-foreground">
-          {STATUS_LABELS[data.old_value] || data.old_value} → {STATUS_LABELS[data.new_value] || data.new_value} par {userName}
+      <div className="flex items-center gap-2 flex-wrap">
+        <RefreshCw className="w-4 h-4 text-blue-400 shrink-0" />
+        <p className="text-sm text-foreground">
+          Statut call : <strong>{STATUS_LABELS[data.old_value] || data.old_value}</strong> → <strong>{STATUS_LABELS[data.new_value] || data.new_value}</strong>
         </p>
+        <span className="text-xs text-muted-foreground">par {userName}</span>
       </div>
     );
   }
 
   if (data.action === "note_added") {
     return (
-      <div>
-        <p className="text-sm font-medium text-foreground">📝 Note call ajoutée</p>
-        <p className="text-xs text-muted-foreground">par {userName}</p>
-        {data.note && <p className="text-xs text-muted-foreground italic mt-1">{data.note}</p>}
+      <div className="flex items-start gap-2">
+        <MessageSquare className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm text-muted-foreground">Note call ajoutée par {userName}</p>
+          {data.note && <p className="text-xs text-muted-foreground italic mt-1">"{data.note}"</p>}
+        </div>
       </div>
     );
   }
 
-  return (
-    <p className="text-sm text-muted-foreground">Activité call : {data.action}</p>
-  );
+  if (data.action === "reassigned") {
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        <UserCheck className="w-4 h-4 text-violet-400 shrink-0" />
+        <p className="text-sm text-foreground">Call réaffecté à <strong>{data.new_value || "—"}</strong></p>
+        <span className="text-xs text-muted-foreground">par {userName}</span>
+      </div>
+    );
+  }
+
+  return <p className="text-sm text-muted-foreground">Activité call : {data.action}</p>;
 }
 
+/* ─── Sale Event ─── */
 function SaleEvent({ data }: { data: any }) {
   return (
     <>
