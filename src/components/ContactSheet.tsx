@@ -143,7 +143,7 @@ export default function ContactSheet({
     });
 
     callsRes.data?.forEach((c) => {
-      events.push({ type: "call", id: c.id!, date: c.scheduled_at || "", data: c });
+      events.push({ type: "call", id: c.id!, date: c.created_at || c.scheduled_at || "", data: c });
     });
 
     salesRes.data?.forEach((s) => {
