@@ -18,44 +18,44 @@ type CallEnriched = Tables<"calls_enriched">;
 export const CALL_STATUS_COLORS: Record<string, string> = {
   planifie: "bg-blue-500/20 text-blue-300 border-blue-500/30",
   annule: "bg-muted text-muted-foreground border-border",
-  disqualifie: "bg-orange-400/20 text-orange-300 border-orange-400/30",
-  pas_interesse: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  non_close: "bg-red-400/20 text-red-300 border-red-400/30",
   no_show: "bg-red-500/20 text-red-300 border-red-500/30",
-  renvoye_pole_vente: "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
+  pas_interesse: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+  disqualifie: "bg-orange-400/20 text-orange-300 border-orange-400/30",
+  non_close: "bg-red-400/20 text-red-300 border-red-400/30",
+  renvoye_pole_vente: "bg-blue-600/20 text-blue-300 border-blue-600/30",
   renvoye_conference: "bg-violet-500/20 text-violet-300 border-violet-500/30",
   rediffusion: "bg-purple-400/20 text-purple-300 border-purple-400/30",
   follow_up: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
   close: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  // Legacy
   effectue: "bg-emerald-400/20 text-emerald-300 border-emerald-400/30",
 };
 
 export const CALL_STATUS_LABELS: Record<string, string> = {
   planifie: "Planifié",
   annule: "Annulé",
-  disqualifie: "Disqualifié",
-  pas_interesse: "Pas intéressé",
-  non_close: "Non close",
   no_show: "No show",
+  pas_interesse: "Pas intéressé",
+  disqualifie: "Disqualifié",
+  non_close: "Non close",
   renvoye_pole_vente: "Renvoi Pôle Vente",
   renvoye_conference: "Renvoi Conférence",
   rediffusion: "Rediffusion",
   follow_up: "Follow up",
   close: "Close",
+  // Legacy
   effectue: "Effectué",
 };
 
 const STATUS_LIST = [
-  { value: "planifie", label: "Planifié" },
-  { value: "disqualifie", label: "Disqualifié" },
-  { value: "pas_interesse", label: "Pas intéressé" },
-  { value: "non_close", label: "Non close" },
   { value: "no_show", label: "No show" },
+  { value: "pas_interesse", label: "Pas intéressé" },
+  { value: "disqualifie", label: "Disqualifié" },
+  { value: "non_close", label: "Non close" },
   { value: "renvoye_pole_vente", label: "Renvoi Pôle Vente" },
   { value: "renvoye_conference", label: "Renvoi Conférence" },
   { value: "rediffusion", label: "Rediffusion" },
   { value: "follow_up", label: "Follow up" },
-  { value: "close", label: "Close" },
 ];
 
 interface Props {

@@ -26,13 +26,14 @@ type LeadEnriched = Tables<"leads_enriched">;
 
 const STATUS_OPTIONS = [
   { value: "all", label: "Tous" },
-  { value: "nouveau", label: "Nouveau" },
-  { value: "pas_de_reponse", label: "Pas de réponse" },
-  { value: "a_relancer", label: "À relancer" },
+  { value: "a_qualifier", label: "À qualifier" },
   { value: "faux_numero", label: "Faux numéro" },
+  { value: "pas_de_reponse", label: "Pas de réponse" },
   { value: "pas_qualifie", label: "Pas qualifié" },
-  { value: "converti", label: "Close" },
+  { value: "a_relancer", label: "À relancer" },
   { value: "perdu", label: "Perdu" },
+  { value: "call_booke", label: "Call booké" },
+  { value: "close", label: "Close" },
 ];
 
 const CALL_TYPE_CONFIG: Record<string, { label: string; className: string }> = {

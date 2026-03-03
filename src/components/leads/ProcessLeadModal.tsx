@@ -16,45 +16,42 @@ import { formatDateTime } from "@/lib/formatDate";
 type LeadEnriched = Tables<"leads_enriched">;
 
 const STATUS_LIST = [
-  { value: "nouveau", label: "Nouveau" },
-  { value: "pas_de_reponse", label: "Pas de réponse" },
-  { value: "a_relancer", label: "À relancer" },
+  { value: "a_qualifier", label: "À qualifier" },
   { value: "faux_numero", label: "Faux numéro" },
+  { value: "pas_de_reponse", label: "Pas de réponse" },
   { value: "pas_qualifie", label: "Pas qualifié" },
-  { value: "converti", label: "Close" },
+  { value: "a_relancer", label: "À relancer" },
   { value: "perdu", label: "Perdu" },
 ];
 
 export const LEAD_STATUS_COLORS: Record<string, string> = {
+  a_qualifier: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  faux_numero: "bg-red-300/20 text-red-300 border-red-300/30",
+  pas_de_reponse: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+  pas_qualifie: "bg-zinc-600/20 text-zinc-400 border-zinc-600/30",
+  a_relancer: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  perdu: "bg-red-500/20 text-red-300 border-red-500/30",
+  call_booke: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  close: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  // Legacy statuses for backward compat
   nouveau: "bg-muted text-muted-foreground border-border",
   contacte: "bg-sky-500/20 text-sky-300 border-sky-500/30",
-  pas_de_reponse: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  a_relancer: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  faux_numero: "bg-red-400/20 text-red-300 border-red-400/30",
-  qualifie: "bg-lime-500/20 text-lime-300 border-lime-500/30",
-  pas_qualifie: "bg-zinc-600/20 text-zinc-400 border-zinc-600/30",
-  call_booke: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  call_vsl: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  call_conference: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  pole_vente: "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
   converti: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  perdu: "bg-red-500/20 text-red-300 border-red-500/30",
 };
 
 export const LEAD_STATUS_LABELS: Record<string, string> = {
+  a_qualifier: "À qualifier",
+  faux_numero: "Faux numéro",
+  pas_de_reponse: "Pas de réponse",
+  pas_qualifie: "Pas qualifié",
+  a_relancer: "À relancer",
+  perdu: "Perdu",
+  call_booke: "Call booké",
+  close: "Close",
+  // Legacy
   nouveau: "Nouveau",
   contacte: "Contacté",
-  pas_de_reponse: "Pas de réponse",
-  a_relancer: "À relancer",
-  faux_numero: "Faux numéro",
-  qualifie: "Qualifié",
-  pas_qualifie: "Pas qualifié",
-  call_booke: "Call VSL",
-  call_vsl: "Call VSL",
-  call_conference: "Call Conférence",
-  pole_vente: "Pôle Vente",
   converti: "Close",
-  perdu: "Perdu",
 };
 
 
