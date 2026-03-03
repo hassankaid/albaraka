@@ -23,12 +23,16 @@ type CallEnriched = Tables<"calls_enriched">;
 const STATUS_OPTIONS = [
   { value: "all", label: "Tous" },
   { value: "planifie", label: "Planifié" },
-  { value: "close", label: "Close" },
-  { value: "no_show", label: "No show" },
-  { value: "follow_up", label: "Follow up" },
-  { value: "non_close", label: "Non close" },
   { value: "annule", label: "Annulé" },
-  { value: "effectue", label: "Effectué" },
+  { value: "no_show", label: "No show" },
+  { value: "pas_interesse", label: "Pas intéressé" },
+  { value: "disqualifie", label: "Disqualifié" },
+  { value: "non_close", label: "Non close" },
+  { value: "renvoye_pole_vente", label: "Renvoi Pôle Vente" },
+  { value: "renvoye_conference", label: "Renvoi Conférence" },
+  { value: "rediffusion", label: "Rediffusion" },
+  { value: "follow_up", label: "Follow up" },
+  { value: "close", label: "Close" },
 ];
 
 const TYPE_OPTIONS = [
