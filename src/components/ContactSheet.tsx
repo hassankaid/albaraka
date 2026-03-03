@@ -26,6 +26,7 @@ interface TimelineEvent {
 const STATUS_COLORS: Record<string, string> = {
   nouveau: "bg-muted text-muted-foreground border-border",
   a_qualifier: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  inscrit_conference: "bg-violet-500/20 text-violet-300 border-violet-500/30",
   faux_numero: "bg-red-300/20 text-red-300 border-red-300/30",
   pas_de_reponse: "bg-orange-500/20 text-orange-300 border-orange-500/30",
   pas_qualifie: "bg-muted text-muted-foreground border-border",
@@ -55,7 +56,7 @@ const STATUS_LABELS: Record<string, string> = {
   nouveau: "Nouveau", contacte: "Contacté", call_booke: "Call booké",
   converti: "Close", perdu: "Perdu", planifie: "Planifié",
   effectue: "Effectué", no_show: "No show", annule: "Annulé",
-  a_qualifier: "À qualifier", faux_numero: "Faux numéro",
+  a_qualifier: "À qualifier", inscrit_conference: "Inscrit conférence", faux_numero: "Faux numéro",
   pas_de_reponse: "Pas de réponse", pas_qualifie: "Pas qualifié",
   a_relancer: "À relancer",
   close: "Close", disqualifie: "Disqualifié", pas_interesse: "Pas intéressé",

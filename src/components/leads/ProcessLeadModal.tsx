@@ -15,44 +15,11 @@ import { formatDateTime } from "@/lib/formatDate";
 
 type LeadEnriched = Tables<"leads_enriched">;
 
-const STATUS_LIST = [
-  { value: "a_qualifier", label: "À qualifier" },
-  { value: "faux_numero", label: "Faux numéro" },
-  { value: "pas_de_reponse", label: "Pas de réponse" },
-  { value: "pas_qualifie", label: "Pas qualifié" },
-  { value: "a_relancer", label: "À relancer" },
-  { value: "perdu", label: "Perdu" },
-];
+import { LEAD_STATUS_LIST, LEAD_STATUS_COLORS, LEAD_STATUS_LABELS } from "@/lib/leadConfig";
 
-export const LEAD_STATUS_COLORS: Record<string, string> = {
-  a_qualifier: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  faux_numero: "bg-red-300/20 text-red-300 border-red-300/30",
-  pas_de_reponse: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  pas_qualifie: "bg-zinc-600/20 text-zinc-400 border-zinc-600/30",
-  a_relancer: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  perdu: "bg-red-500/20 text-red-300 border-red-500/30",
-  call_booke: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  close: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  // Legacy statuses for backward compat
-  nouveau: "bg-muted text-muted-foreground border-border",
-  contacte: "bg-sky-500/20 text-sky-300 border-sky-500/30",
-  converti: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-};
+export { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS };
 
-export const LEAD_STATUS_LABELS: Record<string, string> = {
-  a_qualifier: "À qualifier",
-  faux_numero: "Faux numéro",
-  pas_de_reponse: "Pas de réponse",
-  pas_qualifie: "Pas qualifié",
-  a_relancer: "À relancer",
-  perdu: "Perdu",
-  call_booke: "Call booké",
-  close: "Close",
-  // Legacy
-  nouveau: "Nouveau",
-  contacte: "Contacté",
-  converti: "Close",
-};
+const STATUS_LIST = LEAD_STATUS_LIST;
 
 
 

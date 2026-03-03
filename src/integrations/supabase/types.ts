@@ -372,6 +372,8 @@ export type Database = {
       leads: {
         Row: {
           apporteur_id: string | null
+          apporteur_source: string | null
+          apporteur_source_detail: string | null
           assigned_at: string | null
           assigned_to: string | null
           call_type: string | null
@@ -387,9 +389,16 @@ export type Database = {
           status: string
           systeme_io_id: string | null
           updated_at: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
         }
         Insert: {
           apporteur_id?: string | null
+          apporteur_source?: string | null
+          apporteur_source_detail?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
           call_type?: string | null
@@ -405,9 +414,16 @@ export type Database = {
           status?: string
           systeme_io_id?: string | null
           updated_at?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Update: {
           apporteur_id?: string | null
+          apporteur_source?: string | null
+          apporteur_source_detail?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
           call_type?: string | null
@@ -423,6 +439,11 @@ export type Database = {
           status?: string
           systeme_io_id?: string | null
           updated_at?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Relationships: [
           {
@@ -450,41 +471,56 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
           can_add_instagram_leads: boolean | null
+          city: string | null
+          country: string | null
           created_at: string | null
           email: string
           full_name: string
           id: string
           is_also_apporteur: boolean | null
           phone: string | null
+          postal_code: string | null
           role: string
+          siret: string | null
           timezone: string | null
           updated_at: string | null
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
           can_add_instagram_leads?: boolean | null
+          city?: string | null
+          country?: string | null
           created_at?: string | null
           email: string
           full_name: string
           id: string
           is_also_apporteur?: boolean | null
           phone?: string | null
+          postal_code?: string | null
           role?: string
+          siret?: string | null
           timezone?: string | null
           updated_at?: string | null
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
           can_add_instagram_leads?: boolean | null
+          city?: string | null
+          country?: string | null
           created_at?: string | null
           email?: string
           full_name?: string
           id?: string
           is_also_apporteur?: boolean | null
           phone?: string | null
+          postal_code?: string | null
           role?: string
+          siret?: string | null
           timezone?: string | null
           updated_at?: string | null
         }
