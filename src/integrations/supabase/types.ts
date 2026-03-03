@@ -685,6 +685,7 @@ export type Database = {
           assigned_at: string | null
           assigned_to: string | null
           assigned_to_name: string | null
+          call_type: string | null
           contact_call_assigned_to: string | null
           contact_call_assigned_to_name: string | null
           contact_call_event_type: string | null
