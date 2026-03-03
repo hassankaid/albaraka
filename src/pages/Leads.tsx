@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   Users, UserPlus, RefreshCw, Search, Phone, Clock, PartyPopper, Inbox, ChevronDown, Instagram, Pencil, Eye, Info, Copy,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import LeadInstagramForm from "@/components/LeadInstagramForm";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
@@ -53,14 +54,37 @@ export default function Leads() {
   const [apporteurFormOpen, setApporteurFormOpen] = useState(false);
   const [processLead, setProcessLead] = useState<LeadEnriched | null>(null);
   const [contactSheetId, setContactSheetId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 50;
 
   const fetchLeads = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("leads_enriched")
-      .select("*")
-      .order("created_at", { ascending: false });
+    // Fetch all leads by paginating through the 1000-row limit
+    let allLeads: LeadEnriched[] = [];
+    let from = 0;
+    const batchSize = 1000;
+    let hasMore = true;
 
-    if (!error && data) setLeads(data);
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from("leads_enriched")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .range(from, from + batchSize - 1);
+
+      if (error || !data) {
+        hasMore = false;
+        break;
+      }
+
+      allLeads = allLeads.concat(data);
+      if (data.length < batchSize) {
+        hasMore = false;
+      } else {
+        from += batchSize;
+      }
+    }
+
+    setLeads(allLeads);
     setLoading(false);
   }, []);
 
@@ -193,6 +217,18 @@ export default function Leads() {
     call_booke: leads.filter((l) => l.status === "call_booke").length,
   }), [leads]);
 
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [tab, statusFilter, sourceFilter, search]);
+
+  // Paginated leads
+  const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
+  const paginatedLeads = useMemo(
+    () => filteredLeads.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
+    [filteredLeads, page]
+  );
+
   const counterCards = [
     { label: "Total", value: counts.total, icon: Users, gradient: "from-purple-500/20 to-blue-500/20" },
     { label: "À qualifier", value: counts.aQualifier, icon: Inbox, gradient: "from-muted to-muted" },
@@ -324,6 +360,7 @@ export default function Leads() {
             ) : filteredLeads.length === 0 ? (
               emptyMessage()
             ) : (
+              <>
               <Card className="border-border/50 overflow-hidden">
                 <Table>
                   <TableHeader>
@@ -338,7 +375,7 @@ export default function Leads() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredLeads.map((lead) => (
+                    {paginatedLeads.map((lead) => (
                       <TableRow key={lead.id} className="border-border hover:bg-secondary/50 transition-colors">
                         <TableCell>
                           <div>
@@ -476,6 +513,27 @@ export default function Leads() {
                   </TableBody>
                 </Table>
               </Card>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filteredLeads.length)} sur {filteredLeads.length}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Précédent
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      {page + 1} / {totalPages}
+                    </span>
+                    <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                      Suivant
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              </>
             )}
           </TabsContent>
         ))}
