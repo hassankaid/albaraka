@@ -374,6 +374,7 @@ export type Database = {
           apporteur_id: string | null
           assigned_at: string | null
           assigned_to: string | null
+          call_type: string | null
           contact_id: string | null
           created_at: string | null
           id: string
@@ -391,6 +392,7 @@ export type Database = {
           apporteur_id?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
+          call_type?: string | null
           contact_id?: string | null
           created_at?: string | null
           id?: string
@@ -408,6 +410,7 @@ export type Database = {
           apporteur_id?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
+          call_type?: string | null
           contact_id?: string | null
           created_at?: string | null
           id?: string

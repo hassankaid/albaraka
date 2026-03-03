@@ -21,9 +21,6 @@ const STATUS_LIST = [
   { value: "a_relancer", label: "À relancer" },
   { value: "faux_numero", label: "Faux numéro" },
   { value: "pas_qualifie", label: "Pas qualifié" },
-  { value: "call_vsl", label: "Call VSL" },
-  { value: "call_conference", label: "Call Conférence" },
-  { value: "pole_vente", label: "Pôle Vente" },
   { value: "converti", label: "Close" },
   { value: "perdu", label: "Perdu" },
 ];

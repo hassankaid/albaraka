@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
-  Users, UserPlus, RefreshCw, Search, Phone, Clock, PartyPopper, Inbox, ChevronDown, Instagram, Pencil, Eye, Info,
+  Users, UserPlus, RefreshCw, Search, Phone, Clock, PartyPopper, Inbox, ChevronDown, Instagram, Pencil, Eye, Info, Copy,
 } from "lucide-react";
 import LeadInstagramForm from "@/components/LeadInstagramForm";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
@@ -27,18 +27,19 @@ type LeadEnriched = Tables<"leads_enriched">;
 const STATUS_OPTIONS = [
   { value: "all", label: "Tous" },
   { value: "nouveau", label: "Nouveau" },
-  { value: "contacte", label: "Contacté" },
   { value: "pas_de_reponse", label: "Pas de réponse" },
   { value: "a_relancer", label: "À relancer" },
   { value: "faux_numero", label: "Faux numéro" },
-  { value: "qualifie", label: "Qualifié" },
   { value: "pas_qualifie", label: "Pas qualifié" },
-  { value: "call_vsl", label: "Call VSL" },
-  { value: "call_conference", label: "Call Conférence" },
-  { value: "pole_vente", label: "Pôle Vente" },
   { value: "converti", label: "Close" },
   { value: "perdu", label: "Perdu" },
 ];
+
+const CALL_TYPE_CONFIG: Record<string, { label: string; className: string }> = {
+  call_vsl: { label: "Call VSL", className: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
+  call_conference: { label: "Call Conférence", className: "bg-violet-500/20 text-violet-300 border-violet-500/30" },
+  pole_vente: { label: "Pôle Vente", className: "bg-blue-500/20 text-blue-300 border-blue-500/30" },
+};
 
 const SOURCE_OPTIONS = [
   { value: "all", label: "Tous" },
@@ -345,9 +346,9 @@ export default function Leads() {
                     <TableRow className="border-border hover:bg-transparent">
                       <TableHead>Contact</TableHead>
                       <TableHead>Source</TableHead>
+                      <TableHead>Call</TableHead>
                       <TableHead>Statut</TableHead>
                       <TableHead className="w-[150px]">Setter</TableHead>
-                      <TableHead className="w-[200px]">Call</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead className="w-[100px]">Actions</TableHead>
                     </TableRow>
@@ -359,7 +360,28 @@ export default function Leads() {
                           <div>
                             <p className="font-semibold text-foreground">{lead.raw_full_name || lead.contact_full_name || "—"}</p>
                             <p className="text-xs text-muted-foreground">{lead.raw_email || lead.contact_email}</p>
-                            <p className="text-xs text-muted-foreground">{lead.raw_phone || lead.contact_phone}</p>
+                            {(() => {
+                              const phone = lead.raw_phone || lead.contact_phone;
+                              if (!phone) return <p className="text-xs text-muted-foreground">—</p>;
+                              return (
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <a href={`tel:${phone}`} className="text-sm font-medium text-foreground hover:underline">
+                                    {phone}
+                                  </a>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigator.clipboard.writeText(phone);
+                                      toast({ title: "Numéro copié" });
+                                    }}
+                                    title="Copier"
+                                    className="text-muted-foreground hover:text-foreground transition-colors"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              );
+                            })()}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -368,6 +390,20 @@ export default function Leads() {
                               {lead.source_label}
                             </Badge>
                           )}
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const ct = lead.status as string;
+                            const config = CALL_TYPE_CONFIG[ct];
+                            if (config) {
+                              return (
+                                <Badge variant="outline" className={`text-xs ${config.className}`}>
+                                  {config.label}
+                                </Badge>
+                              );
+                            }
+                            return <span className="text-sm text-muted-foreground">—</span>;
+                          })()}
                         </TableCell>
                         <TableCell>
                           {lead.status && (
@@ -404,20 +440,6 @@ export default function Leads() {
                               <UserPlus className="h-3.5 w-3.5" />
                               M'affecter
                             </Button>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {lead.has_active_call && lead.contact_call_scheduled_at ? (
-                            <div className="space-y-0.5">
-                              <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">
-                                📞 {formatDateTime(lead.contact_call_scheduled_at)}
-                              </Badge>
-                              {lead.contact_call_assigned_to_name && (
-                                <p className="text-xs text-muted-foreground">avec {lead.contact_call_assigned_to_name}</p>
-                              )}
-                            </div>
                           ) : (
                             <span className="text-sm text-muted-foreground">—</span>
                           )}
