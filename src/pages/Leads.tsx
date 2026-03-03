@@ -179,7 +179,7 @@ export default function Leads() {
     // Tab filter
     if (tab === "a_affecter") {
       result = result.filter(
-        (l) => !l.has_active_call && !l.assigned_to && l.status === "nouveau"
+        (l) => !l.assigned_to && !["call_booke", "close", "perdu"].includes(l.status || "")
       );
     } else if (tab === "mes_leads" && user) {
       result = result.filter((l) => l.assigned_to === user.id);
@@ -215,14 +215,14 @@ export default function Leads() {
   // Counters
   const counts = useMemo(() => ({
     total: leads.length,
-    nouveaux: leads.filter((l) => l.status === "nouveau").length,
-    a_affecter: leads.filter((l) => !l.has_active_call && !l.assigned_to && l.status === "nouveau").length,
-    call_booke: leads.filter((l) => l.has_active_call).length,
+    aQualifier: leads.filter((l) => l.status === "a_qualifier").length,
+    a_affecter: leads.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu"].includes(l.status || "")).length,
+    call_booke: leads.filter((l) => l.status === "call_booke").length,
   }), [leads]);
 
   const counterCards = [
     { label: "Total", value: counts.total, icon: Users, gradient: "from-purple-500/20 to-blue-500/20" },
-    { label: "Nouveaux", value: counts.nouveaux, icon: Inbox, gradient: "from-muted to-muted" },
+    { label: "À qualifier", value: counts.aQualifier, icon: Inbox, gradient: "from-muted to-muted" },
     { label: "À affecter", value: counts.a_affecter, icon: UserPlus, gradient: "from-orange-500/20 to-yellow-500/20" },
     { label: "Call booké", value: counts.call_booke, icon: Phone, gradient: "from-blue-500/20 to-cyan-500/20" },
   ];
