@@ -16,54 +16,27 @@ import {
 } from "lucide-react";
 import LeadInstagramForm from "@/components/LeadInstagramForm";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
-import ProcessLeadModal, { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS } from "@/components/leads/ProcessLeadModal";
+import ProcessLeadModal from "@/components/leads/ProcessLeadModal";
 import ContactSheet from "@/components/ContactSheet";
+import {
+  LEAD_STATUS_COLORS,
+  LEAD_STATUS_LABELS,
+  STATUS_FILTER_OPTIONS,
+  SOURCE_FILTER_OPTIONS,
+  getSourceBadgeClass,
+  getSourceLabel,
+} from "@/lib/leadConfig";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatDateTime } from "@/lib/formatDate";
 
 type LeadEnriched = Tables<"leads_enriched">;
 
-const STATUS_OPTIONS = [
-  { value: "all", label: "Tous" },
-  { value: "a_qualifier", label: "À qualifier" },
-  { value: "faux_numero", label: "Faux numéro" },
-  { value: "pas_de_reponse", label: "Pas de réponse" },
-  { value: "pas_qualifie", label: "Pas qualifié" },
-  { value: "a_relancer", label: "À relancer" },
-  { value: "perdu", label: "Perdu" },
-  { value: "call_booke", label: "Call booké" },
-  { value: "close", label: "Close" },
-];
-
 const CALL_TYPE_CONFIG: Record<string, { label: string; className: string }> = {
   call_vsl: { label: "Call VSL", className: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
   call_conference: { label: "Call Conférence", className: "bg-violet-500/20 text-violet-300 border-violet-500/30" },
   pole_vente: { label: "Pôle Vente", className: "bg-blue-500/20 text-blue-300 border-blue-500/30" },
 };
-
-const SOURCE_OPTIONS = [
-  { value: "all", label: "Tous" },
-  { value: "vsl_a", label: "VSL A" },
-  { value: "vsl_b", label: "VSL B" },
-  { value: "vsl_webi", label: "VSL Webi" },
-  { value: "instagram_organic", label: "Instagram Organique" },
-  { value: "instagram_ads", label: "Instagram Ads" },
-  { value: "apporteur", label: "Apporteur" },
-];
-
-const SOURCE_COLORS: Record<string, string> = {
-  "VSL A": "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  "VSL B": "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  "VSL Webi": "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  "Instagram Organique": "bg-pink-500/20 text-pink-300 border-pink-500/30",
-  "Instagram Ads": "bg-pink-600/20 text-pink-400 border-pink-600/30",
-  "Apporteur": "bg-orange-500/20 text-orange-300 border-orange-500/30",
-};
-
-const STATUS_COLORS = LEAD_STATUS_COLORS;
-
-const STATUS_LABELS = LEAD_STATUS_LABELS;
 
 export default function Leads() {
   const { profile: user } = useAuth();
@@ -313,7 +286,7 @@ export default function Leads() {
               <SelectValue placeholder="Statut" />
             </SelectTrigger>
             <SelectContent>
-              {STATUS_OPTIONS.map((s) => (
+              {STATUS_FILTER_OPTIONS.map((s) => (
                 <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
               ))}
             </SelectContent>
@@ -324,7 +297,7 @@ export default function Leads() {
               <SelectValue placeholder="Source" />
             </SelectTrigger>
             <SelectContent>
-              {SOURCE_OPTIONS.map((s) => (
+              {SOURCE_FILTER_OPTIONS.map((s) => (
                 <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
               ))}
             </SelectContent>
@@ -396,9 +369,9 @@ export default function Leads() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {lead.source_label && (
-                            <Badge variant="outline" className={`text-xs ${SOURCE_COLORS[lead.source_label] || ""}`}>
-                              {lead.source_label}
+                          {lead.source && (
+                            <Badge variant="outline" className={`text-xs ${getSourceBadgeClass(lead.source)}`}>
+                              {getSourceLabel(lead.source)}
                             </Badge>
                           )}
                         </TableCell>
@@ -418,8 +391,8 @@ export default function Leads() {
                         </TableCell>
                         <TableCell>
                           {lead.status && (
-                            <Badge variant="outline" className={`text-xs ${STATUS_COLORS[lead.status] || ""}`}>
-                              {STATUS_LABELS[lead.status] || lead.status}
+                            <Badge variant="outline" className={`text-xs ${LEAD_STATUS_COLORS[lead.status] || ""}`}>
+                              {LEAD_STATUS_LABELS[lead.status] || lead.status}
                             </Badge>
                           )}
                         </TableCell>
