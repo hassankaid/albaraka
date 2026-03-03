@@ -367,6 +367,7 @@ export default function Leads() {
                     <TableRow className="border-border hover:bg-transparent">
                       <TableHead>Contact</TableHead>
                       <TableHead>Source</TableHead>
+                      <TableHead>Apporteur</TableHead>
                       <TableHead>Call</TableHead>
                       <TableHead>Statut</TableHead>
                       <TableHead className="w-[150px]">Setter</TableHead>
@@ -411,6 +412,9 @@ export default function Leads() {
                               {getSourceLabel(lead.source)}
                             </Badge>
                           )}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">{lead.apporteur_name || "—"}</span>
                         </TableCell>
                         <TableCell>
                           {(() => {

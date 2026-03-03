@@ -136,6 +136,8 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
             <span className="text-foreground">{lead.source_label || "—"}</span>
             <span className="text-muted-foreground">Date d'entrée</span>
             <span className="text-foreground">{lead.created_at ? formatDateTime(lead.created_at) : "—"}</span>
+            <span className="text-muted-foreground">Apporteur</span>
+            <span className="text-foreground">{lead.apporteur_name || "—"}</span>
             <span className="text-muted-foreground">Setter</span>
             <span className="text-foreground">{lead.assigned_to_name || "Non assigné"}</span>
           </div>
