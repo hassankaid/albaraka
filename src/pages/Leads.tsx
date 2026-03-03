@@ -134,10 +134,20 @@ export default function Leads() {
 
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Lead affecté avec succès" });
-      fetchLeads();
+      return;
     }
+
+    await supabase.from("lead_activities").insert({
+      lead_id: leadId,
+      user_id: user.id,
+      action: "assigned",
+      old_value: null,
+      new_value: user.id,
+      note: null,
+    });
+
+    toast({ title: "Lead affecté avec succès" });
+    fetchLeads();
   };
 
   const handleReassign = async (leadId: string, oldAssignedTo: string | null, newUserId: string) => {
