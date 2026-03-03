@@ -393,8 +393,8 @@ export default function Leads() {
                         </TableCell>
                         <TableCell>
                           {(() => {
-                            const ct = lead.status as string;
-                            const config = CALL_TYPE_CONFIG[ct];
+                            const ct = (lead as any).call_type as string | null;
+                            const config = ct ? CALL_TYPE_CONFIG[ct] : null;
                             if (config) {
                               return (
                                 <Badge variant="outline" className={`text-xs ${config.className}`}>
