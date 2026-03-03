@@ -115,6 +115,27 @@ export default function ContactSheet({
         : Promise.resolve({ data: [] }),
     ]);
 
+    // Collect profile IDs from reassignment new_value fields to resolve names
+    const allActivities = [
+      ...(leadActivitiesRes.data || []),
+      ...(callActivitiesRes.data || []),
+    ];
+    const reassignProfileIds = allActivities
+      .filter((a: any) => (a.action === "reassigned" || a.action === "assigned") && a.new_value)
+      .map((a: any) => a.new_value as string);
+    const uniqueProfileIds = [...new Set(reassignProfileIds)];
+
+    let profileNamesMap: Record<string, string> = {};
+    if (uniqueProfileIds.length > 0) {
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", uniqueProfileIds);
+      (profilesData || []).forEach((p) => {
+        profileNamesMap[p.id] = p.full_name;
+      });
+    }
+
     const events: TimelineEvent[] = [];
 
     leadsRes.data?.forEach((l) => {
@@ -130,11 +151,13 @@ export default function ContactSheet({
     });
 
     (leadActivitiesRes.data || []).forEach((a: any) => {
-      events.push({ type: "lead_activity", id: a.id, date: a.created_at || "", data: a });
+      const enriched = { ...a, _resolved_name: profileNamesMap[a.new_value] || null };
+      events.push({ type: "lead_activity", id: a.id, date: a.created_at || "", data: enriched });
     });
 
     (callActivitiesRes.data || []).forEach((a: any) => {
-      events.push({ type: "call_activity", id: a.id, date: a.created_at || "", data: a });
+      const enriched = { ...a, _resolved_name: profileNamesMap[a.new_value] || null };
+      events.push({ type: "call_activity", id: a.id, date: a.created_at || "", data: enriched });
     });
 
     events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -317,7 +340,7 @@ function LeadActivityEvent({ data, userTz }: { data: any; userTz: string }) {
     return (
       <div className="flex items-center gap-2 flex-wrap">
         <UserCheck className="w-4 h-4 text-violet-400 shrink-0" />
-        <p className="text-sm text-foreground">Lead réaffecté à <strong>{data.new_value || "—"}</strong></p>
+        <p className="text-sm text-foreground">Lead réaffecté à <strong>{data._resolved_name || data.new_value || "—"}</strong></p>
         <span className="text-xs text-muted-foreground">par {userName}</span>
       </div>
     );
@@ -327,7 +350,7 @@ function LeadActivityEvent({ data, userTz }: { data: any; userTz: string }) {
     return (
       <div className="flex items-center gap-2 flex-wrap">
         <UserPlus className="w-4 h-4 text-emerald-400 shrink-0" />
-        <p className="text-sm text-foreground">Lead affecté à <strong>{data.new_value || "—"}</strong></p>
+        <p className="text-sm text-foreground">Lead affecté à <strong>{data._resolved_name || data.new_value || "—"}</strong></p>
         <span className="text-xs text-muted-foreground">par {userName}</span>
       </div>
     );
@@ -433,7 +456,7 @@ function CallActivityEvent({ data, userTz }: { data: any; userTz: string }) {
     return (
       <div className="flex items-center gap-2 flex-wrap">
         <UserCheck className="w-4 h-4 text-violet-400 shrink-0" />
-        <p className="text-sm text-foreground">Call réaffecté à <strong>{data.new_value || "—"}</strong></p>
+        <p className="text-sm text-foreground">Call réaffecté à <strong>{data._resolved_name || data.new_value || "—"}</strong></p>
         <span className="text-xs text-muted-foreground">par {userName}</span>
       </div>
     );
