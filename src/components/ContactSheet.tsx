@@ -304,9 +304,6 @@ function LeadEvent({ data }: { data: any }) {
             {STATUS_LABELS[data.status] || data.status}
           </Badge>
         )}
-        {data.assigned_to_name && (
-          <span className="text-xs text-muted-foreground">Assigné à {data.assigned_to_name}</span>
-        )}
       </div>
       {data.apporteur_name && (
         <p className="text-xs text-muted-foreground">Apporté par {data.apporteur_name}</p>
