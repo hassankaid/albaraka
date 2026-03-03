@@ -10,6 +10,7 @@ import { BadgeEuro, RefreshCw, Plus, Settings } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
 import NewSaleModal from "@/components/sales/NewSaleModal";
 import ManageCommissionsModal from "@/components/sales/ManageCommissionsModal";
+import SaleDetailModal from "@/components/sales/SaleDetailModal";
 
 interface CeoSale {
   id: string;
@@ -68,6 +69,7 @@ export default function Sales() {
   const [ceoSales, setCeoSales] = useState<CeoSale[]>([]);
   const [newSaleOpen, setNewSaleOpen] = useState(false);
   const [commissionsModalSale, setCommissionsModalSale] = useState<CeoSale | null>(null);
+  const [detailSale, setDetailSale] = useState<CeoSale | null>(null);
 
   // Non-CEO state
   const [userCommissions, setUserCommissions] = useState<UserCommission[]>([]);
@@ -238,10 +240,10 @@ export default function Sales() {
             </TableHeader>
             <TableBody>
               {ceoSales.map((sale) => (
-                <TableRow key={sale.id} className="border-border hover:bg-secondary/50 transition-colors">
-                  <TableCell>
-                    <div>
-                      <p className="font-semibold text-foreground">{sale.contact_name || "—"}</p>
+                <TableRow key={sale.id} className="border-border hover:bg-secondary/50 transition-colors cursor-pointer" onClick={() => setDetailSale(sale)}>
+                   <TableCell>
+                     <div>
+                       <p className="font-semibold text-foreground">{sale.contact_name || "—"}</p>
                       <p className="text-xs text-muted-foreground">{sale.contact_email}</p>
                     </div>
                   </TableCell>
@@ -260,10 +262,10 @@ export default function Sales() {
                   <TableCell className="text-sm text-muted-foreground">{sale.closed_by_name || "—"}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{formatDate(sale.sold_at)}</TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm" onClick={() => setCommissionsModalSale(sale)}>
-                      <Settings className="h-4 w-4 mr-1" />
-                      Commissions
-                    </Button>
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setCommissionsModalSale(sale); }}>
+                       <Settings className="h-4 w-4 mr-1" />
+                       Commissions
+                     </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -323,6 +325,15 @@ export default function Sales() {
         saleId={commissionsModalSale?.id || null}
         saleAmountHt={commissionsModalSale?.amount_ht || 0}
         saleProduct={commissionsModalSale?.product || ""}
+        onUpdated={fetchData}
+      />
+      <SaleDetailModal
+        open={!!detailSale}
+        onOpenChange={(v) => !v && setDetailSale(null)}
+        saleId={detailSale?.id || null}
+        saleProduct={detailSale?.product || ""}
+        saleAmountHt={detailSale?.amount_ht || 0}
+        contactName={detailSale?.contact_name || ""}
         onUpdated={fetchData}
       />
     </div>
