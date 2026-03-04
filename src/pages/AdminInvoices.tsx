@@ -1,27 +1,28 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { FileText, Download, CheckCircle2, Trash2, RefreshCw, Loader2, Eye, Users, Euro, AlertCircle } from "lucide-react";
+import { FileText, Download, CheckCircle2, Trash2, RefreshCw, Loader2, Eye, Users, Euro, AlertCircle, CalendarDays, Clock } from "lucide-react";
 import { fetchInvoiceHtml, downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
 import InvoicePreviewModal from "@/components/InvoicePreviewModal";
 
 const MONTHS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 
-const INVOICE_STATUS: Record<string, { label: string; class: string }> = {
-  draft: { label: "Brouillon", class: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30" },
-  generated: { label: "Générée", class: "bg-blue-500/20 text-blue-300 border-blue-500/30" },
-  sent: { label: "Envoyée", class: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
-  paid: { label: "Payée", class: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
+const INVOICE_STATUS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  draft: { label: "Brouillon", variant: "secondary" },
+  generated: { label: "Générée", variant: "outline" },
+  sent: { label: "Envoyée", variant: "default" },
+  paid: { label: "Payée", variant: "default" },
 };
 
 interface ApporteurToInvoice {
@@ -45,13 +46,23 @@ interface InvoiceRow {
   paid_at: string | null;
 }
 
+/** The generation period is always the previous month. */
+function getPreviousMonth() {
+  const now = new Date();
+  const m = now.getMonth(); // 0-indexed
+  if (m === 0) return { month: 11, year: now.getFullYear() - 1 };
+  return { month: m - 1, year: now.getFullYear() };
+}
+
 export default function AdminInvoices() {
   const { profile } = useAuth();
   const now = new Date();
+  const prev = getPreviousMonth();
 
-  // Generation section state
-  const [genMonth, setGenMonth] = useState(now.getMonth());
-  const [genYear, setGenYear] = useState(now.getFullYear());
+  // Generation — fixed to previous month
+  const genMonth = prev.month;   // 0-indexed
+  const genYear = prev.year;
+
   const [apporteurs, setApporteurs] = useState<ApporteurToInvoice[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loadingApporteurs, setLoadingApporteurs] = useState(false);
@@ -73,7 +84,7 @@ export default function AdminInvoices() {
 
   const years = Array.from({ length: 3 }, (_, i) => now.getFullYear() - i);
 
-  // Fetch apporteurs with due commissions for selected period
+  // Fetch apporteurs with due commissions for the previous month
   const fetchApporteurs = useCallback(async () => {
     setLoadingApporteurs(true);
     const month = genMonth + 1;
@@ -95,13 +106,11 @@ export default function AdminInvoices() {
       return;
     }
 
-    // Filter by payment date in period
     const filtered = (data || []).filter((c: any) => {
       const paidAt = c.payments?.paid_at;
       return paidAt && paidAt >= startDate && paidAt < endDate;
     });
 
-    // Group by apporteur
     const grouped: Record<string, ApporteurToInvoice> = {};
     filtered.forEach((c: any) => {
       const uid = c.beneficiary_user_id;
@@ -286,172 +295,184 @@ export default function AdminInvoices() {
     return true;
   });
 
-  // Stats for the generation section
+  // Stats
   const totalCommAmount = apporteurs.reduce((sum, a) => sum + a.total_amount, 0);
   const totalCommCount = apporteurs.reduce((sum, a) => sum + a.commission_count, 0);
+  const periodLabel = `${MONTHS[genMonth]} ${genYear}`;
 
   return (
-    <div className="space-y-8">
-      {/* ── GENERATION SECTION ── */}
+    <div className="space-y-6">
+      {/* Page header */}
       <div>
-        <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
-          <div className="flex items-center gap-3">
-            <FileText className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Générer les factures</h2>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Mois :</span>
-              <Select value={String(genMonth)} onValueChange={(v) => setGenMonth(Number(v))}>
-                <SelectTrigger className="w-36 bg-card"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {MONTHS.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Année :</span>
-              <Select value={String(genYear)} onValueChange={(v) => setGenYear(Number(v))}>
-                <SelectTrigger className="w-24 bg-card"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        {loadingApporteurs ? (
-          <div className="flex items-center gap-2 py-8 justify-center text-muted-foreground">
-            <RefreshCw className="h-4 w-4 animate-spin" /> Chargement...
-          </div>
-        ) : apporteurs.length === 0 ? (
-          <Card className="border-border/50 border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-muted/50 p-4 mb-4">
-                <FileText className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <p className="text-sm font-medium text-foreground mb-1">Aucune facture à générer</p>
-              <p className="text-xs text-muted-foreground max-w-sm">
-                Il n'y a pas de commissions au statut « à payer » pour {MONTHS[genMonth]} {genYear}.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {/* Summary cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-              <Card className="border-border/50">
-                <CardContent className="py-4 flex items-center gap-3">
-                  <div className="rounded-lg bg-primary/10 p-2.5">
-                    <Users className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-foreground">{apporteurs.length}</p>
-                    <p className="text-xs text-muted-foreground">Apporteur{apporteurs.length > 1 ? "s" : ""} à facturer</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-border/50">
-                <CardContent className="py-4 flex items-center gap-3">
-                  <div className="rounded-lg bg-emerald-500/10 p-2.5">
-                    <Euro className="h-5 w-5 text-emerald-400" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-foreground">{totalCommAmount.toLocaleString("fr-FR")} €</p>
-                    <p className="text-xs text-muted-foreground">Montant total</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-border/50">
-                <CardContent className="py-4 flex items-center gap-3">
-                  <div className="rounded-lg bg-amber-500/10 p-2.5">
-                    <AlertCircle className="h-5 w-5 text-amber-400" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-foreground">{totalCommCount}</p>
-                    <p className="text-xs text-muted-foreground">Commission{totalCommCount > 1 ? "s" : ""} à payer</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Apporteurs table */}
-            <Card className="border-border/50">
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12 pl-4">
-                        <Checkbox
-                          checked={selectedIds.size === apporteurs.length}
-                          onCheckedChange={toggleAll}
-                        />
-                      </TableHead>
-                      <TableHead>Apporteur</TableHead>
-                      <TableHead className="text-center">Commissions</TableHead>
-                      <TableHead className="text-right pr-6">Montant</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {apporteurs.map(a => (
-                      <TableRow key={a.beneficiary_user_id} className="cursor-pointer" onClick={() => toggleSelect(a.beneficiary_user_id)}>
-                        <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}>
-                          <Checkbox
-                            checked={selectedIds.has(a.beneficiary_user_id)}
-                            onCheckedChange={() => toggleSelect(a.beneficiary_user_id)}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium text-foreground">{a.full_name}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className="text-xs">{a.commission_count}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right pr-6 font-semibold tabular-nums">
-                          {a.total_amount.toLocaleString("fr-FR")} €
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-
-            {generating && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Génération en cours... {genProgress}/{genTotal}
-                </div>
-                <Progress value={(genProgress / genTotal) * 100} className="h-2" />
-              </div>
-            )}
-
-            <div className="flex items-center gap-3 flex-wrap">
-              <Button
-                onClick={() => generateInvoices(Array.from(selectedIds))}
-                disabled={generating || selectedIds.size === 0}
-                className="gradient-primary text-primary-foreground"
-              >
-                <FileText className="h-4 w-4 mr-1.5" />
-                Générer les factures sélectionnées ({selectedIds.size})
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => generateInvoices(apporteurs.map(a => a.beneficiary_user_id))}
-                disabled={generating}
-              >
-                <FileText className="h-4 w-4 mr-1.5" />
-                Générer TOUTES les factures du mois
-              </Button>
-            </div>
-          </>
-        )}
+        <h1 className="text-2xl font-bold text-foreground">Facturation Apporteurs</h1>
+        <p className="text-sm text-muted-foreground mt-1">Générez et gérez les factures de commissions</p>
       </div>
 
-      {/* ── INVOICE LIST ── */}
-      <div>
-        <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
-          <h2 className="text-lg font-semibold text-foreground">Factures générées</h2>
+      <Tabs defaultValue="generate" className="space-y-6">
+        <TabsList className="bg-muted/60">
+          <TabsTrigger value="generate" className="gap-2">
+            <FileText className="h-4 w-4" />
+            À facturer
+          </TabsTrigger>
+          <TabsTrigger value="history" className="gap-2">
+            <Clock className="h-4 w-4" />
+            Factures générées
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ═══════════════════════════════════════════════════ */}
+        {/* TAB: GENERATION                                    */}
+        {/* ═══════════════════════════════════════════════════ */}
+        <TabsContent value="generate" className="space-y-5">
+          {/* Period indicator — read-only */}
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-5 py-3">
+            <CalendarDays className="h-5 w-5 text-primary shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                Période : <span className="text-primary font-semibold">{periodLabel}</span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Commissions des paiements encaissés en {periodLabel}
+              </p>
+            </div>
+            <Button variant="ghost" size="icon" className="ml-auto" onClick={fetchApporteurs} disabled={loadingApporteurs}>
+              <RefreshCw className={`h-4 w-4 ${loadingApporteurs ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
+
+          {loadingApporteurs ? (
+            <div className="flex items-center gap-2 py-16 justify-center text-muted-foreground">
+              <RefreshCw className="h-4 w-4 animate-spin" /> Chargement…
+            </div>
+          ) : apporteurs.length === 0 ? (
+            <Card className="border-dashed border-border/60">
+              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="rounded-full bg-muted p-4 mb-4">
+                  <FileText className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <p className="font-medium text-foreground mb-1">Aucune facture à générer</p>
+                <p className="text-sm text-muted-foreground max-w-md">
+                  Il n'y a pas de commissions au statut « à payer » pour {periodLabel}.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Summary strip */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Card className="border-border/50">
+                  <CardContent className="py-4 px-5 flex items-center gap-3">
+                    <div className="rounded-lg bg-primary/10 p-2.5">
+                      <Users className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-foreground">{apporteurs.length}</p>
+                      <p className="text-xs text-muted-foreground">Apporteur{apporteurs.length > 1 ? "s" : ""}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-border/50">
+                  <CardContent className="py-4 px-5 flex items-center gap-3">
+                    <div className="rounded-lg bg-primary/10 p-2.5">
+                      <Euro className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-foreground">{totalCommAmount.toLocaleString("fr-FR")} €</p>
+                      <p className="text-xs text-muted-foreground">Montant total</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-border/50">
+                  <CardContent className="py-4 px-5 flex items-center gap-3">
+                    <div className="rounded-lg bg-primary/10 p-2.5">
+                      <AlertCircle className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-foreground">{totalCommCount}</p>
+                      <p className="text-xs text-muted-foreground">Commission{totalCommCount > 1 ? "s" : ""}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Apporteurs table */}
+              <Card className="border-border/50 overflow-hidden">
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/30">
+                        <TableHead className="w-12 pl-4">
+                          <Checkbox
+                            checked={selectedIds.size === apporteurs.length}
+                            onCheckedChange={toggleAll}
+                          />
+                        </TableHead>
+                        <TableHead>Apporteur</TableHead>
+                        <TableHead className="text-center">Commissions</TableHead>
+                        <TableHead className="text-right pr-6">Montant</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {apporteurs.map(a => (
+                        <TableRow key={a.beneficiary_user_id} className="cursor-pointer" onClick={() => toggleSelect(a.beneficiary_user_id)}>
+                          <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedIds.has(a.beneficiary_user_id)}
+                              onCheckedChange={() => toggleSelect(a.beneficiary_user_id)}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium text-foreground">{a.full_name}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="secondary" className="text-xs tabular-nums">{a.commission_count}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right pr-6 font-semibold tabular-nums">
+                            {a.total_amount.toLocaleString("fr-FR")} €
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              {/* Progress bar */}
+              {generating && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Génération en cours… {genProgress}/{genTotal}
+                  </div>
+                  <Progress value={(genProgress / genTotal) * 100} className="h-2" />
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <Button
+                  onClick={() => generateInvoices(Array.from(selectedIds))}
+                  disabled={generating || selectedIds.size === 0}
+                  className="gradient-primary text-primary-foreground"
+                >
+                  <FileText className="h-4 w-4 mr-1.5" />
+                  Générer ({selectedIds.size})
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => generateInvoices(apporteurs.map(a => a.beneficiary_user_id))}
+                  disabled={generating}
+                >
+                  Tout générer
+                </Button>
+              </div>
+            </>
+          )}
+        </TabsContent>
+
+        {/* ═══════════════════════════════════════════════════ */}
+        {/* TAB: GENERATED INVOICES                            */}
+        {/* ═══════════════════════════════════════════════════ */}
+        <TabsContent value="history" className="space-y-5">
+          {/* Filters bar */}
           <div className="flex items-center gap-3 flex-wrap">
             <Select value={String(filterYear)} onValueChange={(v) => setFilterYear(Number(v))}>
               <SelectTrigger className="w-24 bg-card"><SelectValue /></SelectTrigger>
@@ -469,86 +490,97 @@ export default function AdminInvoices() {
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-32 bg-card"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous</SelectItem>
+                <SelectItem value="all">Tous statuts</SelectItem>
                 <SelectItem value="generated">Générée</SelectItem>
                 <SelectItem value="sent">Envoyée</SelectItem>
                 <SelectItem value="paid">Payée</SelectItem>
               </SelectContent>
             </Select>
             <Input
-              placeholder="Rechercher..."
+              placeholder="Rechercher…"
               value={filterSearch}
               onChange={(e) => setFilterSearch(e.target.value)}
               className="w-48 bg-card"
             />
           </div>
-        </div>
 
-        <Card className="border-border/50">
-          <CardContent className="p-0">
-            {loadingInvoices ? (
-              <div className="flex items-center gap-2 py-12 justify-center text-muted-foreground">
-                <RefreshCw className="h-5 w-5 animate-spin" /> Chargement...
-              </div>
-            ) : filteredInvoices.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-12">Aucune facture trouvée.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Apporteur</TableHead>
-                      <TableHead>N° Facture</TableHead>
-                      <TableHead>Période</TableHead>
-                      <TableHead className="text-right">Montant</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredInvoices.map(inv => {
-                      const statusInfo = INVOICE_STATUS[inv.status] || INVOICE_STATUS.draft;
-                      return (
-                        <TableRow key={inv.id}>
-                          <TableCell className="font-medium">{inv.apporteur_name}</TableCell>
-                          <TableCell className="font-mono text-xs">{inv.invoice_number}</TableCell>
-                          <TableCell>{MONTHS[inv.period_month - 1]} {inv.period_year}</TableCell>
-                          <TableCell className="text-right font-semibold tabular-nums">{inv.total_amount.toLocaleString("fr-FR")} €</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={`text-xs ${statusInfo.class}`}>{statusInfo.label}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-end gap-1">
-                              {inv.pdf_url && (
-                                <Button size="icon" variant="ghost" onClick={() => openPreview(inv)} title="Voir">
-                                  <Eye className="h-4 w-4" />
+          {/* Table */}
+          <Card className="border-border/50 overflow-hidden">
+            <CardContent className="p-0">
+              {loadingInvoices ? (
+                <div className="flex items-center gap-2 py-16 justify-center text-muted-foreground">
+                  <RefreshCw className="h-5 w-5 animate-spin" /> Chargement…
+                </div>
+              ) : filteredInvoices.length === 0 ? (
+                <div className="flex flex-col items-center py-16 text-center">
+                  <FileText className="h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">Aucune facture trouvée pour cette période.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/30">
+                        <TableHead>Apporteur</TableHead>
+                        <TableHead>N° Facture</TableHead>
+                        <TableHead>Période</TableHead>
+                        <TableHead className="text-right">Montant</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredInvoices.map(inv => {
+                        const statusInfo = INVOICE_STATUS[inv.status] || INVOICE_STATUS.draft;
+                        const isPaid = inv.status === "paid";
+                        return (
+                          <TableRow key={inv.id}>
+                            <TableCell className="font-medium">{inv.apporteur_name}</TableCell>
+                            <TableCell className="font-mono text-xs text-muted-foreground">{inv.invoice_number}</TableCell>
+                            <TableCell className="text-sm">{MONTHS[inv.period_month - 1]} {inv.period_year}</TableCell>
+                            <TableCell className="text-right font-semibold tabular-nums">{inv.total_amount.toLocaleString("fr-FR")} €</TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={statusInfo.variant}
+                                className={isPaid ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" : ""}
+                              >
+                                {isPaid && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                                {statusInfo.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center justify-end gap-1">
+                                {inv.pdf_url && (
+                                  <Button size="icon" variant="ghost" onClick={() => openPreview(inv)} title="Voir">
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {inv.pdf_url && (
+                                  <Button size="icon" variant="ghost" onClick={() => handleDownload(inv)} title="Télécharger" disabled={downloading === inv.id}>
+                                    {downloading === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                                  </Button>
+                                )}
+                                {!isPaid && (
+                                  <Button size="icon" variant="ghost" onClick={() => handleMarkPaid(inv)} title="Marquer payée" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-500">
+                                    <CheckCircle2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                <Button size="icon" variant="ghost" onClick={() => setDeleteInvoice(inv)} title="Supprimer" className="text-destructive hover:text-destructive">
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
-                              )}
-                              {inv.pdf_url && (
-                                <Button size="icon" variant="ghost" onClick={() => handleDownload(inv)} title="Télécharger PDF" disabled={downloading === inv.id}>
-                                  {downloading === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                                </Button>
-                              )}
-                              {inv.status !== "paid" && (
-                                <Button size="icon" variant="ghost" onClick={() => handleMarkPaid(inv)} title="Marquer payée" className="text-emerald-400 hover:text-emerald-300">
-                                  <CheckCircle2 className="h-4 w-4" />
-                                </Button>
-                              )}
-                              <Button size="icon" variant="ghost" onClick={() => setDeleteInvoice(inv)} title="Supprimer" className="text-destructive hover:text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* ── DELETE CONFIRMATION MODAL ── */}
       <Dialog open={!!deleteInvoice} onOpenChange={(open) => !open && setDeleteInvoice(null)}>
