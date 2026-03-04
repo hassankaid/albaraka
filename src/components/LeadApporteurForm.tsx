@@ -139,7 +139,7 @@ export default function LeadApporteurForm({
               defaultCountry="FR"
               value={phone}
               onChange={setPhone}
-              placeholder="6 12 34 56 78"
+              placeholder="Ex : 6 12 34 56 78"
             />
           </div>
           <div className="space-y-2">
