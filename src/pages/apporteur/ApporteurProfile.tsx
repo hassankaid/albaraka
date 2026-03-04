@@ -305,7 +305,7 @@ export default function ApporteurProfile() {
     return <div className="flex items-center justify-center py-16"><RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
 
-  const hasBankData = !!(bankDetails?.iban || bankDetails?.account_holder);
+  const hasBankData = !!(bankDetails?.iban || bankDetails?.account_holder || bankDetails?.account_number);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
