@@ -80,6 +80,10 @@ export default function ApporteurLeads() {
       toast({ title: "Numéro de téléphone invalide", variant: "destructive" });
       return;
     }
+    if (source === "apporteur_autre" && !sourceDetail.trim()) {
+      toast({ title: "Veuillez préciser la source", variant: "destructive" });
+      return;
+    }
     setSaving(true);
 
     const { data: contactId, error: rpcError } = await supabase.rpc("find_or_create_contact", {
@@ -94,14 +98,22 @@ export default function ApporteurLeads() {
       return;
     }
 
+    let finalNotes = "";
+    if (source === "apporteur_autre" && sourceDetail.trim()) {
+      finalNotes = `Source: ${sourceDetail.trim()}`;
+    }
+    if (notes.trim()) {
+      finalNotes = finalNotes ? `${finalNotes}\n${notes.trim()}` : notes.trim();
+    }
+
     const { error: insertError } = await supabase.from("leads").insert({
       contact_id: contactId,
       source: source,
       source_detail: source,
       apporteur_id: profile.id,
       apporteur_source: source,
-      status: "a_qualifier",
-      notes: notes.trim() || null,
+      status: leadStatus,
+      notes: finalNotes || null,
     });
 
     if (insertError) {
