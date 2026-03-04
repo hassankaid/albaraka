@@ -262,6 +262,7 @@ export type Database = {
           created_at: string | null
           id: string
           paid_at: string | null
+          payment_id: string | null
           percentage: number
           role: string
           sale_id: string
@@ -274,6 +275,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           paid_at?: string | null
+          payment_id?: string | null
           percentage: number
           role: string
           sale_id: string
@@ -286,6 +288,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           paid_at?: string | null
+          payment_id?: string | null
           percentage?: number
           role?: string
           sale_id?: string
@@ -297,6 +300,13 @@ export type Database = {
             columns: ["beneficiary_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
             referencedColumns: ["id"]
           },
           {

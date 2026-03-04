@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, Plus } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Trash2, Plus, Pencil, Check, X } from "lucide-react";
 
 interface Commission {
   id: string;
@@ -22,7 +23,21 @@ interface Commission {
   percentage: number;
   amount: number | null;
   status: string | null;
-  beneficiary_name?: string;
+}
+
+interface AggregatedCommission {
+  key: string;
+  beneficiary_user_id: string | null;
+  beneficiary_external: string | null;
+  beneficiary_name: string;
+  role: string;
+  percentage: number;
+  total: number;
+  paid: number;
+  remaining: number;
+  paidCount: number;
+  totalCount: number;
+  commissionIds: string[];
 }
 
 interface Profile {
@@ -68,8 +83,11 @@ export default function ManageCommissionsModal({
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
   const [percentage, setPercentage] = useState("");
-  const [amount, setAmount] = useState("");
   const [adding, setAdding] = useState(false);
+
+  // Edit state
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editPct, setEditPct] = useState("");
 
   const fetchCommissions = useCallback(async () => {
     if (!saleId) return;
@@ -80,23 +98,7 @@ export default function ManageCommissionsModal({
       .eq("sale_id", saleId)
       .order("created_at", { ascending: true });
 
-    if (data) {
-      // Enrich with profile names
-      const userIds = data.filter((c) => c.beneficiary_user_id).map((c) => c.beneficiary_user_id!);
-      let profileMap: Record<string, string> = {};
-      if (userIds.length > 0) {
-        const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
-        if (profs) profileMap = Object.fromEntries(profs.map((p) => [p.id, p.full_name]));
-      }
-      setCommissions(
-        data.map((c) => ({
-          ...c,
-          beneficiary_name: c.beneficiary_user_id
-            ? profileMap[c.beneficiary_user_id] || "Inconnu"
-            : c.beneficiary_external || "Externe",
-        }))
-      );
-    }
+    if (data) setCommissions(data);
     setLoading(false);
   }, [saleId]);
 
@@ -112,13 +114,6 @@ export default function ManageCommissionsModal({
     }
   }, [open, saleId, fetchCommissions, fetchProfiles]);
 
-  // Auto-calculate amount when percentage changes
-  useEffect(() => {
-    if (percentage) {
-      setAmount(String(Math.round(saleAmountHt * parseFloat(percentage) / 100)));
-    }
-  }, [percentage, saleAmountHt]);
-
   // Suggest percentage when role changes
   useEffect(() => {
     if (selectedRole && ROLE_SUGGESTED_PCT[selectedRole]) {
@@ -126,25 +121,62 @@ export default function ManageCommissionsModal({
     }
   }, [selectedRole]);
 
+  // Aggregate commissions by beneficiary + role
+  const profileMap = Object.fromEntries(profiles.map((p) => [p.id, p.full_name]));
+
+  const aggregated: AggregatedCommission[] = (() => {
+    const groups: Record<string, Commission[]> = {};
+    for (const c of commissions) {
+      const key = `${c.beneficiary_user_id || "ext"}_${c.beneficiary_external || ""}_${c.role}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(c);
+    }
+    return Object.entries(groups).map(([key, items]) => {
+      const first = items[0];
+      const total = items.reduce((s, c) => s + (c.amount || 0), 0);
+      const paid = items.filter((c) => ["paid", "invoiced"].includes(c.status || "")).reduce((s, c) => s + (c.amount || 0), 0);
+      const paidCount = items.filter((c) => ["paid", "invoiced", "due"].includes(c.status || "")).length;
+      return {
+        key,
+        beneficiary_user_id: first.beneficiary_user_id,
+        beneficiary_external: first.beneficiary_external,
+        beneficiary_name: first.beneficiary_user_id
+          ? profileMap[first.beneficiary_user_id] || "Inconnu"
+          : first.beneficiary_external || "Externe",
+        role: first.role,
+        percentage: first.percentage,
+        total,
+        paid,
+        remaining: total - paid,
+        paidCount,
+        totalCount: items.length,
+        commissionIds: items.map((c) => c.id),
+      };
+    });
+  })();
+
+  const totalPct = aggregated.reduce((s, a) => s + a.percentage, 0);
+  const totalAmount = aggregated.reduce((s, a) => s + a.total, 0);
+
   const resetForm = () => {
     setBeneficiaryType("collaborateur");
     setSelectedUserId("");
     setSelectedRole("");
     setPercentage("");
-    setAmount("");
   };
 
   const handleAdd = async () => {
-    if (!saleId || !selectedRole || !percentage || !amount || !selectedUserId) return;
+    if (!saleId || !selectedRole || !percentage || !selectedUserId) return;
     setAdding(true);
     try {
+      // Insert global commission (trigger splits it per payment)
       const { error } = await supabase.from("commissions").insert({
         sale_id: saleId,
         beneficiary_user_id: selectedUserId,
         beneficiary_external: null,
         role: selectedRole,
         percentage: parseFloat(percentage),
-        amount: parseFloat(amount),
+        amount: Math.round(saleAmountHt * parseFloat(percentage) / 100),
         status: "pending",
       });
       if (error) throw error;
@@ -159,15 +191,36 @@ export default function ManageCommissionsModal({
     }
   };
 
-  const handleDelete = async (id: string) => {
-    await supabase.from("commissions").delete().eq("id", id);
+  const handleDeleteGroup = async (ids: string[]) => {
+    for (const id of ids) {
+      await supabase.from("commissions").delete().eq("id", id);
+    }
     toast({ title: "Commission supprimée" });
     fetchCommissions();
     onUpdated();
   };
 
-  const totalPct = commissions.reduce((s, c) => s + c.percentage, 0);
-  const totalAmount = commissions.reduce((s, c) => s + (c.amount || 0), 0);
+  const handleEditPct = async (group: AggregatedCommission) => {
+    const newPct = parseFloat(editPct);
+    if (isNaN(newPct) || newPct <= 0) return;
+
+    try {
+      // Update all commissions in the group — the trigger will recalculate amounts
+      for (const id of group.commissionIds) {
+        const { error } = await supabase
+          .from("commissions")
+          .update({ percentage: newPct })
+          .eq("id", id);
+        if (error) throw error;
+      }
+      toast({ title: "Pourcentage mis à jour" });
+      setEditingKey(null);
+      fetchCommissions();
+      onUpdated();
+    } catch {
+      toast({ title: "Erreur", variant: "destructive" });
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -177,34 +230,87 @@ export default function ManageCommissionsModal({
           <DialogDescription>Montant HT : {saleAmountHt.toLocaleString("fr-FR")} €</DialogDescription>
         </DialogHeader>
 
-        {/* Existing commissions */}
-        <div className="space-y-2">
+        {/* Aggregated commissions */}
+        <div className="space-y-3">
           <h4 className="text-sm font-semibold text-foreground">Commissions actuelles</h4>
           {loading ? (
             <p className="text-sm text-muted-foreground">Chargement…</p>
-          ) : commissions.length === 0 ? (
+          ) : aggregated.length === 0 ? (
             <p className="text-sm text-muted-foreground">Aucune commission enregistrée.</p>
           ) : (
-            <div className="space-y-2">
-              {commissions.map((c) => (
-                <div key={c.id} className="flex items-center justify-between p-3 rounded-md border border-border bg-secondary/20">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="space-y-3">
+              {aggregated.map((g) => (
+                <div key={g.key} className="p-3 rounded-md border border-border bg-secondary/20 space-y-2">
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
                     <div className="min-w-0">
-                      <p className="font-medium text-sm text-foreground truncate">{c.beneficiary_name}</p>
+                      <p className="font-medium text-sm text-foreground truncate">{g.beneficiary_name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <Badge variant="outline" className={`text-xs ${ROLE_COLORS[c.role] || ""}`}>
-                          {c.role}
+                        <Badge variant="outline" className={`text-xs ${ROLE_COLORS[g.role] || ""}`}>
+                          {g.role}
                         </Badge>
-                        <span className="text-xs text-muted-foreground">{c.percentage}%</span>
-                        <span className="text-xs font-semibold text-foreground">{c.amount?.toLocaleString("fr-FR")} €</span>
+                        {editingKey === g.key ? (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              value={editPct}
+                              onChange={(e) => setEditPct(e.target.value)}
+                              className="h-6 w-16 text-xs"
+                            />
+                            <span className="text-xs text-muted-foreground">%</span>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleEditPct(g)}>
+                              <Check className="h-3 w-3 text-emerald-400" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingKey(null)}>
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{g.percentage}%</span>
+                        )}
                       </div>
                     </div>
+                    <div className="flex items-center gap-1">
+                      {editingKey !== g.key && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          onClick={() => { setEditingKey(g.key); setEditPct(String(g.percentage)); }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteGroup(g.commissionIds)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(c.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+
+                  {/* Total */}
+                  <p className="text-sm font-semibold text-foreground">
+                    Total : {g.total.toLocaleString("fr-FR")} €
+                  </p>
+
+                  {/* Progress bar */}
+                  <Progress
+                    value={g.total > 0 ? (g.paid / g.total) * 100 : 0}
+                    className="h-2.5 bg-muted"
+                  />
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      {g.paid.toLocaleString("fr-FR")} € versé · {g.remaining.toLocaleString("fr-FR")} € restant
+                    </span>
+                    <span>({g.paidCount}/{g.totalCount} mensualités)</span>
+                  </div>
                 </div>
               ))}
+
               <div className="flex justify-between text-sm font-semibold pt-1">
                 <span className={totalPct > 100 ? "text-destructive" : "text-foreground"}>
                   Total : {totalPct}%
@@ -275,20 +381,14 @@ export default function ManageCommissionsModal({
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Pourcentage (%)</Label>
-              <Input type="number" value={percentage} onChange={(e) => setPercentage(e.target.value)} placeholder="0" />
-            </div>
-            <div className="space-y-2">
-              <Label>Montant (€)</Label>
-              <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
-            </div>
+          <div className="space-y-2">
+            <Label>Pourcentage (%)</Label>
+            <Input type="number" value={percentage} onChange={(e) => setPercentage(e.target.value)} placeholder="0" />
           </div>
 
           <Button
             onClick={handleAdd}
-            disabled={adding || !selectedRole || !percentage || !amount || !selectedUserId}
+            disabled={adding || !selectedRole || !percentage || !selectedUserId}
             className="w-full"
           >
             {adding ? "Ajout…" : "Ajouter la commission"}
