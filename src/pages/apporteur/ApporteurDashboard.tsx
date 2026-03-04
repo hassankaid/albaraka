@@ -88,6 +88,8 @@ export default function ApporteurDashboard() {
   const [allCommissions, setAllCommissions] = useState<CommissionItem[]>([]);
   const [perfLeads, setPerfLeads] = useState(0);
   const [perfSales, setPerfSales] = useState(0);
+  const [perfCA, setPerfCA] = useState(0);
+  const [perfCollected, setPerfCollected] = useState(0);
   const [recentLeads, setRecentLeads] = useState<LeadItem[]>([]);
 
   const fetchData = useCallback(async () => {
