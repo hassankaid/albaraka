@@ -110,7 +110,7 @@ export default function ApporteurDashboard() {
     const [commRes, leadsRes, salesRes, recentLeadsRes] = await Promise.all([
       // All commissions (no period filter)
       supabase.from("commissions")
-        .select("*, sales!commissions_sale_id_fkey(contacts!sales_contact_id_fkey(full_name)), payments!commissions_payment_id_fkey(payment_number, total_payments, paid_at, due_date)")
+        .select("*, sales!commissions_sale_id_fkey(contacts!sales_contact_id_fkey(full_name), leads!sales_lead_id_fkey(contacts!leads_contact_id_fkey(full_name))), payments!commissions_payment_id_fkey(payment_number, total_payments, paid_at, due_date)")
         .eq("beneficiary_user_id", userId)
         .eq("role", "apporteur")
         .order("created_at", { ascending: false }),
@@ -130,7 +130,7 @@ export default function ApporteurDashboard() {
       sale_id: c.sale_id,
       amount: c.amount,
       status: c.status,
-      client_name: c.sales?.contacts?.full_name || null,
+      client_name: c.sales?.contacts?.full_name || c.sales?.leads?.contacts?.full_name || null,
       payment_number: c.payments?.payment_number || null,
       total_payments: c.payments?.total_payments || null,
       payment_paid_at: c.payments?.paid_at || null,
