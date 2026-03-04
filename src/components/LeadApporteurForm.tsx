@@ -171,7 +171,7 @@ export default function LeadApporteurForm({
               <Input
                 value={sourceDetail}
                 onChange={(e) => setSourceDetail(e.target.value)}
-                placeholder="Précisez la source..."
+                placeholder="Ex : bouche-à-oreille, événement..."
                 required
                 className="bg-background"
               />
