@@ -95,21 +95,27 @@ Si un champ n'est pas trouvé, mets une chaîne vide. Ne retourne RIEN d'autre q
         },
       ];
     } else if (isDocx) {
-      // For DOCX: extract raw text from the XML inside the zip
       // DOCX is a ZIP containing word/document.xml
-      // We send the base64 as a document to Claude which supports docx
+      // Claude API only accepts application/pdf for document type
+      // So we extract raw text from the XML inside the zip
+      const { default: JSZip } = await import("https://esm.sh/jszip@3.10.1");
+      const zip = await JSZip.loadAsync(arrayBuffer);
+      const docXml = await zip.file("word/document.xml")?.async("string");
+      let docText = "";
+      if (docXml) {
+        // Strip XML tags to get plain text
+        docText = docXml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      }
+      if (!docText) {
+        return new Response(
+          JSON.stringify({ error: "Could not extract text from DOCX" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       messageContent = [
         {
-          type: "document",
-          source: {
-            type: "base64",
-            media_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            data: base64,
-          },
-        },
-        {
           type: "text",
-          text: `Extrais les informations bancaires de ce document RIB au format DOCX. Retourne UNIQUEMENT un objet JSON valide avec ces champs :
+          text: `Voici le contenu d'un fichier RIB au format DOCX (texte extrait) :\n\n${docText}\n\nExtrais les informations bancaires de ce document RIB. Retourne UNIQUEMENT un objet JSON valide avec ces champs :
 {
   "account_holder": "NOM PRÉNOM du titulaire",
   "iban": "IBAN complet sans espaces",
