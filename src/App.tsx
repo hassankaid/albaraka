@@ -17,6 +17,7 @@ import Contacts from "./pages/Contacts";
 import Sales from "./pages/Sales";
 import Payments from "./pages/Payments";
 import Profile from "./pages/Profile";
+import AdminInvoices from "./pages/AdminInvoices";
 import NotFound from "./pages/NotFound";
 import ApporteurDashboard from "./pages/apporteur/ApporteurDashboard";
 import ApporteurLeads from "./pages/apporteur/ApporteurLeads";
