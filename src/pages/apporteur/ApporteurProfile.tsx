@@ -231,13 +231,39 @@ export default function ApporteurProfile() {
 
   const handleSaveBankDetails = async () => {
     if (!user) return;
-    const details: BankDetails = {
-      type: "iban",
-      account_holder: editBankForm.account_holder || "",
-      iban: editBankForm.iban || "",
-      bic: editBankForm.bic || "",
-      bank_name: editBankForm.bank_name || "",
-    };
+    const bankType = editBankForm.type || "iban";
+    let details: BankDetails;
+
+    if (bankType === "iban") {
+      details = {
+        type: "iban",
+        account_holder: editBankForm.account_holder || "",
+        iban: editBankForm.iban || "",
+        bic: editBankForm.bic || "",
+        bank_name: editBankForm.bank_name || "",
+      };
+    } else if (bankType === "rib_maroc") {
+      details = {
+        type: "rib_maroc",
+        account_holder: editBankForm.account_holder || "",
+        bank_code: editBankForm.bank_code || "",
+        city_code: editBankForm.city_code || "",
+        account_number: editBankForm.account_number || "",
+        rib_key: editBankForm.rib_key || "",
+        bic: editBankForm.bic || "",
+        bank_name: editBankForm.bank_name || "",
+      };
+    } else {
+      details = {
+        type: "other",
+        account_holder: editBankForm.account_holder || "",
+        account_number: editBankForm.account_number || "",
+        bic: editBankForm.bic || "",
+        bank_name: editBankForm.bank_name || "",
+        additional_info: editBankForm.additional_info || "",
+      };
+    }
+
     const { error } = await supabase.from("profiles").update({
       bank_details: details as any,
     }).eq("id", user.id);
@@ -253,10 +279,16 @@ export default function ApporteurProfile() {
 
   const openEditBank = () => {
     setEditBankForm({
+      type: bankDetails.type || "iban",
       account_holder: bankDetails.account_holder || "",
       iban: bankDetails.iban || "",
       bic: bankDetails.bic || "",
       bank_name: bankDetails.bank_name || "",
+      bank_code: bankDetails.bank_code || "",
+      city_code: bankDetails.city_code || "",
+      account_number: bankDetails.account_number || "",
+      rib_key: bankDetails.rib_key || "",
+      additional_info: bankDetails.additional_info || "",
     });
     setEditBankOpen(true);
   };
