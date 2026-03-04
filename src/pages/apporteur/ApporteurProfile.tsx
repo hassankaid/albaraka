@@ -164,21 +164,46 @@ export default function ApporteurProfile() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     if (file.size > 5 * 1024 * 1024) { toast({ title: "Fichier trop volumineux", description: "5 Mo max", variant: "destructive" }); return; }
-    if (file.type !== "application/pdf") { toast({ title: "Format PDF uniquement", variant: "destructive" }); return; }
+    const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) { toast({ title: "Format non supporté", description: "PDF, JPG, PNG ou WebP", variant: "destructive" }); return; }
+    
+    const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
+    const filePath = `${user.id}/rib.${ext}`;
+    
     setUploadingRib(true);
     try {
-      const filePath = `${user.id}/rib.pdf`;
-      const { error: uploadError } = await supabase.storage.from("ribs").upload(filePath, file, { upsert: true, contentType: "application/pdf" });
+      const { error: uploadError } = await supabase.storage.from("ribs").upload(filePath, file, { upsert: true, contentType: file.type });
       if (uploadError) throw uploadError;
-      // Get signed URL for private bucket
       const { data: signedData } = await supabase.storage.from("ribs").createSignedUrl(filePath, 60 * 60 * 24 * 365);
       const ribUrl = signedData?.signedUrl || filePath;
       await supabase.from("profiles").update({ bank_rib_url: ribUrl }).eq("id", user.id);
       setBankRibUrl(ribUrl);
-      toast({ title: "RIB uploadé avec succès", description: "Vous pouvez maintenant saisir vos coordonnées bancaires." });
+      setUploadingRib(false);
+      
+      // Start extraction
+      setExtractingRib(true);
+      try {
+        const { data: extractData, error: extractError } = await supabase.functions.invoke("extract-rib-data", {
+          body: { user_id: user.id, file_path: filePath },
+        });
+        if (extractError) throw extractError;
+        if (extractData?.bank_details) {
+          setBankDetails(extractData.bank_details);
+          toast({ title: "Données bancaires extraites avec succès !" });
+        } else if (extractData?.error) {
+          throw new Error(extractData.error);
+        }
+      } catch (extractErr: any) {
+        console.error("Extraction failed:", extractErr);
+        toast({ title: "Extraction automatique échouée", description: "Veuillez saisir vos données bancaires manuellement.", variant: "destructive" });
+        openEditBank();
+      } finally {
+        setExtractingRib(false);
+      }
     } catch (err: any) {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
-    } finally { setUploadingRib(false); e.target.value = ""; }
+      toast({ title: "Erreur d'upload", description: err.message, variant: "destructive" });
+      setUploadingRib(false);
+    } finally { e.target.value = ""; }
   };
 
   const handleSavePersonal = async () => {
