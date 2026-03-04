@@ -208,16 +208,18 @@ export default function AdminInvoices() {
     fetchInvoices();
   };
 
+  const [downloading, setDownloading] = useState<string | null>(null);
+
   const handleDownload = async (inv: InvoiceRow) => {
     if (!inv.pdf_url) return;
-    const { data, error } = await supabase.storage
-      .from("invoices")
-      .createSignedUrl(inv.pdf_url, 3600);
-    if (error || !data?.signedUrl) {
+    setDownloading(inv.id);
+    try {
+      await downloadInvoicePdf(inv.pdf_url, inv.invoice_number);
+    } catch {
       toast({ title: "Erreur", description: "Impossible de télécharger la facture", variant: "destructive" });
-      return;
+    } finally {
+      setDownloading(null);
     }
-    window.open(data.signedUrl, "_blank");
   };
 
   const handleMarkPaid = async (inv: InvoiceRow) => {
