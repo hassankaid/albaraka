@@ -48,6 +48,8 @@ interface CommissionRow {
   total_payments: number | null;
   payment_status: string | null;
   payment_amount: number | null;
+  payment_due_date: string | null;
+  payment_paid_at: string | null;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
@@ -99,7 +101,7 @@ export default function AdminCommissions() {
           contacts!sales_contact_id_fkey(full_name)
         ),
         payments!commissions_payment_id_fkey(
-          payment_number, total_payments, status, amount
+          payment_number, total_payments, status, amount, due_date, paid_at
         )
       `)
       .not("payment_id", "is", null)
@@ -133,6 +135,8 @@ export default function AdminCommissions() {
           total_payments: c.payments?.total_payments,
           payment_status: c.payments?.status,
           payment_amount: c.payments?.amount,
+          payment_due_date: c.payments?.due_date,
+          payment_paid_at: c.payments?.paid_at,
         }))
       );
     }
@@ -343,10 +347,12 @@ export default function AdminCommissions() {
                 <TableHead>Rôle</TableHead>
                 <TableHead>Vente</TableHead>
                 <TableHead>Mensualité</TableHead>
+                <TableHead>Échéance</TableHead>
+                <TableHead>Paiement client</TableHead>
                 <TableHead className="text-right">Montant</TableHead>
                 <TableHead>%</TableHead>
                 <TableHead>Statut</TableHead>
-                <TableHead>Payée le</TableHead>
+                <TableHead>Commission payée le</TableHead>
                 <TableHead className="text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -374,6 +380,12 @@ export default function AdminCommissions() {
                       <span className="text-sm text-muted-foreground">
                         {c.payment_number != null ? `${c.payment_number}/${c.total_payments}` : "—"}
                       </span>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {fmtDate(c.payment_due_date)}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {fmtDate(c.payment_paid_at)}
                     </TableCell>
                     <TableCell className="text-right font-semibold text-foreground">
                       {c.amount != null ? `${c.amount.toLocaleString("fr-FR")} €` : "—"}
