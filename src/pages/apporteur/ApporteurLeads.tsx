@@ -315,7 +315,7 @@ export default function ApporteurLeads() {
             {source === "apporteur_autre" && (
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Précisez la source *</label>
-                <Input value={sourceDetail} onChange={(e) => setSourceDetail(e.target.value)} placeholder="Précisez la source..." required className="bg-background" />
+                <Input value={sourceDetail} onChange={(e) => setSourceDetail(e.target.value)} placeholder="Ex : bouche-à-oreille, événement..." required className="bg-background" />
               </div>
             )}
             <div className="space-y-2">
