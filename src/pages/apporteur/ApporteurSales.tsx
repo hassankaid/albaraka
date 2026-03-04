@@ -6,8 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
-import { ShoppingCart, RefreshCw, Calendar, CreditCard, TrendingUp, CheckCircle2, Clock, AlertTriangle, XCircle } from "lucide-react";
+import { ShoppingCart, RefreshCw, Calendar, CreditCard, TrendingUp, CheckCircle2, Clock, AlertTriangle, XCircle, Coins } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
 
 interface SaleRow {
@@ -34,12 +33,28 @@ interface PaymentRow {
   status: string;
 }
 
+interface CommissionRow {
+  payment_id: string | null;
+  amount: number | null;
+  status: string | null;
+  percentage: number;
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  paid: "#22c55e",
+  due: "#f59e0b",
+  invoiced: "#f59e0b",
+  pending: "#6b7280",
+  cancelled: "#ef4444",
+};
+
 export default function ApporteurSales() {
   const { profile } = useAuth();
   const [sales, setSales] = useState<SaleRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSale, setSelectedSale] = useState<SaleRow | null>(null);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [commissions, setCommissions] = useState<CommissionRow[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
 
   const fetchSales = useCallback(async () => {
@@ -87,7 +102,11 @@ export default function ApporteurSales() {
 
     const commBySale: Record<string, { pct: number; amount: number }> = {};
     (commissionsRes.data || []).forEach((c) => {
-      commBySale[c.sale_id] = { pct: c.percentage, amount: c.amount || 0 };
+      if (!commBySale[c.sale_id]) {
+        commBySale[c.sale_id] = { pct: c.percentage, amount: c.amount || 0 };
+      } else {
+        commBySale[c.sale_id].amount += c.amount || 0;
+      }
     });
 
     const rows: SaleRow[] = salesData.map((s: any) => ({
@@ -113,12 +132,22 @@ export default function ApporteurSales() {
   const openDetail = async (sale: SaleRow) => {
     setSelectedSale(sale);
     setLoadingPayments(true);
-    const { data } = await supabase
-      .from("payments")
-      .select("id, payment_number, total_payments, amount, due_date, paid_at, status")
-      .eq("sale_id", sale.id)
-      .order("payment_number", { ascending: true });
-    setPayments(data || []);
+
+    const [paymentsRes, commissionsRes] = await Promise.all([
+      supabase
+        .from("payments")
+        .select("id, payment_number, total_payments, amount, due_date, paid_at, status")
+        .eq("sale_id", sale.id)
+        .order("payment_number", { ascending: true }),
+      supabase
+        .from("commissions")
+        .select("payment_id, amount, status, percentage")
+        .eq("sale_id", sale.id)
+        .eq("beneficiary_user_id", profile!.id),
+    ]);
+
+    setPayments(paymentsRes.data || []);
+    setCommissions(commissionsRes.data || []);
     setLoadingPayments(false);
   };
 
@@ -144,7 +173,24 @@ export default function ApporteurSales() {
     );
   }
 
-  const paidAmount = payments.filter(p => p.status === "paid").reduce((s, p) => s + p.amount, 0);
+  // Commission aggregation for the detail panel
+  const commByPaymentId = Object.fromEntries(
+    commissions.map(c => [c.payment_id, c])
+  );
+
+  const commPaid = commissions
+    .filter(c => c.status === "paid")
+    .reduce((s, c) => s + (c.amount || 0), 0);
+  const commDue = commissions
+    .filter(c => ["due", "invoiced"].includes(c.status || ""))
+    .reduce((s, c) => s + (c.amount || 0), 0);
+  const commPending = commissions
+    .filter(c => c.status === "pending")
+    .reduce((s, c) => s + (c.amount || 0), 0);
+  const commCancelled = commissions
+    .filter(c => c.status === "cancelled")
+    .reduce((s, c) => s + (c.amount || 0), 0);
+  const commTotal = commPaid + commDue + commPending + commCancelled;
 
   return (
     <div className="space-y-6">
@@ -273,17 +319,6 @@ export default function ApporteurSales() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Ma commission</p>
-                      <p className="text-sm font-semibold text-foreground">
-                        {selectedSale.commission_percentage != null
-                          ? `${selectedSale.commission_percentage}% · ${selectedSale.commission_total?.toLocaleString("fr-FR")} €`
-                          : "Non définie"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
                     <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <p className="text-xs text-muted-foreground">Mensualités</p>
@@ -293,25 +328,69 @@ export default function ApporteurSales() {
                 </div>
               </div>
 
-              <Separator className="bg-border" />
+              {/* Commission section */}
+              {!loadingPayments && commTotal > 0 && (
+                <>
+                  <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Coins className="h-4 w-4 text-primary" />
+                      <h4 className="text-sm font-semibold text-foreground">
+                        Ma Commission ({selectedSale.commission_percentage}%)
+                      </h4>
+                    </div>
+
+                    <p className="text-lg font-bold text-foreground">
+                      Total : {commTotal.toLocaleString("fr-FR")} €
+                    </p>
+
+                    {/* Multi-color progress bar */}
+                    <div className="h-3 w-full rounded-full bg-muted overflow-hidden flex">
+                      {commPaid > 0 && (
+                        <div className="h-full" style={{ width: `${(commPaid / commTotal) * 100}%`, backgroundColor: "#22c55e" }} />
+                      )}
+                      {commDue > 0 && (
+                        <div className="h-full" style={{ width: `${(commDue / commTotal) * 100}%`, backgroundColor: "#f59e0b" }} />
+                      )}
+                      {commPending > 0 && (
+                        <div className="h-full" style={{ width: `${(commPending / commTotal) * 100}%`, backgroundColor: "#6b7280" }} />
+                      )}
+                      {commCancelled > 0 && (
+                        <div className="h-full" style={{ width: `${(commCancelled / commTotal) * 100}%`, backgroundColor: "#ef4444" }} />
+                      )}
+                    </div>
+
+                    {/* Legend */}
+                    <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: "#22c55e" }} />
+                        {commPaid.toLocaleString("fr-FR")} € reçu
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: "#f59e0b" }} />
+                        {commDue.toLocaleString("fr-FR")} € à recevoir
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: "#6b7280" }} />
+                        {commPending.toLocaleString("fr-FR")} € en attente
+                      </span>
+                      {commCancelled > 0 && (
+                        <span className="flex items-center gap-1">
+                          <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: "#ef4444" }} />
+                          {commCancelled.toLocaleString("fr-FR")} € annulé
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <Separator className="bg-border" />
+                </>
+              )}
 
               {/* Payments section */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-semibold text-foreground">Échéancier des paiements</h4>
-                  {!loadingPayments && payments.length > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      {paidAmount.toLocaleString("fr-FR")} € / {selectedSale.amount_ht.toLocaleString("fr-FR")} € encaissés
-                    </span>
-                  )}
                 </div>
-
-                {!loadingPayments && payments.length > 0 && (
-                  <Progress
-                    value={selectedSale.amount_ht > 0 ? (paidAmount / selectedSale.amount_ht) * 100 : 0}
-                    className="h-2 mb-4 bg-secondary"
-                  />
-                )}
 
                 {loadingPayments ? (
                   <div className="flex justify-center py-8"><RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" /></div>
@@ -325,37 +404,40 @@ export default function ApporteurSales() {
                     {payments.map((p) => {
                       const label = getPaymentLabel(p.status, p.due_date);
                       const isPaid = p.status === "paid";
+                      const comm = commByPaymentId[p.id];
+                      const commColor = comm ? (STATUS_COLORS[comm.status || "pending"] || "#6b7280") : null;
+
                       return (
                         <div
                           key={p.id}
-                          className={`flex items-center justify-between py-3 px-4 rounded-lg border transition-colors ${
+                          className={`py-3 px-4 rounded-lg border transition-colors ${
                             isPaid
                               ? "bg-emerald-500/5 border-emerald-500/20"
                               : "bg-secondary/20 border-border/50"
                           }`}
                         >
-                          <div className="flex items-center gap-3">
-                            {getPaymentIcon(p.status, p.due_date)}
-                            <div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {getPaymentIcon(p.status, p.due_date)}
                               <p className="text-sm font-medium text-foreground">
                                 Mensualité {p.payment_number}/{p.total_payments}
                               </p>
-                              <p className="text-xs text-muted-foreground">
-                                Échéance : {formatDateOnly(p.due_date)}
-                                {p.paid_at && ` · Payé le ${formatDateOnly(p.paid_at)}`}
-                              </p>
                             </div>
-                          </div>
-                          <div className="text-right">
                             <p className={`text-sm font-semibold ${isPaid ? "text-emerald-400" : "text-foreground"}`}>
                               {p.amount.toLocaleString("fr-FR")} €
                             </p>
-                            <p className={`text-xs ${
-                              isPaid ? "text-emerald-400/70" : 
-                              label === "En retard" ? "text-red-400" : "text-muted-foreground"
-                            }`}>
-                              {label}
+                          </div>
+                          <div className="flex items-center justify-between mt-1 ml-7">
+                            <p className="text-xs text-muted-foreground">
+                              Échéance : {formatDateOnly(p.due_date)}
+                              {p.paid_at && ` · Payé le ${formatDateOnly(p.paid_at)}`}
                             </p>
+                            {comm && (
+                              <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                                → {(comm.amount || 0).toLocaleString("fr-FR")} €
+                                <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: commColor! }} />
+                              </span>
+                            )}
                           </div>
                         </div>
                       );
