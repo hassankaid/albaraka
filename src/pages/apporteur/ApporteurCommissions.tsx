@@ -118,7 +118,7 @@ export default function ApporteurCommissions() {
 
     const [commissionsRes, invoicesRes] = await Promise.all([
       supabase.from("commissions")
-        .select("*, sales!commissions_sale_id_fkey(contact_id, mensualites, contacts!sales_contact_id_fkey(full_name)), payments!commissions_payment_id_fkey(payment_number, total_payments, paid_at, due_date)")
+        .select("*, sales!commissions_sale_id_fkey(contact_id, mensualites, contacts!sales_contact_id_fkey(full_name), leads!sales_lead_id_fkey(contacts!leads_contact_id_fkey(full_name))), payments!commissions_payment_id_fkey(payment_number, total_payments, paid_at, due_date)")
         .eq("beneficiary_user_id", userId)
         .eq("role", "apporteur")
         .order("created_at", { ascending: false }),
