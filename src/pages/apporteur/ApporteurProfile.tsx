@@ -454,7 +454,7 @@ export default function ApporteurProfile() {
               </div>
               <Button variant="outline" onClick={() => ribInputRef.current?.click()} disabled={uploadingRib} className="gap-2">
                 {uploadingRib ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                Télécharger mon RIB (PDF, Image)
+                Télécharger mon RIB (PDF, Image, TXT)
               </Button>
             </div>
           ) : hasBankData ? (
@@ -535,7 +535,7 @@ export default function ApporteurProfile() {
                 ) : (
                   <Button variant="outline" size="sm" onClick={() => ribInputRef.current?.click()} disabled={uploadingRib} className="gap-1">
                     {uploadingRib ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-                    Uploader un RIB (PDF)
+                    Uploader un RIB
                   </Button>
                 )}
               </div>
@@ -569,7 +569,7 @@ export default function ApporteurProfile() {
         </CardContent>
       </Card>
 
-      <input ref={ribInputRef} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" className="hidden" onChange={handleRibUpload} />
+      <input ref={ribInputRef} type="file" accept="application/pdf,image/jpeg,image/png,image/webp,text/plain,.txt" className="hidden" onChange={handleRibUpload} />
 
       {/* ── Edit Bank Details Modal ── */}
       <Dialog open={editBankOpen} onOpenChange={setEditBankOpen}>
