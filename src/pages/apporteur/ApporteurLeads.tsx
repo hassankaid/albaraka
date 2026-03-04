@@ -333,7 +333,7 @@ export default function ApporteurLeads() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Notes</label>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes optionnelles..." className="bg-background" />
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Informations utiles sur le prospect..." className="bg-background" />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>Annuler</Button>
