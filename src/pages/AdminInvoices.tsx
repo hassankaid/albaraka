@@ -210,12 +210,31 @@ export default function AdminInvoices() {
   };
 
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [previewInvoice, setPreviewInvoice] = useState<InvoiceRow | null>(null);
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const openPreview = async (inv: InvoiceRow) => {
+    if (!inv.pdf_url) return;
+    setPreviewInvoice(inv);
+    setPreviewLoading(true);
+    setPreviewHtml("");
+    try {
+      const html = await fetchInvoiceHtml(inv.pdf_url);
+      setPreviewHtml(html);
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de charger la facture", variant: "destructive" });
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
 
   const handleDownload = async (inv: InvoiceRow) => {
     if (!inv.pdf_url) return;
     setDownloading(inv.id);
     try {
-      await downloadInvoicePdf(inv.pdf_url, inv.invoice_number);
+      const html = await fetchInvoiceHtml(inv.pdf_url);
+      await downloadInvoicePdf(inv.invoice_number, html);
     } catch {
       toast({ title: "Erreur", description: "Impossible de télécharger la facture", variant: "destructive" });
     } finally {
