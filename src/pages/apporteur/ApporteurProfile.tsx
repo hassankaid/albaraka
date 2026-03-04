@@ -465,14 +465,50 @@ export default function ApporteurProfile() {
                   <p className="text-xs text-muted-foreground">Banque</p>
                   <p className="text-sm font-medium text-foreground">{bankDetails.bank_name || "—"}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">IBAN</p>
-                  <p className="text-sm font-mono text-foreground">{formatIban(bankDetails.iban || "")}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">BIC</p>
-                  <p className="text-sm font-mono text-foreground">{bankDetails.bic || "—"}</p>
-                </div>
+                {(!bankDetails.type || bankDetails.type === "iban") && (
+                  <>
+                    <div>
+                      <p className="text-xs text-muted-foreground">IBAN</p>
+                      <p className="text-sm font-mono text-foreground">{formatIban(bankDetails.iban || "")}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">BIC</p>
+                      <p className="text-sm font-mono text-foreground">{bankDetails.bic || "—"}</p>
+                    </div>
+                  </>
+                )}
+                {bankDetails.type === "rib_maroc" && (
+                  <>
+                    <div className="sm:col-span-2">
+                      <p className="text-xs text-muted-foreground">RIB</p>
+                      <p className="text-sm font-mono text-foreground">
+                        {`${bankDetails.bank_code || ""}${bankDetails.city_code || ""}${bankDetails.account_number || ""}${bankDetails.rib_key || ""}` || "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">BIC/SWIFT</p>
+                      <p className="text-sm font-mono text-foreground">{bankDetails.bic || "—"}</p>
+                    </div>
+                  </>
+                )}
+                {bankDetails.type === "other" && (
+                  <>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Compte</p>
+                      <p className="text-sm font-mono text-foreground">{bankDetails.account_number || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">BIC/SWIFT</p>
+                      <p className="text-sm font-mono text-foreground">{bankDetails.bic || "—"}</p>
+                    </div>
+                    {bankDetails.additional_info && (
+                      <div className="sm:col-span-2">
+                        <p className="text-xs text-muted-foreground">Info</p>
+                        <p className="text-sm text-foreground">{bankDetails.additional_info}</p>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               <div className="flex items-center gap-3 pt-2 border-t border-border/50">
