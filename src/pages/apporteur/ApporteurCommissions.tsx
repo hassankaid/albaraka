@@ -413,15 +413,7 @@ export default function ApporteurCommissions() {
                       <Badge variant="outline" className={`text-xs ${statusInfo.class}`}>{statusInfo.label}</Badge>
                     </div>
                     {inv.pdf_url && (
-                      <Button size="sm" variant="outline" onClick={async () => {
-                        const { data } = await supabase.storage
-                          .from("invoices")
-                          .createSignedUrl(inv.pdf_url!, 3600);
-                        if (data?.signedUrl) window.open(data.signedUrl, "_blank");
-                      }}>
-                        <Download className="h-3 w-3 mr-1" />
-                        Télécharger
-                      </Button>
+                      <InvoiceDownloadButton pdfUrl={inv.pdf_url} invoiceNumber={inv.invoice_number} />
                     )}
                   </CardContent>
                 </Card>
