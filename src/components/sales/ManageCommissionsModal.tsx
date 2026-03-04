@@ -34,7 +34,9 @@ interface AggregatedCommission {
   percentage: number;
   total: number;
   paid: number;
-  remaining: number;
+  due: number;
+  pending: number;
+  cancelled: number;
   paidCount: number;
   totalCount: number;
   commissionIds: string[];
@@ -133,9 +135,9 @@ export default function ManageCommissionsModal({
     }
     return Object.entries(groups).map(([key, items]) => {
       const first = items[0];
+      const sumByStatus = (statuses: string[]) =>
+        items.filter((c) => statuses.includes(c.status || "")).reduce((s, c) => s + (c.amount || 0), 0);
       const total = items.reduce((s, c) => s + (c.amount || 0), 0);
-      const paid = items.filter((c) => ["paid", "invoiced"].includes(c.status || "")).reduce((s, c) => s + (c.amount || 0), 0);
-      const paidCount = items.filter((c) => ["paid", "invoiced", "due"].includes(c.status || "")).length;
       return {
         key,
         beneficiary_user_id: first.beneficiary_user_id,
@@ -146,9 +148,11 @@ export default function ManageCommissionsModal({
         role: first.role,
         percentage: first.percentage,
         total,
-        paid,
-        remaining: total - paid,
-        paidCount,
+        paid: sumByStatus(["paid", "invoiced"]),
+        due: sumByStatus(["due"]),
+        pending: sumByStatus(["pending"]),
+        cancelled: sumByStatus(["cancelled"]),
+        paidCount: items.filter((c) => ["paid", "invoiced", "due"].includes(c.status || "")).length,
         totalCount: items.length,
         commissionIds: items.map((c) => c.id),
       };
@@ -297,16 +301,45 @@ export default function ManageCommissionsModal({
                     Total : {g.total.toLocaleString("fr-FR")} €
                   </p>
 
-                  {/* Progress bar */}
-                  <Progress
-                    value={g.total > 0 ? (g.paid / g.total) * 100 : 0}
-                    className="h-2.5 bg-muted"
-                  />
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>
-                      {g.paid.toLocaleString("fr-FR")} € versé · {g.remaining.toLocaleString("fr-FR")} € restant
+                  {/* Multi-color progress bar */}
+                  <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden flex">
+                    {g.total > 0 && (
+                      <>
+                        {g.paid > 0 && (
+                          <div className="h-full" style={{ width: `${(g.paid / g.total) * 100}%`, backgroundColor: "#22c55e" }} />
+                        )}
+                        {g.due > 0 && (
+                          <div className="h-full" style={{ width: `${(g.due / g.total) * 100}%`, backgroundColor: "#f59e0b" }} />
+                        )}
+                        {g.pending > 0 && (
+                          <div className="h-full" style={{ width: `${(g.pending / g.total) * 100}%`, backgroundColor: "#6b7280" }} />
+                        )}
+                        {g.cancelled > 0 && (
+                          <div className="h-full" style={{ width: `${(g.cancelled / g.total) * 100}%`, backgroundColor: "#ef4444" }} />
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div className="flex items-center flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: "#22c55e" }} />
+                      {g.paid.toLocaleString("fr-FR")} € versé
                     </span>
-                    <span>({g.paidCount}/{g.totalCount} mensualités)</span>
+                    <span className="flex items-center gap-1">
+                      <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: "#f59e0b" }} />
+                      {g.due.toLocaleString("fr-FR")} € à verser
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: "#6b7280" }} />
+                      {g.pending.toLocaleString("fr-FR")} € en attente
+                    </span>
+                    {g.cancelled > 0 && (
+                      <span className="flex items-center gap-1">
+                        <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: "#ef4444" }} />
+                        {g.cancelled.toLocaleString("fr-FR")} € annulé
+                      </span>
+                    )}
+                    <span className="ml-auto">({g.paidCount}/{g.totalCount} mensualités)</span>
                   </div>
                 </div>
               ))}
