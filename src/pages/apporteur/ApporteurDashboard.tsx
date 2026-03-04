@@ -425,8 +425,8 @@ export default function ApporteurDashboard() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {lead.status && (
-                      <Badge variant="outline" className={`text-xs ${STATUS_COLORS[lead.status] || ""}`}>
-                        {STATUS_LABELS[lead.status] || lead.status}
+                      <Badge variant="outline" className={`text-xs ${LEAD_STATUS_COLORS[lead.status] || "bg-zinc-500/20 text-zinc-400 border-zinc-500/30"}`}>
+                        {LEAD_STATUS_LABELS[lead.status] || lead.status}
                       </Badge>
                     )}
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
