@@ -148,7 +148,7 @@ export default function LeadApporteurForm({
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="email@exemple.com"
+              placeholder="Ex : fatima@gmail.com"
               className="bg-background"
             />
           </div>
