@@ -117,9 +117,9 @@ export default function ApporteurDashboard() {
         .order("created_at", { ascending: false }),
       leadsQ,
       salesQ,
-      // Recent leads
+      // Recent leads - also fetch raw_phone as fallback
       supabase.from("leads_enriched")
-        .select("id, contact_full_name, contact_phone, status, created_at")
+        .select("id, contact_full_name, contact_phone, raw_phone, status, created_at")
         .eq("apporteur_id", userId)
         .order("created_at", { ascending: false })
         .limit(5),
