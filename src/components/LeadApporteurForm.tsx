@@ -156,7 +156,7 @@ export default function LeadApporteurForm({
             <label className="text-sm font-medium text-foreground">Source *</label>
             <Select value={source} onValueChange={setSource}>
               <SelectTrigger className="bg-background">
-                <SelectValue />
+                <SelectValue placeholder="Sélectionnez une source" />
               </SelectTrigger>
               <SelectContent>
                 {APPORTEUR_SOURCES.map((s) => (
