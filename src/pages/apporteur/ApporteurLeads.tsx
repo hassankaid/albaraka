@@ -288,8 +288,8 @@ export default function ApporteurLeads() {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 py-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Prénom & Nom *</label>
-              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Prénom Nom" required className="bg-background" />
+              <label className="text-sm font-medium text-foreground">Prénom / Nom *</label>
+              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Ex : Fatima Dupont" required className="bg-background" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Téléphone *</label>
