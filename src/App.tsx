@@ -48,6 +48,7 @@ const App = () => (
                   <Route path="/contacts" element={<Contacts />} />
                   <Route path="/sales" element={<Sales />} />
                   <Route path="/payments" element={<Payments />} />
+                  <Route path="/admin/invoices" element={<AdminInvoices />} />
                   <Route path="/profile" element={<Profile />} />
                 </Route>
                 {/* Apporteur layout */}
