@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useLocation } from "react-router-dom";
+import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import logo from "@/assets/ethicarena-logo.png";
 import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -33,6 +33,11 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { profile, signOut } = useAuth();
+
+  // Redirect pure apporteurs to their dedicated space
+  if (profile?.role === "apporteur" && !profile?.is_also_apporteur) {
+    return <Navigate to="/my-space" replace />;
+  }
 
   const pageTitle = pageTitles[location.pathname] || "Dashboard";
   const userRole = profile?.role || "apporteur";
