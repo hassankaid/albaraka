@@ -507,10 +507,10 @@ export default function ApporteurProfile() {
             <div className="space-y-2">
               <Label>IBAN</Label>
               <Input
-                value={editBankForm.iban || ""}
+                value={(editBankForm.iban || "").replace(/(.{4})/g, "$1 ").trim()}
                 onChange={(e) => setEditBankForm({ ...editBankForm, iban: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") })}
-                placeholder="FR76XXXXXXXXXXXXXXXXXXXXXXX"
-                className="bg-background font-mono"
+                placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"
+                className="bg-background font-mono tracking-wider"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
