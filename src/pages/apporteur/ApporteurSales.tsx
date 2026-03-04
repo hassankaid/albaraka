@@ -76,7 +76,7 @@ export default function ApporteurSales() {
 
     const { data: salesData } = await supabase
       .from("sales")
-      .select("id, product, amount_ht, sold_at, mensualites, lead_id, contact_id, contacts!sales_contact_id_fkey(full_name)")
+      .select("id, product, amount_ht, sold_at, mensualites, lead_id, contact_id, contacts!sales_contact_id_fkey(full_name), leads!sales_lead_id_fkey(contact_id, contacts!leads_contact_id_fkey(full_name))")
       .in("lead_id", leadIds)
       .order("sold_at", { ascending: false });
 
