@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, Save, Camera, Upload, FileText, Download, CheckCircle2, AlertTriangle, Pencil, Building2 } from "lucide-react";
+import { RefreshCw, Save, Camera, Upload, FileText, Download, CheckCircle2, AlertTriangle, Pencil, Building2, Loader2 } from "lucide-react";
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
 import PhoneInput from "react-phone-number-input";
