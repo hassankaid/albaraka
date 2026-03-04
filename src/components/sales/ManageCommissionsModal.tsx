@@ -138,6 +138,10 @@ export default function ManageCommissionsModal({
       const sumByStatus = (statuses: string[]) =>
         items.filter((c) => statuses.includes(c.status || "")).reduce((s, c) => s + (c.amount || 0), 0);
       const total = items.reduce((s, c) => s + (c.amount || 0), 0);
+      const paid = sumByStatus(["paid"]);
+      const due = sumByStatus(["due", "invoiced"]);
+      const pending = sumByStatus(["pending"]);
+      const cancelled = sumByStatus(["cancelled"]);
       return {
         key,
         beneficiary_user_id: first.beneficiary_user_id,
@@ -148,10 +152,10 @@ export default function ManageCommissionsModal({
         role: first.role,
         percentage: first.percentage,
         total,
-        paid: sumByStatus(["paid", "invoiced"]),
-        due: sumByStatus(["due"]),
-        pending: sumByStatus(["pending"]),
-        cancelled: sumByStatus(["cancelled"]),
+        paid,
+        due,
+        pending,
+        cancelled,
         paidCount: items.filter((c) => ["paid", "invoiced", "due"].includes(c.status || "")).length,
         totalCount: items.length,
         commissionIds: items.map((c) => c.id),
