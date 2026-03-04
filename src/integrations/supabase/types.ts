@@ -985,6 +985,15 @@ export type Database = {
       }
       get_user_role: { Args: never; Returns: string }
       normalize_phone_e164: { Args: { phone: string }; Returns: string }
+      rebalance_commission_group: {
+        Args: {
+          p_beneficiary_external: string
+          p_beneficiary_user_id: string
+          p_role: string
+          p_sale_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
