@@ -70,9 +70,11 @@ Deno.serve(async (req) => {
     else if (ext === "png") mediaType = "image/png";
     else if (ext === "webp") mediaType = "image/webp";
     else if (ext === "txt") mediaType = "text/plain";
+    else if (ext === "docx") mediaType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
     const isPdf = mediaType === "application/pdf";
     const isText = mediaType === "text/plain";
+    const isDocx = ext === "docx";
 
     // For text files, read content directly instead of sending as document
     let messageContent: any[];
@@ -82,6 +84,32 @@ Deno.serve(async (req) => {
         {
           type: "text",
           text: `Voici le contenu d'un fichier RIB au format texte :\n\n${textContent}\n\nExtrais les informations bancaires de ce document RIB. Retourne UNIQUEMENT un objet JSON valide avec ces champs :
+{
+  "account_holder": "NOM PRÉNOM du titulaire",
+  "iban": "IBAN complet sans espaces",
+  "bic": "Code BIC/SWIFT",
+  "bank_name": "Nom court de la banque (ex: 'Revolut France', 'BNP Paribas', 'CIC' — sans mention légale, succursale, etc.)"
+}
+
+Si un champ n'est pas trouvé, mets une chaîne vide. Ne retourne RIEN d'autre que le JSON.`,
+        },
+      ];
+    } else if (isDocx) {
+      // For DOCX: extract raw text from the XML inside the zip
+      // DOCX is a ZIP containing word/document.xml
+      // We send the base64 as a document to Claude which supports docx
+      messageContent = [
+        {
+          type: "document",
+          source: {
+            type: "base64",
+            media_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            data: base64,
+          },
+        },
+        {
+          type: "text",
+          text: `Extrais les informations bancaires de ce document RIB au format DOCX. Retourne UNIQUEMENT un objet JSON valide avec ces champs :
 {
   "account_holder": "NOM PRÉNOM du titulaire",
   "iban": "IBAN complet sans espaces",
