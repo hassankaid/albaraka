@@ -46,15 +46,14 @@ function maskPhoneSimple(phone: string | null): string {
   const clean = phone.replace(/\D/g, "");
   if (clean.length <= 4) return phone;
   const last4 = clean.slice(-4);
-  // Format: +XX X XX XX XX XX with last 4 visible
-  if (clean.length >= 11) {
-    return `+${clean.slice(0, 2)} ${clean.slice(2, 3)} XX XX ${last4.slice(0, 2)} ${last4.slice(2)}`;
-  }
-  // Shorter numbers: 0X XX XX XX XX
-  if (clean.length === 10) {
-    return `0${clean.slice(1, 2)} XX XX ${last4.slice(0, 2)} ${last4.slice(2)}`;
-  }
-  return phone.slice(0, phone.length - 4).replace(/\d/g, "X") + last4;
+  // Keep country code + first digit visible, mask middle, show last 4
+  // E164: strip leading "+" then take all but last 4 as prefix to partially mask
+  const middle = clean.slice(0, -4);
+  // Show first 3 digits of middle (country code area), mask the rest
+  const visible = middle.slice(0, Math.min(3, middle.length));
+  const masked = middle.slice(Math.min(3, middle.length));
+  const maskedStr = masked.replace(/\d{2}/g, "XX ").trim();
+  return `+${visible} ${maskedStr} ${last4.slice(0, 2)} ${last4.slice(2)}`.replace(/\s+/g, " ").trim();
 }
 
 interface CommissionItem {
