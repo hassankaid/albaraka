@@ -188,6 +188,7 @@ Deno.serve(async (req) => {
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>${invoiceNumber}</title>
 <style>
   body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 40px; color: #1a1a2e; font-size: 14px; }
@@ -276,7 +277,7 @@ Deno.serve(async (req) => {
     const { error: uploadError } = await supabaseAdmin.storage
       .from("invoices")
       .upload(filePath, new TextEncoder().encode(htmlContent), {
-        contentType: "text/html",
+        contentType: "text/html; charset=utf-8",
         upsert: true,
       });
 

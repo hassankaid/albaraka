@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Euro, FileText, RefreshCw, Download, CheckCircle2, Clock, ArrowRight } from "lucide-react";
+import { Euro, FileText, RefreshCw, Download, CheckCircle2, Clock, ArrowRight, Loader2 } from "lucide-react";
+import { downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
+import { toast } from "@/hooks/use-toast";
 import { formatDateOnly } from "@/lib/formatDate";
 
 interface CommissionRow {
@@ -41,6 +43,25 @@ const INVOICE_STATUS: Record<string, { label: string; class: string }> = {
   sent: { label: "Envoyée", class: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
   paid: { label: "Payée", class: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
 };
+
+function InvoiceDownloadButton({ pdfUrl, invoiceNumber }: { pdfUrl: string; invoiceNumber: string }) {
+  const [loading, setLoading] = useState(false);
+  return (
+    <Button size="sm" variant="outline" disabled={loading} onClick={async () => {
+      setLoading(true);
+      try {
+        await downloadInvoicePdf(pdfUrl, invoiceNumber);
+      } catch {
+        toast({ title: "Erreur", description: "Impossible de télécharger la facture", variant: "destructive" });
+      } finally {
+        setLoading(false);
+      }
+    }}>
+      {loading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Download className="h-3 w-3 mr-1" />}
+      Télécharger
+    </Button>
+  );
+}
 
 export default function ApporteurCommissions() {
   const { profile } = useAuth();
@@ -411,15 +432,7 @@ export default function ApporteurCommissions() {
                       <Badge variant="outline" className={`text-xs ${statusInfo.class}`}>{statusInfo.label}</Badge>
                     </div>
                     {inv.pdf_url && (
-                      <Button size="sm" variant="outline" onClick={async () => {
-                        const { data } = await supabase.storage
-                          .from("invoices")
-                          .createSignedUrl(inv.pdf_url!, 3600);
-                        if (data?.signedUrl) window.open(data.signedUrl, "_blank");
-                      }}>
-                        <Download className="h-3 w-3 mr-1" />
-                        Télécharger
-                      </Button>
+                      <InvoiceDownloadButton pdfUrl={inv.pdf_url} invoiceNumber={inv.invoice_number} />
                     )}
                   </CardContent>
                 </Card>

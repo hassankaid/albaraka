@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { FileText, Download, CheckCircle2, Trash2, RefreshCw, Loader2 } from "lucide-react";
+import { downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
 
 const MONTHS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 
@@ -207,16 +208,18 @@ export default function AdminInvoices() {
     fetchInvoices();
   };
 
+  const [downloading, setDownloading] = useState<string | null>(null);
+
   const handleDownload = async (inv: InvoiceRow) => {
     if (!inv.pdf_url) return;
-    const { data, error } = await supabase.storage
-      .from("invoices")
-      .createSignedUrl(inv.pdf_url, 3600);
-    if (error || !data?.signedUrl) {
+    setDownloading(inv.id);
+    try {
+      await downloadInvoicePdf(inv.pdf_url, inv.invoice_number);
+    } catch {
       toast({ title: "Erreur", description: "Impossible de télécharger la facture", variant: "destructive" });
-      return;
+    } finally {
+      setDownloading(null);
     }
-    window.open(data.signedUrl, "_blank");
   };
 
   const handleMarkPaid = async (inv: InvoiceRow) => {
@@ -434,8 +437,8 @@ export default function AdminInvoices() {
                         <TableCell>
                           <div className="flex items-center justify-end gap-1">
                             {inv.pdf_url && (
-                              <Button size="icon" variant="ghost" onClick={() => handleDownload(inv)} title="Télécharger">
-                                <Download className="h-4 w-4" />
+                              <Button size="icon" variant="ghost" onClick={() => handleDownload(inv)} title="Télécharger" disabled={downloading === inv.id}>
+                                {downloading === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                               </Button>
                             )}
                             {inv.status !== "paid" && (
