@@ -5,11 +5,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, ShoppingCart, TrendingUp, UserPlus, RefreshCw, ArrowRight, CheckCircle2, Phone } from "lucide-react";
+import { Users, ShoppingCart, TrendingUp, Euro, UserPlus, RefreshCw, ArrowRight, CheckCircle2, Phone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatDateOnly } from "@/lib/formatDate";
+import { LEAD_STATUS_LABELS, LEAD_STATUS_COLORS } from "@/lib/leadConfig";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
 
 type PeriodFilter = "this_month" | "last_month" | "this_year" | "all";
