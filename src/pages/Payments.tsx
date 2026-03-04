@@ -8,8 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface PaymentRow {
   id: string;
@@ -112,11 +116,11 @@ export default function Payments() {
     toast({ title: "Données actualisées" });
   };
 
-  const markAsPaid = async (paymentId: string) => {
-    const today = new Date().toISOString().split("T")[0];
+  const markAsPaid = async (paymentId: string, paidDate: Date) => {
+    const dateStr = format(paidDate, "yyyy-MM-dd");
     const { error } = await supabase
       .from("payments")
-      .update({ status: "paid", paid_at: today })
+      .update({ status: "paid", paid_at: dateStr })
       .eq("id", paymentId);
     if (error) {
       toast({ title: "Erreur", variant: "destructive" });
@@ -302,9 +306,22 @@ export default function Payments() {
                     {isCeo && (
                       <TableCell>
                         {p.status === "pending" && (
-                          <Button variant="ghost" size="sm" onClick={() => markAsPaid(p.id)}>
-                            <Check className="h-4 w-4 mr-1" /> Payé
-                          </Button>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <Check className="h-4 w-4 mr-1" /> Payé
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="end">
+                              <Calendar
+                                mode="single"
+                                selected={new Date()}
+                                onSelect={(date) => { if (date) markAsPaid(p.id, date); }}
+                                locale={fr}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
                         )}
                       </TableCell>
                     )}
