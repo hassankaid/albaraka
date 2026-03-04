@@ -103,8 +103,8 @@ export default function ApporteurDashboard() {
     if (from) leadsQ = leadsQ.gte("created_at", from);
     if (to) leadsQ = leadsQ.lte("created_at", to);
 
-    // Sales count for performance (filtered)
-    let salesQ = supabase.from("sales").select("lead_id, leads!sales_lead_id_fkey(apporteur_id)");
+    // Sales for performance (filtered) - include amount + payments
+    let salesQ = supabase.from("sales").select("amount_ht, lead_id, leads!sales_lead_id_fkey(apporteur_id), payments!payments_sale_id_fkey(amount, status)");
     if (from) salesQ = salesQ.gte("sold_at", from);
     if (to) salesQ = salesQ.lte("sold_at", to);
 
