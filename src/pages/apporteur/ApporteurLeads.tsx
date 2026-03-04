@@ -75,7 +75,7 @@ export default function ApporteurLeads() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile || !fullName.trim() || !phone) return;
+    if (!profile || !fullName.trim() || !phone || !source || !leadStatus) return;
     if (!isValidPhoneNumber(phone)) {
       toast({ title: "Numéro de téléphone invalide", variant: "destructive" });
       return;
