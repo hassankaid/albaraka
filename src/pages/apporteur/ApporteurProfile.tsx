@@ -383,7 +383,21 @@ export default function ApporteurProfile() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {!bankRibUrl && !hasBankData ? (
+          {extractingRib ? (
+            /* ── Extraction in progress ── */
+            <div className="text-center py-8 space-y-4">
+              <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+              <div>
+                <p className="text-foreground font-medium">Extraction des données en cours...</p>
+                <p className="text-sm text-muted-foreground mt-1">Analyse du RIB par intelligence artificielle</p>
+              </div>
+              <div className="w-48 mx-auto">
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full rounded-full bg-primary animate-pulse w-2/3" />
+                </div>
+              </div>
+            </div>
+          ) : !bankRibUrl && !hasBankData ? (
             /* ── No RIB uploaded ── */
             <div className="text-center py-6 space-y-4">
               <Building2 className="h-12 w-12 text-muted-foreground mx-auto" />
@@ -395,7 +409,7 @@ export default function ApporteurProfile() {
               </div>
               <Button variant="outline" onClick={() => ribInputRef.current?.click()} disabled={uploadingRib} className="gap-2">
                 {uploadingRib ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                Télécharger mon RIB (PDF)
+                Télécharger mon RIB (PDF, Image)
               </Button>
             </div>
           ) : hasBankData ? (
