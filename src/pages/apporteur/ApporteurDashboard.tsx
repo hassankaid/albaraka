@@ -46,12 +46,13 @@ function maskPhoneSimple(phone: string | null): string {
   const clean = phone.replace(/\D/g, "");
   if (clean.length <= 4) return phone;
   const last4 = clean.slice(-4);
-  const masked = clean.slice(0, -4).replace(/\d/g, "X");
-  // Format nicely
-  const full = masked + last4;
-  // Try to format like +XX X XX XX XX XX
-  if (phone.startsWith("+") && full.length >= 11) {
-    return `+${full.slice(0, 2)} ${full.slice(2, 3)} XX XX ${last4.slice(0, 2)} ${last4.slice(2)}`;
+  // Format: +XX X XX XX XX XX with last 4 visible
+  if (clean.length >= 11) {
+    return `+${clean.slice(0, 2)} ${clean.slice(2, 3)} XX XX ${last4.slice(0, 2)} ${last4.slice(2)}`;
+  }
+  // Shorter numbers: 0X XX XX XX XX
+  if (clean.length === 10) {
+    return `0${clean.slice(1, 2)} XX XX ${last4.slice(0, 2)} ${last4.slice(2)}`;
   }
   return phone.slice(0, phone.length - 4).replace(/\d/g, "X") + last4;
 }
