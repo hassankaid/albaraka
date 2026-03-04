@@ -148,7 +148,8 @@ export default function ApporteurCommissions() {
   const groupedByMonth = useMemo(() => {
     const groups: Record<string, CommissionRow[]> = {};
     filteredPaid.forEach(c => {
-      const d = new Date(c.paid_at!);
+      const dateStr = c.paid_at || c.payment_paid_at;
+      const d = new Date(dateStr!);
       const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, "0")}`;
       if (!groups[key]) groups[key] = [];
       groups[key].push(c);
