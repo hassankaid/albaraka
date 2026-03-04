@@ -130,14 +130,15 @@ export default function ApporteurCommissions() {
   // ── History: paid commissions grouped by month ──
   const paidCommissions = useMemo(() => {
     return allCommissions
-      .filter(c => c.status === "paid" && c.paid_at)
-      .sort((a, b) => (b.paid_at || "").localeCompare(a.paid_at || ""));
+      .filter(c => c.status === "paid")
+      .sort((a, b) => (b.paid_at || b.payment_paid_at || "").localeCompare(a.paid_at || a.payment_paid_at || ""));
   }, [allCommissions]);
 
   const filteredPaid = useMemo(() => {
     return paidCommissions.filter(c => {
-      if (!c.paid_at) return false;
-      const d = new Date(c.paid_at);
+      const dateStr = c.paid_at || c.payment_paid_at;
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
       if (d.getFullYear() !== historyYear) return false;
       if (historyMonth !== "all" && d.getMonth() !== Number(historyMonth)) return false;
       return true;
@@ -147,7 +148,8 @@ export default function ApporteurCommissions() {
   const groupedByMonth = useMemo(() => {
     const groups: Record<string, CommissionRow[]> = {};
     filteredPaid.forEach(c => {
-      const d = new Date(c.paid_at!);
+      const dateStr = c.paid_at || c.payment_paid_at;
+      const d = new Date(dateStr!);
       const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, "0")}`;
       if (!groups[key]) groups[key] = [];
       groups[key].push(c);
