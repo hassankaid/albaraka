@@ -302,8 +302,9 @@ export default function ApporteurProfile() {
               <PhoneInput international defaultCountry="FR" value={phone} onChange={setPhone} placeholder="6 12 34 56 78" />
             </div>
             <div className="space-y-2">
-              <Label>SIRET / N° TVA <span className="text-destructive">*</span></Label>
+              <Label>SIRET</Label>
               <Input value={siret} onChange={(e) => setSiret(e.target.value)} placeholder="123 456 789 00012" className="bg-background" />
+              <p className="text-xs text-muted-foreground">À remplir uniquement si vous avez une société.</p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
