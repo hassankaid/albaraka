@@ -136,8 +136,9 @@ export default function ApporteurCommissions() {
 
   const filteredPaid = useMemo(() => {
     return paidCommissions.filter(c => {
-      if (!c.paid_at) return false;
-      const d = new Date(c.paid_at);
+      const dateStr = c.paid_at || c.payment_paid_at;
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
       if (d.getFullYear() !== historyYear) return false;
       if (historyMonth !== "all" && d.getMonth() !== Number(historyMonth)) return false;
       return true;
