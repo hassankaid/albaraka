@@ -298,8 +298,12 @@ export default function ApporteurProfile() {
     if (!iban) return "—";
     const clean = iban.replace(/\s/g, "");
     if (clean.length <= 8) return clean;
-    // Show first 4, mask middle, show last 4
     return `${clean.slice(0, 4)} ${"XXXX ".repeat(Math.max(0, Math.floor((clean.length - 8) / 4)))}${clean.slice(-4)}`;
+  };
+
+  const formatIbanInput = (iban: string) => {
+    if (!iban) return "";
+    return iban.replace(/(.{4})(?=.)/g, "$1 ");
   };
 
   if (!profile) {
@@ -601,10 +605,13 @@ export default function ApporteurProfile() {
                 <div className="space-y-2">
                   <Label>IBAN</Label>
                   <Input
-                    value={(editBankForm.iban || "").replace(/(.{4})/g, "$1 ").trim()}
-                    onChange={(e) => setEditBankForm({ ...editBankForm, iban: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") })}
+                    value={formatIbanInput(editBankForm.iban || "")}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+                      setEditBankForm({ ...editBankForm, iban: raw });
+                    }}
                     placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"
-                    className="bg-background font-mono tracking-wider"
+                    className="bg-background font-mono text-sm tracking-wide"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
