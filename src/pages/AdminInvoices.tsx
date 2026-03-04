@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { FileText, Download, CheckCircle2, Trash2, RefreshCw, Loader2 } from "lucide-react";
+import { downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
 
 const MONTHS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 
