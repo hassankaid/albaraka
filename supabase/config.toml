@@ -1,1 +1,4 @@
 project_id = "ktvszjzryabjgxyobtyc"
+
+[functions.extract-rib-data]
+verify_jwt = false
