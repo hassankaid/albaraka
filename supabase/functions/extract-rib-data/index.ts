@@ -69,8 +69,54 @@ Deno.serve(async (req) => {
     if (ext === "jpg" || ext === "jpeg") mediaType = "image/jpeg";
     else if (ext === "png") mediaType = "image/png";
     else if (ext === "webp") mediaType = "image/webp";
+    else if (ext === "txt") mediaType = "text/plain";
 
     const isPdf = mediaType === "application/pdf";
+    const isText = mediaType === "text/plain";
+
+    // For text files, read content directly instead of sending as document
+    let messageContent: any[];
+    if (isText) {
+      const textContent = new TextDecoder().decode(new Uint8Array(arrayBuffer));
+      messageContent = [
+        {
+          type: "text",
+          text: `Voici le contenu d'un fichier RIB au format texte :\n\n${textContent}\n\nExtrais les informations bancaires de ce document RIB. Retourne UNIQUEMENT un objet JSON valide avec ces champs :
+{
+  "account_holder": "NOM PRÉNOM du titulaire",
+  "iban": "IBAN complet sans espaces",
+  "bic": "Code BIC/SWIFT",
+  "bank_name": "Nom court de la banque (ex: 'Revolut France', 'BNP Paribas', 'CIC' — sans mention légale, succursale, etc.)"
+}
+
+Si un champ n'est pas trouvé, mets une chaîne vide. Ne retourne RIEN d'autre que le JSON.`,
+        },
+      ];
+    } else {
+      messageContent = [
+        {
+          type: isPdf ? "document" : "image",
+          source: {
+            type: "base64",
+            media_type: mediaType,
+            data: base64,
+          },
+          ...(isPdf ? { cache_control: { type: "ephemeral" } } : {}),
+        },
+        {
+          type: "text",
+          text: `Extrais les informations bancaires de ce document RIB. Retourne UNIQUEMENT un objet JSON valide avec ces champs :
+{
+  "account_holder": "NOM PRÉNOM du titulaire",
+  "iban": "IBAN complet sans espaces",
+  "bic": "Code BIC/SWIFT",
+  "bank_name": "Nom court de la banque (ex: 'Revolut France', 'BNP Paribas', 'CIC' — sans mention légale, succursale, etc.)"
+}
+
+Si un champ n'est pas trouvé, mets une chaîne vide. Ne retourne RIEN d'autre que le JSON.`,
+        },
+      ];
+    }
 
     // Call Anthropic Claude to extract bank details
     const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
@@ -86,29 +132,7 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: "user",
-            content: [
-              {
-                type: isPdf ? "document" : "image",
-                source: {
-                  type: "base64",
-                  media_type: mediaType,
-                  data: base64,
-                },
-                ...(isPdf ? { cache_control: { type: "ephemeral" } } : {}),
-              },
-              {
-                type: "text",
-                text: `Extrais les informations bancaires de ce document RIB. Retourne UNIQUEMENT un objet JSON valide avec ces champs :
-{
-  "account_holder": "NOM PRÉNOM du titulaire",
-  "iban": "IBAN complet sans espaces",
-  "bic": "Code BIC/SWIFT",
-  "bank_name": "Nom court de la banque (ex: 'Revolut France', 'BNP Paribas', 'CIC' — sans mention légale, succursale, etc.)"
-}
-
-Si un champ n'est pas trouvé, mets une chaîne vide. Ne retourne RIEN d'autre que le JSON.`,
-              },
-            ],
+            content: messageContent,
           },
         ],
       }),
