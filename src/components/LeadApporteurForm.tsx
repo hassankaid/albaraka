@@ -41,9 +41,9 @@ export default function LeadApporteurForm({
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState<string | undefined>("");
-  const [source, setSource] = useState("apporteur_recommandation");
+  const [source, setSource] = useState("");
   const [sourceDetail, setSourceDetail] = useState("");
-  const [status, setStatus] = useState("inscrit_conference");
+  const [status, setStatus] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
