@@ -2,3 +2,9 @@ project_id = "ktvszjzryabjgxyobtyc"
 
 [functions.extract-rib-data]
 verify_jwt = false
+
+[functions.generate-apporteur-invoice]
+verify_jwt = false
+
+[functions.delete-apporteur-invoice]
+verify_jwt = false
