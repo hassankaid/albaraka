@@ -18,6 +18,7 @@ import Sales from "./pages/Sales";
 import Payments from "./pages/Payments";
 import Profile from "./pages/Profile";
 import AdminInvoices from "./pages/AdminInvoices";
+import AdminCommissions from "./pages/AdminCommissions";
 import NotFound from "./pages/NotFound";
 import ApporteurDashboard from "./pages/apporteur/ApporteurDashboard";
 import ApporteurLeads from "./pages/apporteur/ApporteurLeads";
@@ -49,6 +50,7 @@ const App = () => (
                   <Route path="/sales" element={<Sales />} />
                   <Route path="/payments" element={<Payments />} />
                   <Route path="/admin/invoices" element={<AdminInvoices />} />
+                  <Route path="/admin/commissions" element={<AdminCommissions />} />
                   <Route path="/profile" element={<Profile />} />
                 </Route>
                 {/* Apporteur layout */}
