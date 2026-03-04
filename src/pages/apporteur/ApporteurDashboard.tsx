@@ -142,12 +142,17 @@ export default function ApporteurDashboard() {
     setPerfLeads(leadsRes.count || 0);
     const mySales = (salesRes.data || []).filter((s: any) => s.leads?.apporteur_id === userId);
     setPerfSales(mySales.length);
+    setPerfCA(mySales.reduce((sum: number, s: any) => sum + (s.amount_ht || 0), 0));
+    setPerfCollected(mySales.reduce((sum: number, s: any) => {
+      const paid = (s.payments || []).filter((p: any) => p.status === "paid");
+      return sum + paid.reduce((ps: number, p: any) => ps + (p.amount || 0), 0);
+    }, 0));
 
     // Recent leads
     setRecentLeads((recentLeadsRes.data || []).map((l: any) => ({
       id: l.id,
       full_name: l.contact_full_name,
-      phone: l.contact_phone,
+      phone: l.contact_phone || l.raw_phone,
       status: l.status,
       created_at: l.created_at,
     })));
