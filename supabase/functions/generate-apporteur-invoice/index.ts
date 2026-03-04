@@ -188,6 +188,7 @@ Deno.serve(async (req) => {
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>${invoiceNumber}</title>
 <style>
   body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 40px; color: #1a1a2e; font-size: 14px; }
