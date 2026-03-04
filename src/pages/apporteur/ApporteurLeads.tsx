@@ -51,6 +51,8 @@ export default function ApporteurLeads() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState<string | undefined>("");
   const [source, setSource] = useState("apporteur_recommandation");
+  const [sourceDetail, setSourceDetail] = useState("");
+  const [leadStatus, setLeadStatus] = useState("inscrit_conference");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
