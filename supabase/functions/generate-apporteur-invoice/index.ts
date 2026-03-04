@@ -277,7 +277,7 @@ Deno.serve(async (req) => {
     const { error: uploadError } = await supabaseAdmin.storage
       .from("invoices")
       .upload(filePath, new TextEncoder().encode(htmlContent), {
-        contentType: "text/html",
+        contentType: "text/html; charset=utf-8",
         upsert: true,
       });
 

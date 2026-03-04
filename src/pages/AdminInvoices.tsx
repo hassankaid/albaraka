@@ -437,8 +437,8 @@ export default function AdminInvoices() {
                         <TableCell>
                           <div className="flex items-center justify-end gap-1">
                             {inv.pdf_url && (
-                              <Button size="icon" variant="ghost" onClick={() => handleDownload(inv)} title="Télécharger">
-                                <Download className="h-4 w-4" />
+                              <Button size="icon" variant="ghost" onClick={() => handleDownload(inv)} title="Télécharger" disabled={downloading === inv.id}>
+                                {downloading === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                               </Button>
                             )}
                             {inv.status !== "paid" && (

@@ -44,6 +44,25 @@ const INVOICE_STATUS: Record<string, { label: string; class: string }> = {
   paid: { label: "Payée", class: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
 };
 
+function InvoiceDownloadButton({ pdfUrl, invoiceNumber }: { pdfUrl: string; invoiceNumber: string }) {
+  const [loading, setLoading] = useState(false);
+  return (
+    <Button size="sm" variant="outline" disabled={loading} onClick={async () => {
+      setLoading(true);
+      try {
+        await downloadInvoicePdf(pdfUrl, invoiceNumber);
+      } catch {
+        toast({ title: "Erreur", description: "Impossible de télécharger la facture", variant: "destructive" });
+      } finally {
+        setLoading(false);
+      }
+    }}>
+      {loading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Download className="h-3 w-3 mr-1" />}
+      Télécharger
+    </Button>
+  );
+}
+
 export default function ApporteurCommissions() {
   const { profile } = useAuth();
   const [allCommissions, setAllCommissions] = useState<CommissionRow[]>([]);
