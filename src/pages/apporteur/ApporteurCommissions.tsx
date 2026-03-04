@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Euro, FileText, RefreshCw, Download, CheckCircle2, Clock, ArrowRight, Loader2 } from "lucide-react";
-import { downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
+import { Euro, FileText, RefreshCw, Download, CheckCircle2, Clock, ArrowRight, Loader2, Eye } from "lucide-react";
+import { fetchInvoiceHtml, downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
 import { toast } from "@/hooks/use-toast";
+import InvoicePreviewModal from "@/components/InvoicePreviewModal";
 import { formatDateOnly } from "@/lib/formatDate";
 
 interface CommissionRow {
