@@ -77,19 +77,6 @@ interface LeadItem {
   created_at: string;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  nouveau: "bg-muted text-muted-foreground border-border",
-  contacte: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  call_booke: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  converti: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  close: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  perdu: "bg-red-500/20 text-red-300 border-red-500/30",
-};
-const STATUS_LABELS: Record<string, string> = {
-  nouveau: "Nouveau", contacte: "Contacté", call_booke: "Call booké",
-  converti: "Converti", close: "Converti", perdu: "Perdu",
-};
-
 export default function ApporteurDashboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
