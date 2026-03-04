@@ -130,7 +130,7 @@ export default function ApporteurDashboard() {
       sale_id: c.sale_id,
       amount: c.amount,
       status: c.status,
-      client_name: c.sales?.contacts?.full_name || null,
+      client_name: c.sales?.contacts?.full_name || c.sales?.leads?.contacts?.full_name || null,
       payment_number: c.payments?.payment_number || null,
       total_payments: c.payments?.total_payments || null,
       payment_paid_at: c.payments?.paid_at || null,

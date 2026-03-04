@@ -115,7 +115,7 @@ export default function ApporteurSales() {
       amount_ht: s.amount_ht,
       sold_at: s.sold_at,
       mensualites: s.mensualites,
-      contact_name: s.contacts?.full_name || null,
+      contact_name: s.contacts?.full_name || s.leads?.contacts?.full_name || null,
       lead_id: s.lead_id,
       payments_paid: paymentsBySale[s.id]?.paid || 0,
       payments_total: paymentsBySale[s.id]?.total || 0,

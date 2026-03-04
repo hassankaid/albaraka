@@ -137,7 +137,7 @@ export default function ApporteurCommissions() {
         amount: c.amount,
         status: c.status,
         paid_at: c.paid_at,
-        client_name: c.sales?.contacts?.full_name || null,
+        client_name: c.sales?.contacts?.full_name || c.sales?.leads?.contacts?.full_name || null,
         payment_number: c.payments?.payment_number || null,
         total_payments: c.payments?.total_payments || c.sales?.mensualites || null,
         payment_paid_at: c.payments?.paid_at || null,
