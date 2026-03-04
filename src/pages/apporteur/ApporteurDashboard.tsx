@@ -419,7 +419,7 @@ export default function ApporteurDashboard() {
                     <span className="text-xs text-muted-foreground">·</span>
                     <span className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1">
                       <Phone className="h-3 w-3" />
-                      {maskPhoneSimple(lead.phone)}
+                      {lead.phone || "—"}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
