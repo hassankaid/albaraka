@@ -505,6 +505,15 @@ export default function AdminInvoices() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── PREVIEW MODAL ── */}
+      <InvoicePreviewModal
+        open={!!previewInvoice}
+        onOpenChange={(open) => !open && setPreviewInvoice(null)}
+        invoiceNumber={previewInvoice?.invoice_number || ""}
+        htmlContent={previewHtml}
+        loading={previewLoading}
+      />
     </div>
   );
 }

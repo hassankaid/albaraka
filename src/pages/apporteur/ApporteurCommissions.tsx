@@ -468,7 +468,7 @@ export default function ApporteurCommissions() {
                       <Badge variant="outline" className={`text-xs ${statusInfo.class}`}>{statusInfo.label}</Badge>
                     </div>
                     {inv.pdf_url && (
-                      <InvoiceDownloadButton pdfUrl={inv.pdf_url} invoiceNumber={inv.invoice_number} />
+                      <InvoiceActions pdfUrl={inv.pdf_url} invoiceNumber={inv.invoice_number} />
                     )}
                   </CardContent>
                 </Card>
