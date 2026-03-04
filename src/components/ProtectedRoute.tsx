@@ -18,7 +18,7 @@ export function ProtectedRoute() {
 }
 
 export function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
-  const { session, isLoading } = useAuth();
+  const { session, profile, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -28,6 +28,10 @@ export function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (session) return <Navigate to="/dashboard" replace />;
+  if (session) {
+    // Redirect apporteurs to their dedicated space
+    if (profile?.role === "apporteur") return <Navigate to="/my-space" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
   return <>{children}</>;
 }
