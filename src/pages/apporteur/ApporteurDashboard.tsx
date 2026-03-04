@@ -289,7 +289,7 @@ export default function ApporteurDashboard() {
             </SelectContent>
           </Select>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           <Card className="border-border/50 bg-gradient-to-br from-purple-500/10 to-blue-500/10">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 rounded-lg bg-background/50"><Users className="h-5 w-5 text-foreground" /></div>
@@ -305,6 +305,24 @@ export default function ApporteurDashboard() {
               <div>
                 <p className="text-2xl font-bold text-foreground">{perfSales}</p>
                 <p className="text-xs text-muted-foreground">Ventes</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50 bg-gradient-to-br from-blue-500/10 to-cyan-500/10">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-background/50"><Euro className="h-5 w-5 text-foreground" /></div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{perfCA.toLocaleString("fr-FR")} €</p>
+                <p className="text-xs text-muted-foreground">CA généré</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50 bg-gradient-to-br from-orange-500/10 to-yellow-500/10">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-background/50"><Euro className="h-5 w-5 text-foreground" /></div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{perfCollected.toLocaleString("fr-FR")} €</p>
+                <p className="text-xs text-muted-foreground">CA collecté</p>
               </div>
             </CardContent>
           </Card>
