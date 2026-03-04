@@ -322,7 +322,7 @@ export default function ApporteurLeads() {
               <label className="text-sm font-medium text-foreground">Statut *</label>
               <Select value={leadStatus} onValueChange={setLeadStatus}>
                 <SelectTrigger className="bg-background">
-                  <SelectValue />
+                  <SelectValue placeholder="Sélectionnez un statut" />
                 </SelectTrigger>
                 <SelectContent>
                   {STATUS_OPTIONS.map((s) => (
