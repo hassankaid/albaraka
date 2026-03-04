@@ -142,7 +142,26 @@ export default function SaleDetailModal({
                         {formatDateOnly(p.due_date, userTz)}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {p.paid_at ? formatDateOnly(p.paid_at, userTz) : "—"}
+                        {isCeo && p.paid_at ? (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-auto p-0 font-normal text-muted-foreground hover:text-foreground">
+                                {formatDateOnly(p.paid_at, userTz)}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={new Date(p.paid_at)}
+                                onSelect={(date) => { if (date) markAsPaid(p.id, date); }}
+                                locale={fr}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        ) : (
+                          p.paid_at ? formatDateOnly(p.paid_at, userTz) : "—"
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={`text-xs ${statusInfo.className}`}>
