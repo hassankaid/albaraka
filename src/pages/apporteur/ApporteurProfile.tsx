@@ -115,7 +115,7 @@ export default function ApporteurProfile() {
     if (!postalCode.trim()) missing.push("Code postal");
     if (!city.trim()) missing.push("Ville");
     if (!country.trim()) missing.push("Pays");
-    if (!siret.trim()) missing.push("SIRET / N° TVA");
+    // SIRET is optional — not included in missing fields
     if (!bankRibUrl) missing.push("RIB");
     if (!bankDetails?.iban) missing.push("IBAN");
     return missing;
