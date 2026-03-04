@@ -123,11 +123,11 @@ export default function LeadApporteurForm({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Prénom & Nom *</label>
+            <label className="text-sm font-medium text-foreground">Prénom / Nom *</label>
             <Input
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Prénom Nom"
+              placeholder="Ex : Fatima Dupont"
               required
               className="bg-background"
             />
