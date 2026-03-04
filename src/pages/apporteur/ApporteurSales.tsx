@@ -1,0 +1,284 @@
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ShoppingCart, RefreshCw } from "lucide-react";
+import { formatDateOnly } from "@/lib/formatDate";
+
+interface SaleRow {
+  id: string;
+  product: string;
+  amount_ht: number;
+  sold_at: string | null;
+  mensualites: number | null;
+  contact_name: string | null;
+  lead_id: string | null;
+  payments_paid: number;
+  payments_total: number;
+  commission_percentage: number | null;
+  commission_total: number | null;
+}
+
+interface PaymentRow {
+  id: string;
+  payment_number: number;
+  total_payments: number;
+  amount: number;
+  due_date: string;
+  paid_at: string | null;
+  status: string;
+}
+
+export default function ApporteurSales() {
+  const { profile } = useAuth();
+  const [sales, setSales] = useState<SaleRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedSale, setSelectedSale] = useState<SaleRow | null>(null);
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+
+  const fetchSales = useCallback(async () => {
+    if (!profile) return;
+    const userId = profile.id;
+
+    // Get leads belonging to this apporteur
+    const { data: leads } = await supabase
+      .from("leads")
+      .select("id")
+      .eq("apporteur_id", userId);
+
+    if (!leads || leads.length === 0) {
+      setSales([]);
+      setLoading(false);
+      return;
+    }
+
+    const leadIds = leads.map(l => l.id);
+
+    // Get sales for these leads
+    const { data: salesData } = await supabase
+      .from("sales")
+      .select("id, product, amount_ht, sold_at, mensualites, lead_id, contact_id, contacts!sales_contact_id_fkey(full_name)")
+      .in("lead_id", leadIds)
+      .order("sold_at", { ascending: false });
+
+    if (!salesData || salesData.length === 0) {
+      setSales([]);
+      setLoading(false);
+      return;
+    }
+
+    const saleIds = salesData.map(s => s.id);
+
+    // Get payments count and commissions
+    const [paymentsRes, commissionsRes] = await Promise.all([
+      supabase.from("payments").select("sale_id, status").in("sale_id", saleIds),
+      supabase.from("commissions").select("sale_id, percentage, amount").eq("beneficiary_user_id", userId).in("sale_id", saleIds),
+    ]);
+
+    const paymentsBySale: Record<string, { paid: number; total: number }> = {};
+    (paymentsRes.data || []).forEach((p) => {
+      if (!paymentsBySale[p.sale_id!]) paymentsBySale[p.sale_id!] = { paid: 0, total: 0 };
+      paymentsBySale[p.sale_id!].total++;
+      if (p.status === "paid") paymentsBySale[p.sale_id!].paid++;
+    });
+
+    const commBySale: Record<string, { pct: number; amount: number }> = {};
+    (commissionsRes.data || []).forEach((c) => {
+      commBySale[c.sale_id] = { pct: c.percentage, amount: c.amount || 0 };
+    });
+
+    const rows: SaleRow[] = salesData.map((s: any) => ({
+      id: s.id,
+      product: s.product,
+      amount_ht: s.amount_ht,
+      sold_at: s.sold_at,
+      mensualites: s.mensualites,
+      contact_name: s.contacts?.full_name || null,
+      lead_id: s.lead_id,
+      payments_paid: paymentsBySale[s.id]?.paid || 0,
+      payments_total: paymentsBySale[s.id]?.total || 0,
+      commission_percentage: commBySale[s.id]?.pct || null,
+      commission_total: commBySale[s.id]?.amount || null,
+    }));
+
+    setSales(rows);
+    setLoading(false);
+  }, [profile]);
+
+  useEffect(() => { fetchSales(); }, [fetchSales]);
+
+  const openDetail = async (sale: SaleRow) => {
+    setSelectedSale(sale);
+    setLoadingPayments(true);
+    const { data } = await supabase
+      .from("payments")
+      .select("id, payment_number, total_payments, amount, due_date, paid_at, status")
+      .eq("sale_id", sale.id)
+      .order("payment_number", { ascending: true });
+    setPayments(data || []);
+    setLoadingPayments(false);
+  };
+
+  const getPaymentStatusInfo = (status: string, dueDate: string) => {
+    if (status === "paid") return { label: "Payé", class: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" };
+    if (status === "cancelled") return { label: "Annulé", class: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30" };
+    if (new Date(dueDate) < new Date()) return { label: "En retard", class: "bg-red-500/20 text-red-300 border-red-500/30" };
+    return { label: "En attente", class: "bg-orange-500/20 text-orange-300 border-orange-500/30" };
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground">Mes Ventes</h2>
+        <p className="text-sm text-muted-foreground">{sales.length} vente{sales.length > 1 ? "s" : ""}</p>
+      </div>
+
+      {sales.length === 0 ? (
+        <Card className="border-border/50">
+          <CardContent className="p-8 text-center">
+            <ShoppingCart className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-foreground font-medium">Aucune vente pour le moment</p>
+            <p className="text-sm text-muted-foreground mt-1">Vos ventes apparaîtront ici lorsque vos leads seront convertis.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Desktop */}
+          <Card className="border-border/50 overflow-hidden hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead>Client</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Montant</TableHead>
+                  <TableHead>Mensualités</TableHead>
+                  <TableHead>Paiements</TableHead>
+                  <TableHead>Commission</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sales.map((sale) => (
+                  <TableRow
+                    key={sale.id}
+                    className="border-border hover:bg-secondary/50 transition-colors cursor-pointer"
+                    onClick={() => openDetail(sale)}
+                  >
+                    <TableCell className="font-semibold text-foreground">{sale.contact_name || "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {sale.sold_at ? formatDateOnly(sale.sold_at) : "—"}
+                    </TableCell>
+                    <TableCell className="text-foreground">{sale.amount_ht.toLocaleString("fr-FR")} €</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{sale.mensualites || 1}x</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`text-xs ${
+                        sale.payments_paid === sale.payments_total && sale.payments_total > 0
+                          ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                          : "bg-orange-500/20 text-orange-300 border-orange-500/30"
+                      }`}>
+                        {sale.payments_paid}/{sale.payments_total} payé{sale.payments_paid > 1 ? "s" : ""}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {sale.commission_percentage != null ? (
+                        <span className="text-sm text-foreground">
+                          {sale.commission_percentage}% ({sale.commission_total?.toLocaleString("fr-FR")} €)
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+
+          {/* Mobile */}
+          <div className="space-y-3 md:hidden">
+            {sales.map((sale) => (
+              <Card key={sale.id} className="border-border/50 cursor-pointer" onClick={() => openDetail(sale)}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-foreground">{sale.contact_name || "—"}</p>
+                      <p className="text-xs text-muted-foreground">{sale.product} · {sale.sold_at ? formatDateOnly(sale.sold_at) : ""}</p>
+                    </div>
+                    <p className="font-bold text-foreground">{sale.amount_ht.toLocaleString("fr-FR")} €</p>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge variant="outline" className="text-xs bg-orange-500/20 text-orange-300 border-orange-500/30">
+                      {sale.payments_paid}/{sale.payments_total} payés
+                    </Badge>
+                    {sale.commission_percentage != null && (
+                      <span className="text-xs text-muted-foreground">{sale.commission_percentage}% commission</span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Sale Detail Modal */}
+      <Dialog open={!!selectedSale} onOpenChange={() => setSelectedSale(null)}>
+        <DialogContent className="bg-card border-border max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Détail de la vente</DialogTitle>
+          </DialogHeader>
+          {selectedSale && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div><span className="text-muted-foreground">Client :</span> <span className="text-foreground font-medium">{selectedSale.contact_name}</span></div>
+                <div><span className="text-muted-foreground">Produit :</span> <span className="text-foreground font-medium">{selectedSale.product}</span></div>
+                <div><span className="text-muted-foreground">Montant :</span> <span className="text-foreground font-medium">{selectedSale.amount_ht.toLocaleString("fr-FR")} €</span></div>
+                <div><span className="text-muted-foreground">Commission :</span> <span className="text-foreground font-medium">
+                  {selectedSale.commission_percentage != null ? `${selectedSale.commission_percentage}% (${selectedSale.commission_total?.toLocaleString("fr-FR")} €)` : "—"}
+                </span></div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-2">Échéancier</h4>
+                {loadingPayments ? (
+                  <div className="flex justify-center py-4"><RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                ) : payments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Aucun paiement enregistré</p>
+                ) : (
+                  <div className="space-y-2">
+                    {payments.map((p) => {
+                      const info = getPaymentStatusInfo(p.status, p.due_date);
+                      return (
+                        <div key={p.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-secondary/30">
+                          <div className="text-sm">
+                            <span className="font-medium text-foreground">{p.payment_number}/{p.total_payments}</span>
+                            <span className="text-muted-foreground ml-2">{p.amount.toLocaleString("fr-FR")} €</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">{formatDateOnly(p.due_date)}</span>
+                            <Badge variant="outline" className={`text-xs ${info.class}`}>{info.label}</Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

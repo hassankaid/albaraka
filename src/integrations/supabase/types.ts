@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      apporteur_invoices: {
+        Row: {
+          apporteur_id: string
+          created_at: string | null
+          generated_at: string | null
+          id: string
+          invoice_number: string
+          paid_at: string | null
+          pdf_url: string | null
+          period_month: number
+          period_year: number
+          sent_at: string | null
+          status: string
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          apporteur_id: string
+          created_at?: string | null
+          generated_at?: string | null
+          id?: string
+          invoice_number: string
+          paid_at?: string | null
+          pdf_url?: string | null
+          period_month: number
+          period_year: number
+          sent_at?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Update: {
+          apporteur_id?: string
+          created_at?: string | null
+          generated_at?: string | null
+          id?: string
+          invoice_number?: string
+          paid_at?: string | null
+          pdf_url?: string | null
+          period_month?: number
+          period_year?: number
+          sent_at?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "apporteur_invoices_apporteur_id_fkey"
+            columns: ["apporteur_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_activities: {
         Row: {
           action: string
@@ -314,6 +370,67 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_lines: {
+        Row: {
+          client_name: string
+          commission_amount: number
+          commission_percentage: number
+          created_at: string | null
+          id: string
+          invoice_id: string
+          payment_amount: number
+          payment_date: string
+          payment_id: string
+          sale_id: string
+        }
+        Insert: {
+          client_name: string
+          commission_amount: number
+          commission_percentage: number
+          created_at?: string | null
+          id?: string
+          invoice_id: string
+          payment_amount: number
+          payment_date: string
+          payment_id: string
+          sale_id: string
+        }
+        Update: {
+          client_name?: string
+          commission_amount?: number
+          commission_percentage?: number
+          created_at?: string | null
+          id?: string
+          invoice_id?: string
+          payment_amount?: number
+          payment_date?: string
+          payment_id?: string
+          sale_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_lines_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "apporteur_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_lines_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_lines_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_activities: {
         Row: {
           action: string
@@ -536,6 +653,9 @@ export type Database = {
         Row: {
           address: string | null
           avatar_url: string | null
+          bank_country: string | null
+          bank_details: Json | null
+          bank_rib_url: string | null
           can_add_instagram_leads: boolean | null
           city: string | null
           country: string | null
@@ -554,6 +674,9 @@ export type Database = {
         Insert: {
           address?: string | null
           avatar_url?: string | null
+          bank_country?: string | null
+          bank_details?: Json | null
+          bank_rib_url?: string | null
           can_add_instagram_leads?: boolean | null
           city?: string | null
           country?: string | null
@@ -572,6 +695,9 @@ export type Database = {
         Update: {
           address?: string | null
           avatar_url?: string | null
+          bank_country?: string | null
+          bank_details?: Json | null
+          bank_rib_url?: string | null
           can_add_instagram_leads?: boolean | null
           city?: string | null
           country?: string | null
