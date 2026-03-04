@@ -5,11 +5,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, ShoppingCart, TrendingUp, UserPlus, RefreshCw, ArrowRight, CheckCircle2, Phone } from "lucide-react";
+import { Users, ShoppingCart, TrendingUp, Euro, UserPlus, RefreshCw, ArrowRight, CheckCircle2, Phone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatDateOnly } from "@/lib/formatDate";
+import { LEAD_STATUS_LABELS, LEAD_STATUS_COLORS } from "@/lib/leadConfig";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
 
 type PeriodFilter = "this_month" | "last_month" | "this_year" | "all";
@@ -45,12 +46,13 @@ function maskPhoneSimple(phone: string | null): string {
   const clean = phone.replace(/\D/g, "");
   if (clean.length <= 4) return phone;
   const last4 = clean.slice(-4);
-  const masked = clean.slice(0, -4).replace(/\d/g, "X");
-  // Format nicely
-  const full = masked + last4;
-  // Try to format like +XX X XX XX XX XX
-  if (phone.startsWith("+") && full.length >= 11) {
-    return `+${full.slice(0, 2)} ${full.slice(2, 3)} XX XX ${last4.slice(0, 2)} ${last4.slice(2)}`;
+  // Format: +XX X XX XX XX XX with last 4 visible
+  if (clean.length >= 11) {
+    return `+${clean.slice(0, 2)} ${clean.slice(2, 3)} XX XX ${last4.slice(0, 2)} ${last4.slice(2)}`;
+  }
+  // Shorter numbers: 0X XX XX XX XX
+  if (clean.length === 10) {
+    return `0${clean.slice(1, 2)} XX XX ${last4.slice(0, 2)} ${last4.slice(2)}`;
   }
   return phone.slice(0, phone.length - 4).replace(/\d/g, "X") + last4;
 }
@@ -75,19 +77,6 @@ interface LeadItem {
   created_at: string;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  nouveau: "bg-muted text-muted-foreground border-border",
-  contacte: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  call_booke: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  converti: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  close: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  perdu: "bg-red-500/20 text-red-300 border-red-500/30",
-};
-const STATUS_LABELS: Record<string, string> = {
-  nouveau: "Nouveau", contacte: "Contacté", call_booke: "Call booké",
-  converti: "Converti", close: "Converti", perdu: "Perdu",
-};
-
 export default function ApporteurDashboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
@@ -99,6 +88,8 @@ export default function ApporteurDashboard() {
   const [allCommissions, setAllCommissions] = useState<CommissionItem[]>([]);
   const [perfLeads, setPerfLeads] = useState(0);
   const [perfSales, setPerfSales] = useState(0);
+  const [perfCA, setPerfCA] = useState(0);
+  const [perfCollected, setPerfCollected] = useState(0);
   const [recentLeads, setRecentLeads] = useState<LeadItem[]>([]);
 
   const fetchData = useCallback(async () => {
@@ -112,8 +103,8 @@ export default function ApporteurDashboard() {
     if (from) leadsQ = leadsQ.gte("created_at", from);
     if (to) leadsQ = leadsQ.lte("created_at", to);
 
-    // Sales count for performance (filtered)
-    let salesQ = supabase.from("sales").select("lead_id, leads!sales_lead_id_fkey(apporteur_id)");
+    // Sales for performance (filtered) - include amount + payments
+    let salesQ = supabase.from("sales").select("amount_ht, lead_id, leads!sales_lead_id_fkey(apporteur_id), payments!payments_sale_id_fkey(amount, status)");
     if (from) salesQ = salesQ.gte("sold_at", from);
     if (to) salesQ = salesQ.lte("sold_at", to);
 
@@ -126,9 +117,9 @@ export default function ApporteurDashboard() {
         .order("created_at", { ascending: false }),
       leadsQ,
       salesQ,
-      // Recent leads
+      // Recent leads - also fetch raw_phone as fallback
       supabase.from("leads_enriched")
-        .select("id, contact_full_name, contact_phone, status, created_at")
+        .select("id, contact_full_name, contact_phone, raw_phone, status, created_at")
         .eq("apporteur_id", userId)
         .order("created_at", { ascending: false })
         .limit(5),
@@ -151,12 +142,17 @@ export default function ApporteurDashboard() {
     setPerfLeads(leadsRes.count || 0);
     const mySales = (salesRes.data || []).filter((s: any) => s.leads?.apporteur_id === userId);
     setPerfSales(mySales.length);
+    setPerfCA(mySales.reduce((sum: number, s: any) => sum + (s.amount_ht || 0), 0));
+    setPerfCollected(mySales.reduce((sum: number, s: any) => {
+      const paid = (s.payments || []).filter((p: any) => p.status === "paid");
+      return sum + paid.reduce((ps: number, p: any) => ps + (p.amount || 0), 0);
+    }, 0));
 
     // Recent leads
     setRecentLeads((recentLeadsRes.data || []).map((l: any) => ({
       id: l.id,
       full_name: l.contact_full_name,
-      phone: l.contact_phone,
+      phone: l.contact_phone || l.raw_phone,
       status: l.status,
       created_at: l.created_at,
     })));
@@ -293,7 +289,7 @@ export default function ApporteurDashboard() {
             </SelectContent>
           </Select>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           <Card className="border-border/50 bg-gradient-to-br from-purple-500/10 to-blue-500/10">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 rounded-lg bg-background/50"><Users className="h-5 w-5 text-foreground" /></div>
@@ -309,6 +305,24 @@ export default function ApporteurDashboard() {
               <div>
                 <p className="text-2xl font-bold text-foreground">{perfSales}</p>
                 <p className="text-xs text-muted-foreground">Ventes</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50 bg-gradient-to-br from-blue-500/10 to-cyan-500/10">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-background/50"><Euro className="h-5 w-5 text-foreground" /></div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{perfCA.toLocaleString("fr-FR")} €</p>
+                <p className="text-xs text-muted-foreground">CA généré</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50 bg-gradient-to-br from-orange-500/10 to-yellow-500/10">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-background/50"><Euro className="h-5 w-5 text-foreground" /></div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{perfCollected.toLocaleString("fr-FR")} €</p>
+                <p className="text-xs text-muted-foreground">CA collecté</p>
               </div>
             </CardContent>
           </Card>
@@ -411,8 +425,8 @@ export default function ApporteurDashboard() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {lead.status && (
-                      <Badge variant="outline" className={`text-xs ${STATUS_COLORS[lead.status] || ""}`}>
-                        {STATUS_LABELS[lead.status] || lead.status}
+                      <Badge variant="outline" className={`text-xs ${LEAD_STATUS_COLORS[lead.status] || "bg-zinc-500/20 text-zinc-400 border-zinc-500/30"}`}>
+                        {LEAD_STATUS_LABELS[lead.status] || lead.status}
                       </Badge>
                     )}
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
