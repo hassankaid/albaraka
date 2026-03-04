@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Euro, FileText, RefreshCw, Download, CheckCircle2, Clock, ArrowRight, Loader2 } from "lucide-react";
-import { downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
+import { Euro, FileText, RefreshCw, Download, CheckCircle2, Clock, ArrowRight, Loader2, Eye } from "lucide-react";
+import { fetchInvoiceHtml, downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
 import { toast } from "@/hooks/use-toast";
+import InvoicePreviewModal from "@/components/InvoicePreviewModal";
 import { formatDateOnly } from "@/lib/formatDate";
 
 interface CommissionRow {
@@ -44,22 +45,57 @@ const INVOICE_STATUS: Record<string, { label: string; class: string }> = {
   paid: { label: "Payée", class: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
 };
 
-function InvoiceDownloadButton({ pdfUrl, invoiceNumber }: { pdfUrl: string; invoiceNumber: string }) {
-  const [loading, setLoading] = useState(false);
+function InvoiceActions({ pdfUrl, invoiceNumber }: { pdfUrl: string; invoiceNumber: string }) {
+  const [downloading, setDownloading] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const openPreview = async () => {
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    try {
+      const html = await fetchInvoiceHtml(pdfUrl);
+      setPreviewHtml(html);
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de charger la facture", variant: "destructive" });
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const html = previewHtml || await fetchInvoiceHtml(pdfUrl);
+      await downloadInvoicePdf(invoiceNumber, html);
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de télécharger la facture", variant: "destructive" });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
-    <Button size="sm" variant="outline" disabled={loading} onClick={async () => {
-      setLoading(true);
-      try {
-        await downloadInvoicePdf(pdfUrl, invoiceNumber);
-      } catch {
-        toast({ title: "Erreur", description: "Impossible de télécharger la facture", variant: "destructive" });
-      } finally {
-        setLoading(false);
-      }
-    }}>
-      {loading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Download className="h-3 w-3 mr-1" />}
-      Télécharger
-    </Button>
+    <>
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant="outline" onClick={openPreview}>
+          <Eye className="h-3 w-3 mr-1" />
+          Voir
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleDownload} disabled={downloading}>
+          {downloading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Download className="h-3 w-3 mr-1" />}
+          PDF
+        </Button>
+      </div>
+      <InvoicePreviewModal
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        invoiceNumber={invoiceNumber}
+        htmlContent={previewHtml}
+        loading={previewLoading}
+      />
+    </>
   );
 }
 
@@ -432,7 +468,7 @@ export default function ApporteurCommissions() {
                       <Badge variant="outline" className={`text-xs ${statusInfo.class}`}>{statusInfo.label}</Badge>
                     </div>
                     {inv.pdf_url && (
-                      <InvoiceDownloadButton pdfUrl={inv.pdf_url} invoiceNumber={inv.invoice_number} />
+                      <InvoiceActions pdfUrl={inv.pdf_url} invoiceNumber={inv.invoice_number} />
                     )}
                   </CardContent>
                 </Card>

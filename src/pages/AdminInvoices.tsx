@@ -11,8 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { FileText, Download, CheckCircle2, Trash2, RefreshCw, Loader2 } from "lucide-react";
-import { downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
+import { FileText, Download, CheckCircle2, Trash2, RefreshCw, Loader2, Eye } from "lucide-react";
+import { fetchInvoiceHtml, downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
+import InvoicePreviewModal from "@/components/InvoicePreviewModal";
 
 const MONTHS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 
@@ -209,12 +210,31 @@ export default function AdminInvoices() {
   };
 
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [previewInvoice, setPreviewInvoice] = useState<InvoiceRow | null>(null);
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const openPreview = async (inv: InvoiceRow) => {
+    if (!inv.pdf_url) return;
+    setPreviewInvoice(inv);
+    setPreviewLoading(true);
+    setPreviewHtml("");
+    try {
+      const html = await fetchInvoiceHtml(inv.pdf_url);
+      setPreviewHtml(html);
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de charger la facture", variant: "destructive" });
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
 
   const handleDownload = async (inv: InvoiceRow) => {
     if (!inv.pdf_url) return;
     setDownloading(inv.id);
     try {
-      await downloadInvoicePdf(inv.pdf_url, inv.invoice_number);
+      const html = await fetchInvoiceHtml(inv.pdf_url);
+      await downloadInvoicePdf(inv.invoice_number, html);
     } catch {
       toast({ title: "Erreur", description: "Impossible de télécharger la facture", variant: "destructive" });
     } finally {
@@ -437,7 +457,12 @@ export default function AdminInvoices() {
                         <TableCell>
                           <div className="flex items-center justify-end gap-1">
                             {inv.pdf_url && (
-                              <Button size="icon" variant="ghost" onClick={() => handleDownload(inv)} title="Télécharger" disabled={downloading === inv.id}>
+                              <Button size="icon" variant="ghost" onClick={() => openPreview(inv)} title="Voir">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {inv.pdf_url && (
+                              <Button size="icon" variant="ghost" onClick={() => handleDownload(inv)} title="Télécharger PDF" disabled={downloading === inv.id}>
                                 {downloading === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                               </Button>
                             )}
@@ -480,6 +505,15 @@ export default function AdminInvoices() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── PREVIEW MODAL ── */}
+      <InvoicePreviewModal
+        open={!!previewInvoice}
+        onOpenChange={(open) => !open && setPreviewInvoice(null)}
+        invoiceNumber={previewInvoice?.invoice_number || ""}
+        htmlContent={previewHtml}
+        loading={previewLoading}
+      />
     </div>
   );
 }
