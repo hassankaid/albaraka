@@ -23,6 +23,13 @@ interface BankDetails {
   iban?: string;
   bic?: string;
   bank_name?: string;
+  // RIB Maroc fields
+  bank_code?: string;
+  city_code?: string;
+  account_number?: string;
+  rib_key?: string;
+  // Other fields
+  additional_info?: string;
 }
 
 const COUNTRIES = [
