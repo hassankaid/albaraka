@@ -9,8 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { Check, RefreshCw } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface Payment {
   id: string;
@@ -72,11 +76,11 @@ export default function SaleDetailModal({
     if (open && saleId) fetchPayments();
   }, [open, saleId, fetchPayments]);
 
-  const markAsPaid = async (paymentId: string) => {
-    const today = new Date().toISOString().split("T")[0];
+  const markAsPaid = async (paymentId: string, paidDate: Date) => {
+    const dateStr = format(paidDate, "yyyy-MM-dd");
     const { error } = await supabase
       .from("payments")
-      .update({ status: "paid", paid_at: today })
+      .update({ status: "paid", paid_at: dateStr })
       .eq("id", paymentId);
     if (error) {
       toast({ title: "Erreur", variant: "destructive" });
@@ -148,9 +152,22 @@ export default function SaleDetailModal({
                       {isCeo && (
                         <TableCell>
                           {p.status === "pending" && (
-                            <Button variant="ghost" size="sm" onClick={() => markAsPaid(p.id)}>
-                              <Check className="h-4 w-4 mr-1" /> Payé
-                            </Button>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <Check className="h-4 w-4 mr-1" /> Payé
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="end">
+                                <Calendar
+                                  mode="single"
+                                  selected={new Date()}
+                                  onSelect={(date) => { if (date) markAsPaid(p.id, date); }}
+                                  locale={fr}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
                           )}
                         </TableCell>
                       )}
