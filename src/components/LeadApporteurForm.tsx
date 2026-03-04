@@ -41,9 +41,9 @@ export default function LeadApporteurForm({
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState<string | undefined>("");
-  const [source, setSource] = useState("apporteur_recommandation");
+  const [source, setSource] = useState("");
   const [sourceDetail, setSourceDetail] = useState("");
-  const [status, setStatus] = useState("inscrit_conference");
+  const [status, setStatus] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -51,15 +51,15 @@ export default function LeadApporteurForm({
     setFullName("");
     setEmail("");
     setPhone("");
-    setSource("apporteur_recommandation");
+    setSource("");
     setSourceDetail("");
-    setStatus("inscrit_conference");
+    setStatus("");
     setNotes("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile || !fullName.trim() || !phone) return;
+    if (!profile || !fullName.trim() || !phone || !source || !status) return;
 
     if (!isValidPhoneNumber(phone)) {
       toast({ title: "Numéro de téléphone invalide", variant: "destructive" });
@@ -123,11 +123,11 @@ export default function LeadApporteurForm({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Prénom & Nom *</label>
+            <label className="text-sm font-medium text-foreground">Prénom / Nom *</label>
             <Input
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Prénom Nom"
+              placeholder="Ex : Fatima Dupont"
               required
               className="bg-background"
             />
@@ -139,7 +139,7 @@ export default function LeadApporteurForm({
               defaultCountry="FR"
               value={phone}
               onChange={setPhone}
-              placeholder="6 12 34 56 78"
+              placeholder="Ex : 6 12 34 56 78"
             />
           </div>
           <div className="space-y-2">
@@ -148,7 +148,7 @@ export default function LeadApporteurForm({
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="email@exemple.com"
+              placeholder="Ex : fatima@gmail.com"
               className="bg-background"
             />
           </div>
@@ -156,7 +156,7 @@ export default function LeadApporteurForm({
             <label className="text-sm font-medium text-foreground">Source *</label>
             <Select value={source} onValueChange={setSource}>
               <SelectTrigger className="bg-background">
-                <SelectValue />
+                <SelectValue placeholder="Sélectionnez une source" />
               </SelectTrigger>
               <SelectContent>
                 {APPORTEUR_SOURCES.map((s) => (
@@ -171,7 +171,7 @@ export default function LeadApporteurForm({
               <Input
                 value={sourceDetail}
                 onChange={(e) => setSourceDetail(e.target.value)}
-                placeholder="Précisez la source..."
+                placeholder="Ex : bouche-à-oreille, événement..."
                 required
                 className="bg-background"
               />
@@ -181,7 +181,7 @@ export default function LeadApporteurForm({
             <label className="text-sm font-medium text-foreground">Statut *</label>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger className="bg-background">
-                <SelectValue />
+                <SelectValue placeholder="Sélectionnez un statut" />
               </SelectTrigger>
               <SelectContent>
                 {STATUS_OPTIONS.map((s) => (
@@ -195,7 +195,7 @@ export default function LeadApporteurForm({
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Notes optionnelles..."
+              placeholder="Informations utiles sur le prospect..."
               className="bg-background"
             />
           </div>

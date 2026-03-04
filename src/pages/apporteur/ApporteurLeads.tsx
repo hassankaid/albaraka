@@ -50,9 +50,9 @@ export default function ApporteurLeads() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState<string | undefined>("");
-  const [source, setSource] = useState("apporteur_recommandation");
+  const [source, setSource] = useState("");
   const [sourceDetail, setSourceDetail] = useState("");
-  const [leadStatus, setLeadStatus] = useState("inscrit_conference");
+  const [leadStatus, setLeadStatus] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -70,12 +70,12 @@ export default function ApporteurLeads() {
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
   const resetForm = () => {
-    setFullName(""); setEmail(""); setPhone(""); setSource("apporteur_recommandation"); setSourceDetail(""); setLeadStatus("inscrit_conference"); setNotes("");
+    setFullName(""); setEmail(""); setPhone(""); setSource(""); setSourceDetail(""); setLeadStatus(""); setNotes("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile || !fullName.trim() || !phone) return;
+    if (!profile || !fullName.trim() || !phone || !source || !leadStatus) return;
     if (!isValidPhoneNumber(phone)) {
       toast({ title: "Numéro de téléphone invalide", variant: "destructive" });
       return;
@@ -288,22 +288,22 @@ export default function ApporteurLeads() {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 py-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Prénom & Nom *</label>
-              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Prénom Nom" required className="bg-background" />
+              <label className="text-sm font-medium text-foreground">Prénom / Nom *</label>
+              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Ex : Fatima Dupont" required className="bg-background" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Téléphone *</label>
-              <PhoneInput international defaultCountry="FR" value={phone} onChange={setPhone} placeholder="6 12 34 56 78" />
+              <PhoneInput international defaultCountry="FR" value={phone} onChange={setPhone} placeholder="Ex : 6 12 34 56 78" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Email</label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@exemple.com" className="bg-background" />
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Ex : fatima@gmail.com" className="bg-background" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Source *</label>
               <Select value={source} onValueChange={setSource}>
                 <SelectTrigger className="bg-background">
-                  <SelectValue />
+                  <SelectValue placeholder="Sélectionnez une source" />
                 </SelectTrigger>
                 <SelectContent>
                   {APPORTEUR_SOURCES.map((s) => (
@@ -315,14 +315,14 @@ export default function ApporteurLeads() {
             {source === "apporteur_autre" && (
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Précisez la source *</label>
-                <Input value={sourceDetail} onChange={(e) => setSourceDetail(e.target.value)} placeholder="Précisez la source..." required className="bg-background" />
+                <Input value={sourceDetail} onChange={(e) => setSourceDetail(e.target.value)} placeholder="Ex : bouche-à-oreille, événement..." required className="bg-background" />
               </div>
             )}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Statut *</label>
               <Select value={leadStatus} onValueChange={setLeadStatus}>
                 <SelectTrigger className="bg-background">
-                  <SelectValue />
+                  <SelectValue placeholder="Sélectionnez un statut" />
                 </SelectTrigger>
                 <SelectContent>
                   {STATUS_OPTIONS.map((s) => (
@@ -333,7 +333,7 @@ export default function ApporteurLeads() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Notes</label>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes optionnelles..." className="bg-background" />
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Informations utiles sur le prospect..." className="bg-background" />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>Annuler</Button>
