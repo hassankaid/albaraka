@@ -70,7 +70,7 @@ export default function ApporteurLeads() {
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
   const resetForm = () => {
-    setFullName(""); setEmail(""); setPhone(""); setSource("apporteur_recommandation"); setSourceDetail(""); setLeadStatus("inscrit_conference"); setNotes("");
+    setFullName(""); setEmail(""); setPhone(""); setSource(""); setSourceDetail(""); setLeadStatus(""); setNotes("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
