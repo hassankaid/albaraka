@@ -81,6 +81,7 @@ export default function ApporteurProfile() {
   const [bankRibUrl, setBankRibUrl] = useState<string | null>(null);
   const [bankDetails, setBankDetails] = useState<BankDetails>({});
   const [uploadingRib, setUploadingRib] = useState(false);
+  const [extractingRib, setExtractingRib] = useState(false);
   const [editBankOpen, setEditBankOpen] = useState(false);
   const [editBankForm, setEditBankForm] = useState<BankDetails>({});
 
