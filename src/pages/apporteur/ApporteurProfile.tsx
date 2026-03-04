@@ -173,8 +173,8 @@ export default function ApporteurProfile() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     if (file.size > 5 * 1024 * 1024) { toast({ title: "Fichier trop volumineux", description: "5 Mo max", variant: "destructive" }); return; }
-    const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
-    if (!allowedTypes.includes(file.type)) { toast({ title: "Format non supporté", description: "PDF, JPG, PNG ou WebP", variant: "destructive" }); return; }
+    const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp", "text/plain"];
+    if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().endsWith(".txt")) { toast({ title: "Format non supporté", description: "PDF, JPG, PNG, WebP ou TXT", variant: "destructive" }); return; }
     
     const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
     const filePath = `${user.id}/rib.${ext}`;
