@@ -195,7 +195,7 @@ export default function LeadApporteurForm({
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Notes optionnelles..."
+              placeholder="Informations utiles sur le prospect..."
               className="bg-background"
             />
           </div>
