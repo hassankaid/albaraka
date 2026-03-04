@@ -130,8 +130,8 @@ export default function ApporteurCommissions() {
   // ── History: paid commissions grouped by month ──
   const paidCommissions = useMemo(() => {
     return allCommissions
-      .filter(c => c.status === "paid" && c.paid_at)
-      .sort((a, b) => (b.paid_at || "").localeCompare(a.paid_at || ""));
+      .filter(c => c.status === "paid")
+      .sort((a, b) => (b.paid_at || b.payment_paid_at || "").localeCompare(a.paid_at || a.payment_paid_at || ""));
   }, [allCommissions]);
 
   const filteredPaid = useMemo(() => {
