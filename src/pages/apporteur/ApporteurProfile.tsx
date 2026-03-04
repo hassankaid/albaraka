@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -7,13 +7,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
-import { RefreshCw, Save, Camera, Upload, FileText } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RefreshCw, Save, Camera, Upload, FileText, Download, CheckCircle2, AlertTriangle, Pencil, Building2 } from "lucide-react";
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+
+interface BankDetails {
+  type?: string;
+  account_holder?: string;
+  iban?: string;
+  bic?: string;
+  bank_name?: string;
+}
+
+const COUNTRIES = [
+  "France", "Belgique", "Suisse", "Luxembourg", "Canada",
+  "Maroc", "Tunisie", "Algérie", "Sénégal", "Côte d'Ivoire",
+  "Cameroun", "Madagascar", "Comores", "Mayotte", "Réunion",
+  "Allemagne", "Espagne", "Italie", "Portugal", "Royaume-Uni",
+  "Pays-Bas", "Autre",
+];
 
 async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
   const image = new Image();
@@ -61,15 +79,16 @@ export default function ApporteurProfile() {
 
   // Bank
   const [bankRibUrl, setBankRibUrl] = useState<string | null>(null);
-  const [bankDetails, setBankDetails] = useState<{ iban?: string; bic?: string; bank?: string }>({});
+  const [bankDetails, setBankDetails] = useState<BankDetails>({});
   const [uploadingRib, setUploadingRib] = useState(false);
+  const [editBankOpen, setEditBankOpen] = useState(false);
+  const [editBankForm, setEditBankForm] = useState<BankDetails>({});
 
   useEffect(() => {
     if (profile) {
       setFullName(profile.full_name || "");
       setPhone(profile.phone || "");
       setAvatarUrl(profile.avatar_url || null);
-      // Fetch extended profile fields
       supabase.from("profiles").select("address, postal_code, city, country, siret, bank_rib_url, bank_details")
         .eq("id", profile.id).maybeSingle().then(({ data }) => {
           if (data) {
@@ -80,12 +99,29 @@ export default function ApporteurProfile() {
             setSiret(data.siret || "");
             setBankRibUrl(data.bank_rib_url || null);
             if (data.bank_details && typeof data.bank_details === "object") {
-              setBankDetails(data.bank_details as any);
+              setBankDetails(data.bank_details as BankDetails);
             }
           }
         });
     }
   }, [profile]);
+
+  // ── Completion check ──
+  const missingFields = useMemo(() => {
+    const missing: string[] = [];
+    if (!fullName.trim()) missing.push("Nom complet");
+    if (!phone?.trim()) missing.push("Téléphone");
+    if (!address.trim()) missing.push("Adresse");
+    if (!postalCode.trim()) missing.push("Code postal");
+    if (!city.trim()) missing.push("Ville");
+    if (!country.trim()) missing.push("Pays");
+    if (!siret.trim()) missing.push("SIRET / N° TVA");
+    if (!bankRibUrl) missing.push("RIB");
+    if (!bankDetails?.iban) missing.push("IBAN");
+    return missing;
+  }, [fullName, phone, address, postalCode, city, country, siret, bankRibUrl, bankDetails]);
+
+  const isComplete = missingFields.length === 0;
 
   const initials = fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
@@ -130,41 +166,104 @@ export default function ApporteurProfile() {
     if (file.type !== "application/pdf") { toast({ title: "Format PDF uniquement", variant: "destructive" }); return; }
     setUploadingRib(true);
     try {
-      const filePath = `ribs/${user.id}.pdf`;
-      const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true, contentType: "application/pdf" });
+      const filePath = `${user.id}/rib.pdf`;
+      const { error: uploadError } = await supabase.storage.from("ribs").upload(filePath, file, { upsert: true, contentType: "application/pdf" });
       if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(filePath);
-      await supabase.from("profiles").update({ bank_rib_url: publicUrl }).eq("id", user.id);
-      setBankRibUrl(publicUrl);
-      toast({ title: "RIB uploadé avec succès" });
+      // Get signed URL for private bucket
+      const { data: signedData } = await supabase.storage.from("ribs").createSignedUrl(filePath, 60 * 60 * 24 * 365);
+      const ribUrl = signedData?.signedUrl || filePath;
+      await supabase.from("profiles").update({ bank_rib_url: ribUrl }).eq("id", user.id);
+      setBankRibUrl(ribUrl);
+      toast({ title: "RIB uploadé avec succès", description: "Vous pouvez maintenant saisir vos coordonnées bancaires." });
     } catch (err: any) {
       toast({ title: "Erreur", description: err.message, variant: "destructive" });
     } finally { setUploadingRib(false); e.target.value = ""; }
   };
 
-  const handleSave = async () => {
+  const handleSavePersonal = async () => {
     if (!user) return;
     setSaving(true);
     const { error } = await supabase.from("profiles").update({
       full_name: fullName, phone: phone || "", address, postal_code: postalCode, city, country, siret,
-      bank_details: bankDetails as any,
     }).eq("id", user.id);
 
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Profil mis à jour avec succès" });
+      toast({ title: "Informations personnelles enregistrées" });
     }
     setSaving(false);
+  };
+
+  const handleSaveBankDetails = async () => {
+    if (!user) return;
+    const details: BankDetails = {
+      type: "iban",
+      account_holder: editBankForm.account_holder || "",
+      iban: editBankForm.iban || "",
+      bic: editBankForm.bic || "",
+      bank_name: editBankForm.bank_name || "",
+    };
+    const { error } = await supabase.from("profiles").update({
+      bank_details: details as any,
+    }).eq("id", user.id);
+
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      setBankDetails(details);
+      setEditBankOpen(false);
+      toast({ title: "Coordonnées bancaires enregistrées" });
+    }
+  };
+
+  const openEditBank = () => {
+    setEditBankForm({
+      account_holder: bankDetails.account_holder || "",
+      iban: bankDetails.iban || "",
+      bic: bankDetails.bic || "",
+      bank_name: bankDetails.bank_name || "",
+    });
+    setEditBankOpen(true);
+  };
+
+  const formatIban = (iban: string) => {
+    if (!iban) return "—";
+    const clean = iban.replace(/\s/g, "");
+    if (clean.length <= 8) return clean;
+    // Show first 4, mask middle, show last 4
+    return `${clean.slice(0, 4)} ${"XXXX ".repeat(Math.max(0, Math.floor((clean.length - 8) / 4)))}${clean.slice(-4)}`;
   };
 
   if (!profile) {
     return <div className="flex items-center justify-center py-16"><RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
 
+  const hasBankData = !!(bankDetails?.iban || bankDetails?.account_holder);
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      {/* Avatar */}
+      <h2 className="text-2xl font-bold text-foreground">Mon Profil</h2>
+
+      {/* ── Completion indicator ── */}
+      {isComplete ? (
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+          <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
+          <span className="text-sm font-medium text-emerald-300">Profil complet — vous êtes prêt à recevoir vos factures</span>
+        </div>
+      ) : (
+        <div className="px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+          <div className="flex items-center gap-2 mb-1">
+            <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0" />
+            <span className="text-sm font-medium text-amber-300">Profil incomplet</span>
+          </div>
+          <p className="text-xs text-muted-foreground ml-7">
+            Éléments manquants : {missingFields.join(", ")}
+          </p>
+        </div>
+      )}
+
+      {/* ── Avatar ── */}
       <Card className="border-border/50">
         <CardContent className="p-6 flex items-center gap-6">
           <div className="relative group cursor-pointer" onClick={() => !uploading && fileInputRef.current?.click()}>
@@ -179,94 +278,229 @@ export default function ApporteurProfile() {
           <div>
             <p className="font-semibold text-foreground text-lg">{profile.full_name}</p>
             <p className="text-sm text-muted-foreground">{profile.email}</p>
+            <Badge variant="outline" className="mt-1 text-xs bg-primary/10 text-primary border-primary/20">Apporteur d'affaires</Badge>
           </div>
           <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileSelect} />
         </CardContent>
       </Card>
 
-      {/* Personal Info */}
+      {/* ── Section 1: Personal Info ── */}
       <Card className="border-border/50">
         <CardHeader><CardTitle className="text-foreground">Informations personnelles</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Nom complet</Label>
+              <Label>Nom complet <span className="text-destructive">*</span></Label>
               <Input value={fullName} onChange={(e) => setFullName(e.target.value)} className="bg-background" />
             </div>
             <div className="space-y-2">
               <Label>Email</Label>
-              <Input value={profile.email} disabled className="bg-muted" />
+              <Input value={profile.email} disabled className="bg-muted cursor-not-allowed" />
             </div>
             <div className="space-y-2">
-              <Label>Téléphone</Label>
+              <Label>Téléphone <span className="text-destructive">*</span></Label>
               <PhoneInput international defaultCountry="FR" value={phone} onChange={setPhone} placeholder="6 12 34 56 78" />
             </div>
             <div className="space-y-2">
-              <Label>SIRET</Label>
+              <Label>SIRET / N° TVA <span className="text-destructive">*</span></Label>
               <Input value={siret} onChange={(e) => setSiret(e.target.value)} placeholder="123 456 789 00012" className="bg-background" />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2 sm:col-span-2">
-              <Label>Adresse</Label>
-              <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Adresse" className="bg-background" />
+              <Label>Adresse <span className="text-destructive">*</span></Label>
+              <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="123 rue de la Paix" className="bg-background" />
             </div>
             <div className="space-y-2">
-              <Label>Code postal</Label>
+              <Label>Code postal <span className="text-destructive">*</span></Label>
               <Input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="75001" className="bg-background" />
             </div>
             <div className="space-y-2">
-              <Label>Ville</Label>
+              <Label>Ville <span className="text-destructive">*</span></Label>
               <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Paris" className="bg-background" />
             </div>
             <div className="space-y-2">
-              <Label>Pays</Label>
-              <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="France" className="bg-background" />
+              <Label>Pays <span className="text-destructive">*</span></Label>
+              <Select value={country} onValueChange={setCountry}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Sélectionner un pays" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
+          <Button onClick={handleSavePersonal} disabled={saving} className="gradient-primary text-primary-foreground">
+            {saving ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+            Enregistrer
+          </Button>
         </CardContent>
       </Card>
 
-      {/* Bank Info */}
+      {/* ── Section 2: Bank Info ── */}
       <Card className="border-border/50">
-        <CardHeader><CardTitle className="text-foreground">Informations bancaires</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => ribInputRef.current?.click()} disabled={uploadingRib} className="gap-2">
-              {uploadingRib ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {bankRibUrl ? "Remplacer le RIB" : "Uploader un RIB (PDF)"}
-            </Button>
-            {bankRibUrl && (
-              <a href={bankRibUrl} target="_blank" rel="noreferrer" className="text-sm text-primary flex items-center gap-1 hover:underline">
-                <FileText className="h-4 w-4" /> Voir le RIB
-              </a>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-muted-foreground" />
+              Informations bancaires
+            </CardTitle>
+            {hasBankData && (
+              <Button variant="ghost" size="sm" onClick={openEditBank} className="text-muted-foreground">
+                <Pencil className="h-4 w-4 mr-1" /> Modifier
+              </Button>
             )}
-            <input ref={ribInputRef} type="file" accept="application/pdf" className="hidden" onChange={handleRibUpload} />
           </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!bankRibUrl && !hasBankData ? (
+            /* ── No RIB uploaded ── */
+            <div className="text-center py-6 space-y-4">
+              <Building2 className="h-12 w-12 text-muted-foreground mx-auto" />
+              <div>
+                <p className="text-foreground font-medium">Aucun RIB enregistré</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Veuillez télécharger votre RIB pour recevoir vos commissions.
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => ribInputRef.current?.click()} disabled={uploadingRib} className="gap-2">
+                {uploadingRib ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                Télécharger mon RIB (PDF)
+              </Button>
+            </div>
+          ) : hasBankData ? (
+            /* ── Bank details exist ── */
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Titulaire</p>
+                  <p className="text-sm font-medium text-foreground">{bankDetails.account_holder || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Banque</p>
+                  <p className="text-sm font-medium text-foreground">{bankDetails.bank_name || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">IBAN</p>
+                  <p className="text-sm font-mono text-foreground">{formatIban(bankDetails.iban || "")}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">BIC</p>
+                  <p className="text-sm font-mono text-foreground">{bankDetails.bic || "—"}</p>
+                </div>
+              </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="flex items-center gap-3 pt-2 border-t border-border/50">
+                {bankRibUrl ? (
+                  <>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <FileText className="h-4 w-4" />
+                      <span>RIB uploadé</span>
+                    </div>
+                    <a href={bankRibUrl} target="_blank" rel="noreferrer">
+                      <Button variant="outline" size="sm" className="gap-1">
+                        <Download className="h-3 w-3" /> Télécharger
+                      </Button>
+                    </a>
+                    <Button variant="outline" size="sm" onClick={() => ribInputRef.current?.click()} disabled={uploadingRib} className="gap-1">
+                      {uploadingRib ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                      Remplacer
+                    </Button>
+                  </>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={() => ribInputRef.current?.click()} disabled={uploadingRib} className="gap-1">
+                    {uploadingRib ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                    Uploader un RIB (PDF)
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* ── RIB uploaded but no bank details yet ── */
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-amber-300">RIB uploadé — coordonnées bancaires à compléter</p>
+                  <p className="text-xs text-muted-foreground">Veuillez saisir manuellement vos coordonnées IBAN ci-dessous.</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <a href={bankRibUrl!} target="_blank" rel="noreferrer">
+                  <Button variant="outline" size="sm" className="gap-1">
+                    <Download className="h-3 w-3" /> Voir le RIB
+                  </Button>
+                </a>
+                <Button variant="outline" size="sm" onClick={() => ribInputRef.current?.click()} disabled={uploadingRib} className="gap-1">
+                  {uploadingRib ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                  Remplacer
+                </Button>
+              </div>
+              <Button onClick={openEditBank} className="gradient-primary text-primary-foreground gap-2">
+                <Pencil className="h-4 w-4" /> Saisir mes coordonnées bancaires
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <input ref={ribInputRef} type="file" accept="application/pdf" className="hidden" onChange={handleRibUpload} />
+
+      {/* ── Edit Bank Details Modal ── */}
+      <Dialog open={editBankOpen} onOpenChange={setEditBankOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Coordonnées bancaires</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Titulaire du compte</Label>
+              <Input
+                value={editBankForm.account_holder || ""}
+                onChange={(e) => setEditBankForm({ ...editBankForm, account_holder: e.target.value.toUpperCase() })}
+                placeholder="PRÉNOM NOM"
+                className="bg-background"
+              />
+            </div>
             <div className="space-y-2">
               <Label>IBAN</Label>
-              <Input value={bankDetails.iban || ""} onChange={(e) => setBankDetails({ ...bankDetails, iban: e.target.value })} placeholder="FR76 ..." className="bg-background" />
+              <Input
+                value={editBankForm.iban || ""}
+                onChange={(e) => setEditBankForm({ ...editBankForm, iban: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") })}
+                placeholder="FR76XXXXXXXXXXXXXXXXXXXXXXX"
+                className="bg-background font-mono"
+              />
             </div>
-            <div className="space-y-2">
-              <Label>BIC</Label>
-              <Input value={bankDetails.bic || ""} onChange={(e) => setBankDetails({ ...bankDetails, bic: e.target.value })} placeholder="BNPAFRPP" className="bg-background" />
-            </div>
-            <div className="space-y-2">
-              <Label>Banque</Label>
-              <Input value={bankDetails.bank || ""} onChange={(e) => setBankDetails({ ...bankDetails, bank: e.target.value })} placeholder="BNP Paribas" className="bg-background" />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>BIC</Label>
+                <Input
+                  value={editBankForm.bic || ""}
+                  onChange={(e) => setEditBankForm({ ...editBankForm, bic: e.target.value.toUpperCase() })}
+                  placeholder="BNPAFRPP"
+                  className="bg-background font-mono"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Nom de la banque</Label>
+                <Input
+                  value={editBankForm.bank_name || ""}
+                  onChange={(e) => setEditBankForm({ ...editBankForm, bank_name: e.target.value })}
+                  placeholder="BNP Paribas"
+                  className="bg-background"
+                />
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setEditBankOpen(false)}>Annuler</Button>
+            <Button onClick={handleSaveBankDetails} className="gradient-primary text-primary-foreground">Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      <Button onClick={handleSave} disabled={saving} className="w-full gradient-primary text-primary-foreground">
-        {saving ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-        Enregistrer
-      </Button>
-
-      {/* Crop Modal */}
+      {/* ── Crop Modal ── */}
       <Dialog open={cropModalOpen} onOpenChange={(open) => { if (!open) { setCropModalOpen(false); setImageSrc(null); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>Recadrer l'image</DialogTitle></DialogHeader>
