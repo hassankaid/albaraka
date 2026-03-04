@@ -4,8 +4,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ShoppingCart, RefreshCw } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
+import { ShoppingCart, RefreshCw, Calendar, CreditCard, TrendingUp, CheckCircle2, Clock, AlertTriangle, XCircle } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
 
 interface SaleRow {
@@ -44,7 +46,6 @@ export default function ApporteurSales() {
     if (!profile) return;
     const userId = profile.id;
 
-    // Get leads belonging to this apporteur
     const { data: leads } = await supabase
       .from("leads")
       .select("id")
@@ -58,7 +59,6 @@ export default function ApporteurSales() {
 
     const leadIds = leads.map(l => l.id);
 
-    // Get sales for these leads
     const { data: salesData } = await supabase
       .from("sales")
       .select("id, product, amount_ht, sold_at, mensualites, lead_id, contact_id, contacts!sales_contact_id_fkey(full_name)")
@@ -73,7 +73,6 @@ export default function ApporteurSales() {
 
     const saleIds = salesData.map(s => s.id);
 
-    // Get payments count and commissions
     const [paymentsRes, commissionsRes] = await Promise.all([
       supabase.from("payments").select("sale_id, status").in("sale_id", saleIds),
       supabase.from("commissions").select("sale_id, percentage, amount").eq("beneficiary_user_id", userId).in("sale_id", saleIds),
@@ -123,11 +122,18 @@ export default function ApporteurSales() {
     setLoadingPayments(false);
   };
 
-  const getPaymentStatusInfo = (status: string, dueDate: string) => {
-    if (status === "paid") return { label: "Payé", class: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" };
-    if (status === "cancelled") return { label: "Annulé", class: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30" };
-    if (new Date(dueDate) < new Date()) return { label: "En retard", class: "bg-red-500/20 text-red-300 border-red-500/30" };
-    return { label: "En attente", class: "bg-orange-500/20 text-orange-300 border-orange-500/30" };
+  const getPaymentIcon = (status: string, dueDate: string) => {
+    if (status === "paid") return <CheckCircle2 className="h-4 w-4 text-emerald-400" />;
+    if (status === "cancelled") return <XCircle className="h-4 w-4 text-muted-foreground" />;
+    if (new Date(dueDate) < new Date()) return <AlertTriangle className="h-4 w-4 text-red-400" />;
+    return <Clock className="h-4 w-4 text-orange-400" />;
+  };
+
+  const getPaymentLabel = (status: string, dueDate: string) => {
+    if (status === "paid") return "Payé";
+    if (status === "cancelled") return "Annulé";
+    if (new Date(dueDate) < new Date()) return "En retard";
+    return "En attente";
   };
 
   if (loading) {
@@ -137,6 +143,8 @@ export default function ApporteurSales() {
       </div>
     );
   }
+
+  const paidAmount = payments.filter(p => p.status === "paid").reduce((s, p) => s + p.amount, 0);
 
   return (
     <div className="space-y-6">
@@ -232,42 +240,122 @@ export default function ApporteurSales() {
         </>
       )}
 
-      {/* Sale Detail Modal */}
-      <Dialog open={!!selectedSale} onOpenChange={() => setSelectedSale(null)}>
-        <DialogContent className="bg-card border-border max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Détail de la vente</DialogTitle>
-          </DialogHeader>
+      {/* Sale Detail Sheet */}
+      <Sheet open={!!selectedSale} onOpenChange={() => setSelectedSale(null)}>
+        <SheetContent className="bg-card border-border sm:max-w-lg overflow-y-auto">
+          <SheetHeader className="pb-0">
+            <SheetTitle className="text-foreground text-lg">Détail de la vente</SheetTitle>
+          </SheetHeader>
+
           {selectedSale && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><span className="text-muted-foreground">Client :</span> <span className="text-foreground font-medium">{selectedSale.contact_name}</span></div>
-                <div><span className="text-muted-foreground">Produit :</span> <span className="text-foreground font-medium">{selectedSale.product}</span></div>
-                <div><span className="text-muted-foreground">Montant :</span> <span className="text-foreground font-medium">{selectedSale.amount_ht.toLocaleString("fr-FR")} €</span></div>
-                <div><span className="text-muted-foreground">Commission :</span> <span className="text-foreground font-medium">
-                  {selectedSale.commission_percentage != null ? `${selectedSale.commission_percentage}% (${selectedSale.commission_total?.toLocaleString("fr-FR")} €)` : "—"}
-                </span></div>
+            <div className="space-y-6 mt-4">
+              {/* Header card */}
+              <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-foreground">{selectedSale.contact_name || "—"}</h3>
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-xs">
+                    {selectedSale.product}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Montant</p>
+                      <p className="text-sm font-semibold text-foreground">{selectedSale.amount_ht.toLocaleString("fr-FR")} €</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Date de vente</p>
+                      <p className="text-sm font-semibold text-foreground">{selectedSale.sold_at ? formatDateOnly(selectedSale.sold_at) : "—"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Ma commission</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {selectedSale.commission_percentage != null
+                          ? `${selectedSale.commission_percentage}% · ${selectedSale.commission_total?.toLocaleString("fr-FR")} €`
+                          : "Non définie"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Mensualités</p>
+                      <p className="text-sm font-semibold text-foreground">{selectedSale.mensualites || 1}x</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
+              <Separator className="bg-border" />
+
+              {/* Payments section */}
               <div>
-                <h4 className="text-sm font-semibold text-foreground mb-2">Échéancier</h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold text-foreground">Échéancier des paiements</h4>
+                  {!loadingPayments && payments.length > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {paidAmount.toLocaleString("fr-FR")} € / {selectedSale.amount_ht.toLocaleString("fr-FR")} € encaissés
+                    </span>
+                  )}
+                </div>
+
+                {!loadingPayments && payments.length > 0 && (
+                  <Progress
+                    value={selectedSale.amount_ht > 0 ? (paidAmount / selectedSale.amount_ht) * 100 : 0}
+                    className="h-2 mb-4 bg-secondary"
+                  />
+                )}
+
                 {loadingPayments ? (
-                  <div className="flex justify-center py-4"><RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                  <div className="flex justify-center py-8"><RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" /></div>
                 ) : payments.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Aucun paiement enregistré</p>
+                  <div className="rounded-lg border border-dashed border-border p-6 text-center">
+                    <CreditCard className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Aucun paiement enregistré</p>
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     {payments.map((p) => {
-                      const info = getPaymentStatusInfo(p.status, p.due_date);
+                      const label = getPaymentLabel(p.status, p.due_date);
+                      const isPaid = p.status === "paid";
                       return (
-                        <div key={p.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-secondary/30">
-                          <div className="text-sm">
-                            <span className="font-medium text-foreground">{p.payment_number}/{p.total_payments}</span>
-                            <span className="text-muted-foreground ml-2">{p.amount.toLocaleString("fr-FR")} €</span>
+                        <div
+                          key={p.id}
+                          className={`flex items-center justify-between py-3 px-4 rounded-lg border transition-colors ${
+                            isPaid
+                              ? "bg-emerald-500/5 border-emerald-500/20"
+                              : "bg-secondary/20 border-border/50"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            {getPaymentIcon(p.status, p.due_date)}
+                            <div>
+                              <p className="text-sm font-medium text-foreground">
+                                Mensualité {p.payment_number}/{p.total_payments}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Échéance : {formatDateOnly(p.due_date)}
+                                {p.paid_at && ` · Payé le ${formatDateOnly(p.paid_at)}`}
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">{formatDateOnly(p.due_date)}</span>
-                            <Badge variant="outline" className={`text-xs ${info.class}`}>{info.label}</Badge>
+                          <div className="text-right">
+                            <p className={`text-sm font-semibold ${isPaid ? "text-emerald-400" : "text-foreground"}`}>
+                              {p.amount.toLocaleString("fr-FR")} €
+                            </p>
+                            <p className={`text-xs ${
+                              isPaid ? "text-emerald-400/70" : 
+                              label === "En retard" ? "text-red-400" : "text-muted-foreground"
+                            }`}>
+                              {label}
+                            </p>
                           </div>
                         </div>
                       );
@@ -277,8 +365,8 @@ export default function ApporteurSales() {
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
