@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
   "account_holder": "NOM PRÉNOM du titulaire",
   "iban": "IBAN complet sans espaces",
   "bic": "Code BIC/SWIFT",
-  "bank_name": "Nom de la banque"
+  "bank_name": "Nom court de la banque (ex: 'Revolut France', 'BNP Paribas', 'CIC' — sans mention légale, succursale, etc.)"
 }
 
 Si un champ n'est pas trouvé, mets une chaîne vide. Ne retourne RIEN d'autre que le JSON.`,
