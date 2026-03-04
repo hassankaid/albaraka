@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,13 @@ interface BankDetails {
   iban?: string;
   bic?: string;
   bank_name?: string;
+  // RIB Maroc fields
+  bank_code?: string;
+  city_code?: string;
+  account_number?: string;
+  rib_key?: string;
+  // Other fields
+  additional_info?: string;
 }
 
 const COUNTRIES = [
@@ -118,7 +126,8 @@ export default function ApporteurProfile() {
     if (!country.trim()) missing.push("Pays");
     // SIRET is optional — not included in missing fields
     if (!bankRibUrl) missing.push("RIB");
-    if (!bankDetails?.iban) missing.push("IBAN");
+    const hasValidBank = bankDetails?.type === "iban" ? !!bankDetails?.iban : bankDetails?.type === "rib_maroc" ? !!bankDetails?.account_number : !!bankDetails?.account_number;
+    if (!hasValidBank && !bankDetails?.iban) missing.push("Coordonnées bancaires");
     return missing;
   }, [fullName, phone, address, postalCode, city, country, siret, bankRibUrl, bankDetails]);
 
@@ -223,13 +232,39 @@ export default function ApporteurProfile() {
 
   const handleSaveBankDetails = async () => {
     if (!user) return;
-    const details: BankDetails = {
-      type: "iban",
-      account_holder: editBankForm.account_holder || "",
-      iban: editBankForm.iban || "",
-      bic: editBankForm.bic || "",
-      bank_name: editBankForm.bank_name || "",
-    };
+    const bankType = editBankForm.type || "iban";
+    let details: BankDetails;
+
+    if (bankType === "iban") {
+      details = {
+        type: "iban",
+        account_holder: editBankForm.account_holder || "",
+        iban: editBankForm.iban || "",
+        bic: editBankForm.bic || "",
+        bank_name: editBankForm.bank_name || "",
+      };
+    } else if (bankType === "rib_maroc") {
+      details = {
+        type: "rib_maroc",
+        account_holder: editBankForm.account_holder || "",
+        bank_code: editBankForm.bank_code || "",
+        city_code: editBankForm.city_code || "",
+        account_number: editBankForm.account_number || "",
+        rib_key: editBankForm.rib_key || "",
+        bic: editBankForm.bic || "",
+        bank_name: editBankForm.bank_name || "",
+      };
+    } else {
+      details = {
+        type: "other",
+        account_holder: editBankForm.account_holder || "",
+        account_number: editBankForm.account_number || "",
+        bic: editBankForm.bic || "",
+        bank_name: editBankForm.bank_name || "",
+        additional_info: editBankForm.additional_info || "",
+      };
+    }
+
     const { error } = await supabase.from("profiles").update({
       bank_details: details as any,
     }).eq("id", user.id);
@@ -245,10 +280,16 @@ export default function ApporteurProfile() {
 
   const openEditBank = () => {
     setEditBankForm({
+      type: bankDetails.type || "iban",
       account_holder: bankDetails.account_holder || "",
       iban: bankDetails.iban || "",
       bic: bankDetails.bic || "",
       bank_name: bankDetails.bank_name || "",
+      bank_code: bankDetails.bank_code || "",
+      city_code: bankDetails.city_code || "",
+      account_number: bankDetails.account_number || "",
+      rib_key: bankDetails.rib_key || "",
+      additional_info: bankDetails.additional_info || "",
     });
     setEditBankOpen(true);
   };
@@ -265,7 +306,7 @@ export default function ApporteurProfile() {
     return <div className="flex items-center justify-center py-16"><RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
 
-  const hasBankData = !!(bankDetails?.iban || bankDetails?.account_holder);
+  const hasBankData = !!(bankDetails?.iban || bankDetails?.account_holder || bankDetails?.account_number);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -424,14 +465,50 @@ export default function ApporteurProfile() {
                   <p className="text-xs text-muted-foreground">Banque</p>
                   <p className="text-sm font-medium text-foreground">{bankDetails.bank_name || "—"}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">IBAN</p>
-                  <p className="text-sm font-mono text-foreground">{formatIban(bankDetails.iban || "")}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">BIC</p>
-                  <p className="text-sm font-mono text-foreground">{bankDetails.bic || "—"}</p>
-                </div>
+                {(!bankDetails.type || bankDetails.type === "iban") && (
+                  <>
+                    <div>
+                      <p className="text-xs text-muted-foreground">IBAN</p>
+                      <p className="text-sm font-mono text-foreground">{formatIban(bankDetails.iban || "")}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">BIC</p>
+                      <p className="text-sm font-mono text-foreground">{bankDetails.bic || "—"}</p>
+                    </div>
+                  </>
+                )}
+                {bankDetails.type === "rib_maroc" && (
+                  <>
+                    <div className="sm:col-span-2">
+                      <p className="text-xs text-muted-foreground">RIB</p>
+                      <p className="text-sm font-mono text-foreground">
+                        {`${bankDetails.bank_code || ""}${bankDetails.city_code || ""}${bankDetails.account_number || ""}${bankDetails.rib_key || ""}` || "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">BIC/SWIFT</p>
+                      <p className="text-sm font-mono text-foreground">{bankDetails.bic || "—"}</p>
+                    </div>
+                  </>
+                )}
+                {bankDetails.type === "other" && (
+                  <>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Compte</p>
+                      <p className="text-sm font-mono text-foreground">{bankDetails.account_number || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">BIC/SWIFT</p>
+                      <p className="text-sm font-mono text-foreground">{bankDetails.bic || "—"}</p>
+                    </div>
+                    {bankDetails.additional_info && (
+                      <div className="sm:col-span-2">
+                        <p className="text-xs text-muted-foreground">Info</p>
+                        <p className="text-sm text-foreground">{bankDetails.additional_info}</p>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               <div className="flex items-center gap-3 pt-2 border-t border-border/50">
@@ -496,6 +573,19 @@ export default function ApporteurProfile() {
           <DialogHeader><DialogTitle>Coordonnées bancaires</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
+              <Label>Type de compte</Label>
+              <Select value={editBankForm.type || "iban"} onValueChange={(v) => setEditBankForm({ ...editBankForm, type: v })}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="iban">IBAN (Europe)</SelectItem>
+                  <SelectItem value="rib_maroc">RIB Maroc</SelectItem>
+                  <SelectItem value="other">Autre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label>Titulaire du compte</Label>
               <Input
                 value={editBankForm.account_holder || ""}
@@ -504,35 +594,153 @@ export default function ApporteurProfile() {
                 className="bg-background"
               />
             </div>
-            <div className="space-y-2">
-              <Label>IBAN</Label>
-              <Input
-                value={(editBankForm.iban || "").replace(/(.{4})/g, "$1 ").trim()}
-                onChange={(e) => setEditBankForm({ ...editBankForm, iban: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") })}
-                placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"
-                className="bg-background font-mono tracking-wider"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>BIC</Label>
-                <Input
-                  value={editBankForm.bic || ""}
-                  onChange={(e) => setEditBankForm({ ...editBankForm, bic: e.target.value.toUpperCase() })}
-                  placeholder="BNPAFRPP"
-                  className="bg-background font-mono"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Nom de la banque</Label>
-                <Input
-                  value={editBankForm.bank_name || ""}
-                  onChange={(e) => setEditBankForm({ ...editBankForm, bank_name: e.target.value })}
-                  placeholder="BNP Paribas"
-                  className="bg-background"
-                />
-              </div>
-            </div>
+
+            {/* IBAN fields */}
+            {(editBankForm.type || "iban") === "iban" && (
+              <>
+                <div className="space-y-2">
+                  <Label>IBAN</Label>
+                  <Input
+                    value={(editBankForm.iban || "").replace(/(.{4})/g, "$1 ").trim()}
+                    onChange={(e) => setEditBankForm({ ...editBankForm, iban: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") })}
+                    placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"
+                    className="bg-background font-mono tracking-wider"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>BIC</Label>
+                    <Input
+                      value={editBankForm.bic || ""}
+                      onChange={(e) => setEditBankForm({ ...editBankForm, bic: e.target.value.toUpperCase() })}
+                      placeholder="BNPAFRPP"
+                      className="bg-background font-mono"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Nom de la banque</Label>
+                    <Input
+                      value={editBankForm.bank_name || ""}
+                      onChange={(e) => setEditBankForm({ ...editBankForm, bank_name: e.target.value })}
+                      placeholder="BNP Paribas"
+                      className="bg-background"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* RIB Maroc fields */}
+            {editBankForm.type === "rib_maroc" && (
+              <>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label>Code banque</Label>
+                    <Input
+                      value={editBankForm.bank_code || ""}
+                      onChange={(e) => setEditBankForm({ ...editBankForm, bank_code: e.target.value.replace(/\D/g, "").slice(0, 3) })}
+                      placeholder="XXX"
+                      maxLength={3}
+                      className="bg-background font-mono"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Code ville</Label>
+                    <Input
+                      value={editBankForm.city_code || ""}
+                      onChange={(e) => setEditBankForm({ ...editBankForm, city_code: e.target.value.replace(/\D/g, "").slice(0, 3) })}
+                      placeholder="XXX"
+                      maxLength={3}
+                      className="bg-background font-mono"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Clé RIB</Label>
+                    <Input
+                      value={editBankForm.rib_key || ""}
+                      onChange={(e) => setEditBankForm({ ...editBankForm, rib_key: e.target.value.replace(/\D/g, "").slice(0, 2) })}
+                      placeholder="XX"
+                      maxLength={2}
+                      className="bg-background font-mono"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Numéro de compte</Label>
+                  <Input
+                    value={editBankForm.account_number || ""}
+                    onChange={(e) => setEditBankForm({ ...editBankForm, account_number: e.target.value })}
+                    placeholder="Numéro de compte"
+                    className="bg-background font-mono"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>BIC/SWIFT</Label>
+                    <Input
+                      value={editBankForm.bic || ""}
+                      onChange={(e) => setEditBankForm({ ...editBankForm, bic: e.target.value.toUpperCase() })}
+                      placeholder="BMCEXXXX"
+                      className="bg-background font-mono"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Nom de la banque</Label>
+                    <Input
+                      value={editBankForm.bank_name || ""}
+                      onChange={(e) => setEditBankForm({ ...editBankForm, bank_name: e.target.value })}
+                      placeholder="BMCE Bank"
+                      className="bg-background"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Other fields */}
+            {editBankForm.type === "other" && (
+              <>
+                <div className="space-y-2">
+                  <Label>Numéro de compte</Label>
+                  <Input
+                    value={editBankForm.account_number || ""}
+                    onChange={(e) => setEditBankForm({ ...editBankForm, account_number: e.target.value })}
+                    placeholder="Numéro de compte"
+                    className="bg-background font-mono"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>BIC/SWIFT</Label>
+                    <Input
+                      value={editBankForm.bic || ""}
+                      onChange={(e) => setEditBankForm({ ...editBankForm, bic: e.target.value.toUpperCase() })}
+                      placeholder="XXXXXXXX"
+                      className="bg-background font-mono"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Nom de la banque</Label>
+                    <Input
+                      value={editBankForm.bank_name || ""}
+                      onChange={(e) => setEditBankForm({ ...editBankForm, bank_name: e.target.value })}
+                      placeholder="Nom de la banque"
+                      className="bg-background"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Informations complémentaires</Label>
+                  <Textarea
+                    value={editBankForm.additional_info || ""}
+                    onChange={(e) => setEditBankForm({ ...editBankForm, additional_info: e.target.value })}
+                    placeholder="Informations supplémentaires..."
+                    className="bg-background"
+                    rows={3}
+                  />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setEditBankOpen(false)}>Annuler</Button>
