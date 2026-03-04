@@ -21,9 +21,21 @@ import "react-phone-number-input/style.css";
 
 type LeadEnriched = Tables<"leads_enriched">;
 
-const APPORTEUR_SOURCES = Object.entries(leadSourceConfig)
-  .filter(([k]) => k.startsWith("apporteur_"))
-  .map(([k, v]) => ({ value: k, label: v.label }));
+const APPORTEUR_SOURCES = [
+  { value: "apporteur_facebook", label: "Facebook" },
+  { value: "apporteur_whatsapp", label: "WhatsApp" },
+  { value: "apporteur_instagram", label: "Instagram" },
+  { value: "apporteur_linkedin", label: "LinkedIn" },
+  { value: "apporteur_recommandation", label: "Recommandation" },
+  { value: "apporteur_telegram", label: "Telegram" },
+  { value: "apporteur_tiktok", label: "TikTok" },
+  { value: "apporteur_autre", label: "Autre" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "inscrit_conference", label: "Inscrit conférence" },
+  { value: "call_booke", label: "Call booké" },
+];
 
 export default function ApporteurLeads() {
   const { profile } = useAuth();

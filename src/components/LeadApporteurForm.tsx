@@ -6,9 +6,26 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RefreshCw } from "lucide-react";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+
+const APPORTEUR_SOURCES = [
+  { value: "apporteur_facebook", label: "Facebook" },
+  { value: "apporteur_whatsapp", label: "WhatsApp" },
+  { value: "apporteur_instagram", label: "Instagram" },
+  { value: "apporteur_linkedin", label: "LinkedIn" },
+  { value: "apporteur_recommandation", label: "Recommandation" },
+  { value: "apporteur_telegram", label: "Telegram" },
+  { value: "apporteur_tiktok", label: "TikTok" },
+  { value: "apporteur_autre", label: "Autre" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "inscrit_conference", label: "Inscrit conférence" },
+  { value: "call_booke", label: "Call booké" },
+];
 
 export default function LeadApporteurForm({
   open,
@@ -24,6 +41,9 @@ export default function LeadApporteurForm({
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState<string | undefined>("");
+  const [source, setSource] = useState("apporteur_recommandation");
+  const [sourceDetail, setSourceDetail] = useState("");
+  const [status, setStatus] = useState("inscrit_conference");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -31,6 +51,9 @@ export default function LeadApporteurForm({
     setFullName("");
     setEmail("");
     setPhone("");
+    setSource("apporteur_recommandation");
+    setSourceDetail("");
+    setStatus("inscrit_conference");
     setNotes("");
   };
 
@@ -40,6 +63,11 @@ export default function LeadApporteurForm({
 
     if (!isValidPhoneNumber(phone)) {
       toast({ title: "Numéro de téléphone invalide", variant: "destructive" });
+      return;
+    }
+
+    if (source === "apporteur_autre" && !sourceDetail.trim()) {
+      toast({ title: "Veuillez préciser la source", variant: "destructive" });
       return;
     }
 
@@ -57,12 +85,23 @@ export default function LeadApporteurForm({
       return;
     }
 
+    // Build notes field
+    let finalNotes = "";
+    if (source === "apporteur_autre" && sourceDetail.trim()) {
+      finalNotes = `Source: ${sourceDetail.trim()}`;
+    }
+    if (notes.trim()) {
+      finalNotes = finalNotes ? `${finalNotes}\n${notes.trim()}` : notes.trim();
+    }
+
     const { error: insertError } = await supabase.from("leads").insert({
       contact_id: contactId,
-      source: "apporteur",
-      source_detail: "apporteur",
+      source: source,
+      source_detail: source,
       apporteur_id: profile.id,
-      status: "nouveau",
+      apporteur_source: source,
+      status: status,
+      notes: finalNotes || null,
     });
 
     if (insertError) {
@@ -94,6 +133,16 @@ export default function LeadApporteurForm({
             />
           </div>
           <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Téléphone *</label>
+            <PhoneInput
+              international
+              defaultCountry="FR"
+              value={phone}
+              onChange={setPhone}
+              placeholder="6 12 34 56 78"
+            />
+          </div>
+          <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Email</label>
             <Input
               type="email"
@@ -104,14 +153,42 @@ export default function LeadApporteurForm({
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Téléphone *</label>
-            <PhoneInput
-              international
-              defaultCountry="FR"
-              value={phone}
-              onChange={setPhone}
-              placeholder="6 12 34 56 78"
-            />
+            <label className="text-sm font-medium text-foreground">Source *</label>
+            <Select value={source} onValueChange={setSource}>
+              <SelectTrigger className="bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {APPORTEUR_SOURCES.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {source === "apporteur_autre" && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Précisez la source *</label>
+              <Input
+                value={sourceDetail}
+                onChange={(e) => setSourceDetail(e.target.value)}
+                placeholder="Précisez la source..."
+                required
+                className="bg-background"
+              />
+            </div>
+          )}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Statut *</label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Notes</label>
