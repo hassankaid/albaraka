@@ -297,7 +297,7 @@ export default function ApporteurLeads() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Email</label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@exemple.com" className="bg-background" />
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Ex : fatima@gmail.com" className="bg-background" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Source *</label>
