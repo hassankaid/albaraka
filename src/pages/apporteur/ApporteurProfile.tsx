@@ -125,7 +125,8 @@ export default function ApporteurProfile() {
     if (!country.trim()) missing.push("Pays");
     // SIRET is optional — not included in missing fields
     if (!bankRibUrl) missing.push("RIB");
-    if (!bankDetails?.iban) missing.push("IBAN");
+    const hasValidBank = bankDetails?.type === "iban" ? !!bankDetails?.iban : bankDetails?.type === "rib_maroc" ? !!bankDetails?.account_number : !!bankDetails?.account_number;
+    if (!hasValidBank && !bankDetails?.iban) missing.push("Coordonnées bancaires");
     return missing;
   }, [fullName, phone, address, postalCode, city, country, siret, bankRibUrl, bankDetails]);
 
