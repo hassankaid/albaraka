@@ -22,6 +22,9 @@ interface CommissionRow {
   payment_number: number | null;
   total_payments: number | null;
   payment_amount: number | null;
+  payment_paid_at: string | null;
+  payment_due_date: string | null;
+  payment_status: string | null;
 }
 
 interface InvoiceRow {
@@ -70,7 +73,7 @@ export default function ApporteurCommissions() {
 
     const [commissionsRes, invoicesRes] = await Promise.all([
       supabase.from("commissions")
-        .select("*, sales!commissions_sale_id_fkey(product, amount_ht, contact_id, mensualites, contacts!sales_contact_id_fkey(full_name))")
+        .select("*, sales!commissions_sale_id_fkey(product, amount_ht, contact_id, mensualites, contacts!sales_contact_id_fkey(full_name)), payments!commissions_payment_id_fkey(payment_number, total_payments, paid_at, due_date, status)")
         .eq("beneficiary_user_id", userId)
         .gte("created_at", startDate)
         .lte("created_at", endDate)
@@ -92,9 +95,12 @@ export default function ApporteurCommissions() {
         status: c.status,
         created_at: c.created_at,
         client_name: c.sales?.contacts?.full_name || null,
-        payment_number: null,
-        total_payments: c.sales?.mensualites || null,
-        payment_amount: c.sales?.amount_ht ? c.sales.amount_ht / (c.sales.mensualites || 1) : null,
+        payment_number: c.payments?.payment_number || null,
+        total_payments: c.payments?.total_payments || c.sales?.mensualites || null,
+        payment_amount: c.payments ? null : (c.sales?.amount_ht ? c.sales.amount_ht / (c.sales.mensualites || 1) : null),
+        payment_paid_at: c.payments?.paid_at || null,
+        payment_due_date: c.payments?.due_date || null,
+        payment_status: c.payments?.status || null,
       }))
     );
 
@@ -215,8 +221,14 @@ export default function ApporteurCommissions() {
                         <TableCell>
                           <Badge variant="outline" className={`text-xs ${statusInfo.class}`}>{statusInfo.label}</Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {c.created_at ? formatDateOnly(c.created_at) : "—"}
+                        <TableCell className="text-sm">
+                          {c.payment_paid_at ? (
+                            <span className="text-muted-foreground">Payé le {formatDateOnly(c.payment_paid_at)}</span>
+                          ) : c.payment_due_date ? (
+                            <span className="text-muted-foreground/70 italic">Échéance : {formatDateOnly(c.payment_due_date)}</span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     );
