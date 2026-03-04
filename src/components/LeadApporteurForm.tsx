@@ -51,9 +51,9 @@ export default function LeadApporteurForm({
     setFullName("");
     setEmail("");
     setPhone("");
-    setSource("apporteur_recommandation");
+    setSource("");
     setSourceDetail("");
-    setStatus("inscrit_conference");
+    setStatus("");
     setNotes("");
   };
 
