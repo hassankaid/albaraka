@@ -293,7 +293,7 @@ export default function ApporteurLeads() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Téléphone *</label>
-              <PhoneInput international defaultCountry="FR" value={phone} onChange={setPhone} placeholder="6 12 34 56 78" />
+              <PhoneInput international defaultCountry="FR" value={phone} onChange={setPhone} placeholder="Ex : 6 12 34 56 78" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Email</label>
