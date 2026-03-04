@@ -106,12 +106,15 @@ export default function ApporteurLeads() {
       finalNotes = finalNotes ? `${finalNotes}\n${notes.trim()}` : notes.trim();
     }
 
+    const apporteurSource = source.replace(/^apporteur_/, "");
+
     const { error: insertError } = await supabase.from("leads").insert({
       contact_id: contactId,
-      source: source,
-      source_detail: source,
+      source,
+      source_detail: source === "apporteur_autre" ? sourceDetail.trim() || null : null,
       apporteur_id: profile.id,
-      apporteur_source: source,
+      apporteur_source: apporteurSource,
+      apporteur_source_detail: source === "apporteur_autre" ? sourceDetail.trim() || null : null,
       status: leadStatus,
       notes: finalNotes || null,
     });
