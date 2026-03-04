@@ -181,7 +181,7 @@ export default function LeadApporteurForm({
             <label className="text-sm font-medium text-foreground">Statut *</label>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger className="bg-background">
-                <SelectValue />
+                <SelectValue placeholder="Sélectionnez un statut" />
               </SelectTrigger>
               <SelectContent>
                 {STATUS_OPTIONS.map((s) => (
