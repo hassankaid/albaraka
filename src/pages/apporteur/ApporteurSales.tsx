@@ -241,7 +241,7 @@ export default function ApporteurSales() {
                           ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
                           : "bg-orange-500/20 text-orange-300 border-orange-500/30"
                       }`}>
-                        {sale.payments_paid}/{sale.payments_total} payé{sale.payments_paid > 1 ? "s" : ""}
+                        {sale.payments_paid}/{sale.payments_total}
                       </Badge>
                     </TableCell>
                     <TableCell>
