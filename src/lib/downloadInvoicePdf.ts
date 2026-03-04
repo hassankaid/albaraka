@@ -24,6 +24,10 @@ export async function downloadInvoicePdf(invoiceNumber: string, htmlContent: str
 
   const element = document.createElement("div");
   element.innerHTML = content;
+  element.style.position = "fixed";
+  element.style.left = "-9999px";
+  element.style.top = "0";
+  element.style.width = "210mm";
   element.style.padding = "40px";
   element.style.fontFamily = "Helvetica, Arial, sans-serif";
   element.style.fontSize = "14px";
