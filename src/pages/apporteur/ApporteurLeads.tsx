@@ -312,6 +312,25 @@ export default function ApporteurLeads() {
                 </SelectContent>
               </Select>
             </div>
+            {source === "apporteur_autre" && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Précisez la source *</label>
+                <Input value={sourceDetail} onChange={(e) => setSourceDetail(e.target.value)} placeholder="Précisez la source..." required className="bg-background" />
+              </div>
+            )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Statut *</label>
+              <Select value={leadStatus} onValueChange={setLeadStatus}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Notes</label>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes optionnelles..." className="bg-background" />
