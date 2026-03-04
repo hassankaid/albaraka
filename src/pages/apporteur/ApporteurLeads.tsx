@@ -21,9 +21,21 @@ import "react-phone-number-input/style.css";
 
 type LeadEnriched = Tables<"leads_enriched">;
 
-const APPORTEUR_SOURCES = Object.entries(leadSourceConfig)
-  .filter(([k]) => k.startsWith("apporteur_"))
-  .map(([k, v]) => ({ value: k, label: v.label }));
+const APPORTEUR_SOURCES = [
+  { value: "apporteur_facebook", label: "Facebook" },
+  { value: "apporteur_whatsapp", label: "WhatsApp" },
+  { value: "apporteur_instagram", label: "Instagram" },
+  { value: "apporteur_linkedin", label: "LinkedIn" },
+  { value: "apporteur_recommandation", label: "Recommandation" },
+  { value: "apporteur_telegram", label: "Telegram" },
+  { value: "apporteur_tiktok", label: "TikTok" },
+  { value: "apporteur_autre", label: "Autre" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "inscrit_conference", label: "Inscrit conférence" },
+  { value: "call_booke", label: "Call booké" },
+];
 
 export default function ApporteurLeads() {
   const { profile } = useAuth();
@@ -39,6 +51,8 @@ export default function ApporteurLeads() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState<string | undefined>("");
   const [source, setSource] = useState("apporteur_recommandation");
+  const [sourceDetail, setSourceDetail] = useState("");
+  const [leadStatus, setLeadStatus] = useState("inscrit_conference");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -56,7 +70,7 @@ export default function ApporteurLeads() {
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
   const resetForm = () => {
-    setFullName(""); setEmail(""); setPhone(""); setSource("apporteur_recommandation"); setNotes("");
+    setFullName(""); setEmail(""); setPhone(""); setSource("apporteur_recommandation"); setSourceDetail(""); setLeadStatus("inscrit_conference"); setNotes("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,6 +78,10 @@ export default function ApporteurLeads() {
     if (!profile || !fullName.trim() || !phone) return;
     if (!isValidPhoneNumber(phone)) {
       toast({ title: "Numéro de téléphone invalide", variant: "destructive" });
+      return;
+    }
+    if (source === "apporteur_autre" && !sourceDetail.trim()) {
+      toast({ title: "Veuillez préciser la source", variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -80,14 +98,22 @@ export default function ApporteurLeads() {
       return;
     }
 
+    let finalNotes = "";
+    if (source === "apporteur_autre" && sourceDetail.trim()) {
+      finalNotes = `Source: ${sourceDetail.trim()}`;
+    }
+    if (notes.trim()) {
+      finalNotes = finalNotes ? `${finalNotes}\n${notes.trim()}` : notes.trim();
+    }
+
     const { error: insertError } = await supabase.from("leads").insert({
       contact_id: contactId,
       source: source,
       source_detail: source,
       apporteur_id: profile.id,
       apporteur_source: source,
-      status: "a_qualifier",
-      notes: notes.trim() || null,
+      status: leadStatus,
+      notes: finalNotes || null,
     });
 
     if (insertError) {
@@ -281,6 +307,25 @@ export default function ApporteurLeads() {
                 </SelectTrigger>
                 <SelectContent>
                   {APPORTEUR_SOURCES.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {source === "apporteur_autre" && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Précisez la source *</label>
+                <Input value={sourceDetail} onChange={(e) => setSourceDetail(e.target.value)} placeholder="Précisez la source..." required className="bg-background" />
+              </div>
+            )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Statut *</label>
+              <Select value={leadStatus} onValueChange={setLeadStatus}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((s) => (
                     <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                   ))}
                 </SelectContent>
