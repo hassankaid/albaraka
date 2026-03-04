@@ -488,7 +488,7 @@ export default function ApporteurProfile() {
         </CardContent>
       </Card>
 
-      <input ref={ribInputRef} type="file" accept="application/pdf" className="hidden" onChange={handleRibUpload} />
+      <input ref={ribInputRef} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" className="hidden" onChange={handleRibUpload} />
 
       {/* ── Edit Bank Details Modal ── */}
       <Dialog open={editBankOpen} onOpenChange={setEditBankOpen}>
