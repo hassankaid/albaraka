@@ -118,7 +118,7 @@ export default function AdminData() {
 
   // ── Batch fetch helper (bypasses 1000-row limit) ──
   async function fetchAllRows<T>(
-    queryFn: (offset: number, limit: number) => Promise<{ data: T[] | null; error: any }>,
+    queryFn: (offset: number, limit: number) => PromiseLike<{ data: T[] | null; error: any }>,
     batchSize = 1000
   ): Promise<T[]> {
     const all: T[] = [];
