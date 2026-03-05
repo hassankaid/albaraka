@@ -340,11 +340,15 @@ export default function AdminData() {
       label: c.full_name || "Sans nom",
       sub: [c.email, c.phone_normalized].filter(Boolean).join(" · ") || "Aucune info",
     }));
-    if (linkModal.field === "lead_id") return leadOptions.map(l => ({
-      id: l.id,
-      label: `${l.raw_full_name || "Sans nom"} — ${getSourceLabel(l.source)} — ${formatDate(l.created_at)}`,
-      sub: [l.raw_email, l.raw_phone].filter(Boolean).join(" · ") || "",
-    }));
+    if (linkModal.field === "lead_id") return leadOptions.map(l => {
+      const details = [l.raw_email, l.raw_phone].filter(Boolean).join(" · ");
+      const actors = [l.assigned_to_name && `Setter: ${l.assigned_to_name}`, l.apporteur_name && `Apporteur: ${l.apporteur_name}`].filter(Boolean).join(" · ");
+      return {
+        id: l.id,
+        label: `${l.raw_full_name || "Sans nom"} — ${getSourceLabel(l.source)} — ${formatDate(l.created_at)}`,
+        sub: [details, actors].filter(Boolean).join(" — ") || "",
+      };
+    });
     if (linkModal.field === "call_id") return callOptions.map(c => ({
       id: c.id,
       label: `${c.raw_full_name || c.contact_name || "Sans nom"} — ${formatDate(c.scheduled_at)}`,
