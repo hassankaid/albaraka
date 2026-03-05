@@ -335,9 +335,21 @@ export default function AdminData() {
   // Determine which options to show in the link modal
   const getLinkOptions = () => {
     if (!linkModal) return [];
-    if (linkModal.field === "contact_id") return contactOptions.map(c => ({ id: c.id, label: `${c.full_name || "Sans nom"} — ${c.email || c.phone_normalized || ""}` }));
-    if (linkModal.field === "lead_id") return leadOptions.map(l => ({ id: l.id, label: `${l.raw_full_name || "Sans nom"} — ${getSourceLabel(l.source)} — ${formatDate(l.created_at)}` }));
-    if (linkModal.field === "call_id") return callOptions.map(c => ({ id: c.id, label: `${c.raw_full_name || c.contact_name || "Sans nom"} — ${formatDate(c.scheduled_at)}` }));
+    if (linkModal.field === "contact_id") return contactOptions.map(c => ({
+      id: c.id,
+      label: c.full_name || "Sans nom",
+      sub: [c.email, c.phone_normalized].filter(Boolean).join(" · ") || "Aucune info",
+    }));
+    if (linkModal.field === "lead_id") return leadOptions.map(l => ({
+      id: l.id,
+      label: `${l.raw_full_name || "Sans nom"} — ${getSourceLabel(l.source)} — ${formatDate(l.created_at)}`,
+      sub: [l.raw_email, l.raw_phone].filter(Boolean).join(" · ") || "",
+    }));
+    if (linkModal.field === "call_id") return callOptions.map(c => ({
+      id: c.id,
+      label: `${c.raw_full_name || c.contact_name || "Sans nom"} — ${formatDate(c.scheduled_at)}`,
+      sub: [c.raw_email || c.contact_email, c.raw_phone || c.contact_phone].filter(Boolean).join(" · ") || "",
+    }));
     return [];
   };
 
@@ -688,14 +700,14 @@ export default function AdminData() {
             <div>
               <Label>Rechercher</Label>
               <Input
-                placeholder="Filtrer par nom, email..."
+                placeholder="Filtrer par nom, email, téléphone..."
                 value={linkSearch}
                 onChange={(e) => setLinkSearch(e.target.value)}
                 className="mt-1"
               />
             </div>
 
-            <div className="max-h-60 overflow-y-auto border rounded-md">
+            <div className="max-h-72 overflow-y-auto border rounded-md">
               {getLinkOptions().length === 0 ? (
                 <div className="py-6 text-center text-sm text-muted-foreground">Aucun résultat</div>
               ) : (
@@ -703,13 +715,14 @@ export default function AdminData() {
                   <div
                     key={opt.id}
                     onClick={() => setLinkValue(opt.id)}
-                    className={`px-3 py-2 text-sm cursor-pointer transition-colors border-b last:border-b-0 ${
+                    className={`px-3 py-2.5 cursor-pointer transition-colors border-b last:border-b-0 ${
                       linkValue === opt.id
                         ? "bg-primary/10 text-primary font-medium"
                         : "hover:bg-secondary/50 text-foreground"
                     }`}
                   >
-                    {opt.label}
+                    <p className="text-sm">{opt.label}</p>
+                    {opt.sub && <p className="text-xs text-muted-foreground mt-0.5">{opt.sub}</p>}
                   </div>
                 ))
               )}
