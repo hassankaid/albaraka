@@ -264,7 +264,7 @@ export default function AdminData() {
     const data = await fetchAllRows<any>((offset, limit) =>
       supabase
         .from("calls_enriched")
-        .select("id, raw_full_name, raw_email, raw_phone, scheduled_at, status, event_type, contact_id, contact_full_name, contact_phone, contact_email, lead_id, assigned_to_name")
+        .select("id, raw_full_name, raw_email, raw_phone, scheduled_at, status, event_type, contact_id, contact_full_name, contact_phone, contact_email, lead_id, assigned_to, assigned_to_name")
         .order("scheduled_at", { ascending: false })
         .range(offset, offset + limit - 1)
     );
