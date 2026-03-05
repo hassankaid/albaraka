@@ -303,9 +303,9 @@ export default function AdminData() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    await Promise.all([fetchLeads(), fetchCalls(), fetchContacts(), fetchSales()]);
+    await Promise.all([fetchLeads(), fetchCalls(), fetchContacts(), fetchSales(), fetchProfiles()]);
     setLoading(false);
-  }, [fetchLeads, fetchCalls, fetchContacts, fetchSales]);
+  }, [fetchLeads, fetchCalls, fetchContacts, fetchSales, fetchProfiles]);
 
   useEffect(() => {
     fetchAll();
