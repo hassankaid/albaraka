@@ -34,11 +34,15 @@ interface LeadRow {
 interface CallRow {
   id: string;
   raw_full_name: string | null;
+  raw_email: string | null;
+  raw_phone: string | null;
   scheduled_at: string;
   status: string;
   event_type: string | null;
   contact_id: string | null;
   contact_name: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
   lead_id: string | null;
   assigned_to_name: string | null;
 }
