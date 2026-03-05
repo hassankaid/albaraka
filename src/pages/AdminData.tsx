@@ -47,6 +47,7 @@ interface CallRow {
   contact_phone: string | null;
   contact_email: string | null;
   lead_id: string | null;
+  assigned_to: string | null;
   assigned_to_name: string | null;
 }
 
