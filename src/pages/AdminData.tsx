@@ -34,11 +34,15 @@ interface LeadRow {
 interface CallRow {
   id: string;
   raw_full_name: string | null;
+  raw_email: string | null;
+  raw_phone: string | null;
   scheduled_at: string;
   status: string;
   event_type: string | null;
   contact_id: string | null;
   contact_name: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
   lead_id: string | null;
   assigned_to_name: string | null;
 }
@@ -127,7 +131,7 @@ export default function AdminData() {
   const fetchCalls = useCallback(async () => {
     const { data } = await supabase
       .from("calls_enriched")
-      .select("id, raw_full_name, scheduled_at, status, event_type, contact_id, contact_full_name, lead_id, assigned_to_name")
+      .select("id, raw_full_name, raw_email, raw_phone, scheduled_at, status, event_type, contact_id, contact_full_name, contact_phone, contact_email, lead_id, assigned_to_name")
       .order("scheduled_at", { ascending: false })
       .limit(500);
     if (data) {
@@ -180,42 +184,59 @@ export default function AdminData() {
 
   // ── Search filter ──
   const q = search.toLowerCase();
+  // Normalize search: strip spaces/dashes for phone matching
+  const qNorm = q.replace(/[\s\-().+]/g, "");
+  const matchesField = (val: string | null) => {
+    if (!val) return false;
+    const lower = val.toLowerCase();
+    if (lower.includes(q)) return true;
+    // Also try normalized phone match
+    if (qNorm.length >= 3 && val.replace(/[\s\-().+]/g, "").includes(qNorm)) return true;
+    return false;
+  };
+
   const filteredLeads = useMemo(() => {
     if (!q) return leads;
     return leads.filter(l =>
-      l.raw_full_name?.toLowerCase().includes(q) ||
-      l.raw_email?.toLowerCase().includes(q) ||
-      l.raw_phone?.toLowerCase().includes(q) ||
-      l.contact_name?.toLowerCase().includes(q)
+      matchesField(l.raw_full_name) ||
+      matchesField(l.raw_email) ||
+      matchesField(l.raw_phone) ||
+      matchesField(l.contact_name) ||
+      matchesField(l.apporteur_name) ||
+      matchesField(l.assigned_to_name)
     );
-  }, [leads, q]);
+  }, [leads, q, qNorm]);
 
   const filteredCalls = useMemo(() => {
     if (!q) return calls;
     return calls.filter(c =>
-      c.raw_full_name?.toLowerCase().includes(q) ||
-      c.contact_name?.toLowerCase().includes(q) ||
-      c.assigned_to_name?.toLowerCase().includes(q)
+      matchesField(c.raw_full_name) ||
+      matchesField(c.raw_email) ||
+      matchesField(c.raw_phone) ||
+      matchesField(c.contact_name) ||
+      matchesField(c.contact_phone) ||
+      matchesField(c.contact_email) ||
+      matchesField(c.assigned_to_name)
     );
-  }, [calls, q]);
+  }, [calls, q, qNorm]);
 
   const filteredContacts = useMemo(() => {
     if (!q) return contacts;
     return contacts.filter(c =>
-      c.full_name?.toLowerCase().includes(q) ||
-      c.email?.toLowerCase().includes(q) ||
-      c.phone_normalized?.toLowerCase().includes(q)
+      matchesField(c.full_name) ||
+      matchesField(c.email) ||
+      matchesField(c.phone_normalized)
     );
-  }, [contacts, q]);
+  }, [contacts, q, qNorm]);
 
   const filteredSales = useMemo(() => {
     if (!q) return sales;
     return sales.filter(s =>
-      s.contact_name?.toLowerCase().includes(q) ||
-      s.product?.toLowerCase().includes(q) ||
-      s.closed_by_name?.toLowerCase().includes(q)
+      matchesField(s.contact_name) ||
+      matchesField(s.product) ||
+      matchesField(s.closed_by_name)
     );
-  }, [sales, q]);
+  }, [sales, q, qNorm]);
 
   // ── Link management ──
   const openLinkModal = (type: "lead" | "call" | "sale", id: string, field: string, currentValue: string | null, label: string) => {
@@ -271,8 +292,9 @@ export default function AdminData() {
   // Options for link selects
   const contactOptions = useMemo(() => {
     const searchQ = linkSearch.toLowerCase();
+    const searchNorm = linkSearch.replace(/[\s\-().+]/g, "");
     return contacts
-      .filter(c => !searchQ || c.full_name?.toLowerCase().includes(searchQ) || c.email?.toLowerCase().includes(searchQ))
+      .filter(c => !searchQ || c.full_name?.toLowerCase().includes(searchQ) || c.email?.toLowerCase().includes(searchQ) || (searchNorm.length >= 3 && c.phone_normalized?.replace(/[\s\-().+]/g, "").includes(searchNorm)))
       .slice(0, 50);
   }, [contacts, linkSearch]);
 
@@ -362,18 +384,23 @@ export default function AdminData() {
       </div>
 
       {/* Search */}
-      <div className="relative max-w-sm">
+      <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-card" />
+        <Input placeholder="Rechercher par nom, email, téléphone..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-card" />
+        {q && (
+          <p className="text-xs text-muted-foreground mt-1.5 ml-1">
+            {filteredLeads.length + filteredCalls.length + filteredContacts.length + filteredSales.length} résultat(s) trouvé(s)
+          </p>
+        )}
       </div>
 
       {/* Tabs */}
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid grid-cols-4 w-full max-w-lg">
-          <TabsTrigger value="leads" className="gap-1"><Users className="h-3.5 w-3.5" /> Leads</TabsTrigger>
-          <TabsTrigger value="calls" className="gap-1"><Phone className="h-3.5 w-3.5" /> Calls</TabsTrigger>
-          <TabsTrigger value="contacts" className="gap-1"><BookUser className="h-3.5 w-3.5" /> Contacts</TabsTrigger>
-          <TabsTrigger value="sales" className="gap-1"><BadgeEuro className="h-3.5 w-3.5" /> Ventes</TabsTrigger>
+        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+          <TabsTrigger value="leads" className="gap-1"><Users className="h-3.5 w-3.5" /> Leads {q && <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">{filteredLeads.length}</Badge>}</TabsTrigger>
+          <TabsTrigger value="calls" className="gap-1"><Phone className="h-3.5 w-3.5" /> Calls {q && <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">{filteredCalls.length}</Badge>}</TabsTrigger>
+          <TabsTrigger value="contacts" className="gap-1"><BookUser className="h-3.5 w-3.5" /> Contacts {q && <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">{filteredContacts.length}</Badge>}</TabsTrigger>
+          <TabsTrigger value="sales" className="gap-1"><BadgeEuro className="h-3.5 w-3.5" /> Ventes {q && <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">{filteredSales.length}</Badge>}</TabsTrigger>
         </TabsList>
 
         {/* ── LEADS TAB ── */}
@@ -458,7 +485,13 @@ export default function AdminData() {
               <TableBody>
                 {filteredCalls.map((c) => (
                   <TableRow key={c.id} className="border-border hover:bg-secondary/50 transition-colors">
-                    <TableCell className="font-semibold text-foreground text-sm">{c.raw_full_name || c.contact_name || "—"}</TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="font-semibold text-foreground text-sm">{c.raw_full_name || c.contact_name || "—"}</p>
+                        {(c.raw_email || c.contact_email) && <p className="text-xs text-muted-foreground">{c.raw_email || c.contact_email}</p>}
+                        {(c.raw_phone || c.contact_phone) && <p className="text-xs text-muted-foreground">{c.raw_phone || c.contact_phone}</p>}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{formatDate(c.scheduled_at)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{c.event_type || "—"}</TableCell>
                     <TableCell>
