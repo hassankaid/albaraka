@@ -89,7 +89,7 @@ const PAYMENT_LABELS: Record<string, string> = {
   refunded: "Remboursé",
 };
 
-const LEAD_SOURCES = ["systeme_io", "instagram", "apporteur", "whatsapp_ads", "facebook_ads", "autre"];
+const LEAD_SOURCES = Object.keys(leadSourceConfig);
 const LEAD_STATUSES = Object.keys(LEAD_STATUS_LABELS);
 const CALL_STATUSES = Object.keys(CALL_STATUS_LABELS);
 const CALL_EVENT_TYPES = ["vsl", "conference", "pole_vente", ""];
