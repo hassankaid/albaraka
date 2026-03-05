@@ -116,55 +116,75 @@ export default function AdminData() {
   // Contact sheet
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
 
+  // ── Batch fetch helper (bypasses 1000-row limit) ──
+  async function fetchAllRows<T>(
+    queryFn: (offset: number, limit: number) => PromiseLike<{ data: T[] | null; error: any }>,
+    batchSize = 1000
+  ): Promise<T[]> {
+    const all: T[] = [];
+    let offset = 0;
+    let hasMore = true;
+    while (hasMore) {
+      const { data, error } = await queryFn(offset, batchSize);
+      if (error || !data || data.length === 0) { hasMore = false; break; }
+      all.push(...data);
+      offset += batchSize;
+      hasMore = data.length === batchSize;
+    }
+    return all;
+  }
+
   // ── Fetch ──
   const fetchLeads = useCallback(async () => {
-    const { data } = await supabase
-      .from("leads_enriched")
-      .select("id, raw_full_name, raw_email, raw_phone, source, status, contact_id, contact_full_name, assigned_to_name, apporteur_name, created_at")
-      .order("created_at", { ascending: false })
-      .limit(500);
-    if (data) {
-      setLeads(data.map((l: any) => ({ ...l, contact_name: l.contact_full_name })));
-    }
+    const data = await fetchAllRows<any>((offset, limit) =>
+      supabase
+        .from("leads_enriched")
+        .select("id, raw_full_name, raw_email, raw_phone, source, status, contact_id, contact_full_name, assigned_to_name, apporteur_name, created_at")
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1)
+    );
+    setLeads(data.map((l: any) => ({ ...l, contact_name: l.contact_full_name })));
   }, []);
 
   const fetchCalls = useCallback(async () => {
-    const { data } = await supabase
-      .from("calls_enriched")
-      .select("id, raw_full_name, raw_email, raw_phone, scheduled_at, status, event_type, contact_id, contact_full_name, contact_phone, contact_email, lead_id, assigned_to_name")
-      .order("scheduled_at", { ascending: false })
-      .limit(500);
-    if (data) {
-      setCalls(data.map((c: any) => ({ ...c, contact_name: c.contact_full_name })));
-    }
+    const data = await fetchAllRows<any>((offset, limit) =>
+      supabase
+        .from("calls_enriched")
+        .select("id, raw_full_name, raw_email, raw_phone, scheduled_at, status, event_type, contact_id, contact_full_name, contact_phone, contact_email, lead_id, assigned_to_name")
+        .order("scheduled_at", { ascending: false })
+        .range(offset, offset + limit - 1)
+    );
+    setCalls(data.map((c: any) => ({ ...c, contact_name: c.contact_full_name })));
   }, []);
 
   const fetchContacts = useCallback(async () => {
-    const { data } = await supabase
-      .from("contacts")
-      .select("id, full_name, email, phone_normalized, created_at")
-      .order("created_at", { ascending: false })
-      .limit(500);
-    if (data) setContacts(data);
+    const data = await fetchAllRows<any>((offset, limit) =>
+      supabase
+        .from("contacts")
+        .select("id, full_name, email, phone_normalized, created_at")
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1)
+    );
+    setContacts(data);
   }, []);
 
   const fetchSales = useCallback(async () => {
-    const { data } = await supabase
-      .from("sales")
-      .select(`
-        id, product, amount_ht, sold_at, contact_id, lead_id, call_id, payment_status,
-        contacts!sales_contact_id_fkey(full_name),
-        profiles!sales_closed_by_fkey(full_name)
-      `)
-      .order("sold_at", { ascending: false })
-      .limit(500);
-    if (data) {
-      setSales(data.map((s: any) => ({
-        ...s,
-        contact_name: s.contacts?.full_name,
-        closed_by_name: s.profiles?.full_name,
-      })));
-    }
+    const data = await fetchAllRows<any>((offset, limit) =>
+      supabase
+        .from("sales")
+        .select(`
+          id, product, amount_ht, sold_at, contact_id, lead_id, call_id, payment_status,
+          contacts!sales_contact_id_fkey(full_name),
+          profiles!sales_closed_by_fkey(full_name)
+        `)
+        .order("sold_at", { ascending: false })
+        .range(offset, offset + limit - 1)
+    );
+    setSales(data.map((s: any) => ({
+      ...s,
+      contact_name: s.contacts?.full_name,
+      closed_by_name: s.profiles?.full_name,
+    })));
   }, []);
 
   const fetchAll = useCallback(async () => {
