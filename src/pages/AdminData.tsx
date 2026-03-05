@@ -335,9 +335,21 @@ export default function AdminData() {
   // Determine which options to show in the link modal
   const getLinkOptions = () => {
     if (!linkModal) return [];
-    if (linkModal.field === "contact_id") return contactOptions.map(c => ({ id: c.id, label: `${c.full_name || "Sans nom"} — ${c.email || c.phone_normalized || ""}` }));
-    if (linkModal.field === "lead_id") return leadOptions.map(l => ({ id: l.id, label: `${l.raw_full_name || "Sans nom"} — ${getSourceLabel(l.source)} — ${formatDate(l.created_at)}` }));
-    if (linkModal.field === "call_id") return callOptions.map(c => ({ id: c.id, label: `${c.raw_full_name || c.contact_name || "Sans nom"} — ${formatDate(c.scheduled_at)}` }));
+    if (linkModal.field === "contact_id") return contactOptions.map(c => ({
+      id: c.id,
+      label: c.full_name || "Sans nom",
+      sub: [c.email, c.phone_normalized].filter(Boolean).join(" · ") || "Aucune info",
+    }));
+    if (linkModal.field === "lead_id") return leadOptions.map(l => ({
+      id: l.id,
+      label: `${l.raw_full_name || "Sans nom"} — ${getSourceLabel(l.source)} — ${formatDate(l.created_at)}`,
+      sub: [l.raw_email, l.raw_phone].filter(Boolean).join(" · ") || "",
+    }));
+    if (linkModal.field === "call_id") return callOptions.map(c => ({
+      id: c.id,
+      label: `${c.raw_full_name || c.contact_name || "Sans nom"} — ${formatDate(c.scheduled_at)}`,
+      sub: [c.raw_email || c.contact_email, c.raw_phone || c.contact_phone].filter(Boolean).join(" · ") || "",
+    }));
     return [];
   };
 
