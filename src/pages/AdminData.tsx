@@ -484,7 +484,13 @@ export default function AdminData() {
               <TableBody>
                 {filteredCalls.map((c) => (
                   <TableRow key={c.id} className="border-border hover:bg-secondary/50 transition-colors">
-                    <TableCell className="font-semibold text-foreground text-sm">{c.raw_full_name || c.contact_name || "—"}</TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="font-semibold text-foreground text-sm">{c.raw_full_name || c.contact_name || "—"}</p>
+                        {(c.raw_email || c.contact_email) && <p className="text-xs text-muted-foreground">{c.raw_email || c.contact_email}</p>}
+                        {(c.raw_phone || c.contact_phone) && <p className="text-xs text-muted-foreground">{c.raw_phone || c.contact_phone}</p>}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{formatDate(c.scheduled_at)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{c.event_type || "—"}</TableCell>
                     <TableCell>
