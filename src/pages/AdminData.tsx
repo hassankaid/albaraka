@@ -619,8 +619,24 @@ export default function AdminData() {
                         onSave={async (v) => updateField("leads", l.id, "status", v, fetchLeads)}
                       />
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{l.assigned_to_name || "—"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{l.apporteur_name || "—"}</TableCell>
+                    <TableCell>
+                      <EditableCell
+                        value={l.assigned_to}
+                        type="select"
+                        options={["", ...profilesList.filter(p => ["ceo", "collaborateur"].includes(p.role)).map(p => p.id)]}
+                        optionLabels={Object.fromEntries([["", "— Aucun —"], ...profilesList.filter(p => ["ceo", "collaborateur"].includes(p.role)).map(p => [p.id, p.full_name])])}
+                        onSave={async (v) => updateField("leads", l.id, "assigned_to", v === "_empty" ? "" : v, fetchLeads)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <EditableCell
+                        value={l.apporteur_id}
+                        type="select"
+                        options={["", ...profilesList.filter(p => p.role === "apporteur" || profilesList.find(pp => pp.id === p.id)).map(p => p.id)]}
+                        optionLabels={Object.fromEntries([["", "— Aucun —"], ...profilesList.map(p => [p.id, p.full_name])])}
+                        onSave={async (v) => updateField("leads", l.id, "apporteur_id", v === "_empty" ? "" : v, fetchLeads)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         {l.contact_name ? (
