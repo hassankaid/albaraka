@@ -395,11 +395,11 @@ export default function AdminData() {
 
       {/* Tabs */}
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid grid-cols-4 w-full max-w-lg">
-          <TabsTrigger value="leads" className="gap-1"><Users className="h-3.5 w-3.5" /> Leads</TabsTrigger>
-          <TabsTrigger value="calls" className="gap-1"><Phone className="h-3.5 w-3.5" /> Calls</TabsTrigger>
-          <TabsTrigger value="contacts" className="gap-1"><BookUser className="h-3.5 w-3.5" /> Contacts</TabsTrigger>
-          <TabsTrigger value="sales" className="gap-1"><BadgeEuro className="h-3.5 w-3.5" /> Ventes</TabsTrigger>
+        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+          <TabsTrigger value="leads" className="gap-1"><Users className="h-3.5 w-3.5" /> Leads {q && <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">{filteredLeads.length}</Badge>}</TabsTrigger>
+          <TabsTrigger value="calls" className="gap-1"><Phone className="h-3.5 w-3.5" /> Calls {q && <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">{filteredCalls.length}</Badge>}</TabsTrigger>
+          <TabsTrigger value="contacts" className="gap-1"><BookUser className="h-3.5 w-3.5" /> Contacts {q && <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">{filteredContacts.length}</Badge>}</TabsTrigger>
+          <TabsTrigger value="sales" className="gap-1"><BadgeEuro className="h-3.5 w-3.5" /> Ventes {q && <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">{filteredSales.length}</Badge>}</TabsTrigger>
         </TabsList>
 
         {/* ── LEADS TAB ── */}
