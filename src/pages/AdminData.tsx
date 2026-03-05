@@ -349,11 +349,15 @@ export default function AdminData() {
         sub: [details, actors].filter(Boolean).join(" — ") || "",
       };
     });
-    if (linkModal.field === "call_id") return callOptions.map(c => ({
-      id: c.id,
-      label: `${c.raw_full_name || c.contact_name || "Sans nom"} — ${formatDate(c.scheduled_at)}`,
-      sub: [c.raw_email || c.contact_email, c.raw_phone || c.contact_phone].filter(Boolean).join(" · ") || "",
-    }));
+    if (linkModal.field === "call_id") return callOptions.map(c => {
+      const details = [c.raw_email || c.contact_email, c.raw_phone || c.contact_phone].filter(Boolean).join(" · ");
+      const actor = c.assigned_to_name ? `Closer: ${c.assigned_to_name}` : "";
+      return {
+        id: c.id,
+        label: `${c.raw_full_name || c.contact_name || "Sans nom"} — ${formatDate(c.scheduled_at)}`,
+        sub: [details, actor].filter(Boolean).join(" — ") || "",
+      };
+    });
     return [];
   };
 
