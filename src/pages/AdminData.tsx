@@ -205,6 +205,7 @@ export default function AdminData() {
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [contacts, setContacts] = useState<ContactRow[]>([]);
   const [sales, setSales] = useState<SaleRow[]>([]);
+  const [profilesList, setProfilesList] = useState<{ id: string; full_name: string; role: string }[]>([]);
 
   // Link modal
   const [linkModal, setLinkModal] = useState<{
