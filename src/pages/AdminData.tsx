@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { RefreshCw, Search, Link2, Unlink, Users, Phone, BookUser, BadgeEuro, Database, ExternalLink, Trash2, Check, X, Pencil } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
-import { getSourceLabel, getSourceBadgeClass, LEAD_STATUS_LABELS, LEAD_STATUS_COLORS } from "@/lib/leadConfig";
+import { getSourceLabel, getSourceBadgeClass, LEAD_STATUS_LABELS, LEAD_STATUS_COLORS, leadSourceConfig } from "@/lib/leadConfig";
 import ContactSheet from "@/components/ContactSheet";
 
 // ── Types ──
