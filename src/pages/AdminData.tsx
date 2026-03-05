@@ -712,7 +712,15 @@ export default function AdminData() {
                         onSave={async (v) => updateField("calls", c.id, "status", v, fetchCalls)}
                       />
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{c.assigned_to_name || "—"}</TableCell>
+                    <TableCell>
+                      <EditableCell
+                        value={c.assigned_to}
+                        type="select"
+                        options={["", ...profilesList.filter(p => ["ceo", "collaborateur"].includes(p.role)).map(p => p.id)]}
+                        optionLabels={Object.fromEntries([["", "— Aucun —"], ...profilesList.filter(p => ["ceo", "collaborateur"].includes(p.role)).map(p => [p.id, p.full_name])])}
+                        onSave={async (v) => updateField("calls", c.id, "assigned_to", v === "_empty" ? "" : v, fetchCalls)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         {c.contact_name ? (
