@@ -27,7 +27,9 @@ interface LeadRow {
   status: string;
   contact_id: string | null;
   contact_name: string | null;
+  assigned_to: string | null;
   assigned_to_name: string | null;
+  apporteur_id: string | null;
   apporteur_name: string | null;
   created_at: string | null;
 }
