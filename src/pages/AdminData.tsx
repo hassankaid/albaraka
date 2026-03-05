@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { RefreshCw, Search, Link2, Unlink, Users, Phone, BookUser, BadgeEuro, Database, ExternalLink } from "lucide-react";
+import { RefreshCw, Search, Link2, Unlink, Users, Phone, BookUser, BadgeEuro, Database, ExternalLink, Trash2, Check, X, Pencil } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
 import { getSourceLabel, getSourceBadgeClass, LEAD_STATUS_LABELS, LEAD_STATUS_COLORS } from "@/lib/leadConfig";
 import ContactSheet from "@/components/ContactSheet";
@@ -85,6 +86,107 @@ const PAYMENT_LABELS: Record<string, string> = {
   refunded: "Remboursé",
 };
 
+const LEAD_SOURCES = ["systeme_io", "instagram", "apporteur", "whatsapp_ads", "facebook_ads", "autre"];
+const LEAD_STATUSES = Object.keys(LEAD_STATUS_LABELS);
+const CALL_STATUSES = Object.keys(CALL_STATUS_LABELS);
+const CALL_EVENT_TYPES = ["vsl", "conference", "pole_vente", ""];
+const PRODUCTS = ["Business Developer", "Liberty"];
+
+// ── Inline Edit Cell ──
+function EditableCell({
+  value,
+  onSave,
+  type = "text",
+  options,
+  optionLabels,
+  className = "",
+}: {
+  value: string | null;
+  onSave: (val: string) => Promise<void>;
+  type?: "text" | "select" | "number";
+  options?: string[];
+  optionLabels?: Record<string, string>;
+  className?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [editVal, setEditVal] = useState(value || "");
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing && inputRef.current) inputRef.current.focus();
+  }, [editing]);
+
+  const startEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditVal(value || "");
+    setEditing(true);
+  };
+
+  const save = async () => {
+    if (editVal === (value || "")) { setEditing(false); return; }
+    setSaving(true);
+    await onSave(editVal);
+    setSaving(false);
+    setEditing(false);
+  };
+
+  const cancel = () => { setEditing(false); setEditVal(value || ""); };
+
+  if (editing) {
+    if (type === "select" && options) {
+      return (
+        <Select value={editVal} onValueChange={async (v) => {
+          setEditVal(v);
+          setSaving(true);
+          await onSave(v);
+          setSaving(false);
+          setEditing(false);
+        }}>
+          <SelectTrigger className="h-7 text-xs w-auto min-w-[100px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map(o => (
+              <SelectItem key={o} value={o || "_empty"}>{optionLabels?.[o] || o || "—"}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
+    return (
+      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+        <Input
+          ref={inputRef}
+          value={editVal}
+          onChange={(e) => setEditVal(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
+          className="h-7 text-xs px-1.5 w-auto min-w-[80px]"
+          type={type === "number" ? "number" : "text"}
+          disabled={saving}
+        />
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={save} disabled={saving}>
+          <Check className="h-3 w-3 text-green-500" />
+        </Button>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={cancel}>
+          <X className="h-3 w-3 text-muted-foreground" />
+        </Button>
+      </div>
+    );
+  }
+
+  const displayVal = optionLabels?.[value || ""] || value;
+  return (
+    <span
+      className={`cursor-pointer hover:bg-secondary/80 rounded px-1 py-0.5 transition-colors text-sm ${className}`}
+      onClick={startEdit}
+      title="Cliquer pour modifier"
+    >
+      {displayVal || <span className="text-muted-foreground italic">—</span>}
+    </span>
+  );
+}
+
 export default function AdminData() {
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -113,10 +215,13 @@ export default function AdminData() {
   const [linkValue, setLinkValue] = useState<string>("");
   const [linkSaving, setLinkSaving] = useState(false);
 
+  // Delete confirmation
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "lead" | "call" | "contact" | "sale"; id: string; label: string } | null>(null);
+
   // Contact sheet
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
 
-  // ── Batch fetch helper (bypasses 1000-row limit) ──
+  // ── Batch fetch helper ──
   async function fetchAllRows<T>(
     queryFn: (offset: number, limit: number) => PromiseLike<{ data: T[] | null; error: any }>,
     batchSize = 1000
@@ -202,15 +307,39 @@ export default function AdminData() {
     toast({ title: "Données actualisées" });
   };
 
+  // ── Inline update helper ──
+  const updateField = async (table: string, id: string, field: string, value: string, refreshFn: () => Promise<void>) => {
+    const val = value === "" ? null : value;
+    const { error } = await supabase.from(table as any).update({ [field]: val }).eq("id", id);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Modifié" });
+      await refreshFn();
+    }
+  };
+
+  // ── Delete ──
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const tableMap: Record<string, string> = { lead: "leads", call: "calls", contact: "contacts", sale: "sales" };
+    const { error } = await supabase.from(tableMap[deleteTarget.type] as any).delete().eq("id", deleteTarget.id);
+    if (error) {
+      toast({ title: "Erreur de suppression", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Supprimé" });
+      await fetchAll();
+    }
+    setDeleteTarget(null);
+  };
+
   // ── Search filter ──
   const q = search.toLowerCase();
-  // Normalize search: strip spaces/dashes for phone matching
   const qNorm = q.replace(/[\s\-().+]/g, "");
   const matchesField = (val: string | null) => {
     if (!val) return false;
     const lower = val.toLowerCase();
     if (lower.includes(q)) return true;
-    // Also try normalized phone match
     if (qNorm.length >= 3 && val.replace(/[\s\-().+]/g, "").includes(qNorm)) return true;
     return false;
   };
@@ -218,24 +347,16 @@ export default function AdminData() {
   const filteredLeads = useMemo(() => {
     if (!q) return leads;
     return leads.filter(l =>
-      matchesField(l.raw_full_name) ||
-      matchesField(l.raw_email) ||
-      matchesField(l.raw_phone) ||
-      matchesField(l.contact_name) ||
-      matchesField(l.apporteur_name) ||
-      matchesField(l.assigned_to_name)
+      matchesField(l.raw_full_name) || matchesField(l.raw_email) || matchesField(l.raw_phone) ||
+      matchesField(l.contact_name) || matchesField(l.apporteur_name) || matchesField(l.assigned_to_name)
     );
   }, [leads, q, qNorm]);
 
   const filteredCalls = useMemo(() => {
     if (!q) return calls;
     return calls.filter(c =>
-      matchesField(c.raw_full_name) ||
-      matchesField(c.raw_email) ||
-      matchesField(c.raw_phone) ||
-      matchesField(c.contact_name) ||
-      matchesField(c.contact_phone) ||
-      matchesField(c.contact_email) ||
+      matchesField(c.raw_full_name) || matchesField(c.raw_email) || matchesField(c.raw_phone) ||
+      matchesField(c.contact_name) || matchesField(c.contact_phone) || matchesField(c.contact_email) ||
       matchesField(c.assigned_to_name)
     );
   }, [calls, q, qNorm]);
@@ -243,18 +364,14 @@ export default function AdminData() {
   const filteredContacts = useMemo(() => {
     if (!q) return contacts;
     return contacts.filter(c =>
-      matchesField(c.full_name) ||
-      matchesField(c.email) ||
-      matchesField(c.phone_normalized)
+      matchesField(c.full_name) || matchesField(c.email) || matchesField(c.phone_normalized)
     );
   }, [contacts, q, qNorm]);
 
   const filteredSales = useMemo(() => {
     if (!q) return sales;
     return sales.filter(s =>
-      matchesField(s.contact_name) ||
-      matchesField(s.product) ||
-      matchesField(s.closed_by_name)
+      matchesField(s.contact_name) || matchesField(s.product) || matchesField(s.closed_by_name)
     );
   }, [sales, q, qNorm]);
 
@@ -273,12 +390,10 @@ export default function AdminData() {
       .from(tableName)
       .update({ [linkModal.field]: linkValue || null })
       .eq("id", linkModal.id);
-
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Rattachement mis à jour" });
-      // Refresh relevant tab
       if (linkModal.type === "lead") await fetchLeads();
       else if (linkModal.type === "call") await fetchCalls();
       else await fetchSales();
@@ -296,7 +411,6 @@ export default function AdminData() {
       .from(tableName)
       .update({ [linkModal.field]: null })
       .eq("id", linkModal.id);
-
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
@@ -332,7 +446,6 @@ export default function AdminData() {
       .slice(0, 50);
   }, [calls, linkSearch]);
 
-  // Determine which options to show in the link modal
   const getLinkOptions = () => {
     if (!linkModal) return [];
     if (linkModal.field === "contact_id") return contactOptions.map(c => ({
@@ -367,6 +480,12 @@ export default function AdminData() {
     </Button>
   );
 
+  const DeleteButton = ({ onClick }: { onClick: () => void }) => (
+    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onClick(); }} className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" title="Supprimer">
+      <Trash2 className="h-3.5 w-3.5" />
+    </Button>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -375,7 +494,7 @@ export default function AdminData() {
           <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Database className="h-6 w-6" /> Gestion des données
           </h2>
-          <p className="text-sm text-muted-foreground mt-0.5">Vue globale et gestion des rattachements</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Cliquez sur une valeur pour la modifier directement</p>
         </div>
         <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
@@ -449,34 +568,47 @@ export default function AdminData() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
-                  <TableHead>Contact (brut)</TableHead>
+                  <TableHead>Nom</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Téléphone</TableHead>
                   <TableHead>Source</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Setter</TableHead>
                   <TableHead>Apporteur</TableHead>
                   <TableHead>Contact lié</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredLeads.map((l) => (
                   <TableRow key={l.id} className="border-border hover:bg-secondary/50 transition-colors">
                     <TableCell>
-                      <div>
-                        <p className="font-semibold text-foreground text-sm">{l.raw_full_name || "—"}</p>
-                        <p className="text-xs text-muted-foreground">{l.raw_email}</p>
-                        <p className="text-xs text-muted-foreground">{l.raw_phone}</p>
-                      </div>
+                      <EditableCell value={l.raw_full_name} onSave={async (v) => updateField("leads", l.id, "raw_full_name", v, fetchLeads)} />
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`text-xs ${getSourceBadgeClass(l.source)}`}>
-                        {getSourceLabel(l.source)}
-                      </Badge>
+                      <EditableCell value={l.raw_email} onSave={async (v) => updateField("leads", l.id, "raw_email", v, fetchLeads)} />
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`text-xs ${LEAD_STATUS_COLORS[l.status] || ""}`}>
-                        {LEAD_STATUS_LABELS[l.status] || l.status}
-                      </Badge>
+                      <EditableCell value={l.raw_phone} onSave={async (v) => updateField("leads", l.id, "raw_phone", v, fetchLeads)} />
+                    </TableCell>
+                    <TableCell>
+                      <EditableCell
+                        value={l.source}
+                        type="select"
+                        options={LEAD_SOURCES}
+                        optionLabels={Object.fromEntries(LEAD_SOURCES.map(s => [s, getSourceLabel(s)]))}
+                        onSave={async (v) => updateField("leads", l.id, "source", v, fetchLeads)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <EditableCell
+                        value={l.status}
+                        type="select"
+                        options={LEAD_STATUSES}
+                        optionLabels={LEAD_STATUS_LABELS}
+                        onSave={async (v) => updateField("leads", l.id, "status", v, fetchLeads)}
+                      />
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{l.assigned_to_name || "—"}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{l.apporteur_name || "—"}</TableCell>
@@ -489,14 +621,13 @@ export default function AdminData() {
                         ) : (
                           <span className="text-xs text-muted-foreground">Aucun</span>
                         )}
-                        <LinkButton
-                          linked={!!l.contact_id}
-                          onClick={() => openLinkModal("lead", l.id, "contact_id", l.contact_id, "Rattacher à un contact")}
-                          tooltip="Modifier le contact lié"
-                        />
+                        <LinkButton linked={!!l.contact_id} onClick={() => openLinkModal("lead", l.id, "contact_id", l.contact_id, "Rattacher à un contact")} tooltip="Modifier le contact lié" />
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{formatDate(l.created_at)}</TableCell>
+                    <TableCell>
+                      <DeleteButton onClick={() => setDeleteTarget({ type: "lead", id: l.id, label: l.raw_full_name || l.raw_email || l.id.slice(0, 8) })} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -513,31 +644,48 @@ export default function AdminData() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
-                  <TableHead>Prospect</TableHead>
+                  <TableHead>Nom</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Téléphone</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Closer</TableHead>
                   <TableHead>Contact lié</TableHead>
                   <TableHead>Lead lié</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredCalls.map((c) => (
                   <TableRow key={c.id} className="border-border hover:bg-secondary/50 transition-colors">
                     <TableCell>
-                      <div>
-                        <p className="font-semibold text-foreground text-sm">{c.raw_full_name || c.contact_name || "—"}</p>
-                        {(c.raw_email || c.contact_email) && <p className="text-xs text-muted-foreground">{c.raw_email || c.contact_email}</p>}
-                        {(c.raw_phone || c.contact_phone) && <p className="text-xs text-muted-foreground">{c.raw_phone || c.contact_phone}</p>}
-                      </div>
+                      <EditableCell value={c.raw_full_name} onSave={async (v) => updateField("calls", c.id, "raw_full_name", v, fetchCalls)} />
+                    </TableCell>
+                    <TableCell>
+                      <EditableCell value={c.raw_email} onSave={async (v) => updateField("calls", c.id, "raw_email", v, fetchCalls)} />
+                    </TableCell>
+                    <TableCell>
+                      <EditableCell value={c.raw_phone} onSave={async (v) => updateField("calls", c.id, "raw_phone", v, fetchCalls)} />
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{formatDate(c.scheduled_at)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{c.event_type || "—"}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-xs">
-                        {CALL_STATUS_LABELS[c.status] || c.status}
-                      </Badge>
+                      <EditableCell
+                        value={c.event_type}
+                        type="select"
+                        options={CALL_EVENT_TYPES}
+                        optionLabels={{ vsl: "VSL", conference: "Conférence", pole_vente: "Pôle Vente", "": "—" }}
+                        onSave={async (v) => updateField("calls", c.id, "event_type", v === "_empty" ? "" : v, fetchCalls)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <EditableCell
+                        value={c.status}
+                        type="select"
+                        options={CALL_STATUSES}
+                        optionLabels={CALL_STATUS_LABELS}
+                        onSave={async (v) => updateField("calls", c.id, "status", v, fetchCalls)}
+                      />
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{c.assigned_to_name || "—"}</TableCell>
                     <TableCell>
@@ -549,11 +697,7 @@ export default function AdminData() {
                         ) : (
                           <span className="text-xs text-muted-foreground">Aucun</span>
                         )}
-                        <LinkButton
-                          linked={!!c.contact_id}
-                          onClick={() => openLinkModal("call", c.id, "contact_id", c.contact_id, "Rattacher à un contact")}
-                          tooltip="Modifier le contact lié"
-                        />
+                        <LinkButton linked={!!c.contact_id} onClick={() => openLinkModal("call", c.id, "contact_id", c.contact_id, "Rattacher à un contact")} tooltip="Modifier le contact lié" />
                       </div>
                     </TableCell>
                     <TableCell>
@@ -563,12 +707,11 @@ export default function AdminData() {
                         ) : (
                           <span className="text-xs text-muted-foreground">Aucun</span>
                         )}
-                        <LinkButton
-                          linked={!!c.lead_id}
-                          onClick={() => openLinkModal("call", c.id, "lead_id", c.lead_id, "Rattacher à un lead")}
-                          tooltip="Modifier le lead lié"
-                        />
+                        <LinkButton linked={!!c.lead_id} onClick={() => openLinkModal("call", c.id, "lead_id", c.lead_id, "Rattacher à un lead")} tooltip="Modifier le lead lié" />
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <DeleteButton onClick={() => setDeleteTarget({ type: "call", id: c.id, label: c.raw_full_name || c.contact_name || c.id.slice(0, 8) })} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -591,19 +734,29 @@ export default function AdminData() {
                   <TableHead>Téléphone</TableHead>
                   <TableHead>Date création</TableHead>
                   <TableHead>Actions</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredContacts.map((c) => (
-                  <TableRow key={c.id} className="border-border hover:bg-secondary/50 transition-colors cursor-pointer" onClick={() => setSelectedContactId(c.id)}>
-                    <TableCell className="font-semibold text-foreground text-sm">{c.full_name || "—"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{c.email || "—"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{c.phone_normalized || "—"}</TableCell>
+                  <TableRow key={c.id} className="border-border hover:bg-secondary/50 transition-colors">
+                    <TableCell>
+                      <EditableCell value={c.full_name} onSave={async (v) => updateField("contacts", c.id, "full_name", v, fetchContacts)} />
+                    </TableCell>
+                    <TableCell>
+                      <EditableCell value={c.email} onSave={async (v) => updateField("contacts", c.id, "email", v, fetchContacts)} />
+                    </TableCell>
+                    <TableCell>
+                      <EditableCell value={c.phone_normalized} onSave={async (v) => updateField("contacts", c.id, "phone_normalized", v, fetchContacts)} />
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{formatDate(c.created_at)}</TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={(e) => { e.stopPropagation(); setSelectedContactId(c.id); }}>
                         <ExternalLink className="h-3.5 w-3.5" /> Voir fiche
                       </Button>
+                    </TableCell>
+                    <TableCell>
+                      <DeleteButton onClick={() => setDeleteTarget({ type: "contact", id: c.id, label: c.full_name || c.email || c.id.slice(0, 8) })} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -624,11 +777,12 @@ export default function AdminData() {
                   <TableHead>Contact</TableHead>
                   <TableHead>Produit</TableHead>
                   <TableHead>Montant HT</TableHead>
-                  <TableHead>Statut</TableHead>
+                  <TableHead>Statut paiement</TableHead>
                   <TableHead>Closer</TableHead>
                   <TableHead>Lead lié</TableHead>
                   <TableHead>Call lié</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -637,19 +791,33 @@ export default function AdminData() {
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <span className="font-semibold text-foreground text-sm">{s.contact_name || "—"}</span>
-                        <LinkButton
-                          linked={!!s.contact_id}
-                          onClick={() => openLinkModal("sale", s.id, "contact_id", s.contact_id, "Rattacher à un contact")}
-                          tooltip="Modifier le contact lié"
-                        />
+                        <LinkButton linked={!!s.contact_id} onClick={() => openLinkModal("sale", s.id, "contact_id", s.contact_id, "Rattacher à un contact")} tooltip="Modifier le contact lié" />
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm text-foreground">{s.product}</TableCell>
-                    <TableCell className="font-semibold text-foreground">{s.amount_ht.toLocaleString("fr-FR")} €</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-xs">
-                        {PAYMENT_LABELS[s.payment_status || "pending"] || s.payment_status}
-                      </Badge>
+                      <EditableCell
+                        value={s.product}
+                        type="select"
+                        options={PRODUCTS}
+                        onSave={async (v) => updateField("sales", s.id, "product", v, fetchSales)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <EditableCell
+                        value={String(s.amount_ht)}
+                        type="number"
+                        onSave={async (v) => updateField("sales", s.id, "amount_ht", v, fetchSales)}
+                        className="font-semibold"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <EditableCell
+                        value={s.payment_status || "pending"}
+                        type="select"
+                        options={Object.keys(PAYMENT_LABELS)}
+                        optionLabels={PAYMENT_LABELS}
+                        onSave={async (v) => updateField("sales", s.id, "payment_status", v, fetchSales)}
+                      />
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{s.closed_by_name || "—"}</TableCell>
                     <TableCell>
@@ -659,11 +827,7 @@ export default function AdminData() {
                         ) : (
                           <span className="text-xs text-muted-foreground">Aucun</span>
                         )}
-                        <LinkButton
-                          linked={!!s.lead_id}
-                          onClick={() => openLinkModal("sale", s.id, "lead_id", s.lead_id, "Rattacher à un lead")}
-                          tooltip="Modifier le lead lié"
-                        />
+                        <LinkButton linked={!!s.lead_id} onClick={() => openLinkModal("sale", s.id, "lead_id", s.lead_id, "Rattacher à un lead")} tooltip="Modifier le lead lié" />
                       </div>
                     </TableCell>
                     <TableCell>
@@ -673,14 +837,13 @@ export default function AdminData() {
                         ) : (
                           <span className="text-xs text-muted-foreground">Aucun</span>
                         )}
-                        <LinkButton
-                          linked={!!s.call_id}
-                          onClick={() => openLinkModal("sale", s.id, "call_id", s.call_id, "Rattacher à un call")}
-                          tooltip="Modifier le call lié"
-                        />
+                        <LinkButton linked={!!s.call_id} onClick={() => openLinkModal("sale", s.id, "call_id", s.call_id, "Rattacher à un call")} tooltip="Modifier le call lié" />
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{formatDate(s.sold_at)}</TableCell>
+                    <TableCell>
+                      <DeleteButton onClick={() => setDeleteTarget({ type: "sale", id: s.id, label: `${s.contact_name || ""} — ${s.product}` })} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -691,6 +854,25 @@ export default function AdminData() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* ── Delete Confirmation ── */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer <strong>{deleteTarget?.label}</strong> ?
+              Cette action est irréversible et supprimera aussi les données liées (activités, commissions…).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ── Link Modal ── */}
       <Dialog open={!!linkModal} onOpenChange={(v) => !v && setLinkModal(null)}>
