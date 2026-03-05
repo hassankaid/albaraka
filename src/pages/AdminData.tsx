@@ -184,42 +184,59 @@ export default function AdminData() {
 
   // ── Search filter ──
   const q = search.toLowerCase();
+  // Normalize search: strip spaces/dashes for phone matching
+  const qNorm = q.replace(/[\s\-().+]/g, "");
+  const matchesField = (val: string | null) => {
+    if (!val) return false;
+    const lower = val.toLowerCase();
+    if (lower.includes(q)) return true;
+    // Also try normalized phone match
+    if (qNorm.length >= 3 && val.replace(/[\s\-().+]/g, "").includes(qNorm)) return true;
+    return false;
+  };
+
   const filteredLeads = useMemo(() => {
     if (!q) return leads;
     return leads.filter(l =>
-      l.raw_full_name?.toLowerCase().includes(q) ||
-      l.raw_email?.toLowerCase().includes(q) ||
-      l.raw_phone?.toLowerCase().includes(q) ||
-      l.contact_name?.toLowerCase().includes(q)
+      matchesField(l.raw_full_name) ||
+      matchesField(l.raw_email) ||
+      matchesField(l.raw_phone) ||
+      matchesField(l.contact_name) ||
+      matchesField(l.apporteur_name) ||
+      matchesField(l.assigned_to_name)
     );
-  }, [leads, q]);
+  }, [leads, q, qNorm]);
 
   const filteredCalls = useMemo(() => {
     if (!q) return calls;
     return calls.filter(c =>
-      c.raw_full_name?.toLowerCase().includes(q) ||
-      c.contact_name?.toLowerCase().includes(q) ||
-      c.assigned_to_name?.toLowerCase().includes(q)
+      matchesField(c.raw_full_name) ||
+      matchesField(c.raw_email) ||
+      matchesField(c.raw_phone) ||
+      matchesField(c.contact_name) ||
+      matchesField(c.contact_phone) ||
+      matchesField(c.contact_email) ||
+      matchesField(c.assigned_to_name)
     );
-  }, [calls, q]);
+  }, [calls, q, qNorm]);
 
   const filteredContacts = useMemo(() => {
     if (!q) return contacts;
     return contacts.filter(c =>
-      c.full_name?.toLowerCase().includes(q) ||
-      c.email?.toLowerCase().includes(q) ||
-      c.phone_normalized?.toLowerCase().includes(q)
+      matchesField(c.full_name) ||
+      matchesField(c.email) ||
+      matchesField(c.phone_normalized)
     );
-  }, [contacts, q]);
+  }, [contacts, q, qNorm]);
 
   const filteredSales = useMemo(() => {
     if (!q) return sales;
     return sales.filter(s =>
-      s.contact_name?.toLowerCase().includes(q) ||
-      s.product?.toLowerCase().includes(q) ||
-      s.closed_by_name?.toLowerCase().includes(q)
+      matchesField(s.contact_name) ||
+      matchesField(s.product) ||
+      matchesField(s.closed_by_name)
     );
-  }, [sales, q]);
+  }, [sales, q, qNorm]);
 
   // ── Link management ──
   const openLinkModal = (type: "lead" | "call" | "sale", id: string, field: string, currentValue: string | null, label: string) => {
