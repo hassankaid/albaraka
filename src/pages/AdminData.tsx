@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { RefreshCw, Search, Link2, Unlink, Users, Phone, BookUser, BadgeEuro, Database, ExternalLink, Trash2, Check, X, Pencil } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
-import { getSourceLabel, getSourceBadgeClass, LEAD_STATUS_LABELS, LEAD_STATUS_COLORS } from "@/lib/leadConfig";
+import { getSourceLabel, getSourceBadgeClass, LEAD_STATUS_LABELS, LEAD_STATUS_COLORS, leadSourceConfig } from "@/lib/leadConfig";
 import ContactSheet from "@/components/ContactSheet";
 
 // ── Types ──
@@ -27,7 +27,9 @@ interface LeadRow {
   status: string;
   contact_id: string | null;
   contact_name: string | null;
+  assigned_to: string | null;
   assigned_to_name: string | null;
+  apporteur_id: string | null;
   apporteur_name: string | null;
   created_at: string | null;
 }
@@ -45,6 +47,7 @@ interface CallRow {
   contact_phone: string | null;
   contact_email: string | null;
   lead_id: string | null;
+  assigned_to: string | null;
   assigned_to_name: string | null;
 }
 
@@ -86,7 +89,7 @@ const PAYMENT_LABELS: Record<string, string> = {
   refunded: "Remboursé",
 };
 
-const LEAD_SOURCES = ["systeme_io", "instagram", "apporteur", "whatsapp_ads", "facebook_ads", "autre"];
+const LEAD_SOURCES = Object.keys(leadSourceConfig);
 const LEAD_STATUSES = Object.keys(LEAD_STATUS_LABELS);
 const CALL_STATUSES = Object.keys(CALL_STATUS_LABELS);
 const CALL_EVENT_TYPES = ["vsl", "conference", "pole_vente", ""];
@@ -202,6 +205,7 @@ export default function AdminData() {
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [contacts, setContacts] = useState<ContactRow[]>([]);
   const [sales, setSales] = useState<SaleRow[]>([]);
+  const [profilesList, setProfilesList] = useState<{ id: string; full_name: string; role: string }[]>([]);
 
   // Link modal
   const [linkModal, setLinkModal] = useState<{
@@ -240,11 +244,16 @@ export default function AdminData() {
   }
 
   // ── Fetch ──
+  const fetchProfiles = useCallback(async () => {
+    const { data } = await supabase.from("profiles").select("id, full_name, role");
+    if (data) setProfilesList(data);
+  }, []);
+
   const fetchLeads = useCallback(async () => {
     const data = await fetchAllRows<any>((offset, limit) =>
       supabase
         .from("leads_enriched")
-        .select("id, raw_full_name, raw_email, raw_phone, source, status, contact_id, contact_full_name, assigned_to_name, apporteur_name, created_at")
+        .select("id, raw_full_name, raw_email, raw_phone, source, status, contact_id, contact_full_name, assigned_to, assigned_to_name, apporteur_id, apporteur_name, created_at")
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1)
     );
@@ -255,7 +264,7 @@ export default function AdminData() {
     const data = await fetchAllRows<any>((offset, limit) =>
       supabase
         .from("calls_enriched")
-        .select("id, raw_full_name, raw_email, raw_phone, scheduled_at, status, event_type, contact_id, contact_full_name, contact_phone, contact_email, lead_id, assigned_to_name")
+        .select("id, raw_full_name, raw_email, raw_phone, scheduled_at, status, event_type, contact_id, contact_full_name, contact_phone, contact_email, lead_id, assigned_to, assigned_to_name")
         .order("scheduled_at", { ascending: false })
         .range(offset, offset + limit - 1)
     );
@@ -294,9 +303,9 @@ export default function AdminData() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    await Promise.all([fetchLeads(), fetchCalls(), fetchContacts(), fetchSales()]);
+    await Promise.all([fetchLeads(), fetchCalls(), fetchContacts(), fetchSales(), fetchProfiles()]);
     setLoading(false);
-  }, [fetchLeads, fetchCalls, fetchContacts, fetchSales]);
+  }, [fetchLeads, fetchCalls, fetchContacts, fetchSales, fetchProfiles]);
 
   useEffect(() => {
     fetchAll();
@@ -610,8 +619,24 @@ export default function AdminData() {
                         onSave={async (v) => updateField("leads", l.id, "status", v, fetchLeads)}
                       />
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{l.assigned_to_name || "—"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{l.apporteur_name || "—"}</TableCell>
+                    <TableCell>
+                      <EditableCell
+                        value={l.assigned_to}
+                        type="select"
+                        options={["", ...profilesList.filter(p => ["ceo", "collaborateur"].includes(p.role)).map(p => p.id)]}
+                        optionLabels={Object.fromEntries([["", "— Aucun —"], ...profilesList.filter(p => ["ceo", "collaborateur"].includes(p.role)).map(p => [p.id, p.full_name])])}
+                        onSave={async (v) => updateField("leads", l.id, "assigned_to", v === "_empty" ? "" : v, fetchLeads)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <EditableCell
+                        value={l.apporteur_id}
+                        type="select"
+                        options={["", ...profilesList.filter(p => p.role === "apporteur" || profilesList.find(pp => pp.id === p.id)).map(p => p.id)]}
+                        optionLabels={Object.fromEntries([["", "— Aucun —"], ...profilesList.map(p => [p.id, p.full_name])])}
+                        onSave={async (v) => updateField("leads", l.id, "apporteur_id", v === "_empty" ? "" : v, fetchLeads)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         {l.contact_name ? (
@@ -687,7 +712,15 @@ export default function AdminData() {
                         onSave={async (v) => updateField("calls", c.id, "status", v, fetchCalls)}
                       />
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{c.assigned_to_name || "—"}</TableCell>
+                    <TableCell>
+                      <EditableCell
+                        value={c.assigned_to}
+                        type="select"
+                        options={["", ...profilesList.filter(p => ["ceo", "collaborateur"].includes(p.role)).map(p => p.id)]}
+                        optionLabels={Object.fromEntries([["", "— Aucun —"], ...profilesList.filter(p => ["ceo", "collaborateur"].includes(p.role)).map(p => [p.id, p.full_name])])}
+                        onSave={async (v) => updateField("calls", c.id, "assigned_to", v === "_empty" ? "" : v, fetchCalls)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         {c.contact_name ? (
