@@ -110,6 +110,9 @@ export default function ApporteurLeads() {
 
     const { error: insertError } = await supabase.from("leads").insert({
       contact_id: contactId,
+      raw_full_name: fullName.trim().toUpperCase(),
+      raw_email: email.trim() || null,
+      raw_phone: phone,
       source,
       source_detail: source === "apporteur_autre" ? sourceDetail.trim() || null : null,
       apporteur_id: profile.id,
