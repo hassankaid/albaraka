@@ -700,14 +700,14 @@ export default function AdminData() {
             <div>
               <Label>Rechercher</Label>
               <Input
-                placeholder="Filtrer par nom, email..."
+                placeholder="Filtrer par nom, email, téléphone..."
                 value={linkSearch}
                 onChange={(e) => setLinkSearch(e.target.value)}
                 className="mt-1"
               />
             </div>
 
-            <div className="max-h-60 overflow-y-auto border rounded-md">
+            <div className="max-h-72 overflow-y-auto border rounded-md">
               {getLinkOptions().length === 0 ? (
                 <div className="py-6 text-center text-sm text-muted-foreground">Aucun résultat</div>
               ) : (
@@ -715,13 +715,14 @@ export default function AdminData() {
                   <div
                     key={opt.id}
                     onClick={() => setLinkValue(opt.id)}
-                    className={`px-3 py-2 text-sm cursor-pointer transition-colors border-b last:border-b-0 ${
+                    className={`px-3 py-2.5 cursor-pointer transition-colors border-b last:border-b-0 ${
                       linkValue === opt.id
                         ? "bg-primary/10 text-primary font-medium"
                         : "hover:bg-secondary/50 text-foreground"
                     }`}
                   >
-                    {opt.label}
+                    <p className="text-sm">{opt.label}</p>
+                    {opt.sub && <p className="text-xs text-muted-foreground mt-0.5">{opt.sub}</p>}
                   </div>
                 ))
               )}
