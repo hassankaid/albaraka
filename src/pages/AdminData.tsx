@@ -292,8 +292,9 @@ export default function AdminData() {
   // Options for link selects
   const contactOptions = useMemo(() => {
     const searchQ = linkSearch.toLowerCase();
+    const searchNorm = linkSearch.replace(/[\s\-().+]/g, "");
     return contacts
-      .filter(c => !searchQ || c.full_name?.toLowerCase().includes(searchQ) || c.email?.toLowerCase().includes(searchQ))
+      .filter(c => !searchQ || c.full_name?.toLowerCase().includes(searchQ) || c.email?.toLowerCase().includes(searchQ) || (searchNorm.length >= 3 && c.phone_normalized?.replace(/[\s\-().+]/g, "").includes(searchNorm)))
       .slice(0, 50);
   }, [contacts, linkSearch]);
 
