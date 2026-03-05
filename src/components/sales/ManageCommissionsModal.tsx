@@ -412,7 +412,7 @@ export default function ManageCommissionsModal({
                   <SelectItem value="apporteur">Apporteur</SelectItem>
                 )}
                 {beneficiaryType === "agence" && (
-                  <SelectItem value="agence marketing">Agence marketing</SelectItem>
+                  <SelectItem value="agence_marketing">Agence marketing</SelectItem>
                 )}
               </SelectContent>
             </Select>
