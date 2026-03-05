@@ -108,7 +108,7 @@ export default function AdminInvoices() {
 
     const filtered = (data || []).filter((c: any) => {
       const paidAt = c.payments?.paid_at;
-      return paidAt && paidAt >= startDate && paidAt < endDate;
+      return paidAt && paidAt < endDate;
     });
 
     const grouped: Record<string, ApporteurToInvoice> = {};
@@ -332,7 +332,7 @@ export default function AdminInvoices() {
                 Période : <span className="text-primary font-semibold">{periodLabel}</span>
               </p>
               <p className="text-xs text-muted-foreground">
-                Commissions des paiements encaissés en {periodLabel}
+                Commissions à payer jusqu'à {periodLabel} inclus
               </p>
             </div>
             <Button variant="ghost" size="icon" className="ml-auto" onClick={fetchApporteurs} disabled={loadingApporteurs}>
