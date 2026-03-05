@@ -102,11 +102,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Filter by payment paid_at within the period
+    // Include all "due" commissions where payment was made up to (but not including) the end of the period
+    // This catches past months' commissions that were never invoiced
     const eligibleCommissions = (commissions || []).filter((c: any) => {
       const paidAt = c.payments?.paid_at;
       if (!paidAt) return false;
-      return paidAt >= startDate && paidAt < endDate;
+      return paidAt < endDate;
     });
 
     if (eligibleCommissions.length === 0) {
