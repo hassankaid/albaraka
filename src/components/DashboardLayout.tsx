@@ -48,6 +48,11 @@ export default function DashboardLayout() {
     return <Navigate to="/my-space" replace />;
   }
 
+  // Redirect agence to profile if they land on dashboard
+  if (profile?.role === "agence" && location.pathname === "/dashboard") {
+    return <Navigate to="/profile" replace />;
+  }
+
   const pageTitle = pageTitles[location.pathname] || "Dashboard";
   const userRole = profile?.role || "apporteur";
   const navItems = allNavItems.filter((item) => {
