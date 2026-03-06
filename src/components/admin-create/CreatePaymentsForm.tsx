@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -49,9 +50,9 @@ export default function CreatePaymentsForm({ prefilledContactId, prefilledSaleId
 
   useEffect(() => {
     if (!isWizardStep) {
-      supabase.from("contacts").select("id, full_name, email").order("created_at", { ascending: false }).limit(500).then(({ data }) => { if (data) setContacts(data); });
-      supabase.from("sales").select("id, product, amount_ht, sold_at, contacts(full_name)").order("created_at", { ascending: false }).limit(500).then(({ data }) => {
-        if (data) setSales(data.map((s: any) => ({ id: s.id, product: s.product, amount_ht: s.amount_ht, contact_name: s.contacts?.full_name || null, sold_at: s.sold_at })));
+      fetchAllRows<{ id: string; full_name: string | null; email: string | null }>("contacts", "id, full_name, email", { order: { column: "created_at", ascending: false } }).then(setContacts);
+      fetchAllRows<any>("sales", "id, product, amount_ht, sold_at, contacts(full_name)", { order: { column: "created_at", ascending: false } }).then((data) => {
+        setSales(data.map((s: any) => ({ id: s.id, product: s.product, amount_ht: s.amount_ht, contact_name: s.contacts?.full_name || null, sold_at: s.sold_at })));
       });
     }
   }, [isWizardStep]);
