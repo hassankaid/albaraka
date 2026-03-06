@@ -36,7 +36,7 @@ export default function CreatePaymentsForm({ prefilledContactId, prefilledSaleId
   const [contactId, setContactId] = useState<string | null>(prefilledContactId || null);
   const [saleId, setSaleId] = useState<string | null>(prefilledSaleId || null);
   const [contacts, setContacts] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
-  const [sales, setSales] = useState<{ id: string; product: string; amount_ht: number }[]>([]);
+  const [sales, setSales] = useState<{ id: string; product: string; amount_ht: number; contact_name: string | null; sold_at: string | null }[]>([]);
 
   const [payments, setPayments] = useState<PaymentRow[]>([
     { amount: "", dueDate: new Date(), status: "pending", paymentMethod: "" },
