@@ -64,7 +64,7 @@ export default function AdminInvoices() {
   const genMonth = prev.month;   // 0-indexed
   const genYear = prev.year;
 
-  const [apporteurs, setApporteurs] = useState<ApporteurToInvoice[]>([]);
+  const [beneficiaries, setBeneficiaries] = useState<BeneficiaryToInvoice[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loadingApporteurs, setLoadingApporteurs] = useState(false);
   const [generating, setGenerating] = useState(false);
