@@ -336,6 +336,22 @@ export default function AdminCommissions() {
             <SelectItem value="agence_marketing">Agence marketing</SelectItem>
           </SelectContent>
         </Select>
+        {(() => {
+          const d = new Date();
+          d.setMonth(d.getMonth() - 1);
+          const label = d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+          return (
+            <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes périodes</SelectItem>
+                <SelectItem value="billing_period">Facturation ({label})</SelectItem>
+              </SelectContent>
+            </Select>
+          );
+        })()}
       </div>
 
       {/* Table */}
