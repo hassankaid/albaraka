@@ -25,9 +25,10 @@ const INVOICE_STATUS: Record<string, { label: string; variant: "default" | "seco
   paid: { label: "Payée", variant: "default" },
 };
 
-interface ApporteurToInvoice {
+interface BeneficiaryToInvoice {
   beneficiary_user_id: string;
   full_name: string;
+  roles: string[];
   commission_count: number;
   total_amount: number;
 }
