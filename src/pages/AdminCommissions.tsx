@@ -78,6 +78,7 @@ export default function AdminCommissions() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterRole, setFilterRole] = useState<string>("all");
+  const [filterPeriod, setFilterPeriod] = useState<string>("all");
 
   // Edit modal
   const [editingCommission, setEditingCommission] = useState<CommissionRow | null>(null);

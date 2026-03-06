@@ -250,6 +250,7 @@ export default function Payments() {
             <SelectItem value="all">Toutes périodes</SelectItem>
             <SelectItem value="this_month">Ce mois</SelectItem>
             <SelectItem value="next_month">Mois prochain</SelectItem>
+            <SelectItem value="billing_period">Facturation ({getBillingPeriodLabel()})</SelectItem>
           </SelectContent>
         </Select>
         <Input
