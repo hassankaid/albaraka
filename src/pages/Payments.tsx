@@ -147,7 +147,7 @@ export default function Payments() {
       result = result.filter((p) => p.due_date >= start && p.due_date <= end);
     } else if (periodFilter === "billing_period") {
       const { start, end } = getMonthRange(-1);
-      result = result.filter((p) => p.paid_at && p.paid_at >= start && p.paid_at <= end);
+      result = result.filter((p) => p.due_date >= start && p.due_date <= end);
     }
 
     // Status filter
