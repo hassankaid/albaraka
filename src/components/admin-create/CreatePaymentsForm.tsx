@@ -50,12 +50,18 @@ export default function CreatePaymentsForm({ prefilledContactId, prefilledSaleId
   useEffect(() => {
     if (!isWizardStep) {
       supabase.from("contacts").select("id, full_name, email").order("created_at", { ascending: false }).limit(500).then(({ data }) => { if (data) setContacts(data); });
-      supabase.from("sales").select("id, product, amount_ht").order("created_at", { ascending: false }).limit(500).then(({ data }) => { if (data) setSales(data); });
+      supabase.from("sales").select("id, product, amount_ht, sold_at, contacts(full_name)").order("created_at", { ascending: false }).limit(500).then(({ data }) => {
+        if (data) setSales(data.map((s: any) => ({ id: s.id, product: s.product, amount_ht: s.amount_ht, contact_name: s.contacts?.full_name || null, sold_at: s.sold_at })));
+      });
     }
   }, [isWizardStep]);
 
   const contactOptions = contacts.map((c) => ({ id: c.id, label: c.full_name || "Sans nom", sublabel: c.email || undefined }));
-  const saleOptions = sales.map((s) => ({ id: s.id, label: s.product, sublabel: `${s.amount_ht} €` }));
+  const saleOptions = sales.map((s) => {
+    const date = s.sold_at ? new Date(s.sold_at).toLocaleDateString("fr-FR") : "";
+    const name = s.contact_name || "—";
+    return { id: s.id, label: `${s.product} · ${name}`, sublabel: `${s.amount_ht} € ${date ? `· ${date}` : ""}` };
+  });
 
   const addPaymentRow = () => setPayments([...payments, { amount: "", dueDate: new Date(), status: "pending", paymentMethod: "" }]);
   const updatePayment = (i: number, field: keyof PaymentRow, value: any) => {
