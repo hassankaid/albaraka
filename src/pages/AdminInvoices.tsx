@@ -313,8 +313,8 @@ export default function AdminInvoices() {
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Facturation Apporteurs</h1>
-        <p className="text-sm text-muted-foreground mt-1">Générez et gérez les factures de commissions</p>
+        <h1 className="text-2xl font-bold text-foreground">Facturation</h1>
+        <p className="text-sm text-muted-foreground mt-1">Générez et gérez les factures de commissions pour tous les bénéficiaires</p>
       </div>
 
       <Tabs defaultValue="generate" className="space-y-6">
