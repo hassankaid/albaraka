@@ -285,7 +285,7 @@ export default function AdminInvoices() {
     }
 
     toast({ title: "Facture supprimée", description: "Les commissions ont été remises en statut 'due'." });
-    fetchApporteurs();
+    fetchBeneficiaries();
     fetchInvoices();
   };
 
