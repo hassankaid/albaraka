@@ -83,7 +83,6 @@ Deno.serve(async (req) => {
           .eq("payment_id", line.payment_id)
           .eq("sale_id", line.sale_id)
           .eq("beneficiary_user_id", invoice.apporteur_id)
-          .eq("role", "apporteur")
           .in("status", ["invoiced", "paid"]);
       }
     }

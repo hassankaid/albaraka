@@ -50,7 +50,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { apporteur_id, month, year } = await req.json();
+    const body = await req.json();
+    const apporteur_id = body.beneficiary_id || body.apporteur_id;
+    const { month, year } = body;
 
     if (!apporteur_id || !month || !year) {
       return new Response(JSON.stringify({ error: "Missing parameters" }), {
@@ -89,9 +91,8 @@ Deno.serve(async (req) => {
 
     const { data: commissions, error: commError } = await supabaseAdmin
       .from("commissions")
-      .select("id, sale_id, payment_id, amount, percentage, payments!commissions_payment_id_fkey(amount, paid_at, payment_number), sales!commissions_sale_id_fkey(contact_id, contacts!sales_contact_id_fkey(full_name))")
+      .select("id, sale_id, payment_id, amount, percentage, role, payments!commissions_payment_id_fkey(amount, paid_at, payment_number), sales!commissions_sale_id_fkey(contact_id, contacts!sales_contact_id_fkey(full_name))")
       .eq("beneficiary_user_id", apporteur_id)
-      .eq("role", "apporteur")
       .eq("status", "due")
       .not("payment_id", "is", null);
 

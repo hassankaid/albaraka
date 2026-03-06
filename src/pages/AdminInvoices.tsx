@@ -25,9 +25,10 @@ const INVOICE_STATUS: Record<string, { label: string; variant: "default" | "seco
   paid: { label: "Payée", variant: "default" },
 };
 
-interface ApporteurToInvoice {
+interface BeneficiaryToInvoice {
   beneficiary_user_id: string;
   full_name: string;
+  roles: string[];
   commission_count: number;
   total_amount: number;
 }
@@ -63,9 +64,9 @@ export default function AdminInvoices() {
   const genMonth = prev.month;   // 0-indexed
   const genYear = prev.year;
 
-  const [apporteurs, setApporteurs] = useState<ApporteurToInvoice[]>([]);
+  const [beneficiaries, setBeneficiaries] = useState<BeneficiaryToInvoice[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [loadingApporteurs, setLoadingApporteurs] = useState(false);
+  const [loadingBeneficiaries, setLoadingBeneficiaries] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [genProgress, setGenProgress] = useState(0);
   const [genTotal, setGenTotal] = useState(0);
@@ -84,25 +85,23 @@ export default function AdminInvoices() {
 
   const years = Array.from({ length: 3 }, (_, i) => now.getFullYear() - i);
 
-  // Fetch apporteurs with due commissions for the previous month
-  const fetchApporteurs = useCallback(async () => {
-    setLoadingApporteurs(true);
+  // Fetch all beneficiaries with due commissions for the previous month
+  const fetchBeneficiaries = useCallback(async () => {
+    setLoadingBeneficiaries(true);
     const month = genMonth + 1;
-    const startDate = `${genYear}-${String(month).padStart(2, "0")}-01`;
     const endMonth = month === 12 ? 1 : month + 1;
     const endYear = month === 12 ? genYear + 1 : genYear;
     const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01`;
 
     const { data, error } = await supabase
       .from("commissions")
-      .select("beneficiary_user_id, amount, payments!commissions_payment_id_fkey(paid_at), profiles!commissions_beneficiary_user_id_fkey(full_name)")
-      .eq("role", "apporteur")
+      .select("beneficiary_user_id, amount, role, payments!commissions_payment_id_fkey(paid_at), profiles!commissions_beneficiary_user_id_fkey(full_name)")
       .eq("status", "due")
       .not("payment_id", "is", null);
 
     if (error) {
       console.error(error);
-      setLoadingApporteurs(false);
+      setLoadingBeneficiaries(false);
       return;
     }
 
@@ -111,7 +110,7 @@ export default function AdminInvoices() {
       return paidAt && paidAt < endDate;
     });
 
-    const grouped: Record<string, ApporteurToInvoice> = {};
+    const grouped: Record<string, BeneficiaryToInvoice> = {};
     filtered.forEach((c: any) => {
       const uid = c.beneficiary_user_id;
       if (!uid) return;
@@ -119,21 +118,25 @@ export default function AdminInvoices() {
         grouped[uid] = {
           beneficiary_user_id: uid,
           full_name: c.profiles?.full_name || "Inconnu",
+          roles: [],
           commission_count: 0,
           total_amount: 0,
         };
+      }
+      if (c.role && !grouped[uid].roles.includes(c.role)) {
+        grouped[uid].roles.push(c.role);
       }
       grouped[uid].commission_count++;
       grouped[uid].total_amount += c.amount || 0;
     });
 
     const list = Object.values(grouped).sort((a, b) => a.full_name.localeCompare(b.full_name));
-    setApporteurs(list);
+    setBeneficiaries(list);
     setSelectedIds(new Set(list.map(a => a.beneficiary_user_id)));
-    setLoadingApporteurs(false);
+    setLoadingBeneficiaries(false);
   }, [genMonth, genYear]);
 
-  useEffect(() => { fetchApporteurs(); }, [fetchApporteurs]);
+  useEffect(() => { fetchBeneficiaries(); }, [fetchBeneficiaries]);
 
   // Fetch all invoices
   const fetchInvoices = useCallback(async () => {
@@ -175,10 +178,10 @@ export default function AdminInvoices() {
   };
 
   const toggleAll = () => {
-    if (selectedIds.size === apporteurs.length) {
+    if (selectedIds.size === beneficiaries.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(apporteurs.map(a => a.beneficiary_user_id)));
+      setSelectedIds(new Set(beneficiaries.map(a => a.beneficiary_user_id)));
     }
   };
 
@@ -214,7 +217,7 @@ export default function AdminInvoices() {
       description: `${successCount} facture(s) générée(s)${errorCount > 0 ? `, ${errorCount} erreur(s)` : ""}`,
     });
 
-    fetchApporteurs();
+    fetchBeneficiaries();
     fetchInvoices();
   };
 
@@ -282,7 +285,7 @@ export default function AdminInvoices() {
     }
 
     toast({ title: "Facture supprimée", description: "Les commissions ont été remises en statut 'due'." });
-    fetchApporteurs();
+    fetchBeneficiaries();
     fetchInvoices();
   };
 
@@ -296,16 +299,22 @@ export default function AdminInvoices() {
   });
 
   // Stats
-  const totalCommAmount = apporteurs.reduce((sum, a) => sum + a.total_amount, 0);
-  const totalCommCount = apporteurs.reduce((sum, a) => sum + a.commission_count, 0);
+  const totalCommAmount = beneficiaries.reduce((sum, a) => sum + a.total_amount, 0);
+  const totalCommCount = beneficiaries.reduce((sum, a) => sum + a.commission_count, 0);
+
+  const getRoleLabel = (roles: string[]) => {
+    if (roles.length > 1) return "Multi-rôles";
+    const map: Record<string, string> = { apporteur: "Apporteur", closer: "Closer", collaborateur: "Collaborateur" };
+    return map[roles[0]] || roles[0];
+  };
   const periodLabel = `${MONTHS[genMonth]} ${genYear}`;
 
   return (
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Facturation Apporteurs</h1>
-        <p className="text-sm text-muted-foreground mt-1">Générez et gérez les factures de commissions</p>
+        <h1 className="text-2xl font-bold text-foreground">Facturation</h1>
+        <p className="text-sm text-muted-foreground mt-1">Générez et gérez les factures de commissions pour tous les bénéficiaires</p>
       </div>
 
       <Tabs defaultValue="generate" className="space-y-6">
@@ -335,16 +344,16 @@ export default function AdminInvoices() {
                 Commissions à payer jusqu'à {periodLabel} inclus
               </p>
             </div>
-            <Button variant="ghost" size="icon" className="ml-auto" onClick={fetchApporteurs} disabled={loadingApporteurs}>
-              <RefreshCw className={`h-4 w-4 ${loadingApporteurs ? "animate-spin" : ""}`} />
+            <Button variant="ghost" size="icon" className="ml-auto" onClick={fetchBeneficiaries} disabled={loadingBeneficiaries}>
+              <RefreshCw className={`h-4 w-4 ${loadingBeneficiaries ? "animate-spin" : ""}`} />
             </Button>
           </div>
 
-          {loadingApporteurs ? (
+          {loadingBeneficiaries ? (
             <div className="flex items-center gap-2 py-16 justify-center text-muted-foreground">
               <RefreshCw className="h-4 w-4 animate-spin" /> Chargement…
             </div>
-          ) : apporteurs.length === 0 ? (
+          ) : beneficiaries.length === 0 ? (
             <Card className="border-dashed border-border/60">
               <CardContent className="flex flex-col items-center justify-center py-16 text-center">
                 <div className="rounded-full bg-muted p-4 mb-4">
@@ -366,8 +375,8 @@ export default function AdminInvoices() {
                       <Users className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-foreground">{apporteurs.length}</p>
-                      <p className="text-xs text-muted-foreground">Apporteur{apporteurs.length > 1 ? "s" : ""}</p>
+                      <p className="text-2xl font-bold text-foreground">{beneficiaries.length}</p>
+                      <p className="text-xs text-muted-foreground">Bénéficiaire{beneficiaries.length > 1 ? "s" : ""}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -395,7 +404,7 @@ export default function AdminInvoices() {
                 </Card>
               </div>
 
-              {/* Apporteurs table */}
+              {/* Beneficiaries table */}
               <Card className="border-border/50 overflow-hidden">
                 <CardContent className="p-0">
                   <Table>
@@ -403,17 +412,18 @@ export default function AdminInvoices() {
                       <TableRow className="bg-muted/30">
                         <TableHead className="w-12 pl-4">
                           <Checkbox
-                            checked={selectedIds.size === apporteurs.length}
+                            checked={selectedIds.size === beneficiaries.length}
                             onCheckedChange={toggleAll}
                           />
                         </TableHead>
-                        <TableHead>Apporteur</TableHead>
+                        <TableHead>Bénéficiaire</TableHead>
+                        <TableHead>Rôle</TableHead>
                         <TableHead className="text-center">Commissions</TableHead>
                         <TableHead className="text-right pr-6">Montant</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {apporteurs.map(a => (
+                      {beneficiaries.map(a => (
                         <TableRow key={a.beneficiary_user_id} className="cursor-pointer" onClick={() => toggleSelect(a.beneficiary_user_id)}>
                           <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}>
                             <Checkbox
@@ -422,6 +432,11 @@ export default function AdminInvoices() {
                             />
                           </TableCell>
                           <TableCell className="font-medium text-foreground">{a.full_name}</TableCell>
+                          <TableCell>
+                            <Badge variant={a.roles.length > 1 ? "default" : "secondary"} className="text-xs">
+                              {getRoleLabel(a.roles)}
+                            </Badge>
+                          </TableCell>
                           <TableCell className="text-center">
                             <Badge variant="secondary" className="text-xs tabular-nums">{a.commission_count}</Badge>
                           </TableCell>
@@ -458,7 +473,7 @@ export default function AdminInvoices() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => generateInvoices(apporteurs.map(a => a.beneficiary_user_id))}
+                  onClick={() => generateInvoices(beneficiaries.map(a => a.beneficiary_user_id))}
                   disabled={generating}
                 >
                   Tout générer
@@ -521,7 +536,7 @@ export default function AdminInvoices() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/30">
-                        <TableHead>Apporteur</TableHead>
+                        <TableHead>Bénéficiaire</TableHead>
                         <TableHead>N° Facture</TableHead>
                         <TableHead>Période</TableHead>
                         <TableHead className="text-right">Montant</TableHead>
