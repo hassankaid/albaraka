@@ -404,7 +404,7 @@ export default function AdminInvoices() {
                 </Card>
               </div>
 
-              {/* Apporteurs table */}
+              {/* Beneficiaries table */}
               <Card className="border-border/50 overflow-hidden">
                 <CardContent className="p-0">
                   <Table>
@@ -412,17 +412,18 @@ export default function AdminInvoices() {
                       <TableRow className="bg-muted/30">
                         <TableHead className="w-12 pl-4">
                           <Checkbox
-                            checked={selectedIds.size === apporteurs.length}
+                            checked={selectedIds.size === beneficiaries.length}
                             onCheckedChange={toggleAll}
                           />
                         </TableHead>
-                        <TableHead>Apporteur</TableHead>
+                        <TableHead>Bénéficiaire</TableHead>
+                        <TableHead>Rôle</TableHead>
                         <TableHead className="text-center">Commissions</TableHead>
                         <TableHead className="text-right pr-6">Montant</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {apporteurs.map(a => (
+                      {beneficiaries.map(a => (
                         <TableRow key={a.beneficiary_user_id} className="cursor-pointer" onClick={() => toggleSelect(a.beneficiary_user_id)}>
                           <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}>
                             <Checkbox
@@ -431,6 +432,11 @@ export default function AdminInvoices() {
                             />
                           </TableCell>
                           <TableCell className="font-medium text-foreground">{a.full_name}</TableCell>
+                          <TableCell>
+                            <Badge variant={a.roles.length > 1 ? "default" : "secondary"} className="text-xs">
+                              {getRoleLabel(a.roles)}
+                            </Badge>
+                          </TableCell>
                           <TableCell className="text-center">
                             <Badge variant="secondary" className="text-xs tabular-nums">{a.commission_count}</Badge>
                           </TableCell>
