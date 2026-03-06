@@ -536,7 +536,7 @@ export default function AdminInvoices() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/30">
-                        <TableHead>Apporteur</TableHead>
+                        <TableHead>Bénéficiaire</TableHead>
                         <TableHead>N° Facture</TableHead>
                         <TableHead>Période</TableHead>
                         <TableHead className="text-right">Montant</TableHead>
