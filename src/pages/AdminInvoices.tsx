@@ -375,8 +375,8 @@ export default function AdminInvoices() {
                       <Users className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-foreground">{apporteurs.length}</p>
-                      <p className="text-xs text-muted-foreground">Apporteur{apporteurs.length > 1 ? "s" : ""}</p>
+                      <p className="text-2xl font-bold text-foreground">{beneficiaries.length}</p>
+                      <p className="text-xs text-muted-foreground">Bénéficiaire{beneficiaries.length > 1 ? "s" : ""}</p>
                     </div>
                   </CardContent>
                 </Card>
