@@ -349,11 +349,11 @@ export default function AdminInvoices() {
             </Button>
           </div>
 
-          {loadingApporteurs ? (
+          {loadingBeneficiaries ? (
             <div className="flex items-center gap-2 py-16 justify-center text-muted-foreground">
               <RefreshCw className="h-4 w-4 animate-spin" /> Chargement…
             </div>
-          ) : apporteurs.length === 0 ? (
+          ) : beneficiaries.length === 0 ? (
             <Card className="border-dashed border-border/60">
               <CardContent className="flex flex-col items-center justify-center py-16 text-center">
                 <div className="rounded-full bg-muted p-4 mb-4">
