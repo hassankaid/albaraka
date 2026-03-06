@@ -299,8 +299,14 @@ export default function AdminInvoices() {
   });
 
   // Stats
-  const totalCommAmount = apporteurs.reduce((sum, a) => sum + a.total_amount, 0);
-  const totalCommCount = apporteurs.reduce((sum, a) => sum + a.commission_count, 0);
+  const totalCommAmount = beneficiaries.reduce((sum, a) => sum + a.total_amount, 0);
+  const totalCommCount = beneficiaries.reduce((sum, a) => sum + a.commission_count, 0);
+
+  const getRoleLabel = (roles: string[]) => {
+    if (roles.length > 1) return "Multi-rôles";
+    const map: Record<string, string> = { apporteur: "Apporteur", closer: "Closer", collaborateur: "Collaborateur" };
+    return map[roles[0]] || roles[0];
+  };
   const periodLabel = `${MONTHS[genMonth]} ${genYear}`;
 
   return (
