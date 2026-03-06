@@ -50,7 +50,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { apporteur_id, month, year } = await req.json();
+    const body = await req.json();
+    const apporteur_id = body.beneficiary_id || body.apporteur_id;
+    const { month, year } = body;
 
     if (!apporteur_id || !month || !year) {
       return new Response(JSON.stringify({ error: "Missing parameters" }), {
