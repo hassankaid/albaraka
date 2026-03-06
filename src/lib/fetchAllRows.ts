@@ -1,11 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type TableName = keyof Database["public"]["Tables"] | keyof Database["public"]["Views"];
 
 /**
  * Fetch all rows from a Supabase table, bypassing the default 1000-row limit.
  * Uses batched .range() calls to iterate through all data.
  */
 export async function fetchAllRows<T = Record<string, unknown>>(
-  table: string,
+  table: TableName,
   select: string = "*",
   options?: {
     order?: { column: string; ascending?: boolean };
@@ -18,7 +21,7 @@ export async function fetchAllRows<T = Record<string, unknown>>(
   let hasMore = true;
 
   while (hasMore) {
-    let query = supabase.from(table).select(select).range(offset, offset + batchSize - 1);
+    let query = (supabase.from(table as any) as any).select(select).range(offset, offset + batchSize - 1);
 
     if (options?.order) {
       query = query.order(options.order.column, { ascending: options.order.ascending ?? true });
