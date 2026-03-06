@@ -44,6 +44,8 @@ const App = () => (
               <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
               <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
               <Route element={<ProtectedRoute />}>
+                {/* Onboarding (no layout) */}
+                <Route path="/onboarding" element={<ApporteurOnboarding />} />
                 {/* Team layout (CEO + Collaborateur) */}
                 <Route element={<DashboardLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
