@@ -109,11 +109,16 @@ export default function ApporteurOnboarding() {
   const { toast } = useToast();
   const ribInputRef = useRef<HTMLInputElement>(null);
 
+  // Pre-fill from profile data (set during registration)
+  const nameParts = (profile?.full_name || "").split(" ");
+  const initialFirstName = nameParts.slice(0, -1).join(" ") || nameParts[0] || "";
+  const initialLastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
+
   // Form state
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [firstName, setFirstName] = useState(initialFirstName);
+  const [lastName, setLastName] = useState(initialLastName);
   const [email, setEmail] = useState(profile?.email || "");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(profile?.phone || "");
   const [address, setAddress] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [city, setCity] = useState("");
