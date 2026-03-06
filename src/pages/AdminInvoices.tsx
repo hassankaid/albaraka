@@ -85,25 +85,23 @@ export default function AdminInvoices() {
 
   const years = Array.from({ length: 3 }, (_, i) => now.getFullYear() - i);
 
-  // Fetch apporteurs with due commissions for the previous month
-  const fetchApporteurs = useCallback(async () => {
-    setLoadingApporteurs(true);
+  // Fetch all beneficiaries with due commissions for the previous month
+  const fetchBeneficiaries = useCallback(async () => {
+    setLoadingBeneficiaries(true);
     const month = genMonth + 1;
-    const startDate = `${genYear}-${String(month).padStart(2, "0")}-01`;
     const endMonth = month === 12 ? 1 : month + 1;
     const endYear = month === 12 ? genYear + 1 : genYear;
     const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01`;
 
     const { data, error } = await supabase
       .from("commissions")
-      .select("beneficiary_user_id, amount, payments!commissions_payment_id_fkey(paid_at), profiles!commissions_beneficiary_user_id_fkey(full_name)")
-      .eq("role", "apporteur")
+      .select("beneficiary_user_id, amount, role, payments!commissions_payment_id_fkey(paid_at), profiles!commissions_beneficiary_user_id_fkey(full_name)")
       .eq("status", "due")
       .not("payment_id", "is", null);
 
     if (error) {
       console.error(error);
-      setLoadingApporteurs(false);
+      setLoadingBeneficiaries(false);
       return;
     }
 
@@ -112,7 +110,7 @@ export default function AdminInvoices() {
       return paidAt && paidAt < endDate;
     });
 
-    const grouped: Record<string, ApporteurToInvoice> = {};
+    const grouped: Record<string, BeneficiaryToInvoice> = {};
     filtered.forEach((c: any) => {
       const uid = c.beneficiary_user_id;
       if (!uid) return;
@@ -120,18 +118,22 @@ export default function AdminInvoices() {
         grouped[uid] = {
           beneficiary_user_id: uid,
           full_name: c.profiles?.full_name || "Inconnu",
+          roles: [],
           commission_count: 0,
           total_amount: 0,
         };
+      }
+      if (c.role && !grouped[uid].roles.includes(c.role)) {
+        grouped[uid].roles.push(c.role);
       }
       grouped[uid].commission_count++;
       grouped[uid].total_amount += c.amount || 0;
     });
 
     const list = Object.values(grouped).sort((a, b) => a.full_name.localeCompare(b.full_name));
-    setApporteurs(list);
+    setBeneficiaries(list);
     setSelectedIds(new Set(list.map(a => a.beneficiary_user_id)));
-    setLoadingApporteurs(false);
+    setLoadingBeneficiaries(false);
   }, [genMonth, genYear]);
 
   useEffect(() => { fetchApporteurs(); }, [fetchApporteurs]);
