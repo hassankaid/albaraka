@@ -50,10 +50,10 @@ export default function CreateSaleForm({ prefilledContactId, prefilledLeadId, on
 
   useEffect(() => {
     if (!isWizardStep) {
-      supabase.from("contacts").select("id, full_name, email").order("created_at", { ascending: false }).limit(500).then(({ data }) => { if (data) setContacts(data); });
-      supabase.from("leads").select("id, raw_full_name, source").order("created_at", { ascending: false }).limit(500).then(({ data }) => { if (data) setLeads(data); });
+      fetchAllRows<{ id: string; full_name: string | null; email: string | null }>("contacts", "id, full_name, email", { order: { column: "created_at", ascending: false } }).then(setContacts);
+      fetchAllRows<{ id: string; raw_full_name: string | null; source: string }>("leads", "id, raw_full_name, source", { order: { column: "created_at", ascending: false } }).then(setLeads);
     }
-    supabase.from("profiles").select("id, full_name, role").then(({ data }) => { if (data) setProfiles(data); });
+    fetchAllRows<{ id: string; full_name: string; role: string }>("profiles", "id, full_name, role").then(setProfiles);
   }, [isWizardStep]);
 
   const teamProfiles = profiles.filter((p) => p.role === "ceo" || p.role === "collaborateur");
