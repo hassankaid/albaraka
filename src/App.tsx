@@ -27,6 +27,7 @@ import ApporteurLeads from "./pages/apporteur/ApporteurLeads";
 import ApporteurSales from "./pages/apporteur/ApporteurSales";
 import ApporteurCommissions from "./pages/apporteur/ApporteurCommissions";
 import ApporteurProfile from "./pages/apporteur/ApporteurProfile";
+import ApporteurOnboarding from "./pages/apporteur/ApporteurOnboarding";
 
 const queryClient = new QueryClient();
 
