@@ -17,6 +17,7 @@ const allNavItems = [
   { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
   { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"] },
+  { title: "Mon profil", path: "/profile", icon: User, roles: ["agence"] },
   { title: "Mon espace", path: "/my-space", icon: User, roles: ["apporteur"] },
 ];
 
