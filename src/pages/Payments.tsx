@@ -50,6 +50,12 @@ const getMonthRange = (offset: number) => {
   return { start: start.toISOString().split("T")[0], end: end.toISOString().split("T")[0] };
 };
 
+const getBillingPeriodLabel = () => {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 1);
+  return d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+};
+
 export default function Payments() {
   const { profile } = useAuth();
   const { toast } = useToast();
