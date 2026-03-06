@@ -178,10 +178,10 @@ export default function AdminInvoices() {
   };
 
   const toggleAll = () => {
-    if (selectedIds.size === apporteurs.length) {
+    if (selectedIds.size === beneficiaries.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(apporteurs.map(a => a.beneficiary_user_id)));
+      setSelectedIds(new Set(beneficiaries.map(a => a.beneficiary_user_id)));
     }
   };
 
