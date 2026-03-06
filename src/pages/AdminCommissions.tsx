@@ -190,6 +190,16 @@ export default function AdminCommissions() {
   const filtered = commissions.filter((c) => {
     if (filterStatus !== "all" && c.status !== filterStatus) return false;
     if (filterRole !== "all" && c.role !== filterRole) return false;
+    if (filterPeriod === "billing_period") {
+      const d = new Date();
+      d.setDate(1);
+      d.setMonth(d.getMonth() - 1);
+      const start = d.toISOString().split("T")[0];
+      d.setMonth(d.getMonth() + 1);
+      d.setDate(0);
+      const end = d.toISOString().split("T")[0];
+      if (!c.payment_paid_at || c.payment_paid_at < start || c.payment_paid_at > end) return false;
+    }
     if (search) {
       const q = search.toLowerCase();
       if (
