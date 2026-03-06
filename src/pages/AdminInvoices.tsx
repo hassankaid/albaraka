@@ -217,7 +217,7 @@ export default function AdminInvoices() {
       description: `${successCount} facture(s) générée(s)${errorCount > 0 ? `, ${errorCount} erreur(s)` : ""}`,
     });
 
-    fetchApporteurs();
+    fetchBeneficiaries();
     fetchInvoices();
   };
 
