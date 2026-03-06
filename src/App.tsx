@@ -54,6 +54,7 @@ const App = () => (
                   <Route path="/admin/invoices" element={<AdminInvoices />} />
                   <Route path="/admin/commissions" element={<AdminCommissions />} />
                   <Route path="/admin/data" element={<AdminData />} />
+                  <Route path="/admin/create" element={<AdminCreateWizard />} />
                   <Route path="/profile" element={<Profile />} />
                 </Route>
                 {/* Apporteur layout */}
