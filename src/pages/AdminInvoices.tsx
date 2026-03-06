@@ -66,7 +66,7 @@ export default function AdminInvoices() {
 
   const [beneficiaries, setBeneficiaries] = useState<BeneficiaryToInvoice[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [loadingApporteurs, setLoadingApporteurs] = useState(false);
+  const [loadingBeneficiaries, setLoadingBeneficiaries] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [genProgress, setGenProgress] = useState(0);
   const [genTotal, setGenTotal] = useState(0);
