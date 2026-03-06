@@ -17,6 +17,7 @@ const allNavItems = [
   { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
   { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"] },
+  { title: "Mon profil", path: "/profile", icon: User, roles: ["agence"] },
   { title: "Mon espace", path: "/my-space", icon: User, roles: ["apporteur"] },
 ];
 
@@ -45,6 +46,11 @@ export default function DashboardLayout() {
   // Redirect pure apporteurs to their dedicated space
   if (profile?.role === "apporteur" && !profile?.is_also_apporteur) {
     return <Navigate to="/my-space" replace />;
+  }
+
+  // Redirect agence to profile if they land on dashboard
+  if (profile?.role === "agence" && location.pathname === "/dashboard") {
+    return <Navigate to="/profile" replace />;
   }
 
   const pageTitle = pageTitles[location.pathname] || "Dashboard";
