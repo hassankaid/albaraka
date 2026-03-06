@@ -473,7 +473,7 @@ export default function AdminInvoices() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => generateInvoices(apporteurs.map(a => a.beneficiary_user_id))}
+                  onClick={() => generateInvoices(beneficiaries.map(a => a.beneficiary_user_id))}
                   disabled={generating}
                 >
                   Tout générer
