@@ -674,6 +674,7 @@ export type Database = {
           full_name: string
           id: string
           is_also_apporteur: boolean | null
+          onboarding_completed: boolean
           phone: string | null
           postal_code: string | null
           role: string
@@ -695,6 +696,7 @@ export type Database = {
           full_name: string
           id: string
           is_also_apporteur?: boolean | null
+          onboarding_completed?: boolean
           phone?: string | null
           postal_code?: string | null
           role?: string
@@ -716,6 +718,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_also_apporteur?: boolean | null
+          onboarding_completed?: boolean
           phone?: string | null
           postal_code?: string | null
           role?: string
