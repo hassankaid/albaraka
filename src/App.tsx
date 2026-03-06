@@ -27,6 +27,7 @@ import ApporteurLeads from "./pages/apporteur/ApporteurLeads";
 import ApporteurSales from "./pages/apporteur/ApporteurSales";
 import ApporteurCommissions from "./pages/apporteur/ApporteurCommissions";
 import ApporteurProfile from "./pages/apporteur/ApporteurProfile";
+import ApporteurOnboarding from "./pages/apporteur/ApporteurOnboarding";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,8 @@ const App = () => (
               <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
               <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
               <Route element={<ProtectedRoute />}>
+                {/* Onboarding (no layout) */}
+                <Route path="/onboarding" element={<ApporteurOnboarding />} />
                 {/* Team layout (CEO + Collaborateur) */}
                 <Route element={<DashboardLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />

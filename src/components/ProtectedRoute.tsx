@@ -1,9 +1,10 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { RefreshCw } from "lucide-react";
 
 export function ProtectedRoute() {
-  const { session, isLoading } = useAuth();
+  const { session, profile, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -14,6 +15,16 @@ export function ProtectedRoute() {
   }
 
   if (!session) return <Navigate to="/login" replace />;
+
+  // Redirect apporteurs who haven't completed onboarding
+  if (
+    profile?.role === "apporteur" &&
+    !profile?.onboarding_completed &&
+    location.pathname !== "/onboarding"
+  ) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   return <Outlet />;
 }
 
