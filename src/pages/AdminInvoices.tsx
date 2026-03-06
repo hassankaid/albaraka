@@ -136,7 +136,7 @@ export default function AdminInvoices() {
     setLoadingBeneficiaries(false);
   }, [genMonth, genYear]);
 
-  useEffect(() => { fetchApporteurs(); }, [fetchApporteurs]);
+  useEffect(() => { fetchBeneficiaries(); }, [fetchBeneficiaries]);
 
   // Fetch all invoices
   const fetchInvoices = useCallback(async () => {
