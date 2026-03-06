@@ -78,6 +78,7 @@ export default function AdminCommissions() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterRole, setFilterRole] = useState<string>("all");
+  const [filterPeriod, setFilterPeriod] = useState<string>("all");
 
   // Edit modal
   const [editingCommission, setEditingCommission] = useState<CommissionRow | null>(null);
@@ -189,6 +190,16 @@ export default function AdminCommissions() {
   const filtered = commissions.filter((c) => {
     if (filterStatus !== "all" && c.status !== filterStatus) return false;
     if (filterRole !== "all" && c.role !== filterRole) return false;
+    if (filterPeriod === "billing_period") {
+      const d = new Date();
+      d.setDate(1);
+      d.setMonth(d.getMonth() - 1);
+      const start = d.toISOString().split("T")[0];
+      d.setMonth(d.getMonth() + 1);
+      d.setDate(0);
+      const end = d.toISOString().split("T")[0];
+      if (!c.payment_paid_at || c.payment_paid_at < start || c.payment_paid_at > end) return false;
+    }
     if (search) {
       const q = search.toLowerCase();
       if (
@@ -325,6 +336,22 @@ export default function AdminCommissions() {
             <SelectItem value="agence_marketing">Agence marketing</SelectItem>
           </SelectContent>
         </Select>
+        {(() => {
+          const d = new Date();
+          d.setMonth(d.getMonth() - 1);
+          const label = d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+          return (
+            <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes périodes</SelectItem>
+                <SelectItem value="billing_period">Facturation ({label})</SelectItem>
+              </SelectContent>
+            </Select>
+          );
+        })()}
       </div>
 
       {/* Table */}

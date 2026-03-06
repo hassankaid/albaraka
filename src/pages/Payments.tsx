@@ -50,6 +50,12 @@ const getMonthRange = (offset: number) => {
   return { start: start.toISOString().split("T")[0], end: end.toISOString().split("T")[0] };
 };
 
+const getBillingPeriodLabel = () => {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 1);
+  return d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+};
+
 export default function Payments() {
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -139,6 +145,9 @@ export default function Payments() {
       const offset = periodFilter === "this_month" ? 0 : 1;
       const { start, end } = getMonthRange(offset);
       result = result.filter((p) => p.due_date >= start && p.due_date <= end);
+    } else if (periodFilter === "billing_period") {
+      const { start, end } = getMonthRange(-1);
+      result = result.filter((p) => p.paid_at && p.paid_at >= start && p.paid_at <= end);
     }
 
     // Status filter
@@ -241,6 +250,7 @@ export default function Payments() {
             <SelectItem value="all">Toutes périodes</SelectItem>
             <SelectItem value="this_month">Ce mois</SelectItem>
             <SelectItem value="next_month">Mois prochain</SelectItem>
+            <SelectItem value="billing_period">Facturation ({getBillingPeriodLabel()})</SelectItem>
           </SelectContent>
         </Select>
         <Input
