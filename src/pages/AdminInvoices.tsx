@@ -344,8 +344,8 @@ export default function AdminInvoices() {
                 Commissions à payer jusqu'à {periodLabel} inclus
               </p>
             </div>
-            <Button variant="ghost" size="icon" className="ml-auto" onClick={fetchApporteurs} disabled={loadingApporteurs}>
-              <RefreshCw className={`h-4 w-4 ${loadingApporteurs ? "animate-spin" : ""}`} />
+            <Button variant="ghost" size="icon" className="ml-auto" onClick={fetchBeneficiaries} disabled={loadingBeneficiaries}>
+              <RefreshCw className={`h-4 w-4 ${loadingBeneficiaries ? "animate-spin" : ""}`} />
             </Button>
           </div>
 
