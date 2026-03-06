@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import logo from "@/assets/ethicarena-logo.png";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -16,6 +16,7 @@ const allNavItems = [
   { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"] },
   { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
+  { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"] },
   { title: "Mon espace", path: "/my-space", icon: User, roles: ["apporteur"] },
 ];
 
@@ -29,6 +30,7 @@ const pageTitles: Record<string, string> = {
   "/admin/invoices": "Factures Apporteurs",
   "/admin/commissions": "Commissions",
   "/admin/data": "Gestion des données",
+  "/admin/create": "Création complète",
   "/my-space": "Mon espace",
   "/profile": "Mon profil",
 };

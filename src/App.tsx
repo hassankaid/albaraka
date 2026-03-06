@@ -20,6 +20,7 @@ import Profile from "./pages/Profile";
 import AdminInvoices from "./pages/AdminInvoices";
 import AdminCommissions from "./pages/AdminCommissions";
 import AdminData from "./pages/AdminData";
+import AdminCreateWizard from "./pages/AdminCreateWizard";
 import NotFound from "./pages/NotFound";
 import ApporteurDashboard from "./pages/apporteur/ApporteurDashboard";
 import ApporteurLeads from "./pages/apporteur/ApporteurLeads";
@@ -53,6 +54,7 @@ const App = () => (
                   <Route path="/admin/invoices" element={<AdminInvoices />} />
                   <Route path="/admin/commissions" element={<AdminCommissions />} />
                   <Route path="/admin/data" element={<AdminData />} />
+                  <Route path="/admin/create" element={<AdminCreateWizard />} />
                   <Route path="/profile" element={<Profile />} />
                 </Route>
                 {/* Apporteur layout */}
