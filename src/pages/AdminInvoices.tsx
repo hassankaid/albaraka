@@ -87,6 +87,33 @@ export default function AdminInvoices() {
   const [deleteInvoice, setDeleteInvoice] = useState<InvoiceRow | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Fixed salary modal
+  interface SalaryProfile { id: string; full_name: string; role: string; fixed_salary: number | null; fixed_salary_active: boolean; }
+  const [salaryModalOpen, setSalaryModalOpen] = useState(false);
+  const [salaryProfiles, setSalaryProfiles] = useState<SalaryProfile[]>([]);
+  const [loadingSalaries, setLoadingSalaries] = useState(false);
+
+  const fetchSalaryProfiles = useCallback(async () => {
+    setLoadingSalaries(true);
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, full_name, role, fixed_salary, fixed_salary_active")
+      .in("role", ["collaborateur", "agence"])
+      .order("full_name");
+    setSalaryProfiles((data as any[]) || []);
+    setLoadingSalaries(false);
+  }, []);
+
+  const updateSalary = async (profileId: string, updates: { fixed_salary?: number | null; fixed_salary_active?: boolean }) => {
+    const { error } = await supabase.from("profiles").update(updates as any).eq("id", profileId);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      setSalaryProfiles(prev => prev.map(p => p.id === profileId ? { ...p, ...updates } : p));
+      fetchBeneficiaries();
+    }
+  };
+
   const years = Array.from({ length: 3 }, (_, i) => now.getFullYear() - i);
 
   // Fetch all beneficiaries with due commissions OR fixed salary for the previous month
