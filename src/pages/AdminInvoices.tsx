@@ -798,6 +798,26 @@ export default function AdminInvoices() {
         </DialogContent>
       </Dialog>
 
+      {/* ── BULK DELETE CONFIRMATION MODAL ── */}
+      <Dialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer {selectedInvoiceIds.size} facture(s)</DialogTitle>
+            <DialogDescription>
+              Voulez-vous vraiment supprimer les <strong>{selectedInvoiceIds.size}</strong> facture(s) sélectionnée(s) ?
+              Les commissions associées repasseront en statut "due".
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkDeleteConfirm(false)}>Annuler</Button>
+            <Button variant="destructive" onClick={handleBulkDelete}>
+              <Trash2 className="h-4 w-4 mr-1" />
+              Supprimer ({selectedInvoiceIds.size})
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ── PREVIEW MODAL ── */}
       <InvoicePreviewModal
         open={!!previewInvoice}
