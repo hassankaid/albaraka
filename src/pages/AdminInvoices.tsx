@@ -167,7 +167,7 @@ export default function AdminInvoices() {
     // Fetch profiles with fixed salary active (to include even without commissions)
     const { data: salaryProfiles } = await supabase
       .from("profiles")
-      .select("id, full_name, fixed_salary, fixed_salary_active")
+      .select("id, full_name, role, fixed_salary, fixed_salary_active")
       .eq("fixed_salary_active", true);
 
     (salaryProfiles || []).forEach((p: any) => {
