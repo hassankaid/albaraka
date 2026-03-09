@@ -373,6 +373,55 @@ export default function AdminInvoices() {
     fetchInvoices();
   };
 
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedInvoiceIds);
+    if (ids.length === 0) return;
+    setBulkDeleting(true);
+    setBulkDeleteProgress(0);
+    setBulkDeleteTotal(ids.length);
+    setShowBulkDeleteConfirm(false);
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < ids.length; i++) {
+      const { data, error } = await supabase.functions.invoke("delete-apporteur-invoice", {
+        body: { invoice_id: ids[i] },
+      });
+      if (error || data?.error) {
+        errorCount++;
+      } else {
+        successCount++;
+      }
+      setBulkDeleteProgress(i + 1);
+    }
+
+    setBulkDeleting(false);
+    setSelectedInvoiceIds(new Set());
+    toast({
+      title: "Suppression terminée",
+      description: `${successCount} facture(s) supprimée(s)${errorCount > 0 ? `, ${errorCount} erreur(s)` : ""}. Commissions remises en "due".`,
+    });
+    fetchBeneficiaries();
+    fetchInvoices();
+  };
+
+  const toggleInvoiceSelect = (id: string) => {
+    setSelectedInvoiceIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllInvoices = () => {
+    if (selectedInvoiceIds.size === filteredInvoices.length) {
+      setSelectedInvoiceIds(new Set());
+    } else {
+      setSelectedInvoiceIds(new Set(filteredInvoices.map(inv => inv.id)));
+    }
+  };
+
   // Filter invoices
   const filteredInvoices = invoices.filter(inv => {
     if (filterStatus !== "all" && inv.status !== filterStatus) return false;
