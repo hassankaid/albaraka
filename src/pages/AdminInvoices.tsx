@@ -87,7 +87,7 @@ export default function AdminInvoices() {
 
   const years = Array.from({ length: 3 }, (_, i) => now.getFullYear() - i);
 
-  // Fetch all beneficiaries with due commissions for the previous month
+  // Fetch all beneficiaries with due commissions OR fixed salary for the previous month
   const fetchBeneficiaries = useCallback(async () => {
     setLoadingBeneficiaries(true);
     const month = genMonth + 1;
@@ -95,6 +95,7 @@ export default function AdminInvoices() {
     const endYear = month === 12 ? genYear + 1 : genYear;
     const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01`;
 
+    // Fetch commissions
     const { data, error } = await supabase
       .from("commissions")
       .select("beneficiary_user_id, amount, role, payments!commissions_payment_id_fkey(paid_at), profiles!commissions_beneficiary_user_id_fkey(full_name)")
@@ -123,6 +124,8 @@ export default function AdminInvoices() {
           roles: [],
           commission_count: 0,
           total_amount: 0,
+          fixed_salary: null,
+          fixed_salary_active: false,
         };
       }
       if (c.role && !grouped[uid].roles.includes(c.role)) {
@@ -130,6 +133,31 @@ export default function AdminInvoices() {
       }
       grouped[uid].commission_count++;
       grouped[uid].total_amount += c.amount || 0;
+    });
+
+    // Fetch profiles with fixed salary active (to include even without commissions)
+    const { data: salaryProfiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, fixed_salary, fixed_salary_active")
+      .eq("fixed_salary_active", true);
+
+    (salaryProfiles || []).forEach((p: any) => {
+      if (!p.fixed_salary || p.fixed_salary <= 0) return;
+      if (!grouped[p.id]) {
+        grouped[p.id] = {
+          beneficiary_user_id: p.id,
+          full_name: p.full_name || "Inconnu",
+          roles: [],
+          commission_count: 0,
+          total_amount: 0,
+          fixed_salary: p.fixed_salary,
+          fixed_salary_active: true,
+        };
+      } else {
+        grouped[p.id].fixed_salary = p.fixed_salary;
+        grouped[p.id].fixed_salary_active = true;
+      }
+      grouped[p.id].total_amount += Number(p.fixed_salary);
     });
 
     const list = Object.values(grouped).sort((a, b) => a.full_name.localeCompare(b.full_name));
