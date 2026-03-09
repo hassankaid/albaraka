@@ -176,13 +176,16 @@ export default function AdminInvoices() {
         grouped[p.id] = {
           beneficiary_user_id: p.id,
           full_name: p.full_name || "Inconnu",
-          roles: [],
+          roles: [p.role || "collaborateur"],
           commission_count: 0,
           total_amount: 0,
           fixed_salary: p.fixed_salary,
           fixed_salary_active: true,
         };
       } else {
+        if (grouped[p.id].roles.length === 0 && p.role) {
+          grouped[p.id].roles.push(p.role);
+        }
         grouped[p.id].fixed_salary = p.fixed_salary;
         grouped[p.id].fixed_salary_active = true;
       }
