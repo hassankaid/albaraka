@@ -7,11 +7,14 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Check, RefreshCw } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Check, RefreshCw, Trash2, Plus, CalendarIcon, Pencil, X, Save } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -49,6 +52,13 @@ const getPaymentStatusInfo = (status: string, dueDate: string) => {
   return { label: "En attente", className: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30" };
 };
 
+const METHOD_LABELS: Record<string, string> = {
+  virement: "Virement",
+  carte: "Carte",
+  especes: "Espèces",
+  cheque: "Chèque",
+};
+
 export default function SaleDetailModal({
   open, onOpenChange, saleId, saleProduct, saleAmountHt, contactName, onUpdated,
 }: SaleDetailModalProps) {
@@ -59,6 +69,10 @@ export default function SaleDetailModal({
 
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editData, setEditData] = useState<Partial<Payment>>({});
+  const [addingNew, setAddingNew] = useState(false);
+  const [newPayment, setNewPayment] = useState({ amount: "", dueDate: new Date(), status: "pending", paymentMethod: "" });
 
   const fetchPayments = useCallback(async () => {
     if (!saleId) return;
@@ -73,9 +87,14 @@ export default function SaleDetailModal({
   }, [saleId]);
 
   useEffect(() => {
-    if (open && saleId) fetchPayments();
+    if (open && saleId) {
+      fetchPayments();
+      setEditingId(null);
+      setAddingNew(false);
+    }
   }, [open, saleId, fetchPayments]);
 
+  // --- MARK AS PAID ---
   const markAsPaid = async (paymentId: string, paidDate: Date) => {
     const dateStr = format(paidDate, "yyyy-MM-dd");
     const { error } = await supabase
@@ -91,12 +110,93 @@ export default function SaleDetailModal({
     }
   };
 
+  // --- DELETE PAYMENT ---
+  const deletePayment = async (paymentId: string) => {
+    const { error } = await supabase.from("payments").delete().eq("id", paymentId);
+    if (error) {
+      toast({ title: "Erreur de suppression", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Paiement supprimé" });
+      fetchPayments();
+      onUpdated();
+    }
+  };
+
+  // --- START EDIT ---
+  const startEdit = (p: Payment) => {
+    setEditingId(p.id);
+    setEditData({
+      amount: p.amount,
+      due_date: p.due_date,
+      paid_at: p.paid_at,
+      status: p.status,
+      payment_method: p.payment_method,
+    });
+  };
+
+  // --- SAVE EDIT ---
+  const saveEdit = async () => {
+    if (!editingId) return;
+    const { error } = await supabase
+      .from("payments")
+      .update({
+        amount: editData.amount,
+        due_date: editData.due_date,
+        paid_at: editData.paid_at || null,
+        status: editData.status,
+        payment_method: editData.payment_method || null,
+      })
+      .eq("id", editingId);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Paiement modifié" });
+      setEditingId(null);
+      fetchPayments();
+      onUpdated();
+    }
+  };
+
+  // --- ADD PAYMENT ---
+  const addPayment = async () => {
+    if (!saleId || !newPayment.amount || parseFloat(newPayment.amount) <= 0) {
+      toast({ title: "Montant invalide", variant: "destructive" });
+      return;
+    }
+    const maxNum = payments.length > 0 ? Math.max(...payments.map((p) => p.payment_number)) : 0;
+    const newTotal = payments.length + 1;
+
+    const { error } = await supabase.from("payments").insert({
+      sale_id: saleId,
+      amount: parseFloat(newPayment.amount),
+      due_date: format(newPayment.dueDate, "yyyy-MM-dd"),
+      status: newPayment.status,
+      payment_method: newPayment.paymentMethod || null,
+      payment_number: maxNum + 1,
+      total_payments: newTotal,
+    });
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      // Update total_payments on all payments for this sale
+      await supabase
+        .from("payments")
+        .update({ total_payments: newTotal })
+        .eq("sale_id", saleId);
+      toast({ title: "Paiement ajouté" });
+      setAddingNew(false);
+      setNewPayment({ amount: "", dueDate: new Date(), status: "pending", paymentMethod: "" });
+      fetchPayments();
+      onUpdated();
+    }
+  };
+
   const totalPaid = payments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
   const totalPending = payments.filter((p) => p.status === "pending").reduce((s, p) => s + p.amount, 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{saleProduct} — {contactName || "—"}</DialogTitle>
           <DialogDescription>
@@ -107,13 +207,20 @@ export default function SaleDetailModal({
         <Separator />
 
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-foreground">Échéancier</h4>
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold text-foreground">Échéancier</h4>
+            {isCeo && (
+              <Button variant="outline" size="sm" onClick={() => setAddingNew(true)} disabled={addingNew}>
+                <Plus className="h-4 w-4 mr-1" /> Ajouter
+              </Button>
+            )}
+          </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
-          ) : payments.length === 0 ? (
+          ) : payments.length === 0 && !addingNew ? (
             <p className="text-sm text-muted-foreground py-4 text-center">Aucun paiement enregistré pour cette vente.</p>
           ) : (
             <Table>
@@ -123,13 +230,106 @@ export default function SaleDetailModal({
                   <TableHead>Montant</TableHead>
                   <TableHead>Échéance</TableHead>
                   <TableHead>Payé le</TableHead>
+                  <TableHead>Méthode</TableHead>
                   <TableHead>Statut</TableHead>
-                  {isCeo && <TableHead>Action</TableHead>}
+                  {isCeo && <TableHead className="text-right">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {payments.map((p) => {
+                  const isEditing = editingId === p.id;
                   const statusInfo = getPaymentStatusInfo(p.status, p.due_date);
+
+                  if (isEditing && isCeo) {
+                    return (
+                      <TableRow key={p.id} className="border-border bg-secondary/30">
+                        <TableCell className="font-medium text-foreground">
+                          {p.payment_number}/{p.total_payments}
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            className="w-24 h-8 text-sm"
+                            value={editData.amount ?? ""}
+                            onChange={(e) => setEditData({ ...editData, amount: parseFloat(e.target.value) || 0 })}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-8 text-xs">
+                                <CalendarIcon className="h-3 w-3 mr-1" />
+                                {editData.due_date ? format(new Date(editData.due_date), "dd/MM/yy") : "—"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={editData.due_date ? new Date(editData.due_date) : undefined}
+                                onSelect={(d) => d && setEditData({ ...editData, due_date: format(d, "yyyy-MM-dd") })}
+                                locale={fr}
+                                initialFocus
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </TableCell>
+                        <TableCell>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-8 text-xs">
+                                <CalendarIcon className="h-3 w-3 mr-1" />
+                                {editData.paid_at ? format(new Date(editData.paid_at), "dd/MM/yy") : "—"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={editData.paid_at ? new Date(editData.paid_at) : undefined}
+                                onSelect={(d) => setEditData({ ...editData, paid_at: d ? format(d, "yyyy-MM-dd") : null })}
+                                locale={fr}
+                                initialFocus
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </TableCell>
+                        <TableCell>
+                          <Select value={editData.payment_method || "none"} onValueChange={(v) => setEditData({ ...editData, payment_method: v === "none" ? null : v })}>
+                            <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">—</SelectItem>
+                              <SelectItem value="virement">Virement</SelectItem>
+                              <SelectItem value="carte">Carte</SelectItem>
+                              <SelectItem value="especes">Espèces</SelectItem>
+                              <SelectItem value="cheque">Chèque</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Select value={editData.status || "pending"} onValueChange={(v) => setEditData({ ...editData, status: v })}>
+                            <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">En attente</SelectItem>
+                              <SelectItem value="paid">Payé</SelectItem>
+                              <SelectItem value="cancelled">Annulé</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="sm" onClick={saveEdit}>
+                              <Save className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+
                   return (
                     <TableRow key={p.id} className="border-border">
                       <TableCell className="font-medium text-foreground">
@@ -142,26 +342,10 @@ export default function SaleDetailModal({
                         {formatDateOnly(p.due_date, userTz)}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {isCeo && p.paid_at ? (
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-auto p-0 font-normal text-muted-foreground hover:text-foreground">
-                                {formatDateOnly(p.paid_at, userTz)}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={new Date(p.paid_at)}
-                                onSelect={(date) => { if (date) markAsPaid(p.id, date); }}
-                                locale={fr}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        ) : (
-                          p.paid_at ? formatDateOnly(p.paid_at, userTz) : "—"
-                        )}
+                        {p.paid_at ? formatDateOnly(p.paid_at, userTz) : "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {p.payment_method ? (METHOD_LABELS[p.payment_method] || p.payment_method) : "—"}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={`text-xs ${statusInfo.className}`}>
@@ -169,30 +353,125 @@ export default function SaleDetailModal({
                         </Badge>
                       </TableCell>
                       {isCeo && (
-                        <TableCell>
-                          {p.status === "pending" && (
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <Check className="h-4 w-4 mr-1" /> Payé
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            {p.status === "pending" && (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="ghost" size="sm" title="Marquer payé">
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="end">
+                                  <Calendar
+                                    mode="single"
+                                    selected={new Date()}
+                                    onSelect={(date) => { if (date) markAsPaid(p.id, date); }}
+                                    locale={fr}
+                                    initialFocus
+                                    className="pointer-events-auto"
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            )}
+                            <Button variant="ghost" size="sm" title="Modifier" onClick={() => startEdit(p)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" title="Supprimer">
+                                  <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="end">
-                                <Calendar
-                                  mode="single"
-                                  selected={new Date()}
-                                  onSelect={(date) => { if (date) markAsPaid(p.id, date); }}
-                                  locale={fr}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                          )}
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Supprimer ce paiement ?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Paiement {p.payment_number}/{p.total_payments} de {p.amount.toLocaleString("fr-FR")} €. Cette action est irréversible.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => deletePayment(p.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Supprimer
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </TableCell>
                       )}
                     </TableRow>
                   );
                 })}
+
+                {/* ADD NEW ROW */}
+                {addingNew && isCeo && (
+                  <TableRow className="border-border bg-secondary/30">
+                    <TableCell className="font-medium text-muted-foreground">Nouveau</TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        className="w-24 h-8 text-sm"
+                        value={newPayment.amount}
+                        onChange={(e) => setNewPayment({ ...newPayment, amount: e.target.value })}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-8 text-xs">
+                            <CalendarIcon className="h-3 w-3 mr-1" />
+                            {format(newPayment.dueDate, "dd/MM/yy")}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={newPayment.dueDate}
+                            onSelect={(d) => d && setNewPayment({ ...newPayment, dueDate: d })}
+                            locale={fr}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                    <TableCell>
+                      <Select value={newPayment.paymentMethod || "none"} onValueChange={(v) => setNewPayment({ ...newPayment, paymentMethod: v === "none" ? "" : v })}>
+                        <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">—</SelectItem>
+                          <SelectItem value="virement">Virement</SelectItem>
+                          <SelectItem value="carte">Carte</SelectItem>
+                          <SelectItem value="especes">Espèces</SelectItem>
+                          <SelectItem value="cheque">Chèque</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Select value={newPayment.status} onValueChange={(v) => setNewPayment({ ...newPayment, status: v })}>
+                        <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">En attente</SelectItem>
+                          <SelectItem value="paid">Payé</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="sm" onClick={addPayment}>
+                          <Save className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setAddingNew(false)}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           )}
