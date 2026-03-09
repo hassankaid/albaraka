@@ -403,9 +403,14 @@ export default function AdminInvoices() {
                 Commissions à payer jusqu'à {periodLabel} inclus
               </p>
             </div>
-            <Button variant="ghost" size="icon" className="ml-auto" onClick={fetchBeneficiaries} disabled={loadingBeneficiaries}>
-              <RefreshCw className={`h-4 w-4 ${loadingBeneficiaries ? "animate-spin" : ""}`} />
-            </Button>
+            <div className="ml-auto flex items-center gap-1">
+              <Button variant="outline" size="sm" onClick={() => { setSalaryModalOpen(true); fetchSalaryProfiles(); }} className="gap-1.5 text-xs">
+                <Settings2 className="h-3.5 w-3.5" /> Salaires fixes
+              </Button>
+              <Button variant="ghost" size="icon" onClick={fetchBeneficiaries} disabled={loadingBeneficiaries}>
+                <RefreshCw className={`h-4 w-4 ${loadingBeneficiaries ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
           </div>
 
           {loadingBeneficiaries ? (
