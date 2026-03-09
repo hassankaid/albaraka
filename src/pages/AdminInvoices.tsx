@@ -663,7 +663,30 @@ export default function AdminInvoices() {
               onChange={(e) => setFilterSearch(e.target.value)}
               className="w-48 bg-card"
             />
+            {selectedInvoiceIds.size > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowBulkDeleteConfirm(true)}
+                disabled={bulkDeleting}
+                className="ml-auto gap-1.5"
+              >
+                <Trash2 className="h-4 w-4" />
+                Supprimer ({selectedInvoiceIds.size})
+              </Button>
+            )}
           </div>
+
+          {/* Bulk delete progress */}
+          {bulkDeleting && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Suppression en cours… {bulkDeleteProgress}/{bulkDeleteTotal}
+              </div>
+              <Progress value={(bulkDeleteProgress / bulkDeleteTotal) * 100} className="h-2" />
+            </div>
+          )}
 
           {/* Table */}
           <Card className="border-border/50 overflow-hidden">
