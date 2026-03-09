@@ -167,7 +167,7 @@ export default function AdminInvoices() {
     // Fetch profiles with fixed salary active (to include even without commissions)
     const { data: salaryProfiles } = await supabase
       .from("profiles")
-      .select("id, full_name, fixed_salary, fixed_salary_active")
+      .select("id, full_name, role, fixed_salary, fixed_salary_active")
       .eq("fixed_salary_active", true);
 
     (salaryProfiles || []).forEach((p: any) => {
@@ -176,13 +176,16 @@ export default function AdminInvoices() {
         grouped[p.id] = {
           beneficiary_user_id: p.id,
           full_name: p.full_name || "Inconnu",
-          roles: [],
+          roles: [p.role || "collaborateur"],
           commission_count: 0,
           total_amount: 0,
           fixed_salary: p.fixed_salary,
           fixed_salary_active: true,
         };
       } else {
+        if (grouped[p.id].roles.length === 0 && p.role) {
+          grouped[p.id].roles.push(p.role);
+        }
         grouped[p.id].fixed_salary = p.fixed_salary;
         grouped[p.id].fixed_salary_active = true;
       }
@@ -363,7 +366,8 @@ export default function AdminInvoices() {
 
   const getRoleLabel = (roles: string[]) => {
     if (roles.length > 1) return "Multi-rôles";
-    const map: Record<string, string> = { apporteur: "Apporteur", closer: "Closer", collaborateur: "Collaborateur" };
+    const map: Record<string, string> = { apporteur: "Apporteur", closer: "Closer", collaborateur: "Collaborateur", agence: "Agence", agence_marketing: "Agence", ceo: "CEO" };
+    return map[roles[0]] || roles[0] || "—";
     return map[roles[0]] || roles[0];
   };
   const periodLabel = `${MONTHS[genMonth]} ${genYear}`;
