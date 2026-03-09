@@ -468,7 +468,14 @@ export default function AdminInvoices() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-center">
-                            <Badge variant="secondary" className="text-xs tabular-nums">{a.commission_count}</Badge>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <Badge variant="secondary" className="text-xs tabular-nums">{a.commission_count}</Badge>
+                              {a.fixed_salary_active && (
+                                <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30">
+                                  + Salaire fixe
+                                </Badge>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-right pr-6 font-semibold tabular-nums">
                             {a.total_amount.toLocaleString("fr-FR")} €
