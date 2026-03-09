@@ -75,15 +75,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get apporteur profile
+    // Get apporteur profile (including fixed salary fields)
     const { data: apporteurProfile } = await supabaseAdmin
       .from("profiles")
-      .select("full_name, email, address, postal_code, city, country, siret, bank_details")
+      .select("full_name, email, address, postal_code, city, country, siret, bank_details, fixed_salary, fixed_salary_active")
       .eq("id", apporteur_id)
       .single();
 
     // Find commissions with status 'due' for this apporteur in the given period
-    // We match on payments.paid_at within the month
     const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
     const endMonth = month === 12 ? 1 : month + 1;
     const endYear = month === 12 ? year + 1 : year;
@@ -104,20 +103,25 @@ Deno.serve(async (req) => {
     }
 
     // Include all "due" commissions where payment was made up to (but not including) the end of the period
-    // This catches past months' commissions that were never invoiced
     const eligibleCommissions = (commissions || []).filter((c: any) => {
       const paidAt = c.payments?.paid_at;
       if (!paidAt) return false;
       return paidAt < endDate;
     });
 
-    if (eligibleCommissions.length === 0) {
+    // Check fixed salary
+    const hasFixedSalary = apporteurProfile?.fixed_salary_active === true && apporteurProfile?.fixed_salary && apporteurProfile.fixed_salary > 0;
+    const fixedSalaryAmount = hasFixedSalary ? Number(apporteurProfile.fixed_salary) : 0;
+
+    // If no commissions AND no fixed salary, nothing to invoice
+    if (eligibleCommissions.length === 0 && !hasFixedSalary) {
       return new Response(JSON.stringify({ error: "No eligible commissions for this period" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const totalAmount = eligibleCommissions.reduce((sum: number, c: any) => sum + (c.amount || 0), 0);
+    const commissionsTotal = eligibleCommissions.reduce((sum: number, c: any) => sum + (c.amount || 0), 0);
+    const totalAmount = commissionsTotal + fixedSalaryAmount;
 
     // Generate invoice number: FACT-YYYY-MM-NNN
     const { count } = await supabaseAdmin
@@ -150,7 +154,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create invoice lines
+    // Create invoice lines for commissions
     const lines = eligibleCommissions.map((c: any) => ({
       invoice_id: invoice.id,
       sale_id: c.sale_id,
@@ -161,6 +165,20 @@ Deno.serve(async (req) => {
       commission_percentage: c.percentage,
       commission_amount: c.amount || 0,
     }));
+
+    // Add fixed salary line if applicable
+    if (hasFixedSalary) {
+      lines.push({
+        invoice_id: invoice.id,
+        sale_id: null as any,
+        payment_id: null as any,
+        client_name: "Salaire fixe mensuel",
+        payment_amount: 0,
+        payment_date: startDate,
+        commission_percentage: 0,
+        commission_amount: fixedSalaryAmount,
+      });
+    }
 
     const { error: linesError } = await supabaseAdmin
       .from("invoice_lines")
@@ -176,15 +194,21 @@ Deno.serve(async (req) => {
     }
 
     // Update commissions status to 'invoiced'
-    const commissionIds = eligibleCommissions.map((c: any) => c.id);
-    await supabaseAdmin
-      .from("commissions")
-      .update({ status: "invoiced" })
-      .in("id", commissionIds);
+    if (eligibleCommissions.length > 0) {
+      const commissionIds = eligibleCommissions.map((c: any) => c.id);
+      await supabaseAdmin
+        .from("commissions")
+        .update({ status: "invoiced" })
+        .in("id", commissionIds);
+    }
 
     // Generate HTML invoice
     const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
     const bankDetails = apporteurProfile?.bank_details as any;
+
+    // Separate commission lines and fixed salary line for HTML
+    const commissionLines = lines.filter((l: any) => l.sale_id !== null);
+    const fixedSalaryLine = lines.find((l: any) => l.sale_id === null);
 
     const htmlContent = `<!DOCTYPE html>
 <html lang="fr">
@@ -203,6 +227,7 @@ Deno.serve(async (req) => {
   th { background: #f3f0ff; color: #6d28d9; text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
   td { padding: 10px 12px; border-bottom: 1px solid #eee; }
   .total-row { font-weight: 700; font-size: 16px; background: #f9fafb; }
+  .fixed-salary-row { background: #f0fdf4; font-style: italic; }
   .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999; }
   .bank-info { background: #f9fafb; padding: 16px; border-radius: 8px; margin-top: 20px; }
   .bank-info p { margin: 4px 0; }
@@ -232,6 +257,7 @@ Deno.serve(async (req) => {
     </div>
   </div>
 
+  ${commissionLines.length > 0 ? `
   <table>
     <thead>
       <tr>
@@ -243,7 +269,7 @@ Deno.serve(async (req) => {
       </tr>
     </thead>
     <tbody>
-      ${lines.map((l: any) => `
+      ${commissionLines.map((l: any) => `
       <tr>
         <td>${l.client_name}</td>
         <td>${Number(l.payment_amount).toLocaleString("fr-FR")} €</td>
@@ -251,8 +277,30 @@ Deno.serve(async (req) => {
         <td>${l.commission_percentage}%</td>
         <td style="text-align:right;">${Number(l.commission_amount).toLocaleString("fr-FR")} €</td>
       </tr>`).join("")}
+    </tbody>
+  </table>` : ""}
+
+  ${fixedSalaryLine ? `
+  <table style="margin-top: ${commissionLines.length > 0 ? '8' : '16'}px;">
+    ${commissionLines.length === 0 ? `
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th style="text-align:right;">Montant</th>
+      </tr>
+    </thead>` : ""}
+    <tbody>
+      <tr class="fixed-salary-row">
+        <td ${commissionLines.length > 0 ? 'colspan="4"' : ''}>Salaire fixe mensuel</td>
+        <td style="text-align:right;">${Number(fixedSalaryLine.commission_amount).toLocaleString("fr-FR")} €</td>
+      </tr>
+    </tbody>
+  </table>` : ""}
+
+  <table style="margin-top: 4px;">
+    <tbody>
       <tr class="total-row">
-        <td colspan="4">TOTAL</td>
+        <td ${commissionLines.length > 0 ? 'colspan="4"' : ''}>TOTAL</td>
         <td style="text-align:right;">${totalAmount.toLocaleString("fr-FR")} €</td>
       </tr>
     </tbody>
@@ -286,7 +334,6 @@ Deno.serve(async (req) => {
     if (uploadError) {
       console.error("Error uploading invoice:", uploadError);
     } else {
-      // Update invoice with pdf_url (actually html path)
       await supabaseAdmin
         .from("apporteur_invoices")
         .update({ pdf_url: filePath })

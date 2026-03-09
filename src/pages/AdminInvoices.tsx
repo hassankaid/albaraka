@@ -31,6 +31,8 @@ interface BeneficiaryToInvoice {
   roles: string[];
   commission_count: number;
   total_amount: number;
+  fixed_salary: number | null;
+  fixed_salary_active: boolean;
 }
 
 interface InvoiceRow {
