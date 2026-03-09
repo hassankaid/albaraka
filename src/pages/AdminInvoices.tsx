@@ -87,6 +87,13 @@ export default function AdminInvoices() {
   const [deleteInvoice, setDeleteInvoice] = useState<InvoiceRow | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Bulk delete
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteProgress, setBulkDeleteProgress] = useState(0);
+  const [bulkDeleteTotal, setBulkDeleteTotal] = useState(0);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
   // Fixed salary modal
   interface SalaryProfile { id: string; full_name: string; role: string; fixed_salary: number | null; fixed_salary_active: boolean; }
   const [salaryModalOpen, setSalaryModalOpen] = useState(false);
