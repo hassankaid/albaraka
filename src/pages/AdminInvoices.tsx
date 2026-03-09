@@ -725,7 +725,12 @@ export default function AdminInvoices() {
                         const isPaid = inv.status === "paid";
                         return (
                           <TableRow key={inv.id}>
-                            <TableCell className="font-medium">{inv.apporteur_name}</TableCell>
+                            <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={selectedInvoiceIds.has(inv.id)}
+                                onCheckedChange={() => toggleInvoiceSelect(inv.id)}
+                              />
+                            </TableCell>
                             <TableCell className="font-mono text-xs text-muted-foreground">{inv.invoice_number}</TableCell>
                             <TableCell className="text-sm">{MONTHS[inv.period_month - 1]} {inv.period_year}</TableCell>
                             <TableCell className="text-right font-semibold tabular-nums">{inv.total_amount.toLocaleString("fr-FR")} €</TableCell>
