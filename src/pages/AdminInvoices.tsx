@@ -705,6 +705,12 @@ export default function AdminInvoices() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/30">
+                        <TableHead className="w-12 pl-4">
+                          <Checkbox
+                            checked={filteredInvoices.length > 0 && selectedInvoiceIds.size === filteredInvoices.length}
+                            onCheckedChange={toggleAllInvoices}
+                          />
+                        </TableHead>
                         <TableHead>Bénéficiaire</TableHead>
                         <TableHead>N° Facture</TableHead>
                         <TableHead>Période</TableHead>
