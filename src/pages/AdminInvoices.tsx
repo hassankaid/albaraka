@@ -87,6 +87,13 @@ export default function AdminInvoices() {
   const [deleteInvoice, setDeleteInvoice] = useState<InvoiceRow | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Bulk delete
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteProgress, setBulkDeleteProgress] = useState(0);
+  const [bulkDeleteTotal, setBulkDeleteTotal] = useState(0);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
   // Fixed salary modal
   interface SalaryProfile { id: string; full_name: string; role: string; fixed_salary: number | null; fixed_salary_active: boolean; }
   const [salaryModalOpen, setSalaryModalOpen] = useState(false);
@@ -366,6 +373,55 @@ export default function AdminInvoices() {
     fetchInvoices();
   };
 
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedInvoiceIds);
+    if (ids.length === 0) return;
+    setBulkDeleting(true);
+    setBulkDeleteProgress(0);
+    setBulkDeleteTotal(ids.length);
+    setShowBulkDeleteConfirm(false);
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < ids.length; i++) {
+      const { data, error } = await supabase.functions.invoke("delete-apporteur-invoice", {
+        body: { invoice_id: ids[i] },
+      });
+      if (error || data?.error) {
+        errorCount++;
+      } else {
+        successCount++;
+      }
+      setBulkDeleteProgress(i + 1);
+    }
+
+    setBulkDeleting(false);
+    setSelectedInvoiceIds(new Set());
+    toast({
+      title: "Suppression terminée",
+      description: `${successCount} facture(s) supprimée(s)${errorCount > 0 ? `, ${errorCount} erreur(s)` : ""}. Commissions remises en "due".`,
+    });
+    fetchBeneficiaries();
+    fetchInvoices();
+  };
+
+  const toggleInvoiceSelect = (id: string) => {
+    setSelectedInvoiceIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllInvoices = () => {
+    if (selectedInvoiceIds.size === filteredInvoices.length) {
+      setSelectedInvoiceIds(new Set());
+    } else {
+      setSelectedInvoiceIds(new Set(filteredInvoices.map(inv => inv.id)));
+    }
+  };
+
   // Filter invoices
   const filteredInvoices = invoices.filter(inv => {
     if (filterStatus !== "all" && inv.status !== filterStatus) return false;
@@ -607,7 +663,30 @@ export default function AdminInvoices() {
               onChange={(e) => setFilterSearch(e.target.value)}
               className="w-48 bg-card"
             />
+            {selectedInvoiceIds.size > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowBulkDeleteConfirm(true)}
+                disabled={bulkDeleting}
+                className="ml-auto gap-1.5"
+              >
+                <Trash2 className="h-4 w-4" />
+                Supprimer ({selectedInvoiceIds.size})
+              </Button>
+            )}
           </div>
+
+          {/* Bulk delete progress */}
+          {bulkDeleting && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Suppression en cours… {bulkDeleteProgress}/{bulkDeleteTotal}
+              </div>
+              <Progress value={(bulkDeleteProgress / bulkDeleteTotal) * 100} className="h-2" />
+            </div>
+          )}
 
           {/* Table */}
           <Card className="border-border/50 overflow-hidden">
@@ -626,6 +705,12 @@ export default function AdminInvoices() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/30">
+                        <TableHead className="w-12 pl-4">
+                          <Checkbox
+                            checked={filteredInvoices.length > 0 && selectedInvoiceIds.size === filteredInvoices.length}
+                            onCheckedChange={toggleAllInvoices}
+                          />
+                        </TableHead>
                         <TableHead>Bénéficiaire</TableHead>
                         <TableHead>N° Facture</TableHead>
                         <TableHead>Période</TableHead>
@@ -640,6 +725,12 @@ export default function AdminInvoices() {
                         const isPaid = inv.status === "paid";
                         return (
                           <TableRow key={inv.id}>
+                            <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={selectedInvoiceIds.has(inv.id)}
+                                onCheckedChange={() => toggleInvoiceSelect(inv.id)}
+                              />
+                            </TableCell>
                             <TableCell className="font-medium">{inv.apporteur_name}</TableCell>
                             <TableCell className="font-mono text-xs text-muted-foreground">{inv.invoice_number}</TableCell>
                             <TableCell className="text-sm">{MONTHS[inv.period_month - 1]} {inv.period_year}</TableCell>
@@ -702,6 +793,26 @@ export default function AdminInvoices() {
             <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
               {deleting && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
               Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── BULK DELETE CONFIRMATION MODAL ── */}
+      <Dialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer {selectedInvoiceIds.size} facture(s)</DialogTitle>
+            <DialogDescription>
+              Voulez-vous vraiment supprimer les <strong>{selectedInvoiceIds.size}</strong> facture(s) sélectionnée(s) ?
+              Les commissions associées repasseront en statut "due".
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkDeleteConfirm(false)}>Annuler</Button>
+            <Button variant="destructive" onClick={handleBulkDelete}>
+              <Trash2 className="h-4 w-4 mr-1" />
+              Supprimer ({selectedInvoiceIds.size})
             </Button>
           </DialogFooter>
         </DialogContent>
