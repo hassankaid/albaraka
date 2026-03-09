@@ -696,6 +696,50 @@ export default function AdminInvoices() {
         htmlContent={previewHtml}
         loading={previewLoading}
       />
+      {/* ── FIXED SALARY MODAL ── */}
+      <Dialog open={salaryModalOpen} onOpenChange={setSalaryModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Salaires fixes mensuels</DialogTitle>
+            <DialogDescription>
+              Gérez les salaires fixes des collaborateurs et de l'agence marketing. Ces montants sont ajoutés automatiquement aux factures mensuelles.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            {loadingSalaries ? (
+              <div className="flex justify-center py-8"><RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+            ) : salaryProfiles.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Aucun collaborateur ou agence trouvé.</p>
+            ) : salaryProfiles.map(p => (
+              <div key={p.id} className="flex items-center gap-4 rounded-lg border border-border p-4">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground text-sm truncate">{p.full_name}</p>
+                  <Badge variant="secondary" className="text-xs mt-0.5">{p.role === "agence" ? "Agence" : "Collaborateur"}</Badge>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-28">
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={p.fixed_salary ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value === "" ? null : Number(e.target.value);
+                        updateSalary(p.id, { fixed_salary: val });
+                      }}
+                      className="text-right text-sm h-8"
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">€</span>
+                  <Switch
+                    checked={p.fixed_salary_active}
+                    onCheckedChange={(checked) => updateSalary(p.id, { fixed_salary_active: checked })}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
