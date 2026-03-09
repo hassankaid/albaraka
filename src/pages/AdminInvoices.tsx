@@ -170,8 +170,23 @@ export default function AdminInvoices() {
       .select("id, full_name, role, fixed_salary, fixed_salary_active")
       .eq("fixed_salary_active", true);
 
+    // Check which beneficiaries already have an invoice for this period (fixed salary already invoiced)
+    const salaryUserIds = (salaryProfiles || []).filter((p: any) => p.fixed_salary && p.fixed_salary > 0).map((p: any) => p.id);
+    let alreadyInvoicedIds = new Set<string>();
+    if (salaryUserIds.length > 0) {
+      const { data: existingInvoices } = await supabase
+        .from("apporteur_invoices")
+        .select("apporteur_id")
+        .eq("period_month", month)
+        .eq("period_year", genYear)
+        .in("apporteur_id", salaryUserIds);
+      alreadyInvoicedIds = new Set((existingInvoices || []).map((inv: any) => inv.apporteur_id));
+    }
+
     (salaryProfiles || []).forEach((p: any) => {
       if (!p.fixed_salary || p.fixed_salary <= 0) return;
+      // Skip if already invoiced for this period
+      if (alreadyInvoicedIds.has(p.id)) return;
       if (!grouped[p.id]) {
         grouped[p.id] = {
           beneficiary_user_id: p.id,
