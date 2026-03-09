@@ -12,7 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { FileText, Download, CheckCircle2, Trash2, RefreshCw, Loader2, Eye, Users, Euro, AlertCircle, CalendarDays, Clock } from "lucide-react";
+import { FileText, Download, CheckCircle2, Trash2, RefreshCw, Loader2, Eye, Users, Euro, AlertCircle, CalendarDays, Clock, Settings2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { fetchInvoiceHtml, downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
 import InvoicePreviewModal from "@/components/InvoicePreviewModal";
 
@@ -31,6 +33,8 @@ interface BeneficiaryToInvoice {
   roles: string[];
   commission_count: number;
   total_amount: number;
+  fixed_salary: number | null;
+  fixed_salary_active: boolean;
 }
 
 interface InvoiceRow {
@@ -83,9 +87,36 @@ export default function AdminInvoices() {
   const [deleteInvoice, setDeleteInvoice] = useState<InvoiceRow | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Fixed salary modal
+  interface SalaryProfile { id: string; full_name: string; role: string; fixed_salary: number | null; fixed_salary_active: boolean; }
+  const [salaryModalOpen, setSalaryModalOpen] = useState(false);
+  const [salaryProfiles, setSalaryProfiles] = useState<SalaryProfile[]>([]);
+  const [loadingSalaries, setLoadingSalaries] = useState(false);
+
+  const fetchSalaryProfiles = useCallback(async () => {
+    setLoadingSalaries(true);
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, full_name, role, fixed_salary, fixed_salary_active")
+      .in("role", ["collaborateur", "agence"])
+      .order("full_name");
+    setSalaryProfiles((data as any[]) || []);
+    setLoadingSalaries(false);
+  }, []);
+
+  const updateSalary = async (profileId: string, updates: { fixed_salary?: number | null; fixed_salary_active?: boolean }) => {
+    const { error } = await supabase.from("profiles").update(updates as any).eq("id", profileId);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      setSalaryProfiles(prev => prev.map(p => p.id === profileId ? { ...p, ...updates } : p));
+      fetchBeneficiaries();
+    }
+  };
+
   const years = Array.from({ length: 3 }, (_, i) => now.getFullYear() - i);
 
-  // Fetch all beneficiaries with due commissions for the previous month
+  // Fetch all beneficiaries with due commissions OR fixed salary for the previous month
   const fetchBeneficiaries = useCallback(async () => {
     setLoadingBeneficiaries(true);
     const month = genMonth + 1;
@@ -93,6 +124,7 @@ export default function AdminInvoices() {
     const endYear = month === 12 ? genYear + 1 : genYear;
     const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01`;
 
+    // Fetch commissions
     const { data, error } = await supabase
       .from("commissions")
       .select("beneficiary_user_id, amount, role, payments!commissions_payment_id_fkey(paid_at), profiles!commissions_beneficiary_user_id_fkey(full_name)")
@@ -121,6 +153,8 @@ export default function AdminInvoices() {
           roles: [],
           commission_count: 0,
           total_amount: 0,
+          fixed_salary: null,
+          fixed_salary_active: false,
         };
       }
       if (c.role && !grouped[uid].roles.includes(c.role)) {
@@ -128,6 +162,31 @@ export default function AdminInvoices() {
       }
       grouped[uid].commission_count++;
       grouped[uid].total_amount += c.amount || 0;
+    });
+
+    // Fetch profiles with fixed salary active (to include even without commissions)
+    const { data: salaryProfiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, fixed_salary, fixed_salary_active")
+      .eq("fixed_salary_active", true);
+
+    (salaryProfiles || []).forEach((p: any) => {
+      if (!p.fixed_salary || p.fixed_salary <= 0) return;
+      if (!grouped[p.id]) {
+        grouped[p.id] = {
+          beneficiary_user_id: p.id,
+          full_name: p.full_name || "Inconnu",
+          roles: [],
+          commission_count: 0,
+          total_amount: 0,
+          fixed_salary: p.fixed_salary,
+          fixed_salary_active: true,
+        };
+      } else {
+        grouped[p.id].fixed_salary = p.fixed_salary;
+        grouped[p.id].fixed_salary_active = true;
+      }
+      grouped[p.id].total_amount += Number(p.fixed_salary);
     });
 
     const list = Object.values(grouped).sort((a, b) => a.full_name.localeCompare(b.full_name));
@@ -344,9 +403,14 @@ export default function AdminInvoices() {
                 Commissions à payer jusqu'à {periodLabel} inclus
               </p>
             </div>
-            <Button variant="ghost" size="icon" className="ml-auto" onClick={fetchBeneficiaries} disabled={loadingBeneficiaries}>
-              <RefreshCw className={`h-4 w-4 ${loadingBeneficiaries ? "animate-spin" : ""}`} />
-            </Button>
+            <div className="ml-auto flex items-center gap-1">
+              <Button variant="outline" size="sm" onClick={() => { setSalaryModalOpen(true); fetchSalaryProfiles(); }} className="gap-1.5 text-xs">
+                <Settings2 className="h-3.5 w-3.5" /> Salaires fixes
+              </Button>
+              <Button variant="ghost" size="icon" onClick={fetchBeneficiaries} disabled={loadingBeneficiaries}>
+                <RefreshCw className={`h-4 w-4 ${loadingBeneficiaries ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
           </div>
 
           {loadingBeneficiaries ? (
@@ -438,7 +502,14 @@ export default function AdminInvoices() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-center">
-                            <Badge variant="secondary" className="text-xs tabular-nums">{a.commission_count}</Badge>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <Badge variant="secondary" className="text-xs tabular-nums">{a.commission_count}</Badge>
+                              {a.fixed_salary_active && (
+                                <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30">
+                                  + Salaire fixe
+                                </Badge>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-right pr-6 font-semibold tabular-nums">
                             {a.total_amount.toLocaleString("fr-FR")} €
@@ -625,6 +696,50 @@ export default function AdminInvoices() {
         htmlContent={previewHtml}
         loading={previewLoading}
       />
+      {/* ── FIXED SALARY MODAL ── */}
+      <Dialog open={salaryModalOpen} onOpenChange={setSalaryModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Salaires fixes mensuels</DialogTitle>
+            <DialogDescription>
+              Gérez les salaires fixes des collaborateurs et de l'agence marketing. Ces montants sont ajoutés automatiquement aux factures mensuelles.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            {loadingSalaries ? (
+              <div className="flex justify-center py-8"><RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+            ) : salaryProfiles.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Aucun collaborateur ou agence trouvé.</p>
+            ) : salaryProfiles.map(p => (
+              <div key={p.id} className="flex items-center gap-4 rounded-lg border border-border p-4">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground text-sm truncate">{p.full_name}</p>
+                  <Badge variant="secondary" className="text-xs mt-0.5">{p.role === "agence" ? "Agence" : "Collaborateur"}</Badge>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-28">
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={p.fixed_salary ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value === "" ? null : Number(e.target.value);
+                        updateSalary(p.id, { fixed_salary: val });
+                      }}
+                      className="text-right text-sm h-8"
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">€</span>
+                  <Switch
+                    checked={p.fixed_salary_active}
+                    onCheckedChange={(checked) => updateSalary(p.id, { fixed_salary_active: checked })}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
