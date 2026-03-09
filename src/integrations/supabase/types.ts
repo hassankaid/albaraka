@@ -390,8 +390,8 @@ export type Database = {
           invoice_id: string
           payment_amount: number
           payment_date: string
-          payment_id: string
-          sale_id: string
+          payment_id: string | null
+          sale_id: string | null
         }
         Insert: {
           client_name: string
@@ -402,8 +402,8 @@ export type Database = {
           invoice_id: string
           payment_amount: number
           payment_date: string
-          payment_id: string
-          sale_id: string
+          payment_id?: string | null
+          sale_id?: string | null
         }
         Update: {
           client_name?: string
@@ -414,8 +414,8 @@ export type Database = {
           invoice_id?: string
           payment_amount?: number
           payment_date?: string
-          payment_id?: string
-          sale_id?: string
+          payment_id?: string | null
+          sale_id?: string | null
         }
         Relationships: [
           {
@@ -671,6 +671,8 @@ export type Database = {
           country: string | null
           created_at: string | null
           email: string
+          fixed_salary: number | null
+          fixed_salary_active: boolean
           full_name: string
           id: string
           is_also_apporteur: boolean | null
@@ -693,6 +695,8 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           email: string
+          fixed_salary?: number | null
+          fixed_salary_active?: boolean
           full_name: string
           id: string
           is_also_apporteur?: boolean | null
@@ -715,6 +719,8 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           email?: string
+          fixed_salary?: number | null
+          fixed_salary_active?: boolean
           full_name?: string
           id?: string
           is_also_apporteur?: boolean | null
