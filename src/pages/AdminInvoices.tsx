@@ -927,7 +927,10 @@ export default function AdminInvoices() {
       </Dialog>
 
       {/* ── RIB VIEWER MODAL ── */}
-      <Dialog open={ribViewerOpen} onOpenChange={setRibViewerOpen}>
+      <Dialog open={ribViewerOpen} onOpenChange={(open) => {
+        if (!open && ribViewerBlobUrl) URL.revokeObjectURL(ribViewerBlobUrl);
+        setRibViewerOpen(open);
+      }}>
         <DialogContent className="max-w-3xl h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>RIB — {ribViewerName}</DialogTitle>
@@ -935,14 +938,13 @@ export default function AdminInvoices() {
           <div className="flex-1 overflow-hidden bg-muted rounded flex items-center justify-center">
             {ribViewerLoading ? (
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            ) : ribViewerUrl ? (
+            ) : ribViewerBlobUrl ? (
               (() => {
-                const ext = ribViewerUrl.split("?")[0].split(".").pop()?.toLowerCase();
-                const isImage = ["jpg", "jpeg", "png", "webp", "gif"].includes(ext || "");
+                const isImage = ["jpg", "jpeg", "png", "webp", "gif"].includes(ribViewerExt);
                 if (isImage) {
-                  return <img src={ribViewerUrl} alt="RIB" className="max-w-full max-h-full object-contain" />;
+                  return <img src={ribViewerBlobUrl} alt="RIB" className="max-w-full max-h-full object-contain" />;
                 }
-                return <iframe src={ribViewerUrl} className="w-full h-full border-0 rounded" title="RIB" />;
+                return <iframe src={ribViewerBlobUrl} className="w-full h-full border-0 rounded" title="RIB" />;
               })()
             ) : (
               <p className="text-sm text-muted-foreground">Impossible de charger le document.</p>
@@ -950,9 +952,9 @@ export default function AdminInvoices() {
           </div>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setRibViewerOpen(false)}>Fermer</Button>
-            {ribViewerUrl && (
+            {ribViewerBlobUrl && (
               <Button asChild>
-                <a href={ribViewerUrl} target="_blank" rel="noopener noreferrer" download>
+                <a href={ribViewerBlobUrl} download={`rib-${ribViewerName}.${ribViewerExt || "pdf"}`}>
                   <Download className="h-4 w-4 mr-2" /> Télécharger
                 </a>
               </Button>
