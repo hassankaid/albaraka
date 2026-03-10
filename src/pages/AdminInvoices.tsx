@@ -169,6 +169,7 @@ export default function AdminInvoices() {
           total_amount: 0,
           fixed_salary: null,
           fixed_salary_active: false,
+          bank_rib_url: (c.profiles as any)?.bank_rib_url || null,
         };
       }
       if (c.role && !grouped[uid].roles.includes(c.role)) {
