@@ -166,6 +166,10 @@ export default function AdminCommissions() {
     setSaving(true);
     try {
       const updates: any = { status: editStatus };
+      const newAmount = parseFloat(editAmount);
+      if (!isNaN(newAmount) && newAmount >= 0) {
+        updates.amount = newAmount;
+      }
       if (editStatus === "paid" && editPaidAt) {
         updates.paid_at = editPaidAt.toISOString();
       } else if (editStatus !== "paid") {
