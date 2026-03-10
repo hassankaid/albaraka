@@ -83,6 +83,7 @@ export default function AdminCommissions() {
   // Edit modal
   const [editingCommission, setEditingCommission] = useState<CommissionRow | null>(null);
   const [editStatus, setEditStatus] = useState("");
+  const [editAmount, setEditAmount] = useState("");
   const [editPaidAt, setEditPaidAt] = useState<Date | undefined>(undefined);
   const [saving, setSaving] = useState(false);
 
