@@ -98,9 +98,10 @@ export default function AdminInvoices() {
 
   // RIB viewer
   const [ribViewerOpen, setRibViewerOpen] = useState(false);
-  const [ribViewerUrl, setRibViewerUrl] = useState<string | null>(null);
+  const [ribViewerBlobUrl, setRibViewerBlobUrl] = useState<string | null>(null);
   const [ribViewerName, setRibViewerName] = useState("");
   const [ribViewerLoading, setRibViewerLoading] = useState(false);
+  const [ribViewerExt, setRibViewerExt] = useState("");
 
   // Fixed salary modal
   interface SalaryProfile { id: string; full_name: string; role: string; fixed_salary: number | null; fixed_salary_active: boolean; }
