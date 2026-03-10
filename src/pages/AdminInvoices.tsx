@@ -211,6 +211,7 @@ export default function AdminInvoices() {
           total_amount: 0,
           fixed_salary: p.fixed_salary,
           fixed_salary_active: true,
+          bank_rib_url: null,
         };
       } else {
         if (grouped[p.id].roles.length === 0 && p.role) {
