@@ -257,6 +257,7 @@ export default function AdminInvoices() {
         pdf_url: inv.pdf_url,
         generated_at: inv.generated_at,
         paid_at: inv.paid_at,
+        bank_rib_url: inv.profiles?.bank_rib_url || null,
       })));
     }
     setLoadingInvoices(false);
