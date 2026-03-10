@@ -952,6 +952,7 @@ export default function AdminInvoices() {
       {/* ── RIB VIEWER MODAL ── */}
       <Dialog open={ribViewerOpen} onOpenChange={(open) => {
         if (!open && ribViewerBlobUrl) URL.revokeObjectURL(ribViewerBlobUrl);
+        if (!open) setRibViewerTextContent(null);
         setRibViewerOpen(open);
       }}>
         <DialogContent className="max-w-3xl h-[80vh] flex flex-col">
