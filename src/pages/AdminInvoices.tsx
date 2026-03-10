@@ -959,6 +959,15 @@ export default function AdminInvoices() {
         </DialogContent>
       </Dialog>
 
+      {/* ── COMMISSION DETAIL MODAL ── */}
+      <CommissionDetailModal
+        open={!!commDetailBeneficiary}
+        onOpenChange={(open) => !open && setCommDetailBeneficiary(null)}
+        beneficiaryUserId={commDetailBeneficiary?.beneficiary_user_id || null}
+        beneficiaryName={commDetailBeneficiary?.full_name || ""}
+        periodEndDate={`${genMonth === 11 ? genYear + 1 : genYear}-${String((genMonth + 2) > 12 ? 1 : genMonth + 2).padStart(2, "0")}-01`}
+      />
+
       {/* ── RIB VIEWER MODAL ── */}
       <Dialog open={ribViewerOpen} onOpenChange={(open) => {
         if (!open && ribViewerBlobUrl) URL.revokeObjectURL(ribViewerBlobUrl);
