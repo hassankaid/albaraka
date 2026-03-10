@@ -453,14 +453,17 @@ export default function AdminInvoices() {
   };
   const periodLabel = `${MONTHS[genMonth]} ${genYear}`;
 
-  const openRibViewer = async (a: BeneficiaryToInvoice) => {
-    if (!a.bank_rib_url) return;
-    setRibViewerName(a.full_name);
+  const openRibViewer = async (name: string, ribUrl: string) => {
+    setRibViewerName(name);
     setRibViewerOpen(true);
     setRibViewerLoading(true);
     setRibViewerUrl(null);
     try {
-      const { data } = await supabase.storage.from("ribs").createSignedUrl(a.bank_rib_url, 300);
+      // bank_rib_url stores full signed URL — extract relative path within bucket
+      const match = ribUrl.match(/\/ribs\/(.+?)(?:\?|$)/);
+      const filePath = match ? decodeURIComponent(match[1]) : null;
+      if (!filePath) throw new Error("Invalid path");
+      const { data } = await supabase.storage.from("ribs").createSignedUrl(filePath, 300);
       setRibViewerUrl(data?.signedUrl || null);
     } catch {
       toast({ title: "Erreur", description: "Impossible de charger le RIB", variant: "destructive" });
