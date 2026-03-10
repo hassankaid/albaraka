@@ -615,6 +615,15 @@ export default function AdminInvoices() {
                           <TableCell className="text-right pr-6 font-semibold tabular-nums">
                             {a.total_amount.toLocaleString("fr-FR")} €
                           </TableCell>
+                          <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                            {a.bank_rib_url ? (
+                              <Button size="icon" variant="ghost" onClick={() => openRibViewer(a)} title="Voir le RIB">
+                                <CreditCard className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
