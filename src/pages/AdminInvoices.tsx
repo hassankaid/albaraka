@@ -102,6 +102,7 @@ export default function AdminInvoices() {
   const [ribViewerName, setRibViewerName] = useState("");
   const [ribViewerLoading, setRibViewerLoading] = useState(false);
   const [ribViewerExt, setRibViewerExt] = useState("");
+  const [ribViewerTextContent, setRibViewerTextContent] = useState<string | null>(null);
 
   // Fixed salary modal
   interface SalaryProfile { id: string; full_name: string; role: string; fixed_salary: number | null; fixed_salary_active: boolean; }
@@ -463,18 +464,40 @@ export default function AdminInvoices() {
     setRibViewerOpen(true);
     setRibViewerLoading(true);
     setRibViewerBlobUrl(null);
+    setRibViewerTextContent(null);
     try {
-      // Extract relative path from the stored signed URL or raw path
-      const match = ribUrl.match(/\/ribs\/(.+?)(?:\?|$)/);
-      const filePath = match ? decodeURIComponent(match[1]) : ribUrl;
+      // Extract relative storage path from whatever format bank_rib_url is stored as
+      let filePath = ribUrl;
+      // If it's a full URL, extract just the path after /ribs/
+      const urlMatch = ribUrl.match(/\/ribs\/(.+?)(?:\?|$)/);
+      if (urlMatch) {
+        filePath = decodeURIComponent(urlMatch[1]);
+      } else if (ribUrl.startsWith("http")) {
+        // Full URL but doesn't match expected pattern — try URL parsing
+        try {
+          const url = new URL(ribUrl);
+          const pathMatch = url.pathname.match(/\/ribs\/(.+)/);
+          filePath = pathMatch ? decodeURIComponent(pathMatch[1]) : ribUrl;
+        } catch { /* keep ribUrl as-is */ }
+      }
+      // Remove leading slash if present
+      filePath = filePath.replace(/^\/+/, "");
+      
       const ext = filePath.split(".").pop()?.toLowerCase() || "";
       setRibViewerExt(ext);
 
       // Download file as blob via Supabase SDK (bypasses CORS/blocker issues)
       const { data, error } = await supabase.storage.from("ribs").download(filePath);
       if (error || !data) throw error || new Error("No data");
-      const blobUrl = URL.createObjectURL(data);
-      setRibViewerBlobUrl(blobUrl);
+
+      // For text files, read as text content
+      if (ext === "txt") {
+        const text = await data.text();
+        setRibViewerTextContent(text);
+      } else {
+        const blobUrl = URL.createObjectURL(data);
+        setRibViewerBlobUrl(blobUrl);
+      }
     } catch (err) {
       console.error("RIB download error:", err);
       toast({ title: "Erreur", description: "Impossible de charger le RIB", variant: "destructive" });
@@ -929,6 +952,7 @@ export default function AdminInvoices() {
       {/* ── RIB VIEWER MODAL ── */}
       <Dialog open={ribViewerOpen} onOpenChange={(open) => {
         if (!open && ribViewerBlobUrl) URL.revokeObjectURL(ribViewerBlobUrl);
+        if (!open) setRibViewerTextContent(null);
         setRibViewerOpen(open);
       }}>
         <DialogContent className="max-w-3xl h-[80vh] flex flex-col">
@@ -938,11 +962,21 @@ export default function AdminInvoices() {
           <div className="flex-1 overflow-hidden bg-muted rounded flex items-center justify-center">
             {ribViewerLoading ? (
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            ) : ribViewerTextContent ? (
+              <pre className="w-full h-full overflow-auto p-4 text-sm whitespace-pre-wrap font-mono">{ribViewerTextContent}</pre>
             ) : ribViewerBlobUrl ? (
               (() => {
                 const isImage = ["jpg", "jpeg", "png", "webp", "gif"].includes(ribViewerExt);
                 if (isImage) {
                   return <img src={ribViewerBlobUrl} alt="RIB" className="max-w-full max-h-full object-contain" />;
+                }
+                if (ribViewerExt === "docx") {
+                  return (
+                    <div className="text-center p-6 space-y-2">
+                      <p className="text-sm text-muted-foreground">L'aperçu n'est pas disponible pour les fichiers .docx</p>
+                      <p className="text-sm text-muted-foreground">Utilisez le bouton Télécharger ci-dessous.</p>
+                    </div>
+                  );
                 }
                 return <iframe src={ribViewerBlobUrl} className="w-full h-full border-0 rounded" title="RIB" />;
               })()
@@ -952,9 +986,9 @@ export default function AdminInvoices() {
           </div>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setRibViewerOpen(false)}>Fermer</Button>
-            {ribViewerBlobUrl && (
+            {(ribViewerBlobUrl || ribViewerTextContent) && (
               <Button asChild>
-                <a href={ribViewerBlobUrl} download={`rib-${ribViewerName}.${ribViewerExt || "pdf"}`}>
+                <a href={ribViewerBlobUrl || `data:text/plain;charset=utf-8,${encodeURIComponent(ribViewerTextContent || "")}`} download={`rib-${ribViewerName}.${ribViewerExt || "pdf"}`}>
                   <Download className="h-4 w-4 mr-2" /> Télécharger
                 </a>
               </Button>
