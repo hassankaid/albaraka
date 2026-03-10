@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { fetchInvoiceHtml, downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
 import InvoicePreviewModal from "@/components/InvoicePreviewModal";
+import CommissionDetailModal from "@/components/invoices/CommissionDetailModal";
 
 const MONTHS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 
@@ -103,6 +104,9 @@ export default function AdminInvoices() {
   const [ribViewerLoading, setRibViewerLoading] = useState(false);
   const [ribViewerExt, setRibViewerExt] = useState("");
   const [ribViewerTextContent, setRibViewerTextContent] = useState<string | null>(null);
+
+  // Commission detail modal
+  const [commDetailBeneficiary, setCommDetailBeneficiary] = useState<BeneficiaryToInvoice | null>(null);
 
   // Fixed salary modal
   interface SalaryProfile { id: string; full_name: string; role: string; fixed_salary: number | null; fixed_salary_active: boolean; }
@@ -640,9 +644,15 @@ export default function AdminInvoices() {
                               {getRoleLabel(a.roles)}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-center">
+                          <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-center gap-1.5">
-                              <Badge variant="secondary" className="text-xs tabular-nums">{a.commission_count}</Badge>
+                              <Badge
+                                variant="secondary"
+                                className="text-xs tabular-nums cursor-pointer hover:bg-primary/20 transition-colors"
+                                onClick={() => a.commission_count > 0 && setCommDetailBeneficiary(a)}
+                              >
+                                {a.commission_count}
+                              </Badge>
                               {a.fixed_salary_active && (
                                 <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30">
                                   + Salaire fixe
@@ -948,6 +958,15 @@ export default function AdminInvoices() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ── COMMISSION DETAIL MODAL ── */}
+      <CommissionDetailModal
+        open={!!commDetailBeneficiary}
+        onOpenChange={(open) => !open && setCommDetailBeneficiary(null)}
+        beneficiaryUserId={commDetailBeneficiary?.beneficiary_user_id || null}
+        beneficiaryName={commDetailBeneficiary?.full_name || ""}
+        periodEndDate={`${genMonth === 11 ? genYear + 1 : genYear}-${String((genMonth + 2) > 12 ? 1 : genMonth + 2).padStart(2, "0")}-01`}
+      />
 
       {/* ── RIB VIEWER MODAL ── */}
       <Dialog open={ribViewerOpen} onOpenChange={(open) => {
