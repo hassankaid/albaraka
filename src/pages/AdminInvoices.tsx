@@ -961,11 +961,21 @@ export default function AdminInvoices() {
           <div className="flex-1 overflow-hidden bg-muted rounded flex items-center justify-center">
             {ribViewerLoading ? (
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            ) : ribViewerTextContent ? (
+              <pre className="w-full h-full overflow-auto p-4 text-sm whitespace-pre-wrap font-mono">{ribViewerTextContent}</pre>
             ) : ribViewerBlobUrl ? (
               (() => {
                 const isImage = ["jpg", "jpeg", "png", "webp", "gif"].includes(ribViewerExt);
                 if (isImage) {
                   return <img src={ribViewerBlobUrl} alt="RIB" className="max-w-full max-h-full object-contain" />;
+                }
+                if (ribViewerExt === "docx") {
+                  return (
+                    <div className="text-center p-6 space-y-2">
+                      <p className="text-sm text-muted-foreground">L'aperçu n'est pas disponible pour les fichiers .docx</p>
+                      <p className="text-sm text-muted-foreground">Utilisez le bouton Télécharger ci-dessous.</p>
+                    </div>
+                  );
                 }
                 return <iframe src={ribViewerBlobUrl} className="w-full h-full border-0 rounded" title="RIB" />;
               })()
@@ -975,9 +985,9 @@ export default function AdminInvoices() {
           </div>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setRibViewerOpen(false)}>Fermer</Button>
-            {ribViewerBlobUrl && (
+            {(ribViewerBlobUrl || ribViewerTextContent) && (
               <Button asChild>
-                <a href={ribViewerBlobUrl} download={`rib-${ribViewerName}.${ribViewerExt || "pdf"}`}>
+                <a href={ribViewerBlobUrl || `data:text/plain;charset=utf-8,${encodeURIComponent(ribViewerTextContent || "")}`} download={`rib-${ribViewerName}.${ribViewerExt || "pdf"}`}>
                   <Download className="h-4 w-4 mr-2" /> Télécharger
                 </a>
               </Button>
