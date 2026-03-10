@@ -787,6 +787,11 @@ export default function AdminInvoices() {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center justify-end gap-1">
+                                {inv.bank_rib_url && (
+                                  <Button size="icon" variant="ghost" onClick={() => openRibViewer(inv.apporteur_name, inv.bank_rib_url!)} title="Voir le RIB">
+                                    <CreditCard className="h-4 w-4" />
+                                  </Button>
+                                )}
                                 {inv.pdf_url && (
                                   <Button size="icon" variant="ghost" onClick={() => openPreview(inv)} title="Voir">
                                     <Eye className="h-4 w-4" />
