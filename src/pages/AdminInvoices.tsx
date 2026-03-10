@@ -461,14 +461,22 @@ export default function AdminInvoices() {
     setRibViewerLoading(true);
     setRibViewerUrl(null);
     try {
-      // bank_rib_url stores full signed URL — extract relative path within bucket
+      // Extract relative path from the stored signed URL
       const match = ribUrl.match(/\/ribs\/(.+?)(?:\?|$)/);
       const filePath = match ? decodeURIComponent(match[1]) : null;
-      if (!filePath) throw new Error("Invalid path");
-      const { data } = await supabase.storage.from("ribs").createSignedUrl(filePath, 300);
-      setRibViewerUrl(data?.signedUrl || null);
+      if (filePath) {
+        const { data, error } = await supabase.storage.from("ribs").createSignedUrl(filePath, 600);
+        if (data?.signedUrl) {
+          setRibViewerUrl(data.signedUrl);
+          return;
+        }
+        console.warn("createSignedUrl failed, using stored URL:", error?.message);
+      }
+      // Fallback: use the stored URL directly (already signed with long expiry)
+      setRibViewerUrl(ribUrl);
     } catch {
-      toast({ title: "Erreur", description: "Impossible de charger le RIB", variant: "destructive" });
+      // Last fallback: use stored URL as-is
+      setRibViewerUrl(ribUrl);
     } finally {
       setRibViewerLoading(false);
     }
