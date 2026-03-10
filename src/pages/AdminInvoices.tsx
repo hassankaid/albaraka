@@ -219,6 +219,7 @@ export default function AdminInvoices() {
         }
         grouped[p.id].fixed_salary = p.fixed_salary;
         grouped[p.id].fixed_salary_active = true;
+        if (!grouped[p.id].bank_rib_url) grouped[p.id].bank_rib_url = (p as any).bank_rib_url || null;
       }
       grouped[p.id].total_amount += Number(p.fixed_salary);
     });
