@@ -95,6 +95,12 @@ export default function AdminInvoices() {
   const [bulkDeleteTotal, setBulkDeleteTotal] = useState(0);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
+  // RIB viewer
+  const [ribViewerOpen, setRibViewerOpen] = useState(false);
+  const [ribViewerUrl, setRibViewerUrl] = useState<string | null>(null);
+  const [ribViewerName, setRibViewerName] = useState("");
+  const [ribViewerLoading, setRibViewerLoading] = useState(false);
+
   // Fixed salary modal
   interface SalaryProfile { id: string; full_name: string; role: string; fixed_salary: number | null; fixed_salary_active: boolean; }
   const [salaryModalOpen, setSalaryModalOpen] = useState(false);
