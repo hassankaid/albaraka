@@ -238,7 +238,7 @@ export default function AdminInvoices() {
     setLoadingInvoices(true);
     const { data, error } = await supabase
       .from("apporteur_invoices")
-      .select("*, profiles!apporteur_invoices_apporteur_id_fkey(full_name)")
+      .select("*, profiles!apporteur_invoices_apporteur_id_fkey(full_name, bank_rib_url)")
       .order("period_year", { ascending: false })
       .order("period_month", { ascending: false });
 
