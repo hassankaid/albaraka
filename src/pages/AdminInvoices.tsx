@@ -457,27 +457,27 @@ export default function AdminInvoices() {
   const periodLabel = `${MONTHS[genMonth]} ${genYear}`;
 
   const openRibViewer = async (name: string, ribUrl: string) => {
+    // Cleanup previous blob URL
+    if (ribViewerBlobUrl) URL.revokeObjectURL(ribViewerBlobUrl);
     setRibViewerName(name);
     setRibViewerOpen(true);
     setRibViewerLoading(true);
-    setRibViewerUrl(null);
+    setRibViewerBlobUrl(null);
     try {
-      // Extract relative path from the stored signed URL
+      // Extract relative path from the stored signed URL or raw path
       const match = ribUrl.match(/\/ribs\/(.+?)(?:\?|$)/);
-      const filePath = match ? decodeURIComponent(match[1]) : null;
-      if (filePath) {
-        const { data, error } = await supabase.storage.from("ribs").createSignedUrl(filePath, 600);
-        if (data?.signedUrl) {
-          setRibViewerUrl(data.signedUrl);
-          return;
-        }
-        console.warn("createSignedUrl failed, using stored URL:", error?.message);
-      }
-      // Fallback: use the stored URL directly (already signed with long expiry)
-      setRibViewerUrl(ribUrl);
-    } catch {
-      // Last fallback: use stored URL as-is
-      setRibViewerUrl(ribUrl);
+      const filePath = match ? decodeURIComponent(match[1]) : ribUrl;
+      const ext = filePath.split(".").pop()?.toLowerCase() || "";
+      setRibViewerExt(ext);
+
+      // Download file as blob via Supabase SDK (bypasses CORS/blocker issues)
+      const { data, error } = await supabase.storage.from("ribs").download(filePath);
+      if (error || !data) throw error || new Error("No data");
+      const blobUrl = URL.createObjectURL(data);
+      setRibViewerBlobUrl(blobUrl);
+    } catch (err) {
+      console.error("RIB download error:", err);
+      toast({ title: "Erreur", description: "Impossible de charger le RIB", variant: "destructive" });
     } finally {
       setRibViewerLoading(false);
     }
