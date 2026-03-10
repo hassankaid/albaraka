@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { FileText, Download, CheckCircle2, Trash2, RefreshCw, Loader2, Eye, Users, Euro, AlertCircle, CalendarDays, Clock, Settings2 } from "lucide-react";
+import { FileText, Download, CheckCircle2, Trash2, RefreshCw, Loader2, Eye, Users, Euro, AlertCircle, CalendarDays, Clock, Settings2, CreditCard } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { fetchInvoiceHtml, downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
@@ -35,6 +35,7 @@ interface BeneficiaryToInvoice {
   total_amount: number;
   fixed_salary: number | null;
   fixed_salary_active: boolean;
+  bank_rib_url: string | null;
 }
 
 interface InvoiceRow {
@@ -94,6 +95,12 @@ export default function AdminInvoices() {
   const [bulkDeleteTotal, setBulkDeleteTotal] = useState(0);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
+  // RIB viewer
+  const [ribViewerOpen, setRibViewerOpen] = useState(false);
+  const [ribViewerUrl, setRibViewerUrl] = useState<string | null>(null);
+  const [ribViewerName, setRibViewerName] = useState("");
+  const [ribViewerLoading, setRibViewerLoading] = useState(false);
+
   // Fixed salary modal
   interface SalaryProfile { id: string; full_name: string; role: string; fixed_salary: number | null; fixed_salary_active: boolean; }
   const [salaryModalOpen, setSalaryModalOpen] = useState(false);
@@ -134,7 +141,7 @@ export default function AdminInvoices() {
     // Fetch commissions
     const { data, error } = await supabase
       .from("commissions")
-      .select("beneficiary_user_id, amount, role, payments!commissions_payment_id_fkey(paid_at), profiles!commissions_beneficiary_user_id_fkey(full_name)")
+      .select("beneficiary_user_id, amount, role, payments!commissions_payment_id_fkey(paid_at), profiles!commissions_beneficiary_user_id_fkey(full_name, bank_rib_url)")
       .eq("status", "due")
       .not("payment_id", "is", null);
 
@@ -162,6 +169,7 @@ export default function AdminInvoices() {
           total_amount: 0,
           fixed_salary: null,
           fixed_salary_active: false,
+          bank_rib_url: (c.profiles as any)?.bank_rib_url || null,
         };
       }
       if (c.role && !grouped[uid].roles.includes(c.role)) {
@@ -174,7 +182,7 @@ export default function AdminInvoices() {
     // Fetch profiles with fixed salary active (to include even without commissions)
     const { data: salaryProfiles } = await supabase
       .from("profiles")
-      .select("id, full_name, role, fixed_salary, fixed_salary_active")
+      .select("id, full_name, role, fixed_salary, fixed_salary_active, bank_rib_url")
       .eq("fixed_salary_active", true);
 
     // Check which beneficiaries already have an invoice for this period (fixed salary already invoiced)
@@ -203,6 +211,7 @@ export default function AdminInvoices() {
           total_amount: 0,
           fixed_salary: p.fixed_salary,
           fixed_salary_active: true,
+          bank_rib_url: (p as any).bank_rib_url || null,
         };
       } else {
         if (grouped[p.id].roles.length === 0 && p.role) {
@@ -210,6 +219,7 @@ export default function AdminInvoices() {
         }
         grouped[p.id].fixed_salary = p.fixed_salary;
         grouped[p.id].fixed_salary_active = true;
+        if (!grouped[p.id].bank_rib_url) grouped[p.id].bank_rib_url = (p as any).bank_rib_url || null;
       }
       grouped[p.id].total_amount += Number(p.fixed_salary);
     });
@@ -443,6 +453,22 @@ export default function AdminInvoices() {
   };
   const periodLabel = `${MONTHS[genMonth]} ${genYear}`;
 
+  const openRibViewer = async (a: BeneficiaryToInvoice) => {
+    if (!a.bank_rib_url) return;
+    setRibViewerName(a.full_name);
+    setRibViewerOpen(true);
+    setRibViewerLoading(true);
+    setRibViewerUrl(null);
+    try {
+      const { data } = await supabase.storage.from("ribs").createSignedUrl(a.bank_rib_url, 300);
+      setRibViewerUrl(data?.signedUrl || null);
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de charger le RIB", variant: "destructive" });
+    } finally {
+      setRibViewerLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Page header */}
@@ -559,6 +585,7 @@ export default function AdminInvoices() {
                         <TableHead>Rôle</TableHead>
                         <TableHead className="text-center">Commissions</TableHead>
                         <TableHead className="text-right pr-6">Montant</TableHead>
+                        <TableHead className="w-12 text-center">RIB</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -588,6 +615,15 @@ export default function AdminInvoices() {
                           </TableCell>
                           <TableCell className="text-right pr-6 font-semibold tabular-nums">
                             {a.total_amount.toLocaleString("fr-FR")} €
+                          </TableCell>
+                          <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                            {a.bank_rib_url ? (
+                              <Button size="icon" variant="ghost" onClick={() => openRibViewer(a)} title="Voir le RIB">
+                                <CreditCard className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -868,6 +904,41 @@ export default function AdminInvoices() {
               </div>
             ))}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── RIB VIEWER MODAL ── */}
+      <Dialog open={ribViewerOpen} onOpenChange={setRibViewerOpen}>
+        <DialogContent className="max-w-3xl h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>RIB — {ribViewerName}</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden bg-muted rounded flex items-center justify-center">
+            {ribViewerLoading ? (
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            ) : ribViewerUrl ? (
+              (() => {
+                const ext = ribViewerUrl.split("?")[0].split(".").pop()?.toLowerCase();
+                const isImage = ["jpg", "jpeg", "png", "webp", "gif"].includes(ext || "");
+                if (isImage) {
+                  return <img src={ribViewerUrl} alt="RIB" className="max-w-full max-h-full object-contain" />;
+                }
+                return <iframe src={ribViewerUrl} className="w-full h-full border-0 rounded" title="RIB" />;
+              })()
+            ) : (
+              <p className="text-sm text-muted-foreground">Impossible de charger le document.</p>
+            )}
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setRibViewerOpen(false)}>Fermer</Button>
+            {ribViewerUrl && (
+              <Button asChild>
+                <a href={ribViewerUrl} target="_blank" rel="noopener noreferrer" download>
+                  <Download className="h-4 w-4 mr-2" /> Télécharger
+                </a>
+              </Button>
+            )}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
