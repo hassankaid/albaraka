@@ -584,6 +584,7 @@ export default function AdminInvoices() {
                         <TableHead>Rôle</TableHead>
                         <TableHead className="text-center">Commissions</TableHead>
                         <TableHead className="text-right pr-6">Montant</TableHead>
+                        <TableHead className="w-12 text-center">RIB</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
