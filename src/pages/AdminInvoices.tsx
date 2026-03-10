@@ -464,6 +464,7 @@ export default function AdminInvoices() {
     setRibViewerOpen(true);
     setRibViewerLoading(true);
     setRibViewerBlobUrl(null);
+    setRibViewerTextContent(null);
     try {
       // Extract relative storage path from whatever format bank_rib_url is stored as
       let filePath = ribUrl;
@@ -488,8 +489,15 @@ export default function AdminInvoices() {
       // Download file as blob via Supabase SDK (bypasses CORS/blocker issues)
       const { data, error } = await supabase.storage.from("ribs").download(filePath);
       if (error || !data) throw error || new Error("No data");
-      const blobUrl = URL.createObjectURL(data);
-      setRibViewerBlobUrl(blobUrl);
+
+      // For text files, read as text content
+      if (ext === "txt") {
+        const text = await data.text();
+        setRibViewerTextContent(text);
+      } else {
+        const blobUrl = URL.createObjectURL(data);
+        setRibViewerBlobUrl(blobUrl);
+      }
     } catch (err) {
       console.error("RIB download error:", err);
       toast({ title: "Erreur", description: "Impossible de charger le RIB", variant: "destructive" });
