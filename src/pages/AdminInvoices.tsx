@@ -623,7 +623,7 @@ export default function AdminInvoices() {
                           </TableCell>
                           <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                             {a.bank_rib_url ? (
-                              <Button size="icon" variant="ghost" onClick={() => openRibViewer(a)} title="Voir le RIB">
+                              <Button size="icon" variant="ghost" onClick={() => openRibViewer(a.full_name, a.bank_rib_url!)} title="Voir le RIB">
                                 <CreditCard className="h-4 w-4" />
                               </Button>
                             ) : (
