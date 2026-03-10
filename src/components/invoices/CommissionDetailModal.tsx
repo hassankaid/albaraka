@@ -103,10 +103,9 @@ export default function CommissionDetailModal({ open, onOpenChange, beneficiaryU
           contact_name: c.sales?.contacts?.full_name || null,
         }))
         .sort((a: CommissionDetail, b: CommissionDetail) => {
-          const nameA = a.contact_name || "";
-          const nameB = b.contact_name || "";
-          if (nameA !== nameB) return nameA.localeCompare(nameB);
-          return a.payment_number - b.payment_number;
+          const dateA = a.payment_due_date || "";
+          const dateB = b.payment_due_date || "";
+          return dateA.localeCompare(dateB);
         });
 
       setCommissions(filtered);
@@ -118,7 +117,7 @@ export default function CommissionDetailModal({ open, onOpenChange, beneficiaryU
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Commissions — {beneficiaryName}</DialogTitle>
           <DialogDescription>
@@ -136,46 +135,46 @@ export default function CommissionDetailModal({ open, onOpenChange, beneficiaryU
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30">
-                  <TableHead>Client</TableHead>
-                  <TableHead>Produit</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead className="text-center">Échéance</TableHead>
-                  <TableHead className="text-center">Payé client</TableHead>
-                  <TableHead className="text-right">Montant paiement</TableHead>
-                  <TableHead className="text-center">%</TableHead>
-                  <TableHead className="text-right">Commission</TableHead>
-                  <TableHead>Statut</TableHead>
+                  <TableHead className="py-4">Client</TableHead>
+                  <TableHead className="py-4">Produit</TableHead>
+                  <TableHead className="py-4">Rôle</TableHead>
+                  <TableHead className="py-4 text-center">Échéance</TableHead>
+                  <TableHead className="py-4 text-center">Payé client</TableHead>
+                  <TableHead className="py-4 text-right">Montant paiement</TableHead>
+                  <TableHead className="py-4 text-center">%</TableHead>
+                  <TableHead className="py-4 text-right">Commission</TableHead>
+                  <TableHead className="py-4">Statut</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {commissions.map((c) => (
                   <TableRow key={c.id}>
-                    <TableCell className="font-medium text-foreground text-sm">{c.contact_name || "—"}</TableCell>
-                    <TableCell className="text-sm">
+                    <TableCell className="font-medium text-foreground py-4">{c.contact_name || "—"}</TableCell>
+                    <TableCell className="py-4">
                       <span>{c.sale_product}</span>
                       <span className="text-xs text-muted-foreground ml-1">
                         ({c.payment_number}/{c.total_payments})
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-4">
                       <Badge variant="secondary" className="text-xs">
                         {ROLE_LABELS[c.role] || c.role}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-center text-xs text-muted-foreground">
+                    <TableCell className="text-center text-sm text-muted-foreground py-4">
                       {c.payment_due_date ? formatDateOnly(c.payment_due_date, "Europe/Paris") : "—"}
                     </TableCell>
-                    <TableCell className="text-center text-xs text-muted-foreground">
+                    <TableCell className="text-center text-sm text-muted-foreground py-4">
                       {c.payment_paid_at ? formatDateOnly(c.payment_paid_at, "Europe/Paris") : "—"}
                     </TableCell>
-                    <TableCell className="text-right text-sm tabular-nums">
+                    <TableCell className="text-right tabular-nums py-4">
                       {c.payment_amount.toLocaleString("fr-FR")} €
                     </TableCell>
-                    <TableCell className="text-center text-sm tabular-nums">{c.percentage}%</TableCell>
-                    <TableCell className="text-right font-semibold text-sm tabular-nums">
+                    <TableCell className="text-center tabular-nums py-4">{c.percentage}%</TableCell>
+                    <TableCell className="text-right font-semibold tabular-nums py-4">
                       {c.amount != null ? `${c.amount.toLocaleString("fr-FR")} €` : "—"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-4">
                       <Badge variant="outline" className={`text-xs ${STATUS_COLORS[c.status || "pending"] || ""}`}>
                         {STATUS_LABELS[c.status || "pending"] || c.status}
                       </Badge>
