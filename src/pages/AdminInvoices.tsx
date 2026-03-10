@@ -50,6 +50,7 @@ interface InvoiceRow {
   pdf_url: string | null;
   generated_at: string | null;
   paid_at: string | null;
+  bank_rib_url: string | null;
 }
 
 /** The generation period is always the previous month. */
