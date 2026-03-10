@@ -83,6 +83,7 @@ export default function AdminCommissions() {
   // Edit modal
   const [editingCommission, setEditingCommission] = useState<CommissionRow | null>(null);
   const [editStatus, setEditStatus] = useState("");
+  const [editAmount, setEditAmount] = useState("");
   const [editPaidAt, setEditPaidAt] = useState<Date | undefined>(undefined);
   const [saving, setSaving] = useState(false);
 
@@ -156,6 +157,7 @@ export default function AdminCommissions() {
   const openEdit = (c: CommissionRow) => {
     setEditingCommission(c);
     setEditStatus(c.status || "pending");
+    setEditAmount(c.amount != null ? String(c.amount) : "");
     setEditPaidAt(c.paid_at ? new Date(c.paid_at) : undefined);
   };
 
@@ -164,6 +166,10 @@ export default function AdminCommissions() {
     setSaving(true);
     try {
       const updates: any = { status: editStatus };
+      const newAmount = parseFloat(editAmount);
+      if (!isNaN(newAmount) && newAmount >= 0) {
+        updates.amount = newAmount;
+      }
       if (editStatus === "paid" && editPaidAt) {
         updates.paid_at = editPaidAt.toISOString();
       } else if (editStatus !== "paid") {
@@ -459,14 +465,19 @@ export default function AdminCommissions() {
 
           {editingCommission && (
             <div className="space-y-4">
-              {/* Amount info */}
-              <div className="p-3 rounded-lg bg-secondary/30 border border-border">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Montant</span>
-                  <span className="font-semibold text-foreground">
-                    {editingCommission.amount?.toLocaleString("fr-FR")} € ({editingCommission.percentage}%)
-                  </span>
-                </div>
+              {/* Amount */}
+              <div className="space-y-2">
+                <Label>Montant (€)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(e.target.value)}
+                  placeholder="0"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Pourcentage : {editingCommission.percentage}% — Paiement client : {editingCommission.payment_amount?.toLocaleString("fr-FR")} €
+                </p>
               </div>
 
               {/* Status */}
