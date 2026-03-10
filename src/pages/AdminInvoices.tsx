@@ -50,6 +50,7 @@ interface InvoiceRow {
   pdf_url: string | null;
   generated_at: string | null;
   paid_at: string | null;
+  bank_rib_url: string | null;
 }
 
 /** The generation period is always the previous month. */
@@ -237,7 +238,7 @@ export default function AdminInvoices() {
     setLoadingInvoices(true);
     const { data, error } = await supabase
       .from("apporteur_invoices")
-      .select("*, profiles!apporteur_invoices_apporteur_id_fkey(full_name)")
+      .select("*, profiles!apporteur_invoices_apporteur_id_fkey(full_name, bank_rib_url)")
       .order("period_year", { ascending: false })
       .order("period_month", { ascending: false });
 
@@ -256,6 +257,7 @@ export default function AdminInvoices() {
         pdf_url: inv.pdf_url,
         generated_at: inv.generated_at,
         paid_at: inv.paid_at,
+        bank_rib_url: inv.profiles?.bank_rib_url || null,
       })));
     }
     setLoadingInvoices(false);
@@ -453,14 +455,17 @@ export default function AdminInvoices() {
   };
   const periodLabel = `${MONTHS[genMonth]} ${genYear}`;
 
-  const openRibViewer = async (a: BeneficiaryToInvoice) => {
-    if (!a.bank_rib_url) return;
-    setRibViewerName(a.full_name);
+  const openRibViewer = async (name: string, ribUrl: string) => {
+    setRibViewerName(name);
     setRibViewerOpen(true);
     setRibViewerLoading(true);
     setRibViewerUrl(null);
     try {
-      const { data } = await supabase.storage.from("ribs").createSignedUrl(a.bank_rib_url, 300);
+      // bank_rib_url stores full signed URL — extract relative path within bucket
+      const match = ribUrl.match(/\/ribs\/(.+?)(?:\?|$)/);
+      const filePath = match ? decodeURIComponent(match[1]) : null;
+      if (!filePath) throw new Error("Invalid path");
+      const { data } = await supabase.storage.from("ribs").createSignedUrl(filePath, 300);
       setRibViewerUrl(data?.signedUrl || null);
     } catch {
       toast({ title: "Erreur", description: "Impossible de charger le RIB", variant: "destructive" });
@@ -618,7 +623,7 @@ export default function AdminInvoices() {
                           </TableCell>
                           <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                             {a.bank_rib_url ? (
-                              <Button size="icon" variant="ghost" onClick={() => openRibViewer(a)} title="Voir le RIB">
+                              <Button size="icon" variant="ghost" onClick={() => openRibViewer(a.full_name, a.bank_rib_url!)} title="Voir le RIB">
                                 <CreditCard className="h-4 w-4" />
                               </Button>
                             ) : (
@@ -782,6 +787,11 @@ export default function AdminInvoices() {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center justify-end gap-1">
+                                {inv.bank_rib_url && (
+                                  <Button size="icon" variant="ghost" onClick={() => openRibViewer(inv.apporteur_name, inv.bank_rib_url!)} title="Voir le RIB">
+                                    <CreditCard className="h-4 w-4" />
+                                  </Button>
+                                )}
                                 {inv.pdf_url && (
                                   <Button size="icon" variant="ghost" onClick={() => openPreview(inv)} title="Voir">
                                     <Eye className="h-4 w-4" />
