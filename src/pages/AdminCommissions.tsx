@@ -157,6 +157,7 @@ export default function AdminCommissions() {
   const openEdit = (c: CommissionRow) => {
     setEditingCommission(c);
     setEditStatus(c.status || "pending");
+    setEditAmount(c.amount != null ? String(c.amount) : "");
     setEditPaidAt(c.paid_at ? new Date(c.paid_at) : undefined);
   };
 
