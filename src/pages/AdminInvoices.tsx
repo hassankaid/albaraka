@@ -644,9 +644,15 @@ export default function AdminInvoices() {
                               {getRoleLabel(a.roles)}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-center">
+                          <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-center gap-1.5">
-                              <Badge variant="secondary" className="text-xs tabular-nums">{a.commission_count}</Badge>
+                              <Badge
+                                variant="secondary"
+                                className="text-xs tabular-nums cursor-pointer hover:bg-primary/20 transition-colors"
+                                onClick={() => a.commission_count > 0 && setCommDetailBeneficiary(a)}
+                              >
+                                {a.commission_count}
+                              </Badge>
                               {a.fixed_salary_active && (
                                 <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30">
                                   + Salaire fixe
