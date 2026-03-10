@@ -464,9 +464,23 @@ export default function AdminInvoices() {
     setRibViewerLoading(true);
     setRibViewerBlobUrl(null);
     try {
-      // Extract relative path from the stored signed URL or raw path
-      const match = ribUrl.match(/\/ribs\/(.+?)(?:\?|$)/);
-      const filePath = match ? decodeURIComponent(match[1]) : ribUrl;
+      // Extract relative storage path from whatever format bank_rib_url is stored as
+      let filePath = ribUrl;
+      // If it's a full URL, extract just the path after /ribs/
+      const urlMatch = ribUrl.match(/\/ribs\/(.+?)(?:\?|$)/);
+      if (urlMatch) {
+        filePath = decodeURIComponent(urlMatch[1]);
+      } else if (ribUrl.startsWith("http")) {
+        // Full URL but doesn't match expected pattern — try URL parsing
+        try {
+          const url = new URL(ribUrl);
+          const pathMatch = url.pathname.match(/\/ribs\/(.+)/);
+          filePath = pathMatch ? decodeURIComponent(pathMatch[1]) : ribUrl;
+        } catch { /* keep ribUrl as-is */ }
+      }
+      // Remove leading slash if present
+      filePath = filePath.replace(/^\/+/, "");
+      
       const ext = filePath.split(".").pop()?.toLowerCase() || "";
       setRibViewerExt(ext);
 
