@@ -35,6 +35,7 @@ interface BeneficiaryToInvoice {
   total_amount: number;
   fixed_salary: number | null;
   fixed_salary_active: boolean;
+  bank_rib_url: string | null;
 }
 
 interface InvoiceRow {
