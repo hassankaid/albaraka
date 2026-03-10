@@ -141,7 +141,7 @@ export default function AdminInvoices() {
     // Fetch commissions
     const { data, error } = await supabase
       .from("commissions")
-      .select("beneficiary_user_id, amount, role, payments!commissions_payment_id_fkey(paid_at), profiles!commissions_beneficiary_user_id_fkey(full_name)")
+      .select("beneficiary_user_id, amount, role, payments!commissions_payment_id_fkey(paid_at), profiles!commissions_beneficiary_user_id_fkey(full_name, bank_rib_url)")
       .eq("status", "due")
       .not("payment_id", "is", null);
 
