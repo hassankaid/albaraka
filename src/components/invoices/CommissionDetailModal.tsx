@@ -103,10 +103,9 @@ export default function CommissionDetailModal({ open, onOpenChange, beneficiaryU
           contact_name: c.sales?.contacts?.full_name || null,
         }))
         .sort((a: CommissionDetail, b: CommissionDetail) => {
-          const nameA = a.contact_name || "";
-          const nameB = b.contact_name || "";
-          if (nameA !== nameB) return nameA.localeCompare(nameB);
-          return a.payment_number - b.payment_number;
+          const dateA = a.payment_due_date || "";
+          const dateB = b.payment_due_date || "";
+          return dateA.localeCompare(dateB);
         });
 
       setCommissions(filtered);
