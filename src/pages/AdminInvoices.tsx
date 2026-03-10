@@ -452,6 +452,22 @@ export default function AdminInvoices() {
   };
   const periodLabel = `${MONTHS[genMonth]} ${genYear}`;
 
+  const openRibViewer = async (a: BeneficiaryToInvoice) => {
+    if (!a.bank_rib_url) return;
+    setRibViewerName(a.full_name);
+    setRibViewerOpen(true);
+    setRibViewerLoading(true);
+    setRibViewerUrl(null);
+    try {
+      const { data } = await supabase.storage.from("ribs").createSignedUrl(a.bank_rib_url, 300);
+      setRibViewerUrl(data?.signedUrl || null);
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de charger le RIB", variant: "destructive" });
+    } finally {
+      setRibViewerLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Page header */}
