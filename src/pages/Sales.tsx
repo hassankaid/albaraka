@@ -323,7 +323,7 @@ export default function Sales() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {userCommissions.map((c) => (
+              {filteredCommissions.map((c) => (
                 <TableRow key={c.id} className="border-border hover:bg-secondary/50 transition-colors">
                   <TableCell>
                     <div>
