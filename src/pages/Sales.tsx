@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BadgeEuro, RefreshCw, Plus, Settings } from "lucide-react";
+import { BadgeEuro, RefreshCw, Plus, Settings, Search } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
 import NewSaleModal from "@/components/sales/NewSaleModal";
 import ManageCommissionsModal from "@/components/sales/ManageCommissionsModal";
@@ -21,6 +22,7 @@ interface CeoSale {
   contact_name: string | null;
   contact_email: string | null;
   closed_by_name: string | null;
+  apporteur_name: string | null;
   commission_count: number;
 }
 
@@ -64,6 +66,7 @@ export default function Sales() {
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState("");
 
   // CEO state
   const [ceoSales, setCeoSales] = useState<CeoSale[]>([]);
@@ -84,6 +87,7 @@ export default function Sales() {
           id, product, amount_ht, payment_status, sold_at,
           contacts!sales_contact_id_fkey(full_name, email),
           profiles!sales_closed_by_fkey(full_name),
+          leads!sales_lead_id_fkey(profiles!leads_apporteur_id_fkey(full_name)),
           commissions(id)
         `)
         .order("sold_at", { ascending: false });
@@ -99,6 +103,7 @@ export default function Sales() {
             contact_name: s.contacts?.full_name,
             contact_email: s.contacts?.email,
             closed_by_name: s.profiles?.full_name,
+            apporteur_name: s.leads?.profiles?.full_name || null,
             commission_count: s.commissions?.length || 0,
           }))
         );
@@ -146,14 +151,37 @@ export default function Sales() {
     toast({ title: "Données actualisées" });
   };
 
+  // Filtering
+  const filteredCeoSales = useMemo(() => {
+    if (!search.trim()) return ceoSales;
+    const q = search.toLowerCase();
+    return ceoSales.filter((s) =>
+      s.contact_name?.toLowerCase().includes(q) ||
+      s.contact_email?.toLowerCase().includes(q) ||
+      s.closed_by_name?.toLowerCase().includes(q) ||
+      s.apporteur_name?.toLowerCase().includes(q) ||
+      s.product.toLowerCase().includes(q)
+    );
+  }, [ceoSales, search]);
+
+  const filteredCommissions = useMemo(() => {
+    if (!search.trim()) return userCommissions;
+    const q = search.toLowerCase();
+    return userCommissions.filter((c) =>
+      c.contact_name?.toLowerCase().includes(q) ||
+      c.product.toLowerCase().includes(q) ||
+      c.role.toLowerCase().includes(q)
+    );
+  }, [userCommissions, search]);
+
   // Stats
   const totalCA = isCeo
-    ? ceoSales.reduce((s, v) => s + v.amount_ht, 0)
-    : userCommissions.reduce((s, c) => s + (c.amount || 0), 0);
+    ? filteredCeoSales.reduce((s, v) => s + v.amount_ht, 0)
+    : filteredCommissions.reduce((s, c) => s + (c.amount || 0), 0);
   const totalPaid = isCeo
-    ? ceoSales.filter((v) => v.payment_status === "paid").reduce((s, v) => s + v.amount_ht, 0)
-    : userCommissions.filter((c) => c.status === "paid").reduce((s, c) => s + (c.amount || 0), 0);
-  const count = isCeo ? ceoSales.length : userCommissions.length;
+    ? filteredCeoSales.filter((v) => v.payment_status === "paid").reduce((s, v) => s + v.amount_ht, 0)
+    : filteredCommissions.filter((c) => c.status === "paid").reduce((s, c) => s + (c.amount || 0), 0);
+  const count = isCeo ? filteredCeoSales.length : filteredCommissions.length;
 
   const userTz = profile?.timezone || "Europe/Paris";
   const formatDate = (d: string | null) =>
@@ -170,6 +198,15 @@ export default function Sales() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 w-48 lg:w-64 h-9"
+            />
+          </div>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
             Actualiser
@@ -239,7 +276,7 @@ export default function Sales() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {ceoSales.map((sale) => (
+              {filteredCeoSales.map((sale) => (
                 <TableRow key={sale.id} className="border-border hover:bg-secondary/50 transition-colors cursor-pointer" onClick={() => setDetailSale(sale)}>
                    <TableCell>
                      <div>
@@ -287,7 +324,7 @@ export default function Sales() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {userCommissions.map((c) => (
+              {filteredCommissions.map((c) => (
                 <TableRow key={c.id} className="border-border hover:bg-secondary/50 transition-colors">
                   <TableCell>
                     <div>
