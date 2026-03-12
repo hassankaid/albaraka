@@ -21,6 +21,7 @@ interface CeoSale {
   contact_name: string | null;
   contact_email: string | null;
   closed_by_name: string | null;
+  apporteur_name: string | null;
   commission_count: number;
 }
 
