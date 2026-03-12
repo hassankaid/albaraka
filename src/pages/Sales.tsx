@@ -275,7 +275,7 @@ export default function Sales() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {ceoSales.map((sale) => (
+              {filteredCeoSales.map((sale) => (
                 <TableRow key={sale.id} className="border-border hover:bg-secondary/50 transition-colors cursor-pointer" onClick={() => setDetailSale(sale)}>
                    <TableCell>
                      <div>
