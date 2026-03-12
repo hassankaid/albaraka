@@ -150,14 +150,37 @@ export default function Sales() {
     toast({ title: "Données actualisées" });
   };
 
+  // Filtering
+  const filteredCeoSales = useMemo(() => {
+    if (!search.trim()) return ceoSales;
+    const q = search.toLowerCase();
+    return ceoSales.filter((s) =>
+      s.contact_name?.toLowerCase().includes(q) ||
+      s.contact_email?.toLowerCase().includes(q) ||
+      s.closed_by_name?.toLowerCase().includes(q) ||
+      s.apporteur_name?.toLowerCase().includes(q) ||
+      s.product.toLowerCase().includes(q)
+    );
+  }, [ceoSales, search]);
+
+  const filteredCommissions = useMemo(() => {
+    if (!search.trim()) return userCommissions;
+    const q = search.toLowerCase();
+    return userCommissions.filter((c) =>
+      c.contact_name?.toLowerCase().includes(q) ||
+      c.product.toLowerCase().includes(q) ||
+      c.role.toLowerCase().includes(q)
+    );
+  }, [userCommissions, search]);
+
   // Stats
   const totalCA = isCeo
-    ? ceoSales.reduce((s, v) => s + v.amount_ht, 0)
-    : userCommissions.reduce((s, c) => s + (c.amount || 0), 0);
+    ? filteredCeoSales.reduce((s, v) => s + v.amount_ht, 0)
+    : filteredCommissions.reduce((s, c) => s + (c.amount || 0), 0);
   const totalPaid = isCeo
-    ? ceoSales.filter((v) => v.payment_status === "paid").reduce((s, v) => s + v.amount_ht, 0)
-    : userCommissions.filter((c) => c.status === "paid").reduce((s, c) => s + (c.amount || 0), 0);
-  const count = isCeo ? ceoSales.length : userCommissions.length;
+    ? filteredCeoSales.filter((v) => v.payment_status === "paid").reduce((s, v) => s + v.amount_ht, 0)
+    : filteredCommissions.filter((c) => c.status === "paid").reduce((s, c) => s + (c.amount || 0), 0);
+  const count = isCeo ? filteredCeoSales.length : filteredCommissions.length;
 
   const userTz = profile?.timezone || "Europe/Paris";
   const formatDate = (d: string | null) =>
