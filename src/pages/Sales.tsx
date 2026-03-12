@@ -86,6 +86,7 @@ export default function Sales() {
           id, product, amount_ht, payment_status, sold_at,
           contacts!sales_contact_id_fkey(full_name, email),
           profiles!sales_closed_by_fkey(full_name),
+          leads!sales_lead_id_fkey(profiles!leads_apporteur_id_fkey(full_name)),
           commissions(id)
         `)
         .order("sold_at", { ascending: false });
@@ -101,6 +102,7 @@ export default function Sales() {
             contact_name: s.contacts?.full_name,
             contact_email: s.contacts?.email,
             closed_by_name: s.profiles?.full_name,
+            apporteur_name: s.leads?.profiles?.full_name || null,
             commission_count: s.commissions?.length || 0,
           }))
         );
