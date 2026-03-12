@@ -65,6 +65,7 @@ export default function Sales() {
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState("");
 
   // CEO state
   const [ceoSales, setCeoSales] = useState<CeoSale[]>([]);
