@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BadgeEuro, RefreshCw, Plus, Settings } from "lucide-react";
+import { BadgeEuro, RefreshCw, Plus, Settings, Search } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
 import NewSaleModal from "@/components/sales/NewSaleModal";
 import ManageCommissionsModal from "@/components/sales/ManageCommissionsModal";
