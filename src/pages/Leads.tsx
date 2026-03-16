@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   Users, UserPlus, RefreshCw, Search, Phone, Inbox, ChevronDown, Instagram, Pencil, Eye, Info, Copy,
-  ChevronLeft, ChevronRight, PartyPopper,
+  ChevronLeft, ChevronRight, PartyPopper, CheckSquare,
 } from "lucide-react";
 import LeadInstagramForm from "@/components/LeadInstagramForm";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
@@ -58,6 +58,8 @@ export default function Leads() {
   const [processLead, setProcessLead] = useState<LeadEnriched | null>(null);
   const [contactSheetId, setContactSheetId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAssigning, setBulkAssigning] = useState(false);
   const PAGE_SIZE = 50;
 
   const fetchLeads = useCallback(async () => {
@@ -165,6 +167,31 @@ export default function Leads() {
     }
   };
 
+  const handleBulkAssign = async (newUserId: string) => {
+    if (!user || selectedIds.size === 0) return;
+    setBulkAssigning(true);
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase
+      .from("leads")
+      .update({ assigned_to: newUserId, assigned_at: new Date().toISOString(), status: "a_qualifier" })
+      .in("id", ids);
+
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      const activities = ids.map((id) => ({
+        lead_id: id, user_id: user.id, action: "reassigned",
+        old_value: null, new_value: newUserId,
+        note: "Affectation en masse depuis recyclage",
+      }));
+      await supabase.from("lead_activities").insert(activities);
+      toast({ title: `${ids.length} leads affectés avec succès` });
+      setSelectedIds(new Set());
+      fetchLeads();
+    }
+    setBulkAssigning(false);
+  };
+
   const isCeo = user?.role === "ceo";
 
   // Scoped leads: collaborateurs only see their own (except "À affecter")
@@ -223,7 +250,7 @@ export default function Leads() {
     return result;
   }, [leads, scopedLeads, tab, statusFilter, sourceFilter, search, user]);
 
-  useEffect(() => { setPage(0); }, [tab, statusFilter, sourceFilter, search]);
+  useEffect(() => { setPage(0); setSelectedIds(new Set()); }, [tab, statusFilter, sourceFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
   const paginatedLeads = useMemo(
@@ -371,10 +398,56 @@ export default function Leads() {
         emptyMessage()
       ) : (
         <>
+          {/* Bulk action bar */}
+          {tab === "a_recycler" && isCeo && selectedIds.size > 0 && (
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20">
+              <CheckSquare className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-foreground">{selectedIds.size} lead{selectedIds.size > 1 ? "s" : ""} sélectionné{selectedIds.size > 1 ? "s" : ""}</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" className="gap-1.5 text-xs" disabled={bulkAssigning}>
+                    <UserPlus className="h-3.5 w-3.5" />
+                    Affecter en masse
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {collaborateurs
+                    .filter((c) => c.collaborateur_level === "intermediaire")
+                    .map((c) => (
+                      <DropdownMenuItem key={c.id} onClick={() => handleBulkAssign(c.id)}>
+                        {c.full_name}
+                      </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => setSelectedIds(new Set())}>
+                Désélectionner
+              </Button>
+            </div>
+          )}
+
           <div className="rounded-lg border border-border/50 overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
+                  {tab === "a_recycler" && isCeo && (
+                    <TableHead className="w-[40px]">
+                      <input
+                        type="checkbox"
+                        className="rounded border-border"
+                        checked={paginatedLeads.length > 0 && paginatedLeads.every((l) => selectedIds.has(l.id!))}
+                        onChange={(e) => {
+                          const next = new Set(selectedIds);
+                          paginatedLeads.forEach((l) => {
+                            if (e.target.checked) next.add(l.id!);
+                            else next.delete(l.id!);
+                          });
+                          setSelectedIds(next);
+                        }}
+                      />
+                    </TableHead>
+                  )}
                   <TableHead className="w-[220px]">Contact</TableHead>
                   <TableHead>Source</TableHead>
                   <TableHead>Apporteur</TableHead>
@@ -386,7 +459,22 @@ export default function Leads() {
               </TableHeader>
               <TableBody>
                 {paginatedLeads.map((lead) => (
-                  <TableRow key={lead.id} className="border-border hover:bg-secondary/50 transition-colors">
+                  <TableRow key={lead.id} className={`border-border hover:bg-secondary/50 transition-colors ${selectedIds.has(lead.id!) ? "bg-primary/5" : ""}`}>
+                    {tab === "a_recycler" && isCeo && (
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          className="rounded border-border"
+                          checked={selectedIds.has(lead.id!)}
+                          onChange={(e) => {
+                            const next = new Set(selectedIds);
+                            if (e.target.checked) next.add(lead.id!);
+                            else next.delete(lead.id!);
+                            setSelectedIds(next);
+                          }}
+                        />
+                      </TableCell>
+                    )}
                     {/* Contact */}
                     <TableCell>
                       <div className="min-w-0">
