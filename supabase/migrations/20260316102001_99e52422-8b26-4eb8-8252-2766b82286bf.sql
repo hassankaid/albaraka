@@ -1,0 +1,1 @@
+UPDATE leads SET source = 'webi', source_detail = NULL WHERE source = 'meta_ads';
