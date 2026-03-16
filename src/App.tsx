@@ -22,6 +22,7 @@ import AdminInvoices from "./pages/AdminInvoices";
 import AdminCommissions from "./pages/AdminCommissions";
 import AdminData from "./pages/AdminData";
 import AdminCreateWizard from "./pages/AdminCreateWizard";
+import AdminTeam from "./pages/AdminTeam";
 import NotFound from "./pages/NotFound";
 import ApporteurDashboard from "./pages/apporteur/ApporteurDashboard";
 import ApporteurLeads from "./pages/apporteur/ApporteurLeads";
