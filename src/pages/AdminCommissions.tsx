@@ -399,7 +399,7 @@ export default function AdminCommissions() {
               })}
             </TableBody>
           </Table>
-        </Card>
+        </div>
       )}
 
       {/* Edit modal */}
