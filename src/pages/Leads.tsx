@@ -30,7 +30,12 @@ import { fr } from "date-fns/locale";
 
 type LeadEnriched = Tables<"leads_enriched">;
 
-const TABS = [
+const COLLAB_TABS = [
+  { value: "a_affecter", label: "À affecter" },
+  { value: "mes_leads", label: "Mes leads" },
+] as const;
+
+const CEO_TABS = [
   { value: "a_affecter", label: "À affecter" },
   { value: "mes_leads", label: "Mes leads" },
   { value: "tous", label: "Tous" },
