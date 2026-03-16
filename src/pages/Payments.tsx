@@ -60,6 +60,55 @@ const getBillingPeriodLabel = () => {
 
 const PAGE_SIZE = 50;
 
+function PaymentNotesCell({ paymentId, initialNotes, onSave }: { paymentId: string; initialNotes: string; onSave: (id: string, notes: string) => Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(initialNotes);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { setValue(initialNotes); }, [initialNotes]);
+
+  const handleSave = async () => {
+    if (value === initialNotes) { setEditing(false); return; }
+    setSaving(true);
+    await onSave(paymentId, value);
+    setSaving(false);
+    setEditing(false);
+  };
+
+  if (!editing) {
+    return (
+      <button
+        onClick={() => setEditing(true)}
+        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground max-w-[180px] text-left"
+        title={value || "Ajouter un commentaire"}
+      >
+        <MessageSquare className="h-3 w-3 shrink-0" />
+        <span className="truncate">{value || "—"}</span>
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1 min-w-[160px]">
+      <Textarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="min-h-[50px] text-xs bg-card resize-none"
+        placeholder="Commentaire..."
+        autoFocus
+      />
+      <div className="flex gap-1">
+        <Button size="sm" className="h-6 text-[10px]" onClick={handleSave} disabled={saving}>
+          {saving ? <RefreshCw className="h-3 w-3 animate-spin" /> : "Enregistrer"}
+        </Button>
+        <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => { setValue(initialNotes); setEditing(false); }}>
+          Annuler
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function Payments() {
   const { profile } = useAuth();
   const { toast } = useToast();
