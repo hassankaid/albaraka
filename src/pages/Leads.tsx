@@ -58,6 +58,8 @@ export default function Leads() {
   const [processLead, setProcessLead] = useState<LeadEnriched | null>(null);
   const [contactSheetId, setContactSheetId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAssigning, setBulkAssigning] = useState(false);
   const PAGE_SIZE = 50;
 
   const fetchLeads = useCallback(async () => {
