@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Trash2, Plus, Pencil, Check, X } from "lucide-react";
+import { ROLE_CONFIG } from "@/lib/roleConfig";
 
 interface Commission {
   id: string;
