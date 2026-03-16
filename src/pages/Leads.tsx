@@ -167,6 +167,31 @@ export default function Leads() {
     }
   };
 
+  const handleBulkAssign = async (newUserId: string) => {
+    if (!user || selectedIds.size === 0) return;
+    setBulkAssigning(true);
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase
+      .from("leads")
+      .update({ assigned_to: newUserId, assigned_at: new Date().toISOString(), status: "a_qualifier" })
+      .in("id", ids);
+
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      const activities = ids.map((id) => ({
+        lead_id: id, user_id: user.id, action: "reassigned",
+        old_value: null, new_value: newUserId,
+        note: "Affectation en masse depuis recyclage",
+      }));
+      await supabase.from("lead_activities").insert(activities);
+      toast({ title: `${ids.length} leads affectés avec succès` });
+      setSelectedIds(new Set());
+      fetchLeads();
+    }
+    setBulkAssigning(false);
+  };
+
   const isCeo = user?.role === "ceo";
 
   // Scoped leads: collaborateurs only see their own (except "À affecter")
