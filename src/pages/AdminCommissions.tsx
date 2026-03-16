@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -234,91 +233,40 @@ export default function AdminCommissions() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Gestion des commissions</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Visualisez et gérez toutes les commissions
-          </p>
+    <div className="space-y-4">
+      {/* Top bar: KPIs + refresh */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
+            <BadgeEuro className="h-3.5 w-3.5 text-primary" />
+            <span className="text-sm font-bold text-foreground">{totalAmount.toLocaleString("fr-FR")} €</span>
+            <span className="text-xs text-muted-foreground">total ({filtered.length})</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+            <span className="text-sm font-bold text-foreground">{paidAmount.toLocaleString("fr-FR")} €</span>
+            <span className="text-xs text-muted-foreground">payées</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
+            <AlertCircle className="h-3.5 w-3.5 text-amber-400" />
+            <span className="text-sm font-bold text-foreground">{dueAmount.toLocaleString("fr-FR")} €</span>
+            <span className="text-xs text-muted-foreground">à payer</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
+            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-sm font-bold text-foreground">{pendingAmount.toLocaleString("fr-FR")} €</span>
+            <span className="text-xs text-muted-foreground">en attente</span>
+          </div>
         </div>
-        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-          Actualiser
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefresh} disabled={refreshing} title="Actualiser">
+          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <BadgeEuro className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{totalAmount.toLocaleString("fr-FR")} €</p>
-                <p className="text-xs text-muted-foreground">Total ({filtered.length})</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-500/10">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{paidAmount.toLocaleString("fr-FR")} €</p>
-                <p className="text-xs text-muted-foreground">Payées</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10">
-                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{dueAmount.toLocaleString("fr-FR")} €</p>
-                <p className="text-xs text-muted-foreground">À payer / Facturées</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-muted">
-                <Clock className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{pendingAmount.toLocaleString("fr-FR")} €</p>
-                <p className="text-xs text-muted-foreground">En attente</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher par nom, produit…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+      {/* Filters row */}
+      <div className="flex flex-wrap items-center gap-2">
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-[160px]">
-            <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+          <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -331,7 +279,7 @@ export default function AdminCommissions() {
           </SelectContent>
         </Select>
         <Select value={filterRole} onValueChange={setFilterRole}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -339,7 +287,7 @@ export default function AdminCommissions() {
             <SelectItem value="apporteur">Apporteur</SelectItem>
             <SelectItem value="setter">Setter</SelectItem>
             <SelectItem value="closer">Closer</SelectItem>
-            <SelectItem value="agence_marketing">Agence marketing</SelectItem>
+            <SelectItem value="agence_marketing">Agence</SelectItem>
           </SelectContent>
         </Select>
         {(() => {
@@ -348,7 +296,7 @@ export default function AdminCommissions() {
           const label = d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
           return (
             <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-              <SelectTrigger className="w-[220px]">
+              <SelectTrigger className="w-[190px] h-8 text-xs bg-card">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -358,6 +306,15 @@ export default function AdminCommissions() {
             </Select>
           );
         })()}
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-8 text-xs bg-card"
+          />
+        </div>
       </div>
 
       {/* Table */}
@@ -372,7 +329,7 @@ export default function AdminCommissions() {
           <p className="text-sm text-muted-foreground mt-1">Modifiez vos filtres pour voir plus de résultats.</p>
         </div>
       ) : (
-        <Card className="border-border/50 overflow-hidden">
+        <div className="rounded-lg border border-border/50 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
@@ -396,10 +353,10 @@ export default function AdminCommissions() {
                 return (
                   <TableRow key={c.id} className="border-border hover:bg-secondary/50 transition-colors">
                     <TableCell>
-                      <p className="font-medium text-foreground">{c.beneficiary_name}</p>
+                      <p className="font-medium text-foreground text-sm">{c.beneficiary_name}</p>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`text-xs ${ROLE_COLORS[c.role] || ""}`}>
+                      <Badge variant="outline" className={`text-[10px] leading-tight ${ROLE_COLORS[c.role] || ""}`}>
                         {c.role}
                       </Badge>
                     </TableCell>
@@ -410,32 +367,32 @@ export default function AdminCommissions() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {c.payment_number != null ? `${c.payment_number}/${c.total_payments}` : "—"}
                       </span>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-xs text-muted-foreground">
                       {fmtDate(c.payment_due_date)}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-xs text-muted-foreground">
                       {fmtDate(c.payment_paid_at)}
                     </TableCell>
-                    <TableCell className="text-right font-semibold text-foreground">
+                    <TableCell className="text-right font-semibold text-sm text-foreground">
                       {c.amount != null ? `${c.amount.toLocaleString("fr-FR")} €` : "—"}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{c.percentage}%</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{c.percentage}%</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`text-xs gap-1 ${statusConf.color}`}>
+                      <Badge variant="outline" className={`text-[10px] leading-tight gap-1 ${statusConf.color}`}>
                         <StatusIcon className="h-3 w-3" />
                         {statusConf.label}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-xs text-muted-foreground">
                       {fmtDate(c.paid_at)}
                     </TableCell>
                     <TableCell className="text-center">
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
-                        <Pencil className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}>
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -443,7 +400,7 @@ export default function AdminCommissions() {
               })}
             </TableBody>
           </Table>
-        </Card>
+        </div>
       )}
 
       {/* Edit modal */}

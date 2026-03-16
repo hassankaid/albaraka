@@ -2,12 +2,11 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BadgeEuro, RefreshCw, Plus, Settings, Search } from "lucide-react";
+import { BadgeEuro, RefreshCw, Plus, Settings, Search, Inbox, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
 import NewSaleModal from "@/components/sales/NewSaleModal";
 import ManageCommissionsModal from "@/components/sales/ManageCommissionsModal";
@@ -59,6 +58,8 @@ const ROLE_COLORS: Record<string, string> = {
   agence_marketing: "bg-orange-500/20 text-orange-300 border-orange-500/30",
 };
 
+const PAGE_SIZE = 50;
+
 export default function Sales() {
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -67,14 +68,13 @@ export default function Sales() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
 
-  // CEO state
   const [ceoSales, setCeoSales] = useState<CeoSale[]>([]);
   const [newSaleOpen, setNewSaleOpen] = useState(false);
   const [commissionsModalSale, setCommissionsModalSale] = useState<CeoSale | null>(null);
   const [detailSale, setDetailSale] = useState<CeoSale | null>(null);
 
-  // Non-CEO state
   const [userCommissions, setUserCommissions] = useState<UserCommission[]>([]);
 
   const fetchData = useCallback(async () => {
@@ -151,7 +151,6 @@ export default function Sales() {
     toast({ title: "Données actualisées" });
   };
 
-  // Filtering
   const filteredCeoSales = useMemo(() => {
     if (!search.trim()) return ceoSales;
     const q = search.toLowerCase();
@@ -174,77 +173,67 @@ export default function Sales() {
     );
   }, [userCommissions, search]);
 
-  // Stats
+  useEffect(() => { setPage(0); }, [search]);
+
+  const items = isCeo ? filteredCeoSales : filteredCommissions;
+  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const paginatedCeoSales = useMemo(() => filteredCeoSales.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [filteredCeoSales, page]);
+  const paginatedCommissions = useMemo(() => filteredCommissions.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [filteredCommissions, page]);
+
   const totalCA = isCeo
     ? filteredCeoSales.reduce((s, v) => s + v.amount_ht, 0)
     : filteredCommissions.reduce((s, c) => s + (c.amount || 0), 0);
   const totalPaid = isCeo
     ? filteredCeoSales.filter((v) => v.payment_status === "paid").reduce((s, v) => s + v.amount_ht, 0)
     : filteredCommissions.filter((c) => c.status === "paid").reduce((s, c) => s + (c.amount || 0), 0);
-  const count = isCeo ? filteredCeoSales.length : filteredCommissions.length;
+  const count = items.length;
 
   const userTz = profile?.timezone || "Europe/Paris";
-  const formatDate = (d: string | null) =>
-    d ? formatDateOnly(d, userTz) : "—";
+  const formatDate = (d: string | null) => d ? formatDateOnly(d, userTz) : "—";
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Ventes</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {isCeo ? "Toutes les ventes" : "Ventes avec vos commissions"}
-          </p>
+    <div className="space-y-4">
+      {/* Top bar: KPIs + actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
+            <BadgeEuro className="h-3.5 w-3.5 text-purple-400" />
+            <span className="text-sm font-bold text-foreground">{count}</span>
+            <span className="text-xs text-muted-foreground">{isCeo ? "ventes" : "commissions"}</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
+            <span className="text-sm font-bold text-foreground">{totalCA.toLocaleString("fr-FR")} €</span>
+            <span className="text-xs text-muted-foreground">{isCeo ? "CA HT" : "total"}</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
+            <span className="text-sm font-bold text-emerald-400">{totalPaid.toLocaleString("fr-FR")} €</span>
+            <span className="text-xs text-muted-foreground">payé</span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 w-48 lg:w-64 h-9"
-            />
-          </div>
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-            Actualiser
-          </Button>
           {isCeo && (
-            <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => setNewSaleOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button size="sm" className="gradient-primary text-primary-foreground text-xs gap-1.5" onClick={() => setNewSaleOpen(true)}>
+              <Plus className="h-3.5 w-3.5" />
               Nouvelle vente
             </Button>
           )}
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefresh} disabled={refreshing} title="Actualiser">
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+          </Button>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-purple-500/20 to-blue-500/20 border-border/50 backdrop-blur-sm">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-background/50">
-              <BadgeEuro className="h-5 w-5 text-foreground" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{count}</p>
-              <p className="text-xs text-muted-foreground">{isCeo ? "Ventes" : "Commissions"}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-border/50 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <p className="text-2xl font-bold text-foreground">{totalCA.toLocaleString("fr-FR")} €</p>
-            <p className="text-xs text-muted-foreground">{isCeo ? "CA total HT" : "Total commissions"}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-border/50 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <p className="text-2xl font-bold text-foreground">{totalPaid.toLocaleString("fr-FR")} €</p>
-            <p className="text-xs text-muted-foreground">Payé</p>
-          </CardContent>
-        </Card>
+      {/* Search */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-8 text-xs bg-card"
+          />
+        </div>
       </div>
 
       {/* Table */}
@@ -254,104 +243,138 @@ export default function Sales() {
         </div>
       ) : count === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <BadgeEuro className="h-12 w-12 text-muted-foreground mb-4" />
+          <Inbox className="h-12 w-12 text-muted-foreground mb-4" />
           <p className="text-lg font-semibold text-foreground">
             {isCeo ? "Aucune vente pour le moment" : "Aucune commission pour le moment"}
           </p>
         </div>
       ) : isCeo ? (
-        /* CEO TABLE */
-        <Card className="border-border/50 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead>Contact</TableHead>
-                <TableHead>Produit</TableHead>
-                <TableHead>Montant HT</TableHead>
-                <TableHead>Paiement</TableHead>
-                <TableHead>Commissions</TableHead>
-                <TableHead>Closer</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCeoSales.map((sale) => (
-                <TableRow key={sale.id} className="border-border hover:bg-secondary/50 transition-colors cursor-pointer" onClick={() => setDetailSale(sale)}>
-                   <TableCell>
-                     <div>
-                       <p className="font-semibold text-foreground">{sale.contact_name || "—"}</p>
-                      <p className="text-xs text-muted-foreground">{sale.contact_email}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-foreground">{sale.product}</TableCell>
-                  <TableCell className="font-semibold text-foreground">
-                    {sale.amount_ht.toLocaleString("fr-FR")} €
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={`text-xs ${PAYMENT_COLORS[sale.payment_status || "pending"] || ""}`}>
-                      {PAYMENT_LABELS[sale.payment_status || "pending"] || sale.payment_status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="text-xs">{sale.commission_count}</Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{sale.closed_by_name || "—"}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{formatDate(sale.sold_at)}</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setCommissionsModalSale(sale); }}>
-                       <Settings className="h-4 w-4 mr-1" />
-                       Commissions
-                     </Button>
-                  </TableCell>
+        <>
+          <div className="rounded-lg border border-border/50 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="w-[200px]">Contact</TableHead>
+                  <TableHead>Produit</TableHead>
+                  <TableHead>Montant HT</TableHead>
+                  <TableHead>Paiement</TableHead>
+                  <TableHead>Commissions</TableHead>
+                  <TableHead>Closer</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="w-[100px]">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+              </TableHeader>
+              <TableBody>
+                {paginatedCeoSales.map((sale) => (
+                  <TableRow key={sale.id} className="border-border hover:bg-secondary/50 transition-colors cursor-pointer" onClick={() => setDetailSale(sale)}>
+                    <TableCell>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground text-sm truncate">{sale.contact_name || "—"}</p>
+                        {sale.contact_email && <p className="text-xs text-muted-foreground truncate">{sale.contact_email}</p>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-foreground">{sale.product}</TableCell>
+                    <TableCell className="font-semibold text-sm text-foreground">{sale.amount_ht.toLocaleString("fr-FR")} €</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`text-[10px] leading-tight ${PAYMENT_COLORS[sale.payment_status || "pending"] || ""}`}>
+                        {PAYMENT_LABELS[sale.payment_status || "pending"] || sale.payment_status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="text-[10px]">{sale.commission_count}</Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{sale.closed_by_name || "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{formatDate(sale.sold_at)}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={(e) => { e.stopPropagation(); setCommissionsModalSale(sale); }}>
+                        <Settings className="h-3.5 w-3.5" />
+                        Com.
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filteredCeoSales.length)} sur {filteredCeoSales.length}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+                  <ChevronLeft className="h-3.5 w-3.5 mr-1" />Préc.
+                </Button>
+                <span className="text-xs text-muted-foreground">{page + 1}/{totalPages}</span>
+                <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                  Suiv.<ChevronRight className="h-3.5 w-3.5 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       ) : (
-        /* NON-CEO TABLE */
-        <Card className="border-border/50 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead>Vente</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Mon rôle</TableHead>
-                <TableHead>%</TableHead>
-                <TableHead>Montant</TableHead>
-                <TableHead>Statut</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCommissions.map((c) => (
-                <TableRow key={c.id} className="border-border hover:bg-secondary/50 transition-colors">
-                  <TableCell>
-                    <div>
-                      <p className="font-semibold text-foreground">{c.product}</p>
-                      <p className="text-xs text-muted-foreground">{c.contact_name}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{formatDate(c.sold_at)}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={`text-xs ${ROLE_COLORS[c.role] || ""}`}>
-                      {c.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-foreground">{c.percentage}%</TableCell>
-                  <TableCell className="font-semibold text-foreground">
-                    {c.amount != null ? `${c.amount.toLocaleString("fr-FR")} €` : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={`text-xs ${PAYMENT_COLORS[c.status || "pending"] || ""}`}>
-                      {c.status === "paid" ? "Payée" : "En attente"}
-                    </Badge>
-                  </TableCell>
+        <>
+          <div className="rounded-lg border border-border/50 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead>Vente</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Mon rôle</TableHead>
+                  <TableHead>%</TableHead>
+                  <TableHead>Montant</TableHead>
+                  <TableHead>Statut</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+              </TableHeader>
+              <TableBody>
+                {paginatedCommissions.map((c) => (
+                  <TableRow key={c.id} className="border-border hover:bg-secondary/50 transition-colors">
+                    <TableCell>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground text-sm">{c.product}</p>
+                        <p className="text-xs text-muted-foreground">{c.contact_name}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{formatDate(c.sold_at)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`text-[10px] leading-tight ${ROLE_COLORS[c.role] || ""}`}>
+                        {c.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-foreground">{c.percentage}%</TableCell>
+                    <TableCell className="font-semibold text-sm text-foreground">
+                      {c.amount != null ? `${c.amount.toLocaleString("fr-FR")} €` : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`text-[10px] leading-tight ${PAYMENT_COLORS[c.status || "pending"] || ""}`}>
+                        {c.status === "paid" ? "Payée" : "En attente"}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filteredCommissions.length)} sur {filteredCommissions.length}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+                  <ChevronLeft className="h-3.5 w-3.5 mr-1" />Préc.
+                </Button>
+                <span className="text-xs text-muted-foreground">{page + 1}/{totalPages}</span>
+                <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                  Suiv.<ChevronRight className="h-3.5 w-3.5 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Modals */}
