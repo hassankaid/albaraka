@@ -348,20 +348,24 @@ export default function AdminTeam() {
                           Promouvoir collaborateur
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => toggleActive(member)}>
-                        {member.is_active ? (
-                          <>
-                            <ToggleLeft className="h-4 w-4 mr-2 text-muted-foreground" />
-                            Désactiver
-                          </>
-                        ) : (
-                          <>
-                            <ToggleRight className="h-4 w-4 mr-2 text-emerald-400" />
-                            Réactiver
-                          </>
-                        )}
-                      </DropdownMenuItem>
+                      {member.role === "collaborateur" && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => toggleActive(member)}>
+                            {member.is_active ? (
+                              <>
+                                <ToggleLeft className="h-4 w-4 mr-2 text-muted-foreground" />
+                                Désactiver
+                              </>
+                            ) : (
+                              <>
+                                <ToggleRight className="h-4 w-4 mr-2 text-emerald-400" />
+                                Réactiver
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
