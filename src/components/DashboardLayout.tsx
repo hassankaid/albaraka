@@ -29,6 +29,7 @@ const pageTitles: Record<string, string> = {
   "/contacts": "Contacts",
   "/sales": "Ventes",
   "/payments": "Paiements",
+  "/my-commissions": "Mes commissions",
   "/admin/invoices": "Factures Apporteurs",
   "/admin/commissions": "Commissions",
   "/admin/data": "Gestion des données",
