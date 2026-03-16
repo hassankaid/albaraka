@@ -14,6 +14,8 @@ interface Profile {
   avatar_url: string | null;
   timezone: string | null;
   onboarding_completed: boolean | null;
+  collaborateur_level: string | null;
+  is_active: boolean;
 }
 
 interface AuthContextType {
