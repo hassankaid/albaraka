@@ -53,7 +53,7 @@ export default function CreateSaleForm({ prefilledContactId, prefilledLeadId, on
       fetchAllRows<{ id: string; full_name: string | null; email: string | null }>("contacts", "id, full_name, email", { order: { column: "created_at", ascending: false } }).then(setContacts);
       fetchAllRows<{ id: string; raw_full_name: string | null; source: string }>("leads", "id, raw_full_name, source", { order: { column: "created_at", ascending: false } }).then(setLeads);
     }
-    fetchAllRows<{ id: string; full_name: string; role: string }>("profiles", "id, full_name, role").then(setProfiles);
+    fetchAllRows<{ id: string; full_name: string; role: string; is_active: boolean }>("profiles", "id, full_name, role, is_active").then(setProfiles);
   }, [isWizardStep]);
 
   const teamProfiles = profiles.filter((p) => p.role === "ceo" || p.role === "collaborateur").sort((a, b) => a.full_name.localeCompare(b.full_name));
