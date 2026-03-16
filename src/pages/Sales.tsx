@@ -339,9 +339,17 @@ export default function Sales() {
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{formatDate(c.sold_at)}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`text-[10px] leading-tight ${ROLE_COLORS[c.role] || ""}`}>
-                        {c.role}
-                      </Badge>
+                      {(() => {
+                        const cfg = ROLE_CONFIG[c.role];
+                        if (!cfg) return <span className="text-xs text-muted-foreground">{c.role}</span>;
+                        const Icon = cfg.icon;
+                        return (
+                          <Badge variant="outline" className={`text-[10px] leading-tight ${cfg.class}`}>
+                            <Icon className="h-3 w-3 mr-1" />
+                            {cfg.label}
+                          </Badge>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell className="text-sm text-foreground">{c.percentage}%</TableCell>
                     <TableCell className="font-semibold text-sm text-foreground">
