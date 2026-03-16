@@ -250,9 +250,17 @@ export default function ManageCommissionsModal({
                     <div className="min-w-0">
                       <p className="font-medium text-sm text-foreground truncate">{g.beneficiary_name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <Badge variant="outline" className={`text-xs ${ROLE_COLORS[g.role] || ""}`}>
-                          {g.role}
-                        </Badge>
+                        {(() => {
+                          const cfg = ROLE_CONFIG[g.role];
+                          if (!cfg) return <Badge variant="outline" className="text-xs">{g.role}</Badge>;
+                          const Icon = cfg.icon;
+                          return (
+                            <Badge variant="outline" className={`text-xs ${cfg.class}`}>
+                              <Icon className="h-3 w-3 mr-1" />
+                              {cfg.label}
+                            </Badge>
+                          );
+                        })()}
                         {editingKey === g.key ? (
                           <div className="flex items-center gap-1">
                             <Input
