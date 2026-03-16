@@ -59,12 +59,7 @@ interface ManageCommissionsModalProps {
   onUpdated: () => void;
 }
 
-const ROLE_COLORS: Record<string, string> = {
-  apporteur: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  setter: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  closer: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  agence_marketing: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-};
+// ROLE_CONFIG imported from @/lib/roleConfig
 
 const ROLE_SUGGESTED_PCT: Record<string, number> = {
   apporteur: 25,
