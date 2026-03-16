@@ -24,6 +24,7 @@ import {
   RefreshCw, Search, Filter, Pencil, CalendarIcon, BadgeEuro,
   CheckCircle2, Clock, AlertCircle, XCircle, FileText,
 } from "lucide-react";
+import { ROLE_CONFIG } from "@/lib/roleConfig";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatDateOnly } from "@/lib/formatDate";
