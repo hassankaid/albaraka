@@ -331,6 +331,8 @@ export default function AdminCommissions() {
         </div>
       ) : (
         <div className="rounded-lg border border-border/50 overflow-hidden">
+          <Table>
+            <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead>Bénéficiaire</TableHead>
                 <TableHead>Rôle</TableHead>
@@ -352,10 +354,10 @@ export default function AdminCommissions() {
                 return (
                   <TableRow key={c.id} className="border-border hover:bg-secondary/50 transition-colors">
                     <TableCell>
-                      <p className="font-medium text-foreground">{c.beneficiary_name}</p>
+                      <p className="font-medium text-foreground text-sm">{c.beneficiary_name}</p>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`text-xs ${ROLE_COLORS[c.role] || ""}`}>
+                      <Badge variant="outline" className={`text-[10px] leading-tight ${ROLE_COLORS[c.role] || ""}`}>
                         {c.role}
                       </Badge>
                     </TableCell>
@@ -366,32 +368,32 @@ export default function AdminCommissions() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {c.payment_number != null ? `${c.payment_number}/${c.total_payments}` : "—"}
                       </span>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-xs text-muted-foreground">
                       {fmtDate(c.payment_due_date)}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-xs text-muted-foreground">
                       {fmtDate(c.payment_paid_at)}
                     </TableCell>
-                    <TableCell className="text-right font-semibold text-foreground">
+                    <TableCell className="text-right font-semibold text-sm text-foreground">
                       {c.amount != null ? `${c.amount.toLocaleString("fr-FR")} €` : "—"}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{c.percentage}%</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{c.percentage}%</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`text-xs gap-1 ${statusConf.color}`}>
+                      <Badge variant="outline" className={`text-[10px] leading-tight gap-1 ${statusConf.color}`}>
                         <StatusIcon className="h-3 w-3" />
                         {statusConf.label}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-xs text-muted-foreground">
                       {fmtDate(c.paid_at)}
                     </TableCell>
                     <TableCell className="text-center">
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
-                        <Pencil className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}>
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                     </TableCell>
                   </TableRow>
