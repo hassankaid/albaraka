@@ -401,7 +401,7 @@ export default function ApporteurCommissions({ defaultRoleFilter }: ApporteurCom
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-semibold text-foreground text-sm truncate">{c.client_name || "—"}</span>
-                            {showRoleFilter && roleFilter === "all" && renderRoleBadge(c.role)}
+                            {showRoleFilter && renderRoleBadge(c.role)}
                             <span className="text-xs text-muted-foreground">·</span>
                             <span className="text-xs text-muted-foreground">
                               Mensualité {c.payment_number || "?"}/{c.total_payments || "?"}
