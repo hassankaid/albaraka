@@ -234,75 +234,34 @@ export default function AdminCommissions() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Gestion des commissions</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Visualisez et gérez toutes les commissions
-          </p>
+    <div className="space-y-4">
+      {/* Top bar: KPIs + refresh */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
+            <BadgeEuro className="h-3.5 w-3.5 text-primary" />
+            <span className="text-sm font-bold text-foreground">{totalAmount.toLocaleString("fr-FR")} €</span>
+            <span className="text-xs text-muted-foreground">total ({filtered.length})</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+            <span className="text-sm font-bold text-foreground">{paidAmount.toLocaleString("fr-FR")} €</span>
+            <span className="text-xs text-muted-foreground">payées</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
+            <AlertCircle className="h-3.5 w-3.5 text-amber-400" />
+            <span className="text-sm font-bold text-foreground">{dueAmount.toLocaleString("fr-FR")} €</span>
+            <span className="text-xs text-muted-foreground">à payer</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
+            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-sm font-bold text-foreground">{pendingAmount.toLocaleString("fr-FR")} €</span>
+            <span className="text-xs text-muted-foreground">en attente</span>
+          </div>
         </div>
-        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-          Actualiser
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefresh} disabled={refreshing} title="Actualiser">
+          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
         </Button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <BadgeEuro className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{totalAmount.toLocaleString("fr-FR")} €</p>
-                <p className="text-xs text-muted-foreground">Total ({filtered.length})</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-500/10">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{paidAmount.toLocaleString("fr-FR")} €</p>
-                <p className="text-xs text-muted-foreground">Payées</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10">
-                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{dueAmount.toLocaleString("fr-FR")} €</p>
-                <p className="text-xs text-muted-foreground">À payer / Facturées</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-muted">
-                <Clock className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{pendingAmount.toLocaleString("fr-FR")} €</p>
-                <p className="text-xs text-muted-foreground">En attente</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Filters */}
