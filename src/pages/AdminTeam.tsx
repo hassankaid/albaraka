@@ -192,11 +192,6 @@ export default function AdminTeam() {
           <span className="text-sm font-bold text-foreground">{collaborateurs.length}</span>
           <span className="text-xs text-muted-foreground">collabs</span>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-purple-500/30">
-          <Users className="h-3.5 w-3.5 text-purple-400" />
-          <span className="text-sm font-bold text-foreground">{apporteurs.length}</span>
-          <span className="text-xs text-muted-foreground">apporteurs</span>
-        </div>
         {members.filter(m => !m.is_active).length > 0 && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-destructive/30">
             <UserX className="h-3.5 w-3.5 text-destructive" />
