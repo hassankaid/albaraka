@@ -253,7 +253,7 @@ export default function Leads() {
     return result;
   }, [leads, scopedLeads, tab, statusFilter, sourceFilter, search, user]);
 
-  useEffect(() => { setPage(0); setSelectedIds(new Set()); }, [tab, statusFilter, sourceFilter, search]);
+  useEffect(() => { setPage(0); setSelectedIds(new Set()); }, [tab, statusFilter, sourceFilter.length, search]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
   const paginatedLeads = useMemo(
