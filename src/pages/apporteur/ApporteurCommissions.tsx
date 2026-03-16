@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Euro, FileText, RefreshCw, Download, CheckCircle2, Clock, ArrowRight, Loader2, Eye } from "lucide-react";
+import { Euro, FileText, RefreshCw, Download, CheckCircle2, Clock, ArrowRight, Loader2, Eye, Users, Briefcase } from "lucide-react";
 import { fetchInvoiceHtml, downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
 import { toast } from "@/hooks/use-toast";
 import InvoicePreviewModal from "@/components/InvoicePreviewModal";
@@ -15,6 +15,7 @@ import { formatDateOnly } from "@/lib/formatDate";
 interface CommissionRow {
   id: string;
   sale_id: string;
+  role: string;
   percentage: number;
   amount: number | null;
   status: string | null;
@@ -43,6 +44,11 @@ const INVOICE_STATUS: Record<string, { label: string; class: string }> = {
   generated: { label: "Générée", class: "bg-blue-500/20 text-blue-300 border-blue-500/30" },
   sent: { label: "Envoyée", class: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
   paid: { label: "Payée", class: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
+};
+
+const ROLE_LABELS: Record<string, { label: string; class: string; icon: typeof Users }> = {
+  apporteur: { label: "Apport d'affaires", class: "bg-purple-500/20 text-purple-300 border-purple-500/30", icon: Users },
+  collaborateur: { label: "Collaborateur", class: "bg-blue-500/20 text-blue-300 border-blue-500/30", icon: Briefcase },
 };
 
 function InvoiceActions({ pdfUrl, invoiceNumber }: { pdfUrl: string; invoiceNumber: string }) {
@@ -99,12 +105,18 @@ function InvoiceActions({ pdfUrl, invoiceNumber }: { pdfUrl: string; invoiceNumb
   );
 }
 
-export default function ApporteurCommissions() {
+interface ApporteurCommissionsProps {
+  /** If set, only show commissions for this role. Otherwise show all user's commissions. */
+  defaultRoleFilter?: string;
+}
+
+export default function ApporteurCommissions({ defaultRoleFilter }: ApporteurCommissionsProps = {}) {
   const { profile } = useAuth();
   const [allCommissions, setAllCommissions] = useState<CommissionRow[]>([]);
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [roleFilter, setRoleFilter] = useState<string>(defaultRoleFilter || "all");
 
   // History filters
   const now = new Date();
@@ -116,12 +128,13 @@ export default function ApporteurCommissions() {
     setLoading(true);
     const userId = profile.id;
 
+    let commissionsQuery = supabase.from("commissions")
+      .select("*, sales!commissions_sale_id_fkey(contact_id, mensualites, contacts!sales_contact_id_fkey(full_name), leads!sales_lead_id_fkey(contacts!leads_contact_id_fkey(full_name))), payments!commissions_payment_id_fkey(payment_number, total_payments, paid_at, due_date)")
+      .eq("beneficiary_user_id", userId)
+      .order("created_at", { ascending: false });
+
     const [commissionsRes, invoicesRes] = await Promise.all([
-      supabase.from("commissions")
-        .select("*, sales!commissions_sale_id_fkey(contact_id, mensualites, contacts!sales_contact_id_fkey(full_name), leads!sales_lead_id_fkey(contacts!leads_contact_id_fkey(full_name))), payments!commissions_payment_id_fkey(payment_number, total_payments, paid_at, due_date)")
-        .eq("beneficiary_user_id", userId)
-        .eq("role", "apporteur")
-        .order("created_at", { ascending: false }),
+      commissionsQuery,
       supabase.from("apporteur_invoices")
         .select("*")
         .eq("apporteur_id", userId)
@@ -133,6 +146,7 @@ export default function ApporteurCommissions() {
       (commissionsRes.data || []).map((c: any) => ({
         id: c.id,
         sale_id: c.sale_id,
+        role: c.role,
         percentage: c.percentage,
         amount: c.amount,
         status: c.status,
@@ -162,34 +176,49 @@ export default function ApporteurCommissions() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Detect available roles
+  const availableRoles = useMemo(() => {
+    const roles = new Set(allCommissions.map(c => c.role));
+    return Array.from(roles).sort();
+  }, [allCommissions]);
+
+  const showRoleFilter = availableRoles.length > 1 && !defaultRoleFilter;
+
+  // Filter commissions by role
+  const filteredCommissions = useMemo(() => {
+    const activeFilter = defaultRoleFilter || roleFilter;
+    if (activeFilter === "all") return allCommissions;
+    return allCommissions.filter(c => c.role === activeFilter);
+  }, [allCommissions, roleFilter, defaultRoleFilter]);
+
   // ── KPIs ──
-  const notCancelled = allCommissions.filter(c => c.status !== "cancelled");
+  const notCancelled = filteredCommissions.filter(c => c.status !== "cancelled");
   const uniqueSaleIds = new Set(notCancelled.map(c => c.sale_id));
 
   const totalPrevu = notCancelled.reduce((s, c) => s + (c.amount || 0), 0);
-  const totalRecevoir = allCommissions.filter(c => ["due", "invoiced"].includes(c.status || "")).reduce((s, c) => s + (c.amount || 0), 0);
-  const totalRecu = allCommissions.filter(c => c.status === "paid").reduce((s, c) => s + (c.amount || 0), 0);
-  const totalPending = allCommissions.filter(c => c.status === "pending").reduce((s, c) => s + (c.amount || 0), 0);
-  const totalCancelled = allCommissions.filter(c => c.status === "cancelled").reduce((s, c) => s + (c.amount || 0), 0);
+  const totalRecevoir = filteredCommissions.filter(c => ["due", "invoiced"].includes(c.status || "")).reduce((s, c) => s + (c.amount || 0), 0);
+  const totalRecu = filteredCommissions.filter(c => c.status === "paid").reduce((s, c) => s + (c.amount || 0), 0);
+  const totalPending = filteredCommissions.filter(c => c.status === "pending").reduce((s, c) => s + (c.amount || 0), 0);
+  const totalCancelled = filteredCommissions.filter(c => c.status === "cancelled").reduce((s, c) => s + (c.amount || 0), 0);
   const totalAll = totalRecu + totalRecevoir + totalPending + totalCancelled;
 
   // ── Prochaines commissions (dashboard) ──
   const upcoming = useMemo(() => {
-    const dueItems = allCommissions
+    const dueItems = filteredCommissions
       .filter(c => ["due", "invoiced"].includes(c.status || ""))
       .sort((a, b) => (a.payment_due_date || "").localeCompare(b.payment_due_date || ""));
-    const pendingItems = allCommissions
+    const pendingItems = filteredCommissions
       .filter(c => c.status === "pending")
       .sort((a, b) => (a.payment_due_date || "").localeCompare(b.payment_due_date || ""));
     return [...dueItems, ...pendingItems];
-  }, [allCommissions]);
+  }, [filteredCommissions]);
 
   // ── History: paid commissions grouped by month ──
   const paidCommissions = useMemo(() => {
-    return allCommissions
+    return filteredCommissions
       .filter(c => c.status === "paid")
       .sort((a, b) => (b.paid_at || b.payment_paid_at || "").localeCompare(a.paid_at || a.payment_paid_at || ""));
-  }, [allCommissions]);
+  }, [filteredCommissions]);
 
   const filteredPaid = useMemo(() => {
     return paidCommissions.filter(c => {
@@ -237,9 +266,38 @@ export default function ApporteurCommissions() {
     { color: "#ef4444", width: (totalCancelled / totalAll) * 100 },
   ] : [];
 
+  const renderRoleBadge = (role: string) => {
+    const info = ROLE_LABELS[role];
+    if (!info) return null;
+    const Icon = info.icon;
+    return (
+      <Badge variant="outline" className={`text-xs ${info.class}`}>
+        <Icon className="h-3 w-3 mr-1" />
+        {info.label}
+      </Badge>
+    );
+  };
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-foreground">Commissions & Factures</h2>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h2 className="text-2xl font-bold text-foreground">Commissions & Factures</h2>
+        {showRoleFilter && (
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="w-48 bg-card">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes les sources</SelectItem>
+              {availableRoles.map(r => (
+                <SelectItem key={r} value={r}>
+                  {ROLE_LABELS[r]?.label || r}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-secondary">
@@ -323,6 +381,7 @@ export default function ApporteurCommissions() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-semibold text-foreground text-sm truncate">{c.client_name || "—"}</span>
+                            {showRoleFilter && roleFilter === "all" && renderRoleBadge(c.role)}
                             <span className="text-xs text-muted-foreground">·</span>
                             <span className="text-xs text-muted-foreground">
                               Mensualité {c.payment_number || "?"}/{c.total_payments || "?"}
@@ -415,6 +474,7 @@ export default function ApporteurCommissions() {
                         <div className="flex items-center gap-2 min-w-0">
                           <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
                           <span className="font-semibold text-foreground text-sm truncate">{c.client_name || "—"}</span>
+                          {showRoleFilter && roleFilter === "all" && renderRoleBadge(c.role)}
                           <span className="text-xs text-muted-foreground">·</span>
                           <span className="text-xs text-muted-foreground whitespace-nowrap">
                             Mensualité {c.payment_number || "?"}/{c.total_payments || "?"}
