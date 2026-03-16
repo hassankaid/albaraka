@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Search, RefreshCw, Users, UserCheck, UserX, ArrowUpRight,
-  Shield, ShieldCheck, ShieldAlert, ToggleLeft, ToggleRight,
+  ShieldCheck, ShieldAlert, MoreHorizontal, ChevronDown, ChevronUp,
+  ToggleLeft, ToggleRight, ArrowDownRight,
 } from "lucide-react";
 
 interface TeamMember {
@@ -26,17 +26,12 @@ interface TeamMember {
   is_also_apporteur: boolean | null;
   collaborateur_level: string | null;
   created_at: string | null;
-  // Stats
   lead_count?: number;
   sale_count?: number;
   commission_total?: number;
 }
 
-const ROLE_FILTER_OPTIONS = [
-  { value: "all", label: "Tous les rôles" },
-  { value: "collaborateur", label: "Collaborateurs" },
-  { value: "apporteur", label: "Apporteurs" },
-];
+type Tab = "collaborateurs" | "apporteurs";
 
 export default function AdminTeam() {
   const { profile: user } = useAuth();
@@ -44,17 +39,18 @@ export default function AdminTeam() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
-  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
-  const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
-  const [promoteTarget, setPromoteTarget] = useState<TeamMember | null>(null);
-  const [levelDialogOpen, setLevelDialogOpen] = useState(false);
-  const [levelTarget, setLevelTarget] = useState<TeamMember | null>(null);
-  const [newLevel, setNewLevel] = useState<string>("intermediaire");
+  const [tab, setTab] = useState<Tab>("collaborateurs");
+
+  // Dialog states
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    action: () => Promise<void>;
+  }>({ open: false, title: "", description: "", action: async () => {} });
 
   const fetchMembers = async () => {
     setLoading(true);
-
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, full_name, email, role, phone, avatar_url, is_also_apporteur, created_at, collaborateur_level, is_active")
@@ -63,222 +59,184 @@ export default function AdminTeam() {
 
     if (!profiles) { setLoading(false); return; }
 
-    // Fetch stats in parallel
+    const ids = profiles.map(p => p.id);
     const [{ data: leadStats }, { data: saleStats }, { data: commissionStats }] = await Promise.all([
-      supabase.from("leads").select("assigned_to").in("assigned_to", profiles.map(p => p.id)),
-      supabase.from("sales").select("closed_by").in("closed_by", profiles.map(p => p.id)),
-      supabase.from("commissions").select("beneficiary_user_id, amount").in("beneficiary_user_id", profiles.map(p => p.id)),
+      supabase.from("leads").select("assigned_to").in("assigned_to", ids),
+      supabase.from("sales").select("closed_by").in("closed_by", ids),
+      supabase.from("commissions").select("beneficiary_user_id, amount").in("beneficiary_user_id", ids),
     ]);
 
-    const leadCountMap: Record<string, number> = {};
-    leadStats?.forEach(l => { leadCountMap[l.assigned_to!] = (leadCountMap[l.assigned_to!] || 0) + 1; });
-
-    const saleCountMap: Record<string, number> = {};
-    saleStats?.forEach(s => { saleCountMap[s.closed_by!] = (saleCountMap[s.closed_by!] || 0) + 1; });
-
-    const commissionMap: Record<string, number> = {};
+    const leadMap: Record<string, number> = {};
+    leadStats?.forEach(l => { leadMap[l.assigned_to!] = (leadMap[l.assigned_to!] || 0) + 1; });
+    const saleMap: Record<string, number> = {};
+    saleStats?.forEach(s => { saleMap[s.closed_by!] = (saleMap[s.closed_by!] || 0) + 1; });
+    const commMap: Record<string, number> = {};
     commissionStats?.forEach(c => {
-      commissionMap[c.beneficiary_user_id!] = (commissionMap[c.beneficiary_user_id!] || 0) + (Number(c.amount) || 0);
+      commMap[c.beneficiary_user_id!] = (commMap[c.beneficiary_user_id!] || 0) + (Number(c.amount) || 0);
     });
 
     setMembers(profiles.map(p => ({
       ...p,
       is_active: (p as any).is_active ?? true,
       collaborateur_level: (p as any).collaborateur_level ?? null,
-      lead_count: leadCountMap[p.id] || 0,
-      sale_count: saleCountMap[p.id] || 0,
-      commission_total: Math.round((commissionMap[p.id] || 0) * 100) / 100,
+      lead_count: leadMap[p.id] || 0,
+      sale_count: saleMap[p.id] || 0,
+      commission_total: Math.round((commMap[p.id] || 0) * 100) / 100,
     })));
-
     setLoading(false);
   };
 
   useEffect(() => { fetchMembers(); }, []);
 
-  const filtered = useMemo(() => {
-    let result = members;
-    if (roleFilter !== "all") result = result.filter(m => m.role === roleFilter);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(m =>
-        m.full_name.toLowerCase().includes(q) ||
-        m.email.toLowerCase().includes(q) ||
-        (m.phone && m.phone.includes(q))
-      );
-    }
-    return result;
-  }, [members, roleFilter, search]);
+  const collaborateurs = useMemo(() => members.filter(m => m.role === "collaborateur"), [members]);
+  const apporteurs = useMemo(() => members.filter(m => m.role === "apporteur"), [members]);
 
-  const counts = useMemo(() => ({
-    total: members.length,
-    collaborateurs: members.filter(m => m.role === "collaborateur").length,
-    apporteurs: members.filter(m => m.role === "apporteur").length,
-    inactifs: members.filter(m => !m.is_active).length,
-  }), [members]);
+  const displayed = useMemo(() => {
+    const source = tab === "collaborateurs" ? collaborateurs : apporteurs;
+    if (!search.trim()) return source;
+    const q = search.toLowerCase();
+    return source.filter(m =>
+      m.full_name.toLowerCase().includes(q) ||
+      m.email.toLowerCase().includes(q) ||
+      (m.phone && m.phone.includes(q))
+    );
+  }, [tab, collaborateurs, apporteurs, search]);
 
-  const handlePromote = async () => {
-    if (!promoteTarget) return;
-    const { error } = await supabase
-      .from("profiles")
-      .update({ role: "collaborateur", collaborateur_level: "intermediaire" })
-      .eq("id", promoteTarget.id);
-
-    if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: `${promoteTarget.full_name} est maintenant collaborateur intermédiaire` });
-      fetchMembers();
-    }
-    setPromoteDialogOpen(false);
-    setPromoteTarget(null);
+  // Actions
+  const confirmAction = (title: string, description: string, action: () => Promise<void>) => {
+    setConfirmDialog({ open: true, title, description, action });
   };
 
-  const handleChangeLevel = async () => {
-    if (!levelTarget) return;
-    const { error } = await supabase
-      .from("profiles")
-      .update({ collaborateur_level: newLevel })
-      .eq("id", levelTarget.id);
-
-    if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: `Niveau mis à jour : ${newLevel === "confirme" ? "Confirmé" : "Intermédiaire"}` });
-      fetchMembers();
-    }
-    setLevelDialogOpen(false);
-    setLevelTarget(null);
+  const runConfirmedAction = async () => {
+    await confirmDialog.action();
+    setConfirmDialog({ open: false, title: "", description: "", action: async () => {} });
+    fetchMembers();
   };
 
-  const handleToggleActive = async (member: TeamMember) => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_active: !member.is_active })
-      .eq("id", member.id);
-
-    if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: member.is_active ? `${member.full_name} désactivé` : `${member.full_name} réactivé` });
-      fetchMembers();
+  const promoteToCollab = (m: TeamMember) => confirmAction(
+    "Promouvoir en collaborateur",
+    `${m.full_name} deviendra collaborateur intermédiaire. Il ne pourra pas s'affecter de leads lui-même.`,
+    async () => {
+      const { error } = await supabase.from("profiles")
+        .update({ role: "collaborateur", collaborateur_level: "intermediaire" })
+        .eq("id", m.id);
+      if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      else toast({ title: `${m.full_name} promu collaborateur` });
     }
+  );
+
+  const demoteToApporteur = (m: TeamMember) => confirmAction(
+    "Rétrograder en apporteur",
+    `${m.full_name} redeviendra apporteur et perdra ses accès collaborateur.`,
+    async () => {
+      const { error } = await supabase.from("profiles")
+        .update({ role: "apporteur", collaborateur_level: null })
+        .eq("id", m.id);
+      if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      else toast({ title: `${m.full_name} rétrogradé` });
+    }
+  );
+
+  const changeLevel = (m: TeamMember, level: string) => {
+    const label = level === "confirme" ? "Confirmé" : "Intermédiaire";
+    const desc = level === "confirme"
+      ? `${m.full_name} pourra s'affecter des leads lui-même.`
+      : `${m.full_name} ne pourra plus s'affecter de leads. Vous devrez le faire manuellement.`;
+    confirmAction(`Passer en ${label}`, desc, async () => {
+      const { error } = await supabase.from("profiles")
+        .update({ collaborateur_level: level })
+        .eq("id", m.id);
+      if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      else toast({ title: `Niveau mis à jour : ${label}` });
+    });
   };
 
-  const handleDemoteToApporteur = async (member: TeamMember) => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ role: "apporteur", collaborateur_level: null })
-      .eq("id", member.id);
-
-    if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: `${member.full_name} est redevenu apporteur` });
-      fetchMembers();
+  const toggleActive = (m: TeamMember) => confirmAction(
+    m.is_active ? "Désactiver ce membre" : "Réactiver ce membre",
+    m.is_active
+      ? `${m.full_name} ne pourra plus accéder à la plateforme.`
+      : `${m.full_name} retrouvera ses accès.`,
+    async () => {
+      const { error } = await supabase.from("profiles")
+        .update({ is_active: !m.is_active })
+        .eq("id", m.id);
+      if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      else toast({ title: m.is_active ? `${m.full_name} désactivé` : `${m.full_name} réactivé` });
     }
-  };
+  );
 
   const getInitials = (name: string) =>
     name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
-  const getLevelBadge = (member: TeamMember) => {
-    if (member.role !== "collaborateur") return null;
-    if (member.collaborateur_level === "confirme") {
-      return (
-        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 gap-1">
-          <ShieldCheck className="h-3 w-3" /> Confirmé
-        </Badge>
-      );
-    }
-    return (
-      <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 gap-1">
-        <ShieldAlert className="h-3 w-3" /> Intermédiaire
-      </Badge>
-    );
-  };
-
-  const getRoleBadge = (role: string) => {
-    if (role === "collaborateur") {
-      return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Collaborateur</Badge>;
-    }
-    return <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">Apporteur</Badge>;
-  };
-
   if (user?.role !== "ceo") return null;
 
+  const tabs = [
+    { id: "collaborateurs" as Tab, label: "Collaborateurs", count: collaborateurs.length, icon: UserCheck },
+    { id: "apporteurs" as Tab, label: "Apporteurs", count: apporteurs.length, icon: Users },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Stats cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="bg-card border-border">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Users className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{counts.total}</p>
-              <p className="text-xs text-muted-foreground">Total membres</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/10">
-              <UserCheck className="h-5 w-5 text-blue-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{counts.collaborateurs}</p>
-              <p className="text-xs text-muted-foreground">Collaborateurs</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/10">
-              <Users className="h-5 w-5 text-purple-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{counts.apporteurs}</p>
-              <p className="text-xs text-muted-foreground">Apporteurs</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-destructive/10">
-              <UserX className="h-5 w-5 text-destructive" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{counts.inactifs}</p>
-              <p className="text-xs text-muted-foreground">Inactifs</p>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="space-y-5">
+      {/* KPI bar */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
+          <Users className="h-3.5 w-3.5 text-primary" />
+          <span className="text-sm font-bold text-foreground">{members.length}</span>
+          <span className="text-xs text-muted-foreground">total</span>
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-blue-500/30">
+          <UserCheck className="h-3.5 w-3.5 text-blue-400" />
+          <span className="text-sm font-bold text-foreground">{collaborateurs.length}</span>
+          <span className="text-xs text-muted-foreground">collabs</span>
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-purple-500/30">
+          <Users className="h-3.5 w-3.5 text-purple-400" />
+          <span className="text-sm font-bold text-foreground">{apporteurs.length}</span>
+          <span className="text-xs text-muted-foreground">apporteurs</span>
+        </div>
+        {members.filter(m => !m.is_active).length > 0 && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-destructive/30">
+            <UserX className="h-3.5 w-3.5 text-destructive" />
+            <span className="text-sm font-bold text-foreground">{members.filter(m => !m.is_active).length}</span>
+            <span className="text-xs text-muted-foreground">inactifs</span>
+          </div>
+        )}
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+      {/* Tabs + Search */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex bg-muted/50 rounded-lg p-0.5 gap-0.5">
+          {tabs.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                tab === t.id
+                  ? "gradient-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <t.icon className="h-3.5 w-3.5" />
+              {t.label}
+              <span className={`text-xs ${tab === t.id ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                {t.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher un membre..."
+            placeholder="Rechercher..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-9 h-8 text-sm"
           />
         </div>
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {ROLE_FILTER_OPTIONS.map(o => (
-              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button variant="outline" size="icon" onClick={fetchMembers} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+
+        <Button variant="outline" size="icon" className="h-8 w-8" onClick={fetchMembers} disabled={loading}>
+          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
         </Button>
       </div>
 
@@ -288,30 +246,32 @@ export default function AdminTeam() {
           <TableHeader>
             <TableRow className="bg-muted/30">
               <TableHead>Membre</TableHead>
-              <TableHead>Rôle</TableHead>
-              <TableHead>Niveau</TableHead>
+              {tab === "collaborateurs" && <TableHead>Niveau</TableHead>}
               <TableHead className="text-center">Leads</TableHead>
               <TableHead className="text-center">Ventes</TableHead>
               <TableHead className="text-right">Commissions</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={tab === "collaborateurs" ? 6 : 5} className="text-center py-12 text-muted-foreground">
                   Chargement...
                 </TableCell>
               </TableRow>
-            ) : filtered.length === 0 ? (
+            ) : displayed.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
-                  Aucun membre trouvé
+                <TableCell colSpan={tab === "collaborateurs" ? 6 : 5} className="text-center py-12">
+                  <div className="flex flex-col items-center gap-2">
+                    <Users className="h-8 w-8 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Aucun {tab === "collaborateurs" ? "collaborateur" : "apporteur"} trouvé</p>
+                  </div>
                 </TableCell>
               </TableRow>
-            ) : filtered.map(member => (
-              <TableRow key={member.id} className={!member.is_active ? "opacity-50" : ""}>
+            ) : displayed.map(member => (
+              <TableRow key={member.id} className={!member.is_active ? "opacity-40" : ""}>
+                {/* Member info */}
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8 text-xs">
@@ -320,14 +280,36 @@ export default function AdminTeam() {
                         {getInitials(member.full_name)}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{member.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{member.email}</p>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-foreground truncate">{member.full_name}</p>
+                        {!member.is_active && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-destructive/40 text-destructive">
+                            Inactif
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{member.email}</p>
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>{getRoleBadge(member.role)}</TableCell>
-                <TableCell>{getLevelBadge(member) || <span className="text-xs text-muted-foreground">—</span>}</TableCell>
+
+                {/* Level (collabs only) */}
+                {tab === "collaborateurs" && (
+                  <TableCell>
+                    {member.collaborateur_level === "confirme" ? (
+                      <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 gap-1 text-xs">
+                        <ShieldCheck className="h-3 w-3" /> Confirmé
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 gap-1 text-xs">
+                        <ShieldAlert className="h-3 w-3" /> Intermédiaire
+                      </Badge>
+                    )}
+                  </TableCell>
+                )}
+
+                {/* Stats */}
                 <TableCell className="text-center">
                   <span className="text-sm font-medium text-foreground">{member.lead_count}</span>
                 </TableCell>
@@ -339,62 +321,58 @@ export default function AdminTeam() {
                     {member.commission_total?.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
                   </span>
                 </TableCell>
+
+                {/* Actions dropdown */}
                 <TableCell>
-                  {member.is_active ? (
-                    <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Actif</Badge>
-                  ) : (
-                    <Badge className="bg-destructive/20 text-destructive border-destructive/30">Inactif</Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center gap-1 justify-end">
-                    {member.role === "apporteur" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1 text-xs h-7"
-                        onClick={() => { setPromoteTarget(member); setPromoteDialogOpen(true); }}
-                      >
-                        <ArrowUpRight className="h-3 w-3" /> Promouvoir
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <MoreHorizontal className="h-4 w-4" />
                       </Button>
-                    )}
-                    {member.role === "collaborateur" && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1 text-xs h-7"
-                          onClick={() => {
-                            setLevelTarget(member);
-                            setNewLevel(member.collaborateur_level === "confirme" ? "intermediaire" : "confirme");
-                            setLevelDialogOpen(true);
-                          }}
-                        >
-                          <Shield className="h-3 w-3" />
-                          {member.collaborateur_level === "confirme" ? "→ Intermédiaire" : "→ Confirmé"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-xs h-7 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleDemoteToApporteur(member)}
-                        >
-                          Rétrograder
-                        </Button>
-                      </>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2"
-                      onClick={() => handleToggleActive(member)}
-                    >
-                      {member.is_active
-                        ? <ToggleRight className="h-4 w-4 text-emerald-400" />
-                        : <ToggleLeft className="h-4 w-4 text-muted-foreground" />
-                      }
-                    </Button>
-                  </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      {member.role === "collaborateur" && (
+                        <>
+                          {member.collaborateur_level === "confirme" ? (
+                            <DropdownMenuItem onClick={() => changeLevel(member, "intermediaire")}>
+                              <ChevronDown className="h-4 w-4 mr-2 text-amber-400" />
+                              Passer Intermédiaire
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onClick={() => changeLevel(member, "confirme")}>
+                              <ChevronUp className="h-4 w-4 mr-2 text-emerald-400" />
+                              Passer Confirmé
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => demoteToApporteur(member)} className="text-destructive focus:text-destructive">
+                            <ArrowDownRight className="h-4 w-4 mr-2" />
+                            Rétrograder apporteur
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {member.role === "apporteur" && (
+                        <DropdownMenuItem onClick={() => promoteToCollab(member)}>
+                          <ArrowUpRight className="h-4 w-4 mr-2 text-blue-400" />
+                          Promouvoir collaborateur
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => toggleActive(member)}>
+                        {member.is_active ? (
+                          <>
+                            <ToggleLeft className="h-4 w-4 mr-2 text-muted-foreground" />
+                            Désactiver
+                          </>
+                        ) : (
+                          <>
+                            <ToggleRight className="h-4 w-4 mr-2 text-emerald-400" />
+                            Réactiver
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
@@ -402,39 +380,16 @@ export default function AdminTeam() {
         </Table>
       </div>
 
-      {/* Promote dialog */}
-      <Dialog open={promoteDialogOpen} onOpenChange={setPromoteDialogOpen}>
+      {/* Confirm dialog */}
+      <Dialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog(prev => ({ ...prev, open: false }))}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Promouvoir en collaborateur</DialogTitle>
-            <DialogDescription>
-              {promoteTarget?.full_name} passera d'apporteur à collaborateur intermédiaire.
-              Il ne pourra pas s'affecter de leads lui-même — vous devrez le faire manuellement.
-            </DialogDescription>
+            <DialogTitle>{confirmDialog.title}</DialogTitle>
+            <DialogDescription>{confirmDialog.description}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPromoteDialogOpen(false)}>Annuler</Button>
-            <Button onClick={handlePromote}>Confirmer la promotion</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Change level dialog */}
-      <Dialog open={levelDialogOpen} onOpenChange={setLevelDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Changer le niveau</DialogTitle>
-            <DialogDescription>
-              {levelTarget?.full_name} passera en niveau{" "}
-              <strong>{newLevel === "confirme" ? "Confirmé" : "Intermédiaire"}</strong>.
-              {newLevel === "confirme"
-                ? " Il pourra s'affecter des leads lui-même."
-                : " Vous devrez lui affecter les leads manuellement."}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setLevelDialogOpen(false)}>Annuler</Button>
-            <Button onClick={handleChangeLevel}>Confirmer</Button>
+            <Button variant="outline" onClick={() => setConfirmDialog(prev => ({ ...prev, open: false }))}>Annuler</Button>
+            <Button onClick={runConfirmedAction}>Confirmer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
