@@ -179,8 +179,10 @@ export default function Leads() {
     let result: LeadEnriched[];
 
     if (tab === "a_affecter") {
-      // Always show ALL unassigned leads for everyone
-      result = leads.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu"].includes(l.status || ""));
+      // Always show ALL unassigned leads for everyone (excluding recycled)
+      result = leads.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu", "a_recycler"].includes(l.status || ""));
+    } else if (tab === "a_recycler") {
+      result = leads.filter((l) => l.status === "a_recycler");
     } else if (tab === "mes_leads") {
       result = user ? leads.filter((l) => l.assigned_to === user.id) : [];
     } else {
