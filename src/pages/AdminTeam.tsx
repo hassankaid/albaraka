@@ -151,19 +151,22 @@ export default function AdminTeam() {
     });
   };
 
-  const toggleActive = (m: TeamMember) => confirmAction(
-    m.is_active ? "Désactiver ce membre" : "Réactiver ce membre",
-    m.is_active
-      ? `${m.full_name} ne pourra plus accéder à la plateforme.`
-      : `${m.full_name} retrouvera ses accès.`,
-    async () => {
-      const { error } = await supabase.from("profiles")
-        .update({ is_active: !m.is_active })
-        .eq("id", m.id);
-      if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" });
-      else toast({ title: m.is_active ? `${m.full_name} désactivé` : `${m.full_name} réactivé` });
-    }
-  );
+  const toggleActive = (m: TeamMember) => {
+    const hasApporteurAccess = m.is_also_apporteur;
+    confirmAction(
+      m.is_active ? "Désactiver le rôle collaborateur" : "Réactiver ce membre",
+      m.is_active
+        ? `${m.full_name} ne pourra plus accéder au CRM en tant que collaborateur.${hasApporteurAccess ? " Son espace apporteur restera accessible." : ""} Son historique (leads, ventes, commissions) est conservé et reste exploitable.`
+        : `${m.full_name} retrouvera l'accès complet au CRM collaborateur.`,
+      async () => {
+        const { error } = await supabase.from("profiles")
+          .update({ is_active: !m.is_active })
+          .eq("id", m.id);
+        if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" });
+        else toast({ title: m.is_active ? `${m.full_name} désactivé comme collaborateur` : `${m.full_name} réactivé` });
+      }
+    );
+  };
 
   const getInitials = (name: string) =>
     name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
