@@ -461,8 +461,27 @@ export default function Leads() {
                         ) : (
                           <span className="text-xs text-foreground">{lead.assigned_to_name}</span>
                         )
-                      ) : !lead.has_active_call && !["call_booke", "close", "perdu"].includes(lead.status || "") && (isCeo || user?.collaborateur_level === "confirme") ? (
-                        <Button size="sm" variant="outline" onClick={() => handleAssignToMe(lead.id!)} className="gap-1 text-[11px] h-7 px-2">
+                      ) : lead.status === "a_recycler" && isCeo ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="sm" variant="outline" className="gap-1 text-[11px] h-7 px-2">
+                              <UserPlus className="h-3 w-3" />
+                              Affecter
+                              <ChevronDown className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            {collaborateurs
+                              .filter((c) => c.id !== user?.id)
+                              .map((c) => (
+                                <DropdownMenuItem key={c.id} onClick={() => handleReassign(lead.id!, null, c.id, lead.status)}>
+                                  {c.full_name}
+                                </DropdownMenuItem>
+                              ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : !lead.has_active_call && !["call_booke", "close", "perdu", "a_recycler"].includes(lead.status || "") && (isCeo || user?.collaborateur_level === "confirme") ? (
+                        <Button size="sm" variant="outline" onClick={() => handleAssignToMe(lead.id!, lead.status)} className="gap-1 text-[11px] h-7 px-2">
                           <UserPlus className="h-3 w-3" />
                           M'affecter
                         </Button>
