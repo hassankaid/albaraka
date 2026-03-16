@@ -1,0 +1,2 @@
+ALTER TABLE leads DROP CONSTRAINT leads_status_check;
+ALTER TABLE leads ADD CONSTRAINT leads_status_check CHECK (status = ANY (ARRAY['a_qualifier', 'faux_numero', 'pas_de_reponse', 'pas_qualifie', 'a_relancer', 'perdu', 'inscrit_conference', 'call_booke', 'close', 'a_recycler']));
