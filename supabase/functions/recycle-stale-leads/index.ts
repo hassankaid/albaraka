@@ -16,16 +16,16 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Find leads with status 'pas_de_reponse' that haven't been updated in over 30 days
+    // Find leads with status 'pas_de_reponse' created over 30 days ago
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - 30);
 
     const { data: staleLeads, error: fetchError } = await supabase
       .from("leads")
-      .select("id, assigned_to, updated_at")
+      .select("id, assigned_to, created_at")
       .eq("status", "pas_de_reponse")
       .not("assigned_to", "is", null)
-      .lt("updated_at", cutoffDate.toISOString());
+      .lt("created_at", cutoffDate.toISOString());
 
     if (fetchError) {
       throw new Error(`Fetch error: ${fetchError.message}`);
