@@ -16,6 +16,7 @@ import Calls from "./pages/Calls";
 import Contacts from "./pages/Contacts";
 import Sales from "./pages/Sales";
 import Payments from "./pages/Payments";
+import MyCommissions from "./pages/MyCommissions";
 import Profile from "./pages/Profile";
 import AdminInvoices from "./pages/AdminInvoices";
 import AdminCommissions from "./pages/AdminCommissions";
@@ -54,6 +55,7 @@ const App = () => (
                   <Route path="/contacts" element={<Contacts />} />
                   <Route path="/sales" element={<Sales />} />
                   <Route path="/payments" element={<Payments />} />
+                  <Route path="/my-commissions" element={<MyCommissions />} />
                   <Route path="/admin/invoices" element={<AdminInvoices />} />
                   <Route path="/admin/commissions" element={<AdminCommissions />} />
                   <Route path="/admin/data" element={<AdminData />} />
