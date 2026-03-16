@@ -445,7 +445,7 @@ export default function Leads() {
                               {collaborateurs
                                 .filter((c) => c.id !== lead.assigned_to)
                                 .map((c) => (
-                                  <DropdownMenuItem key={c.id} onClick={() => handleReassign(lead.id!, lead.assigned_to, c.id)}>
+                                  <DropdownMenuItem key={c.id} onClick={() => handleReassign(lead.id!, lead.assigned_to, c.id, lead.status)}>
                                     {c.full_name}
                                   </DropdownMenuItem>
                                 ))}
