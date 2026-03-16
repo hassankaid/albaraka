@@ -35,7 +35,7 @@ export default function CreateSaleForm({ prefilledContactId, prefilledLeadId, on
   const [leadId, setLeadId] = useState<string | null>(prefilledLeadId || null);
   const [contacts, setContacts] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
   const [leads, setLeads] = useState<{ id: string; raw_full_name: string | null; source: string }[]>([]);
-  const [profiles, setProfiles] = useState<{ id: string; full_name: string; role: string }[]>([]);
+  const [profiles, setProfiles] = useState<{ id: string; full_name: string; role: string; is_active: boolean }[]>([]);
 
   const [saleProduct, setSaleProduct] = useState("");
   const [saleAmount, setSaleAmount] = useState("");
