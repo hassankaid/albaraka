@@ -46,7 +46,25 @@ const INVOICE_STATUS: Record<string, { label: string; class: string }> = {
   paid: { label: "Payée", class: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
 };
 
-const ROLE_LABELS: Record<string, { label: string; class: string; icon: typeof Users }> = {
+// Map raw DB roles to source categories for filtering
+const ROLE_SOURCE_CATEGORY: Record<string, string> = {
+  apporteur: "apporteur",
+  setter: "collaborateur",
+  closer: "collaborateur",
+  agence_marketing: "collaborateur",
+  collaborateur: "collaborateur",
+};
+
+// Precise role labels for display on each commission line
+const PRECISE_ROLE_LABELS: Record<string, string> = {
+  apporteur: "Apporteur",
+  setter: "Setter",
+  closer: "Closer",
+  agence_marketing: "Agence",
+  collaborateur: "Collaborateur",
+};
+
+const SOURCE_FILTER_LABELS: Record<string, { label: string; class: string; icon: typeof Users }> = {
   apporteur: { label: "Apport d'affaires", class: "bg-purple-500/20 text-purple-300 border-purple-500/30", icon: Users },
   collaborateur: { label: "Collaborateur", class: "bg-blue-500/20 text-blue-300 border-blue-500/30", icon: Briefcase },
 };
