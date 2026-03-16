@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.delete-apporteur-invoice]
 verify_jwt = false
+
+[functions.recycle-stale-leads]
+verify_jwt = false

@@ -60,6 +60,7 @@ export const leadStatusConfig: Record<string, { label: string; color: string }> 
   pas_qualifie: { label: "Pas qualifié", color: "zinc" },
   a_relancer: { label: "À relancer", color: "yellow" },
   perdu: { label: "Perdu", color: "red" },
+  a_recycler: { label: "À recycler", color: "amber" },
   call_booke: { label: "Call booké", color: "purple" },
   close: { label: "Close", color: "emerald" },
   // Legacy
