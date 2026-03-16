@@ -168,7 +168,8 @@ export default function Leads() {
   const counts = useMemo(() => ({
     total: scopedLeads.length,
     aQualifier: scopedLeads.filter((l) => l.status === "a_qualifier").length,
-    a_affecter: leads.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu"].includes(l.status || "")).length,
+    a_affecter: leads.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu", "a_recycler"].includes(l.status || "")).length,
+    a_recycler: leads.filter((l) => l.status === "a_recycler").length,
     call_booke: scopedLeads.filter((l) => l.status === "call_booke").length,
     mes_leads: myLeadsCount,
   }), [scopedLeads, leads, myLeadsCount]);
