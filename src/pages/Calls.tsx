@@ -196,7 +196,7 @@ export default function Calls() {
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
             <Calendar className="h-3.5 w-3.5 text-orange-400" />
             <span className="text-sm font-bold text-foreground">{counts.today}</span>
-            <span className="text-xs text-muted-foreground">aujourd'hui</span>
+            <span className="text-xs text-muted-foreground">{isCeo ? "aujourd'hui" : "mes calls auj."}</span>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
             <Clock className="h-3.5 w-3.5 text-blue-400" />
