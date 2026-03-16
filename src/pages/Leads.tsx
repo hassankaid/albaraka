@@ -306,6 +306,7 @@ export default function Leads() {
             >
               {t.label}
               {t.value === "a_affecter" ? ` (${counts.a_affecter})`
+                : t.value === "a_recycler" ? ` (${counts.a_recycler})`
                 : t.value === "mes_leads" ? ` (${counts.mes_leads})`
                 : t.value === "tous" ? ` (${counts.total})`
                 : ""}
