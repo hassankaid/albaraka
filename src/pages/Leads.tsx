@@ -30,7 +30,12 @@ import { fr } from "date-fns/locale";
 
 type LeadEnriched = Tables<"leads_enriched">;
 
-const TABS = [
+const COLLAB_TABS = [
+  { value: "a_affecter", label: "À affecter" },
+  { value: "mes_leads", label: "Mes leads" },
+] as const;
+
+const CEO_TABS = [
   { value: "a_affecter", label: "À affecter" },
   { value: "mes_leads", label: "Mes leads" },
   { value: "tous", label: "Tous" },
@@ -153,13 +158,19 @@ export default function Leads() {
     return leads.filter(l => l.assigned_to === user.id);
   }, [leads, user, isCeo]);
 
-  // Counts — "à affecter" always global, rest scoped
+  // Counts
+  const myLeadsCount = useMemo(() => {
+    if (!user) return 0;
+    return leads.filter(l => l.assigned_to === user.id).length;
+  }, [leads, user]);
+
   const counts = useMemo(() => ({
     total: scopedLeads.length,
     aQualifier: scopedLeads.filter((l) => l.status === "a_qualifier").length,
     a_affecter: leads.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu"].includes(l.status || "")).length,
     call_booke: scopedLeads.filter((l) => l.status === "call_booke").length,
-  }), [scopedLeads, leads]);
+    mes_leads: myLeadsCount,
+  }), [scopedLeads, leads, myLeadsCount]);
 
   // Filtered leads
   const filteredLeads = useMemo(() => {
@@ -279,7 +290,7 @@ export default function Leads() {
       {/* Tabs + filters row */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center bg-card border border-border rounded-lg p-0.5">
-          {TABS.map((t) => (
+          {(isCeo ? CEO_TABS : COLLAB_TABS).map((t) => (
             <button
               key={t.value}
               onClick={() => setTab(t.value)}
@@ -290,7 +301,10 @@ export default function Leads() {
               }`}
             >
               {t.label}
-              {t.value === "a_affecter" ? ` (${counts.a_affecter})` : t.value === "tous" ? ` (${counts.total})` : ""}
+              {t.value === "a_affecter" ? ` (${counts.a_affecter})`
+                : t.value === "mes_leads" ? ` (${counts.mes_leads})`
+                : t.value === "tous" ? ` (${counts.total})`
+                : ""}
             </button>
           ))}
         </div>
