@@ -86,7 +86,7 @@ export default function Leads() {
   const fetchCollaborateurs = useCallback(async () => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, full_name")
+      .select("id, full_name, collaborateur_level")
       .in("role", ["ceo", "collaborateur"]);
     if (data) setCollaborateurs(data);
   }, []);
