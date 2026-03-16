@@ -335,18 +335,17 @@ export default function AdminTeam() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
                       {member.role === "collaborateur" && (
-                        <>
-                          {member.collaborateur_level === "confirme" ? (
-                            <DropdownMenuItem onClick={() => changeLevel(member, "intermediaire")}>
-                              <ChevronDown className="h-4 w-4 mr-2 text-amber-400" />
-                              Passer Intermédiaire
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem onClick={() => changeLevel(member, "confirme")}>
-                              <ChevronUp className="h-4 w-4 mr-2 text-emerald-400" />
-                              Passer Confirmé
-                            </DropdownMenuItem>
-                          )}
+                        member.collaborateur_level === "confirme" ? (
+                          <DropdownMenuItem onClick={() => changeLevel(member, "intermediaire")}>
+                            <ChevronDown className="h-4 w-4 mr-2 text-amber-400" />
+                            Passer Intermédiaire
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={() => changeLevel(member, "confirme")}>
+                            <ChevronUp className="h-4 w-4 mr-2 text-emerald-400" />
+                            Passer Confirmé
+                          </DropdownMenuItem>
+                        )
                       )}
                       {member.role === "apporteur" && (
                         <DropdownMenuItem onClick={() => promoteToCollab(member)}>
