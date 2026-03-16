@@ -144,22 +144,35 @@ export default function Leads() {
     }
   };
 
-  // Counts
+  const isCeo = user?.role === "ceo";
+
+  // Scoped leads: collaborateurs only see their own (except "À affecter")
+  const scopedLeads = useMemo(() => {
+    if (isCeo) return leads;
+    if (!user) return [];
+    return leads.filter(l => l.assigned_to === user.id);
+  }, [leads, user, isCeo]);
+
+  // Counts — "à affecter" always global, rest scoped
   const counts = useMemo(() => ({
-    total: leads.length,
-    aQualifier: leads.filter((l) => l.status === "a_qualifier").length,
+    total: scopedLeads.length,
+    aQualifier: scopedLeads.filter((l) => l.status === "a_qualifier").length,
     a_affecter: leads.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu"].includes(l.status || "")).length,
-    call_booke: leads.filter((l) => l.status === "call_booke").length,
-  }), [leads]);
+    call_booke: scopedLeads.filter((l) => l.status === "call_booke").length,
+  }), [scopedLeads, leads]);
 
   // Filtered leads
   const filteredLeads = useMemo(() => {
-    let result = leads;
+    let result: LeadEnriched[];
 
     if (tab === "a_affecter") {
-      result = result.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu"].includes(l.status || ""));
-    } else if (tab === "mes_leads" && user) {
-      result = result.filter((l) => l.assigned_to === user.id);
+      // Always show ALL unassigned leads for everyone
+      result = leads.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu"].includes(l.status || ""));
+    } else if (tab === "mes_leads") {
+      result = user ? leads.filter((l) => l.assigned_to === user.id) : [];
+    } else {
+      // "tous" — scoped for collaborateurs
+      result = scopedLeads;
     }
 
     if (statusFilter !== "all") result = result.filter((l) => l.status === statusFilter);
@@ -178,7 +191,7 @@ export default function Leads() {
     }
 
     return result;
-  }, [leads, tab, statusFilter, sourceFilter, search, user]);
+  }, [leads, scopedLeads, tab, statusFilter, sourceFilter, search, user]);
 
   useEffect(() => { setPage(0); }, [tab, statusFilter, sourceFilter, search]);
 
@@ -227,7 +240,7 @@ export default function Leads() {
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
             <Users className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-sm font-bold text-foreground">{counts.total}</span>
-            <span className="text-xs text-muted-foreground">leads</span>
+            <span className="text-xs text-muted-foreground">{isCeo ? "leads" : "mes leads"}</span>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
             <span className="text-sm font-bold text-foreground">{counts.aQualifier}</span>

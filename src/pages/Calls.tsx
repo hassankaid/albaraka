@@ -51,12 +51,14 @@ const TYPE_COLORS: Record<string, string> = {
   appel_organique: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
 };
 
-const TABS = [
+// Tabs are built dynamically — "Mes calls" only shown for CEO
+const BASE_TABS = [
   { value: "aujourdhui", label: "Aujourd'hui" },
   { value: "a_venir", label: "À venir" },
   { value: "passes", label: "Passés" },
-  { value: "mes_calls", label: "Mes calls" },
 ] as const;
+
+const MES_CALLS_TAB = { value: "mes_calls", label: "Mes calls" } as const;
 
 const PAGE_SIZE = 50;
 
@@ -106,20 +108,28 @@ export default function Calls() {
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+  const isCeo = profile?.role === "ceo";
+
+  // Scoped calls: collaborateurs only see their own
+  const scopedCalls = useMemo(() => {
+    if (isCeo) return calls;
+    if (!profile) return [];
+    return calls.filter(c => c.assigned_to === profile.id);
+  }, [calls, profile, isCeo]);
 
   const counts = useMemo(() => ({
-    today: calls.filter((c) => c.scheduled_at && isToday(new Date(c.scheduled_at)) && c.status === "planifie").length,
-    thisWeek: calls.filter((c) => {
+    today: scopedCalls.filter((c) => c.scheduled_at && isToday(new Date(c.scheduled_at)) && c.status === "planifie").length,
+    thisWeek: scopedCalls.filter((c) => {
       if (!c.scheduled_at) return false;
       const d = new Date(c.scheduled_at);
       return d >= weekStart && d <= weekEnd;
     }).length,
-    planned: calls.filter((c) => c.status === "planifie").length,
-    done: calls.filter((c) => c.status === "effectue" || c.status === "close").length,
-  }), [calls, weekStart, weekEnd]);
+    planned: scopedCalls.filter((c) => c.status === "planifie").length,
+    done: scopedCalls.filter((c) => c.status === "effectue" || c.status === "close").length,
+  }), [scopedCalls, weekStart, weekEnd]);
 
   const filteredCalls = useMemo(() => {
-    let result = calls;
+    let result = scopedCalls;
 
     if (tab === "aujourdhui") {
       result = result.filter((c) => c.scheduled_at && isToday(new Date(c.scheduled_at)) && c.status === "planifie");
@@ -147,7 +157,7 @@ export default function Calls() {
     }
 
     return result;
-  }, [calls, tab, statusFilter, typeFilter, search, profile, now]);
+  }, [scopedCalls, tab, statusFilter, typeFilter, search, profile, now]);
 
   useEffect(() => { setPage(0); }, [tab, statusFilter, typeFilter, search]);
 
@@ -186,7 +196,7 @@ export default function Calls() {
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
             <Calendar className="h-3.5 w-3.5 text-orange-400" />
             <span className="text-sm font-bold text-foreground">{counts.today}</span>
-            <span className="text-xs text-muted-foreground">aujourd'hui</span>
+            <span className="text-xs text-muted-foreground">{isCeo ? "aujourd'hui" : "mes calls auj."}</span>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
             <Clock className="h-3.5 w-3.5 text-blue-400" />
@@ -212,7 +222,7 @@ export default function Calls() {
       {/* Tabs + filters row */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center bg-card border border-border rounded-lg p-0.5">
-          {TABS.map((t) => (
+          {[...BASE_TABS, ...(isCeo ? [MES_CALLS_TAB] : [])].map((t) => (
             <button
               key={t.value}
               onClick={() => setTab(t.value)}
