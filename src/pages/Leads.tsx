@@ -441,7 +441,7 @@ export default function Leads() {
                         ) : (
                           <span className="text-xs text-foreground">{lead.assigned_to_name}</span>
                         )
-                      ) : !lead.has_active_call && !["call_booke", "close", "perdu"].includes(lead.status || "") ? (
+                      ) : !lead.has_active_call && !["call_booke", "close", "perdu"].includes(lead.status || "") && (isCeo || user?.collaborateur_level === "confirme") ? (
                         <Button size="sm" variant="outline" onClick={() => handleAssignToMe(lead.id!)} className="gap-1 text-[11px] h-7 px-2">
                           <UserPlus className="h-3 w-3" />
                           M'affecter
