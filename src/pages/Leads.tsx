@@ -472,7 +472,7 @@ export default function Leads() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start">
                             {collaborateurs
-                              .filter((c) => c.id !== user?.id)
+                              .filter((c) => c.collaborateur_level === "intermediaire")
                               .map((c) => (
                                 <DropdownMenuItem key={c.id} onClick={() => handleReassign(lead.id!, null, c.id, lead.status)}>
                                   {c.full_name}
