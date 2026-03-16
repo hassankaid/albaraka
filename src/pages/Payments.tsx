@@ -5,11 +5,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight } from "lucide-react";
+import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -22,8 +23,10 @@ interface PaymentRow {
   due_date: string;
   paid_at: string | null;
   status: string;
+  notes: string | null;
   contact_name: string | null;
   contact_email: string | null;
+  contact_phone: string | null;
 }
 
 const getPaymentStatusInfo = (status: string, dueDate: string) => {
@@ -57,6 +60,55 @@ const getBillingPeriodLabel = () => {
 
 const PAGE_SIZE = 50;
 
+function PaymentNotesCell({ paymentId, initialNotes, onSave }: { paymentId: string; initialNotes: string; onSave: (id: string, notes: string) => Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(initialNotes);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { setValue(initialNotes); }, [initialNotes]);
+
+  const handleSave = async () => {
+    if (value === initialNotes) { setEditing(false); return; }
+    setSaving(true);
+    await onSave(paymentId, value);
+    setSaving(false);
+    setEditing(false);
+  };
+
+  if (!editing) {
+    return (
+      <button
+        onClick={() => setEditing(true)}
+        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground max-w-[180px] text-left"
+        title={value || "Ajouter un commentaire"}
+      >
+        <MessageSquare className="h-3 w-3 shrink-0" />
+        <span className="truncate">{value || "—"}</span>
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1 min-w-[160px]">
+      <Textarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="min-h-[50px] text-xs bg-card resize-none"
+        placeholder="Commentaire..."
+        autoFocus
+      />
+      <div className="flex gap-1">
+        <Button size="sm" className="h-6 text-[10px]" onClick={handleSave} disabled={saving}>
+          {saving ? <RefreshCw className="h-3 w-3 animate-spin" /> : "Enregistrer"}
+        </Button>
+        <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => { setValue(initialNotes); setEditing(false); }}>
+          Annuler
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function Payments() {
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -81,8 +133,8 @@ export default function Payments() {
       const { data } = await supabase
         .from("payments")
         .select(`
-          id, payment_number, total_payments, amount, due_date, paid_at, status,
-          contacts!payments_contact_id_fkey(full_name, email)
+          id, payment_number, total_payments, amount, due_date, paid_at, status, notes,
+          contacts!payments_contact_id_fkey(full_name, email, phone_normalized)
         `)
         .order("due_date", { ascending: true })
         .range(from, from + batchSize - 1);
@@ -105,8 +157,10 @@ export default function Payments() {
         due_date: p.due_date,
         paid_at: p.paid_at,
         status: p.status,
+        notes: p.notes,
         contact_name: p.contacts?.full_name || null,
         contact_email: p.contacts?.email || null,
+        contact_phone: p.contacts?.phone_normalized || null,
       }))
     );
     setLoading(false);
@@ -132,6 +186,18 @@ export default function Payments() {
     } else {
       toast({ title: "Paiement marqué comme payé" });
       fetchPayments();
+    }
+  };
+  const saveNotes = async (paymentId: string, newNotes: string) => {
+    const { error } = await supabase
+      .from("payments")
+      .update({ notes: newNotes })
+      .eq("id", paymentId);
+    if (error) {
+      toast({ title: "Erreur lors de la sauvegarde", variant: "destructive" });
+    } else {
+      setAllPayments((prev) => prev.map((p) => p.id === paymentId ? { ...p, notes: newNotes } : p));
+      toast({ title: "Commentaire enregistré" });
     }
   };
 
@@ -269,6 +335,7 @@ export default function Payments() {
                   <TableHead>Échéance</TableHead>
                   <TableHead>Payé le</TableHead>
                   <TableHead>Statut</TableHead>
+                  <TableHead className="w-[200px]">Commentaire</TableHead>
                   {isCeo && <TableHead className="w-[80px]">Action</TableHead>}
                 </TableRow>
               </TableHeader>
@@ -281,6 +348,12 @@ export default function Payments() {
                         <div className="min-w-0">
                           <p className="font-semibold text-foreground text-sm truncate">{p.contact_name || "—"}</p>
                           {p.contact_email && <p className="text-xs text-muted-foreground truncate">{p.contact_email}</p>}
+                          {p.contact_phone && (
+                            <a href={`tel:${p.contact_phone}`} className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-0.5">
+                              <Phone className="h-3 w-3" />
+                              {p.contact_phone}
+                            </a>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-sm font-medium text-foreground">
@@ -319,6 +392,9 @@ export default function Payments() {
                         <Badge variant="outline" className={`text-[10px] leading-tight ${statusInfo.className}`}>
                           {statusInfo.label}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <PaymentNotesCell paymentId={p.id} initialNotes={p.notes || ""} onSave={saveNotes} />
                       </TableCell>
                       {isCeo && (
                         <TableCell>
