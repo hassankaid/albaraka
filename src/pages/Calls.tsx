@@ -106,20 +106,28 @@ export default function Calls() {
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+  const isCeo = profile?.role === "ceo";
+
+  // Scoped calls: collaborateurs only see their own
+  const scopedCalls = useMemo(() => {
+    if (isCeo) return calls;
+    if (!profile) return [];
+    return calls.filter(c => c.assigned_to === profile.id);
+  }, [calls, profile, isCeo]);
 
   const counts = useMemo(() => ({
-    today: calls.filter((c) => c.scheduled_at && isToday(new Date(c.scheduled_at)) && c.status === "planifie").length,
-    thisWeek: calls.filter((c) => {
+    today: scopedCalls.filter((c) => c.scheduled_at && isToday(new Date(c.scheduled_at)) && c.status === "planifie").length,
+    thisWeek: scopedCalls.filter((c) => {
       if (!c.scheduled_at) return false;
       const d = new Date(c.scheduled_at);
       return d >= weekStart && d <= weekEnd;
     }).length,
-    planned: calls.filter((c) => c.status === "planifie").length,
-    done: calls.filter((c) => c.status === "effectue" || c.status === "close").length,
-  }), [calls, weekStart, weekEnd]);
+    planned: scopedCalls.filter((c) => c.status === "planifie").length,
+    done: scopedCalls.filter((c) => c.status === "effectue" || c.status === "close").length,
+  }), [scopedCalls, weekStart, weekEnd]);
 
   const filteredCalls = useMemo(() => {
-    let result = calls;
+    let result = scopedCalls;
 
     if (tab === "aujourdhui") {
       result = result.filter((c) => c.scheduled_at && isToday(new Date(c.scheduled_at)) && c.status === "planifie");
@@ -147,7 +155,7 @@ export default function Calls() {
     }
 
     return result;
-  }, [calls, tab, statusFilter, typeFilter, search, profile, now]);
+  }, [scopedCalls, tab, statusFilter, typeFilter, search, profile, now]);
 
   useEffect(() => { setPage(0); }, [tab, statusFilter, typeFilter, search]);
 
