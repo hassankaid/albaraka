@@ -25,6 +25,17 @@ export function ProtectedRoute() {
     return <Navigate to="/onboarding" replace />;
   }
 
+  // Inactive collaborateurs with is_also_apporteur can only access /my-space/*
+  if (
+    profile?.role === "collaborateur" &&
+    profile?.is_active === false &&
+    profile?.is_also_apporteur &&
+    !location.pathname.startsWith("/my-space") &&
+    location.pathname !== "/onboarding"
+  ) {
+    return <Navigate to="/my-space" replace />;
+  }
+
   return <Outlet />;
 }
 

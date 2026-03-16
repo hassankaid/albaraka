@@ -51,6 +51,11 @@ export default function DashboardLayout() {
     return <Navigate to="/my-space" replace />;
   }
 
+  // Inactive collaborateurs who are also apporteurs go to apporteur space
+  if (profile?.role === "collaborateur" && profile?.is_active === false && profile?.is_also_apporteur) {
+    return <Navigate to="/my-space" replace />;
+  }
+
   // Redirect agence to profile if they land on dashboard
   if (profile?.role === "agence" && location.pathname === "/dashboard") {
     return <Navigate to="/profile" replace />;

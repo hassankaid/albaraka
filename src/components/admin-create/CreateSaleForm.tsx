@@ -35,7 +35,7 @@ export default function CreateSaleForm({ prefilledContactId, prefilledLeadId, on
   const [leadId, setLeadId] = useState<string | null>(prefilledLeadId || null);
   const [contacts, setContacts] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
   const [leads, setLeads] = useState<{ id: string; raw_full_name: string | null; source: string }[]>([]);
-  const [profiles, setProfiles] = useState<{ id: string; full_name: string; role: string }[]>([]);
+  const [profiles, setProfiles] = useState<{ id: string; full_name: string; role: string; is_active: boolean }[]>([]);
 
   const [saleProduct, setSaleProduct] = useState("");
   const [saleAmount, setSaleAmount] = useState("");
@@ -53,10 +53,10 @@ export default function CreateSaleForm({ prefilledContactId, prefilledLeadId, on
       fetchAllRows<{ id: string; full_name: string | null; email: string | null }>("contacts", "id, full_name, email", { order: { column: "created_at", ascending: false } }).then(setContacts);
       fetchAllRows<{ id: string; raw_full_name: string | null; source: string }>("leads", "id, raw_full_name, source", { order: { column: "created_at", ascending: false } }).then(setLeads);
     }
-    fetchAllRows<{ id: string; full_name: string; role: string }>("profiles", "id, full_name, role").then(setProfiles);
+    fetchAllRows<{ id: string; full_name: string; role: string; is_active: boolean }>("profiles", "id, full_name, role, is_active").then(setProfiles);
   }, [isWizardStep]);
 
-  const teamProfiles = profiles.filter((p) => p.role === "ceo" || p.role === "collaborateur");
+  const teamProfiles = profiles.filter((p) => p.role === "ceo" || p.role === "collaborateur").sort((a, b) => a.full_name.localeCompare(b.full_name));
   const contactOptions = contacts.map((c) => ({ id: c.id, label: c.full_name || "Sans nom", sublabel: c.email || undefined }));
   const leadOptions = leads.map((l) => ({ id: l.id, label: l.raw_full_name || "Sans nom", sublabel: l.source }));
 
@@ -131,7 +131,11 @@ export default function CreateSaleForm({ prefilledContactId, prefilledLeadId, on
             <Select value={saleClosedBy} onValueChange={setSaleClosedBy}>
               <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
               <SelectContent>
-                {teamProfiles.map((p) => (<SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>))}
+                {teamProfiles.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.full_name}{!p.is_active ? " (inactif)" : ""}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
