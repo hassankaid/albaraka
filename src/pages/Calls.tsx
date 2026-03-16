@@ -51,12 +51,14 @@ const TYPE_COLORS: Record<string, string> = {
   appel_organique: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
 };
 
-const TABS = [
+// Tabs are built dynamically — "Mes calls" only shown for CEO
+const BASE_TABS = [
   { value: "aujourdhui", label: "Aujourd'hui" },
   { value: "a_venir", label: "À venir" },
   { value: "passes", label: "Passés" },
-  { value: "mes_calls", label: "Mes calls" },
 ] as const;
+
+const MES_CALLS_TAB = { value: "mes_calls", label: "Mes calls" } as const;
 
 const PAGE_SIZE = 50;
 
