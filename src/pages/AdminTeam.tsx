@@ -347,12 +347,6 @@ export default function AdminTeam() {
                               Passer Confirmé
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => demoteToApporteur(member)} className="text-destructive focus:text-destructive">
-                            <ArrowDownRight className="h-4 w-4 mr-2" />
-                            Rétrograder apporteur
-                          </DropdownMenuItem>
-                        </>
                       )}
                       {member.role === "apporteur" && (
                         <DropdownMenuItem onClick={() => promoteToCollab(member)}>
