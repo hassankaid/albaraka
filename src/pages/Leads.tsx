@@ -398,10 +398,56 @@ export default function Leads() {
         emptyMessage()
       ) : (
         <>
+          {/* Bulk action bar */}
+          {tab === "a_recycler" && isCeo && selectedIds.size > 0 && (
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20">
+              <CheckSquare className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-foreground">{selectedIds.size} lead{selectedIds.size > 1 ? "s" : ""} sélectionné{selectedIds.size > 1 ? "s" : ""}</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" className="gap-1.5 text-xs" disabled={bulkAssigning}>
+                    <UserPlus className="h-3.5 w-3.5" />
+                    Affecter en masse
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {collaborateurs
+                    .filter((c) => c.collaborateur_level === "intermediaire")
+                    .map((c) => (
+                      <DropdownMenuItem key={c.id} onClick={() => handleBulkAssign(c.id)}>
+                        {c.full_name}
+                      </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => setSelectedIds(new Set())}>
+                Désélectionner
+              </Button>
+            </div>
+          )}
+
           <div className="rounded-lg border border-border/50 overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
+                  {tab === "a_recycler" && isCeo && (
+                    <TableHead className="w-[40px]">
+                      <input
+                        type="checkbox"
+                        className="rounded border-border"
+                        checked={paginatedLeads.length > 0 && paginatedLeads.every((l) => selectedIds.has(l.id!))}
+                        onChange={(e) => {
+                          const next = new Set(selectedIds);
+                          paginatedLeads.forEach((l) => {
+                            if (e.target.checked) next.add(l.id!);
+                            else next.delete(l.id!);
+                          });
+                          setSelectedIds(next);
+                        }}
+                      />
+                    </TableHead>
+                  )}
                   <TableHead className="w-[220px]">Contact</TableHead>
                   <TableHead>Source</TableHead>
                   <TableHead>Apporteur</TableHead>
@@ -413,7 +459,22 @@ export default function Leads() {
               </TableHeader>
               <TableBody>
                 {paginatedLeads.map((lead) => (
-                  <TableRow key={lead.id} className="border-border hover:bg-secondary/50 transition-colors">
+                  <TableRow key={lead.id} className={`border-border hover:bg-secondary/50 transition-colors ${selectedIds.has(lead.id!) ? "bg-primary/5" : ""}`}>
+                    {tab === "a_recycler" && isCeo && (
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          className="rounded border-border"
+                          checked={selectedIds.has(lead.id!)}
+                          onChange={(e) => {
+                            const next = new Set(selectedIds);
+                            if (e.target.checked) next.add(lead.id!);
+                            else next.delete(lead.id!);
+                            setSelectedIds(next);
+                          }}
+                        />
+                      </TableCell>
+                    )}
                     {/* Contact */}
                     <TableCell>
                       <div className="min-w-0">
