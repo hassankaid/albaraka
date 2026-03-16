@@ -264,20 +264,10 @@ export default function AdminCommissions() {
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher par nom, produit…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+      {/* Filters row */}
+      <div className="flex flex-wrap items-center gap-2">
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-[160px]">
-            <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+          <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -290,7 +280,7 @@ export default function AdminCommissions() {
           </SelectContent>
         </Select>
         <Select value={filterRole} onValueChange={setFilterRole}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -298,7 +288,7 @@ export default function AdminCommissions() {
             <SelectItem value="apporteur">Apporteur</SelectItem>
             <SelectItem value="setter">Setter</SelectItem>
             <SelectItem value="closer">Closer</SelectItem>
-            <SelectItem value="agence_marketing">Agence marketing</SelectItem>
+            <SelectItem value="agence_marketing">Agence</SelectItem>
           </SelectContent>
         </Select>
         {(() => {
@@ -307,7 +297,7 @@ export default function AdminCommissions() {
           const label = d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
           return (
             <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-              <SelectTrigger className="w-[220px]">
+              <SelectTrigger className="w-[190px] h-8 text-xs bg-card">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -317,6 +307,15 @@ export default function AdminCommissions() {
             </Select>
           );
         })()}
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-8 text-xs bg-card"
+          />
+        </div>
       </div>
 
       {/* Table */}
