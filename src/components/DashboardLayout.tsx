@@ -105,6 +105,19 @@ export default function DashboardLayout() {
             </NavLink>
           ))}
         </nav>
+
+        {profile?.is_also_apporteur && (
+          <div className="p-3 border-t border-border">
+            <NavLink
+              to="/my-space"
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors w-full"
+            >
+              <ArrowLeftRight className="h-4 w-4" />
+              Espace Apporteur
+            </NavLink>
+          </div>
+        )}
       </aside>
 
       {/* Main area */}

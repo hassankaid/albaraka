@@ -73,7 +73,17 @@ export default function ApporteurLayout() {
           ))}
         </nav>
 
-        <div className="p-3 border-t border-border">
+        <div className="p-3 border-t border-border space-y-1">
+          {profile?.is_also_apporteur && (
+            <NavLink
+              to="/dashboard"
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors w-full"
+            >
+              <ArrowLeftRight className="h-4 w-4" />
+              Espace Collaborateur
+            </NavLink>
+          )}
           <button
             onClick={() => { setSidebarOpen(false); signOut(); }}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-destructive hover:bg-secondary transition-colors w-full"
