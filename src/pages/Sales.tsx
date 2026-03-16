@@ -52,12 +52,7 @@ const PAYMENT_LABELS: Record<string, string> = {
   refunded: "Remboursé",
 };
 
-const ROLE_CONFIG: Record<string, { label: string; class: string; icon: typeof Users }> = {
-  apporteur: { label: "Apporteur", class: "bg-purple-500/20 text-purple-300 border-purple-500/30", icon: Users },
-  setter: { label: "Setter", class: "bg-blue-500/20 text-blue-300 border-blue-500/30", icon: Headset },
-  closer: { label: "Closer", class: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30", icon: Target },
-  agence_marketing: { label: "Agence", class: "bg-orange-500/20 text-orange-300 border-orange-500/30", icon: Building2 },
-};
+// ROLE_CONFIG imported from @/lib/roleConfig
 
 const PAGE_SIZE = 50;
 
