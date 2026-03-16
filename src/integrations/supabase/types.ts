@@ -668,6 +668,7 @@ export type Database = {
           bank_rib_url: string | null
           can_add_instagram_leads: boolean | null
           city: string | null
+          collaborateur_level: string | null
           country: string | null
           created_at: string | null
           email: string
@@ -675,6 +676,7 @@ export type Database = {
           fixed_salary_active: boolean
           full_name: string
           id: string
+          is_active: boolean
           is_also_apporteur: boolean | null
           onboarding_completed: boolean
           phone: string | null
@@ -692,6 +694,7 @@ export type Database = {
           bank_rib_url?: string | null
           can_add_instagram_leads?: boolean | null
           city?: string | null
+          collaborateur_level?: string | null
           country?: string | null
           created_at?: string | null
           email: string
@@ -699,6 +702,7 @@ export type Database = {
           fixed_salary_active?: boolean
           full_name: string
           id: string
+          is_active?: boolean
           is_also_apporteur?: boolean | null
           onboarding_completed?: boolean
           phone?: string | null
@@ -716,6 +720,7 @@ export type Database = {
           bank_rib_url?: string | null
           can_add_instagram_leads?: boolean | null
           city?: string | null
+          collaborateur_level?: string | null
           country?: string | null
           created_at?: string | null
           email?: string
@@ -723,6 +728,7 @@ export type Database = {
           fixed_salary_active?: boolean
           full_name?: string
           id?: string
+          is_active?: boolean
           is_also_apporteur?: boolean | null
           onboarding_completed?: boolean
           phone?: string | null
