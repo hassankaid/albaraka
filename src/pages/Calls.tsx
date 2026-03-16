@@ -222,7 +222,7 @@ export default function Calls() {
       {/* Tabs + filters row */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center bg-card border border-border rounded-lg p-0.5">
-          {TABS.map((t) => (
+          {[...BASE_TABS, ...(isCeo ? [MES_CALLS_TAB] : [])].map((t) => (
             <button
               key={t.value}
               onClick={() => setTab(t.value)}
