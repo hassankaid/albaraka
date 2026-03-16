@@ -52,7 +52,7 @@ export default function Leads() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [collaborateurs, setCollaborateurs] = useState<{ id: string; full_name: string }[]>([]);
+  const [collaborateurs, setCollaborateurs] = useState<{ id: string; full_name: string; collaborateur_level: string | null }[]>([]);
   const [igFormOpen, setIgFormOpen] = useState(false);
   const [apporteurFormOpen, setApporteurFormOpen] = useState(false);
   const [processLead, setProcessLead] = useState<LeadEnriched | null>(null);
@@ -86,7 +86,7 @@ export default function Leads() {
   const fetchCollaborateurs = useCallback(async () => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, full_name")
+      .select("id, full_name, collaborateur_level")
       .in("role", ["ceo", "collaborateur"]);
     if (data) setCollaborateurs(data);
   }, []);
@@ -472,7 +472,7 @@ export default function Leads() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start">
                             {collaborateurs
-                              .filter((c) => c.id !== user?.id)
+                              .filter((c) => c.collaborateur_level === "intermediaire")
                               .map((c) => (
                                 <DropdownMenuItem key={c.id} onClick={() => handleReassign(lead.id!, null, c.id, lead.status)}>
                                   {c.full_name}
