@@ -131,11 +131,19 @@ export default function Leads() {
     fetchLeads();
   };
 
-  const handleReassign = async (leadId: string, oldAssignedTo: string | null, newUserId: string) => {
+  const handleReassign = async (leadId: string, oldAssignedTo: string | null, newUserId: string, currentStatus?: string | null) => {
     if (!user) return;
+    const updatePayload: Record<string, unknown> = {
+      assigned_to: newUserId,
+      assigned_at: new Date().toISOString(),
+    };
+    // When assigning a recycled lead, reset status to a_qualifier
+    if (currentStatus === "a_recycler") {
+      updatePayload.status = "a_qualifier";
+    }
     const { error } = await supabase
       .from("leads")
-      .update({ assigned_to: newUserId, assigned_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq("id", leadId);
 
     if (error) {
