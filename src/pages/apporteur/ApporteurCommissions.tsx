@@ -46,7 +46,25 @@ const INVOICE_STATUS: Record<string, { label: string; class: string }> = {
   paid: { label: "Payée", class: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
 };
 
-const ROLE_LABELS: Record<string, { label: string; class: string; icon: typeof Users }> = {
+// Map raw DB roles to source categories for filtering
+const ROLE_SOURCE_CATEGORY: Record<string, string> = {
+  apporteur: "apporteur",
+  setter: "collaborateur",
+  closer: "collaborateur",
+  agence_marketing: "collaborateur",
+  collaborateur: "collaborateur",
+};
+
+// Precise role labels for display on each commission line
+const PRECISE_ROLE_LABELS: Record<string, string> = {
+  apporteur: "Apporteur",
+  setter: "Setter",
+  closer: "Closer",
+  agence_marketing: "Agence",
+  collaborateur: "Collaborateur",
+};
+
+const SOURCE_FILTER_LABELS: Record<string, { label: string; class: string; icon: typeof Users }> = {
   apporteur: { label: "Apport d'affaires", class: "bg-purple-500/20 text-purple-300 border-purple-500/30", icon: Users },
   collaborateur: { label: "Collaborateur", class: "bg-blue-500/20 text-blue-300 border-blue-500/30", icon: Briefcase },
 };
@@ -176,19 +194,19 @@ export default function ApporteurCommissions({ defaultRoleFilter }: ApporteurCom
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Detect available roles
-  const availableRoles = useMemo(() => {
-    const roles = new Set(allCommissions.map(c => c.role));
-    return Array.from(roles).sort();
+  // Detect available source categories (apporteur vs collaborateur)
+  const availableCategories = useMemo(() => {
+    const cats = new Set(allCommissions.map(c => ROLE_SOURCE_CATEGORY[c.role] || "collaborateur"));
+    return Array.from(cats).sort();
   }, [allCommissions]);
 
-  const showRoleFilter = availableRoles.length > 1 && !defaultRoleFilter;
+  const showRoleFilter = availableCategories.length > 1 && !defaultRoleFilter;
 
-  // Filter commissions by role
+  // Filter commissions by source category
   const filteredCommissions = useMemo(() => {
     const activeFilter = defaultRoleFilter || roleFilter;
     if (activeFilter === "all") return allCommissions;
-    return allCommissions.filter(c => c.role === activeFilter);
+    return allCommissions.filter(c => (ROLE_SOURCE_CATEGORY[c.role] || "collaborateur") === activeFilter);
   }, [allCommissions, roleFilter, defaultRoleFilter]);
 
   // ── KPIs ──
@@ -267,13 +285,15 @@ export default function ApporteurCommissions({ defaultRoleFilter }: ApporteurCom
   ] : [];
 
   const renderRoleBadge = (role: string) => {
-    const info = ROLE_LABELS[role];
+    const category = ROLE_SOURCE_CATEGORY[role] || "collaborateur";
+    const info = SOURCE_FILTER_LABELS[category];
     if (!info) return null;
     const Icon = info.icon;
+    const preciseLabel = PRECISE_ROLE_LABELS[role] || role;
     return (
       <Badge variant="outline" className={`text-xs ${info.class}`}>
         <Icon className="h-3 w-3 mr-1" />
-        {info.label}
+        {preciseLabel}
       </Badge>
     );
   };
@@ -289,9 +309,9 @@ export default function ApporteurCommissions({ defaultRoleFilter }: ApporteurCom
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Toutes les sources</SelectItem>
-              {availableRoles.map(r => (
+              {availableCategories.map(r => (
                 <SelectItem key={r} value={r}>
-                  {ROLE_LABELS[r]?.label || r}
+                  {SOURCE_FILTER_LABELS[r]?.label || r}
                 </SelectItem>
               ))}
             </SelectContent>
