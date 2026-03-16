@@ -286,6 +286,7 @@ export default function Payments() {
                   <TableHead>Échéance</TableHead>
                   <TableHead>Payé le</TableHead>
                   <TableHead>Statut</TableHead>
+                  <TableHead className="w-[200px]">Commentaire</TableHead>
                   {isCeo && <TableHead className="w-[80px]">Action</TableHead>}
                 </TableRow>
               </TableHeader>
@@ -298,6 +299,12 @@ export default function Payments() {
                         <div className="min-w-0">
                           <p className="font-semibold text-foreground text-sm truncate">{p.contact_name || "—"}</p>
                           {p.contact_email && <p className="text-xs text-muted-foreground truncate">{p.contact_email}</p>}
+                          {p.contact_phone && (
+                            <a href={`tel:${p.contact_phone}`} className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-0.5">
+                              <Phone className="h-3 w-3" />
+                              {p.contact_phone}
+                            </a>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-sm font-medium text-foreground">
@@ -336,6 +343,9 @@ export default function Payments() {
                         <Badge variant="outline" className={`text-[10px] leading-tight ${statusInfo.className}`}>
                           {statusInfo.label}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <PaymentNotesCell paymentId={p.id} initialNotes={p.notes || ""} onSave={saveNotes} />
                       </TableCell>
                       {isCeo && (
                         <TableCell>
