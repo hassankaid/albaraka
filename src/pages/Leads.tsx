@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
@@ -50,7 +53,7 @@ export default function Leads() {
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<string>("a_affecter");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [sourceFilter, setSourceFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [collaborateurs, setCollaborateurs] = useState<{ id: string; full_name: string; collaborateur_level: string | null }[]>([]);
   const [igFormOpen, setIgFormOpen] = useState(false);
@@ -233,7 +236,7 @@ export default function Leads() {
     }
 
     if (statusFilter !== "all") result = result.filter((l) => l.status === statusFilter);
-    if (sourceFilter !== "all") result = result.filter((l) => l.source === sourceFilter);
+    if (sourceFilter.length > 0) result = result.filter((l) => l.source && sourceFilter.includes(l.source));
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -250,7 +253,7 @@ export default function Leads() {
     return result;
   }, [leads, scopedLeads, tab, statusFilter, sourceFilter, search, user]);
 
-  useEffect(() => { setPage(0); setSelectedIds(new Set()); }, [tab, statusFilter, sourceFilter, search]);
+  useEffect(() => { setPage(0); setSelectedIds(new Set()); }, [tab, statusFilter, sourceFilter.length, search]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
   const paginatedLeads = useMemo(
@@ -356,16 +359,47 @@ export default function Leads() {
           ))}
         </div>
 
-        <Select value={sourceFilter} onValueChange={setSourceFilter}>
-          <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
-            <SelectValue placeholder="Source" />
-          </SelectTrigger>
-          <SelectContent>
-            {SOURCE_FILTER_OPTIONS.map((s) => (
-              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs bg-card gap-1.5 min-w-[130px] justify-between">
+              {sourceFilter.length === 0 ? "Sources" : `${sourceFilter.length} source${sourceFilter.length > 1 ? "s" : ""}`}
+              <ChevronDown className="h-3 w-3 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[220px] p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Rechercher source…" className="h-9" />
+              <CommandList>
+                <CommandEmpty>Aucune source.</CommandEmpty>
+                <CommandGroup>
+                  {SOURCE_FILTER_OPTIONS.filter(s => s.value !== "all").map((s) => {
+                    const isSelected = sourceFilter.includes(s.value);
+                    return (
+                      <CommandItem
+                        key={s.value}
+                        onSelect={() => {
+                          setSourceFilter(prev =>
+                            isSelected ? prev.filter(v => v !== s.value) : [...prev, s.value]
+                          );
+                        }}
+                      >
+                        <Checkbox checked={isSelected} className="mr-2" />
+                        {s.label}
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+            {sourceFilter.length > 0 && (
+              <div className="border-t p-1">
+                <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setSourceFilter([])}>
+                  Réinitialiser
+                </Button>
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
