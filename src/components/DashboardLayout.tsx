@@ -22,13 +22,13 @@ const allNavItems = [
 ];
 
 const pageTitles: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/leads": "Leads",
-  "/calls": "Calls",
+  "/dashboard": "Mon Dashboard",
+  "/leads": "Mes Leads",
+  "/calls": "Mes Calls",
   "/contacts": "Contacts",
-  "/sales": "Ventes",
-  "/payments": "Paiements",
-  "/my-commissions": "Mes commissions",
+  "/sales": "Mes Ventes",
+  "/payments": "Mes Paiements",
+  "/my-commissions": "Mes Commissions",
   "/admin/invoices": "Factures Apporteurs",
   "/admin/commissions": "Commissions",
   "/admin/data": "Gestion des données",
