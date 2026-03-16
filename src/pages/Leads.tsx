@@ -111,11 +111,18 @@ export default function Leads() {
     toast({ title: "Données actualisées" });
   };
 
-  const handleAssignToMe = async (leadId: string) => {
+  const handleAssignToMe = async (leadId: string, currentStatus?: string | null) => {
     if (!user) return;
+    const updatePayload: Record<string, unknown> = {
+      assigned_to: user.id,
+      assigned_at: new Date().toISOString(),
+    };
+    if (currentStatus === "a_recycler") {
+      updatePayload.status = "a_qualifier";
+    }
     const { error } = await supabase
       .from("leads")
-      .update({ assigned_to: user.id, assigned_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq("id", leadId);
 
     if (error) {
@@ -125,17 +132,25 @@ export default function Leads() {
 
     await supabase.from("lead_activities").insert({
       lead_id: leadId, user_id: user.id, action: "assigned",
-      old_value: null, new_value: user.id, note: null,
+      old_value: null, new_value: user.id, note: currentStatus === "a_recycler" ? "Réaffectation depuis recyclage" : null,
     });
     toast({ title: "Lead affecté avec succès" });
     fetchLeads();
   };
 
-  const handleReassign = async (leadId: string, oldAssignedTo: string | null, newUserId: string) => {
+  const handleReassign = async (leadId: string, oldAssignedTo: string | null, newUserId: string, currentStatus?: string | null) => {
     if (!user) return;
+    const updatePayload: Record<string, unknown> = {
+      assigned_to: newUserId,
+      assigned_at: new Date().toISOString(),
+    };
+    // When assigning a recycled lead, reset status to a_qualifier
+    if (currentStatus === "a_recycler") {
+      updatePayload.status = "a_qualifier";
+    }
     const { error } = await supabase
       .from("leads")
-      .update({ assigned_to: newUserId, assigned_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq("id", leadId);
 
     if (error) {
@@ -437,7 +452,7 @@ export default function Leads() {
                               {collaborateurs
                                 .filter((c) => c.id !== lead.assigned_to)
                                 .map((c) => (
-                                  <DropdownMenuItem key={c.id} onClick={() => handleReassign(lead.id!, lead.assigned_to, c.id)}>
+                                  <DropdownMenuItem key={c.id} onClick={() => handleReassign(lead.id!, lead.assigned_to, c.id, lead.status)}>
                                     {c.full_name}
                                   </DropdownMenuItem>
                                 ))}
@@ -446,8 +461,27 @@ export default function Leads() {
                         ) : (
                           <span className="text-xs text-foreground">{lead.assigned_to_name}</span>
                         )
-                      ) : !lead.has_active_call && !["call_booke", "close", "perdu"].includes(lead.status || "") && (isCeo || user?.collaborateur_level === "confirme") ? (
-                        <Button size="sm" variant="outline" onClick={() => handleAssignToMe(lead.id!)} className="gap-1 text-[11px] h-7 px-2">
+                      ) : lead.status === "a_recycler" && isCeo ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="sm" variant="outline" className="gap-1 text-[11px] h-7 px-2">
+                              <UserPlus className="h-3 w-3" />
+                              Affecter
+                              <ChevronDown className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            {collaborateurs
+                              .filter((c) => c.id !== user?.id)
+                              .map((c) => (
+                                <DropdownMenuItem key={c.id} onClick={() => handleReassign(lead.id!, null, c.id, lead.status)}>
+                                  {c.full_name}
+                                </DropdownMenuItem>
+                              ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : !lead.has_active_call && !["call_booke", "close", "perdu", "a_recycler"].includes(lead.status || "") && (isCeo || user?.collaborateur_level === "confirme") ? (
+                        <Button size="sm" variant="outline" onClick={() => handleAssignToMe(lead.id!, lead.status)} className="gap-1 text-[11px] h-7 px-2">
                           <UserPlus className="h-3 w-3" />
                           M'affecter
                         </Button>
