@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import logo from "@/assets/ethicarena-logo.png";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -18,7 +18,7 @@ const allNavItems = [
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
   { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"] },
   { title: "Mon profil", path: "/profile", icon: User, roles: ["agence"] },
-  { title: "Mon espace", path: "/my-space", icon: User, roles: ["apporteur"] },
+  
 ];
 
 const pageTitles: Record<string, string> = {
@@ -55,12 +55,7 @@ export default function DashboardLayout() {
 
   const pageTitle = pageTitles[location.pathname] || "Dashboard";
   const userRole = profile?.role || "apporteur";
-  const navItems = allNavItems.filter((item) => {
-    if (item.path === "/my-space") {
-      return userRole === "apporteur" || profile?.is_also_apporteur;
-    }
-    return item.roles.includes(userRole);
-  });
+  const navItems = allNavItems.filter((item) => item.roles.includes(userRole));
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
@@ -105,6 +100,19 @@ export default function DashboardLayout() {
             </NavLink>
           ))}
         </nav>
+
+        {profile?.is_also_apporteur && (
+          <div className="p-3 border-t border-border">
+            <NavLink
+              to="/my-space"
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors w-full"
+            >
+              <ArrowLeftRight className="h-4 w-4" />
+              Espace Apporteur
+            </NavLink>
+          </div>
+        )}
       </aside>
 
       {/* Main area */}
