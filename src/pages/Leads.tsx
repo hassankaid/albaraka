@@ -359,16 +359,47 @@ export default function Leads() {
           ))}
         </div>
 
-        <Select value={sourceFilter} onValueChange={setSourceFilter}>
-          <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
-            <SelectValue placeholder="Source" />
-          </SelectTrigger>
-          <SelectContent>
-            {SOURCE_FILTER_OPTIONS.map((s) => (
-              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs bg-card gap-1.5 min-w-[130px] justify-between">
+              {sourceFilter.length === 0 ? "Sources" : `${sourceFilter.length} source${sourceFilter.length > 1 ? "s" : ""}`}
+              <ChevronDown className="h-3 w-3 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[220px] p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Rechercher source…" className="h-9" />
+              <CommandList>
+                <CommandEmpty>Aucune source.</CommandEmpty>
+                <CommandGroup>
+                  {SOURCE_FILTER_OPTIONS.filter(s => s.value !== "all").map((s) => {
+                    const isSelected = sourceFilter.includes(s.value);
+                    return (
+                      <CommandItem
+                        key={s.value}
+                        onSelect={() => {
+                          setSourceFilter(prev =>
+                            isSelected ? prev.filter(v => v !== s.value) : [...prev, s.value]
+                          );
+                        }}
+                      >
+                        <Checkbox checked={isSelected} className="mr-2" />
+                        {s.label}
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+            {sourceFilter.length > 0 && (
+              <div className="border-t p-1">
+                <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setSourceFilter([])}>
+                  Réinitialiser
+                </Button>
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
