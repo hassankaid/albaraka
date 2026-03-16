@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import logo from "@/assets/ethicarena-logo.png";
-import { BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X } from "lucide-react";
+import { BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X, ArrowLeftRight } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
