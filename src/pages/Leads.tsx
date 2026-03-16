@@ -3,17 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Tables } from "@/integrations/supabase/types";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
-  Users, UserPlus, RefreshCw, Search, Phone, Clock, PartyPopper, Inbox, ChevronDown, Instagram, Pencil, Eye, Info, Copy,
-  ChevronLeft, ChevronRight,
+  Users, UserPlus, RefreshCw, Search, Phone, Inbox, ChevronDown, Instagram, Pencil, Eye, Info, Copy,
+  ChevronLeft, ChevronRight, PartyPopper,
 } from "lucide-react";
 import LeadInstagramForm from "@/components/LeadInstagramForm";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
@@ -27,17 +25,16 @@ import {
   getSourceBadgeClass,
   getSourceLabel,
 } from "@/lib/leadConfig";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { formatDateTime } from "@/lib/formatDate";
 
 type LeadEnriched = Tables<"leads_enriched">;
 
-const CALL_TYPE_CONFIG: Record<string, { label: string; className: string }> = {
-  call_vsl: { label: "Call VSL", className: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
-  call_conference: { label: "Call Conférence", className: "bg-violet-500/20 text-violet-300 border-violet-500/30" },
-  pole_vente: { label: "Pôle Vente", className: "bg-blue-500/20 text-blue-300 border-blue-500/30" },
-};
+const TABS = [
+  { value: "a_affecter", label: "À affecter" },
+  { value: "mes_leads", label: "Mes leads" },
+  { value: "tous", label: "Tous" },
+] as const;
 
 export default function Leads() {
   const { profile: user } = useAuth();
@@ -45,7 +42,7 @@ export default function Leads() {
   const [leads, setLeads] = useState<LeadEnriched[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [tab, setTab] = useState("a_affecter");
+  const [tab, setTab] = useState<string>("a_affecter");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -58,7 +55,6 @@ export default function Leads() {
   const PAGE_SIZE = 50;
 
   const fetchLeads = useCallback(async () => {
-    // Fetch all leads by paginating through the 1000-row limit
     let allLeads: LeadEnriched[] = [];
     let from = 0;
     const batchSize = 1000;
@@ -71,17 +67,10 @@ export default function Leads() {
         .order("created_at", { ascending: false })
         .range(from, from + batchSize - 1);
 
-      if (error || !data) {
-        hasMore = false;
-        break;
-      }
-
+      if (error || !data) { hasMore = false; break; }
       allLeads = allLeads.concat(data);
-      if (data.length < batchSize) {
-        hasMore = false;
-      } else {
-        from += batchSize;
-      }
+      hasMore = data.length >= batchSize;
+      from += batchSize;
     }
 
     setLeads(allLeads);
@@ -101,18 +90,12 @@ export default function Leads() {
     fetchCollaborateurs();
   }, [fetchLeads, fetchCollaborateurs]);
 
-  // Realtime subscription
   useEffect(() => {
     const channel = supabase
       .channel("leads-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => {
-        fetchLeads();
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => fetchLeads())
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [fetchLeads]);
 
   const handleRefresh = async () => {
@@ -135,14 +118,9 @@ export default function Leads() {
     }
 
     await supabase.from("lead_activities").insert({
-      lead_id: leadId,
-      user_id: user.id,
-      action: "assigned",
-      old_value: null,
-      new_value: user.id,
-      note: null,
+      lead_id: leadId, user_id: user.id, action: "assigned",
+      old_value: null, new_value: user.id, note: null,
     });
-
     toast({ title: "Lead affecté avec succès" });
     fetchLeads();
   };
@@ -158,58 +136,15 @@ export default function Leads() {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
       await supabase.from("lead_activities").insert({
-        lead_id: leadId,
-        user_id: user.id,
-        action: "reassigned",
-        old_value: oldAssignedTo,
-        new_value: newUserId,
+        lead_id: leadId, user_id: user.id, action: "reassigned",
+        old_value: oldAssignedTo, new_value: newUserId,
       });
       toast({ title: "Lead réassigné avec succès" });
       fetchLeads();
     }
   };
 
-  // Filtered leads
-  const filteredLeads = useMemo(() => {
-    let result = leads;
-
-    // Tab filter
-    if (tab === "a_affecter") {
-      result = result.filter(
-        (l) => !l.assigned_to && !["call_booke", "close", "perdu"].includes(l.status || "")
-      );
-    } else if (tab === "mes_leads" && user) {
-      result = result.filter((l) => l.assigned_to === user.id);
-    }
-
-    // Status filter
-    if (statusFilter !== "all") {
-      result = result.filter((l) => l.status === statusFilter);
-    }
-
-    // Source filter
-    if (sourceFilter !== "all") {
-      result = result.filter((l) => l.source === sourceFilter);
-    }
-
-    // Search
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (l) =>
-          l.raw_full_name?.toLowerCase().includes(q) ||
-          l.contact_full_name?.toLowerCase().includes(q) ||
-          l.raw_email?.toLowerCase().includes(q) ||
-          l.contact_email?.toLowerCase().includes(q) ||
-          l.raw_phone?.toLowerCase().includes(q) ||
-          l.contact_phone?.toLowerCase().includes(q)
-      );
-    }
-
-    return result;
-  }, [leads, tab, statusFilter, sourceFilter, search, user]);
-
-  // Counters
+  // Counts
   const counts = useMemo(() => ({
     total: leads.length,
     aQualifier: leads.filter((l) => l.status === "a_qualifier").length,
@@ -217,24 +152,41 @@ export default function Leads() {
     call_booke: leads.filter((l) => l.status === "call_booke").length,
   }), [leads]);
 
-  // Reset page when filters change
-  useEffect(() => {
-    setPage(0);
-  }, [tab, statusFilter, sourceFilter, search]);
+  // Filtered leads
+  const filteredLeads = useMemo(() => {
+    let result = leads;
 
-  // Paginated leads
+    if (tab === "a_affecter") {
+      result = result.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu"].includes(l.status || ""));
+    } else if (tab === "mes_leads" && user) {
+      result = result.filter((l) => l.assigned_to === user.id);
+    }
+
+    if (statusFilter !== "all") result = result.filter((l) => l.status === statusFilter);
+    if (sourceFilter !== "all") result = result.filter((l) => l.source === sourceFilter);
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((l) =>
+        l.raw_full_name?.toLowerCase().includes(q) ||
+        l.contact_full_name?.toLowerCase().includes(q) ||
+        l.raw_email?.toLowerCase().includes(q) ||
+        l.contact_email?.toLowerCase().includes(q) ||
+        l.raw_phone?.toLowerCase().includes(q) ||
+        l.contact_phone?.toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [leads, tab, statusFilter, sourceFilter, search, user]);
+
+  useEffect(() => { setPage(0); }, [tab, statusFilter, sourceFilter, search]);
+
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
   const paginatedLeads = useMemo(
     () => filteredLeads.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
     [filteredLeads, page]
   );
-
-  const counterCards = [
-    { label: "Total", value: counts.total, icon: Users, gradient: "from-purple-500/20 to-blue-500/20" },
-    { label: "À qualifier", value: counts.aQualifier, icon: Inbox, gradient: "from-muted to-muted" },
-    { label: "À affecter", value: counts.a_affecter, icon: UserPlus, gradient: "from-orange-500/20 to-yellow-500/20" },
-    { label: "Call booké", value: counts.call_booke, icon: Phone, gradient: "from-blue-500/20 to-cyan-500/20" },
-  ];
 
   const emptyMessage = () => {
     if (tab === "a_affecter") {
@@ -262,286 +214,277 @@ export default function Leads() {
     );
   };
 
+  const formatShortDate = (dateStr: string | null) => {
+    if (!dateStr) return "—";
+    return format(new Date(dateStr), "d MMM", { locale: fr });
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-4">
+      {/* Top bar: KPIs + actions */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Leads</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">Gestion des prospects</p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
+            <Users className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-sm font-bold text-foreground">{counts.total}</span>
+            <span className="text-xs text-muted-foreground">leads</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
+            <span className="text-sm font-bold text-foreground">{counts.aQualifier}</span>
+            <span className="text-xs text-muted-foreground">à qualifier</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-orange-500/30">
+            <UserPlus className="h-3.5 w-3.5 text-orange-400" />
+            <span className="text-sm font-bold text-foreground">{counts.a_affecter}</span>
+            <span className="text-xs text-muted-foreground">à affecter</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
+            <Phone className="h-3.5 w-3.5 text-blue-400" />
+            <span className="text-sm font-bold text-foreground">{counts.call_booke}</span>
+            <span className="text-xs text-muted-foreground">call booké</span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {user?.can_add_instagram_leads && (
             <Button size="sm" onClick={() => setIgFormOpen(true)} className="bg-gradient-to-r from-pink-500 to-purple-500 text-primary-foreground text-xs gap-1.5">
-              <Instagram className="h-4 w-4" />
-              Lead Instagram
+              <Instagram className="h-3.5 w-3.5" />
+              Lead IG
             </Button>
           )}
           {user?.is_also_apporteur && (
             <Button size="sm" variant="outline" onClick={() => setApporteurFormOpen(true)} className="text-xs gap-1.5 border-blue-500/40 text-blue-400 hover:bg-blue-500/10">
-              <UserPlus className="h-4 w-4" />
-              Apporter un lead
+              <UserPlus className="h-3.5 w-3.5" />
+              Apporter
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-            Actualiser
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefresh} disabled={refreshing} title="Actualiser">
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
         </div>
       </div>
 
-      {/* Counter cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {counterCards.map((c) => (
-          <Card key={c.label} className={`bg-gradient-to-br ${c.gradient} border-border/50 backdrop-blur-sm`}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-background/50">
-                <c.icon className="h-5 w-5 text-foreground" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{c.value}</p>
-                <p className="text-xs text-muted-foreground">{c.label}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Tabs */}
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="bg-card border border-border">
-          <TabsTrigger value="a_affecter">À affecter ({counts.a_affecter})</TabsTrigger>
-          <TabsTrigger value="mes_leads">Mes leads</TabsTrigger>
-          <TabsTrigger value="tous">Tous ({counts.total})</TabsTrigger>
-        </TabsList>
-
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 mt-4">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[140px] bg-card">
-              <SelectValue placeholder="Statut" />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_FILTER_OPTIONS.map((s) => (
-                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={sourceFilter} onValueChange={setSourceFilter}>
-            <SelectTrigger className="w-[140px] bg-card">
-              <SelectValue placeholder="Source" />
-            </SelectTrigger>
-            <SelectContent>
-              {SOURCE_FILTER_OPTIONS.map((s) => (
-                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher nom, email, téléphone..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-card"
-            />
-          </div>
+      {/* Tabs + filters row */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center bg-card border border-border rounded-lg p-0.5">
+          {TABS.map((t) => (
+            <button
+              key={t.value}
+              onClick={() => setTab(t.value)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                tab === t.value
+                  ? "gradient-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t.label}
+              {t.value === "a_affecter" ? ` (${counts.a_affecter})` : t.value === "tous" ? ` (${counts.total})` : ""}
+            </button>
+          ))}
         </div>
 
-        {/* Table content for all tabs */}
-        {["a_affecter", "mes_leads", "tous"].map((tabValue) => (
-          <TabsContent key={tabValue} value={tabValue} className="mt-4">
-            {loading ? (
-              <div className="flex items-center justify-center py-16">
-                <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : filteredLeads.length === 0 ? (
-              emptyMessage()
-            ) : (
-              <>
-              <Card className="border-border/50 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-border hover:bg-transparent">
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Source</TableHead>
-                      <TableHead>Apporteur</TableHead>
-                      <TableHead>Call</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead className="w-[150px]">Setter</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="w-[100px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedLeads.map((lead) => (
-                      <TableRow key={lead.id} className="border-border hover:bg-secondary/50 transition-colors">
-                        <TableCell>
-                          <div>
-                            <p className="font-semibold text-foreground">{lead.raw_full_name || lead.contact_full_name || "—"}</p>
-                            <p className="text-xs text-muted-foreground">{lead.raw_email || lead.contact_email}</p>
-                            {(() => {
-                              const phone = lead.raw_phone || lead.contact_phone;
-                              if (!phone) return <p className="text-xs text-muted-foreground">—</p>;
-                              return (
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                  <a href={`tel:${phone}`} className="text-sm font-medium text-foreground hover:underline">
-                                    {phone}
-                                  </a>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      navigator.clipboard.writeText(phone);
-                                      toast({ title: "Numéro copié" });
-                                    }}
-                                    title="Copier"
-                                    className="text-muted-foreground hover:text-foreground transition-colors"
-                                  >
-                                    <Copy className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {lead.source && (
-                            <Badge variant="outline" className={`text-xs ${getSourceBadgeClass(lead.source)}`}>
-                              {getSourceLabel(lead.source)}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-muted-foreground">{lead.apporteur_name || "—"}</span>
-                        </TableCell>
-                        <TableCell>
-                          {(() => {
-                            const ct = (lead as any).call_type as string | null;
-                            const config = ct ? CALL_TYPE_CONFIG[ct] : null;
-                            if (config) {
-                              return (
-                                <Badge variant="outline" className={`text-xs ${config.className}`}>
-                                  {config.label}
-                                </Badge>
-                              );
-                            }
-                            return <span className="text-sm text-muted-foreground">—</span>;
-                          })()}
-                        </TableCell>
-                        <TableCell>
-                          {lead.status && (
-                            <Badge variant="outline" className={`text-xs ${LEAD_STATUS_COLORS[lead.status] || ""}`}>
-                              {LEAD_STATUS_LABELS[lead.status] || lead.status}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {lead.assigned_to ? (
-                            (lead.assigned_to === user?.id || user?.role === "ceo") ? (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground h-auto p-0">
-                                    {lead.assigned_to_name || "Assigné"}
-                                    <ChevronDown className="h-3 w-3" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start">
-                                  {collaborateurs
-                                    .filter((c) => c.id !== lead.assigned_to)
-                                    .map((c) => (
-                                      <DropdownMenuItem key={c.id} onClick={() => handleReassign(lead.id!, lead.assigned_to, c.id)}>
-                                        {c.full_name}
-                                      </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            ) : (
-                              <span className="text-sm text-foreground">{lead.assigned_to_name}</span>
-                            )
-                          ) : !lead.has_active_call ? (
-                            <Button size="sm" variant="outline" onClick={() => handleAssignToMe(lead.id!)} className="gap-1.5 text-xs">
-                              <UserPlus className="h-3.5 w-3.5" />
-                              M'affecter
-                            </Button>
+        <Select value={sourceFilter} onValueChange={setSourceFilter}>
+          <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
+            <SelectValue placeholder="Source" />
+          </SelectTrigger>
+          <SelectContent>
+            {SOURCE_FILTER_OPTIONS.map((s) => (
+              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
+            <SelectValue placeholder="Statut" />
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_FILTER_OPTIONS.map((s) => (
+              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-8 text-xs bg-card"
+          />
+        </div>
+      </div>
+
+      {/* Table */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : filteredLeads.length === 0 ? (
+        emptyMessage()
+      ) : (
+        <>
+          <div className="rounded-lg border border-border/50 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="w-[220px]">Contact</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Apporteur</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead className="w-[140px]">Setter</TableHead>
+                  <TableHead className="w-[80px]">Date</TableHead>
+                  <TableHead className="w-[70px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedLeads.map((lead) => (
+                  <TableRow key={lead.id} className="border-border hover:bg-secondary/50 transition-colors">
+                    {/* Contact */}
+                    <TableCell>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground text-sm truncate">{lead.raw_full_name || lead.contact_full_name || "—"}</p>
+                        {lead.raw_email || lead.contact_email ? (
+                          <p className="text-xs text-muted-foreground truncate">{lead.raw_email || lead.contact_email}</p>
+                        ) : null}
+                        {(() => {
+                          const phone = lead.raw_phone || lead.contact_phone;
+                          if (!phone) return null;
+                          return (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <a href={`tel:${phone}`} className="text-xs text-muted-foreground hover:text-foreground hover:underline truncate">
+                                {phone}
+                              </a>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigator.clipboard.writeText(phone);
+                                  toast({ title: "Numéro copié" });
+                                }}
+                                className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </button>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </TableCell>
+                    {/* Source */}
+                    <TableCell>
+                      {lead.source && (
+                        <Badge variant="outline" className={`text-[10px] leading-tight ${getSourceBadgeClass(lead.source)}`}>
+                          {getSourceLabel(lead.source)}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    {/* Apporteur */}
+                    <TableCell>
+                      <span className="text-xs text-muted-foreground">{lead.apporteur_name || "—"}</span>
+                    </TableCell>
+                    {/* Statut */}
+                    <TableCell>
+                      {lead.status && (
+                        <Badge variant="outline" className={`text-[10px] leading-tight ${LEAD_STATUS_COLORS[lead.status] || ""}`}>
+                          {LEAD_STATUS_LABELS[lead.status] || lead.status}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    {/* Setter */}
+                    <TableCell>
+                      {lead.assigned_to ? (
+                        (lead.assigned_to === user?.id || user?.role === "ceo") ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground h-auto p-0">
+                                {lead.assigned_to_name || "Assigné"}
+                                <ChevronDown className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              {collaborateurs
+                                .filter((c) => c.id !== lead.assigned_to)
+                                .map((c) => (
+                                  <DropdownMenuItem key={c.id} onClick={() => handleReassign(lead.id!, lead.assigned_to, c.id)}>
+                                    {c.full_name}
+                                  </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : (
+                          <span className="text-xs text-foreground">{lead.assigned_to_name}</span>
+                        )
+                      ) : !lead.has_active_call ? (
+                        <Button size="sm" variant="outline" onClick={() => handleAssignToMe(lead.id!)} className="gap-1 text-[11px] h-7 px-2">
+                          <UserPlus className="h-3 w-3" />
+                          M'affecter
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    {/* Date */}
+                    <TableCell>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatShortDate(lead.created_at)}
+                      </span>
+                    </TableCell>
+                    {/* Actions */}
+                    <TableCell>
+                      <div className="flex items-center gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => setProcessLead(lead)}
+                          title={lead.assigned_to === user?.id || user?.role === "ceo" ? "Traiter" : "Consulter"}
+                        >
+                          {lead.assigned_to === user?.id || user?.role === "ceo" ? (
+                            <Pencil className="h-3.5 w-3.5" />
                           ) : (
-                            <span className="text-sm text-muted-foreground">—</span>
+                            <Info className="h-3.5 w-3.5" />
                           )}
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-muted-foreground">
-                            {lead.created_at
-                              ? formatDistanceToNow(new Date(lead.created_at), { addSuffix: true, locale: fr })
-                              : "—"}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            {(lead.assigned_to === user?.id || user?.role === "ceo") ? (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => setProcessLead(lead)}
-                                title="Traiter"
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => setProcessLead(lead)}
-                                title="Consulter"
-                              >
-                                <Info className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                            {lead.contact_id && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => setContactSheetId(lead.contact_id)}
-                                title="Voir contact"
-                              >
-                                <Eye className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Card>
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-4">
-                  <p className="text-sm text-muted-foreground">
-                    {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filteredLeads.length)} sur {filteredLeads.length}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
-                      <ChevronLeft className="h-4 w-4 mr-1" />
-                      Précédent
-                    </Button>
-                    <span className="text-sm text-muted-foreground">
-                      {page + 1} / {totalPages}
-                    </span>
-                    <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
-                      Suivant
-                      <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-              </>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
+                        </Button>
+                        {lead.contact_id && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => setContactSheetId(lead.contact_id)}
+                            title="Voir contact"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filteredLeads.length)} sur {filteredLeads.length}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+                  <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+                  Préc.
+                </Button>
+                <span className="text-xs text-muted-foreground">{page + 1}/{totalPages}</span>
+                <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                  Suiv.
+                  <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Forms & Modals */}
       <LeadInstagramForm open={igFormOpen} onOpenChange={setIgFormOpen} onSuccess={fetchLeads} />
