@@ -139,6 +139,18 @@ export default function Payments() {
       fetchPayments();
     }
   };
+  const saveNotes = async (paymentId: string, newNotes: string) => {
+    const { error } = await supabase
+      .from("payments")
+      .update({ notes: newNotes })
+      .eq("id", paymentId);
+    if (error) {
+      toast({ title: "Erreur lors de la sauvegarde", variant: "destructive" });
+    } else {
+      setAllPayments((prev) => prev.map((p) => p.id === paymentId ? { ...p, notes: newNotes } : p));
+      toast({ title: "Commentaire enregistré" });
+    }
+  };
 
   const filteredPayments = useMemo(() => {
     let result = allPayments;
