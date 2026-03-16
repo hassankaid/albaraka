@@ -13,6 +13,7 @@ const allNavItems = [
   { title: "Contacts", path: "/contacts", icon: BookUser, roles: ["ceo"] },
   { title: "Ventes", path: "/sales", icon: BadgeEuro, roles: ["ceo", "collaborateur", "apporteur"] },
   { title: "Paiements", path: "/payments", icon: CreditCard, roles: ["ceo", "collaborateur"] },
+  { title: "Mes commissions", path: "/my-commissions", icon: Receipt, roles: ["ceo", "collaborateur"] },
   { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"] },
   { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
