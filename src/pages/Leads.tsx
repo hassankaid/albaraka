@@ -158,13 +158,19 @@ export default function Leads() {
     return leads.filter(l => l.assigned_to === user.id);
   }, [leads, user, isCeo]);
 
-  // Counts — "à affecter" always global, rest scoped
+  // Counts
+  const myLeadsCount = useMemo(() => {
+    if (!user) return 0;
+    return leads.filter(l => l.assigned_to === user.id).length;
+  }, [leads, user]);
+
   const counts = useMemo(() => ({
     total: scopedLeads.length,
     aQualifier: scopedLeads.filter((l) => l.status === "a_qualifier").length,
     a_affecter: leads.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu"].includes(l.status || "")).length,
     call_booke: scopedLeads.filter((l) => l.status === "call_booke").length,
-  }), [scopedLeads, leads]);
+    mes_leads: myLeadsCount,
+  }), [scopedLeads, leads, myLeadsCount]);
 
   // Filtered leads
   const filteredLeads = useMemo(() => {
