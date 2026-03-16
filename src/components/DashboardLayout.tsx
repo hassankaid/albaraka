@@ -10,7 +10,7 @@ const allNavItems = [
   { title: "Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur"] },
   { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"] },
   { title: "Calls", path: "/calls", icon: Phone, roles: ["ceo", "collaborateur"] },
-  { title: "Contacts", path: "/contacts", icon: BookUser, roles: ["ceo", "collaborateur"] },
+  { title: "Contacts", path: "/contacts", icon: BookUser, roles: ["ceo"] },
   { title: "Ventes", path: "/sales", icon: BadgeEuro, roles: ["ceo", "collaborateur", "apporteur"] },
   { title: "Paiements", path: "/payments", icon: CreditCard, roles: ["ceo", "collaborateur"] },
   { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"] },
