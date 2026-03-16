@@ -131,7 +131,11 @@ export default function CreateSaleForm({ prefilledContactId, prefilledLeadId, on
             <Select value={saleClosedBy} onValueChange={setSaleClosedBy}>
               <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
               <SelectContent>
-                {teamProfiles.map((p) => (<SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>))}
+                {teamProfiles.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.full_name}{!p.is_active ? " (inactif)" : ""}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
