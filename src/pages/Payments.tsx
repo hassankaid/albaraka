@@ -108,8 +108,10 @@ export default function Payments() {
         due_date: p.due_date,
         paid_at: p.paid_at,
         status: p.status,
+        notes: p.notes,
         contact_name: p.contacts?.full_name || null,
         contact_email: p.contacts?.email || null,
+        contact_phone: p.contacts?.phone_normalized || null,
       }))
     );
     setLoading(false);
