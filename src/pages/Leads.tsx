@@ -52,7 +52,7 @@ export default function Leads() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [collaborateurs, setCollaborateurs] = useState<{ id: string; full_name: string }[]>([]);
+  const [collaborateurs, setCollaborateurs] = useState<{ id: string; full_name: string; collaborateur_level: string | null }[]>([]);
   const [igFormOpen, setIgFormOpen] = useState(false);
   const [apporteurFormOpen, setApporteurFormOpen] = useState(false);
   const [processLead, setProcessLead] = useState<LeadEnriched | null>(null);
