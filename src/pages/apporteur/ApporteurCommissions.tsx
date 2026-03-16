@@ -194,19 +194,19 @@ export default function ApporteurCommissions({ defaultRoleFilter }: ApporteurCom
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Detect available roles
-  const availableRoles = useMemo(() => {
-    const roles = new Set(allCommissions.map(c => c.role));
-    return Array.from(roles).sort();
+  // Detect available source categories (apporteur vs collaborateur)
+  const availableCategories = useMemo(() => {
+    const cats = new Set(allCommissions.map(c => ROLE_SOURCE_CATEGORY[c.role] || "collaborateur"));
+    return Array.from(cats).sort();
   }, [allCommissions]);
 
-  const showRoleFilter = availableRoles.length > 1 && !defaultRoleFilter;
+  const showRoleFilter = availableCategories.length > 1 && !defaultRoleFilter;
 
-  // Filter commissions by role
+  // Filter commissions by source category
   const filteredCommissions = useMemo(() => {
     const activeFilter = defaultRoleFilter || roleFilter;
     if (activeFilter === "all") return allCommissions;
-    return allCommissions.filter(c => c.role === activeFilter);
+    return allCommissions.filter(c => (ROLE_SOURCE_CATEGORY[c.role] || "collaborateur") === activeFilter);
   }, [allCommissions, roleFilter, defaultRoleFilter]);
 
   // ── KPIs ──
