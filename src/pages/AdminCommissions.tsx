@@ -24,6 +24,7 @@ import {
   RefreshCw, Search, Filter, Pencil, CalendarIcon, BadgeEuro,
   CheckCircle2, Clock, AlertCircle, XCircle, FileText,
 } from "lucide-react";
+import { ROLE_CONFIG } from "@/lib/roleConfig";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatDateOnly } from "@/lib/formatDate";
@@ -59,12 +60,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
   cancelled: { label: "Annulée", color: "bg-destructive/15 text-destructive border-destructive/30", icon: XCircle },
 };
 
-const ROLE_COLORS: Record<string, string> = {
-  apporteur: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30",
-  setter: "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30",
-  closer: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
-  agence_marketing: "bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30",
-};
+// ROLE_CONFIG imported from @/lib/roleConfig
 
 export default function AdminCommissions() {
   const { profile } = useAuth();
@@ -356,9 +352,17 @@ export default function AdminCommissions() {
                       <p className="font-medium text-foreground text-sm">{c.beneficiary_name}</p>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`text-[10px] leading-tight ${ROLE_COLORS[c.role] || ""}`}>
-                        {c.role}
-                      </Badge>
+                      {(() => {
+                        const cfg = ROLE_CONFIG[c.role];
+                        if (!cfg) return <span className="text-xs text-muted-foreground">{c.role}</span>;
+                        const Icon = cfg.icon;
+                        return (
+                          <Badge variant="outline" className={`text-[10px] leading-tight ${cfg.class}`}>
+                            <Icon className="h-3 w-3 mr-1" />
+                            {cfg.label}
+                          </Badge>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell>
                       <div>

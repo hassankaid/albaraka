@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BadgeEuro, RefreshCw, Plus, Settings, Search, Inbox, ChevronLeft, ChevronRight } from "lucide-react";
+import { ROLE_CONFIG } from "@/lib/roleConfig";
 import { formatDateOnly } from "@/lib/formatDate";
 import NewSaleModal from "@/components/sales/NewSaleModal";
 import ManageCommissionsModal from "@/components/sales/ManageCommissionsModal";
@@ -51,12 +52,7 @@ const PAYMENT_LABELS: Record<string, string> = {
   refunded: "Remboursé",
 };
 
-const ROLE_COLORS: Record<string, string> = {
-  apporteur: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  setter: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  closer: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  agence_marketing: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-};
+// ROLE_CONFIG imported from @/lib/roleConfig
 
 const PAGE_SIZE = 50;
 
@@ -339,9 +335,17 @@ export default function Sales() {
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{formatDate(c.sold_at)}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`text-[10px] leading-tight ${ROLE_COLORS[c.role] || ""}`}>
-                        {c.role}
-                      </Badge>
+                      {(() => {
+                        const cfg = ROLE_CONFIG[c.role];
+                        if (!cfg) return <span className="text-xs text-muted-foreground">{c.role}</span>;
+                        const Icon = cfg.icon;
+                        return (
+                          <Badge variant="outline" className={`text-[10px] leading-tight ${cfg.class}`}>
+                            <Icon className="h-3 w-3 mr-1" />
+                            {cfg.label}
+                          </Badge>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell className="text-sm text-foreground">{c.percentage}%</TableCell>
                     <TableCell className="font-semibold text-sm text-foreground">

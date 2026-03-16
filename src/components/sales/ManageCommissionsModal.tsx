@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Trash2, Plus, Pencil, Check, X } from "lucide-react";
+import { ROLE_CONFIG } from "@/lib/roleConfig";
 
 interface Commission {
   id: string;
@@ -58,12 +59,7 @@ interface ManageCommissionsModalProps {
   onUpdated: () => void;
 }
 
-const ROLE_COLORS: Record<string, string> = {
-  apporteur: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  setter: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  closer: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  agence_marketing: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-};
+// ROLE_CONFIG imported from @/lib/roleConfig
 
 const ROLE_SUGGESTED_PCT: Record<string, number> = {
   apporteur: 25,
@@ -254,9 +250,17 @@ export default function ManageCommissionsModal({
                     <div className="min-w-0">
                       <p className="font-medium text-sm text-foreground truncate">{g.beneficiary_name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <Badge variant="outline" className={`text-xs ${ROLE_COLORS[g.role] || ""}`}>
-                          {g.role}
-                        </Badge>
+                        {(() => {
+                          const cfg = ROLE_CONFIG[g.role];
+                          if (!cfg) return <Badge variant="outline" className="text-xs">{g.role}</Badge>;
+                          const Icon = cfg.icon;
+                          return (
+                            <Badge variant="outline" className={`text-xs ${cfg.class}`}>
+                              <Icon className="h-3 w-3 mr-1" />
+                              {cfg.label}
+                            </Badge>
+                          );
+                        })()}
                         {editingKey === g.key ? (
                           <div className="flex items-center gap-1">
                             <Input
