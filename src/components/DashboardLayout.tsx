@@ -18,7 +18,7 @@ const allNavItems = [
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
   { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"] },
   { title: "Mon profil", path: "/profile", icon: User, roles: ["agence"] },
-  { title: "Mon espace", path: "/my-space", icon: User, roles: ["apporteur"] },
+  
 ];
 
 const pageTitles: Record<string, string> = {
