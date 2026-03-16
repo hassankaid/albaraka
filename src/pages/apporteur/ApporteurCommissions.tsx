@@ -285,13 +285,15 @@ export default function ApporteurCommissions({ defaultRoleFilter }: ApporteurCom
   ] : [];
 
   const renderRoleBadge = (role: string) => {
-    const info = ROLE_LABELS[role];
+    const category = ROLE_SOURCE_CATEGORY[role] || "collaborateur";
+    const info = SOURCE_FILTER_LABELS[category];
     if (!info) return null;
     const Icon = info.icon;
+    const preciseLabel = PRECISE_ROLE_LABELS[role] || role;
     return (
       <Badge variant="outline" className={`text-xs ${info.class}`}>
         <Icon className="h-3 w-3 mr-1" />
-        {info.label}
+        {preciseLabel}
       </Badge>
     );
   };
@@ -307,9 +309,9 @@ export default function ApporteurCommissions({ defaultRoleFilter }: ApporteurCom
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Toutes les sources</SelectItem>
-              {availableRoles.map(r => (
+              {availableCategories.map(r => (
                 <SelectItem key={r} value={r}>
-                  {ROLE_LABELS[r]?.label || r}
+                  {SOURCE_FILTER_LABELS[r]?.label || r}
                 </SelectItem>
               ))}
             </SelectContent>
