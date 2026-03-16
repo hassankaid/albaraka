@@ -16,6 +16,7 @@ import Calls from "./pages/Calls";
 import Contacts from "./pages/Contacts";
 import Sales from "./pages/Sales";
 import Payments from "./pages/Payments";
+import MyCommissions from "./pages/MyCommissions";
 import Profile from "./pages/Profile";
 import AdminInvoices from "./pages/AdminInvoices";
 import AdminCommissions from "./pages/AdminCommissions";
