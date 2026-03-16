@@ -7,29 +7,28 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
 const allNavItems = [
-  { title: "Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur"] },
-  { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"] },
-  { title: "Calls", path: "/calls", icon: Phone, roles: ["ceo", "collaborateur"] },
+  { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur"] },
+  { title: "Mes Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"] },
+  { title: "Mes Calls", path: "/calls", icon: Phone, roles: ["ceo", "collaborateur"] },
   { title: "Contacts", path: "/contacts", icon: BookUser, roles: ["ceo"] },
-  { title: "Ventes", path: "/sales", icon: BadgeEuro, roles: ["ceo", "collaborateur", "apporteur"] },
-  { title: "Paiements", path: "/payments", icon: CreditCard, roles: ["ceo", "collaborateur"] },
-  { title: "Mes commissions", path: "/my-commissions", icon: Receipt, roles: ["ceo", "collaborateur"] },
+  { title: "Mes Ventes", path: "/sales", icon: BadgeEuro, roles: ["ceo", "collaborateur", "apporteur"] },
+  { title: "Mes Paiements", path: "/payments", icon: CreditCard, roles: ["ceo", "collaborateur"] },
+  { title: "Mes Commissions", path: "/my-commissions", icon: Receipt, roles: ["ceo", "collaborateur"] },
   { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"] },
   { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
   { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"] },
   { title: "Mon profil", path: "/profile", icon: User, roles: ["agence"] },
-  
 ];
 
 const pageTitles: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/leads": "Leads",
-  "/calls": "Calls",
+  "/dashboard": "Mon Dashboard",
+  "/leads": "Mes Leads",
+  "/calls": "Mes Calls",
   "/contacts": "Contacts",
-  "/sales": "Ventes",
-  "/payments": "Paiements",
-  "/my-commissions": "Mes commissions",
+  "/sales": "Mes Ventes",
+  "/payments": "Mes Paiements",
+  "/my-commissions": "Mes Commissions",
   "/admin/invoices": "Factures Apporteurs",
   "/admin/commissions": "Commissions",
   "/admin/data": "Gestion des données",
