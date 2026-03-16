@@ -330,9 +330,7 @@ export default function AdminCommissions() {
           <p className="text-sm text-muted-foreground mt-1">Modifiez vos filtres pour voir plus de résultats.</p>
         </div>
       ) : (
-        <Card className="border-border/50 overflow-hidden">
-          <Table>
-            <TableHeader>
+        <div className="rounded-lg border border-border/50 overflow-hidden">
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead>Bénéficiaire</TableHead>
                 <TableHead>Rôle</TableHead>
