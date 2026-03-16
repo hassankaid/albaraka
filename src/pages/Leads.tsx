@@ -236,7 +236,7 @@ export default function Leads() {
     }
 
     if (statusFilter !== "all") result = result.filter((l) => l.status === statusFilter);
-    if (sourceFilter !== "all") result = result.filter((l) => l.source === sourceFilter);
+    if (sourceFilter.length > 0) result = result.filter((l) => l.source && sourceFilter.includes(l.source));
 
     if (search.trim()) {
       const q = search.toLowerCase();
