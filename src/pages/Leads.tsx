@@ -290,7 +290,7 @@ export default function Leads() {
       {/* Tabs + filters row */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center bg-card border border-border rounded-lg p-0.5">
-          {TABS.map((t) => (
+          {(isCeo ? CEO_TABS : COLLAB_TABS).map((t) => (
             <button
               key={t.value}
               onClick={() => setTab(t.value)}
@@ -301,7 +301,10 @@ export default function Leads() {
               }`}
             >
               {t.label}
-              {t.value === "a_affecter" ? ` (${counts.a_affecter})` : t.value === "tous" ? ` (${counts.total})` : ""}
+              {t.value === "a_affecter" ? ` (${counts.a_affecter})`
+                : t.value === "mes_leads" ? ` (${counts.mes_leads})`
+                : t.value === "tous" ? ` (${counts.total})`
+                : ""}
             </button>
           ))}
         </div>
