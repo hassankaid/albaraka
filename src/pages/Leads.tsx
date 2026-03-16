@@ -37,6 +37,7 @@ const COLLAB_TABS = [
 
 const CEO_TABS = [
   { value: "a_affecter", label: "À affecter" },
+  { value: "a_recycler", label: "À recycler" },
   { value: "mes_leads", label: "Mes leads" },
   { value: "tous", label: "Tous" },
 ] as const;
