@@ -37,6 +37,7 @@ const COLLAB_TABS = [
 
 const CEO_TABS = [
   { value: "a_affecter", label: "À affecter" },
+  { value: "a_recycler", label: "À recycler" },
   { value: "mes_leads", label: "Mes leads" },
   { value: "tous", label: "Tous" },
 ] as const;
@@ -167,7 +168,8 @@ export default function Leads() {
   const counts = useMemo(() => ({
     total: scopedLeads.length,
     aQualifier: scopedLeads.filter((l) => l.status === "a_qualifier").length,
-    a_affecter: leads.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu"].includes(l.status || "")).length,
+    a_affecter: leads.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu", "a_recycler"].includes(l.status || "")).length,
+    a_recycler: leads.filter((l) => l.status === "a_recycler").length,
     call_booke: scopedLeads.filter((l) => l.status === "call_booke").length,
     mes_leads: myLeadsCount,
   }), [scopedLeads, leads, myLeadsCount]);
@@ -177,8 +179,10 @@ export default function Leads() {
     let result: LeadEnriched[];
 
     if (tab === "a_affecter") {
-      // Always show ALL unassigned leads for everyone
-      result = leads.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu"].includes(l.status || ""));
+      // Always show ALL unassigned leads for everyone (excluding recycled)
+      result = leads.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu", "a_recycler"].includes(l.status || ""));
+    } else if (tab === "a_recycler") {
+      result = leads.filter((l) => l.status === "a_recycler");
     } else if (tab === "mes_leads") {
       result = user ? leads.filter((l) => l.assigned_to === user.id) : [];
     } else {
@@ -302,6 +306,7 @@ export default function Leads() {
             >
               {t.label}
               {t.value === "a_affecter" ? ` (${counts.a_affecter})`
+                : t.value === "a_recycler" ? ` (${counts.a_recycler})`
                 : t.value === "mes_leads" ? ` (${counts.mes_leads})`
                 : t.value === "tous" ? ` (${counts.total})`
                 : ""}
