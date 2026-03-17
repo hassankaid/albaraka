@@ -89,56 +89,72 @@ export default function AdminCommissions() {
   const fetchData = useCallback(async () => {
     if (!profile) return;
 
-    const { data, error } = await supabase
-      .from("commissions")
-      .select(`
-        id, role, percentage, amount, status, paid_at, created_at,
-        beneficiary_user_id, beneficiary_external,
-        profiles!commissions_beneficiary_user_id_fkey(full_name),
-        sales!commissions_sale_id_fkey(
-          product, amount_ht, sold_at,
-          contacts!sales_contact_id_fkey(full_name)
-        ),
-        payments!commissions_payment_id_fkey(
-          payment_number, total_payments, status, amount, due_date, paid_at
-        )
-      `)
-      .not("payment_id", "is", null)
-      .order("created_at", { ascending: false });
+    const selectStr = `
+      id, role, percentage, amount, status, paid_at, created_at,
+      beneficiary_user_id, beneficiary_external,
+      profiles!commissions_beneficiary_user_id_fkey(full_name),
+      sales!commissions_sale_id_fkey(
+        product, amount_ht, sold_at,
+        contacts!sales_contact_id_fkey(full_name)
+      ),
+      payments!commissions_payment_id_fkey(
+        payment_number, total_payments, status, amount, due_date, paid_at
+      )
+    `;
 
-    if (error) {
-      console.error("Error fetching commissions:", error);
-      toast({ title: "Erreur de chargement", variant: "destructive" });
-      setLoading(false);
-      return;
+    const batchSize = 1000;
+    let allData: any[] = [];
+    let offset = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from("commissions")
+        .select(selectStr)
+        .not("payment_id", "is", null)
+        .order("created_at", { ascending: false })
+        .range(offset, offset + batchSize - 1);
+
+      if (error) {
+        console.error("Error fetching commissions:", error);
+        toast({ title: "Erreur de chargement", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        allData.push(...data);
+        offset += batchSize;
+        hasMore = data.length === batchSize;
+      } else {
+        hasMore = false;
+      }
     }
 
-    if (data) {
-      setCommissions(
-        data.map((c: any) => ({
-          id: c.id,
-          role: c.role,
-          percentage: c.percentage,
-          amount: c.amount,
-          status: c.status,
-          paid_at: c.paid_at,
-          created_at: c.created_at,
-          beneficiary_user_id: c.beneficiary_user_id,
-          beneficiary_external: c.beneficiary_external,
-          beneficiary_name: c.profiles?.full_name || c.beneficiary_external || "—",
-          sale_product: c.sales?.product || "—",
-          sale_amount_ht: c.sales?.amount_ht || 0,
-          sale_sold_at: c.sales?.sold_at,
-          contact_name: c.sales?.contacts?.full_name || "—",
-          payment_number: c.payments?.payment_number,
-          total_payments: c.payments?.total_payments,
-          payment_status: c.payments?.status,
-          payment_amount: c.payments?.amount,
-          payment_due_date: c.payments?.due_date,
-          payment_paid_at: c.payments?.paid_at,
-        }))
-      );
-    }
+    setCommissions(
+      allData.map((c: any) => ({
+        id: c.id,
+        role: c.role,
+        percentage: c.percentage,
+        amount: c.amount,
+        status: c.status,
+        paid_at: c.paid_at,
+        created_at: c.created_at,
+        beneficiary_user_id: c.beneficiary_user_id,
+        beneficiary_external: c.beneficiary_external,
+        beneficiary_name: c.profiles?.full_name || c.beneficiary_external || "—",
+        sale_product: c.sales?.product || "—",
+        sale_amount_ht: c.sales?.amount_ht || 0,
+        sale_sold_at: c.sales?.sold_at,
+        contact_name: c.sales?.contacts?.full_name || "—",
+        payment_number: c.payments?.payment_number,
+        total_payments: c.payments?.total_payments,
+        payment_status: c.payments?.status,
+        payment_amount: c.payments?.amount,
+        payment_due_date: c.payments?.due_date,
+        payment_paid_at: c.payments?.paid_at,
+      }))
+    );
     setLoading(false);
   }, [profile, toast]);
 
