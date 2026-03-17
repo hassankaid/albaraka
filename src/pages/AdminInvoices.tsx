@@ -429,6 +429,39 @@ export default function AdminInvoices() {
     fetchInvoices();
   };
 
+  const handleBulkDownload = async (invoicesToDownload: InvoiceRow[]) => {
+    const withPdf = invoicesToDownload.filter(inv => inv.pdf_url);
+    if (withPdf.length === 0) {
+      toast({ title: "Aucune facture", description: "Aucune facture avec PDF à télécharger", variant: "destructive" });
+      return;
+    }
+    setBulkDownloading(true);
+    setBulkDownloadProgress(0);
+    setBulkDownloadTotal(withPdf.length);
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < withPdf.length; i++) {
+      try {
+        const html = await fetchInvoiceHtml(withPdf[i].pdf_url!);
+        await downloadInvoicePdf(withPdf[i].invoice_number, html);
+        successCount++;
+      } catch {
+        errorCount++;
+      }
+      setBulkDownloadProgress(i + 1);
+      // Small delay between downloads to avoid browser blocking
+      if (i < withPdf.length - 1) await new Promise(r => setTimeout(r, 800));
+    }
+
+    setBulkDownloading(false);
+    toast({
+      title: "Téléchargement terminé",
+      description: `${successCount} facture(s) téléchargée(s)${errorCount > 0 ? `, ${errorCount} erreur(s)` : ""}`,
+    });
+  };
+
   const toggleInvoiceSelect = (id: string) => {
     setSelectedInvoiceIds(prev => {
       const next = new Set(prev);
