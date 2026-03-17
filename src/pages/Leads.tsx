@@ -300,8 +300,8 @@ export default function Leads() {
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
             <Users className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-sm font-bold text-foreground">{counts.total}</span>
-            <span className="text-xs text-muted-foreground">{isCeo ? "leads" : "mes leads"}</span>
+            <span className="text-sm font-bold text-foreground">{filteredLeads.length}</span>
+            <span className="text-xs text-muted-foreground">résultats</span>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
             <span className="text-sm font-bold text-foreground">{counts.aQualifier}</span>
