@@ -24,7 +24,8 @@ import {
   LEAD_STATUS_COLORS,
   LEAD_STATUS_LABELS,
   STATUS_FILTER_OPTIONS,
-  SOURCE_FILTER_OPTIONS,
+  SOURCE_GROUPS,
+  leadSourceConfig,
   getSourceBadgeClass,
   getSourceLabel,
 } from "@/lib/leadConfig";
