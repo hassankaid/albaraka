@@ -238,8 +238,7 @@ export default function Leads() {
     }
 
     if (statusFilter !== "all") result = result.filter((l) => l.status === statusFilter);
-    // Only apply source filter on "À affecter" tab
-    if (sourceFilter.length > 0 && tab === "a_affecter") result = result.filter((l) => l.source && sourceFilter.includes(l.source));
+    if (sourceFilter.length > 0) result = result.filter((l) => l.source && sourceFilter.includes(l.source));
 
     if (search.trim()) {
       const q = search.toLowerCase();
