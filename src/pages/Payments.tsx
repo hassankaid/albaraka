@@ -569,6 +569,7 @@ export default function Payments() {
           </DialogHeader>
           <Calendar
             mode="single"
+            required
             selected={paidPickerPayment?.due_date ? new Date(paidPickerPayment.due_date) : new Date()}
             defaultMonth={paidPickerPayment?.due_date ? new Date(paidPickerPayment.due_date) : new Date()}
             onSelect={(date) => { if (date && paidPickerPayment) markAsPaid(paidPickerPayment.id, date); }}
