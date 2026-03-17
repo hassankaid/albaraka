@@ -237,8 +237,8 @@ export default function Leads() {
     }
 
     if (statusFilter !== "all") result = result.filter((l) => l.status === statusFilter);
-    // Don't apply source filter on recycler tab — show all sources
-    if (sourceFilter.length > 0 && tab !== "a_recycler") result = result.filter((l) => l.source && sourceFilter.includes(l.source));
+    // Only apply source filter on "À affecter" tab
+    if (sourceFilter.length > 0 && tab === "a_affecter") result = result.filter((l) => l.source && sourceFilter.includes(l.source));
 
     if (search.trim()) {
       const q = search.toLowerCase();
