@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Euro, FileText, RefreshCw, Download, CheckCircle2, Clock, ArrowRight, Loader2, Eye, Users, Briefcase } from "lucide-react";
+import { Euro, FileText, RefreshCw, Download, CheckCircle2, Clock, ArrowRight, Loader2, Eye, Users, Briefcase, TrendingUp } from "lucide-react";
 import { fetchInvoiceHtml, downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
 import { toast } from "@/hooks/use-toast";
 import InvoicePreviewModal from "@/components/InvoicePreviewModal";
