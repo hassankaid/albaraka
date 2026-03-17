@@ -19,15 +19,17 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
   RefreshCw, Search, Filter, Pencil, CalendarIcon, BadgeEuro,
-  CheckCircle2, Clock, AlertCircle, XCircle, FileText,
+  CheckCircle2, Clock, AlertCircle, XCircle, FileText, TrendingUp,
 } from "lucide-react";
 import { ROLE_CONFIG } from "@/lib/roleConfig";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatDateOnly } from "@/lib/formatDate";
+import CommissionProjection from "@/components/commissions/CommissionProjection";
 
 interface CommissionRow {
   id: string;
