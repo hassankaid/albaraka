@@ -287,6 +287,9 @@ function TimelineDot({ type, action }: { type: string; action?: string }) {
     } else if (action === "reassigned" || action === "assigned") {
       className = "bg-violet-500/20 border-violet-500/40";
       icon = "👤";
+    } else if (action === "unassigned") {
+      className = "bg-amber-500/20 border-amber-500/40";
+      icon = "🔓";
     } else if (action === "note_added") {
       className = "bg-yellow-500/20 border-yellow-500/40";
       icon = "📝";
