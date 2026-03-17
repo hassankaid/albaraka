@@ -22,7 +22,7 @@ interface Profile {
   country: string | null;
   siret: string | null;
   bank_rib_url: string | null;
-  bank_details: Record<string, any> | null;
+  bank_details: any;
 }
 
 interface AuthContextType {
