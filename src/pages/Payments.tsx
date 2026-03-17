@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
