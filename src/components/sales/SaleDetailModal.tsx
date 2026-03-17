@@ -326,7 +326,8 @@ export default function SaleDetailModal({
                             <SelectContent>
                               <SelectItem value="pending">En attente</SelectItem>
                               <SelectItem value="paid">Payé</SelectItem>
-                              <SelectItem value="cancelled">Annulé</SelectItem>
+                              <SelectItem value="late">En retard</SelectItem>
+                              <SelectItem value="lost">Perdu</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
