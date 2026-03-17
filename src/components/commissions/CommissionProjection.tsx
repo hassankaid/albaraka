@@ -159,10 +159,14 @@ export default function CommissionProjection({ userId, roleSourceFilter }: Commi
     return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month));
   }, [filtered]);
 
-  // Detail for selected month
+  // Detail for selected month (same logic as grouping)
   const monthDetail = useMemo(() => {
     if (!selectedMonth) return [];
-    return filtered.filter((c) => c.payment_due_date?.startsWith(selectedMonth));
+    return filtered.filter((c) => {
+      const isPaidOrDue = ["paid", "due", "invoiced"].includes(c.status || "");
+      const dateRef = isPaidOrDue ? (c.payment_paid_at || c.payment_due_date) : c.payment_due_date;
+      return dateRef?.startsWith(selectedMonth);
+    });
   }, [filtered, selectedMonth]);
 
   // Totals
