@@ -175,6 +175,7 @@ export default function Payments() {
         contact_name: p.contacts?.full_name || null,
         contact_email: p.contacts?.email || null,
         contact_phone: p.contacts?.phone_normalized || null,
+        sale_id: p.sale_id || null,
       }))
     );
     setLoading(false);
