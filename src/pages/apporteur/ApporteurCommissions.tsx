@@ -323,6 +323,7 @@ export default function ApporteurCommissions({ defaultRoleFilter }: ApporteurCom
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-secondary">
           <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
+          <TabsTrigger value="projection" className="gap-1.5"><TrendingUp className="h-3.5 w-3.5" /> Projection</TabsTrigger>
           <TabsTrigger value="history">Historique</TabsTrigger>
           <TabsTrigger value="invoices">Factures</TabsTrigger>
         </TabsList>
