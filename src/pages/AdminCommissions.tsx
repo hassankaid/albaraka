@@ -508,6 +508,11 @@ export default function AdminCommissions() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+      </TabsContent>
+
+      <TabsContent value="projection" className="mt-0">
+        <CommissionProjection />
+      </TabsContent>
+    </Tabs>
   );
 }
