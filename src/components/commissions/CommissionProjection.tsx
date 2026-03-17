@@ -125,13 +125,15 @@ export default function CommissionProjection({ userId, roleSourceFilter }: Commi
     });
   }, [commissions, beneficiaryFilter, roleFilter]);
 
-  // Group by month (based on payment due_date)
+  // Group by month: paid/due/invoiced → by payment_paid_at, pending/cancelled → by due_date
   const monthlyData = useMemo(() => {
     const map = new Map<string, MonthData>();
 
     filtered.forEach((c) => {
-      if (!c.payment_due_date) return;
-      const monthKey = c.payment_due_date.substring(0, 7); // YYYY-MM
+      const isPaidOrDue = ["paid", "due", "invoiced"].includes(c.status || "");
+      const dateRef = isPaidOrDue ? (c.payment_paid_at || c.payment_due_date) : c.payment_due_date;
+      if (!dateRef) return;
+      const monthKey = dateRef.substring(0, 7); // YYYY-MM
       if (!map.has(monthKey)) {
         const [y, m] = monthKey.split("-");
         const date = new Date(parseInt(y), parseInt(m) - 1);
@@ -157,10 +159,14 @@ export default function CommissionProjection({ userId, roleSourceFilter }: Commi
     return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month));
   }, [filtered]);
 
-  // Detail for selected month
+  // Detail for selected month (same logic as grouping)
   const monthDetail = useMemo(() => {
     if (!selectedMonth) return [];
-    return filtered.filter((c) => c.payment_due_date?.startsWith(selectedMonth));
+    return filtered.filter((c) => {
+      const isPaidOrDue = ["paid", "due", "invoiced"].includes(c.status || "");
+      const dateRef = isPaidOrDue ? (c.payment_paid_at || c.payment_due_date) : c.payment_due_date;
+      return dateRef?.startsWith(selectedMonth);
+    });
   }, [filtered, selectedMonth]);
 
   // Totals
