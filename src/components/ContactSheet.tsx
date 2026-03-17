@@ -160,7 +160,11 @@ export default function ContactSheet({
     });
 
     (leadActivitiesRes.data || []).forEach((a: any) => {
-      const enriched = { ...a, _resolved_name: profileNamesMap[a.new_value] || null };
+      const enriched = {
+        ...a,
+        _resolved_name: profileNamesMap[a.new_value] || null,
+        _resolved_old_name: profileNamesMap[a.old_value] || null,
+      };
       events.push({ type: "lead_activity", id: a.id, date: a.created_at || "", data: enriched });
     });
 
