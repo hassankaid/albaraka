@@ -54,7 +54,8 @@ export default function Leads() {
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<string>("a_affecter");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [sourceFilter, setSourceFilter] = useState<string[]>(["vsl_a", "vsl_b", "webi", "instagram_ads", "whatsapp_ads"]);
+  const ADS_SOURCES = ["vsl_a", "vsl_b", "webi", "instagram_ads", "whatsapp_ads"];
+  const [sourceFilter, setSourceFilter] = useState<string[]>(ADS_SOURCES);
   const [search, setSearch] = useState("");
   const [collaborateurs, setCollaborateurs] = useState<{ id: string; full_name: string; collaborateur_level: string | null }[]>([]);
   const [igFormOpen, setIgFormOpen] = useState(false);
@@ -237,8 +238,7 @@ export default function Leads() {
     }
 
     if (statusFilter !== "all") result = result.filter((l) => l.status === statusFilter);
-    // Only apply source filter on "À affecter" tab
-    if (sourceFilter.length > 0 && tab === "a_affecter") result = result.filter((l) => l.source && sourceFilter.includes(l.source));
+    if (sourceFilter.length > 0) result = result.filter((l) => l.source && sourceFilter.includes(l.source));
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -255,7 +255,14 @@ export default function Leads() {
     return result;
   }, [leads, scopedLeads, tab, statusFilter, sourceFilter, search, user]);
 
-  useEffect(() => { setPage(0); setSelectedIds(new Set()); }, [tab, statusFilter, sourceFilter.length, search]);
+  useEffect(() => {
+    setPage(0);
+    setSelectedIds(new Set());
+    // Reset source filter: Ads only for "À affecter", all sources for other tabs
+    setSourceFilter(tab === "a_affecter" ? ADS_SOURCES : []);
+  }, [tab]);
+
+  useEffect(() => { setPage(0); }, [statusFilter, sourceFilter.length, search]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
   const paginatedLeads = useMemo(
