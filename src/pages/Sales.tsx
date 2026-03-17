@@ -13,7 +13,7 @@ import NewSaleModal from "@/components/sales/NewSaleModal";
 import ManageCommissionsModal from "@/components/sales/ManageCommissionsModal";
 import SaleDetailModal from "@/components/sales/SaleDetailModal";
 
-interface CeoSale {
+interface SaleRow {
   id: string;
   product: string;
   amount_ht: number;
@@ -24,18 +24,10 @@ interface CeoSale {
   closed_by_name: string | null;
   apporteur_name: string | null;
   commission_count: number;
-}
-
-interface UserCommission {
-  id: string;
-  role: string;
-  percentage: number;
-  amount: number | null;
-  status: string | null;
-  product: string;
-  amount_ht: number;
-  sold_at: string | null;
-  contact_name: string | null;
+  // collaborator-specific aggregated commission info
+  my_commission_total: number;
+  my_commission_paid: number;
+  my_roles: string[];
 }
 
 const PAYMENT_COLORS: Record<string, string> = {
