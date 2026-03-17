@@ -448,6 +448,14 @@ export default function ApporteurCommissions({ defaultRoleFilter }: ApporteurCom
           </section>
         </TabsContent>
 
+        {/* ═══ TAB: PROJECTION ═══ */}
+        <TabsContent value="projection" className="mt-4">
+          <CommissionProjection
+            userId={profile?.id}
+            roleSourceFilter={defaultRoleFilter || (roleFilter !== "all" ? roleFilter : undefined)}
+          />
+        </TabsContent>
+
         {/* ═══ TAB 2: HISTORIQUE ═══ */}
         <TabsContent value="history" className="space-y-6 mt-4">
           {/* Filters */}
