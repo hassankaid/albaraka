@@ -72,7 +72,9 @@ export async function generateInvoicePdfBlob(invoiceNumber: string, htmlContent:
   document.body.appendChild(element);
 
   try {
-    return await html2pdf().set(getPdfOptions(invoiceNumber)).from(element).outputPdf("blob");
+    const worker = html2pdf().set(getPdfOptions(invoiceNumber)).from(element).toPdf();
+    const pdf = await worker.get("pdf");
+    return pdf.output("blob") as Blob;
   } finally {
     document.body.removeChild(element);
   }

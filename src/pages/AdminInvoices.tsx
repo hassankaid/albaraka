@@ -824,7 +824,7 @@ export default function AdminInvoices() {
                     className="gap-1.5"
                   >
                     <Download className="h-4 w-4" />
-                    Télécharger ({selectedInvoiceIds.size})
+                    {selectedInvoiceIds.size > 1 ? `Télécharger ZIP (${selectedInvoiceIds.size})` : `Télécharger (${selectedInvoiceIds.size})`}
                   </Button>
                   <Button
                     variant="destructive"
