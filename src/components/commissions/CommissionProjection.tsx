@@ -205,29 +205,33 @@ export default function CommissionProjection({ userId, roleSourceFilter }: Commi
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <Select value={beneficiaryFilter} onValueChange={(v) => { setBeneficiaryFilter(v); setSelectedMonth(null); }}>
-          <SelectTrigger className="w-[200px] h-8 text-xs bg-card">
-            <SelectValue placeholder="Tous les bénéficiaires" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les bénéficiaires</SelectItem>
-            {beneficiaries.map(([key, name]) => (
-              <SelectItem key={key} value={key}>{name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setSelectedMonth(null); }}>
-          <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous rôles</SelectItem>
-            <SelectItem value="apporteur">Apporteur</SelectItem>
-            <SelectItem value="setter">Setter</SelectItem>
-            <SelectItem value="closer">Closer</SelectItem>
-            <SelectItem value="agence_marketing">Agence</SelectItem>
-          </SelectContent>
-        </Select>
+        {!userId && (
+          <Select value={beneficiaryFilter} onValueChange={(v) => { setBeneficiaryFilter(v); setSelectedMonth(null); }}>
+            <SelectTrigger className="w-[200px] h-8 text-xs bg-card">
+              <SelectValue placeholder="Tous les bénéficiaires" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les bénéficiaires</SelectItem>
+              {beneficiaries.map(([key, name]) => (
+                <SelectItem key={key} value={key}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {!roleSourceFilter && (
+          <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setSelectedMonth(null); }}>
+            <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous rôles</SelectItem>
+              <SelectItem value="apporteur">Apporteur</SelectItem>
+              <SelectItem value="setter">Setter</SelectItem>
+              <SelectItem value="closer">Closer</SelectItem>
+              <SelectItem value="agence_marketing">Agence</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Chart */}
