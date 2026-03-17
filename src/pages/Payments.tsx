@@ -147,7 +147,7 @@ export default function Payments() {
       const { data } = await supabase
         .from("payments")
         .select(`
-          id, payment_number, total_payments, amount, due_date, paid_at, status, notes,
+          id, payment_number, total_payments, amount, due_date, paid_at, status, notes, sale_id,
           contacts!payments_contact_id_fkey(full_name, email, phone_normalized)
         `)
         .order("due_date", { ascending: true })
