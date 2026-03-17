@@ -395,7 +395,7 @@ export default function Payments() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <PaymentNotesCell paymentId={p.id} initialNotes={p.notes || ""} onSave={saveNotes} />
+                        <PaymentNotesCell paymentId={p.id} initialNotes={p.notes || ""} contactName={p.contact_name} onSave={saveNotes} />
                       </TableCell>
                       {isCeo && (
                         <TableCell>
