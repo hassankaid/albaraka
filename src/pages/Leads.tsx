@@ -54,7 +54,7 @@ export default function Leads() {
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<string>("a_affecter");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [sourceFilter, setSourceFilter] = useState<string[]>([]);
+  const [sourceFilter, setSourceFilter] = useState<string[]>(["vsl_a", "vsl_b", "webi", "instagram_ads", "whatsapp_ads"]);
   const [search, setSearch] = useState("");
   const [collaborateurs, setCollaborateurs] = useState<{ id: string; full_name: string; collaborateur_level: string | null }[]>([]);
   const [igFormOpen, setIgFormOpen] = useState(false);
