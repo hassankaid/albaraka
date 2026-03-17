@@ -117,17 +117,24 @@ export default function ContactSheet({
         : Promise.resolve({ data: [] }),
     ]);
 
-    // Collect profile IDs from reassignment new_value fields to resolve names
+    // Collect profile IDs from reassignment/unassignment fields to resolve names
     const allActivities = [
       ...(leadActivitiesRes.data || []),
       ...(callActivitiesRes.data || []),
     ];
-    const reassignProfileIds = allActivities
-      .filter((a: any) => (a.action === "reassigned" || a.action === "assigned") && a.new_value)
-      .map((a: any) => a.new_value as string);
-    const uniqueProfileIds = [...new Set(reassignProfileIds)];
+    const profileIdsToResolve = new Set<string>();
+    allActivities.forEach((a: any) => {
+      if ((a.action === "reassigned" || a.action === "assigned") && a.new_value) {
+        profileIdsToResolve.add(a.new_value);
+      }
+      // Also resolve old_value for unassigned/status_change to show old setter
+      if (a.old_value && /^[0-9a-f]{8}-/.test(a.old_value)) {
+        profileIdsToResolve.add(a.old_value);
+      }
+    });
 
     let profileNamesMap: Record<string, string> = {};
+    const uniqueProfileIds = [...profileIdsToResolve];
     if (uniqueProfileIds.length > 0) {
       const { data: profilesData } = await supabase
         .from("profiles")
