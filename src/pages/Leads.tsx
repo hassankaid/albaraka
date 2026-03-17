@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
@@ -24,7 +24,8 @@ import {
   LEAD_STATUS_COLORS,
   LEAD_STATUS_LABELS,
   STATUS_FILTER_OPTIONS,
-  SOURCE_FILTER_OPTIONS,
+  SOURCE_GROUPS,
+  leadSourceConfig,
   getSourceBadgeClass,
   getSourceLabel,
 } from "@/lib/leadConfig";
@@ -366,33 +367,62 @@ export default function Leads() {
               <ChevronDown className="h-3 w-3 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[220px] p-0" align="start">
-            <Command>
-              <CommandInput placeholder="Rechercher source…" className="h-9" />
-              <CommandList>
-                <CommandEmpty>Aucune source.</CommandEmpty>
-                <CommandGroup>
-                  {SOURCE_FILTER_OPTIONS.filter(s => s.value !== "all").map((s) => {
-                    const isSelected = sourceFilter.includes(s.value);
-                    return (
-                      <CommandItem
-                        key={s.value}
-                        onSelect={() => {
-                          setSourceFilter(prev =>
-                            isSelected ? prev.filter(v => v !== s.value) : [...prev, s.value]
-                          );
-                        }}
-                      >
-                        <Checkbox checked={isSelected} className="mr-2" />
-                        {s.label}
-                      </CommandItem>
-                    );
-                  })}
-                </CommandGroup>
-              </CommandList>
-            </Command>
+          <PopoverContent className="w-[250px] p-2" align="start">
+            <div className="space-y-3">
+              {SOURCE_GROUPS.map((group) => {
+                const groupSources = group.sources as readonly string[];
+                const selectedInGroup = groupSources.filter((s) => sourceFilter.includes(s));
+                const allSelected = selectedInGroup.length === groupSources.length;
+                const someSelected = selectedInGroup.length > 0 && !allSelected;
+
+                return (
+                  <div key={group.label}>
+                    <button
+                      className="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-md hover:bg-secondary/60 transition-colors"
+                      onClick={() => {
+                        if (allSelected) {
+                          setSourceFilter((prev) => prev.filter((s) => !groupSources.includes(s)));
+                        } else {
+                          setSourceFilter((prev) => [
+                            ...prev.filter((s) => !groupSources.includes(s)),
+                            ...groupSources,
+                          ]);
+                        }
+                      }}
+                    >
+                      <Checkbox
+                        checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                        className="pointer-events-none"
+                      />
+                      <span className="text-xs font-semibold text-foreground">{group.label}</span>
+                    </button>
+                    <div className="ml-4 mt-1 space-y-0.5">
+                      {groupSources.map((srcKey) => {
+                        const isSelected = sourceFilter.includes(srcKey);
+                        const cfg = leadSourceConfig[srcKey];
+                        if (!cfg) return null;
+                        return (
+                          <button
+                            key={srcKey}
+                            className="flex items-center gap-2 w-full text-left px-2 py-1 rounded-md hover:bg-secondary/40 transition-colors"
+                            onClick={() => {
+                              setSourceFilter((prev) =>
+                                isSelected ? prev.filter((v) => v !== srcKey) : [...prev, srcKey]
+                              );
+                            }}
+                          >
+                            <Checkbox checked={isSelected} className="pointer-events-none" />
+                            <span className="text-xs text-muted-foreground">{cfg.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
             {sourceFilter.length > 0 && (
-              <div className="border-t p-1">
+              <div className="border-t border-border mt-2 pt-2">
                 <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setSourceFilter([])}>
                   Réinitialiser
                 </Button>
