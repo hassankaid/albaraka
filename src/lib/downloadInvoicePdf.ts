@@ -14,11 +14,10 @@ export async function fetchInvoiceHtml(pdfUrl: string): Promise<string> {
   return await response.text();
 }
 
-export async function downloadInvoicePdf(invoiceNumber: string, htmlContent: string) {
+function createOffscreenElement(htmlContent: string): HTMLDivElement {
   const container = document.createElement("div");
   container.innerHTML = htmlContent;
 
-  // Extract body + styles
   const bodyContent = container.querySelector("body");
   const content = bodyContent ? bodyContent.innerHTML : htmlContent;
 
@@ -28,6 +27,14 @@ export async function downloadInvoicePdf(invoiceNumber: string, htmlContent: str
   element.style.fontFamily = "Helvetica, Arial, sans-serif";
   element.style.fontSize = "14px";
   element.style.color = "#1a1a2e";
+  // Keep element in DOM for html2canvas but invisible & non-disruptive
+  element.style.position = "fixed";
+  element.style.left = "-9999px";
+  element.style.top = "0";
+  element.style.width = "210mm";
+  element.style.zIndex = "-1";
+  element.style.opacity = "0";
+  element.style.pointerEvents = "none";
 
   const styleTag = container.querySelector("style");
   if (styleTag) {
@@ -36,56 +43,36 @@ export async function downloadInvoicePdf(invoiceNumber: string, htmlContent: str
     element.prepend(style);
   }
 
-  document.body.appendChild(element);
+  return element;
+}
 
-  const options = {
+function getPdfOptions(invoiceNumber: string) {
+  return {
     margin: 10,
     filename: `${invoiceNumber}.pdf`,
     image: { type: "jpeg" as const, quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true, letterRendering: true },
     jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
   };
+}
+
+export async function downloadInvoicePdf(invoiceNumber: string, htmlContent: string) {
+  const element = createOffscreenElement(htmlContent);
+  document.body.appendChild(element);
 
   try {
-    await html2pdf().set(options).from(element).save();
+    await html2pdf().set(getPdfOptions(invoiceNumber)).from(element).save();
   } finally {
     document.body.removeChild(element);
   }
 }
 
 export async function generateInvoicePdfBlob(invoiceNumber: string, htmlContent: string): Promise<Blob> {
-  const container = document.createElement("div");
-  container.innerHTML = htmlContent;
-
-  const bodyContent = container.querySelector("body");
-  const content = bodyContent ? bodyContent.innerHTML : htmlContent;
-
-  const element = document.createElement("div");
-  element.innerHTML = content;
-  element.style.padding = "40px";
-  element.style.fontFamily = "Helvetica, Arial, sans-serif";
-  element.style.fontSize = "14px";
-  element.style.color = "#1a1a2e";
-
-  const styleTag = container.querySelector("style");
-  if (styleTag) {
-    const style = document.createElement("style");
-    style.textContent = styleTag.textContent;
-    element.prepend(style);
-  }
-
+  const element = createOffscreenElement(htmlContent);
   document.body.appendChild(element);
 
-  const options = {
-    margin: 10,
-    filename: `${invoiceNumber}.pdf`,
-    image: { type: "jpeg" as const, quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-    jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
-  };
-
   try {
-    return await html2pdf().set(options).from(element).outputPdf("blob");
+    return await html2pdf().set(getPdfOptions(invoiceNumber)).from(element).outputPdf("blob");
   } finally {
     document.body.removeChild(element);
   }
