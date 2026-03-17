@@ -824,7 +824,7 @@ export default function AdminInvoices() {
                     className="gap-1.5"
                   >
                     <Download className="h-4 w-4" />
-                    {selectedInvoiceIds.size > 1 ? `Télécharger ZIP (${selectedInvoiceIds.size})` : `Télécharger (${selectedInvoiceIds.size})`}
+                    Télécharger ({selectedInvoiceIds.size})
                   </Button>
                   <Button
                     variant="destructive"
@@ -847,7 +847,7 @@ export default function AdminInvoices() {
                   className="gap-1.5"
                 >
                   <Download className="h-4 w-4" />
-                   Tout télécharger en ZIP ({filteredInvoices.filter(inv => inv.pdf_url).length})
+                   Tout télécharger ({filteredInvoices.filter(inv => inv.pdf_url).length})
                 </Button>
               )}
             </div>
