@@ -19,15 +19,17 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
   RefreshCw, Search, Filter, Pencil, CalendarIcon, BadgeEuro,
-  CheckCircle2, Clock, AlertCircle, XCircle, FileText,
+  CheckCircle2, Clock, AlertCircle, XCircle, FileText, TrendingUp,
 } from "lucide-react";
 import { ROLE_CONFIG } from "@/lib/roleConfig";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatDateOnly } from "@/lib/formatDate";
+import CommissionProjection from "@/components/commissions/CommissionProjection";
 
 interface CommissionRow {
   id: string;
@@ -229,7 +231,13 @@ export default function AdminCommissions() {
   }
 
   return (
-    <div className="space-y-4">
+    <Tabs defaultValue="list" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="list" className="gap-1.5"><BadgeEuro className="h-3.5 w-3.5" /> Liste</TabsTrigger>
+        <TabsTrigger value="projection" className="gap-1.5"><TrendingUp className="h-3.5 w-3.5" /> Projection</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="list" className="space-y-4 mt-0">
       {/* Top bar: KPIs + refresh */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap">
@@ -500,6 +508,11 @@ export default function AdminCommissions() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+      </TabsContent>
+
+      <TabsContent value="projection" className="mt-0">
+        <CommissionProjection />
+      </TabsContent>
+    </Tabs>
   );
 }
