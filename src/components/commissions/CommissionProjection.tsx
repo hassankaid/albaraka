@@ -57,29 +57,47 @@ export default function CommissionProjection({ userId, roleSourceFilter }: Commi
   };
 
   const fetchData = useCallback(async () => {
-    let query = supabase
-      .from("commissions")
-      .select(`
-        amount, status, paid_at, role,
-        beneficiary_user_id, beneficiary_external,
-        profiles!commissions_beneficiary_user_id_fkey(full_name),
-        sales!commissions_sale_id_fkey(
-          product,
-          contacts!sales_contact_id_fkey(full_name)
-        ),
-        payments!commissions_payment_id_fkey(due_date, paid_at),
-        percentage
-      `)
-      .not("payment_id", "is", null);
+    const selectStr = `
+      amount, status, paid_at, role,
+      beneficiary_user_id, beneficiary_external,
+      profiles!commissions_beneficiary_user_id_fkey(full_name),
+      sales!commissions_sale_id_fkey(
+        product,
+        contacts!sales_contact_id_fkey(full_name)
+      ),
+      payments!commissions_payment_id_fkey(due_date, paid_at),
+      percentage
+    `;
 
-    if (userId) {
-      query = query.eq("beneficiary_user_id", userId);
+    const batchSize = 1000;
+    let allData: any[] = [];
+    let offset = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      let query = supabase
+        .from("commissions")
+        .select(selectStr)
+        .not("payment_id", "is", null)
+        .range(offset, offset + batchSize - 1);
+
+      if (userId) {
+        query = query.eq("beneficiary_user_id", userId);
+      }
+
+      const { data } = await query;
+
+      if (data && data.length > 0) {
+        allData.push(...data);
+        offset += batchSize;
+        hasMore = data.length === batchSize;
+      } else {
+        hasMore = false;
+      }
     }
 
-    const { data } = await query;
-
-    if (data) {
-      let mapped = data.map((c: any) => ({
+    if (allData.length > 0) {
+      let mapped = allData.map((c: any) => ({
         amount: c.amount || 0,
         status: c.status,
         paid_at: c.paid_at,
