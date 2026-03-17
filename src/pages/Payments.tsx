@@ -406,10 +406,23 @@ export default function Payments() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedPayments.map((p) => {
-                  const statusInfo = getPaymentStatusInfo(p.status, p.due_date);
-                  return (
-                    <TableRow key={p.id} className={`border-border hover:bg-secondary/50 transition-colors ${p.status === "lost" ? "opacity-60" : ""}`}>
+                {(() => {
+                  let lastSaleId: string | null | undefined = undefined;
+                  const colCount = isCeo ? 8 : 7;
+                  return paginatedPayments.map((p) => {
+                    const statusInfo = getPaymentStatusInfo(p.status, p.due_date);
+                    const showSeparator = groupBySale && p.sale_id !== lastSaleId && lastSaleId !== undefined;
+                    lastSaleId = p.sale_id;
+                    return (
+                      <>
+                        {showSeparator && (
+                          <TableRow key={`sep-${p.id}`} className="hover:bg-transparent">
+                            <TableCell colSpan={colCount} className="p-0">
+                              <div className="border-t-2 border-dashed border-border/70" />
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        <TableRow key={p.id} className={`border-border hover:bg-secondary/50 transition-colors ${p.status === "lost" ? "opacity-60" : ""}`}>
                       <TableCell>
                         <div className="min-w-0">
                           <p className={`font-semibold text-foreground text-sm truncate ${p.status === "lost" ? "line-through" : ""}`}>{p.contact_name || "—"}</p>
@@ -489,8 +502,10 @@ export default function Payments() {
                         </TableCell>
                       )}
                     </TableRow>
-                  );
-                })}
+                      </>
+                    );
+                  });
+                })()}
               </TableBody>
             </Table>
           </div>
