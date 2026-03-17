@@ -231,7 +231,13 @@ export default function AdminCommissions() {
   }
 
   return (
-    <div className="space-y-4">
+    <Tabs defaultValue="list" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="list" className="gap-1.5"><BadgeEuro className="h-3.5 w-3.5" /> Liste</TabsTrigger>
+        <TabsTrigger value="projection" className="gap-1.5"><TrendingUp className="h-3.5 w-3.5" /> Projection</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="list" className="space-y-4 mt-0">
       {/* Top bar: KPIs + refresh */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap">
