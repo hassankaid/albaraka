@@ -322,13 +322,8 @@ export default function Sales() {
                             })}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="min-w-0">
-                            <p className="font-semibold text-sm text-foreground">{sale.my_commission_total.toLocaleString("fr-FR")} €</p>
-                            {sale.my_commission_paid > 0 && (
-                              <p className="text-[10px] text-emerald-400">{sale.my_commission_paid.toLocaleString("fr-FR")} € payé</p>
-                            )}
-                          </div>
+                        <TableCell className="font-semibold text-sm text-foreground">
+                          {sale.my_commission_total.toLocaleString("fr-FR")} €
                         </TableCell>
                       </>
                     )}
