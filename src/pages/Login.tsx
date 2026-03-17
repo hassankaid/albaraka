@@ -56,6 +56,61 @@ const Login = () => {
     navigate("/dashboard");
   };
 
+  if (forgotMode) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background bg-grid-pattern p-4">
+        <div className="w-full max-w-md space-y-8">
+          <div className="flex flex-col items-center space-y-2">
+            <img src={logo} alt="Ethicarena" className="w-20 h-20 object-contain" />
+            <h1 className="text-2xl font-bold text-foreground mt-6">Mot de passe oublié</h1>
+            <p className="text-muted-foreground text-sm">Entrez votre email pour recevoir un lien de réinitialisation</p>
+          </div>
+
+          {resetSent ? (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm rounded-lg p-4 text-center space-y-2">
+              <p className="font-medium">Email envoyé !</p>
+              <p>Vérifiez votre boîte mail (et vos spams) pour réinitialiser votre mot de passe.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleForgotPassword} className="bg-card border border-border rounded-xl p-8 space-y-6 shadow-lg">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="email"
+                    placeholder="vous@ethicarena.ma"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full pl-10 pr-4 py-2.5 bg-transparent border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-2.5 rounded-full gradient-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading && <RefreshCw className="h-4 w-4 animate-spin" />}
+                Envoyer le lien
+              </button>
+            </form>
+          )}
+
+          <button
+            onClick={() => { setForgotMode(false); setResetSent(false); }}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mx-auto"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Retour à la connexion
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background bg-grid-pattern p-4">
       <div className="w-full max-w-md space-y-8">
@@ -88,7 +143,16 @@ const Login = () => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Mot de passe</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-foreground">Mot de passe</label>
+              <button
+                type="button"
+                onClick={() => setForgotMode(true)}
+                className="text-xs text-primary hover:underline"
+              >
+                Mot de passe oublié ?
+              </button>
+            </div>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
