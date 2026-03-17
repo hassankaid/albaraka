@@ -230,6 +230,14 @@ export default function AdminCommissions() {
     return true;
   });
 
+  // Sort: by due date ascending, then payment number ascending
+  filtered.sort((a, b) => {
+    const dateA = a.payment_due_date || "";
+    const dateB = b.payment_due_date || "";
+    if (dateA !== dateB) return dateA.localeCompare(dateB);
+    return (a.payment_number || 0) - (b.payment_number || 0);
+  });
+
   // Stats
   const totalAmount = filtered.reduce((s, c) => s + (c.amount || 0), 0);
   const paidAmount = filtered.filter((c) => c.status === "paid").reduce((s, c) => s + (c.amount || 0), 0);
