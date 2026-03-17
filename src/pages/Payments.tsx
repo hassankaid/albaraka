@@ -41,7 +41,7 @@ const getPaymentStatusInfo = (status: string, dueDate: string) => {
   due.setHours(0, 0, 0, 0);
 
   if (status === "paid") return { label: "Payé", className: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30", key: "paid" };
-  if (status === "cancelled" || status === "lost") return { label: "Perdu", className: "bg-zinc-700/50 text-zinc-400 border-zinc-600/30 line-through", key: "lost" };
+  if (status === "cancelled" || status === "lost") return { label: "Perdu", className: "bg-zinc-700/50 text-zinc-400 border-zinc-600/30", key: "lost" };
   if (status === "late") return { label: "En retard", className: "bg-red-500/20 text-red-300 border-red-500/30", key: "late" };
   if (status === "pending" && due < today) return { label: "En retard", className: "bg-red-500/20 text-red-300 border-red-500/30", key: "late" };
   return { label: "En attente", className: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30", key: "pending" };
@@ -129,7 +129,7 @@ export default function Payments() {
   const [periodFilter, setPeriodFilter] = useState("this_month");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
-  const [groupBySale, setGroupBySale] = useState(true);
+  const [groupBySale, setGroupBySale] = useState(false);
 
   // Lost confirmation dialog
   const [lostConfirmPayment, setLostConfirmPayment] = useState<PaymentRow | null>(null);
@@ -432,7 +432,7 @@ export default function Payments() {
                         <TableRow className={`border-border hover:bg-secondary/50 transition-colors ${p.status === "lost" ? "opacity-60" : ""}`}>
                       <TableCell>
                         <div className="min-w-0">
-                          <p className={`font-semibold text-foreground text-sm truncate ${p.status === "lost" ? "line-through" : ""}`}>{p.contact_name || "—"}</p>
+                          <p className="font-semibold text-foreground text-sm truncate">{p.contact_name || "—"}</p>
                           {p.contact_email && <p className="text-xs text-muted-foreground truncate">{p.contact_email}</p>}
                           {p.contact_phone && (
                             <a href={`tel:${p.contact_phone}`} className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-0.5">
@@ -445,7 +445,7 @@ export default function Payments() {
                       <TableCell className="text-sm font-medium text-foreground">
                         {p.payment_number}/{p.total_payments}
                       </TableCell>
-                      <TableCell className={`font-semibold text-sm text-foreground ${p.status === "lost" ? "line-through" : ""}`}>
+                      <TableCell className="font-semibold text-sm text-foreground">
                         {p.amount.toLocaleString("fr-FR")} €
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
