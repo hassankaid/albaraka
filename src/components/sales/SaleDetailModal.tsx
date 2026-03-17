@@ -47,8 +47,8 @@ const getPaymentStatusInfo = (status: string, dueDate: string) => {
   due.setHours(0, 0, 0, 0);
 
   if (status === "paid") return { label: "Payé", className: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" };
-  if (status === "cancelled") return { label: "Annulé", className: "bg-muted text-muted-foreground border-border" };
-  if (status === "pending" && due < today) return { label: "En retard", className: "bg-red-500/20 text-red-300 border-red-500/30" };
+  if (status === "cancelled" || status === "lost") return { label: "Perdu", className: "bg-red-500/20 text-red-300 border-red-500/30 line-through" };
+  if (status === "late" || (status === "pending" && due < today)) return { label: "En retard", className: "bg-orange-500/20 text-orange-300 border-orange-500/30" };
   return { label: "En attente", className: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30" };
 };
 
