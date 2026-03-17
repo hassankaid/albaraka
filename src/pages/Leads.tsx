@@ -255,7 +255,12 @@ export default function Leads() {
     return result;
   }, [leads, scopedLeads, tab, statusFilter, sourceFilter, search, user]);
 
-  useEffect(() => { setPage(0); setSelectedIds(new Set()); }, [tab, statusFilter, sourceFilter.length, search]);
+  useEffect(() => {
+    setPage(0);
+    setSelectedIds(new Set());
+    // Reset source filter: Ads only for "À affecter", all sources for other tabs
+    setSourceFilter(tab === "a_affecter" ? ADS_SOURCES : []);
+  }, [tab]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
   const paginatedLeads = useMemo(
