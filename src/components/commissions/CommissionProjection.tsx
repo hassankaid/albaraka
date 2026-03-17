@@ -33,7 +33,14 @@ interface MonthData {
   cancelled: number;
 }
 
-export default function CommissionProjection() {
+interface CommissionProjectionProps {
+  /** If set, only show commissions for this user */
+  userId?: string;
+  /** If set, filter by role source category */
+  roleSourceFilter?: string;
+}
+
+export default function CommissionProjection({ userId, roleSourceFilter }: CommissionProjectionProps) {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [commissions, setCommissions] = useState<CommissionData[]>([]);
@@ -41,8 +48,16 @@ export default function CommissionProjection() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
 
+  const ROLE_SOURCE_CATEGORY: Record<string, string> = {
+    apporteur: "apporteur",
+    setter: "collaborateur",
+    closer: "collaborateur",
+    agence_marketing: "collaborateur",
+    collaborateur: "collaborateur",
+  };
+
   const fetchData = useCallback(async () => {
-    const { data } = await supabase
+    let query = supabase
       .from("commissions")
       .select(`
         amount, status, paid_at, role,
@@ -57,26 +72,34 @@ export default function CommissionProjection() {
       `)
       .not("payment_id", "is", null);
 
+    if (userId) {
+      query = query.eq("beneficiary_user_id", userId);
+    }
+
+    const { data } = await query;
+
     if (data) {
-      setCommissions(
-        data.map((c: any) => ({
-          amount: c.amount || 0,
-          status: c.status,
-          paid_at: c.paid_at,
-          role: c.role,
-          beneficiary_user_id: c.beneficiary_user_id,
-          beneficiary_external: c.beneficiary_external,
-          beneficiary_name: c.profiles?.full_name || c.beneficiary_external || "—",
-          payment_due_date: c.payments?.due_date || null,
-          payment_paid_at: c.payments?.paid_at || null,
-          contact_name: c.sales?.contacts?.full_name || "—",
-          sale_product: c.sales?.product || "—",
-          percentage: c.percentage,
-        }))
-      );
+      let mapped = data.map((c: any) => ({
+        amount: c.amount || 0,
+        status: c.status,
+        paid_at: c.paid_at,
+        role: c.role,
+        beneficiary_user_id: c.beneficiary_user_id,
+        beneficiary_external: c.beneficiary_external,
+        beneficiary_name: c.profiles?.full_name || c.beneficiary_external || "—",
+        payment_due_date: c.payments?.due_date || null,
+        payment_paid_at: c.payments?.paid_at || null,
+        contact_name: c.sales?.contacts?.full_name || "—",
+        sale_product: c.sales?.product || "—",
+        percentage: c.percentage,
+      }));
+      if (roleSourceFilter) {
+        mapped = mapped.filter(c => (ROLE_SOURCE_CATEGORY[c.role] || "collaborateur") === roleSourceFilter);
+      }
+      setCommissions(mapped);
     }
     setLoading(false);
-  }, []);
+  }, [userId, roleSourceFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -182,29 +205,33 @@ export default function CommissionProjection() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <Select value={beneficiaryFilter} onValueChange={(v) => { setBeneficiaryFilter(v); setSelectedMonth(null); }}>
-          <SelectTrigger className="w-[200px] h-8 text-xs bg-card">
-            <SelectValue placeholder="Tous les bénéficiaires" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les bénéficiaires</SelectItem>
-            {beneficiaries.map(([key, name]) => (
-              <SelectItem key={key} value={key}>{name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setSelectedMonth(null); }}>
-          <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous rôles</SelectItem>
-            <SelectItem value="apporteur">Apporteur</SelectItem>
-            <SelectItem value="setter">Setter</SelectItem>
-            <SelectItem value="closer">Closer</SelectItem>
-            <SelectItem value="agence_marketing">Agence</SelectItem>
-          </SelectContent>
-        </Select>
+        {!userId && (
+          <Select value={beneficiaryFilter} onValueChange={(v) => { setBeneficiaryFilter(v); setSelectedMonth(null); }}>
+            <SelectTrigger className="w-[200px] h-8 text-xs bg-card">
+              <SelectValue placeholder="Tous les bénéficiaires" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les bénéficiaires</SelectItem>
+              {beneficiaries.map(([key, name]) => (
+                <SelectItem key={key} value={key}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {!roleSourceFilter && (
+          <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setSelectedMonth(null); }}>
+            <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous rôles</SelectItem>
+              <SelectItem value="apporteur">Apporteur</SelectItem>
+              <SelectItem value="setter">Setter</SelectItem>
+              <SelectItem value="closer">Closer</SelectItem>
+              <SelectItem value="agence_marketing">Agence</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Chart */}

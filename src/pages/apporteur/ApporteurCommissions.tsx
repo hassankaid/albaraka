@@ -6,10 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Euro, FileText, RefreshCw, Download, CheckCircle2, Clock, ArrowRight, Loader2, Eye, Users, Briefcase } from "lucide-react";
+import { Euro, FileText, RefreshCw, Download, CheckCircle2, Clock, ArrowRight, Loader2, Eye, Users, Briefcase, TrendingUp } from "lucide-react";
 import { fetchInvoiceHtml, downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
 import { toast } from "@/hooks/use-toast";
 import InvoicePreviewModal from "@/components/InvoicePreviewModal";
+import CommissionProjection from "@/components/commissions/CommissionProjection";
 import { formatDateOnly } from "@/lib/formatDate";
 
 interface CommissionRow {
@@ -322,6 +323,7 @@ export default function ApporteurCommissions({ defaultRoleFilter }: ApporteurCom
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-secondary">
           <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
+          <TabsTrigger value="projection" className="gap-1.5"><TrendingUp className="h-3.5 w-3.5" /> Projection</TabsTrigger>
           <TabsTrigger value="history">Historique</TabsTrigger>
           <TabsTrigger value="invoices">Factures</TabsTrigger>
         </TabsList>
@@ -444,6 +446,14 @@ export default function ApporteurCommissions({ defaultRoleFilter }: ApporteurCom
               </div>
             )}
           </section>
+        </TabsContent>
+
+        {/* ═══ TAB: PROJECTION ═══ */}
+        <TabsContent value="projection" className="mt-4">
+          <CommissionProjection
+            userId={profile?.id}
+            roleSourceFilter={defaultRoleFilter || (roleFilter !== "all" ? roleFilter : undefined)}
+          />
         </TabsContent>
 
         {/* ═══ TAB 2: HISTORIQUE ═══ */}
