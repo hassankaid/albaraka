@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
-import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare } from "lucide-react";
+import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare, MoreHorizontal, Clock, XCircle, CalendarIcon } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -38,6 +39,8 @@ const getPaymentStatusInfo = (status: string, dueDate: string) => {
 
   if (status === "paid") return { label: "Payé", className: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30", key: "paid" };
   if (status === "cancelled") return { label: "Annulé", className: "bg-muted text-muted-foreground border-border", key: "cancelled" };
+  if (status === "late") return { label: "En retard", className: "bg-red-500/20 text-red-300 border-red-500/30", key: "late" };
+  if (status === "lost") return { label: "Perdu", className: "bg-zinc-700/50 text-zinc-400 border-zinc-600/30 line-through", key: "lost" };
   if (status === "pending" && due < today) return { label: "En retard", className: "bg-red-500/20 text-red-300 border-red-500/30", key: "overdue" };
   return { label: "En attente", className: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30", key: "pending" };
 };
@@ -125,6 +128,11 @@ export default function Payments() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
 
+  // Lost confirmation dialog
+  const [lostConfirmPayment, setLostConfirmPayment] = useState<PaymentRow | null>(null);
+  // Paid date picker
+  const [paidPickerPayment, setPaidPickerPayment] = useState<PaymentRow | null>(null);
+
   const fetchPayments = useCallback(async () => {
     const batchSize = 1000;
     let from = 0;
@@ -187,9 +195,38 @@ export default function Payments() {
       toast({ title: "Erreur", variant: "destructive" });
     } else {
       toast({ title: "Paiement marqué comme payé" });
+      setPaidPickerPayment(null);
       fetchPayments();
     }
   };
+
+  const markAsLate = async (paymentId: string) => {
+    const { error } = await supabase
+      .from("payments")
+      .update({ status: "late" })
+      .eq("id", paymentId);
+    if (error) {
+      toast({ title: "Erreur", variant: "destructive" });
+    } else {
+      toast({ title: "Paiement marqué en retard" });
+      fetchPayments();
+    }
+  };
+
+  const markAsLost = async (paymentId: string) => {
+    const { error } = await supabase
+      .from("payments")
+      .update({ status: "lost" })
+      .eq("id", paymentId);
+    if (error) {
+      toast({ title: "Erreur", variant: "destructive" });
+    } else {
+      toast({ title: "Paiement marqué comme perdu (cascade appliquée)" });
+      setLostConfirmPayment(null);
+      fetchPayments();
+    }
+  };
+
   const saveNotes = async (paymentId: string, newNotes: string) => {
     const { error } = await supabase
       .from("payments")
@@ -248,8 +285,10 @@ export default function Payments() {
   const totalPaidMonth = kpiPayments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
   const today = new Date().toISOString().split("T")[0];
   const totalOverdue = allPayments
-    .filter((p) => p.status === "pending" && p.due_date < today)
+    .filter((p) => (p.status === "pending" && p.due_date < today) || p.status === "late")
     .reduce((s, p) => s + p.amount, 0);
+
+  const canChangeStatus = (status: string) => status === "pending" || status === "late";
 
   return (
     <div className="space-y-4">
@@ -298,8 +337,10 @@ export default function Payments() {
           <SelectContent>
             <SelectItem value="all">Tous statuts</SelectItem>
             <SelectItem value="pending">En attente</SelectItem>
-            <SelectItem value="overdue">En retard</SelectItem>
+            <SelectItem value="overdue">En retard (échéance)</SelectItem>
+            <SelectItem value="late">En retard (rejet)</SelectItem>
             <SelectItem value="paid">Payé</SelectItem>
+            <SelectItem value="lost">Perdu</SelectItem>
             <SelectItem value="cancelled">Annulé</SelectItem>
           </SelectContent>
         </Select>
@@ -345,10 +386,10 @@ export default function Payments() {
                 {paginatedPayments.map((p) => {
                   const statusInfo = getPaymentStatusInfo(p.status, p.due_date);
                   return (
-                    <TableRow key={p.id} className="border-border hover:bg-secondary/50 transition-colors">
+                    <TableRow key={p.id} className={`border-border hover:bg-secondary/50 transition-colors ${p.status === "lost" ? "opacity-60" : ""}`}>
                       <TableCell>
                         <div className="min-w-0">
-                          <p className="font-semibold text-foreground text-sm truncate">{p.contact_name || "—"}</p>
+                          <p className={`font-semibold text-foreground text-sm truncate ${p.status === "lost" ? "line-through" : ""}`}>{p.contact_name || "—"}</p>
                           {p.contact_email && <p className="text-xs text-muted-foreground truncate">{p.contact_email}</p>}
                           {p.contact_phone && (
                             <a href={`tel:${p.contact_phone}`} className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-0.5">
@@ -361,7 +402,7 @@ export default function Payments() {
                       <TableCell className="text-sm font-medium text-foreground">
                         {p.payment_number}/{p.total_payments}
                       </TableCell>
-                      <TableCell className="font-semibold text-sm text-foreground">
+                      <TableCell className={`font-semibold text-sm text-foreground ${p.status === "lost" ? "line-through" : ""}`}>
                         {p.amount.toLocaleString("fr-FR")} €
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
@@ -400,24 +441,28 @@ export default function Payments() {
                       </TableCell>
                       {isCeo && (
                         <TableCell>
-                          {p.status === "pending" && (
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-7 text-xs gap-1">
-                                  <Check className="h-3.5 w-3.5" /> Payé
+                          {canChangeStatus(p.status) ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
                                 </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="end">
-                                <Calendar
-                                  mode="single"
-                                  selected={new Date()}
-                                  onSelect={(date) => { if (date) markAsPaid(p.id, date); }}
-                                  locale={fr}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                          )}
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem onClick={() => setPaidPickerPayment(p)} className="text-emerald-400">
+                                  <Check className="h-3.5 w-3.5 mr-2" /> Payé
+                                </DropdownMenuItem>
+                                {p.status !== "late" && (
+                                  <DropdownMenuItem onClick={() => markAsLate(p.id)} className="text-red-400">
+                                    <Clock className="h-3.5 w-3.5 mr-2" /> En retard
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onClick={() => setLostConfirmPayment(p)} className="text-zinc-400">
+                                  <XCircle className="h-3.5 w-3.5 mr-2" /> Perdu
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : null}
                         </TableCell>
                       )}
                     </TableRow>
@@ -445,6 +490,48 @@ export default function Payments() {
           )}
         </>
       )}
+
+      {/* Lost confirmation dialog */}
+      <Dialog open={!!lostConfirmPayment} onOpenChange={(open) => !open && setLostConfirmPayment(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmer « Perdu »</DialogTitle>
+            <DialogDescription>
+              Cette action marquera ce paiement et toutes les mensualités suivantes (non payées) comme perdues. Les commissions associées seront annulées.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground">
+            <p><strong>Client :</strong> {lostConfirmPayment?.contact_name || "—"}</p>
+            <p><strong>Mensualité :</strong> {lostConfirmPayment?.payment_number}/{lostConfirmPayment?.total_payments} — {lostConfirmPayment?.amount.toLocaleString("fr-FR")} €</p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setLostConfirmPayment(null)}>Annuler</Button>
+            <Button variant="destructive" onClick={() => lostConfirmPayment && markAsLost(lostConfirmPayment.id)}>
+              Confirmer Perdu
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Paid date picker dialog */}
+      <Dialog open={!!paidPickerPayment} onOpenChange={(open) => !open && setPaidPickerPayment(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Date de paiement</DialogTitle>
+            <DialogDescription>
+              {paidPickerPayment?.contact_name || "Client"} — {paidPickerPayment?.amount.toLocaleString("fr-FR")} €
+            </DialogDescription>
+          </DialogHeader>
+          <Calendar
+            mode="single"
+            selected={new Date()}
+            onSelect={(date) => { if (date && paidPickerPayment) markAsPaid(paidPickerPayment.id, date); }}
+            locale={fr}
+            initialFocus
+            className="pointer-events-auto mx-auto"
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
