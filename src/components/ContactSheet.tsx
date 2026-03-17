@@ -335,13 +335,37 @@ function LeadActivityEvent({ data, userTz }: { data: any; userTz: string }) {
   const userName = data.profiles?.full_name || "Inconnu";
 
   if (data.action === "status_change") {
+    const isRecycling = data.new_value === "a_recycler";
+    return (
+      <div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <RefreshCw className="w-4 h-4 text-blue-400 shrink-0" />
+          <p className="text-sm text-foreground">
+            Statut lead :{" "}
+            <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[data.old_value] || ""}`}>
+              {STATUS_LABELS[data.old_value] || data.old_value}
+            </Badge>
+            {" → "}
+            <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[data.new_value] || ""}`}>
+              {STATUS_LABELS[data.new_value] || data.new_value}
+            </Badge>
+          </p>
+        </div>
+        {isRecycling && data._resolved_old_name && (
+          <p className="text-xs text-muted-foreground mt-1">Ancien setter : <strong>{data._resolved_old_name}</strong></p>
+        )}
+        {data.note && <p className="text-xs text-muted-foreground italic mt-1">{data.note}</p>}
+        <span className="text-xs text-muted-foreground">par {userName}</span>
+      </div>
+    );
+  }
+
+  if (data.action === "unassigned") {
     return (
       <div className="flex items-center gap-2 flex-wrap">
-        <RefreshCw className="w-4 h-4 text-blue-400 shrink-0" />
-        <p className="text-sm text-foreground">
-          Statut lead : <strong>{STATUS_LABELS[data.old_value] || data.old_value}</strong> → <strong>{STATUS_LABELS[data.new_value] || data.new_value}</strong>
-        </p>
-        <span className="text-xs text-muted-foreground">par {userName}</span>
+        <UserCheck className="w-4 h-4 text-amber-400 shrink-0" />
+        <p className="text-sm text-foreground">Lead désassigné de <strong>{data._resolved_old_name || data.old_value || "—"}</strong></p>
+        {data.note && <span className="text-xs text-muted-foreground italic">— {data.note}</span>}
       </div>
     );
   }
