@@ -33,7 +33,14 @@ interface MonthData {
   cancelled: number;
 }
 
-export default function CommissionProjection() {
+interface CommissionProjectionProps {
+  /** If set, only show commissions for this user */
+  userId?: string;
+  /** If set, filter by role source category */
+  roleSourceFilter?: string;
+}
+
+export default function CommissionProjection({ userId, roleSourceFilter }: CommissionProjectionProps) {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [commissions, setCommissions] = useState<CommissionData[]>([]);
@@ -41,8 +48,16 @@ export default function CommissionProjection() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
 
+  const ROLE_SOURCE_CATEGORY: Record<string, string> = {
+    apporteur: "apporteur",
+    setter: "collaborateur",
+    closer: "collaborateur",
+    agence_marketing: "collaborateur",
+    collaborateur: "collaborateur",
+  };
+
   const fetchData = useCallback(async () => {
-    const { data } = await supabase
+    let query = supabase
       .from("commissions")
       .select(`
         amount, status, paid_at, role,
@@ -56,6 +71,10 @@ export default function CommissionProjection() {
         percentage
       `)
       .not("payment_id", "is", null);
+
+    if (userId) {
+      query = query.eq("beneficiary_user_id", userId);
+    }
 
     if (data) {
       setCommissions(
