@@ -97,6 +97,11 @@ export default function AdminInvoices() {
   const [bulkDeleteTotal, setBulkDeleteTotal] = useState(0);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
+  // Bulk download
+  const [bulkDownloading, setBulkDownloading] = useState(false);
+  const [bulkDownloadProgress, setBulkDownloadProgress] = useState(0);
+  const [bulkDownloadTotal, setBulkDownloadTotal] = useState(0);
+
   // RIB viewer
   const [ribViewerOpen, setRibViewerOpen] = useState(false);
   const [ribViewerBlobUrl, setRibViewerBlobUrl] = useState<string | null>(null);
