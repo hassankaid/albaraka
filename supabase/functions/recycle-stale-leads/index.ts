@@ -50,17 +50,17 @@ Deno.serve(async (req) => {
     // ── Rule 1: "Pas de réponse" leads older than 2 weeks ──
     const { data: staleNoResponse, error: err1 } = await supabase
       .from("leads")
-      .select("id, assigned_to, status, source, apporteur_id, created_at")
+      .select("id, assigned_to, status, source, apporteur_id, contact_id, created_at")
       .eq("status", "pas_de_reponse")
       .lt("created_at", cutoffISO);
 
     if (err1) throw new Error(`Fetch pas_de_reponse error: ${err1.message}`);
 
-    // ── Rule 2: Organic leads in "a_qualifier" with no setter, older than 2 weeks ──
+    // ── Rule 2: Organic leads unassigned in non-terminal status, older than 2 weeks ──
     const { data: staleOrganic, error: err2 } = await supabase
       .from("leads")
-      .select("id, assigned_to, status, source, apporteur_id, created_at")
-      .eq("status", "a_qualifier")
+      .select("id, assigned_to, status, source, apporteur_id, contact_id, created_at")
+      .in("status", ["a_qualifier", "inscrit_conference"])
       .is("assigned_to", null)
       .in("source", ORGANIC_SOURCES)
       .lt("created_at", cutoffISO);
@@ -68,15 +68,69 @@ Deno.serve(async (req) => {
     if (err2) throw new Error(`Fetch organic error: ${err2.message}`);
 
     // Merge and deduplicate
-    const allLeadsMap = new Map<string, typeof staleNoResponse[0]>();
+    const allLeadsMap = new Map<string, (typeof staleNoResponse)[0]>();
     for (const lead of [...(staleNoResponse || []), ...(staleOrganic || [])]) {
       allLeadsMap.set(lead.id, lead);
     }
+
+    // ── Protection: exclude leads whose contact has an active call or any sale ──
+    const contactIds = [
+      ...new Set(
+        Array.from(allLeadsMap.values())
+          .map((l) => l.contact_id)
+          .filter(Boolean)
+      ),
+    ];
+
+    const protectedContactIds = new Set<string>();
+
+    if (contactIds.length > 0) {
+      // Check for active calls (not annule, not no_show)
+      const { data: callContacts } = await supabase
+        .from("calls")
+        .select("contact_id")
+        .in("contact_id", contactIds)
+        .not("status", "in", '("annule","no_show")');
+
+      if (callContacts) {
+        for (const c of callContacts) {
+          if (c.contact_id) protectedContactIds.add(c.contact_id);
+        }
+      }
+
+      // Check for sales
+      const { data: saleContacts } = await supabase
+        .from("sales")
+        .select("contact_id")
+        .in("contact_id", contactIds);
+
+      if (saleContacts) {
+        for (const c of saleContacts) {
+          if (c.contact_id) protectedContactIds.add(c.contact_id);
+        }
+      }
+    }
+
+    // Filter out protected leads
+    let skippedCount = 0;
+    for (const [id, lead] of allLeadsMap) {
+      if (lead.contact_id && protectedContactIds.has(lead.contact_id)) {
+        allLeadsMap.delete(id);
+        skippedCount++;
+      }
+    }
+
     const allLeads = Array.from(allLeadsMap.values());
 
     if (allLeads.length === 0) {
       return new Response(
-        JSON.stringify({ message: "No leads to recycle", rule1: 0, rule2: 0, total: 0 }),
+        JSON.stringify({
+          message: "No leads to recycle",
+          rule1: 0,
+          rule2: 0,
+          total: 0,
+          skipped_protected: skippedCount,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -136,10 +190,10 @@ Deno.serve(async (req) => {
       console.error("Activity logging error:", actError.message);
     }
 
-    const rule1Count = (staleNoResponse || []).length;
-    const rule2Count = (staleOrganic || []).filter(
-      (l) => !staleNoResponse?.some((r) => r.id === l.id)
+    const rule1Count = (staleNoResponse || []).filter(
+      (l) => allLeadsMap.has(l.id)
     ).length;
+    const rule2Count = allLeads.length - rule1Count;
 
     return new Response(
       JSON.stringify({
@@ -147,6 +201,7 @@ Deno.serve(async (req) => {
         rule1_pas_de_reponse: rule1Count,
         rule2_organic_unassigned: rule2Count,
         total: allLeads.length,
+        skipped_protected: skippedCount,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
