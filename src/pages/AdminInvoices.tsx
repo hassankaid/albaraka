@@ -784,18 +784,44 @@ export default function AdminInvoices() {
               onChange={(e) => setFilterSearch(e.target.value)}
               className="w-48 bg-card"
             />
-            {selectedInvoiceIds.size > 0 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setShowBulkDeleteConfirm(true)}
-                disabled={bulkDeleting}
-                className="ml-auto gap-1.5"
-              >
-                <Trash2 className="h-4 w-4" />
-                Supprimer ({selectedInvoiceIds.size})
-              </Button>
-            )}
+            <div className="ml-auto flex items-center gap-2">
+              {selectedInvoiceIds.size > 0 && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkDownload(filteredInvoices.filter(inv => selectedInvoiceIds.has(inv.id)))}
+                    disabled={bulkDownloading}
+                    className="gap-1.5"
+                  >
+                    <Download className="h-4 w-4" />
+                    Télécharger ({selectedInvoiceIds.size})
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowBulkDeleteConfirm(true)}
+                    disabled={bulkDeleting}
+                    className="gap-1.5"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Supprimer ({selectedInvoiceIds.size})
+                  </Button>
+                </>
+              )}
+              {filteredInvoices.some(inv => inv.pdf_url) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBulkDownload(filteredInvoices)}
+                  disabled={bulkDownloading}
+                  className="gap-1.5"
+                >
+                  <Download className="h-4 w-4" />
+                  Tout télécharger ({filteredInvoices.filter(inv => inv.pdf_url).length})
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Bulk delete progress */}
