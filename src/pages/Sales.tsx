@@ -24,7 +24,7 @@ interface SaleRow {
   closed_by_name: string | null;
   apporteur_name: string | null;
   commission_count: number;
-  // collaborator-specific aggregated commission info
+  // collaborator-specific
   my_commission_total: number;
   my_commission_paid: number;
   my_roles: string[];
@@ -44,8 +44,6 @@ const PAYMENT_LABELS: Record<string, string> = {
   refunded: "Remboursé",
 };
 
-// ROLE_CONFIG imported from @/lib/roleConfig
-
 const PAGE_SIZE = 50;
 
 export default function Sales() {
@@ -58,12 +56,10 @@ export default function Sales() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
 
-  const [ceoSales, setCeoSales] = useState<CeoSale[]>([]);
+  const [sales, setSales] = useState<SaleRow[]>([]);
   const [newSaleOpen, setNewSaleOpen] = useState(false);
-  const [commissionsModalSale, setCommissionsModalSale] = useState<CeoSale | null>(null);
-  const [detailSale, setDetailSale] = useState<CeoSale | null>(null);
-
-  const [userCommissions, setUserCommissions] = useState<UserCommission[]>([]);
+  const [commissionsModalSale, setCommissionsModalSale] = useState<SaleRow | null>(null);
+  const [detailSale, setDetailSale] = useState<SaleRow | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!profile) return;
@@ -81,7 +77,7 @@ export default function Sales() {
         .order("sold_at", { ascending: false });
 
       if (data) {
-        setCeoSales(
+        setSales(
           data.map((s: any) => ({
             id: s.id,
             product: s.product,
@@ -93,38 +89,68 @@ export default function Sales() {
             closed_by_name: s.profiles?.full_name,
             apporteur_name: s.leads?.profiles?.full_name || null,
             commission_count: s.commissions?.length || 0,
+            my_commission_total: 0,
+            my_commission_paid: 0,
+            my_roles: [],
           }))
         );
       }
     } else {
+      // Fetch commissions for the current user, grouped by sale
       const { data } = await supabase
         .from("commissions")
         .select(`
           id, role, percentage, amount, status,
           sales!commissions_sale_id_fkey(
-            product, amount_ht, sold_at,
-            contacts!sales_contact_id_fkey(full_name)
+            id, product, amount_ht, sold_at, payment_status,
+            contacts!sales_contact_id_fkey(full_name, email),
+            profiles!sales_closed_by_fkey(full_name)
           )
         `)
         .eq("beneficiary_user_id", profile.id)
         .order("created_at", { ascending: false });
 
       if (data) {
-        setUserCommissions(
-          data
-            .filter((c: any) => c.sales)
-            .map((c: any) => ({
-              id: c.id,
-              role: c.role,
-              percentage: c.percentage,
-              amount: c.amount,
-              status: c.status,
+        // Group commissions by sale_id
+        const salesMap = new Map<string, SaleRow>();
+        for (const c of data as any[]) {
+          if (!c.sales) continue;
+          const saleId = c.sales.id;
+          if (!salesMap.has(saleId)) {
+            salesMap.set(saleId, {
+              id: saleId,
               product: c.sales.product,
               amount_ht: c.sales.amount_ht,
+              payment_status: c.sales.payment_status,
               sold_at: c.sales.sold_at,
-              contact_name: c.sales.contacts?.full_name,
-            }))
-        );
+              contact_name: c.sales.contacts?.full_name || null,
+              contact_email: c.sales.contacts?.email || null,
+              closed_by_name: c.sales.profiles?.full_name || null,
+              apporteur_name: null,
+              commission_count: 0,
+              my_commission_total: 0,
+              my_commission_paid: 0,
+              my_roles: [],
+            });
+          }
+          const row = salesMap.get(saleId)!;
+          row.commission_count += 1;
+          row.my_commission_total += c.amount || 0;
+          if (c.status === "paid") {
+            row.my_commission_paid += c.amount || 0;
+          }
+          if (c.role && !row.my_roles.includes(c.role)) {
+            row.my_roles.push(c.role);
+          }
+        }
+        // Sort by sold_at desc
+        const sorted = Array.from(salesMap.values()).sort((a, b) => {
+          if (!a.sold_at && !b.sold_at) return 0;
+          if (!a.sold_at) return 1;
+          if (!b.sold_at) return -1;
+          return new Date(b.sold_at).getTime() - new Date(a.sold_at).getTime();
+        });
+        setSales(sorted);
       }
     }
     setLoading(false);
@@ -139,42 +165,30 @@ export default function Sales() {
     toast({ title: "Données actualisées" });
   };
 
-  const filteredCeoSales = useMemo(() => {
-    if (!search.trim()) return ceoSales;
+  const filtered = useMemo(() => {
+    if (!search.trim()) return sales;
     const q = search.toLowerCase();
-    return ceoSales.filter((s) =>
+    return sales.filter((s) =>
       s.contact_name?.toLowerCase().includes(q) ||
       s.contact_email?.toLowerCase().includes(q) ||
       s.closed_by_name?.toLowerCase().includes(q) ||
       s.apporteur_name?.toLowerCase().includes(q) ||
       s.product.toLowerCase().includes(q)
     );
-  }, [ceoSales, search]);
-
-  const filteredCommissions = useMemo(() => {
-    if (!search.trim()) return userCommissions;
-    const q = search.toLowerCase();
-    return userCommissions.filter((c) =>
-      c.contact_name?.toLowerCase().includes(q) ||
-      c.product.toLowerCase().includes(q) ||
-      c.role.toLowerCase().includes(q)
-    );
-  }, [userCommissions, search]);
+  }, [sales, search]);
 
   useEffect(() => { setPage(0); }, [search]);
 
-  const items = isCeo ? filteredCeoSales : filteredCommissions;
-  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-  const paginatedCeoSales = useMemo(() => filteredCeoSales.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [filteredCeoSales, page]);
-  const paginatedCommissions = useMemo(() => filteredCommissions.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [filteredCommissions, page]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = useMemo(() => filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [filtered, page]);
 
   const totalCA = isCeo
-    ? filteredCeoSales.reduce((s, v) => s + v.amount_ht, 0)
-    : filteredCommissions.reduce((s, c) => s + (c.amount || 0), 0);
+    ? filtered.reduce((s, v) => s + v.amount_ht, 0)
+    : filtered.reduce((s, v) => s + v.my_commission_total, 0);
   const totalPaid = isCeo
-    ? filteredCeoSales.filter((v) => v.payment_status === "paid").reduce((s, v) => s + v.amount_ht, 0)
-    : filteredCommissions.filter((c) => c.status === "paid").reduce((s, c) => s + (c.amount || 0), 0);
-  const count = items.length;
+    ? filtered.filter((v) => v.payment_status === "paid").reduce((s, v) => s + v.amount_ht, 0)
+    : filtered.reduce((s, v) => s + v.my_commission_paid, 0);
+  const count = filtered.length;
 
   const userTz = profile?.timezone || "Europe/Paris";
   const formatDate = (d: string | null) => d ? formatDateOnly(d, userTz) : "—";
@@ -187,11 +201,11 @@ export default function Sales() {
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
             <BadgeEuro className="h-3.5 w-3.5 text-purple-400" />
             <span className="text-sm font-bold text-foreground">{count}</span>
-            <span className="text-xs text-muted-foreground">{isCeo ? "ventes" : "commissions"}</span>
+            <span className="text-xs text-muted-foreground">ventes</span>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
             <span className="text-sm font-bold text-foreground">{totalCA.toLocaleString("fr-FR")} €</span>
-            <span className="text-xs text-muted-foreground">{isCeo ? "CA HT" : "total"}</span>
+            <span className="text-xs text-muted-foreground">{isCeo ? "CA HT" : "mes commissions"}</span>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
             <span className="text-sm font-bold text-emerald-400">{totalPaid.toLocaleString("fr-FR")} €</span>
@@ -232,11 +246,9 @@ export default function Sales() {
       ) : count === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Inbox className="h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-lg font-semibold text-foreground">
-            {isCeo ? "Aucune vente pour le moment" : "Aucune commission pour le moment"}
-          </p>
+          <p className="text-lg font-semibold text-foreground">Aucune vente pour le moment</p>
         </div>
-      ) : isCeo ? (
+      ) : (
         <>
           <div className="rounded-lg border border-border/50 overflow-hidden">
             <Table>
@@ -246,15 +258,28 @@ export default function Sales() {
                   <TableHead>Produit</TableHead>
                   <TableHead>Montant HT</TableHead>
                   <TableHead>Paiement</TableHead>
-                  <TableHead>Commissions</TableHead>
-                  <TableHead>Closer</TableHead>
+                  {isCeo ? (
+                    <>
+                      <TableHead>Commissions</TableHead>
+                      <TableHead>Closer</TableHead>
+                    </>
+                  ) : (
+                    <>
+                      <TableHead>Mes rôles</TableHead>
+                      <TableHead>Ma commission</TableHead>
+                    </>
+                  )}
                   <TableHead>Date</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
+                  {isCeo && <TableHead className="w-[100px]">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedCeoSales.map((sale) => (
-                  <TableRow key={sale.id} className="border-border hover:bg-secondary/50 transition-colors cursor-pointer" onClick={() => setDetailSale(sale)}>
+                {paginated.map((sale) => (
+                  <TableRow
+                    key={sale.id}
+                    className="border-border hover:bg-secondary/50 transition-colors cursor-pointer"
+                    onClick={() => setDetailSale(sale)}
+                  >
                     <TableCell>
                       <div className="min-w-0">
                         <p className="font-semibold text-foreground text-sm truncate">{sale.contact_name || "—"}</p>
@@ -268,17 +293,48 @@ export default function Sales() {
                         {PAYMENT_LABELS[sale.payment_status || "pending"] || sale.payment_status}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="text-[10px]">{sale.commission_count}</Badge>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{sale.closed_by_name || "—"}</TableCell>
+                    {isCeo ? (
+                      <>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-[10px]">{sale.commission_count}</Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{sale.closed_by_name || "—"}</TableCell>
+                      </>
+                    ) : (
+                      <>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {sale.my_roles.map((role) => {
+                              const cfg = ROLE_CONFIG[role];
+                              if (!cfg) return <Badge key={role} variant="outline" className="text-[10px]">{role}</Badge>;
+                              const Icon = cfg.icon;
+                              return (
+                                <Badge key={role} variant="outline" className={`text-[10px] leading-tight ${cfg.class}`}>
+                                  <Icon className="h-3 w-3 mr-1" />{cfg.label}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-sm text-foreground">{sale.my_commission_total.toLocaleString("fr-FR")} €</p>
+                            {sale.my_commission_paid > 0 && (
+                              <p className="text-[10px] text-emerald-400">{sale.my_commission_paid.toLocaleString("fr-FR")} € payé</p>
+                            )}
+                          </div>
+                        </TableCell>
+                      </>
+                    )}
                     <TableCell className="text-xs text-muted-foreground">{formatDate(sale.sold_at)}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={(e) => { e.stopPropagation(); setCommissionsModalSale(sale); }}>
-                        <Settings className="h-3.5 w-3.5" />
-                        Com.
-                      </Button>
-                    </TableCell>
+                    {isCeo && (
+                      <TableCell>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={(e) => { e.stopPropagation(); setCommissionsModalSale(sale); }}>
+                          <Settings className="h-3.5 w-3.5" />
+                          Com.
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -288,76 +344,7 @@ export default function Sales() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
-                {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filteredCeoSales.length)} sur {filteredCeoSales.length}
-              </p>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
-                  <ChevronLeft className="h-3.5 w-3.5 mr-1" />Préc.
-                </Button>
-                <span className="text-xs text-muted-foreground">{page + 1}/{totalPages}</span>
-                <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
-                  Suiv.<ChevronRight className="h-3.5 w-3.5 ml-1" />
-                </Button>
-              </div>
-            </div>
-          )}
-        </>
-      ) : (
-        <>
-          <div className="rounded-lg border border-border/50 overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead>Vente</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Mon rôle</TableHead>
-                  <TableHead>%</TableHead>
-                  <TableHead>Montant</TableHead>
-                  <TableHead>Statut</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedCommissions.map((c) => (
-                  <TableRow key={c.id} className="border-border hover:bg-secondary/50 transition-colors">
-                    <TableCell>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground text-sm">{c.product}</p>
-                        <p className="text-xs text-muted-foreground">{c.contact_name}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{formatDate(c.sold_at)}</TableCell>
-                    <TableCell>
-                      {(() => {
-                        const cfg = ROLE_CONFIG[c.role];
-                        if (!cfg) return <span className="text-xs text-muted-foreground">{c.role}</span>;
-                        const Icon = cfg.icon;
-                        return (
-                          <Badge variant="outline" className={`text-[10px] leading-tight ${cfg.class}`}>
-                            <Icon className="h-3 w-3 mr-1" />
-                            {cfg.label}
-                          </Badge>
-                        );
-                      })()}
-                    </TableCell>
-                    <TableCell className="text-sm text-foreground">{c.percentage}%</TableCell>
-                    <TableCell className="font-semibold text-sm text-foreground">
-                      {c.amount != null ? `${c.amount.toLocaleString("fr-FR")} €` : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={`text-[10px] leading-tight ${PAYMENT_COLORS[c.status || "pending"] || ""}`}>
-                        {c.status === "paid" ? "Payée" : "En attente"}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">
-                {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filteredCommissions.length)} sur {filteredCommissions.length}
+                {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} sur {filtered.length}
               </p>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
