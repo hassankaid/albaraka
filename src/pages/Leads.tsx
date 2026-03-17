@@ -262,6 +262,8 @@ export default function Leads() {
     setSourceFilter(tab === "a_affecter" ? ADS_SOURCES : []);
   }, [tab]);
 
+  useEffect(() => { setPage(0); }, [statusFilter, sourceFilter.length, search]);
+
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
   const paginatedLeads = useMemo(
     () => filteredLeads.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
