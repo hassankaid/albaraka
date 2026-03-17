@@ -16,13 +16,26 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Get a system user (CEO) for activity logging
+    const { data: ceoProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("role", "ceo")
+      .limit(1)
+      .single();
+
+    const systemUserId = ceoProfile?.id;
+    if (!systemUserId) {
+      throw new Error("No CEO profile found for system logging");
+    }
+
     // Find leads with status 'pas_de_reponse' created over 30 days ago
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - 30);
 
     const { data: staleLeads, error: fetchError } = await supabase
       .from("leads")
-      .select("id, assigned_to, created_at")
+      .select("id, assigned_to, status, created_at")
       .eq("status", "pas_de_reponse")
       .not("assigned_to", "is", null)
       .lt("created_at", cutoffDate.toISOString());
@@ -55,17 +68,30 @@ Deno.serve(async (req) => {
       throw new Error(`Update error: ${updateError.message}`);
     }
 
-    // Log activity for each recycled lead
-    const activities = staleLeads.map((lead) => ({
-      lead_id: lead.id,
-      user_id: "00000000-0000-0000-0000-000000000000", // system
-      action: "recycled",
-      old_value: lead.assigned_to,
-      new_value: null,
-      note: "Recyclage automatique — pas de réponse depuis plus de 30 jours",
-    }));
+    // Log activity for each recycled lead (status change + unassign)
+    const activities = staleLeads.flatMap((lead) => [
+      {
+        lead_id: lead.id,
+        user_id: systemUserId,
+        action: "status_change",
+        old_value: lead.status,
+        new_value: "a_recycler",
+        note: "Recyclage automatique — pas de réponse depuis plus de 30 jours",
+      },
+      {
+        lead_id: lead.id,
+        user_id: systemUserId,
+        action: "unassigned",
+        old_value: lead.assigned_to,
+        new_value: null,
+        note: "Désassigné par recyclage automatique",
+      },
+    ]);
 
-    await supabase.from("lead_activities").insert(activities);
+    const { error: actError } = await supabase.from("lead_activities").insert(activities);
+    if (actError) {
+      console.error("Activity logging error:", actError.message);
+    }
 
     return new Response(
       JSON.stringify({ message: `${leadIds.length} leads recycled`, count: leadIds.length }),
