@@ -432,7 +432,7 @@ export default function Payments() {
                         <TableRow className={`border-border hover:bg-secondary/50 transition-colors ${p.status === "lost" ? "opacity-60" : ""}`}>
                       <TableCell>
                         <div className="min-w-0">
-                          <p className={`font-semibold text-foreground text-sm truncate ${p.status === "lost" ? "line-through" : ""}`}>{p.contact_name || "—"}</p>
+                          <p className="font-semibold text-foreground text-sm truncate">{p.contact_name || "—"}</p>
                           {p.contact_email && <p className="text-xs text-muted-foreground truncate">{p.contact_email}</p>}
                           {p.contact_phone && (
                             <a href={`tel:${p.contact_phone}`} className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-0.5">
