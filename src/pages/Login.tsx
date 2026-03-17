@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/ethicarena-logo.png";
-import { Eye, EyeOff, Mail, Lock, RefreshCw } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, RefreshCw, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
