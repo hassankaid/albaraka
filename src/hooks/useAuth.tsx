@@ -16,6 +16,13 @@ interface Profile {
   onboarding_completed: boolean | null;
   collaborateur_level: string | null;
   is_active: boolean;
+  address: string | null;
+  postal_code: string | null;
+  city: string | null;
+  country: string | null;
+  siret: string | null;
+  bank_rib_url: string | null;
+  bank_details: Record<string, any> | null;
 }
 
 interface AuthContextType {
