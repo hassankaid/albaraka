@@ -351,11 +351,9 @@ export default function Payments() {
           <SelectContent>
             <SelectItem value="all">Tous statuts</SelectItem>
             <SelectItem value="pending">En attente</SelectItem>
-            <SelectItem value="overdue">En retard (échéance)</SelectItem>
-            <SelectItem value="late">En retard (rejet)</SelectItem>
+            <SelectItem value="late">En retard</SelectItem>
             <SelectItem value="paid">Payé</SelectItem>
             <SelectItem value="lost">Perdu</SelectItem>
-            <SelectItem value="cancelled">Annulé</SelectItem>
           </SelectContent>
         </Select>
 
