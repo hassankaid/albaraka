@@ -146,8 +146,6 @@ export default function CreatePaymentsForm({ prefilledContactId, prefilledSaleId
                   <SelectContent>
                     <SelectItem value="pending">En attente</SelectItem>
                     <SelectItem value="paid">Payé</SelectItem>
-                    <SelectItem value="late">En retard</SelectItem>
-                    <SelectItem value="lost">Perdu</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

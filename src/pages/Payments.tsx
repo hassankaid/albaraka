@@ -38,10 +38,9 @@ const getPaymentStatusInfo = (status: string, dueDate: string) => {
   due.setHours(0, 0, 0, 0);
 
   if (status === "paid") return { label: "Payé", className: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30", key: "paid" };
-  if (status === "cancelled") return { label: "Annulé", className: "bg-muted text-muted-foreground border-border", key: "cancelled" };
   if (status === "late") return { label: "En retard", className: "bg-red-500/20 text-red-300 border-red-500/30", key: "late" };
   if (status === "lost") return { label: "Perdu", className: "bg-zinc-700/50 text-zinc-400 border-zinc-600/30 line-through", key: "lost" };
-  if (status === "pending" && due < today) return { label: "En retard", className: "bg-red-500/20 text-red-300 border-red-500/30", key: "overdue" };
+  if (status === "pending" && due < today) return { label: "En retard", className: "bg-red-500/20 text-red-300 border-red-500/30", key: "late" };
   return { label: "En attente", className: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30", key: "pending" };
 };
 
@@ -337,11 +336,9 @@ export default function Payments() {
           <SelectContent>
             <SelectItem value="all">Tous statuts</SelectItem>
             <SelectItem value="pending">En attente</SelectItem>
-            <SelectItem value="overdue">En retard (échéance)</SelectItem>
-            <SelectItem value="late">En retard (rejet)</SelectItem>
+            <SelectItem value="late">En retard</SelectItem>
             <SelectItem value="paid">Payé</SelectItem>
             <SelectItem value="lost">Perdu</SelectItem>
-            <SelectItem value="cancelled">Annulé</SelectItem>
           </SelectContent>
         </Select>
 
