@@ -994,6 +994,10 @@ export type Database = {
       }
     }
     Functions: {
+      compute_sale_payment_status: {
+        Args: { p_sale_id: string }
+        Returns: string
+      }
       find_or_create_contact: {
         Args: { p_email: string; p_full_name?: string; p_phone: string }
         Returns: string
