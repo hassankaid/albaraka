@@ -31,6 +31,7 @@ const STATUS_COLORS: Record<string, string> = {
   pas_de_reponse: "bg-orange-500/20 text-orange-300 border-orange-500/30",
   pas_qualifie: "bg-muted text-muted-foreground border-border",
   a_relancer: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  a_recycler: "bg-amber-500/20 text-amber-300 border-amber-500/30",
   contacte: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
   call_booke: "bg-purple-500/20 text-purple-300 border-purple-500/30",
   converti: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
@@ -58,7 +59,7 @@ const STATUS_LABELS: Record<string, string> = {
   effectue: "Effectué", no_show: "No show", annule: "Annulé",
   a_qualifier: "À qualifier", inscrit_conference: "Inscrit conférence", faux_numero: "Faux numéro",
   pas_de_reponse: "Pas de réponse", pas_qualifie: "Pas qualifié",
-  a_relancer: "À relancer",
+  a_relancer: "À relancer", a_recycler: "À recycler",
   close: "Close", disqualifie: "Disqualifié", pas_interesse: "Pas intéressé",
   non_close: "Non close", renvoye_pole_vente: "Renvoi Pôle Vente",
   renvoye_conference: "Renvoi Conférence", rediffusion: "Rediffusion",
@@ -116,17 +117,24 @@ export default function ContactSheet({
         : Promise.resolve({ data: [] }),
     ]);
 
-    // Collect profile IDs from reassignment new_value fields to resolve names
+    // Collect profile IDs from reassignment/unassignment fields to resolve names
     const allActivities = [
       ...(leadActivitiesRes.data || []),
       ...(callActivitiesRes.data || []),
     ];
-    const reassignProfileIds = allActivities
-      .filter((a: any) => (a.action === "reassigned" || a.action === "assigned") && a.new_value)
-      .map((a: any) => a.new_value as string);
-    const uniqueProfileIds = [...new Set(reassignProfileIds)];
+    const profileIdsToResolve = new Set<string>();
+    allActivities.forEach((a: any) => {
+      if ((a.action === "reassigned" || a.action === "assigned") && a.new_value) {
+        profileIdsToResolve.add(a.new_value);
+      }
+      // Also resolve old_value for unassigned/status_change to show old setter
+      if (a.old_value && /^[0-9a-f]{8}-/.test(a.old_value)) {
+        profileIdsToResolve.add(a.old_value);
+      }
+    });
 
     let profileNamesMap: Record<string, string> = {};
+    const uniqueProfileIds = [...profileIdsToResolve];
     if (uniqueProfileIds.length > 0) {
       const { data: profilesData } = await supabase
         .from("profiles")
@@ -152,7 +160,11 @@ export default function ContactSheet({
     });
 
     (leadActivitiesRes.data || []).forEach((a: any) => {
-      const enriched = { ...a, _resolved_name: profileNamesMap[a.new_value] || null };
+      const enriched = {
+        ...a,
+        _resolved_name: profileNamesMap[a.new_value] || null,
+        _resolved_old_name: profileNamesMap[a.old_value] || null,
+      };
       events.push({ type: "lead_activity", id: a.id, date: a.created_at || "", data: enriched });
     });
 
@@ -275,6 +287,9 @@ function TimelineDot({ type, action }: { type: string; action?: string }) {
     } else if (action === "reassigned" || action === "assigned") {
       className = "bg-violet-500/20 border-violet-500/40";
       icon = "👤";
+    } else if (action === "unassigned") {
+      className = "bg-amber-500/20 border-amber-500/40";
+      icon = "🔓";
     } else if (action === "note_added") {
       className = "bg-yellow-500/20 border-yellow-500/40";
       icon = "📝";
@@ -323,13 +338,37 @@ function LeadActivityEvent({ data, userTz }: { data: any; userTz: string }) {
   const userName = data.profiles?.full_name || "Inconnu";
 
   if (data.action === "status_change") {
+    const isRecycling = data.new_value === "a_recycler";
+    return (
+      <div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <RefreshCw className="w-4 h-4 text-blue-400 shrink-0" />
+          <p className="text-sm text-foreground">
+            Statut lead :{" "}
+            <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[data.old_value] || ""}`}>
+              {STATUS_LABELS[data.old_value] || data.old_value}
+            </Badge>
+            {" → "}
+            <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[data.new_value] || ""}`}>
+              {STATUS_LABELS[data.new_value] || data.new_value}
+            </Badge>
+          </p>
+        </div>
+        {isRecycling && data._resolved_old_name && (
+          <p className="text-xs text-muted-foreground mt-1">Ancien setter : <strong>{data._resolved_old_name}</strong></p>
+        )}
+        {data.note && <p className="text-xs text-muted-foreground italic mt-1">{data.note}</p>}
+        <span className="text-xs text-muted-foreground">par {userName}</span>
+      </div>
+    );
+  }
+
+  if (data.action === "unassigned") {
     return (
       <div className="flex items-center gap-2 flex-wrap">
-        <RefreshCw className="w-4 h-4 text-blue-400 shrink-0" />
-        <p className="text-sm text-foreground">
-          Statut lead : <strong>{STATUS_LABELS[data.old_value] || data.old_value}</strong> → <strong>{STATUS_LABELS[data.new_value] || data.new_value}</strong>
-        </p>
-        <span className="text-xs text-muted-foreground">par {userName}</span>
+        <UserCheck className="w-4 h-4 text-amber-400 shrink-0" />
+        <p className="text-sm text-foreground">Lead désassigné de <strong>{data._resolved_old_name || data.old_value || "—"}</strong></p>
+        {data.note && <span className="text-xs text-muted-foreground italic">— {data.note}</span>}
       </div>
     );
   }
