@@ -31,6 +31,7 @@ const STATUS_COLORS: Record<string, string> = {
   pas_de_reponse: "bg-orange-500/20 text-orange-300 border-orange-500/30",
   pas_qualifie: "bg-muted text-muted-foreground border-border",
   a_relancer: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  a_recycler: "bg-amber-500/20 text-amber-300 border-amber-500/30",
   contacte: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
   call_booke: "bg-purple-500/20 text-purple-300 border-purple-500/30",
   converti: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
