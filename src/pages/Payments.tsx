@@ -445,7 +445,7 @@ export default function Payments() {
                       <TableCell className="text-sm font-medium text-foreground">
                         {p.payment_number}/{p.total_payments}
                       </TableCell>
-                      <TableCell className={`font-semibold text-sm text-foreground ${p.status === "lost" ? "line-through" : ""}`}>
+                      <TableCell className="font-semibold text-sm text-foreground">
                         {p.amount.toLocaleString("fr-FR")} €
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
