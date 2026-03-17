@@ -10,6 +10,7 @@ import { Euro, FileText, RefreshCw, Download, CheckCircle2, Clock, ArrowRight, L
 import { fetchInvoiceHtml, downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
 import { toast } from "@/hooks/use-toast";
 import InvoicePreviewModal from "@/components/InvoicePreviewModal";
+import CommissionProjection from "@/components/commissions/CommissionProjection";
 import { formatDateOnly } from "@/lib/formatDate";
 
 interface CommissionRow {
