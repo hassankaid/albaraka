@@ -97,6 +97,11 @@ export default function AdminInvoices() {
   const [bulkDeleteTotal, setBulkDeleteTotal] = useState(0);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
+  // Bulk download
+  const [bulkDownloading, setBulkDownloading] = useState(false);
+  const [bulkDownloadProgress, setBulkDownloadProgress] = useState(0);
+  const [bulkDownloadTotal, setBulkDownloadTotal] = useState(0);
+
   // RIB viewer
   const [ribViewerOpen, setRibViewerOpen] = useState(false);
   const [ribViewerBlobUrl, setRibViewerBlobUrl] = useState<string | null>(null);
@@ -424,6 +429,39 @@ export default function AdminInvoices() {
     fetchInvoices();
   };
 
+  const handleBulkDownload = async (invoicesToDownload: InvoiceRow[]) => {
+    const withPdf = invoicesToDownload.filter(inv => inv.pdf_url);
+    if (withPdf.length === 0) {
+      toast({ title: "Aucune facture", description: "Aucune facture avec PDF à télécharger", variant: "destructive" });
+      return;
+    }
+    setBulkDownloading(true);
+    setBulkDownloadProgress(0);
+    setBulkDownloadTotal(withPdf.length);
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < withPdf.length; i++) {
+      try {
+        const html = await fetchInvoiceHtml(withPdf[i].pdf_url!);
+        await downloadInvoicePdf(withPdf[i].invoice_number, html);
+        successCount++;
+      } catch {
+        errorCount++;
+      }
+      setBulkDownloadProgress(i + 1);
+      // Small delay between downloads to avoid browser blocking
+      if (i < withPdf.length - 1) await new Promise(r => setTimeout(r, 800));
+    }
+
+    setBulkDownloading(false);
+    toast({
+      title: "Téléchargement terminé",
+      description: `${successCount} facture(s) téléchargée(s)${errorCount > 0 ? `, ${errorCount} erreur(s)` : ""}`,
+    });
+  };
+
   const toggleInvoiceSelect = (id: string) => {
     setSelectedInvoiceIds(prev => {
       const next = new Set(prev);
@@ -746,19 +784,56 @@ export default function AdminInvoices() {
               onChange={(e) => setFilterSearch(e.target.value)}
               className="w-48 bg-card"
             />
-            {selectedInvoiceIds.size > 0 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setShowBulkDeleteConfirm(true)}
-                disabled={bulkDeleting}
-                className="ml-auto gap-1.5"
-              >
-                <Trash2 className="h-4 w-4" />
-                Supprimer ({selectedInvoiceIds.size})
-              </Button>
-            )}
+            <div className="ml-auto flex items-center gap-2">
+              {selectedInvoiceIds.size > 0 && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkDownload(filteredInvoices.filter(inv => selectedInvoiceIds.has(inv.id)))}
+                    disabled={bulkDownloading}
+                    className="gap-1.5"
+                  >
+                    <Download className="h-4 w-4" />
+                    Télécharger ({selectedInvoiceIds.size})
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowBulkDeleteConfirm(true)}
+                    disabled={bulkDeleting}
+                    className="gap-1.5"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Supprimer ({selectedInvoiceIds.size})
+                  </Button>
+                </>
+              )}
+              {filteredInvoices.some(inv => inv.pdf_url) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBulkDownload(filteredInvoices)}
+                  disabled={bulkDownloading}
+                  className="gap-1.5"
+                >
+                  <Download className="h-4 w-4" />
+                  Tout télécharger ({filteredInvoices.filter(inv => inv.pdf_url).length})
+                </Button>
+              )}
+            </div>
           </div>
+
+          {/* Bulk download progress */}
+          {bulkDownloading && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Téléchargement en cours… {bulkDownloadProgress}/{bulkDownloadTotal}
+              </div>
+              <Progress value={(bulkDownloadProgress / bulkDownloadTotal) * 100} className="h-2" />
+            </div>
+          )}
 
           {/* Bulk delete progress */}
           {bulkDeleting && (
