@@ -76,26 +76,30 @@ export default function CommissionProjection({ userId, roleSourceFilter }: Commi
       query = query.eq("beneficiary_user_id", userId);
     }
 
+    const { data } = await query;
+
     if (data) {
-      setCommissions(
-        data.map((c: any) => ({
-          amount: c.amount || 0,
-          status: c.status,
-          paid_at: c.paid_at,
-          role: c.role,
-          beneficiary_user_id: c.beneficiary_user_id,
-          beneficiary_external: c.beneficiary_external,
-          beneficiary_name: c.profiles?.full_name || c.beneficiary_external || "—",
-          payment_due_date: c.payments?.due_date || null,
-          payment_paid_at: c.payments?.paid_at || null,
-          contact_name: c.sales?.contacts?.full_name || "—",
-          sale_product: c.sales?.product || "—",
-          percentage: c.percentage,
-        }))
-      );
+      let mapped = data.map((c: any) => ({
+        amount: c.amount || 0,
+        status: c.status,
+        paid_at: c.paid_at,
+        role: c.role,
+        beneficiary_user_id: c.beneficiary_user_id,
+        beneficiary_external: c.beneficiary_external,
+        beneficiary_name: c.profiles?.full_name || c.beneficiary_external || "—",
+        payment_due_date: c.payments?.due_date || null,
+        payment_paid_at: c.payments?.paid_at || null,
+        contact_name: c.sales?.contacts?.full_name || "—",
+        sale_product: c.sales?.product || "—",
+        percentage: c.percentage,
+      }));
+      if (roleSourceFilter) {
+        mapped = mapped.filter(c => (ROLE_SOURCE_CATEGORY[c.role] || "collaborateur") === roleSourceFilter);
+      }
+      setCommissions(mapped);
     }
     setLoading(false);
-  }, []);
+  }, [userId, roleSourceFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
