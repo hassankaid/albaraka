@@ -59,7 +59,7 @@ const STATUS_LABELS: Record<string, string> = {
   effectue: "Effectué", no_show: "No show", annule: "Annulé",
   a_qualifier: "À qualifier", inscrit_conference: "Inscrit conférence", faux_numero: "Faux numéro",
   pas_de_reponse: "Pas de réponse", pas_qualifie: "Pas qualifié",
-  a_relancer: "À relancer",
+  a_relancer: "À relancer", a_recycler: "À recycler",
   close: "Close", disqualifie: "Disqualifié", pas_interesse: "Pas intéressé",
   non_close: "Non close", renvoye_pole_vente: "Renvoi Pôle Vente",
   renvoye_conference: "Renvoi Conférence", rediffusion: "Rediffusion",
