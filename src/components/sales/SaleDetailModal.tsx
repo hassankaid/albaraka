@@ -47,8 +47,8 @@ const getPaymentStatusInfo = (status: string, dueDate: string) => {
   due.setHours(0, 0, 0, 0);
 
   if (status === "paid") return { label: "Payé", className: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" };
-  if (status === "cancelled") return { label: "Annulé", className: "bg-muted text-muted-foreground border-border" };
-  if (status === "pending" && due < today) return { label: "En retard", className: "bg-red-500/20 text-red-300 border-red-500/30" };
+  if (status === "cancelled" || status === "lost") return { label: "Perdu", className: "bg-red-500/20 text-red-300 border-red-500/30 line-through" };
+  if (status === "late" || (status === "pending" && due < today)) return { label: "En retard", className: "bg-orange-500/20 text-orange-300 border-orange-500/30" };
   return { label: "En attente", className: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30" };
 };
 
@@ -112,10 +112,24 @@ export default function SaleDetailModal({
 
   // --- DELETE PAYMENT ---
   const deletePayment = async (paymentId: string) => {
+    // Delete linked invoice_lines first to avoid FK constraint errors
+    const { error: ilError } = await supabase.from("invoice_lines").delete().eq("payment_id", paymentId);
+    if (ilError) {
+      toast({ title: "Erreur de suppression", description: ilError.message, variant: "destructive" });
+      return;
+    }
     const { error } = await supabase.from("payments").delete().eq("id", paymentId);
     if (error) {
       toast({ title: "Erreur de suppression", description: error.message, variant: "destructive" });
     } else {
+      // Update total_payments on remaining payments
+      if (saleId) {
+        const { data: remaining } = await supabase.from("payments").select("id").eq("sale_id", saleId);
+        const newTotal = remaining?.length || 0;
+        if (newTotal > 0) {
+          await supabase.from("payments").update({ total_payments: newTotal }).eq("sale_id", saleId);
+        }
+      }
       toast({ title: "Paiement supprimé" });
       fetchPayments();
       onUpdated();
@@ -312,7 +326,8 @@ export default function SaleDetailModal({
                             <SelectContent>
                               <SelectItem value="pending">En attente</SelectItem>
                               <SelectItem value="paid">Payé</SelectItem>
-                              <SelectItem value="cancelled">Annulé</SelectItem>
+                              <SelectItem value="late">En retard</SelectItem>
+                              <SelectItem value="lost">Perdu</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
