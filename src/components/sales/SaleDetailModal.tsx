@@ -112,10 +112,24 @@ export default function SaleDetailModal({
 
   // --- DELETE PAYMENT ---
   const deletePayment = async (paymentId: string) => {
+    // Delete linked invoice_lines first to avoid FK constraint errors
+    const { error: ilError } = await supabase.from("invoice_lines").delete().eq("payment_id", paymentId);
+    if (ilError) {
+      toast({ title: "Erreur de suppression", description: ilError.message, variant: "destructive" });
+      return;
+    }
     const { error } = await supabase.from("payments").delete().eq("id", paymentId);
     if (error) {
       toast({ title: "Erreur de suppression", description: error.message, variant: "destructive" });
     } else {
+      // Update total_payments on remaining payments
+      if (saleId) {
+        const { data: remaining } = await supabase.from("payments").select("id").eq("sale_id", saleId);
+        const newTotal = remaining?.length || 0;
+        if (newTotal > 0) {
+          await supabase.from("payments").update({ total_payments: newTotal }).eq("sale_id", saleId);
+        }
+      }
       toast({ title: "Paiement supprimé" });
       fetchPayments();
       onUpdated();
