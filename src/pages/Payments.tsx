@@ -424,15 +424,15 @@ export default function Payments() {
                     const showSeparator = groupBySale && p.sale_id !== lastSaleId && lastSaleId !== undefined;
                     lastSaleId = p.sale_id;
                     return (
-                      <>
+                      <Fragment key={p.id}>
                         {showSeparator && (
-                          <TableRow key={`sep-${p.id}`} className="hover:bg-transparent">
+                          <TableRow className="hover:bg-transparent">
                             <TableCell colSpan={colCount} className="p-0">
                               <div className="border-t-2 border-dashed border-border/70" />
                             </TableCell>
                           </TableRow>
                         )}
-                        <TableRow key={p.id} className={`border-border hover:bg-secondary/50 transition-colors ${p.status === "lost" ? "opacity-60" : ""}`}>
+                        <TableRow className={`border-border hover:bg-secondary/50 transition-colors ${p.status === "lost" ? "opacity-60" : ""}`}>
                       <TableCell>
                         <div className="min-w-0">
                           <p className={`font-semibold text-foreground text-sm truncate ${p.status === "lost" ? "line-through" : ""}`}>{p.contact_name || "—"}</p>
