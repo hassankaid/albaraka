@@ -512,7 +512,7 @@ export default function Payments() {
                         </TableCell>
                       )}
                     </TableRow>
-                      </>
+                      </Fragment>
                     );
                   });
                 })()}
