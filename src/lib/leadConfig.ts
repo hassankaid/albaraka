@@ -103,6 +103,29 @@ export const SOURCE_FILTER_OPTIONS = [
   })),
 ];
 
+// 2-level source grouping: Ads vs Organique
+export const SOURCE_GROUPS = [
+  {
+    label: "Ads",
+    sources: ["vsl_a", "vsl_b", "webi", "instagram_ads", "whatsapp_ads"],
+  },
+  {
+    label: "Organique",
+    sources: [
+      "instagram_organic",
+      "apporteur_facebook",
+      "apporteur_whatsapp",
+      "apporteur_instagram",
+      "apporteur_linkedin",
+      "apporteur_recommandation",
+      "apporteur_telegram",
+      "apporteur_tiktok",
+      "apporteur_autre",
+      "autre",
+    ],
+  },
+] as const;
+
 // Status filter options for dropdowns
 export const STATUS_FILTER_OPTIONS = [
   { value: "all", label: "Tous" },
