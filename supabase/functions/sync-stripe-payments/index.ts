@@ -99,95 +99,79 @@ Deno.serve(async (req) => {
         const matchedInvoiceIds = new Set<string>();
 
         for (const payment of sortedPayments) {
-          const paymentAmountEur = payment.amount; // amount in EUR
+          const paymentAmountEur = payment.amount;
+          const dueDateMs = new Date(payment.due_date).getTime();
+          const WINDOW_BEFORE_MS = 45 * 24 * 60 * 60 * 1000; // 45 days before due_date
+          const WINDOW_AFTER_MS = 30 * 24 * 60 * 60 * 1000;  // 30 days after due_date
 
-          // Try to find a matching Stripe invoice
-          // Match criteria: similar amount (within tolerance), not already matched
-          // FIFO: oldest unmatched invoice first
-          const sortedInvoices = [...invoices.data]
+          // Find best matching Stripe invoice by amount AND date proximity
+          const candidates = invoices.data
             .filter((inv) => !matchedInvoiceIds.has(inv.id))
-            .sort((a, b) => a.created - b.created);
+            .filter((inv) => {
+              const invoiceAmountEur = inv.amount_paid / 100;
+              return Math.abs(invoiceAmountEur - paymentAmountEur) <= AMOUNT_TOLERANCE;
+            })
+            .filter((inv) => {
+              // Date proximity: invoice date must be within window of due_date
+              const invoiceDateMs = inv.status_transitions?.paid_at
+                ? inv.status_transitions.paid_at * 1000
+                : inv.created * 1000;
+              return invoiceDateMs >= (dueDateMs - WINDOW_BEFORE_MS) && invoiceDateMs <= (dueDateMs + WINDOW_AFTER_MS);
+            })
+            // Sort by closest to due_date
+            .sort((a, b) => {
+              const aDate = (a.status_transitions?.paid_at || a.created) * 1000;
+              const bDate = (b.status_transitions?.paid_at || b.created) * 1000;
+              return Math.abs(aDate - dueDateMs) - Math.abs(bDate - dueDateMs);
+            });
 
-          for (const invoice of sortedInvoices) {
-            const invoiceAmountEur = invoice.amount_paid / 100; // Stripe amounts are in cents
-            const amountDiff = Math.abs(invoiceAmountEur - paymentAmountEur);
+          if (candidates.length === 0) {
+            logStep(`⏭️ ${email} payment ${payment.payment_number}/${payment.total_payments} (due ${payment.due_date}, ${paymentAmountEur}€): no date-matching invoice found`);
+            continue;
+          }
 
-            if (amountDiff > AMOUNT_TOLERANCE) continue;
+          const invoice = candidates[0];
+          const invoiceAmountEur = invoice.amount_paid / 100;
 
-            // Amount matches! Now check invoice status
-            if (invoice.status === "paid") {
-              // Mark as paid
-              const paidAt = invoice.status_transitions?.paid_at
-                ? new Date(invoice.status_transitions.paid_at * 1000).toISOString().split("T")[0]
-                : new Date(invoice.created * 1000).toISOString().split("T")[0];
+          if (invoice.status === "paid") {
+            const paidAt = invoice.status_transitions?.paid_at
+              ? new Date(invoice.status_transitions.paid_at * 1000).toISOString().split("T")[0]
+              : new Date(invoice.created * 1000).toISOString().split("T")[0];
 
+            const { error: updateError } = await supabase
+              .from("payments")
+              .update({ status: "paid", paid_at: paidAt })
+              .eq("id", payment.id);
+
+            if (!updateError) {
+              matchedInvoiceIds.add(invoice.id);
+              totalUpdated++;
+              changes.push({ paymentId: payment.id, oldStatus: payment.status, newStatus: "paid", paidAt, email });
+              logStep(`✅ ${email} payment ${payment.payment_number}/${payment.total_payments} (due ${payment.due_date}) → paid (${paidAt})`, {
+                amount: paymentAmountEur, stripeAmount: invoiceAmountEur, stripeInvoice: invoice.id,
+              });
+            }
+          } else if (invoice.status === "open" && invoice.due_date && invoice.due_date * 1000 < Date.now()) {
+            if (payment.status !== "late") {
               const { error: updateError } = await supabase
-                .from("payments")
-                .update({ status: "paid", paid_at: paidAt })
-                .eq("id", payment.id);
-
+                .from("payments").update({ status: "late" }).eq("id", payment.id);
               if (!updateError) {
                 matchedInvoiceIds.add(invoice.id);
                 totalUpdated++;
-                changes.push({
-                  paymentId: payment.id,
-                  oldStatus: payment.status,
-                  newStatus: "paid",
-                  paidAt,
-                  email,
-                });
-                logStep(`✅ ${email} payment ${payment.payment_number}/${payment.total_payments} → paid (${paidAt})`, {
-                  amount: paymentAmountEur,
-                  stripeInvoice: invoice.id,
-                });
+                changes.push({ paymentId: payment.id, oldStatus: payment.status, newStatus: "late", email });
+                logStep(`⚠️ ${email} payment ${payment.payment_number}/${payment.total_payments} → late`, { stripeInvoice: invoice.id });
               }
-              break; // Move to next payment
-            } else if (invoice.status === "open" && invoice.due_date && invoice.due_date * 1000 < Date.now()) {
-              // Past due open invoice → late
-              if (payment.status !== "late") {
-                const { error: updateError } = await supabase
-                  .from("payments")
-                  .update({ status: "late" })
-                  .eq("id", payment.id);
-
-                if (!updateError) {
-                  matchedInvoiceIds.add(invoice.id);
-                  totalUpdated++;
-                  changes.push({
-                    paymentId: payment.id,
-                    oldStatus: payment.status,
-                    newStatus: "late",
-                    email,
-                  });
-                  logStep(`⚠️ ${email} payment ${payment.payment_number}/${payment.total_payments} → late`, {
-                    stripeInvoice: invoice.id,
-                  });
-                }
+            }
+          } else if (invoice.status === "uncollectible" || invoice.status === "void") {
+            if (payment.status !== "late") {
+              const { error: updateError } = await supabase
+                .from("payments").update({ status: "late" }).eq("id", payment.id);
+              if (!updateError) {
+                matchedInvoiceIds.add(invoice.id);
+                totalUpdated++;
+                changes.push({ paymentId: payment.id, oldStatus: payment.status, newStatus: "late", email });
+                logStep(`⚠️ ${email} payment ${payment.payment_number}/${payment.total_payments} → late (uncollectible)`, { stripeInvoice: invoice.id });
               }
-              break;
-            } else if (invoice.status === "uncollectible" || invoice.status === "void") {
-              // Failed → late
-              if (payment.status !== "late") {
-                const { error: updateError } = await supabase
-                  .from("payments")
-                  .update({ status: "late" })
-                  .eq("id", payment.id);
-
-                if (!updateError) {
-                  matchedInvoiceIds.add(invoice.id);
-                  totalUpdated++;
-                  changes.push({
-                    paymentId: payment.id,
-                    oldStatus: payment.status,
-                    newStatus: "late",
-                    email,
-                  });
-                  logStep(`⚠️ ${email} payment ${payment.payment_number}/${payment.total_payments} → late (uncollectible)`, {
-                    stripeInvoice: invoice.id,
-                  });
-                }
-              }
-              break;
             }
           }
         }
