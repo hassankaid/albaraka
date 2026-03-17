@@ -15,8 +15,9 @@ import { toast } from "@/hooks/use-toast";
 import { FileText, Download, CheckCircle2, Trash2, RefreshCw, Loader2, Eye, Users, Euro, AlertCircle, CalendarDays, Clock, Settings2, CreditCard } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { fetchInvoiceHtml, downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
+import { fetchInvoiceHtml, downloadInvoicePdf, generateInvoicePdfBlob } from "@/lib/downloadInvoicePdf";
 import InvoicePreviewModal from "@/components/InvoicePreviewModal";
+import JSZip from "jszip";
 import CommissionDetailModal from "@/components/invoices/CommissionDetailModal";
 
 const MONTHS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
