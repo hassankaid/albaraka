@@ -15,8 +15,9 @@ import { toast } from "@/hooks/use-toast";
 import { FileText, Download, CheckCircle2, Trash2, RefreshCw, Loader2, Eye, Users, Euro, AlertCircle, CalendarDays, Clock, Settings2, CreditCard } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { fetchInvoiceHtml, downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
+import { fetchInvoiceHtml, downloadInvoicePdf, generateInvoicePdfBlob } from "@/lib/downloadInvoicePdf";
 import InvoicePreviewModal from "@/components/InvoicePreviewModal";
+import JSZip from "jszip";
 import CommissionDetailModal from "@/components/invoices/CommissionDetailModal";
 
 const MONTHS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
@@ -435,30 +436,58 @@ export default function AdminInvoices() {
       toast({ title: "Aucune facture", description: "Aucune facture avec PDF à télécharger", variant: "destructive" });
       return;
     }
+
+    // Single invoice → direct download (no zip)
+    if (withPdf.length === 1) {
+      setBulkDownloading(true);
+      setBulkDownloadProgress(0);
+      setBulkDownloadTotal(1);
+      try {
+        const html = await fetchInvoiceHtml(withPdf[0].pdf_url!);
+        await downloadInvoicePdf(withPdf[0].invoice_number, html);
+        setBulkDownloadProgress(1);
+        toast({ title: "Téléchargement terminé", description: "1 facture téléchargée" });
+      } catch {
+        toast({ title: "Erreur", description: "Impossible de télécharger la facture", variant: "destructive" });
+      }
+      setBulkDownloading(false);
+      return;
+    }
+
     setBulkDownloading(true);
     setBulkDownloadProgress(0);
     setBulkDownloadTotal(withPdf.length);
 
+    const zip = new JSZip();
     let successCount = 0;
     let errorCount = 0;
 
     for (let i = 0; i < withPdf.length; i++) {
       try {
         const html = await fetchInvoiceHtml(withPdf[i].pdf_url!);
-        await downloadInvoicePdf(withPdf[i].invoice_number, html);
+        const blob = await generateInvoicePdfBlob(withPdf[i].invoice_number, html);
+        zip.file(`${withPdf[i].invoice_number}.pdf`, blob);
         successCount++;
       } catch {
         errorCount++;
       }
       setBulkDownloadProgress(i + 1);
-      // Small delay between downloads to avoid browser blocking
-      if (i < withPdf.length - 1) await new Promise(r => setTimeout(r, 800));
+    }
+
+    if (successCount > 0) {
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `factures_${new Date().toISOString().slice(0, 10)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
     }
 
     setBulkDownloading(false);
     toast({
       title: "Téléchargement terminé",
-      description: `${successCount} facture(s) téléchargée(s)${errorCount > 0 ? `, ${errorCount} erreur(s)` : ""}`,
+      description: `${successCount} facture(s) dans le ZIP${errorCount > 0 ? `, ${errorCount} erreur(s)` : ""}`,
     });
   };
 
@@ -818,7 +847,7 @@ export default function AdminInvoices() {
                   className="gap-1.5"
                 >
                   <Download className="h-4 w-4" />
-                  Tout télécharger ({filteredInvoices.filter(inv => inv.pdf_url).length})
+                   Tout télécharger en ZIP ({filteredInvoices.filter(inv => inv.pdf_url).length})
                 </Button>
               )}
             </div>
