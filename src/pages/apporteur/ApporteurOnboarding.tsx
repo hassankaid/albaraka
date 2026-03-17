@@ -119,16 +119,16 @@ export default function ApporteurOnboarding() {
   const [lastName, setLastName] = useState(initialLastName);
   const [email, setEmail] = useState(profile?.email || "");
   const [phone, setPhone] = useState(profile?.phone || "");
-  const [address, setAddress] = useState("");
-  const [postalCode, setPostalCode] = useState("");
-  const [city, setCity] = useState("");
-  const [country, setCountry] = useState("");
+  const [address, setAddress] = useState(profile?.address || "");
+  const [postalCode, setPostalCode] = useState(profile?.postal_code || "");
+  const [city, setCity] = useState(profile?.city || "");
+  const [country, setCountry] = useState(profile?.country || "");
   const [countryOpen, setCountryOpen] = useState(false);
-  const [siret, setSiret] = useState("");
+  const [siret, setSiret] = useState(profile?.siret || "");
 
   // Bank
-  const [bankRibUrl, setBankRibUrl] = useState<string | null>(null);
-  const [bankDetails, setBankDetails] = useState<BankDetails>({});
+  const [bankRibUrl, setBankRibUrl] = useState<string | null>(profile?.bank_rib_url || null);
+  const [bankDetails, setBankDetails] = useState<BankDetails>((profile?.bank_details as BankDetails) || {});
   const [uploadingRib, setUploadingRib] = useState(false);
   const [extractingRib, setExtractingRib] = useState(false);
   const [editBankOpen, setEditBankOpen] = useState(false);
