@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ShoppingBag, User } from "lucide-react";
+import { ShoppingBag, User, Check, CheckCheck } from "lucide-react";
 
 interface Sale {
   id: string;
@@ -58,6 +58,7 @@ export default function PeriodSalesCard({ sales, payments, contactMap }: Props) 
         const paidCount = salePayments.filter((p) => p.status === "paid").length;
         const totalCount = sale.mensualites || 1;
         const contact = contactMap.get(sale.contact_id);
+        const isComplete = paidCount >= totalCount;
 
         return {
           ...sale,
@@ -65,6 +66,7 @@ export default function PeriodSalesCard({ sales, payments, contactMap }: Props) 
           paidCount,
           totalCount,
           contactName: contact?.full_name || "Inconnu",
+          isComplete,
         };
       })
       .sort((a, b) => (b.sold_at || "").localeCompare(a.sold_at || ""));
@@ -77,34 +79,33 @@ export default function PeriodSalesCard({ sales, payments, contactMap }: Props) 
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold flex items-center justify-between">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <ShoppingBag className="h-4 w-4 text-primary" />
-            <span>Ventes de la période</span>
-            <Badge variant="secondary" className="text-[11px] ml-0.5">{enrichedSales.length}</Badge>
+            <CardTitle className="text-sm font-semibold">Ventes de la période</CardTitle>
+            <Badge variant="secondary" className="text-[11px]">{enrichedSales.length}</Badge>
           </div>
-        </CardTitle>
-        <div className="flex items-center gap-6 mt-2">
-          <div className="flex flex-col">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">CA Généré</span>
-            <span className="text-base font-bold text-foreground tabular-nums">{fmt(totalCA)}</span>
-          </div>
-          <div className="h-8 w-px bg-border" />
-          <div className="flex flex-col">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">CA Collecté</span>
-            <span className="text-base font-bold text-[hsl(var(--kpi-paid))] tabular-nums">{fmt(totalCollecte)}</span>
+          <div className="flex items-center gap-1">
+            <div className="bg-muted/50 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
+              <span className="text-[10px] text-muted-foreground">CA</span>
+              <span className="text-xs font-bold text-foreground tabular-nums">{fmt(totalCA)}</span>
+            </div>
+            <div className="bg-[hsl(var(--kpi-paid)/0.08)] rounded-lg px-3 py-1.5 flex items-center gap-1.5">
+              <span className="text-[10px] text-[hsl(var(--kpi-paid))]">Collecté</span>
+              <span className="text-xs font-bold text-[hsl(var(--kpi-paid))] tabular-nums">{fmt(totalCollecte)}</span>
+            </div>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="grid grid-cols-[1fr_68px_52px_68px_70px_90px_90px] gap-2 px-2 pb-1.5 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <CardContent className="pt-1">
+        <div className="grid grid-cols-[1fr_68px_56px_56px_70px_90px_90px] gap-2 px-2 pb-1.5 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           <span>Client</span>
           <span>Date</span>
-          <span className="text-center">Éch.</span>
           <span className="text-center">Mens.</span>
+          <span className="text-center">Éch.</span>
           <span className="text-center">Statut</span>
-          <span className="text-right">CA Généré</span>
+          <span className="text-right">CA</span>
           <span className="text-right">Collecté</span>
         </div>
 
@@ -115,7 +116,7 @@ export default function PeriodSalesCard({ sales, payments, contactMap }: Props) 
               return (
                 <div
                   key={sale.id}
-                  className="grid grid-cols-[1fr_68px_52px_68px_70px_90px_90px] gap-2 items-center px-2 py-2 hover:bg-muted/30 transition-colors"
+                  className="grid grid-cols-[1fr_68px_56px_56px_70px_90px_90px] gap-2 items-center px-2 py-2 hover:bg-muted/30 transition-colors"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
@@ -128,19 +129,21 @@ export default function PeriodSalesCard({ sales, payments, contactMap }: Props) 
                     {sale.sold_at ? formatDate(sale.sold_at) : "—"}
                   </span>
 
-                  <span className="text-[11px] tabular-nums text-center">
-                    {sale.totalCount === 1 ? (
-                      <span className="text-muted-foreground/50">—</span>
-                    ) : (
-                      <span className="text-foreground font-medium">{sale.paidCount}<span className="text-muted-foreground/50">/{sale.totalCount}</span></span>
-                    )}
-                  </span>
+                  <div className="flex justify-center">
+                    <span className="text-[11px] font-medium text-foreground tabular-nums">{sale.totalCount}×</span>
+                  </div>
 
-                  <span className="text-[11px] tabular-nums text-center">
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-border font-medium">
-                      {sale.totalCount}×
-                    </Badge>
-                  </span>
+                  <div className="flex justify-center">
+                    {sale.isComplete ? (
+                      <CheckCheck className="h-4 w-4 text-[hsl(var(--kpi-paid))]" />
+                    ) : sale.totalCount === 1 ? (
+                      <span className="text-[11px] text-muted-foreground/50">—</span>
+                    ) : (
+                      <span className="text-[11px] font-medium tabular-nums text-foreground">
+                        {sale.paidCount}<span className="text-muted-foreground">/{sale.totalCount}</span>
+                      </span>
+                    )}
+                  </div>
 
                   <div className="flex justify-center">
                     <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${cfg.className}`}>

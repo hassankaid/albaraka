@@ -51,6 +51,14 @@ function FinancialTab() {
         totalChargesCumul={data.totalChargesCumul}
         totalCommissions={data.totalCommissions}
         isFiltered={dateRange !== null}
+        sales={data.sales}
+        payments={data.payments}
+        contactMap={data.contactMap}
+        commissions={data.commissions}
+        profiles={data.profiles}
+        totalSalariesCumul={data.totalSalariesCumul}
+        totalFixedChargesCumul={data.totalFixedChargesCumul}
+        commissionsPaid={data.commissionsPaid}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
