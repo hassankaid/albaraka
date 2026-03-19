@@ -21,7 +21,7 @@ export default function FinancialKPIs({ caGenere, caCollecte, tauxCashCollecte, 
     { label: "Taux encaissé", value: `${tauxCashCollecte.toFixed(1)}%`, icon: Percent, color: "text-blue-500" },
     { label: "Taux d'impayés", value: `${tauxImpayes.toFixed(1)}%`, icon: AlertTriangle, color: tauxImpayes > 10 ? "text-destructive" : "text-amber-500" },
     { label: "Commissions", value: fmt(totalCommissions), icon: CreditCard, color: "text-orange-500" },
-    { label: "Charges (cumul)", value: fmt(totalChargesCumul), icon: BarChart3, color: "text-muted-foreground" },
+    { label: "Charges", value: fmt(totalChargesCumul), icon: BarChart3, color: "text-muted-foreground" },
     { label: "Bénéfice", value: fmt(benefice), icon: PiggyBank, color: benefice >= 0 ? "text-emerald-500" : "text-destructive" },
     { label: "ROI Ads", value: "—", icon: TrendingDown, color: "text-muted-foreground" },
   ];
