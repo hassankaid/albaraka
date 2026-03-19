@@ -173,13 +173,14 @@ export default function FinancialKPIs(props: Props) {
   const paidPayments = useMemo(() => [...payments].filter(p => p.status === "paid").sort((a, b) => b.due_date.localeCompare(a.due_date)), [payments]);
   const lateOrLostPayments = useMemo(() => [...payments].filter(p => p.status === "late" || p.status === "lost").sort((a, b) => b.due_date.localeCompare(a.due_date)), [payments]);
   const engagedCommissions = useMemo(() => {
+    const getDate = (c: Commission) => {
+      if (c.status === "paid" && c.paid_at) return c.paid_at;
+      const p = c.payment_id ? allPaymentMap.get(c.payment_id) : null;
+      return p?.paid_at || "";
+    };
     return commissions
       .filter(c => c.status === "due" || c.status === "paid" || c.status === "invoiced")
-      .sort((a, b) => {
-        const dateA = a.paid_at || (a.payment_id ? allPaymentMap.get(a.payment_id)?.paid_at : null) || "";
-        const dateB = b.paid_at || (b.payment_id ? allPaymentMap.get(b.payment_id)?.paid_at : null) || "";
-        return dateB.localeCompare(dateA);
-      });
+      .sort((a, b) => getDate(b).localeCompare(getDate(a)));
   }, [commissions, allPaymentMap]);
 
   // Unique beneficiaries and sales for commission filters
@@ -391,7 +392,13 @@ export default function FinancialKPIs(props: Props) {
                     <span className="text-[11px] text-muted-foreground tabular-nums text-center">
                       {payment ? `${payment.payment_number}/${payment.total_payments}` : "—"}
                     </span>
-                    <span className="text-[11px] text-muted-foreground tabular-nums text-center">{c.paid_at ? formatDate(c.paid_at) : payment?.paid_at ? formatDate(payment.paid_at) : "—"}</span>
+                    <span className="text-[11px] text-muted-foreground tabular-nums text-center">
+                      {c.status === "paid" && c.paid_at
+                        ? formatDate(c.paid_at)
+                        : payment?.paid_at
+                          ? formatDate(payment.paid_at)
+                          : "—"}
+                    </span>
                     <div className="flex justify-center"><Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${cfg.className}`}>{cfg.label}</Badge></div>
                     <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(c.amount || 0)}</span>
                   </div>
