@@ -88,7 +88,19 @@ export function useFinancialData() {
 
   const profilesQuery = useQuery({
     queryKey: ["financial-profiles"],
-    queryFn: () => fetchAllRows<Profile>("profiles", "id, full_name, role, fixed_salary, fixed_salary_active, is_active"),
+    queryFn: () => fetchAllRows<Profile>("profiles", "id, full_name, role, is_active"),
+  });
+
+  const salaryPeriodsQuery = useQuery({
+    queryKey: ["financial-salary-periods"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("salary_periods" as any)
+        .select("*")
+        .order("start_date", { ascending: false });
+      if (error) throw error;
+      return (data || []) as unknown as SalaryPeriod[];
+    },
   });
 
   const contactsQuery = useQuery({
