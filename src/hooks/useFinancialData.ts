@@ -160,6 +160,7 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
   const contacts = contactsQuery.data || [];
   const fixedCharges = fixedChargesQuery.data || [];
   const salaryPeriods = salaryPeriodsQuery.data || [];
+  const allAds = adsQuery.data || [];
 
   // ── Apply date range filtering ──
   const range = dateRange ?? null;
