@@ -391,7 +391,13 @@ export default function FinancialKPIs(props: Props) {
                     <span className="text-[11px] text-muted-foreground tabular-nums text-center">
                       {payment ? `${payment.payment_number}/${payment.total_payments}` : "—"}
                     </span>
-                    <span className="text-[11px] text-muted-foreground tabular-nums text-center">{c.paid_at ? formatDate(c.paid_at) : payment?.paid_at ? formatDate(payment.paid_at) : "—"}</span>
+                    <span className="text-[11px] text-muted-foreground tabular-nums text-center">
+                      {c.status === "paid" && c.paid_at
+                        ? formatDate(c.paid_at)
+                        : payment?.paid_at
+                          ? formatDate(payment.paid_at)
+                          : "—"}
+                    </span>
                     <div className="flex justify-center"><Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${cfg.className}`}>{cfg.label}</Badge></div>
                     <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(c.amount || 0)}</span>
                   </div>
