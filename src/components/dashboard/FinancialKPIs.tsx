@@ -397,7 +397,7 @@ export default function FinancialKPIs(props: Props) {
         {kpis.map((k) => (
           <button
             key={k.key}
-            onClick={() => k.hasDetail && setOpenModal(k.key)}
+            onClick={() => k.hasDetail && handleOpenModal(k.key)}
             disabled={!k.hasDetail}
             className={`bg-card border border-border rounded-xl p-3 flex flex-col gap-1 text-left transition-all ${
               k.hasDetail ? "hover:border-primary/30 hover:shadow-sm cursor-pointer" : "cursor-default"
