@@ -265,8 +265,8 @@ export default function FinancialKPIs(props: Props) {
         const totalImpaye = lateOrLostPayments.reduce((s, p) => s + p.amount, 0);
         return (
           <div>
-            <div className="grid grid-cols-[1fr_100px_56px_80px_68px_90px] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              <span>Client</span><span>Date éch.</span><span className="text-center">N°</span><span className="text-center">Date paiem.</span><span className="text-center">Statut</span><span className="text-right">Montant</span>
+            <div className="grid grid-cols-[1fr_100px_56px_68px_90px] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span>Client</span><span>Date éch.</span><span className="text-center">N°</span><span className="text-center">Statut</span><span className="text-right">Montant</span>
             </div>
             <div className="divide-y divide-border/40">
               {items.map((p, idx) => {
@@ -274,16 +274,15 @@ export default function FinancialKPIs(props: Props) {
                 const contact = sale ? contactMap.get(sale.contact_id) : null;
                 const cfg = statusCfg[p.status] || statusCfg.pending;
                 return (
-                  <div key={p.id} className={`grid grid-cols-[1fr_100px_56px_80px_68px_90px] gap-3 items-center px-3 py-2.5 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
+                  <div key={p.id} className={`grid grid-cols-[1fr_100px_56px_68px_90px] gap-3 items-center px-3 py-2.5 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0"><User className="h-3 w-3 text-muted-foreground" /></div>
                       <span className="text-xs font-medium text-foreground truncate">{contact?.full_name || "Inconnu"}</span>
                     </div>
                     <span className="text-[11px] text-muted-foreground tabular-nums">{formatDate(p.due_date)}</span>
                     <span className="text-[11px] font-medium text-foreground tabular-nums text-center">{p.payment_number}/{p.total_payments}</span>
-                    <span className="text-[11px] text-muted-foreground tabular-nums text-center">{p.paid_at ? formatDate(p.paid_at) : "—"}</span>
                     <div className="flex justify-center"><Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${cfg.className}`}>{cfg.label}</Badge></div>
-                    <span className="text-xs font-bold text-destructive tabular-nums text-right">{fmt(p.amount)}</span>
+                    <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(p.amount)}</span>
                   </div>
                 );
               })}
