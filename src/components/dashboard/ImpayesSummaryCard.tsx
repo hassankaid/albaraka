@@ -96,17 +96,13 @@ export default function ImpayesSummaryCard({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5 content-center">
+            <div className="flex flex-col justify-center gap-2">
               {segments.map((segment) => (
-                <div key={segment.key} className="rounded-lg border border-border/70 bg-muted/35 px-2.5 py-2 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: segment.color }} />
-                    <span className="text-[11px] text-muted-foreground whitespace-nowrap">{segment.label}</span>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <span className="text-sm font-bold text-foreground tabular-nums block leading-none">{segment.count}</span>
-                    <span className="text-[10px] text-muted-foreground tabular-nums">{segment.pct.toFixed(0)}%</span>
-                  </div>
+                <div key={segment.key} className="flex items-center gap-3">
+                  <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: segment.color }} />
+                  <span className="text-xs text-muted-foreground w-16">{segment.label}</span>
+                  <span className="text-sm font-bold text-foreground tabular-nums ml-auto">{segment.count}</span>
+                  <span className="text-[11px] text-muted-foreground tabular-nums w-8 text-right">{segment.pct.toFixed(0)}%</span>
                 </div>
               ))}
             </div>
