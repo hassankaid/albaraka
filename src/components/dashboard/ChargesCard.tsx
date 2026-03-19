@@ -176,7 +176,7 @@ export default function ChargesCard({ fixedCharges, activeSalaries, totalFixedCh
             {activeSalaries.map((p) => (
               <div key={p.id} className="flex items-center justify-between text-xs">
                 <span className="text-foreground">{p.full_name}</span>
-                <span className="font-medium">{fmt(p.fixed_salary || 0)}/mois</span>
+                <span className="font-medium">{fmt(p.amount)}/mois</span>
               </div>
             ))}
           </div>
