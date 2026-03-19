@@ -14,6 +14,13 @@ interface Sale {
   lead_id: string | null;
 }
 
+interface Contact {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone_normalized: string | null;
+}
+
 interface Payment {
   id: string;
   amount: number;
