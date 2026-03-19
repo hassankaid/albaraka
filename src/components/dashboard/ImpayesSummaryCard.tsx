@@ -65,7 +65,7 @@ export default function ImpayesSummaryCard({
             </Badge>
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            {impayesCount} impayé{impayesCount > 1 ? "s" : ""} (retard + perdu) sur {total} vente{total > 1 ? "s" : ""}
+            {impayesCount} impayé{impayesCount > 1 ? "s" : ""} sur {total} vente{total > 1 ? "s" : ""}
           </p>
         </div>
 
