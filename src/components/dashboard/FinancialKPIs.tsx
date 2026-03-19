@@ -152,7 +152,8 @@ export default function FinancialKPIs(props: Props) {
 
   const profileMap = new Map(profiles.map(p => [p.id, p]));
   const saleMap = new Map(sales.map(s => [s.id, s]));
-  const paymentMap = new Map(payments.map(p => [p.id, p]));
+  // Use allPayments for commission lookups (commissions may reference payments outside filtered range)
+  const allPaymentMap = new Map(allPayments.map(p => [p.id, p]));
 
   const kpis: { key: KpiKey; label: string; value: string; icon: any; color: string; hasDetail: boolean }[] = [
     { key: "caGenere", label: "CA Généré", value: fmt(caGenere), icon: TrendingUp, color: "text-primary", hasDetail: true },
