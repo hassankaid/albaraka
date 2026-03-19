@@ -782,6 +782,44 @@ export type Database = {
         }
         Relationships: []
       }
+      salary_periods: {
+        Row: {
+          amount: number
+          created_at: string | null
+          end_date: string | null
+          id: string
+          profile_id: string
+          start_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          profile_id: string
+          start_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          profile_id?: string
+          start_date?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_periods_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales: {
         Row: {
           amount_ht: number
