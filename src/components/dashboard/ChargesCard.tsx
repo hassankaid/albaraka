@@ -91,6 +91,11 @@ function formatMonthYear(dateStr: string) {
   return `${MONTHS[month - 1]} ${year}`;
 }
 
+function buildYears() {
+  const cur = new Date().getFullYear();
+  return Array.from({ length: 12 }, (_, i) => cur - 3 + i);
+}
+
 // ── Month/Year picker component ──
 function MonthYearSelect({ value, onChange, label, placeholder }: {
   value: { month: number; year: number } | null;
@@ -99,7 +104,7 @@ function MonthYearSelect({ value, onChange, label, placeholder }: {
   placeholder?: string;
 }) {
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+  const years = buildYears();
 
   return (
     <div className="space-y-1">
