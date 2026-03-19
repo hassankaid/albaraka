@@ -56,6 +56,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 export default function MRRChart({ data, payments = [], contactMap = new Map(), sales = [] }: Props) {
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   const chartData = data.map((d) => ({
     ...d,
