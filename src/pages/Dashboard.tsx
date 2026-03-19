@@ -3,7 +3,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFinancialData } from "@/hooks/useFinancialData";
 import FinancialKPIs from "@/components/dashboard/FinancialKPIs";
 import PaymentSplitCard from "@/components/dashboard/PaymentSplitCard";
-import ImpayesCard from "@/components/dashboard/ImpayesCard";
+import ImpayesSummaryCard from "@/components/dashboard/ImpayesSummaryCard";
+import ImpayesListCard from "@/components/dashboard/ImpayesListCard";
 import MRRChart from "@/components/dashboard/MRRChart";
 import TreasuryCard from "@/components/dashboard/TreasuryCard";
 import ChargesCard from "@/components/dashboard/ChargesCard";
@@ -19,6 +20,8 @@ function FinancialTab() {
       </div>
     );
   }
+
+  const impayesCA = [...data.salesLate, ...data.salesLost].reduce((sum, s) => sum + s.amount_ht, 0);
 
   return (
     <div className="space-y-4">
@@ -41,14 +44,13 @@ function FinancialTab() {
           oneShotCount={data.salesOneShot.length}
           multiCount={data.salesMulti.length}
         />
-        <ImpayesCard
+        <ImpayesSummaryCard
           tauxImpayes={data.tauxImpayes}
-          salesLate={data.salesLate}
-          salesLost={data.salesLost}
-          salesPaid={data.salesPaid}
-          salesInProgress={data.salesInProgress}
-          contactMap={data.contactMap}
-          payments={data.payments}
+          salesLateCount={data.salesLate.length}
+          salesLostCount={data.salesLost.length}
+          salesPaidCount={data.salesPaid.length}
+          salesInProgressCount={data.salesInProgress.length}
+          impayesCA={impayesCA}
         />
         <TreasuryCard
           tresoIn={data.tresoIn}
@@ -56,6 +58,13 @@ function FinancialTab() {
           tresoRemaining={data.tresoRemaining}
         />
       </div>
+
+      <ImpayesListCard
+        salesLate={data.salesLate}
+        salesLost={data.salesLost}
+        contactMap={data.contactMap}
+        payments={data.payments}
+      />
 
       <MRRChart data={data.mrrData} />
 
@@ -69,7 +78,6 @@ function FinancialTab() {
           commissionsDue={data.commissionsDue}
           onRefresh={() => data.refetchCharges()}
         />
-        {/* ROI placeholder */}
         <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center justify-center text-center space-y-2">
           <p className="text-sm font-semibold text-foreground">ROI Global</p>
           <p className="text-muted-foreground text-xs">L'intégration des dépenses publicitaires permettra de calculer le ROI automatiquement.</p>
