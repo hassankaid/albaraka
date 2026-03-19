@@ -212,7 +212,24 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     tauxImpayes = salesWithStatus.length > 0 ? (impCount / salesWithStatus.length) * 100 : 0;
   }
 
-  // KPI: Commissions
+  // KPI: One-shot vs Multi
+  const salesOneShot = sales.filter((s) => (s.mensualites || 1) === 1);
+  const salesMulti = sales.filter((s) => (s.mensualites || 1) > 1);
+  const totalSalesCount = sales.length;
+  const oneShotPct = totalSalesCount > 0 ? (salesOneShot.length / totalSalesCount) * 100 : 0;
+  const multiPct = totalSalesCount > 0 ? (salesMulti.length / totalSalesCount) * 100 : 0;
+  const oneShotCA = salesOneShot.reduce((s, sale) => s + sale.amount_ht, 0);
+  const multiCA = salesMulti.reduce((s, sale) => s + sale.amount_ht, 0);
+
+  // KPI: Sales by payment status (for ImpayesSummaryCard)
+  const salesWithStatus = sales.filter((s) => s.payment_status);
+  const salesLate = salesWithStatus.filter((s) => s.payment_status === "late");
+  const salesLost = salesWithStatus.filter((s) => s.payment_status === "lost");
+  const salesPaid = salesWithStatus.filter((s) => s.payment_status === "paid");
+  const salesInProgress = salesWithStatus.filter((s) => s.payment_status === "in_progress");
+  const impayesCount = salesLate.length + salesLost.length;
+  const payesCount = salesPaid.length + salesInProgress.length;
+
   const commissionsEngagees = commissions.filter((c) => c.status === "due" || c.status === "paid" || c.status === "invoiced");
   const totalCommissions = commissionsEngagees.reduce((sum, c) => sum + (c.amount || 0), 0);
   const commissionsPaid = commissions.filter((c) => c.status === "paid").reduce((sum, c) => sum + (c.amount || 0), 0);
