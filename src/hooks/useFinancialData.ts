@@ -187,7 +187,7 @@ export function useFinancialData() {
   // Impayés list (sales with late or lost)
   const impayesList = [...salesLate, ...salesLost];
 
-  const isLoading = salesQuery.isLoading || paymentsQuery.isLoading || commissionsQuery.isLoading || profilesQuery.isLoading || fixedChargesQuery.isLoading;
+  const isLoading = salesQuery.isLoading || paymentsQuery.isLoading || commissionsQuery.isLoading || profilesQuery.isLoading || fixedChargesQuery.isLoading || contactsQuery.isLoading;
 
   return {
     isLoading,
@@ -221,6 +221,8 @@ export function useFinancialData() {
     activeCharges,
     fixedCharges,
     profiles,
+    contacts,
+    contactMap,
     tresoIn,
     tresoOut,
     tresoRemaining,
