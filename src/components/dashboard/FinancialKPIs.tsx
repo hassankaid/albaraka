@@ -243,7 +243,7 @@ export default function FinancialKPIs(props: Props) {
                     <span className="text-[11px] font-medium text-foreground tabular-nums text-center">{p.payment_number}/{p.total_payments}</span>
                     <span className="text-[11px] text-muted-foreground tabular-nums text-center">{p.paid_at ? formatDate(p.paid_at) : "—"}</span>
                     <div className="flex justify-center"><Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${statusCfg.paid.className}`}>Payé</Badge></div>
-                    <span className="text-xs font-bold text-[hsl(var(--kpi-paid))] tabular-nums text-right">{fmt(p.amount)}</span>
+                    <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(p.amount)}</span>
                   </div>
                 );
               })}
