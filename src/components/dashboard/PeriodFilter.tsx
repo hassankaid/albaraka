@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, addWeeks, subWeeks, getISOWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
@@ -19,47 +20,67 @@ interface Props {
   onChange: (range: DateRange | null) => void;
 }
 
-const PRESETS: { key: PresetKey; label: string }[] = [
-  { key: "week", label: "Semaine" },
-  { key: "month", label: "Mois" },
-  { key: "quarter", label: "Trimestre" },
-  { key: "year", label: "Année" },
-  { key: "all", label: "Tout" },
-  { key: "custom", label: "Personnalisé" },
-];
+const MONTHS_SHORT = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+const QUARTERS = ["T1", "T2", "T3", "T4"];
 
-function getPresetRange(key: PresetKey): DateRange | null {
-  const now = new Date();
-  switch (key) {
-    case "week":
-      return { from: startOfWeek(now, { weekStartsOn: 1 }), to: endOfWeek(now, { weekStartsOn: 1 }) };
-    case "month":
-      return { from: startOfMonth(now), to: endOfMonth(now) };
-    case "quarter":
-      return { from: startOfQuarter(now), to: endOfQuarter(now) };
-    case "year":
-      return { from: startOfYear(now), to: endOfYear(now) };
-    case "all":
-      return null;
-    default:
-      return null;
-  }
+function buildYears() {
+  const cur = new Date().getFullYear();
+  return Array.from({ length: 8 }, (_, i) => cur - 3 + i);
 }
 
 export default function PeriodFilter({ value, onChange }: Props) {
   const [activePreset, setActivePreset] = useState<PresetKey>("all");
+
+  // Sub-picker states
+  const now = new Date();
+  const [selMonth, setSelMonth] = useState(now.getMonth()); // 0-based
+  const [selMonthYear, setSelMonthYear] = useState(now.getFullYear());
+  const [selWeekRef, setSelWeekRef] = useState(now); // reference date for week
+  const [selQuarter, setSelQuarter] = useState(Math.floor(now.getMonth() / 3)); // 0-based
+  const [selQuarterYear, setSelQuarterYear] = useState(now.getFullYear());
+  const [selYear, setSelYear] = useState(now.getFullYear());
+
+  // Custom
   const [customOpen, setCustomOpen] = useState(false);
   const [customFrom, setCustomFrom] = useState<Date | undefined>();
   const [customTo, setCustomTo] = useState<Date | undefined>();
 
+  const years = useMemo(() => buildYears(), []);
+
+  // ── Apply range based on preset + sub-picker values ──
+  const applyMonth = (month: number, year: number) => {
+    setSelMonth(month);
+    setSelMonthYear(year);
+    const d = new Date(year, month, 1);
+    onChange({ from: startOfMonth(d), to: endOfMonth(d) });
+  };
+
+  const applyWeek = (ref: Date) => {
+    setSelWeekRef(ref);
+    onChange({ from: startOfWeek(ref, { weekStartsOn: 1 }), to: endOfWeek(ref, { weekStartsOn: 1 }) });
+  };
+
+  const applyQuarter = (q: number, year: number) => {
+    setSelQuarter(q);
+    setSelQuarterYear(year);
+    const d = new Date(year, q * 3, 1);
+    onChange({ from: startOfQuarter(d), to: endOfQuarter(d) });
+  };
+
+  const applyYear = (year: number) => {
+    setSelYear(year);
+    const d = new Date(year, 0, 1);
+    onChange({ from: startOfYear(d), to: endOfYear(d) });
+  };
+
   const handlePreset = (key: PresetKey) => {
     setActivePreset(key);
-    if (key === "custom") {
-      setCustomOpen(true);
-      return;
-    }
-    setCustomOpen(false);
-    onChange(getPresetRange(key));
+    if (key === "all") { onChange(null); return; }
+    if (key === "month") { applyMonth(selMonth, selMonthYear); return; }
+    if (key === "week") { applyWeek(selWeekRef); return; }
+    if (key === "quarter") { applyQuarter(selQuarter, selQuarterYear); return; }
+    if (key === "year") { applyYear(selYear); return; }
+    if (key === "custom") { setCustomOpen(true); return; }
   };
 
   const applyCustom = () => {
@@ -69,18 +90,24 @@ export default function PeriodFilter({ value, onChange }: Props) {
     }
   };
 
-  const formatRange = () => {
-    if (!value) return null;
-    const f = format(value.from, "d MMM yyyy", { locale: fr });
-    const t = format(value.to, "d MMM yyyy", { locale: fr });
-    return `${f} → ${t}`;
-  };
+  // Week display helpers
+  const weekStart = startOfWeek(selWeekRef, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(selWeekRef, { weekStartsOn: 1 });
+  const weekNum = getISOWeek(selWeekRef);
+
+  const presets: { key: PresetKey; label: string }[] = [
+    { key: "week", label: "Semaine" },
+    { key: "month", label: "Mois" },
+    { key: "quarter", label: "Trimestre" },
+    { key: "year", label: "Année" },
+    { key: "all", label: "Tout" },
+    { key: "custom", label: "Personnalisé" },
+  ];
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-xs text-muted-foreground font-medium">Période :</span>
+    <div className="flex items-center gap-3 flex-wrap">
       <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
-        {PRESETS.map(({ key, label }) => (
+        {presets.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => handlePreset(key)}
@@ -96,6 +123,68 @@ export default function PeriodFilter({ value, onChange }: Props) {
         ))}
       </div>
 
+      {/* ── WEEK sub-picker ── */}
+      {activePreset === "week" && (
+        <div className="flex items-center gap-1.5">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => applyWeek(subWeeks(selWeekRef, 1))}>
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </Button>
+          <span className="text-xs font-medium text-foreground min-w-[180px] text-center">
+            S{weekNum} — {format(weekStart, "d MMM", { locale: fr })} → {format(weekEnd, "d MMM yyyy", { locale: fr })}
+          </span>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => applyWeek(addWeeks(selWeekRef, 1))}>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
+
+      {/* ── MONTH sub-picker ── */}
+      {activePreset === "month" && (
+        <div className="flex items-center gap-1.5">
+          <Select value={String(selMonth)} onValueChange={(v) => applyMonth(Number(v), selMonthYear)}>
+            <SelectTrigger className="h-7 text-xs w-[120px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {MONTHS_SHORT.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={String(selMonthYear)} onValueChange={(v) => applyMonth(selMonth, Number(v))}>
+            <SelectTrigger className="h-7 text-xs w-[80px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* ── QUARTER sub-picker ── */}
+      {activePreset === "quarter" && (
+        <div className="flex items-center gap-1.5">
+          <Select value={String(selQuarter)} onValueChange={(v) => applyQuarter(Number(v), selQuarterYear)}>
+            <SelectTrigger className="h-7 text-xs w-[70px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {QUARTERS.map((q, i) => <SelectItem key={i} value={String(i)}>{q}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={String(selQuarterYear)} onValueChange={(v) => applyQuarter(selQuarter, Number(v))}>
+            <SelectTrigger className="h-7 text-xs w-[80px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* ── YEAR sub-picker ── */}
+      {activePreset === "year" && (
+        <Select value={String(selYear)} onValueChange={(v) => applyYear(Number(v))}>
+          <SelectTrigger className="h-7 text-xs w-[80px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      )}
+
+      {/* ── CUSTOM date picker ── */}
       {activePreset === "custom" && (
         <Popover open={customOpen} onOpenChange={setCustomOpen}>
           <PopoverTrigger asChild>
@@ -139,8 +228,11 @@ export default function PeriodFilter({ value, onChange }: Props) {
         </Popover>
       )}
 
-      {value && activePreset !== "all" && (
-        <span className="text-[11px] text-muted-foreground">{formatRange()}</span>
+      {/* ── Range label for custom ── */}
+      {value && activePreset === "custom" && customFrom && customTo && (
+        <span className="text-[11px] text-muted-foreground">
+          {format(value.from, "d MMM yyyy", { locale: fr })} → {format(value.to, "d MMM yyyy", { locale: fr })}
+        </span>
       )}
     </div>
   );
