@@ -53,6 +53,7 @@ interface Props {
   activeSalaries: SalaryProfile[];
   totalFixedChargesMensuel: number;
   totalSalariesMensuel: number;
+  totalAdsCumul: number;
   commissionsPaid: number;
   commissionsDue: number;
   salaryPeriods: SalaryPeriod[];
@@ -143,8 +144,17 @@ function MonthYearSelect({ value, onChange, label, placeholder }: {
 
 // ── Main component ──
 export default function ChargesCard({
-  fixedCharges, activeSalaries, totalFixedChargesMensuel, totalSalariesMensuel,
-  commissionsPaid, commissionsDue, salaryPeriods, profiles, onRefreshCharges, onRefreshSalaries,
+  fixedCharges,
+  activeSalaries,
+  totalFixedChargesMensuel,
+  totalSalariesMensuel,
+  totalAdsCumul,
+  commissionsPaid,
+  commissionsDue,
+  salaryPeriods,
+  profiles,
+  onRefreshCharges,
+  onRefreshSalaries,
 }: Props) {
   const [manageOpen, setManageOpen] = useState(false);
 
@@ -308,6 +318,13 @@ export default function ChargesCard({
               <span className="text-muted-foreground">Autres charges</span>
             </div>
             <span className="font-medium">{totalOneTimeCharges > 0 ? fmt(totalOneTimeCharges) : <span className="text-muted-foreground text-xs italic">—</span>}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-muted-foreground">Publicité (période)</span>
+            </div>
+            <span className="font-medium">{fmt(totalAdsCumul)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">

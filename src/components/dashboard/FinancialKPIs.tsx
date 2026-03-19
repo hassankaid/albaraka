@@ -163,6 +163,20 @@ export default function FinancialKPIs(props: Props) {
   // Use allPayments for commission lookups (commissions may reference payments outside filtered range)
   const allPaymentMap = new Map(allPayments.map(p => [p.id, p]));
 
+  const roiDisplayValue = roi !== null
+    ? `x${roi.toFixed(1)}`
+    : totalAdsCumul === 0 && caGenere > 0
+      ? "x∞"
+      : "—";
+
+  const roiDisplayColor = roi !== null
+    ? roi >= 1
+      ? "text-emerald-500"
+      : "text-destructive"
+    : totalAdsCumul === 0 && caGenere > 0
+      ? "text-emerald-500"
+      : "text-muted-foreground";
+
   const kpis: { key: KpiKey; label: string; value: string; icon: any; color: string; hasDetail: boolean }[] = [
     { key: "caGenere", label: "CA Généré", value: fmt(caGenere), icon: TrendingUp, color: "text-primary", hasDetail: true },
     { key: "caCollecte", label: "CA Collecté", value: fmt(caCollecte), icon: Wallet, color: "text-emerald-500", hasDetail: true },
@@ -171,7 +185,7 @@ export default function FinancialKPIs(props: Props) {
     { key: "commissions", label: "Commissions", value: fmt(totalCommissions), icon: CreditCard, color: "text-orange-500", hasDetail: true },
     { key: "charges", label: "Charges", value: fmt(totalChargesCumul), icon: BarChart3, color: "text-muted-foreground", hasDetail: true },
     { key: "benefice", label: "Bénéfice", value: fmt(benefice), icon: PiggyBank, color: benefice >= 0 ? "text-emerald-500" : "text-destructive", hasDetail: true },
-    { key: "roi", label: "ROI", value: roi !== null ? `x${roi.toFixed(1)}` : "—", icon: TrendingUp, color: roi !== null && roi >= 1 ? "text-emerald-500" : roi !== null ? "text-destructive" : "text-muted-foreground", hasDetail: false },
+    { key: "roi", label: "ROI", value: roiDisplayValue, icon: TrendingUp, color: roiDisplayColor, hasDetail: false },
   ];
 
   const sortedSalesForCA = useMemo(() => [...sales].sort((a, b) => (b.sold_at || "").localeCompare(a.sold_at || "")), [sales]);

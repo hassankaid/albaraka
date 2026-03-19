@@ -116,6 +116,7 @@ function FinancialTab() {
         activeSalaries={data.activeSalaries}
         totalFixedChargesMensuel={data.totalFixedChargesMensuel}
         totalSalariesMensuel={data.totalSalariesMensuel}
+        totalAdsCumul={data.totalAdsCumul}
         commissionsPaid={data.commissionsPaid}
         commissionsDue={data.commissionsDue}
         salaryPeriods={data.salaryPeriods}
