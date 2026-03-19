@@ -169,7 +169,15 @@ export default function FinancialKPIs(props: Props) {
   const sortedSalesForCA = useMemo(() => [...sales].sort((a, b) => (b.sold_at || "").localeCompare(a.sold_at || "")), [sales]);
   const paidPayments = useMemo(() => [...payments].filter(p => p.status === "paid").sort((a, b) => b.due_date.localeCompare(a.due_date)), [payments]);
   const lateOrLostPayments = useMemo(() => [...payments].filter(p => p.status === "late" || p.status === "lost").sort((a, b) => b.due_date.localeCompare(a.due_date)), [payments]);
-  const engagedCommissions = useMemo(() => commissions.filter(c => c.status === "due" || c.status === "paid" || c.status === "invoiced").sort((a, b) => (b.amount || 0) - (a.amount || 0)), [commissions]);
+  const engagedCommissions = useMemo(() => {
+    return commissions
+      .filter(c => c.status === "due" || c.status === "paid" || c.status === "invoiced")
+      .sort((a, b) => {
+        const dateA = a.paid_at || (a.payment_id ? allPaymentMap.get(a.payment_id)?.paid_at : null) || "";
+        const dateB = b.paid_at || (b.payment_id ? allPaymentMap.get(b.payment_id)?.paid_at : null) || "";
+        return dateB.localeCompare(dateA);
+      });
+  }, [commissions, allPaymentMap]);
 
   function paginate<T>(items: T[]) {
     const totalPages = Math.ceil(items.length / MODAL_PAGE_SIZE);
