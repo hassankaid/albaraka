@@ -85,6 +85,7 @@ interface Props {
   activeSalaries: ActiveSalary[];
   activeCharges: ActiveCharge[];
   allPayments: Payment[];
+  allSales: Sale[];
 }
 
 function fmt(n: number) {
