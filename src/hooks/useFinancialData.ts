@@ -126,6 +126,7 @@ export function useFinancialData() {
   const profiles = profilesQuery.data || [];
   const contacts = contactsQuery.data || [];
   const fixedCharges = fixedChargesQuery.data || [];
+  const salaryPeriods = salaryPeriodsQuery.data || [];
 
   // Build contact map for quick lookup
   const contactMap = new Map(contacts.map((c) => [c.id, c]));
