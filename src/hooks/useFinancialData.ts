@@ -190,8 +190,27 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     .filter((p) => p.status === "paid")
     .reduce((sum, p) => sum + (p.amount || 0), 0);
 
-  // KPI: Taux de cash collecté
-  const tauxCashCollecte = caGenere > 0 ? (caCollecte / caGenere) * 100 : 0;
+  // KPI: Taux de cash collecté & Taux d'impayés
+  // When a period filter is active, base these on échéances (payments) of the period
+  // When "Tout", base on sales payment_status (global view)
+  let tauxCashCollecte: number;
+  let tauxImpayes: number;
+
+  if (range) {
+    // Period-based: how many échéances in this period are paid / late+lost
+    const periodPaymentsTotal = payments.length;
+    const periodPaid = payments.filter((p) => p.status === "paid");
+    const periodLateOrLost = payments.filter((p) => p.status === "late" || p.status === "lost");
+    const periodPaidAmount = periodPaid.reduce((sum, p) => sum + p.amount, 0);
+    const periodTotalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
+    tauxCashCollecte = periodTotalAmount > 0 ? (periodPaidAmount / periodTotalAmount) * 100 : 0;
+    tauxImpayes = periodPaymentsTotal > 0 ? (periodLateOrLost.length / periodPaymentsTotal) * 100 : 0;
+  } else {
+    tauxCashCollecte = caGenere > 0 ? (caCollecte / caGenere) * 100 : 0;
+    const salesWithStatus = sales.filter((s) => s.payment_status);
+    const impCount = salesWithStatus.filter((s) => s.payment_status === "late" || s.payment_status === "lost").length;
+    tauxImpayes = salesWithStatus.length > 0 ? (impCount / salesWithStatus.length) * 100 : 0;
+  }
 
   // KPI: One-shot vs Multi
   const salesOneShot = sales.filter((s) => (s.mensualites || 1) === 1);
@@ -202,7 +221,7 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
   const oneShotCA = salesOneShot.reduce((s, sale) => s + sale.amount_ht, 0);
   const multiCA = salesMulti.reduce((s, sale) => s + sale.amount_ht, 0);
 
-  // KPI: Taux d'impayés
+  // KPI: Sales by payment status (for ImpayesSummaryCard)
   const salesWithStatus = sales.filter((s) => s.payment_status);
   const salesLate = salesWithStatus.filter((s) => s.payment_status === "late");
   const salesLost = salesWithStatus.filter((s) => s.payment_status === "lost");
@@ -210,9 +229,7 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
   const salesInProgress = salesWithStatus.filter((s) => s.payment_status === "in_progress");
   const impayesCount = salesLate.length + salesLost.length;
   const payesCount = salesPaid.length + salesInProgress.length;
-  const tauxImpayes = salesWithStatus.length > 0 ? (impayesCount / salesWithStatus.length) * 100 : 0;
 
-  // KPI: Commissions
   const commissionsEngagees = commissions.filter((c) => c.status === "due" || c.status === "paid" || c.status === "invoiced");
   const totalCommissions = commissionsEngagees.reduce((sum, c) => sum + (c.amount || 0), 0);
   const commissionsPaid = commissions.filter((c) => c.status === "paid").reduce((sum, c) => sum + (c.amount || 0), 0);

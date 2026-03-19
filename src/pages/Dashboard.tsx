@@ -50,6 +50,7 @@ function FinancialTab() {
         benefice={data.benefice}
         totalChargesCumul={data.totalChargesCumul}
         totalCommissions={data.totalCommissions}
+        isFiltered={dateRange !== null}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -84,7 +85,6 @@ function FinancialTab() {
         sales={data.sales}
         payments={data.allPayments}
         contactMap={data.contactMap}
-        profiles={data.profiles}
       />
 
       <ImpayesListCard
