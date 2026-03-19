@@ -22,6 +22,7 @@ interface Sale {
   product: string;
   mensualites: number | null;
   payment_status: string | null;
+  sold_at: string | null;
 }
 
 interface ContactInfo {
