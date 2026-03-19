@@ -342,9 +342,36 @@ export default function FinancialKPIs(props: Props) {
 
       // ═══════════════════ COMMISSIONS ═══════════════════
       case "commissions": {
-        const { items, safePage, totalPages } = paginate(engagedCommissions);
+        const filteredTotal = filteredCommissions.reduce((s, c) => s + (c.amount || 0), 0);
+        const { items, safePage, totalPages } = paginate(filteredCommissions);
         return (
           <div>
+            {/* Filters */}
+            <div className="flex items-center gap-2 px-3 pb-3">
+              <Filter className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+              <Select value={commFilterBenef} onValueChange={(v) => { setCommFilterBenef(v); setModalPage(0); }}>
+                <SelectTrigger className="h-7 text-xs w-[180px]">
+                  <SelectValue placeholder="Bénéficiaire" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les bénéficiaires</SelectItem>
+                  {commBeneficiaries.map(([key, name]) => (
+                    <SelectItem key={key} value={key}>{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={commFilterSale} onValueChange={(v) => { setCommFilterSale(v); setModalPage(0); }}>
+                <SelectTrigger className="h-7 text-xs w-[180px]">
+                  <SelectValue placeholder="Vente (client)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les ventes</SelectItem>
+                  {commSales.map(([key, name]) => (
+                    <SelectItem key={key} value={key}>{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-[1fr_1fr_70px_50px_56px_80px_68px_80px] gap-2 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               <span>Bénéficiaire</span><span>Client</span><span>Rôle</span><span className="text-center">%</span><span className="text-center">N°</span><span className="text-center">Date</span><span className="text-center">Statut</span><span className="text-right">Montant</span>
             </div>
@@ -373,7 +400,7 @@ export default function FinancialKPIs(props: Props) {
             </div>
             <div className="flex items-center justify-between pt-3 border-t border-border px-3">
               <span className="text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">{engagedCommissions.length}</span> commission{engagedCommissions.length > 1 ? "s" : ""} — Total <span className="font-bold text-foreground">{fmt(totalCommissions)}</span>
+                <span className="font-semibold text-foreground">{filteredCommissions.length}</span> commission{filteredCommissions.length > 1 ? "s" : ""} — Total <span className="font-bold text-foreground">{fmt(filteredTotal)}</span>
               </span>
               <ModalPagination page={safePage} totalPages={totalPages} setPage={setModalPage} />
             </div>
