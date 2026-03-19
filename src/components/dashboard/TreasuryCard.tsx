@@ -59,12 +59,12 @@ export default function TreasuryCard({ tresoIn, tresoOut, tresoRemaining, commis
                 <span className="font-medium text-foreground tabular-nums">{fmt(commissionsPaid)}</span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Salaires fixes</span>
-                <span className="font-medium text-foreground tabular-nums">{fmt(totalSalariesMensuel)}</span>
+                <span className="text-muted-foreground">Salaires fixes (cumul)</span>
+                <span className="font-medium text-foreground tabular-nums">{fmt(totalSalariesCumul)}</span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Charges fixes</span>
-                <span className="font-medium text-foreground tabular-nums">{fmt(totalFixedChargesMensuel)}</span>
+                <span className="text-muted-foreground">Charges fixes (cumul)</span>
+                <span className="font-medium text-foreground tabular-nums">{fmt(totalFixedChargesCumul)}</span>
               </div>
             </div>
           )}
