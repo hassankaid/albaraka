@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
     const periodStart = `${year}-${String(month).padStart(2, "0")}-01`;
     const { data: salaryPeriods } = await supabaseAdmin
       .from("salary_periods")
-      .select("amount")
+      .select("amount, end_date")
       .eq("profile_id", apporteur_id)
       .lte("start_date", periodStart);
 
