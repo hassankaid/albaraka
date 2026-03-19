@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"; // dashboard
 import { useAuth } from "@/hooks/useAuth";
 import { useFinancialData, type FinancialDateRange } from "@/hooks/useFinancialData";
 import FinancialKPIs from "@/components/dashboard/FinancialKPIs";
