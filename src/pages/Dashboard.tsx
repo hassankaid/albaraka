@@ -9,6 +9,7 @@ import ImpayesListCard from "@/components/dashboard/ImpayesListCard";
 import MRRChart from "@/components/dashboard/MRRChart";
 import TreasuryCard from "@/components/dashboard/TreasuryCard";
 import ChargesCard from "@/components/dashboard/ChargesCard";
+import PeriodSalesCard from "@/components/dashboard/PeriodSalesCard";
 import PeriodFilter, { type DateRange } from "@/components/dashboard/PeriodFilter";
 import { Loader2 } from "lucide-react";
 
