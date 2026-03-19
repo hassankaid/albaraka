@@ -29,7 +29,8 @@ function buildYears() {
 }
 
 export default function PeriodFilter({ value, onChange }: Props) {
-  const [activePreset, setActivePreset] = useState<PresetKey>("all");
+  const [activePreset, setActivePreset] = useState<PresetKey>("month");
+  const initializedRef = useRef(false);
 
   const now = new Date();
   const [selMonth, setSelMonth] = useState(now.getMonth());
