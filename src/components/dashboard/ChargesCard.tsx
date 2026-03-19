@@ -53,6 +53,7 @@ interface Props {
   activeSalaries: SalaryProfile[];
   totalFixedChargesMensuel: number;
   totalSalariesMensuel: number;
+  totalAdsCumul: number;
   commissionsPaid: number;
   commissionsDue: number;
   salaryPeriods: SalaryPeriod[];
