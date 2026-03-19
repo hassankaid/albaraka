@@ -70,7 +70,32 @@ interface FixedCharge {
   notes: string | null;
 }
 
-export function useFinancialData() {
+export interface FinancialDateRange {
+  from: Date;
+  to: Date;
+}
+
+// ── Helper: count months a period overlaps with [rangeStart, rangeEnd] ──
+function countMonthsInRange(startDate: string, endDate: string | null, rangeStart: Date, rangeEnd: Date): number {
+  const start = new Date(startDate);
+  const end = endDate ? new Date(endDate) : rangeEnd;
+  const effectiveStart = start > rangeStart ? start : rangeStart;
+  const effectiveEnd = end < rangeEnd ? end : rangeEnd;
+  if (effectiveStart > effectiveEnd) return 0;
+  const startMonth = effectiveStart.getFullYear() * 12 + effectiveStart.getMonth();
+  const endMonth = effectiveEnd.getFullYear() * 12 + effectiveEnd.getMonth();
+  return Math.max(0, endMonth - startMonth + 1);
+}
+
+function inRange(dateStr: string | null, range: FinancialDateRange | null): boolean {
+  if (!range || !dateStr) return true;
+  const d = dateStr.slice(0, 10);
+  const from = range.from.toISOString().slice(0, 10);
+  const to = range.to.toISOString().slice(0, 10);
+  return d >= from && d <= to;
+}
+
+export function useFinancialData(dateRange?: FinancialDateRange | null) {
   const salesQuery = useQuery({
     queryKey: ["financial-sales"],
     queryFn: () => fetchAllRows<Sale>("sales", "id, amount_ht, mensualites, payment_status, contact_id, product, sold_at, closed_by, lead_id"),
@@ -120,13 +145,39 @@ export function useFinancialData() {
     },
   });
 
-  const sales = salesQuery.data || [];
-  const payments = paymentsQuery.data || [];
-  const commissions = commissionsQuery.data || [];
+  // Raw data (unfiltered)
+  const allSales = salesQuery.data || [];
+  const allPayments = paymentsQuery.data || [];
+  const allCommissions = commissionsQuery.data || [];
   const profiles = profilesQuery.data || [];
   const contacts = contactsQuery.data || [];
   const fixedCharges = fixedChargesQuery.data || [];
   const salaryPeriods = salaryPeriodsQuery.data || [];
+
+  // ── Apply date range filtering ──
+  const range = dateRange ?? null;
+
+  // Sales: filter by sold_at
+  const sales = range
+    ? allSales.filter((s) => inRange(s.sold_at, range))
+    : allSales;
+
+  // Payments: filter by due_date (when the payment is scheduled)
+  const payments = range
+    ? allPayments.filter((p) => inRange(p.due_date, range))
+    : allPayments;
+
+  // Commissions: filter by linked payment's due_date via sale_id
+  const filteredPaymentIds = range ? new Set(payments.map((p) => p.id)) : null;
+  const filteredSaleIds = range ? new Set(sales.map((s) => s.id)) : null;
+  const commissions = range
+    ? allCommissions.filter((c) => {
+        // Include if the commission's payment is in range, OR the sale is in range and it's a global commission
+        if (c.paid_at && inRange(c.paid_at, range)) return true;
+        if (filteredPaymentIds && c.sale_id && filteredSaleIds?.has(c.sale_id)) return true;
+        return false;
+      })
+    : allCommissions;
 
   // Build contact map for quick lookup
   const contactMap = new Map(contacts.map((c) => [c.id, c]));
@@ -161,33 +212,19 @@ export function useFinancialData() {
   const payesCount = salesPaid.length + salesInProgress.length;
   const tauxImpayes = salesWithStatus.length > 0 ? (impayesCount / salesWithStatus.length) * 100 : 0;
 
-  // KPI: Commissions (due + paid = réellement engagées)
+  // KPI: Commissions
   const commissionsEngagees = commissions.filter((c) => c.status === "due" || c.status === "paid" || c.status === "invoiced");
   const totalCommissions = commissionsEngagees.reduce((sum, c) => sum + (c.amount || 0), 0);
   const commissionsPaid = commissions.filter((c) => c.status === "paid").reduce((sum, c) => sum + (c.amount || 0), 0);
   const commissionsDue = commissions.filter((c) => c.status === "due" || c.status === "invoiced").reduce((sum, c) => sum + (c.amount || 0), 0);
 
-  // ── Helper: count months a period overlaps with [rangeStart, rangeEnd] ──
-  function countMonthsInRange(startDate: string, endDate: string | null, rangeStart: Date, rangeEnd: Date): number {
-    const start = new Date(startDate);
-    const end = endDate ? new Date(endDate) : rangeEnd;
-    // Clamp to range
-    const effectiveStart = start > rangeStart ? start : rangeStart;
-    const effectiveEnd = end < rangeEnd ? end : rangeEnd;
-    if (effectiveStart > effectiveEnd) return 0;
-    // Count months between effectiveStart and effectiveEnd (inclusive of both months)
-    const startMonth = effectiveStart.getFullYear() * 12 + effectiveStart.getMonth();
-    const endMonth = effectiveEnd.getFullYear() * 12 + effectiveEnd.getMonth();
-    return Math.max(0, endMonth - startMonth + 1);
-  }
-
-  // Global range: from earliest data to end of current month
+  // ── Charge range: use filter range or global ──
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10);
-  const globalStart = new Date(2020, 0, 1); // far enough back
-  const globalEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0); // last day of current month
+  const chargeRangeStart = range?.from ?? new Date(2020, 0, 1);
+  const chargeRangeEnd = range?.to ?? new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-  // Charges: Salaires fixes — cumul total sur toute la période
+  // Charges: Salaires fixes
   const activeSalaryPeriods = salaryPeriods.filter((sp) => sp.start_date <= todayStr && (!sp.end_date || sp.end_date >= sp.start_date));
   const activeSalaries = activeSalaryPeriods.map((sp) => {
     const profile = profiles.find((p) => p.id === sp.profile_id);
@@ -196,9 +233,9 @@ export function useFinancialData() {
   // Monthly rate for display in ChargesCard summary
   const currentlyActiveSalaries = salaryPeriods.filter((sp) => sp.start_date <= todayStr && (!sp.end_date || sp.end_date >= todayStr));
   const totalSalariesMensuel = currentlyActiveSalaries.reduce((sum, s) => sum + s.amount, 0);
-  // Cumulative total across all months
+  // Cumulative total in range
   const totalSalariesCumul = salaryPeriods.reduce((sum, sp) => {
-    const months = countMonthsInRange(sp.start_date, sp.end_date, globalStart, globalEnd);
+    const months = countMonthsInRange(sp.start_date, sp.end_date, chargeRangeStart, chargeRangeEnd);
     return sum + sp.amount * months;
   }, 0);
 
@@ -209,21 +246,23 @@ export function useFinancialData() {
     if (c.frequency === "one_time") return sum;
     return sum + c.amount;
   }, 0);
-  // Cumulative total across all months
-  const totalFixedChargesCumul = fixedCharges.filter(c => c.is_active).reduce((sum, c) => {
-    if (c.frequency === "one_time") return sum + c.amount;
+  // Cumulative total in range
+  const totalFixedChargesCumul = fixedCharges.filter((c) => c.is_active).reduce((sum, c) => {
+    if (c.frequency === "one_time") {
+      // Only count if the one-time charge falls within the range
+      if (inRange(c.start_date, range)) return sum + c.amount;
+      return sum;
+    }
     if (c.frequency === "yearly") {
-      const months = countMonthsInRange(c.start_date, c.end_date, globalStart, globalEnd);
+      const months = countMonthsInRange(c.start_date, c.end_date, chargeRangeStart, chargeRangeEnd);
       return sum + (c.amount / 12) * months;
     }
-    // monthly
-    const months = countMonthsInRange(c.start_date, c.end_date, globalStart, globalEnd);
+    const months = countMonthsInRange(c.start_date, c.end_date, chargeRangeStart, chargeRangeEnd);
     return sum + c.amount * months;
   }, 0);
 
-  // Total charges mensuelles (display)
+  // Total charges
   const totalChargesMensuel = totalSalariesMensuel + totalFixedChargesMensuel;
-  // Total charges cumulées (for treasury)
   const totalChargesCumul = totalSalariesCumul + totalFixedChargesCumul;
 
   // Bénéfice = CA collecté - commissions payées
@@ -242,12 +281,12 @@ export function useFinancialData() {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([month, amount]) => ({ month, amount }));
 
-  // Treasury: In / Out / Remaining — uses cumulative charges
+  // Treasury
   const tresoIn = caCollecte;
   const tresoOut = commissionsPaid + totalChargesCumul;
   const tresoRemaining = tresoIn - tresoOut;
 
-  // Impayés list (sales with late or lost)
+  // Impayés list
   const impayesList = [...salesLate, ...salesLost];
 
   const isLoading = salesQuery.isLoading || paymentsQuery.isLoading || commissionsQuery.isLoading || profilesQuery.isLoading || fixedChargesQuery.isLoading || contactsQuery.isLoading || salaryPeriodsQuery.isLoading;
