@@ -14,6 +14,13 @@ interface Sale {
   lead_id: string | null;
 }
 
+interface Contact {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone_normalized: string | null;
+}
+
 interface Payment {
   id: string;
   amount: number;
@@ -78,6 +85,11 @@ export function useFinancialData() {
     queryFn: () => fetchAllRows<Profile>("profiles", "id, full_name, role, fixed_salary, fixed_salary_active, is_active"),
   });
 
+  const contactsQuery = useQuery({
+    queryKey: ["financial-contacts"],
+    queryFn: () => fetchAllRows<Contact>("contacts", "id, full_name, email, phone_normalized"),
+  });
+
   const fixedChargesQuery = useQuery({
     queryKey: ["financial-fixed-charges"],
     queryFn: async () => {
@@ -94,7 +106,11 @@ export function useFinancialData() {
   const payments = paymentsQuery.data || [];
   const commissions = commissionsQuery.data || [];
   const profiles = profilesQuery.data || [];
+  const contacts = contactsQuery.data || [];
   const fixedCharges = fixedChargesQuery.data || [];
+
+  // Build contact map for quick lookup
+  const contactMap = new Map(contacts.map((c) => [c.id, c]));
 
   // KPI: CA Généré
   const caGenere = sales.reduce((sum, s) => sum + (s.amount_ht || 0), 0);
@@ -171,7 +187,7 @@ export function useFinancialData() {
   // Impayés list (sales with late or lost)
   const impayesList = [...salesLate, ...salesLost];
 
-  const isLoading = salesQuery.isLoading || paymentsQuery.isLoading || commissionsQuery.isLoading || profilesQuery.isLoading || fixedChargesQuery.isLoading;
+  const isLoading = salesQuery.isLoading || paymentsQuery.isLoading || commissionsQuery.isLoading || profilesQuery.isLoading || fixedChargesQuery.isLoading || contactsQuery.isLoading;
 
   return {
     isLoading,
@@ -205,6 +221,8 @@ export function useFinancialData() {
     activeCharges,
     fixedCharges,
     profiles,
+    contacts,
+    contactMap,
     tresoIn,
     tresoOut,
     tresoRemaining,

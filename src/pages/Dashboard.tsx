@@ -47,6 +47,8 @@ function FinancialTab() {
           salesLost={data.salesLost}
           salesPaid={data.salesPaid}
           salesInProgress={data.salesInProgress}
+          contactMap={data.contactMap}
+          payments={data.payments}
         />
         <TreasuryCard
           tresoIn={data.tresoIn}
