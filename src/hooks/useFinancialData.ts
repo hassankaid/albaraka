@@ -268,9 +268,9 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
   // Bénéfice = CA collecté - commissions payées
   const benefice = caCollecte - commissionsPaid;
 
-  // MRR: group non-lost payments by month
+  // MRR: uses ALL payments (unfiltered) — MRR is its own time-series
   const mrrByMonth: Record<string, number> = {};
-  payments
+  allPayments
     .filter((p) => p.status !== "lost" && p.total_payments > 1)
     .forEach((p) => {
       const month = p.due_date.substring(0, 7);
@@ -281,13 +281,11 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([month, amount]) => ({ month, amount }));
 
-  // Treasury
-  const tresoIn = caCollecte;
-  const tresoOut = commissionsPaid + totalChargesCumul;
-  const tresoRemaining = tresoIn - tresoOut;
-
-  // Impayés list
-  const impayesList = [...salesLate, ...salesLost];
+  // Impayés: uses ALL sales (unfiltered) — impayés status is a current state, not period-dependent
+  const allSalesWithStatus = allSales.filter((s) => s.payment_status);
+  const allSalesLate = allSalesWithStatus.filter((s) => s.payment_status === "late");
+  const allSalesLost = allSalesWithStatus.filter((s) => s.payment_status === "lost");
+  const impayesList = [...allSalesLate, ...allSalesLost];
 
   const isLoading = salesQuery.isLoading || paymentsQuery.isLoading || commissionsQuery.isLoading || profilesQuery.isLoading || fixedChargesQuery.isLoading || contactsQuery.isLoading || salaryPeriodsQuery.isLoading;
 
