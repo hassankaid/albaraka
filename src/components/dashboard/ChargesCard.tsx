@@ -321,6 +321,13 @@ export default function ChargesCard({
           </div>
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
+              <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-muted-foreground">Publicité (période)</span>
+            </div>
+            <span className="font-medium">{fmt(totalAdsCumul)}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
               <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-muted-foreground">Frais transaction</span>
             </div>
