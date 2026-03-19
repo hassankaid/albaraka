@@ -91,6 +91,11 @@ function formatMonthYear(dateStr: string) {
   return `${MONTHS[month - 1]} ${year}`;
 }
 
+function buildYears() {
+  const cur = new Date().getFullYear();
+  return Array.from({ length: 12 }, (_, i) => cur - 3 + i);
+}
+
 // ── Month/Year picker component ──
 function MonthYearSelect({ value, onChange, label, placeholder }: {
   value: { month: number; year: number } | null;
@@ -99,7 +104,7 @@ function MonthYearSelect({ value, onChange, label, placeholder }: {
   placeholder?: string;
 }) {
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+  const years = buildYears();
 
   return (
     <div className="space-y-1">
@@ -390,51 +395,31 @@ export default function ChargesCard({
                             </div>
 
                             {/* Editable dates */}
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[11px] text-muted-foreground">De</span>
-                                <select
-                                  className="text-[11px] bg-transparent border border-border rounded px-1.5 py-0.5 text-foreground"
-                                  value={startParsed.month}
-                                  onChange={e => handleUpdateSalaryDates(sp.id, { month: Number(e.target.value), year: startParsed.year }, endParsed)}
-                                >
-                                  {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-                                </select>
-                                <select
-                                  className="text-[11px] bg-transparent border border-border rounded px-1.5 py-0.5 text-foreground"
-                                  value={startParsed.year}
-                                  onChange={e => handleUpdateSalaryDates(sp.id, { month: startParsed.month, year: Number(e.target.value) }, endParsed)}
-                                >
-                                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(y => (
-                                    <option key={y} value={y}>{y}</option>
-                                  ))}
-                                </select>
-                              </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[11px] text-muted-foreground">De</span>
+                              <Select value={String(startParsed.month)} onValueChange={v => handleUpdateSalaryDates(sp.id, { month: Number(v), year: startParsed.year }, endParsed)}>
+                                <SelectTrigger className="h-7 text-[11px] w-[110px]"><SelectValue /></SelectTrigger>
+                                <SelectContent>{MONTHS.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)}</SelectContent>
+                              </Select>
+                              <Select value={String(startParsed.year)} onValueChange={v => handleUpdateSalaryDates(sp.id, { month: startParsed.month, year: Number(v) }, endParsed)}>
+                                <SelectTrigger className="h-7 text-[11px] w-[72px]"><SelectValue /></SelectTrigger>
+                                <SelectContent>{buildYears().map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+                              </Select>
                               <span className="text-[11px] text-muted-foreground">→</span>
-                              <div className="flex items-center gap-1.5">
-                                {endParsed ? (
-                                  <>
-                                    <select
-                                      className="text-[11px] bg-transparent border border-border rounded px-1.5 py-0.5 text-foreground"
-                                      value={endParsed.month}
-                                      onChange={e => handleUpdateSalaryDates(sp.id, startParsed, { month: Number(e.target.value), year: endParsed.year })}
-                                    >
-                                      {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-                                    </select>
-                                    <select
-                                      className="text-[11px] bg-transparent border border-border rounded px-1.5 py-0.5 text-foreground"
-                                      value={endParsed.year}
-                                      onChange={e => handleUpdateSalaryDates(sp.id, startParsed, { month: endParsed.month, year: Number(e.target.value) })}
-                                    >
-                                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(y => (
-                                        <option key={y} value={y}>{y}</option>
-                                      ))}
-                                    </select>
-                                  </>
-                                ) : (
-                                  <span className="text-[11px] text-muted-foreground italic">en cours</span>
-                                )}
-                              </div>
+                              {endParsed ? (
+                                <>
+                                  <Select value={String(endParsed.month)} onValueChange={v => handleUpdateSalaryDates(sp.id, startParsed, { month: Number(v), year: endParsed.year })}>
+                                    <SelectTrigger className="h-7 text-[11px] w-[110px]"><SelectValue /></SelectTrigger>
+                                    <SelectContent>{MONTHS.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)}</SelectContent>
+                                  </Select>
+                                  <Select value={String(endParsed.year)} onValueChange={v => handleUpdateSalaryDates(sp.id, startParsed, { month: endParsed.month, year: Number(v) })}>
+                                    <SelectTrigger className="h-7 text-[11px] w-[72px]"><SelectValue /></SelectTrigger>
+                                    <SelectContent>{buildYears().map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+                                  </Select>
+                                </>
+                              ) : (
+                                <span className="text-[11px] text-muted-foreground italic">en cours</span>
+                              )}
                             </div>
                           </div>
 
