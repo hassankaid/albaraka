@@ -176,9 +176,9 @@ export default function FinancialKPIs(props: Props) {
   const lateOrLostPayments = useMemo(() => [...payments].filter(p => p.status === "late" || p.status === "lost").sort((a, b) => b.due_date.localeCompare(a.due_date)), [payments]);
   const engagedCommissions = useMemo(() => {
     const getDate = (c: Commission) => {
-      if (c.status === "paid" && c.paid_at) return c.paid_at;
       const p = c.payment_id ? allPaymentMap.get(c.payment_id) : null;
-      return p?.paid_at || "";
+      // Primary: payment client paid_at, fallback: due_date
+      return p?.paid_at || p?.due_date || "";
     };
     return commissions
       .filter(c => c.status === "due" || c.status === "paid" || c.status === "invoiced")
