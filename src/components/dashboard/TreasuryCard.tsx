@@ -9,6 +9,7 @@ interface Props {
   commissionsPaid: number;
   totalSalariesCumul: number;
   totalFixedChargesCumul: number;
+  totalAdsCumul: number;
 }
 
 function fmt(n: number) {
