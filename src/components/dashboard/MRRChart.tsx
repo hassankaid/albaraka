@@ -147,10 +147,7 @@ export default function MRRChart({ data, payments = [], contactMap = new Map(), 
                       <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
                         <User className="h-3 w-3 text-muted-foreground" />
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-foreground truncate">{contact?.full_name || "Inconnu"}</p>
-                        {sale && <p className="text-[10px] text-muted-foreground truncate">{sale.product}</p>}
-                      </div>
+                      <span className="text-xs font-medium text-foreground truncate">{contact?.full_name || "Inconnu"}</span>
                     </div>
                     <span className="text-xs text-muted-foreground">{formatDate(p.due_date)}</span>
                     <span className="text-xs text-muted-foreground tabular-nums text-center">{p.payment_number}/{p.total_payments}</span>
