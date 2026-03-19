@@ -211,7 +211,7 @@ export function useFinancialData() {
   // Impayés list (sales with late or lost)
   const impayesList = [...salesLate, ...salesLost];
 
-  const isLoading = salesQuery.isLoading || paymentsQuery.isLoading || commissionsQuery.isLoading || profilesQuery.isLoading || fixedChargesQuery.isLoading || contactsQuery.isLoading;
+  const isLoading = salesQuery.isLoading || paymentsQuery.isLoading || commissionsQuery.isLoading || profilesQuery.isLoading || fixedChargesQuery.isLoading || contactsQuery.isLoading || salaryPeriodsQuery.isLoading;
 
   return {
     isLoading,
