@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      ads: {
+        Row: {
+          amount_spent: number
+          campaign_id: string
+          campaign_name: string
+          channel: string | null
+          clicks: number
+          created_at: string
+          date: string
+          id: string
+          impressions: number
+          updated_at: string
+        }
+        Insert: {
+          amount_spent?: number
+          campaign_id: string
+          campaign_name: string
+          channel?: string | null
+          clicks?: number
+          created_at?: string
+          date: string
+          id?: string
+          impressions?: number
+          updated_at?: string
+        }
+        Update: {
+          amount_spent?: number
+          campaign_id?: string
+          campaign_name?: string
+          channel?: string | null
+          clicks?: number
+          created_at?: string
+          date?: string
+          id?: string
+          impressions?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       apporteur_invoices: {
         Row: {
           apporteur_id: string
