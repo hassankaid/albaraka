@@ -133,10 +133,10 @@ export default function AdminInvoices() {
     const { data: periods } = await (supabase.from("salary_periods" as any) as any)
       .select("id, profile_id, amount, start_date, end_date");
 
-    const activePeriods = (periods || []).filter((sp: any) => !sp.end_date || sp.end_date >= today);
-    const periodMap = new Map(activePeriods.map((sp: any) => [sp.profile_id, sp]));
+    const activePeriods = ((periods || []) as any[]).filter((sp) => !sp.end_date || sp.end_date >= today);
+    const periodMap = new Map(activePeriods.map((sp) => [sp.profile_id, sp]));
 
-    const merged = (profiles || []).map((p: any) => {
+    const merged = ((profiles || []) as any[]).map((p) => {
       const sp = periodMap.get(p.id);
       return {
         id: p.id,
