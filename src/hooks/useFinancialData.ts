@@ -41,6 +41,8 @@ interface Commission {
   beneficiary_external: string | null;
   sale_id: string;
   paid_at: string | null;
+  percentage: number;
+  payment_id: string | null;
 }
 
 interface Profile {

@@ -59,6 +59,8 @@ function FinancialTab() {
         totalSalariesCumul={data.totalSalariesCumul}
         totalFixedChargesCumul={data.totalFixedChargesCumul}
         commissionsPaid={data.commissionsPaid}
+        activeSalaries={data.activeSalaries}
+        activeCharges={data.activeCharges}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
