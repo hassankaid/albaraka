@@ -150,35 +150,32 @@ export default function ImpayesListCard({ salesLate, salesLost, contactMap, paym
       <Dialog open={!!selectedSale} onOpenChange={() => setSelectedSale(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader className="pb-0">
-            <div className="flex items-start justify-between gap-4">
-              <DialogTitle className="text-sm flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-base font-semibold">{selectedContact?.full_name || "Inconnu"}</p>
-                  <p className="text-xs text-muted-foreground font-normal">{selectedSale?.product} · {selectedSale && fmt(selectedSale.amount_ht)}</p>
-                </div>
-              </DialogTitle>
+            <DialogTitle className="text-sm flex items-center gap-3">
+              <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                <User className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-base font-semibold">{selectedContact?.full_name || "Inconnu"}</p>
+                <p className="text-xs text-muted-foreground font-normal">{selectedSale?.product} · {selectedSale && fmt(selectedSale.amount_ht)}</p>
+              </div>
+            </DialogTitle>
 
-              {/* Contact info in header */}
-              {(selectedContact?.email || selectedContact?.phone_normalized) && (
-                <div className="flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0 pt-1">
-                  {selectedContact?.email && (
-                    <span className="flex items-center gap-1">
-                      <Mail className="h-3 w-3" />
-                      {selectedContact.email}
-                    </span>
-                  )}
-                  {selectedContact?.phone_normalized && (
-                    <span className="flex items-center gap-1">
-                      <Phone className="h-3 w-3" />
-                      {selectedContact.phone_normalized}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
+            {(selectedContact?.email || selectedContact?.phone_normalized) && (
+              <div className="flex items-center gap-3 text-xs text-muted-foreground ml-12 pt-0.5">
+                {selectedContact?.email && (
+                  <span className="flex items-center gap-1">
+                    <Mail className="h-3 w-3" />
+                    {selectedContact.email}
+                  </span>
+                )}
+                {selectedContact?.phone_normalized && (
+                  <span className="flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    {selectedContact.phone_normalized}
+                  </span>
+                )}
+              </div>
+            )}
           </DialogHeader>
 
           {/* Horizontal payment grid */}
