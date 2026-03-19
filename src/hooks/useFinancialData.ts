@@ -41,6 +41,8 @@ interface Commission {
   beneficiary_external: string | null;
   sale_id: string;
   paid_at: string | null;
+  percentage: number;
+  payment_id: string | null;
 }
 
 interface Profile {
@@ -108,7 +110,7 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
 
   const commissionsQuery = useQuery({
     queryKey: ["financial-commissions"],
-    queryFn: () => fetchAllRows<Commission>("commissions", "id, amount, status, role, beneficiary_user_id, beneficiary_external, sale_id, paid_at"),
+    queryFn: () => fetchAllRows<Commission>("commissions", "id, amount, status, role, beneficiary_user_id, beneficiary_external, sale_id, paid_at, percentage, payment_id"),
   });
 
   const profilesQuery = useQuery({

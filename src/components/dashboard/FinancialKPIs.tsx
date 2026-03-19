@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
-import { TrendingUp, TrendingDown, Wallet, CreditCard, Percent, AlertTriangle, PiggyBank, BarChart3, User, ChevronLeft, ChevronRight } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, CreditCard, Percent, AlertTriangle, PiggyBank, BarChart3, User, ChevronLeft, ChevronRight, CheckCheck } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Payment {
   id: string;
@@ -38,6 +37,9 @@ interface Commission {
   beneficiary_user_id: string | null;
   beneficiary_external: string | null;
   sale_id: string;
+  percentage?: number;
+  payment_id?: string | null;
+  paid_at?: string | null;
 }
 
 interface ProfileInfo {
@@ -45,11 +47,21 @@ interface ProfileInfo {
   full_name: string;
 }
 
-interface FixedCharge {
+interface ActiveSalary {
+  id: string;
+  profile_id: string;
+  full_name: string;
+  amount: number;
+  start_date: string;
+  end_date: string | null;
+}
+
+interface ActiveCharge {
   id: string;
   name: string;
   amount: number;
   frequency: string;
+  category: string;
 }
 
 interface Props {
@@ -61,7 +73,6 @@ interface Props {
   totalChargesCumul: number;
   totalCommissions: number;
   isFiltered?: boolean;
-  // Detail data
   sales: Sale[];
   payments: Payment[];
   contactMap: Map<string, ContactInfo>;
@@ -70,6 +81,8 @@ interface Props {
   totalSalariesCumul: number;
   totalFixedChargesCumul: number;
   commissionsPaid: number;
+  activeSalaries: ActiveSalary[];
+  activeCharges: ActiveCharge[];
 }
 
 function fmt(n: number) {
@@ -80,22 +93,48 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 }
 
-const saleStatusCfg: Record<string, { label: string; className: string }> = {
+const statusCfg: Record<string, { label: string; className: string }> = {
   paid: { label: "Payé", className: "bg-[hsl(var(--kpi-paid)/0.15)] text-[hsl(var(--kpi-paid))] border-[hsl(var(--kpi-paid)/0.3)]" },
   in_progress: { label: "En cours", className: "bg-[hsl(var(--kpi-in-progress)/0.15)] text-[hsl(var(--kpi-in-progress))] border-[hsl(var(--kpi-in-progress)/0.3)]" },
   pending: { label: "En attente", className: "bg-[hsl(var(--kpi-in-progress)/0.15)] text-[hsl(var(--kpi-in-progress))] border-[hsl(var(--kpi-in-progress)/0.3)]" },
   late: { label: "Retard", className: "bg-[hsl(var(--kpi-late)/0.15)] text-[hsl(var(--kpi-late))] border-[hsl(var(--kpi-late)/0.4)]" },
   lost: { label: "Perdu", className: "bg-[hsl(var(--kpi-lost)/0.2)] text-[hsl(var(--kpi-lost))] border-[hsl(var(--kpi-lost)/0.5)]" },
+  due: { label: "À payer", className: "bg-[hsl(var(--kpi-in-progress)/0.15)] text-[hsl(var(--kpi-in-progress))] border-[hsl(var(--kpi-in-progress)/0.3)]" },
+  invoiced: { label: "Facturée", className: "bg-[hsl(var(--kpi-in-progress)/0.15)] text-[hsl(var(--kpi-in-progress))] border-[hsl(var(--kpi-in-progress)/0.3)]" },
 };
 
-const paymentStatusCfg: Record<string, { label: string; className: string }> = {
-  paid: { label: "Payé", className: "bg-[hsl(var(--kpi-paid)/0.15)] text-[hsl(var(--kpi-paid))] border-[hsl(var(--kpi-paid)/0.3)]" },
-  pending: { label: "En attente", className: "bg-[hsl(var(--kpi-in-progress)/0.15)] text-[hsl(var(--kpi-in-progress))] border-[hsl(var(--kpi-in-progress)/0.3)]" },
-  late: { label: "En retard", className: "bg-[hsl(var(--kpi-late)/0.15)] text-[hsl(var(--kpi-late))] border-[hsl(var(--kpi-late)/0.4)]" },
-  lost: { label: "Perdu", className: "bg-[hsl(var(--kpi-lost)/0.2)] text-[hsl(var(--kpi-lost))] border-[hsl(var(--kpi-lost)/0.5)]" },
+const roleLabels: Record<string, string> = {
+  closer: "Closer",
+  setter: "Setter",
+  apporteur: "Apporteur",
+  agence_marketing: "Agence",
+};
+
+const freqLabels: Record<string, string> = {
+  monthly: "Mensuel",
+  yearly: "Annuel",
+  one_time: "Ponctuel",
 };
 
 type KpiKey = "caGenere" | "caCollecte" | "tauxCollecte" | "tauxImpayes" | "commissions" | "charges" | "benefice" | "roi";
+
+const MODAL_PAGE_SIZE = 15;
+
+// Reusable pagination footer
+function ModalPagination({ page, totalPages, setPage }: { page: number; totalPages: number; setPage: (fn: (p: number) => number) => void }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center gap-1">
+      <button disabled={page === 0} onClick={() => setPage(p => p - 1)} className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted disabled:opacity-30 transition-colors">
+        <ChevronLeft className="h-3.5 w-3.5" />
+      </button>
+      <span className="text-[11px] text-muted-foreground tabular-nums px-1">{page + 1} / {totalPages}</span>
+      <button disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)} className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted disabled:opacity-30 transition-colors">
+        <ChevronRight className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
 
 export default function FinancialKPIs(props: Props) {
   const {
@@ -103,16 +142,16 @@ export default function FinancialKPIs(props: Props) {
     totalChargesCumul, totalCommissions, isFiltered,
     sales, payments, contactMap, commissions, profiles,
     totalSalariesCumul, totalFixedChargesCumul, commissionsPaid,
+    activeSalaries, activeCharges,
   } = props;
 
   const [openModal, setOpenModal] = useState<KpiKey | null>(null);
   const [modalPage, setModalPage] = useState(0);
-
-  // Reset page when modal changes
   const handleOpenModal = (key: KpiKey) => { setModalPage(0); setOpenModal(key); };
 
   const profileMap = new Map(profiles.map(p => [p.id, p]));
   const saleMap = new Map(sales.map(s => [s.id, s]));
+  const paymentMap = new Map(payments.map(p => [p.id, p]));
 
   const kpis: { key: KpiKey; label: string; value: string; icon: any; color: string; hasDetail: boolean }[] = [
     { key: "caGenere", label: "CA Généré", value: fmt(caGenere), icon: TrendingUp, color: "text-primary", hasDetail: true },
@@ -125,255 +164,271 @@ export default function FinancialKPIs(props: Props) {
     { key: "roi", label: "ROI Ads", value: "—", icon: TrendingDown, color: "text-muted-foreground", hasDetail: false },
   ];
 
-  // ── Compute detail data based on modal ──
-  const paidPayments = payments.filter(p => p.status === "paid");
-  const lateOrLostPayments = payments.filter(p => p.status === "late" || p.status === "lost");
-  const dueCommissions = commissions.filter(c => c.status === "due" || c.status === "invoiced");
-  const paidCommissions = commissions.filter(c => c.status === "paid");
+  const sortedSalesForCA = useMemo(() => [...sales].sort((a, b) => (b.sold_at || "").localeCompare(a.sold_at || "")), [sales]);
+  const paidPayments = useMemo(() => [...payments].filter(p => p.status === "paid").sort((a, b) => b.due_date.localeCompare(a.due_date)), [payments]);
+  const lateOrLostPayments = useMemo(() => [...payments].filter(p => p.status === "late" || p.status === "lost").sort((a, b) => a.due_date.localeCompare(b.due_date)), [payments]);
+  const engagedCommissions = useMemo(() => commissions.filter(c => c.status === "due" || c.status === "paid" || c.status === "invoiced").sort((a, b) => (b.amount || 0) - (a.amount || 0)), [commissions]);
 
-  const MODAL_PAGE_SIZE = 15;
-
-  const sortedSalesForCA = useMemo(() =>
-    [...sales].sort((a, b) => (b.sold_at || "").localeCompare(a.sold_at || "")),
-    [sales]
-  );
+  function paginate<T>(items: T[]) {
+    const totalPages = Math.ceil(items.length / MODAL_PAGE_SIZE);
+    const safePage = Math.min(modalPage, Math.max(0, totalPages - 1));
+    return { items: items.slice(safePage * MODAL_PAGE_SIZE, (safePage + 1) * MODAL_PAGE_SIZE), safePage, totalPages };
+  }
 
   const renderModalContent = (key: KpiKey) => {
     switch (key) {
+      // ═══════════════════ CA GÉNÉRÉ ═══════════════════
       case "caGenere": {
-        const totalPages = Math.ceil(sortedSalesForCA.length / MODAL_PAGE_SIZE);
-        const safePage = Math.min(modalPage, Math.max(0, totalPages - 1));
-        const paginated = sortedSalesForCA.slice(safePage * MODAL_PAGE_SIZE, (safePage + 1) * MODAL_PAGE_SIZE);
-
+        const { items, safePage, totalPages } = paginate(sortedSalesForCA);
         return (
-          <div className="space-y-0">
-            {/* Header */}
+          <div>
             <div className="grid grid-cols-[1fr_100px_50px_56px_68px_90px] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              <span>Client</span>
-              <span>Date</span>
-              <span className="text-center">Mens.</span>
-              <span className="text-center">Éch.</span>
-              <span className="text-center">Statut</span>
-              <span className="text-right">Montant HT</span>
+              <span>Client</span><span>Date</span><span className="text-center">Mens.</span><span className="text-center">Éch.</span><span className="text-center">Statut</span><span className="text-right">Montant HT</span>
             </div>
-
-            {/* Rows */}
             <div className="divide-y divide-border/40">
-              {paginated.map((s, idx) => {
+              {items.map((s, idx) => {
                 const contact = contactMap.get(s.contact_id);
                 const totalCount = s.mensualites || 1;
-                const salePayments = payments.filter(p => p.sale_id === s.id);
-                const paidCount = salePayments.filter(p => p.status === "paid").length;
+                const sp = payments.filter(p => p.sale_id === s.id);
+                const paidCount = sp.filter(p => p.status === "paid").length;
                 const isComplete = paidCount >= totalCount;
-                const cfg = saleStatusCfg[s.payment_status || "pending"] || saleStatusCfg.pending;
-
+                const cfg = statusCfg[s.payment_status || "pending"] || statusCfg.pending;
                 return (
                   <div key={s.id} className={`grid grid-cols-[1fr_100px_50px_56px_68px_90px] gap-3 items-center px-3 py-2.5 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                        <User className="h-3 w-3 text-muted-foreground" />
-                      </div>
+                      <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0"><User className="h-3 w-3 text-muted-foreground" /></div>
                       <span className="text-xs font-medium text-foreground truncate">{contact?.full_name || "Inconnu"}</span>
                     </div>
                     <span className="text-[11px] text-muted-foreground tabular-nums">{s.sold_at ? formatDate(s.sold_at) : "—"}</span>
                     <span className="text-[11px] font-medium text-foreground tabular-nums text-center">{totalCount}×</span>
                     <div className="flex justify-center">
-                      {isComplete ? (
-                        <span className="text-[hsl(var(--kpi-paid))] text-xs">✓</span>
-                      ) : (
-                        <span className="text-[11px] font-semibold tabular-nums text-foreground">{paidCount}<span className="text-muted-foreground">/{totalCount}</span></span>
-                      )}
+                      {isComplete ? <CheckCheck className="h-4 w-4 text-[hsl(var(--kpi-paid))]" /> : <span className="text-[11px] font-semibold tabular-nums text-foreground">{paidCount}<span className="text-muted-foreground">/{totalCount}</span></span>}
                     </div>
-                    <div className="flex justify-center">
-                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${cfg.className}`}>{cfg.label}</Badge>
-                    </div>
+                    <div className="flex justify-center"><Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${cfg.className}`}>{cfg.label}</Badge></div>
                     <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(s.amount_ht)}</span>
                   </div>
                 );
               })}
             </div>
-
-            {/* Footer with pagination */}
             <div className="flex items-center justify-between pt-3 border-t border-border px-3">
-              <span className="text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">{sales.length}</span> vente{sales.length > 1 ? "s" : ""} — Total <span className="font-bold text-foreground">{fmt(caGenere)}</span>
-              </span>
-              {totalPages > 1 && (
-                <div className="flex items-center gap-1">
-                  <button disabled={safePage === 0} onClick={() => setModalPage(p => p - 1)} className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted disabled:opacity-30">
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                  </button>
-                  <span className="text-[11px] text-muted-foreground tabular-nums px-1">{safePage + 1}/{totalPages}</span>
-                  <button disabled={safePage >= totalPages - 1} onClick={() => setModalPage(p => p + 1)} className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted disabled:opacity-30">
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              )}
+              <span className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{sales.length}</span> vente{sales.length > 1 ? "s" : ""} — Total <span className="font-bold text-foreground">{fmt(caGenere)}</span></span>
+              <ModalPagination page={safePage} totalPages={totalPages} setPage={setModalPage} />
             </div>
           </div>
         );
       }
 
+      // ═══════════════════ CA COLLECTÉ / TAUX COLLECTE ═══════════════════
       case "caCollecte":
-      case "tauxCollecte":
+      case "tauxCollecte": {
+        const { items, safePage, totalPages } = paginate(paidPayments);
         return (
-          <div className="space-y-1">
-            <div className="grid grid-cols-[1fr_80px_80px_70px] gap-2 px-2 pb-1.5 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              <span>Client</span>
-              <span>Échéance</span>
-              <span className="text-right">Montant</span>
-              <span className="text-center">Statut</span>
+          <div>
+            <div className="grid grid-cols-[1fr_100px_56px_80px_68px_90px] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span>Client</span><span>Date éch.</span><span className="text-center">N°</span><span className="text-center">Date paiem.</span><span className="text-center">Statut</span><span className="text-right">Montant</span>
             </div>
-            <ScrollArea className="max-h-[400px]">
-              <div className="divide-y divide-border/50">
-                {paidPayments.sort((a, b) => b.due_date.localeCompare(a.due_date)).map(p => {
-                  const sale = p.sale_id ? saleMap.get(p.sale_id) : null;
-                  const contact = sale ? contactMap.get(sale.contact_id) : null;
-                  return (
-                    <div key={p.id} className="grid grid-cols-[1fr_80px_80px_70px] gap-2 items-center px-2 py-1.5">
+            <div className="divide-y divide-border/40">
+              {items.map((p, idx) => {
+                const sale = p.sale_id ? saleMap.get(p.sale_id) : null;
+                const contact = sale ? contactMap.get(sale.contact_id) : null;
+                return (
+                  <div key={p.id} className={`grid grid-cols-[1fr_100px_56px_80px_68px_90px] gap-3 items-center px-3 py-2.5 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0"><User className="h-3 w-3 text-muted-foreground" /></div>
                       <span className="text-xs font-medium text-foreground truncate">{contact?.full_name || "Inconnu"}</span>
-                      <span className="text-[11px] text-muted-foreground">{formatDate(p.due_date)}</span>
-                      <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(p.amount)}</span>
-                      <div className="flex justify-center">
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border bg-[hsl(var(--kpi-paid)/0.15)] text-[hsl(var(--kpi-paid))] border-[hsl(var(--kpi-paid)/0.3)]">
-                          Payé
-                        </Badge>
-                      </div>
                     </div>
-                  );
-                })}
-              </div>
-            </ScrollArea>
-            <div className="border-t border-border pt-2 px-2 flex justify-between">
-              <span className="text-xs font-medium text-muted-foreground">{paidPayments.length} échéance{paidPayments.length > 1 ? "s" : ""} payée{paidPayments.length > 1 ? "s" : ""}</span>
-              <span className="text-sm font-bold text-[hsl(var(--kpi-paid))]">{fmt(caCollecte)}</span>
+                    <span className="text-[11px] text-muted-foreground tabular-nums">{formatDate(p.due_date)}</span>
+                    <span className="text-[11px] font-medium text-foreground tabular-nums text-center">{p.payment_number}/{p.total_payments}</span>
+                    <span className="text-[11px] text-muted-foreground tabular-nums text-center">{p.paid_at ? formatDate(p.paid_at) : "—"}</span>
+                    <div className="flex justify-center"><Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${statusCfg.paid.className}`}>Payé</Badge></div>
+                    <span className="text-xs font-bold text-[hsl(var(--kpi-paid))] tabular-nums text-right">{fmt(p.amount)}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex items-center justify-between pt-3 border-t border-border px-3">
+              <span className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{paidPayments.length}</span> échéance{paidPayments.length > 1 ? "s" : ""} payée{paidPayments.length > 1 ? "s" : ""} — Total <span className="font-bold text-[hsl(var(--kpi-paid))]">{fmt(caCollecte)}</span></span>
+              <ModalPagination page={safePage} totalPages={totalPages} setPage={setModalPage} />
             </div>
           </div>
         );
+      }
 
-      case "tauxImpayes":
+      // ═══════════════════ TAUX D'IMPAYÉS ═══════════════════
+      case "tauxImpayes": {
+        if (lateOrLostPayments.length === 0) {
+          return <p className="text-sm text-muted-foreground py-8 text-center">Aucune échéance impayée 🎉</p>;
+        }
+        const { items, safePage, totalPages } = paginate(lateOrLostPayments);
+        const totalImpaye = lateOrLostPayments.reduce((s, p) => s + p.amount, 0);
         return (
-          <div className="space-y-1">
-            <div className="grid grid-cols-[1fr_80px_80px_70px] gap-2 px-2 pb-1.5 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              <span>Client</span>
-              <span>Échéance</span>
-              <span className="text-right">Montant</span>
-              <span className="text-center">Statut</span>
+          <div>
+            <div className="grid grid-cols-[1fr_100px_56px_80px_68px_90px] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span>Client</span><span>Date éch.</span><span className="text-center">N°</span><span className="text-center">Date paiem.</span><span className="text-center">Statut</span><span className="text-right">Montant</span>
             </div>
-            <ScrollArea className="max-h-[400px]">
-              <div className="divide-y divide-border/50">
-                {lateOrLostPayments.sort((a, b) => a.due_date.localeCompare(b.due_date)).map(p => {
-                  const sale = p.sale_id ? saleMap.get(p.sale_id) : null;
-                  const contact = sale ? contactMap.get(sale.contact_id) : null;
-                  const cfg = paymentStatusCfg[p.status] || paymentStatusCfg.pending;
-                  return (
-                    <div key={p.id} className="grid grid-cols-[1fr_80px_80px_70px] gap-2 items-center px-2 py-1.5">
+            <div className="divide-y divide-border/40">
+              {items.map((p, idx) => {
+                const sale = p.sale_id ? saleMap.get(p.sale_id) : null;
+                const contact = sale ? contactMap.get(sale.contact_id) : null;
+                const cfg = statusCfg[p.status] || statusCfg.pending;
+                return (
+                  <div key={p.id} className={`grid grid-cols-[1fr_100px_56px_80px_68px_90px] gap-3 items-center px-3 py-2.5 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0"><User className="h-3 w-3 text-muted-foreground" /></div>
                       <span className="text-xs font-medium text-foreground truncate">{contact?.full_name || "Inconnu"}</span>
-                      <span className="text-[11px] text-muted-foreground">{formatDate(p.due_date)}</span>
-                      <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(p.amount)}</span>
-                      <div className="flex justify-center">
-                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${cfg.className}`}>{cfg.label}</Badge>
-                      </div>
                     </div>
-                  );
-                })}
-                {lateOrLostPayments.length === 0 && (
-                  <p className="text-sm text-muted-foreground py-6 text-center">Aucune échéance impayée 🎉</p>
-                )}
-              </div>
-            </ScrollArea>
-            {lateOrLostPayments.length > 0 && (
-              <div className="border-t border-border pt-2 px-2 flex justify-between">
-                <span className="text-xs font-medium text-muted-foreground">{lateOrLostPayments.length} échéance{lateOrLostPayments.length > 1 ? "s" : ""}</span>
-                <span className="text-sm font-bold text-destructive">{fmt(lateOrLostPayments.reduce((s, p) => s + p.amount, 0))}</span>
-              </div>
-            )}
+                    <span className="text-[11px] text-muted-foreground tabular-nums">{formatDate(p.due_date)}</span>
+                    <span className="text-[11px] font-medium text-foreground tabular-nums text-center">{p.payment_number}/{p.total_payments}</span>
+                    <span className="text-[11px] text-muted-foreground tabular-nums text-center">{p.paid_at ? formatDate(p.paid_at) : "—"}</span>
+                    <div className="flex justify-center"><Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${cfg.className}`}>{cfg.label}</Badge></div>
+                    <span className="text-xs font-bold text-destructive tabular-nums text-right">{fmt(p.amount)}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex items-center justify-between pt-3 border-t border-border px-3">
+              <span className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{lateOrLostPayments.length}</span> échéance{lateOrLostPayments.length > 1 ? "s" : ""} — Total <span className="font-bold text-destructive">{fmt(totalImpaye)}</span></span>
+              <ModalPagination page={safePage} totalPages={totalPages} setPage={setModalPage} />
+            </div>
           </div>
         );
+      }
 
-      case "commissions":
-        const allComms = [...paidCommissions, ...dueCommissions].sort((a, b) => (b.amount || 0) - (a.amount || 0));
+      // ═══════════════════ COMMISSIONS ═══════════════════
+      case "commissions": {
+        const { items, safePage, totalPages } = paginate(engagedCommissions);
         return (
-          <div className="space-y-1">
-            <div className="grid grid-cols-[1fr_80px_80px_70px] gap-2 px-2 pb-1.5 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              <span>Bénéficiaire</span>
-              <span>Rôle</span>
-              <span className="text-right">Montant</span>
-              <span className="text-center">Statut</span>
+          <div>
+            <div className="grid grid-cols-[1fr_1fr_70px_50px_56px_80px_68px_80px] gap-2 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span>Bénéficiaire</span><span>Client</span><span>Rôle</span><span className="text-center">%</span><span className="text-center">N°</span><span className="text-center">Date</span><span className="text-center">Statut</span><span className="text-right">Montant</span>
             </div>
-            <ScrollArea className="max-h-[400px]">
-              <div className="divide-y divide-border/50">
-                {allComms.map(c => {
-                  const name = c.beneficiary_user_id ? profileMap.get(c.beneficiary_user_id)?.full_name : c.beneficiary_external;
-                  const isPaid = c.status === "paid";
-                  return (
-                    <div key={c.id} className="grid grid-cols-[1fr_80px_80px_70px] gap-2 items-center px-2 py-1.5">
-                      <span className="text-xs font-medium text-foreground truncate">{name || "—"}</span>
-                      <span className="text-[11px] text-muted-foreground capitalize">{c.role === "agence_marketing" ? "Agence" : c.role}</span>
-                      <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(c.amount || 0)}</span>
-                      <div className="flex justify-center">
-                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${isPaid ? paymentStatusCfg.paid.className : paymentStatusCfg.pending.className}`}>
-                          {isPaid ? "Payée" : "Due"}
-                        </Badge>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </ScrollArea>
-            <div className="border-t border-border pt-2 px-2 flex justify-between">
+            <div className="divide-y divide-border/40">
+              {items.map((c, idx) => {
+                const name = c.beneficiary_user_id ? profileMap.get(c.beneficiary_user_id)?.full_name : c.beneficiary_external;
+                const sale = saleMap.get(c.sale_id);
+                const clientName = sale ? contactMap.get(sale.contact_id)?.full_name : null;
+                const payment = c.payment_id ? paymentMap.get(c.payment_id) : null;
+                const cfg = statusCfg[c.status || "pending"] || statusCfg.pending;
+                return (
+                  <div key={c.id} className={`grid grid-cols-[1fr_1fr_70px_50px_56px_80px_68px_80px] gap-2 items-center px-3 py-2.5 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
+                    <span className="text-xs font-medium text-foreground truncate">{name || "—"}</span>
+                    <span className="text-xs text-muted-foreground truncate">{clientName || "—"}</span>
+                    <span className="text-[11px] text-muted-foreground">{roleLabels[c.role] || c.role}</span>
+                    <span className="text-[11px] font-medium text-foreground tabular-nums text-center">{c.percentage ?? "—"}%</span>
+                    <span className="text-[11px] text-muted-foreground tabular-nums text-center">
+                      {payment ? `${payment.payment_number}/${payment.total_payments}` : "—"}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground tabular-nums text-center">{c.paid_at ? formatDate(c.paid_at) : payment?.paid_at ? formatDate(payment.paid_at) : "—"}</span>
+                    <div className="flex justify-center"><Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${cfg.className}`}>{cfg.label}</Badge></div>
+                    <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(c.amount || 0)}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex items-center justify-between pt-3 border-t border-border px-3">
               <span className="text-xs text-muted-foreground">
-                <span className="font-medium">{paidCommissions.length}</span> payée{paidCommissions.length > 1 ? "s" : ""} · <span className="font-medium">{dueCommissions.length}</span> due{dueCommissions.length > 1 ? "s" : ""}
+                <span className="font-semibold text-foreground">{engagedCommissions.length}</span> commission{engagedCommissions.length > 1 ? "s" : ""} — Total <span className="font-bold text-foreground">{fmt(totalCommissions)}</span>
               </span>
-              <span className="text-sm font-bold text-foreground">{fmt(totalCommissions)}</span>
+              <ModalPagination page={safePage} totalPages={totalPages} setPage={setModalPage} />
             </div>
           </div>
         );
+      }
 
-      case "charges":
+      // ═══════════════════ CHARGES ═══════════════════
+      case "charges": {
         return (
-          <div className="space-y-3 px-2">
-            {[
-              { label: "Commissions payées", amount: commissionsPaid, color: "bg-orange-400" },
-              { label: "Salaires fixes", amount: totalSalariesCumul, color: "bg-blue-400" },
-              { label: "Charges fixes", amount: totalFixedChargesCumul, color: "bg-violet-400" },
-            ].map(item => (
-              <div key={item.label} className="flex items-center justify-between py-2">
-                <div className="flex items-center gap-2.5">
-                  <span className={`h-2.5 w-2.5 rounded-full ${item.color}`} />
-                  <span className="text-sm text-foreground">{item.label}</span>
-                </div>
-                <span className="text-sm font-bold text-foreground tabular-nums">{fmt(item.amount)}</span>
+          <div className="space-y-4">
+            {/* Commissions payées */}
+            <div>
+              <div className="flex items-center gap-2 px-3 pb-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-orange-400" />
+                <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Commissions payées</span>
+                <span className="ml-auto text-sm font-bold text-foreground tabular-nums">{fmt(commissionsPaid)}</span>
               </div>
-            ))}
-            <div className="border-t border-border pt-2 flex justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Total charges</span>
-              <span className="text-sm font-bold text-foreground">{fmt(totalChargesCumul)}</span>
             </div>
-          </div>
-        );
 
-      case "benefice":
-        return (
-          <div className="space-y-3 px-2">
-            <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">CA Collecté (entrées)</span>
-              <span className="text-sm font-bold text-[hsl(var(--kpi-paid))] tabular-nums">{fmt(caCollecte)}</span>
+            {/* Salaires fixes */}
+            <div>
+              <div className="flex items-center gap-2 px-3 pb-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-blue-400" />
+                <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Salaires fixes</span>
+                <span className="ml-auto text-sm font-bold text-foreground tabular-nums">{fmt(totalSalariesCumul)}</span>
+              </div>
+              {activeSalaries.length > 0 && (
+                <div className="border border-border rounded-lg mx-3 divide-y divide-border/40">
+                  {activeSalaries.map((s, idx) => (
+                    <div key={s.id} className={`flex items-center justify-between px-3 py-2 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0"><User className="h-3 w-3 text-muted-foreground" /></div>
+                        <span className="text-xs font-medium text-foreground truncate">{s.full_name}</span>
+                      </div>
+                      <span className="text-xs font-bold text-foreground tabular-nums">{fmt(s.amount)}/mois</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Commissions payées</span>
-              <span className="text-sm font-bold text-foreground tabular-nums">- {fmt(commissionsPaid)}</span>
+
+            {/* Charges fixes */}
+            <div>
+              <div className="flex items-center gap-2 px-3 pb-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-violet-400" />
+                <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Charges fixes</span>
+                <span className="ml-auto text-sm font-bold text-foreground tabular-nums">{fmt(totalFixedChargesCumul)}</span>
+              </div>
+              {activeCharges.length > 0 && (
+                <div className="border border-border rounded-lg mx-3 divide-y divide-border/40">
+                  {activeCharges.map((c, idx) => (
+                    <div key={c.id} className={`flex items-center justify-between px-3 py-2 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-medium text-foreground truncate">{c.name}</span>
+                        <span className="text-[10px] text-muted-foreground">{freqLabels[c.frequency] || c.frequency}</span>
+                      </div>
+                      <span className="text-xs font-bold text-foreground tabular-nums">{fmt(c.amount)}{c.frequency === "monthly" ? "/mois" : c.frequency === "yearly" ? "/an" : ""}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Charges (salaires + fixes)</span>
-              <span className="text-sm font-bold text-foreground tabular-nums">- {fmt(totalSalariesCumul + totalFixedChargesCumul)}</span>
-            </div>
-            <div className="border-t-2 border-border pt-3 flex justify-between">
-              <span className="text-sm font-semibold text-foreground">Bénéfice net</span>
-              <span className={`text-lg font-bold tabular-nums ${benefice >= 0 ? "text-[hsl(var(--kpi-paid))]" : "text-destructive"}`}>{fmt(benefice)}</span>
+
+            {/* Total */}
+            <div className="flex items-center justify-between pt-3 border-t-2 border-border px-3">
+              <span className="text-sm font-semibold text-foreground">Total charges</span>
+              <span className="text-lg font-bold text-foreground tabular-nums">{fmt(totalChargesCumul)}</span>
             </div>
           </div>
         );
+      }
+
+      // ═══════════════════ BÉNÉFICE ═══════════════════
+      case "benefice": {
+        const lines = [
+          { label: "CA Collecté", amount: caCollecte, color: "text-[hsl(var(--kpi-paid))]", sign: "+" },
+          { label: "Commissions payées", amount: commissionsPaid, color: "text-foreground", sign: "−" },
+          { label: "Salaires fixes", amount: totalSalariesCumul, color: "text-foreground", sign: "−" },
+          { label: "Charges fixes", amount: totalFixedChargesCumul, color: "text-foreground", sign: "−" },
+        ];
+        return (
+          <div>
+            <div className="divide-y divide-border/40">
+              {lines.map((l, idx) => (
+                <div key={l.label} className={`flex items-center justify-between px-3 py-3 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-medium text-muted-foreground w-4 text-center">{l.sign}</span>
+                    <span className="text-sm text-foreground">{l.label}</span>
+                  </div>
+                  <span className={`text-sm font-bold tabular-nums ${l.color}`}>{fmt(l.amount)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between pt-4 mt-1 border-t-2 border-border px-3">
+              <span className="text-sm font-semibold text-foreground">Bénéfice net</span>
+              <span className={`text-xl font-bold tabular-nums ${benefice >= 0 ? "text-[hsl(var(--kpi-paid))]" : "text-destructive"}`}>{fmt(benefice)}</span>
+            </div>
+          </div>
+        );
+      }
 
       default:
         return null;
@@ -387,9 +442,13 @@ export default function FinancialKPIs(props: Props) {
     tauxImpayes: isFiltered ? "Détail — Échéances impayées" : "Détail — Taux d'impayés",
     commissions: "Détail — Commissions",
     charges: "Détail — Charges",
-    benefice: "Détail — Bénéfice",
+    benefice: "Détail — Bénéfice net",
     roi: "ROI Ads",
   };
+
+  // Wider dialog for commissions (more columns)
+  const wideModals: KpiKey[] = ["commissions"];
+  const dialogSize = openModal && wideModals.includes(openModal) ? "max-w-4xl" : "max-w-3xl";
 
   return (
     <>
@@ -413,7 +472,7 @@ export default function FinancialKPIs(props: Props) {
       </div>
 
       <Dialog open={!!openModal} onOpenChange={() => setOpenModal(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className={dialogSize}>
           <DialogHeader>
             <DialogTitle className="text-base">{openModal ? modalTitles[openModal] : ""}</DialogTitle>
           </DialogHeader>
