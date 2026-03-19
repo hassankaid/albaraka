@@ -253,5 +253,7 @@ export function useFinancialData() {
     sales,
     payments,
     refetchCharges: fixedChargesQuery.refetch,
+    salaryPeriods,
+    refetchSalaryPeriods: salaryPeriodsQuery.refetch,
   };
 }
