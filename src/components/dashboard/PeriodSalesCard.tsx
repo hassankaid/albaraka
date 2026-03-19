@@ -151,7 +151,7 @@ export default function PeriodSalesCard({ sales, payments, contactMap }: Props) 
               return (
                 <div
                   key={sale.id}
-                  className={`grid grid-cols-[1fr_72px_48px_56px_68px_80px_80px] gap-2 items-center px-3 py-2.5 transition-colors hover:bg-muted/30 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}
+                  className={`grid grid-cols-[1fr_110px_48px_56px_68px_80px_80px] gap-2 items-center px-3 py-2.5 transition-colors hover:bg-muted/30 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
