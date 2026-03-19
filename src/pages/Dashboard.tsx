@@ -32,7 +32,7 @@ function FinancialTab() {
         tauxCashCollecte={data.tauxCashCollecte}
         tauxImpayes={data.tauxImpayes}
         benefice={data.benefice}
-        totalChargesMensuel={data.totalChargesMensuel}
+        totalChargesCumul={data.totalChargesCumul}
         totalCommissions={data.totalCommissions}
       />
 

@@ -6,7 +6,7 @@ interface Props {
   tauxCashCollecte: number;
   tauxImpayes: number;
   benefice: number;
-  totalChargesMensuel: number;
+  totalChargesCumul: number;
   totalCommissions: number;
 }
 
@@ -14,14 +14,14 @@ function fmt(n: number) {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
 }
 
-export default function FinancialKPIs({ caGenere, caCollecte, tauxCashCollecte, tauxImpayes, benefice, totalChargesMensuel, totalCommissions }: Props) {
+export default function FinancialKPIs({ caGenere, caCollecte, tauxCashCollecte, tauxImpayes, benefice, totalChargesCumul, totalCommissions }: Props) {
   const kpis = [
     { label: "CA Généré", value: fmt(caGenere), icon: TrendingUp, color: "text-primary" },
     { label: "CA Collecté", value: fmt(caCollecte), icon: Wallet, color: "text-emerald-500" },
     { label: "Taux encaissé", value: `${tauxCashCollecte.toFixed(1)}%`, icon: Percent, color: "text-blue-500" },
     { label: "Taux d'impayés", value: `${tauxImpayes.toFixed(1)}%`, icon: AlertTriangle, color: tauxImpayes > 10 ? "text-destructive" : "text-amber-500" },
     { label: "Commissions", value: fmt(totalCommissions), icon: CreditCard, color: "text-orange-500" },
-    { label: "Charges /mois", value: fmt(totalChargesMensuel), icon: BarChart3, color: "text-muted-foreground" },
+    { label: "Charges (cumul)", value: fmt(totalChargesCumul), icon: BarChart3, color: "text-muted-foreground" },
     { label: "Bénéfice", value: fmt(benefice), icon: PiggyBank, color: benefice >= 0 ? "text-emerald-500" : "text-destructive" },
     { label: "ROI Ads", value: "—", icon: TrendingDown, color: "text-muted-foreground" },
   ];
