@@ -167,27 +167,66 @@ export function useFinancialData() {
   const commissionsPaid = commissions.filter((c) => c.status === "paid").reduce((sum, c) => sum + (c.amount || 0), 0);
   const commissionsDue = commissions.filter((c) => c.status === "due" || c.status === "invoiced").reduce((sum, c) => sum + (c.amount || 0), 0);
 
-  // Charges: Salaires fixes mensuels (currently active salary periods)
-  const today = new Date().toISOString().slice(0, 10);
-  const activeSalaryPeriods = salaryPeriods.filter((sp) => sp.start_date <= today && (!sp.end_date || sp.end_date >= today));
+  // ── Helper: count months a period overlaps with [rangeStart, rangeEnd] ──
+  function countMonthsInRange(startDate: string, endDate: string | null, rangeStart: Date, rangeEnd: Date): number {
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : rangeEnd;
+    // Clamp to range
+    const effectiveStart = start > rangeStart ? start : rangeStart;
+    const effectiveEnd = end < rangeEnd ? end : rangeEnd;
+    if (effectiveStart > effectiveEnd) return 0;
+    // Count months between effectiveStart and effectiveEnd (inclusive of both months)
+    const startMonth = effectiveStart.getFullYear() * 12 + effectiveStart.getMonth();
+    const endMonth = effectiveEnd.getFullYear() * 12 + effectiveEnd.getMonth();
+    return Math.max(0, endMonth - startMonth + 1);
+  }
+
+  // Global range: from earliest data to end of current month
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const globalStart = new Date(2020, 0, 1); // far enough back
+  const globalEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0); // last day of current month
+
+  // Charges: Salaires fixes — cumul total sur toute la période
+  const activeSalaryPeriods = salaryPeriods.filter((sp) => sp.start_date <= todayStr && (!sp.end_date || sp.end_date >= sp.start_date));
   const activeSalaries = activeSalaryPeriods.map((sp) => {
     const profile = profiles.find((p) => p.id === sp.profile_id);
     return { id: sp.id, profile_id: sp.profile_id, full_name: profile?.full_name || "Inconnu", amount: sp.amount, start_date: sp.start_date, end_date: sp.end_date };
   });
-  const totalSalariesMensuel = activeSalaries.reduce((sum, s) => sum + s.amount, 0);
+  // Monthly rate for display in ChargesCard summary
+  const currentlyActiveSalaries = salaryPeriods.filter((sp) => sp.start_date <= todayStr && (!sp.end_date || sp.end_date >= todayStr));
+  const totalSalariesMensuel = currentlyActiveSalaries.reduce((sum, s) => sum + s.amount, 0);
+  // Cumulative total across all months
+  const totalSalariesCumul = salaryPeriods.reduce((sum, sp) => {
+    const months = countMonthsInRange(sp.start_date, sp.end_date, globalStart, globalEnd);
+    return sum + sp.amount * months;
+  }, 0);
 
-  // Charges: Fixed charges (monthly equivalent)
+  // Charges: Fixed charges
   const activeCharges = fixedCharges.filter((c) => c.is_active);
   const totalFixedChargesMensuel = activeCharges.reduce((sum, c) => {
     if (c.frequency === "yearly") return sum + c.amount / 12;
-    if (c.frequency === "one_time") return sum; // not recurring
-    return sum + c.amount; // monthly
+    if (c.frequency === "one_time") return sum;
+    return sum + c.amount;
+  }, 0);
+  // Cumulative total across all months
+  const totalFixedChargesCumul = fixedCharges.filter(c => c.is_active).reduce((sum, c) => {
+    if (c.frequency === "one_time") return sum + c.amount;
+    if (c.frequency === "yearly") {
+      const months = countMonthsInRange(c.start_date, c.end_date, globalStart, globalEnd);
+      return sum + (c.amount / 12) * months;
+    }
+    // monthly
+    const months = countMonthsInRange(c.start_date, c.end_date, globalStart, globalEnd);
+    return sum + c.amount * months;
   }, 0);
 
-  // Total charges mensuelles
+  // Total charges mensuelles (display)
   const totalChargesMensuel = totalSalariesMensuel + totalFixedChargesMensuel;
+  // Total charges cumulées (for treasury)
+  const totalChargesCumul = totalSalariesCumul + totalFixedChargesCumul;
 
-  // Bénéfice = CA collecté - commissions payées - charges (estimation)
+  // Bénéfice = CA collecté - commissions payées
   const benefice = caCollecte - commissionsPaid;
 
   // MRR: group non-lost payments by month
@@ -195,7 +234,7 @@ export function useFinancialData() {
   payments
     .filter((p) => p.status !== "lost" && p.total_payments > 1)
     .forEach((p) => {
-      const month = p.due_date.substring(0, 7); // YYYY-MM
+      const month = p.due_date.substring(0, 7);
       mrrByMonth[month] = (mrrByMonth[month] || 0) + p.amount;
     });
 
@@ -203,9 +242,9 @@ export function useFinancialData() {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([month, amount]) => ({ month, amount }));
 
-  // Treasury: In / Out / Remaining
+  // Treasury: In / Out / Remaining — uses cumulative charges
   const tresoIn = caCollecte;
-  const tresoOut = commissionsPaid + totalSalariesMensuel + totalFixedChargesMensuel;
+  const tresoOut = commissionsPaid + totalChargesCumul;
   const tresoRemaining = tresoIn - tresoOut;
 
   // Impayés list (sales with late or lost)
