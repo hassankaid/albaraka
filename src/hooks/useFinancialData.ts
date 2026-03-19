@@ -181,7 +181,7 @@ export function useFinancialData() {
 
   // Treasury: In / Out / Remaining
   const tresoIn = caCollecte;
-  const tresoOut = commissionsPaid + totalSalariesMensuel; // simplified
+  const tresoOut = commissionsPaid + totalSalariesMensuel + totalFixedChargesMensuel;
   const tresoRemaining = tresoIn - tresoOut;
 
   // Impayés list (sales with late or lost)

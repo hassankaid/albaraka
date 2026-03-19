@@ -58,6 +58,9 @@ function FinancialTab() {
           tresoIn={data.tresoIn}
           tresoOut={data.tresoOut}
           tresoRemaining={data.tresoRemaining}
+          commissionsPaid={data.commissionsPaid}
+          totalSalariesMensuel={data.totalSalariesMensuel}
+          totalFixedChargesMensuel={data.totalFixedChargesMensuel}
         />
       </div>
 
