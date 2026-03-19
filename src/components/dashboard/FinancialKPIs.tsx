@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { TrendingUp, TrendingDown, Wallet, CreditCard, Percent, AlertTriangle, PiggyBank, BarChart3, User, X } from "lucide-react";
+import { useState, useMemo } from "react";
+import { TrendingUp, TrendingDown, Wallet, CreditCard, Percent, AlertTriangle, PiggyBank, BarChart3, User, ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -22,6 +22,7 @@ interface Sale {
   product: string;
   mensualites: number | null;
   payment_status: string | null;
+  sold_at: string | null;
 }
 
 interface ContactInfo {
@@ -79,6 +80,14 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 }
 
+const saleStatusCfg: Record<string, { label: string; className: string }> = {
+  paid: { label: "Payé", className: "bg-[hsl(var(--kpi-paid)/0.15)] text-[hsl(var(--kpi-paid))] border-[hsl(var(--kpi-paid)/0.3)]" },
+  in_progress: { label: "En cours", className: "bg-[hsl(var(--kpi-in-progress)/0.15)] text-[hsl(var(--kpi-in-progress))] border-[hsl(var(--kpi-in-progress)/0.3)]" },
+  pending: { label: "En attente", className: "bg-[hsl(var(--kpi-in-progress)/0.15)] text-[hsl(var(--kpi-in-progress))] border-[hsl(var(--kpi-in-progress)/0.3)]" },
+  late: { label: "Retard", className: "bg-[hsl(var(--kpi-late)/0.15)] text-[hsl(var(--kpi-late))] border-[hsl(var(--kpi-late)/0.4)]" },
+  lost: { label: "Perdu", className: "bg-[hsl(var(--kpi-lost)/0.2)] text-[hsl(var(--kpi-lost))] border-[hsl(var(--kpi-lost)/0.5)]" },
+};
+
 const paymentStatusCfg: Record<string, { label: string; className: string }> = {
   paid: { label: "Payé", className: "bg-[hsl(var(--kpi-paid)/0.15)] text-[hsl(var(--kpi-paid))] border-[hsl(var(--kpi-paid)/0.3)]" },
   pending: { label: "En attente", className: "bg-[hsl(var(--kpi-in-progress)/0.15)] text-[hsl(var(--kpi-in-progress))] border-[hsl(var(--kpi-in-progress)/0.3)]" },
@@ -97,6 +106,10 @@ export default function FinancialKPIs(props: Props) {
   } = props;
 
   const [openModal, setOpenModal] = useState<KpiKey | null>(null);
+  const [modalPage, setModalPage] = useState(0);
+
+  // Reset page when modal changes
+  const handleOpenModal = (key: KpiKey) => { setModalPage(0); setOpenModal(key); };
 
   const profileMap = new Map(profiles.map(p => [p.id, p]));
   const saleMap = new Map(sales.map(s => [s.id, s]));
@@ -118,38 +131,88 @@ export default function FinancialKPIs(props: Props) {
   const dueCommissions = commissions.filter(c => c.status === "due" || c.status === "invoiced");
   const paidCommissions = commissions.filter(c => c.status === "paid");
 
+  const MODAL_PAGE_SIZE = 15;
+
+  const sortedSalesForCA = useMemo(() =>
+    [...sales].sort((a, b) => (b.sold_at || "").localeCompare(a.sold_at || "")),
+    [sales]
+  );
+
   const renderModalContent = (key: KpiKey) => {
     switch (key) {
-      case "caGenere":
+      case "caGenere": {
+        const totalPages = Math.ceil(sortedSalesForCA.length / MODAL_PAGE_SIZE);
+        const safePage = Math.min(modalPage, Math.max(0, totalPages - 1));
+        const paginated = sortedSalesForCA.slice(safePage * MODAL_PAGE_SIZE, (safePage + 1) * MODAL_PAGE_SIZE);
+
         return (
-          <div className="space-y-1">
-            <div className="grid grid-cols-[1fr_90px_90px] gap-2 px-2 pb-1.5 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="space-y-0">
+            {/* Header */}
+            <div className="grid grid-cols-[1fr_100px_50px_56px_68px_90px] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               <span>Client</span>
-              <span className="text-right">Montant HT</span>
+              <span>Date</span>
               <span className="text-center">Mens.</span>
+              <span className="text-center">Éch.</span>
+              <span className="text-center">Statut</span>
+              <span className="text-right">Montant HT</span>
             </div>
-            <ScrollArea className="max-h-[400px]">
-              <div className="divide-y divide-border/50">
-                {sales.sort((a, b) => (b.amount_ht || 0) - (a.amount_ht || 0)).map(s => (
-                  <div key={s.id} className="grid grid-cols-[1fr_90px_90px] gap-2 items-center px-2 py-2">
+
+            {/* Rows */}
+            <div className="divide-y divide-border/40">
+              {paginated.map((s, idx) => {
+                const contact = contactMap.get(s.contact_id);
+                const totalCount = s.mensualites || 1;
+                const salePayments = payments.filter(p => p.sale_id === s.id);
+                const paidCount = salePayments.filter(p => p.status === "paid").length;
+                const isComplete = paidCount >= totalCount;
+                const cfg = saleStatusCfg[s.payment_status || "pending"] || saleStatusCfg.pending;
+
+                return (
+                  <div key={s.id} className={`grid grid-cols-[1fr_100px_50px_56px_68px_90px] gap-3 items-center px-3 py-2.5 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
                         <User className="h-3 w-3 text-muted-foreground" />
                       </div>
-                      <span className="text-xs font-medium text-foreground truncate">{contactMap.get(s.contact_id)?.full_name || "Inconnu"}</span>
+                      <span className="text-xs font-medium text-foreground truncate">{contact?.full_name || "Inconnu"}</span>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground tabular-nums">{s.sold_at ? formatDate(s.sold_at) : "—"}</span>
+                    <span className="text-[11px] font-medium text-foreground tabular-nums text-center">{totalCount}×</span>
+                    <div className="flex justify-center">
+                      {isComplete ? (
+                        <span className="text-[hsl(var(--kpi-paid))] text-xs">✓</span>
+                      ) : (
+                        <span className="text-[11px] font-semibold tabular-nums text-foreground">{paidCount}<span className="text-muted-foreground">/{totalCount}</span></span>
+                      )}
+                    </div>
+                    <div className="flex justify-center">
+                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${cfg.className}`}>{cfg.label}</Badge>
                     </div>
                     <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(s.amount_ht)}</span>
-                    <span className="text-xs text-muted-foreground tabular-nums text-center">{s.mensualites || 1}×</span>
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
-            <div className="border-t border-border pt-2 px-2 flex justify-between">
-              <span className="text-xs font-medium text-muted-foreground">{sales.length} vente{sales.length > 1 ? "s" : ""}</span>
-              <span className="text-sm font-bold text-foreground">{fmt(caGenere)}</span>
+                );
+              })}
+            </div>
+
+            {/* Footer with pagination */}
+            <div className="flex items-center justify-between pt-3 border-t border-border px-3">
+              <span className="text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">{sales.length}</span> vente{sales.length > 1 ? "s" : ""} — Total <span className="font-bold text-foreground">{fmt(caGenere)}</span>
+              </span>
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <button disabled={safePage === 0} onClick={() => setModalPage(p => p - 1)} className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted disabled:opacity-30">
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                  <span className="text-[11px] text-muted-foreground tabular-nums px-1">{safePage + 1}/{totalPages}</span>
+                  <button disabled={safePage >= totalPages - 1} onClick={() => setModalPage(p => p + 1)} className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted disabled:opacity-30">
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         );
+      }
 
       case "caCollecte":
       case "tauxCollecte":
@@ -334,7 +397,7 @@ export default function FinancialKPIs(props: Props) {
         {kpis.map((k) => (
           <button
             key={k.key}
-            onClick={() => k.hasDetail && setOpenModal(k.key)}
+            onClick={() => k.hasDetail && handleOpenModal(k.key)}
             disabled={!k.hasDetail}
             className={`bg-card border border-border rounded-xl p-3 flex flex-col gap-1 text-left transition-all ${
               k.hasDetail ? "hover:border-primary/30 hover:shadow-sm cursor-pointer" : "cursor-default"
@@ -350,7 +413,7 @@ export default function FinancialKPIs(props: Props) {
       </div>
 
       <Dialog open={!!openModal} onOpenChange={() => setOpenModal(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle className="text-base">{openModal ? modalTitles[openModal] : ""}</DialogTitle>
           </DialogHeader>
