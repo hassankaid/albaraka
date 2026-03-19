@@ -215,6 +215,8 @@ export default function FinancialKPIs(props: Props) {
       return true;
     });
   }, [engagedCommissions, commFilterBenef, commFilterSale]);
+
+  function paginate<T>(items: T[]) {
     const totalPages = Math.ceil(items.length / MODAL_PAGE_SIZE);
     const safePage = Math.min(modalPage, Math.max(0, totalPages - 1));
     return { items: items.slice(safePage * MODAL_PAGE_SIZE, (safePage + 1) * MODAL_PAGE_SIZE), safePage, totalPages };
