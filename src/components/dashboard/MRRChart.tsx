@@ -93,7 +93,7 @@ export default function MRRChart({ data, payments = [], contactMap = new Map(), 
             <p className="text-sm text-muted-foreground py-8 text-center">Aucune donnée de paiement récurrent</p>
           ) : (
             <ResponsiveContainer width="100%" height={340}>
-              <BarChart data={chartData} barCategoryGap="20%" onClick={(e) => e?.activePayload?.[0]?.payload && handleBarClick(e.activePayload[0].payload)}>
+              <BarChart data={chartData} barCategoryGap="20%" onClick={(e: any) => e?.activePayload?.[0]?.payload && handleBarClick(e.activePayload[0].payload)}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
                 <XAxis dataKey="label" className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
