@@ -147,6 +147,11 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     },
   });
 
+  const adsQuery = useQuery({
+    queryKey: ["financial-ads"],
+    queryFn: () => fetchAllRows<Ad>("ads", "id, date, campaign_name, campaign_id, channel, amount_spent, impressions, clicks"),
+  });
+
   // Raw data (unfiltered)
   const allSales = salesQuery.data || [];
   const allPayments = paymentsQuery.data || [];
