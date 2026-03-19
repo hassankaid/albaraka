@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -29,7 +29,8 @@ function buildYears() {
 }
 
 export default function PeriodFilter({ value, onChange }: Props) {
-  const [activePreset, setActivePreset] = useState<PresetKey>("all");
+  const [activePreset, setActivePreset] = useState<PresetKey>("month");
+  const initializedRef = useRef(false);
 
   const now = new Date();
   const [selMonth, setSelMonth] = useState(now.getMonth());
@@ -45,6 +46,15 @@ export default function PeriodFilter({ value, onChange }: Props) {
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
 
   const years = useMemo(() => buildYears(), []);
+
+  // Fire initial month selection on mount
+  useEffect(() => {
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      const d = new Date(now.getFullYear(), now.getMonth(), 1);
+      onChange({ from: startOfMonth(d), to: endOfMonth(d) });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const applyMonth = (month: number, year: number) => {
     setSelMonth(month);
