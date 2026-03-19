@@ -144,8 +144,17 @@ function MonthYearSelect({ value, onChange, label, placeholder }: {
 
 // ── Main component ──
 export default function ChargesCard({
-  fixedCharges, activeSalaries, totalFixedChargesMensuel, totalSalariesMensuel,
-  commissionsPaid, commissionsDue, salaryPeriods, profiles, onRefreshCharges, onRefreshSalaries,
+  fixedCharges,
+  activeSalaries,
+  totalFixedChargesMensuel,
+  totalSalariesMensuel,
+  totalAdsCumul,
+  commissionsPaid,
+  commissionsDue,
+  salaryPeriods,
+  profiles,
+  onRefreshCharges,
+  onRefreshSalaries,
 }: Props) {
   const [manageOpen, setManageOpen] = useState(false);
 
