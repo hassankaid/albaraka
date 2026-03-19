@@ -21,9 +21,11 @@ interface FixedCharge {
 
 interface SalaryProfile {
   id: string;
+  profile_id: string;
   full_name: string;
-  fixed_salary: number | null;
-  fixed_salary_active: boolean;
+  amount: number;
+  start_date: string;
+  end_date: string | null;
 }
 
 interface Props {
