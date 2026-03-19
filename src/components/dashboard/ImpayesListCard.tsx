@@ -43,7 +43,7 @@ function fmt(n: number) {
 }
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 }
 
 const paymentStatusConfig: Record<string, { label: string; className: string }> = {
