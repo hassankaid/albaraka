@@ -309,7 +309,7 @@ export default function FinancialKPIs(props: Props) {
                 const name = c.beneficiary_user_id ? profileMap.get(c.beneficiary_user_id)?.full_name : c.beneficiary_external;
                 const sale = saleMap.get(c.sale_id);
                 const clientName = sale ? contactMap.get(sale.contact_id)?.full_name : null;
-                const payment = c.payment_id ? paymentMap.get(c.payment_id) : null;
+                const payment = c.payment_id ? allPaymentMap.get(c.payment_id) : null;
                 const cfg = statusCfg[c.status || "pending"] || statusCfg.pending;
                 return (
                   <div key={c.id} className={`grid grid-cols-[1fr_1fr_70px_50px_56px_80px_68px_80px] gap-2 items-center px-3 py-2.5 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
