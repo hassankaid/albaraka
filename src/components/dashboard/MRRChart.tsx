@@ -124,7 +124,7 @@ export default function MRRChart({ data, payments = [], contactMap = new Map(), 
         </CardContent>
       </Card>
 
-      <Dialog open={!!selectedMonth} onOpenChange={() => setSelectedMonth(null)}>
+      <Dialog open={!!selectedMonth} onOpenChange={() => { setSelectedMonth(null); setStatusFilter(null); }}>
         <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
           <DialogHeader className="pb-0 flex-shrink-0">
             <DialogTitle className="text-base font-semibold capitalize">
@@ -132,6 +132,27 @@ export default function MRRChart({ data, payments = [], contactMap = new Map(), 
               <Badge variant="secondary" className="text-[11px] ml-2">{monthPayments.length} paiements</Badge>
             </DialogTitle>
           </DialogHeader>
+
+          <div className="flex items-center gap-1.5 flex-shrink-0 pt-1">
+            {[
+              { key: null, label: "Tous" },
+              { key: "paid", label: "Payé" },
+              { key: "pending", label: "En attente" },
+              { key: "late", label: "En retard" },
+            ].map((f) => (
+              <button
+                key={f.key ?? "all"}
+                onClick={() => setStatusFilter(f.key)}
+                className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+                  statusFilter === f.key
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
 
           <div className="mt-2 flex flex-col min-h-0 flex-1">
             <div className="grid grid-cols-[1fr_120px_60px_80px_80px] gap-3 px-2 pb-1.5 border-b border-border text-[11px] font-medium text-muted-foreground flex-shrink-0">
