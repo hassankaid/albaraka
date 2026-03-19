@@ -47,9 +47,15 @@ interface Profile {
   id: string;
   full_name: string;
   role: string;
-  fixed_salary: number | null;
-  fixed_salary_active: boolean;
   is_active: boolean;
+}
+
+interface SalaryPeriod {
+  id: string;
+  profile_id: string;
+  amount: number;
+  start_date: string;
+  end_date: string | null;
 }
 
 interface FixedCharge {
