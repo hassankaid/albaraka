@@ -373,8 +373,8 @@ export default function FinancialKPIs(props: Props) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-[1fr_1fr_70px_50px_56px_80px_68px_80px] gap-2 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              <span>Bénéficiaire</span><span>Client</span><span>Rôle</span><span className="text-center">%</span><span className="text-center">N°</span><span className="text-center">Date</span><span className="text-center">Statut</span><span className="text-right">Montant</span>
+            <div className="grid grid-cols-[1fr_1fr_65px_46px_50px_76px_76px_62px_78px] gap-1.5 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span>Bénéficiaire</span><span>Client</span><span>Rôle</span><span className="text-center">%</span><span className="text-center">N°</span><span className="text-center">Payé le</span><span className="text-center">Versé le</span><span className="text-center">Statut</span><span className="text-right">Montant</span>
             </div>
             <div className="divide-y divide-border/40">
               {items.map((c, idx) => {
@@ -384,21 +384,16 @@ export default function FinancialKPIs(props: Props) {
                 const payment = c.payment_id ? allPaymentMap.get(c.payment_id) : null;
                 const cfg = statusCfg[c.status || "pending"] || statusCfg.pending;
                 return (
-                  <div key={c.id} className={`grid grid-cols-[1fr_1fr_70px_50px_56px_80px_68px_80px] gap-2 items-center px-3 py-2.5 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
+                  <div key={c.id} className={`grid grid-cols-[1fr_1fr_65px_46px_50px_76px_76px_62px_78px] gap-1.5 items-center px-3 py-2.5 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
                     <span className="text-xs font-medium text-foreground truncate">{name || "—"}</span>
                     <span className="text-xs text-muted-foreground truncate">{clientName || "—"}</span>
-                    <span className="text-[11px] text-muted-foreground">{roleLabels[c.role] || c.role}</span>
-                    <span className="text-[11px] font-medium text-foreground tabular-nums text-center">{c.percentage ?? "—"}%</span>
-                    <span className="text-[11px] text-muted-foreground tabular-nums text-center">
+                    <span className="text-[10px] text-muted-foreground">{roleLabels[c.role] || c.role}</span>
+                    <span className="text-[10px] font-medium text-foreground tabular-nums text-center">{c.percentage ?? "—"}%</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums text-center">
                       {payment ? `${payment.payment_number}/${payment.total_payments}` : "—"}
                     </span>
-                    <span className="text-[11px] text-muted-foreground tabular-nums text-center">
-                      {c.status === "paid" && c.paid_at
-                        ? formatDate(c.paid_at)
-                        : payment?.paid_at
-                          ? formatDate(payment.paid_at)
-                          : "—"}
-                    </span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums text-center">{payment?.paid_at ? formatDate(payment.paid_at) : "—"}</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums text-center">{c.status === "paid" && c.paid_at ? formatDate(c.paid_at) : "—"}</span>
                     <div className="flex justify-center"><Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${cfg.className}`}>{cfg.label}</Badge></div>
                     <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(c.amount || 0)}</span>
                   </div>
@@ -528,7 +523,7 @@ export default function FinancialKPIs(props: Props) {
 
   // Wider dialog for commissions (more columns)
   const wideModals: KpiKey[] = ["commissions"];
-  const dialogSize = openModal && wideModals.includes(openModal) ? "max-w-4xl" : "max-w-3xl";
+  const dialogSize = openModal && wideModals.includes(openModal) ? "max-w-5xl" : "max-w-3xl";
 
   return (
     <>
