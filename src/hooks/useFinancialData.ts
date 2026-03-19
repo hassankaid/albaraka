@@ -2,6 +2,17 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAllRows } from "@/lib/fetchAllRows";
 
+interface Ad {
+  id: string;
+  date: string;
+  campaign_name: string;
+  campaign_id: string;
+  channel: string | null;
+  amount_spent: number;
+  impressions: number;
+  clicks: number;
+}
+
 interface Sale {
   id: string;
   amount_ht: number;
