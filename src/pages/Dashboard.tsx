@@ -81,7 +81,10 @@ function FinancialTab() {
           totalSalariesMensuel={data.totalSalariesMensuel}
           commissionsPaid={data.commissionsPaid}
           commissionsDue={data.commissionsDue}
-          onRefresh={() => data.refetchCharges()}
+          salaryPeriods={data.salaryPeriods}
+          profiles={data.profiles}
+          onRefreshCharges={() => data.refetchCharges()}
+          onRefreshSalaries={() => data.refetchSalaryPeriods()}
         />
         <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center justify-center text-center space-y-2">
           <p className="text-sm font-semibold text-foreground">ROI Global</p>
