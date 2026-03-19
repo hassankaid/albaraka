@@ -77,8 +77,9 @@ export default function ImpayesListCard({ salesLate, salesLost, contactMap, paym
         </CardHeader>
         <CardContent className="pt-0">
           {/* Table header */}
-          <div className="grid grid-cols-[1fr_100px_80px_24px] gap-2 px-2 pb-1.5 border-b border-border text-[11px] font-medium text-muted-foreground">
+          <div className="grid grid-cols-[1fr_90px_100px_80px_24px] gap-2 px-2 pb-1.5 border-b border-border text-[11px] font-medium text-muted-foreground">
             <span>Client</span>
+            <span>Depuis</span>
             <span className="text-right">Montant</span>
             <span className="text-center">Statut</span>
             <span />
@@ -89,11 +90,19 @@ export default function ImpayesListCard({ salesLate, salesLost, contactMap, paym
               {impayesList.map((sale) => {
                 const contact = contactMap.get(sale.contact_id);
                 const isLost = sale.payment_status === "lost";
+                const salePayments = payments.filter((p) => p.sale_id === sale.id);
+                // Late: first payment with status late (earliest due_date)
+                // Lost: first payment with status lost (lowest payment_number = the one that triggered it)
+                const triggerPayment = isLost
+                  ? salePayments.filter((p) => p.status === "lost").sort((a, b) => a.payment_number - b.payment_number)[0]
+                  : salePayments.filter((p) => p.status === "late").sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
+                const triggerDate = triggerPayment?.due_date;
+
                 return (
                   <button
                     key={sale.id}
                     onClick={() => setSelectedSale(sale)}
-                    className="grid grid-cols-[1fr_100px_80px_24px] gap-2 items-center w-full px-2 py-2 hover:bg-muted/40 transition-colors text-left group"
+                    className="grid grid-cols-[1fr_90px_100px_80px_24px] gap-2 items-center w-full px-2 py-2 hover:bg-muted/40 transition-colors text-left group"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`h-7 w-7 rounded-full flex items-center justify-center flex-shrink-0 ${isLost ? "bg-[hsl(var(--kpi-lost)/0.2)]" : "bg-[hsl(var(--kpi-late)/0.15)]"}`}>
@@ -103,6 +112,9 @@ export default function ImpayesListCard({ salesLate, salesLost, contactMap, paym
                         {contact?.full_name || "Inconnu"}
                       </span>
                     </div>
+                    <span className="text-[11px] text-muted-foreground">
+                      {triggerDate ? formatDate(triggerDate) : "—"}
+                    </span>
                     <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(sale.amount_ht)}</span>
                     <div className="flex justify-center">
                       <Badge
