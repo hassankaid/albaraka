@@ -86,6 +86,8 @@ interface Props {
   activeCharges: ActiveCharge[];
   allPayments: Payment[];
   allSales: Sale[];
+  totalAdsCumul: number;
+  roi: number | null;
 }
 
 function fmt(n: number) {
