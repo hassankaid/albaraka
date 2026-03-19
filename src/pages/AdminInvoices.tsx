@@ -1098,18 +1098,19 @@ export default function AdminInvoices() {
                     <Input
                       type="number"
                       placeholder="0"
-                      value={p.fixed_salary ?? ""}
+                      value={p.amount ?? ""}
                       onChange={(e) => {
                         const val = e.target.value === "" ? null : Number(e.target.value);
-                        updateSalary(p.id, { fixed_salary: val });
+                        setSalaryProfiles(prev => prev.map(sp => sp.id === p.id ? { ...sp, amount: val } : sp));
                       }}
+                      onBlur={() => updateSalary(p.id, p.amount)}
                       className="text-right text-sm h-8"
                     />
                   </div>
                   <span className="text-xs text-muted-foreground">€</span>
                   <Switch
-                    checked={p.fixed_salary_active}
-                    onCheckedChange={(checked) => updateSalary(p.id, { fixed_salary_active: checked })}
+                    checked={!!p.amount && p.amount > 0}
+                    onCheckedChange={(checked) => updateSalary(p.id, checked ? (p.amount || 0) : null)}
                   />
                 </div>
               </div>
