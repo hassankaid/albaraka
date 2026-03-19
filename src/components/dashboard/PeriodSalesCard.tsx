@@ -133,7 +133,7 @@ export default function PeriodSalesCard({ sales, payments, contactMap }: Props) 
 
       <CardContent className="pt-4 pb-3">
         {/* ── Column headers ── */}
-        <div className="grid grid-cols-[1fr_72px_48px_56px_68px_80px_80px] gap-2 px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="grid grid-cols-[1fr_110px_48px_56px_68px_80px_80px] gap-2 px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           <span>Client</span>
           <span>Date</span>
           <span className="text-center">Mens.</span>
