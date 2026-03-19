@@ -76,13 +76,13 @@ function FinancialTab() {
       </div>
 
       <ImpayesListCard
-        salesLate={data.salesLate}
-        salesLost={data.salesLost}
+        salesLate={data.allSalesLate}
+        salesLost={data.allSalesLost}
         contactMap={data.contactMap}
-        payments={data.payments}
+        payments={data.allPayments}
       />
 
-      <MRRChart data={data.mrrData} payments={data.payments} contactMap={data.contactMap} sales={data.sales} />
+      <MRRChart data={data.mrrData} payments={data.allPayments} contactMap={data.contactMap} sales={data.allSales} />
 
       <ChargesCard
         fixedCharges={data.fixedCharges}
