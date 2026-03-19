@@ -149,7 +149,9 @@ export default function FinancialKPIs(props: Props) {
 
   const [openModal, setOpenModal] = useState<KpiKey | null>(null);
   const [modalPage, setModalPage] = useState(0);
-  const handleOpenModal = (key: KpiKey) => { setModalPage(0); setOpenModal(key); };
+  const [commFilterBenef, setCommFilterBenef] = useState<string>("all");
+  const [commFilterSale, setCommFilterSale] = useState<string>("all");
+  const handleOpenModal = (key: KpiKey) => { setModalPage(0); setCommFilterBenef("all"); setCommFilterSale("all"); setOpenModal(key); };
 
   const profileMap = new Map(profiles.map(p => [p.id, p]));
   const saleMap = new Map(sales.map(s => [s.id, s]));
