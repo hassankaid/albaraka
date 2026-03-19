@@ -287,6 +287,11 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
   const allSalesLost = allSalesWithStatus.filter((s) => s.payment_status === "lost");
   const impayesList = [...allSalesLate, ...allSalesLost];
 
+  // Treasury
+  const tresoIn = caCollecte;
+  const tresoOut = commissionsPaid + totalChargesCumul;
+  const tresoRemaining = tresoIn - tresoOut;
+
   const isLoading = salesQuery.isLoading || paymentsQuery.isLoading || commissionsQuery.isLoading || profilesQuery.isLoading || fixedChargesQuery.isLoading || contactsQuery.isLoading || salaryPeriodsQuery.isLoading;
 
   return {
