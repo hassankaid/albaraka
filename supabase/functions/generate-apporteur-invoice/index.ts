@@ -109,9 +109,20 @@ Deno.serve(async (req) => {
       return paidAt < endDate;
     });
 
-    // Check fixed salary
-    const hasFixedSalary = apporteurProfile?.fixed_salary_active === true && apporteurProfile?.fixed_salary && apporteurProfile.fixed_salary > 0;
-    const fixedSalaryAmount = hasFixedSalary ? Number(apporteurProfile.fixed_salary) : 0;
+    // Check fixed salary from salary_periods table for the invoice period
+    const periodStart = `${year}-${String(month).padStart(2, "0")}-01`;
+    const { data: salaryPeriods } = await supabaseAdmin
+      .from("salary_periods")
+      .select("amount")
+      .eq("profile_id", apporteur_id)
+      .lte("start_date", periodStart);
+
+    // Filter: active during this month (no end_date or end_date >= period start)
+    const activeSalary = (salaryPeriods || []).find((sp: any) =>
+      sp.amount > 0 && (!sp.end_date || sp.end_date >= periodStart)
+    );
+    const hasFixedSalary = !!activeSalary;
+    const fixedSalaryAmount = hasFixedSalary ? Number(activeSalary.amount) : 0;
 
     // If no commissions AND no fixed salary, nothing to invoice
     if (eligibleCommissions.length === 0 && !hasFixedSalary) {
