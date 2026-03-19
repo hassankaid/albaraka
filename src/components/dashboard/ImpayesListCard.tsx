@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Clock, XCircle, ChevronRight, AlertTriangle, User } from "lucide-react";
+import { ChevronRight, AlertTriangle, User, Mail, Phone } from "lucide-react";
 
 interface Payment {
   id: string;
@@ -47,36 +47,54 @@ function formatDate(d: string) {
 }
 
 const paymentStatusConfig: Record<string, { label: string; className: string }> = {
-  paid: { label: "Payé", className: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" },
-  pending: { label: "En attente", className: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
-  late: { label: "En retard", className: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-  lost: { label: "Perdu", className: "bg-destructive/10 text-destructive border-destructive/20" },
+  paid: { label: "Payé", className: "bg-[hsl(var(--kpi-paid)/0.15)] text-[hsl(var(--kpi-paid))] border-[hsl(var(--kpi-paid)/0.3)]" },
+  pending: { label: "En attente", className: "bg-[hsl(var(--kpi-in-progress)/0.15)] text-[hsl(var(--kpi-in-progress))] border-[hsl(var(--kpi-in-progress)/0.3)]" },
+  late: { label: "En retard", className: "bg-[hsl(var(--kpi-late)/0.15)] text-[hsl(var(--kpi-late))] border-[hsl(var(--kpi-late)/0.4)]" },
+  lost: { label: "Perdu", className: "bg-[hsl(var(--kpi-lost)/0.2)] text-[hsl(var(--kpi-lost))] border-[hsl(var(--kpi-lost)/0.5)]" },
 };
+
+function getTriggerDate(sale: SaleItem, salePayments: Payment[]): string | undefined {
+  const isLost = sale.payment_status === "lost";
+  const triggerPayment = isLost
+    ? salePayments.filter((p) => p.status === "lost").sort((a, b) => a.payment_number - b.payment_number)[0]
+    : salePayments.filter((p) => p.status === "late").sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
+  return triggerPayment?.due_date;
+}
 
 export default function ImpayesListCard({ salesLate, salesLost, contactMap, payments }: Props) {
   const [selectedSale, setSelectedSale] = useState<SaleItem | null>(null);
 
-  const impayesList = [...salesLate, ...salesLost];
+  // Sort each group: most recent trigger date first
+  const sortedList = useMemo(() => {
+    const withTrigger = (list: SaleItem[]) =>
+      list
+        .map((sale) => ({
+          sale,
+          triggerDate: getTriggerDate(sale, payments.filter((p) => p.sale_id === sale.id)),
+        }))
+        .sort((a, b) => (b.triggerDate || "").localeCompare(a.triggerDate || ""));
 
-  const salePayments = selectedSale
+    return [...withTrigger(salesLate), ...withTrigger(salesLost)];
+  }, [salesLate, salesLost, payments]);
+
+  const modalPayments = selectedSale
     ? payments.filter((p) => p.sale_id === selectedSale.id).sort((a, b) => a.payment_number - b.payment_number)
     : [];
   const selectedContact = selectedSale ? contactMap.get(selectedSale.contact_id) : null;
 
-  if (impayesList.length === 0) return null;
+  if (sortedList.length === 0) return null;
 
   return (
     <>
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertTriangle className="h-4 w-4 text-[hsl(var(--kpi-late))]" />
             Détail des impayés
-            <Badge variant="secondary" className="text-[11px] ml-1">{impayesList.length}</Badge>
+            <Badge variant="secondary" className="text-[11px] ml-1">{sortedList.length}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          {/* Table header */}
           <div className="grid grid-cols-[1fr_90px_100px_80px_24px] gap-2 px-2 pb-1.5 border-b border-border text-[11px] font-medium text-muted-foreground">
             <span>Client</span>
             <span>Depuis</span>
@@ -87,17 +105,9 @@ export default function ImpayesListCard({ salesLate, salesLost, contactMap, paym
 
           <ScrollArea className="max-h-[320px]">
             <div className="divide-y divide-border/50">
-              {impayesList.map((sale) => {
+              {sortedList.map(({ sale, triggerDate }) => {
                 const contact = contactMap.get(sale.contact_id);
                 const isLost = sale.payment_status === "lost";
-                const salePayments = payments.filter((p) => p.sale_id === sale.id);
-                // Late: first payment with status late (earliest due_date)
-                // Lost: first payment with status lost (lowest payment_number = the one that triggered it)
-                const triggerPayment = isLost
-                  ? salePayments.filter((p) => p.status === "lost").sort((a, b) => a.payment_number - b.payment_number)[0]
-                  : salePayments.filter((p) => p.status === "late").sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
-                const triggerDate = triggerPayment?.due_date;
-
                 return (
                   <button
                     key={sale.id}
@@ -136,49 +146,72 @@ export default function ImpayesListCard({ salesLate, salesLost, contactMap, paym
         </CardContent>
       </Card>
 
-      {/* Compact payment detail modal */}
+      {/* Wide horizontal modal */}
       <Dialog open={!!selectedSale} onOpenChange={() => setSelectedSale(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-2xl">
           <DialogHeader className="pb-0">
-            <DialogTitle className="text-sm flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                <User className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">{selectedContact?.full_name || "Inconnu"}</p>
-                <p className="text-[11px] text-muted-foreground font-normal">{selectedSale?.product} · {selectedSale && fmt(selectedSale.amount_ht)}</p>
-              </div>
-            </DialogTitle>
+            <div className="flex items-start justify-between gap-4">
+              <DialogTitle className="text-sm flex items-center gap-3">
+                <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold">{selectedContact?.full_name || "Inconnu"}</p>
+                  <p className="text-xs text-muted-foreground font-normal">{selectedSale?.product} · {selectedSale && fmt(selectedSale.amount_ht)}</p>
+                </div>
+              </DialogTitle>
+
+              {/* Contact info in header */}
+              {(selectedContact?.email || selectedContact?.phone_normalized) && (
+                <div className="flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0 pt-1">
+                  {selectedContact?.email && (
+                    <span className="flex items-center gap-1">
+                      <Mail className="h-3 w-3" />
+                      {selectedContact.email}
+                    </span>
+                  )}
+                  {selectedContact?.phone_normalized && (
+                    <span className="flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      {selectedContact.phone_normalized}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </DialogHeader>
 
-          <ScrollArea className="max-h-[300px] -mx-1 px-1">
-            <div className="space-y-1 py-1">
-              {salePayments.map((p) => {
-                const cfg = paymentStatusConfig[p.status] || paymentStatusConfig.pending;
-                return (
-                  <div key={p.id} className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-muted/30">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-muted-foreground tabular-nums w-8">
+          {/* Horizontal payment grid */}
+          <div className="mt-2">
+            <div className="grid grid-cols-[50px_90px_1fr_80px] gap-3 px-2 pb-1.5 border-b border-border text-[11px] font-medium text-muted-foreground">
+              <span>N°</span>
+              <span>Échéance</span>
+              <span>Statut</span>
+              <span className="text-right">Montant</span>
+            </div>
+            <ScrollArea className="max-h-[260px]">
+              <div className="divide-y divide-border/50">
+                {modalPayments.map((p) => {
+                  const cfg = paymentStatusConfig[p.status] || paymentStatusConfig.pending;
+                  return (
+                    <div key={p.id} className="grid grid-cols-[50px_90px_1fr_80px] gap-3 items-center px-2 py-2">
+                      <span className="text-xs text-muted-foreground tabular-nums">
                         {p.payment_number}/{p.total_payments}
                       </span>
-                      <span className="text-[11px] text-muted-foreground">{formatDate(p.due_date)}</span>
-                      <Badge variant="outline" className={`text-[9px] px-1 py-0 border ${cfg.className}`}>
-                        {cfg.label}
-                      </Badge>
+                      <span className="text-xs text-muted-foreground">{formatDate(p.due_date)}</span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${cfg.className}`}>
+                          {cfg.label}
+                        </Badge>
+                        {p.paid_at && <span className="text-[10px] text-muted-foreground">payé le {formatDate(p.paid_at)}</span>}
+                      </div>
+                      <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(p.amount)}</span>
                     </div>
-                    <span className="text-xs font-semibold text-foreground tabular-nums">{fmt(p.amount)}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </ScrollArea>
-
-          {(selectedContact?.email || selectedContact?.phone_normalized) && (
-            <div className="flex items-center gap-3 text-[11px] text-muted-foreground pt-1 border-t border-border">
-              {selectedContact.email && <span>✉️ {selectedContact.email}</span>}
-              {selectedContact.phone_normalized && <span>📞 {selectedContact.phone_normalized}</span>}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </div>
         </DialogContent>
       </Dialog>
     </>
