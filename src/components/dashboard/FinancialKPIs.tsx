@@ -488,6 +488,7 @@ export default function FinancialKPIs(props: Props) {
           { label: "Commissions payées", amount: commissionsPaid, color: "text-foreground", sign: "−" },
           { label: "Salaires fixes", amount: totalSalariesCumul, color: "text-foreground", sign: "−" },
           { label: "Charges fixes", amount: totalFixedChargesCumul, color: "text-foreground", sign: "−" },
+          { label: "Publicité", amount: totalAdsCumul, color: "text-foreground", sign: "−" },
         ];
         return (
           <div>
