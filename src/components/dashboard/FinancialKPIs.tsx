@@ -523,7 +523,7 @@ export default function FinancialKPIs(props: Props) {
 
   // Wider dialog for commissions (more columns)
   const wideModals: KpiKey[] = ["commissions"];
-  const dialogSize = openModal && wideModals.includes(openModal) ? "max-w-4xl" : "max-w-3xl";
+  const dialogSize = openModal && wideModals.includes(openModal) ? "max-w-5xl" : "max-w-3xl";
 
   return (
     <>
