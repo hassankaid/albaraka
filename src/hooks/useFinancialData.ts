@@ -389,5 +389,8 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     refetchCharges: fixedChargesQuery.refetch,
     salaryPeriods,
     refetchSalaryPeriods: salaryPeriodsQuery.refetch,
+    totalAdsCumul,
+    roi,
+    ads,
   };
 }
