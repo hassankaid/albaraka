@@ -190,27 +190,27 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     .filter((p) => p.status === "paid")
     .reduce((sum, p) => sum + (p.amount || 0), 0);
 
-  // KPI: Taux de cash collecté
-  const tauxCashCollecte = caGenere > 0 ? (caCollecte / caGenere) * 100 : 0;
+  // KPI: Taux de cash collecté & Taux d'impayés
+  // When a period filter is active, base these on échéances (payments) of the period
+  // When "Tout", base on sales payment_status (global view)
+  let tauxCashCollecte: number;
+  let tauxImpayes: number;
 
-  // KPI: One-shot vs Multi
-  const salesOneShot = sales.filter((s) => (s.mensualites || 1) === 1);
-  const salesMulti = sales.filter((s) => (s.mensualites || 1) > 1);
-  const totalSalesCount = sales.length;
-  const oneShotPct = totalSalesCount > 0 ? (salesOneShot.length / totalSalesCount) * 100 : 0;
-  const multiPct = totalSalesCount > 0 ? (salesMulti.length / totalSalesCount) * 100 : 0;
-  const oneShotCA = salesOneShot.reduce((s, sale) => s + sale.amount_ht, 0);
-  const multiCA = salesMulti.reduce((s, sale) => s + sale.amount_ht, 0);
-
-  // KPI: Taux d'impayés
-  const salesWithStatus = sales.filter((s) => s.payment_status);
-  const salesLate = salesWithStatus.filter((s) => s.payment_status === "late");
-  const salesLost = salesWithStatus.filter((s) => s.payment_status === "lost");
-  const salesPaid = salesWithStatus.filter((s) => s.payment_status === "paid");
-  const salesInProgress = salesWithStatus.filter((s) => s.payment_status === "in_progress");
-  const impayesCount = salesLate.length + salesLost.length;
-  const payesCount = salesPaid.length + salesInProgress.length;
-  const tauxImpayes = salesWithStatus.length > 0 ? (impayesCount / salesWithStatus.length) * 100 : 0;
+  if (range) {
+    // Period-based: how many échéances in this period are paid / late+lost
+    const periodPaymentsTotal = payments.length;
+    const periodPaid = payments.filter((p) => p.status === "paid");
+    const periodLateOrLost = payments.filter((p) => p.status === "late" || p.status === "lost");
+    const periodPaidAmount = periodPaid.reduce((sum, p) => sum + p.amount, 0);
+    const periodTotalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
+    tauxCashCollecte = periodTotalAmount > 0 ? (periodPaidAmount / periodTotalAmount) * 100 : 0;
+    tauxImpayes = periodPaymentsTotal > 0 ? (periodLateOrLost.length / periodPaymentsTotal) * 100 : 0;
+  } else {
+    tauxCashCollecte = caGenere > 0 ? (caCollecte / caGenere) * 100 : 0;
+    const salesWithStatus = sales.filter((s) => s.payment_status);
+    const impCount = salesWithStatus.filter((s) => s.payment_status === "late" || s.payment_status === "lost").length;
+    tauxImpayes = salesWithStatus.length > 0 ? (impCount / salesWithStatus.length) * 100 : 0;
+  }
 
   // KPI: Commissions
   const commissionsEngagees = commissions.filter((c) => c.status === "due" || c.status === "paid" || c.status === "invoiced");
