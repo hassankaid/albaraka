@@ -68,7 +68,7 @@ function FinancialTab() {
         payments={data.payments}
       />
 
-      <MRRChart data={data.mrrData} />
+      <MRRChart data={data.mrrData} payments={data.payments} contactMap={data.contactMap} sales={data.sales} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ChargesCard
