@@ -44,7 +44,7 @@ function fmtFull(n: number) {
 }
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "2-digit" });
+  return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 }
 
 const statusConfig: Record<string, { label: string; className: string }> = {
