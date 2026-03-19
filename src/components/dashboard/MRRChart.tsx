@@ -113,6 +113,7 @@ export default function MRRChart({ data, payments = [], contactMap = new Map(), 
                   fill="hsl(var(--primary))"
                   radius={[6, 6, 0, 0]}
                   className="cursor-pointer"
+                  minPointSize={18}
                   onClick={(_data: any, index: number) => {
                     const entry = chartData[index];
                     if (entry?.month) setSelectedMonth(entry.month);
