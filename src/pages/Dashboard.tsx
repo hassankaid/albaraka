@@ -84,7 +84,6 @@ function FinancialTab() {
         sales={data.sales}
         payments={data.allPayments}
         contactMap={data.contactMap}
-        profiles={data.profiles}
       />
 
       <ImpayesListCard
