@@ -21,7 +21,8 @@ function FinancialTab() {
     );
   }
 
-  const impayesCA = [...data.salesLate, ...data.salesLost].reduce((sum, s) => sum + s.amount_ht, 0);
+  const lateCA = data.salesLate.reduce((sum, s) => sum + s.amount_ht, 0);
+  const lostCA = data.salesLost.reduce((sum, s) => sum + s.amount_ht, 0);
 
   return (
     <div className="space-y-4">
