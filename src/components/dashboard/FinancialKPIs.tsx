@@ -182,7 +182,39 @@ export default function FinancialKPIs(props: Props) {
       });
   }, [commissions, allPaymentMap]);
 
-  function paginate<T>(items: T[]) {
+  // Unique beneficiaries and sales for commission filters
+  const commBeneficiaries = useMemo(() => {
+    const map = new Map<string, string>();
+    engagedCommissions.forEach(c => {
+      const key = c.beneficiary_user_id || c.beneficiary_external || "";
+      if (!key || map.has(key)) return;
+      const name = c.beneficiary_user_id ? profileMap.get(c.beneficiary_user_id)?.full_name : c.beneficiary_external;
+      if (name) map.set(key, name);
+    });
+    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [engagedCommissions, profileMap]);
+
+  const commSales = useMemo(() => {
+    const map = new Map<string, string>();
+    engagedCommissions.forEach(c => {
+      if (map.has(c.sale_id)) return;
+      const sale = saleMap.get(c.sale_id);
+      const clientName = sale ? contactMap.get(sale.contact_id)?.full_name : null;
+      if (clientName) map.set(c.sale_id, clientName);
+    });
+    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [engagedCommissions, saleMap, contactMap]);
+
+  const filteredCommissions = useMemo(() => {
+    return engagedCommissions.filter(c => {
+      if (commFilterBenef !== "all") {
+        const key = c.beneficiary_user_id || c.beneficiary_external || "";
+        if (key !== commFilterBenef) return false;
+      }
+      if (commFilterSale !== "all" && c.sale_id !== commFilterSale) return false;
+      return true;
+    });
+  }, [engagedCommissions, commFilterBenef, commFilterSale]);
     const totalPages = Math.ceil(items.length / MODAL_PAGE_SIZE);
     const safePage = Math.min(modalPage, Math.max(0, totalPages - 1));
     return { items: items.slice(safePage * MODAL_PAGE_SIZE, (safePage + 1) * MODAL_PAGE_SIZE), safePage, totalPages };
