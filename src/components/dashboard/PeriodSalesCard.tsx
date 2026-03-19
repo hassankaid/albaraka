@@ -44,7 +44,7 @@ function fmtFull(n: number) {
 }
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "2-digit" });
+  return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 }
 
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -133,7 +133,7 @@ export default function PeriodSalesCard({ sales, payments, contactMap }: Props) 
 
       <CardContent className="pt-4 pb-3">
         {/* ── Column headers ── */}
-        <div className="grid grid-cols-[1fr_72px_48px_56px_68px_80px_80px] gap-2 px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="grid grid-cols-[1fr_110px_48px_56px_68px_80px_80px] gap-2 px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           <span>Client</span>
           <span>Date</span>
           <span className="text-center">Mens.</span>
@@ -151,7 +151,7 @@ export default function PeriodSalesCard({ sales, payments, contactMap }: Props) 
               return (
                 <div
                   key={sale.id}
-                  className={`grid grid-cols-[1fr_72px_48px_56px_68px_80px_80px] gap-2 items-center px-3 py-2.5 transition-colors hover:bg-muted/30 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}
+                  className={`grid grid-cols-[1fr_110px_48px_56px_68px_80px_80px] gap-2 items-center px-3 py-2.5 transition-colors hover:bg-muted/30 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
