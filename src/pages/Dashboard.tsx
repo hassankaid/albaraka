@@ -13,7 +13,11 @@ import PeriodFilter, { type DateRange } from "@/components/dashboard/PeriodFilte
 import { Loader2 } from "lucide-react";
 
 function FinancialTab() {
-  const [dateRange, setDateRange] = useState<DateRange | null>(null);
+  const now = new Date();
+  const [dateRange, setDateRange] = useState<DateRange | null>({
+    from: new Date(now.getFullYear(), now.getMonth(), 1),
+    to: new Date(now.getFullYear(), now.getMonth() + 1, 0),
+  });
 
   // Convert to FinancialDateRange for the hook
   const financialRange: FinancialDateRange | null = dateRange

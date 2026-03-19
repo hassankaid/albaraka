@@ -47,6 +47,15 @@ export default function PeriodFilter({ value, onChange }: Props) {
 
   const years = useMemo(() => buildYears(), []);
 
+  // Fire initial month selection on mount
+  useEffect(() => {
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      const d = new Date(now.getFullYear(), now.getMonth(), 1);
+      onChange({ from: startOfMonth(d), to: endOfMonth(d) });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const applyMonth = (month: number, year: number) => {
     setSelMonth(month);
     setSelMonthYear(year);
