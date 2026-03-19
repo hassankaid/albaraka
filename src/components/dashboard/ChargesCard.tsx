@@ -21,9 +21,11 @@ interface FixedCharge {
 
 interface SalaryProfile {
   id: string;
+  profile_id: string;
   full_name: string;
-  fixed_salary: number | null;
-  fixed_salary_active: boolean;
+  amount: number;
+  start_date: string;
+  end_date: string | null;
 }
 
 interface Props {
@@ -174,7 +176,7 @@ export default function ChargesCard({ fixedCharges, activeSalaries, totalFixedCh
             {activeSalaries.map((p) => (
               <div key={p.id} className="flex items-center justify-between text-xs">
                 <span className="text-foreground">{p.full_name}</span>
-                <span className="font-medium">{fmt(p.fixed_salary || 0)}/mois</span>
+                <span className="font-medium">{fmt(p.amount)}/mois</span>
               </div>
             ))}
           </div>

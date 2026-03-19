@@ -115,30 +115,67 @@ export default function AdminInvoices() {
   const [commDetailBeneficiary, setCommDetailBeneficiary] = useState<BeneficiaryToInvoice | null>(null);
 
   // Fixed salary modal
-  interface SalaryProfile { id: string; full_name: string; role: string; fixed_salary: number | null; fixed_salary_active: boolean; }
+  interface SalaryProfile { id: string; full_name: string; role: string; salary_period_id: string | null; amount: number | null; start_date: string | null; end_date: string | null; }
   const [salaryModalOpen, setSalaryModalOpen] = useState(false);
   const [salaryProfiles, setSalaryProfiles] = useState<SalaryProfile[]>([]);
   const [loadingSalaries, setLoadingSalaries] = useState(false);
 
   const fetchSalaryProfiles = useCallback(async () => {
     setLoadingSalaries(true);
-    const { data } = await supabase
+    const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, full_name, role, fixed_salary, fixed_salary_active")
+      .select("id, full_name, role")
       .in("role", ["collaborateur", "agence"])
       .order("full_name");
-    setSalaryProfiles((data as any[]) || []);
+
+    // Fetch active salary periods (no end_date or end_date >= today)
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: periods } = await (supabase.from("salary_periods" as any) as any)
+      .select("id, profile_id, amount, start_date, end_date");
+
+    const activePeriods = ((periods || []) as any[]).filter((sp) => !sp.end_date || sp.end_date >= today);
+    const periodMap = new Map(activePeriods.map((sp) => [sp.profile_id, sp]));
+
+    const merged = ((profiles || []) as any[]).map((p) => {
+      const sp = periodMap.get(p.id);
+      return {
+        id: p.id,
+        full_name: p.full_name,
+        role: p.role,
+        salary_period_id: sp?.id || null,
+        amount: sp?.amount || null,
+        start_date: sp?.start_date || null,
+        end_date: sp?.end_date || null,
+      };
+    });
+    setSalaryProfiles(merged);
     setLoadingSalaries(false);
   }, []);
 
-  const updateSalary = async (profileId: string, updates: { fixed_salary?: number | null; fixed_salary_active?: boolean }) => {
-    const { error } = await supabase.from("profiles").update(updates as any).eq("id", profileId);
-    if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
-    } else {
-      setSalaryProfiles(prev => prev.map(p => p.id === profileId ? { ...p, ...updates } : p));
-      fetchBeneficiaries();
+  const updateSalary = async (profileId: string, amount: number | null) => {
+    const profile = salaryProfiles.find(p => p.id === profileId);
+    if (!profile) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    if (amount && amount > 0) {
+      if (profile.salary_period_id) {
+        // Update existing period
+        const { error } = await (supabase.from("salary_periods" as any) as any).update({ amount }).eq("id", profile.salary_period_id);
+        if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return; }
+      } else {
+        // Create new period
+        const { error } = await (supabase.from("salary_periods" as any) as any).insert({ profile_id: profileId, amount, start_date: today });
+        if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return; }
+      }
+    } else if (profile.salary_period_id) {
+      // Deactivate: set end_date to today
+      const { error } = await (supabase.from("salary_periods" as any) as any).update({ end_date: today }).eq("id", profile.salary_period_id);
+      if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return; }
     }
+
+    fetchSalaryProfiles();
+    fetchBeneficiaries();
   };
 
   const years = Array.from({ length: 3 }, (_, i) => now.getFullYear() - i);
@@ -192,14 +229,21 @@ export default function AdminInvoices() {
       grouped[uid].total_amount += c.amount || 0;
     });
 
-    // Fetch profiles with fixed salary active (to include even without commissions)
-    const { data: salaryProfiles } = await supabase
-      .from("profiles")
-      .select("id, full_name, role, fixed_salary, fixed_salary_active, bank_rib_url")
-      .eq("fixed_salary_active", true);
+    // Fetch active salary periods for this invoice period
+    const periodStart = `${genYear}-${String(month).padStart(2, "0")}-01`;
+    const periodEndMonth = month === 12 ? 1 : month + 1;
+    const periodEndYear = month === 12 ? genYear + 1 : genYear;
+    const periodEnd = `${periodEndYear}-${String(periodEndMonth).padStart(2, "0")}-01`;
 
-    // Check which beneficiaries already have an invoice for this period (fixed salary already invoiced)
-    const salaryUserIds = (salaryProfiles || []).filter((p: any) => p.fixed_salary && p.fixed_salary > 0).map((p: any) => p.id);
+    const { data: salaryPeriodsData } = await (supabase.from("salary_periods" as any) as any)
+      .select("id, profile_id, amount, start_date, end_date");
+
+    // Filter salary periods active during the invoice month
+    const activeSalaryPeriods = ((salaryPeriodsData || []) as any[]).filter((sp: any) => {
+      return sp.amount > 0 && sp.start_date < periodEnd && (!sp.end_date || sp.end_date >= periodStart);
+    });
+
+    const salaryUserIds = activeSalaryPeriods.map((sp: any) => sp.profile_id);
     let alreadyInvoicedIds = new Set<string>();
     if (salaryUserIds.length > 0) {
       const { data: existingInvoices } = await supabase
@@ -211,30 +255,41 @@ export default function AdminInvoices() {
       alreadyInvoicedIds = new Set((existingInvoices || []).map((inv: any) => inv.apporteur_id));
     }
 
-    (salaryProfiles || []).forEach((p: any) => {
-      if (!p.fixed_salary || p.fixed_salary <= 0) return;
-      // Skip if already invoiced for this period
-      if (alreadyInvoicedIds.has(p.id)) return;
-      if (!grouped[p.id]) {
-        grouped[p.id] = {
-          beneficiary_user_id: p.id,
-          full_name: p.full_name || "Inconnu",
-          roles: [p.role || "collaborateur"],
+    // Get profile info for salary beneficiaries
+    const salaryProfileIds = [...new Set(salaryUserIds)];
+    let salaryProfileMap = new Map<string, any>();
+    if (salaryProfileIds.length > 0) {
+      const { data: spProfiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, role, bank_rib_url")
+        .in("id", salaryProfileIds);
+      (spProfiles || []).forEach((p: any) => salaryProfileMap.set(p.id, p));
+    }
+
+    activeSalaryPeriods.forEach((sp: any) => {
+      const profileId = sp.profile_id;
+      if (alreadyInvoicedIds.has(profileId)) return;
+      const prof = salaryProfileMap.get(profileId);
+      if (!grouped[profileId]) {
+        grouped[profileId] = {
+          beneficiary_user_id: profileId,
+          full_name: prof?.full_name || "Inconnu",
+          roles: [prof?.role || "collaborateur"],
           commission_count: 0,
           total_amount: 0,
-          fixed_salary: p.fixed_salary,
+          fixed_salary: sp.amount,
           fixed_salary_active: true,
-          bank_rib_url: (p as any).bank_rib_url || null,
+          bank_rib_url: prof?.bank_rib_url || null,
         };
       } else {
-        if (grouped[p.id].roles.length === 0 && p.role) {
-          grouped[p.id].roles.push(p.role);
+        if (grouped[profileId].roles.length === 0 && prof?.role) {
+          grouped[profileId].roles.push(prof.role);
         }
-        grouped[p.id].fixed_salary = p.fixed_salary;
-        grouped[p.id].fixed_salary_active = true;
-        if (!grouped[p.id].bank_rib_url) grouped[p.id].bank_rib_url = (p as any).bank_rib_url || null;
+        grouped[profileId].fixed_salary = sp.amount;
+        grouped[profileId].fixed_salary_active = true;
+        if (!grouped[profileId].bank_rib_url) grouped[profileId].bank_rib_url = prof?.bank_rib_url || null;
       }
-      grouped[p.id].total_amount += Number(p.fixed_salary);
+      grouped[profileId].total_amount += Number(sp.amount);
     });
 
     const list = Object.values(grouped).sort((a, b) => a.full_name.localeCompare(b.full_name));
@@ -1043,18 +1098,19 @@ export default function AdminInvoices() {
                     <Input
                       type="number"
                       placeholder="0"
-                      value={p.fixed_salary ?? ""}
+                      value={p.amount ?? ""}
                       onChange={(e) => {
                         const val = e.target.value === "" ? null : Number(e.target.value);
-                        updateSalary(p.id, { fixed_salary: val });
+                        setSalaryProfiles(prev => prev.map(sp => sp.id === p.id ? { ...sp, amount: val } : sp));
                       }}
+                      onBlur={() => updateSalary(p.id, p.amount)}
                       className="text-right text-sm h-8"
                     />
                   </div>
                   <span className="text-xs text-muted-foreground">€</span>
                   <Switch
-                    checked={p.fixed_salary_active}
-                    onCheckedChange={(checked) => updateSalary(p.id, { fixed_salary_active: checked })}
+                    checked={!!p.amount && p.amount > 0}
+                    onCheckedChange={(checked) => updateSalary(p.id, checked ? (p.amount || 0) : null)}
                   />
                 </div>
               </div>

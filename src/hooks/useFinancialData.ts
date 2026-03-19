@@ -47,9 +47,15 @@ interface Profile {
   id: string;
   full_name: string;
   role: string;
-  fixed_salary: number | null;
-  fixed_salary_active: boolean;
   is_active: boolean;
+}
+
+interface SalaryPeriod {
+  id: string;
+  profile_id: string;
+  amount: number;
+  start_date: string;
+  end_date: string | null;
 }
 
 interface FixedCharge {
@@ -82,7 +88,19 @@ export function useFinancialData() {
 
   const profilesQuery = useQuery({
     queryKey: ["financial-profiles"],
-    queryFn: () => fetchAllRows<Profile>("profiles", "id, full_name, role, fixed_salary, fixed_salary_active, is_active"),
+    queryFn: () => fetchAllRows<Profile>("profiles", "id, full_name, role, is_active"),
+  });
+
+  const salaryPeriodsQuery = useQuery({
+    queryKey: ["financial-salary-periods"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("salary_periods" as any)
+        .select("*")
+        .order("start_date", { ascending: false });
+      if (error) throw error;
+      return (data || []) as unknown as SalaryPeriod[];
+    },
   });
 
   const contactsQuery = useQuery({
@@ -108,6 +126,7 @@ export function useFinancialData() {
   const profiles = profilesQuery.data || [];
   const contacts = contactsQuery.data || [];
   const fixedCharges = fixedChargesQuery.data || [];
+  const salaryPeriods = salaryPeriodsQuery.data || [];
 
   // Build contact map for quick lookup
   const contactMap = new Map(contacts.map((c) => [c.id, c]));
@@ -148,9 +167,14 @@ export function useFinancialData() {
   const commissionsPaid = commissions.filter((c) => c.status === "paid").reduce((sum, c) => sum + (c.amount || 0), 0);
   const commissionsDue = commissions.filter((c) => c.status === "due" || c.status === "invoiced").reduce((sum, c) => sum + (c.amount || 0), 0);
 
-  // Charges: Salaires fixes mensuels
-  const activeSalaries = profiles.filter((p) => p.fixed_salary_active && p.fixed_salary && p.fixed_salary > 0);
-  const totalSalariesMensuel = activeSalaries.reduce((sum, p) => sum + (p.fixed_salary || 0), 0);
+  // Charges: Salaires fixes mensuels (currently active salary periods)
+  const today = new Date().toISOString().slice(0, 10);
+  const activeSalaryPeriods = salaryPeriods.filter((sp) => sp.start_date <= today && (!sp.end_date || sp.end_date >= today));
+  const activeSalaries = activeSalaryPeriods.map((sp) => {
+    const profile = profiles.find((p) => p.id === sp.profile_id);
+    return { id: sp.id, profile_id: sp.profile_id, full_name: profile?.full_name || "Inconnu", amount: sp.amount, start_date: sp.start_date, end_date: sp.end_date };
+  });
+  const totalSalariesMensuel = activeSalaries.reduce((sum, s) => sum + s.amount, 0);
 
   // Charges: Fixed charges (monthly equivalent)
   const activeCharges = fixedCharges.filter((c) => c.is_active);
@@ -187,7 +211,7 @@ export function useFinancialData() {
   // Impayés list (sales with late or lost)
   const impayesList = [...salesLate, ...salesLost];
 
-  const isLoading = salesQuery.isLoading || paymentsQuery.isLoading || commissionsQuery.isLoading || profilesQuery.isLoading || fixedChargesQuery.isLoading || contactsQuery.isLoading;
+  const isLoading = salesQuery.isLoading || paymentsQuery.isLoading || commissionsQuery.isLoading || profilesQuery.isLoading || fixedChargesQuery.isLoading || contactsQuery.isLoading || salaryPeriodsQuery.isLoading;
 
   return {
     isLoading,
