@@ -83,6 +83,7 @@ interface Props {
   commissionsPaid: number;
   activeSalaries: ActiveSalary[];
   activeCharges: ActiveCharge[];
+  allPayments: Payment[];
 }
 
 function fmt(n: number) {
@@ -142,7 +143,7 @@ export default function FinancialKPIs(props: Props) {
     totalChargesCumul, totalCommissions, isFiltered,
     sales, payments, contactMap, commissions, profiles,
     totalSalariesCumul, totalFixedChargesCumul, commissionsPaid,
-    activeSalaries, activeCharges,
+    activeSalaries, activeCharges, allPayments,
   } = props;
 
   const [openModal, setOpenModal] = useState<KpiKey | null>(null);
@@ -151,7 +152,8 @@ export default function FinancialKPIs(props: Props) {
 
   const profileMap = new Map(profiles.map(p => [p.id, p]));
   const saleMap = new Map(sales.map(s => [s.id, s]));
-  const paymentMap = new Map(payments.map(p => [p.id, p]));
+  // Use allPayments for commission lookups (commissions may reference payments outside filtered range)
+  const allPaymentMap = new Map(allPayments.map(p => [p.id, p]));
 
   const kpis: { key: KpiKey; label: string; value: string; icon: any; color: string; hasDetail: boolean }[] = [
     { key: "caGenere", label: "CA Généré", value: fmt(caGenere), icon: TrendingUp, color: "text-primary", hasDetail: true },
@@ -166,7 +168,7 @@ export default function FinancialKPIs(props: Props) {
 
   const sortedSalesForCA = useMemo(() => [...sales].sort((a, b) => (b.sold_at || "").localeCompare(a.sold_at || "")), [sales]);
   const paidPayments = useMemo(() => [...payments].filter(p => p.status === "paid").sort((a, b) => b.due_date.localeCompare(a.due_date)), [payments]);
-  const lateOrLostPayments = useMemo(() => [...payments].filter(p => p.status === "late" || p.status === "lost").sort((a, b) => a.due_date.localeCompare(b.due_date)), [payments]);
+  const lateOrLostPayments = useMemo(() => [...payments].filter(p => p.status === "late" || p.status === "lost").sort((a, b) => b.due_date.localeCompare(a.due_date)), [payments]);
   const engagedCommissions = useMemo(() => commissions.filter(c => c.status === "due" || c.status === "paid" || c.status === "invoiced").sort((a, b) => (b.amount || 0) - (a.amount || 0)), [commissions]);
 
   function paginate<T>(items: T[]) {
@@ -241,13 +243,13 @@ export default function FinancialKPIs(props: Props) {
                     <span className="text-[11px] font-medium text-foreground tabular-nums text-center">{p.payment_number}/{p.total_payments}</span>
                     <span className="text-[11px] text-muted-foreground tabular-nums text-center">{p.paid_at ? formatDate(p.paid_at) : "—"}</span>
                     <div className="flex justify-center"><Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${statusCfg.paid.className}`}>Payé</Badge></div>
-                    <span className="text-xs font-bold text-[hsl(var(--kpi-paid))] tabular-nums text-right">{fmt(p.amount)}</span>
+                    <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(p.amount)}</span>
                   </div>
                 );
               })}
             </div>
             <div className="flex items-center justify-between pt-3 border-t border-border px-3">
-              <span className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{paidPayments.length}</span> échéance{paidPayments.length > 1 ? "s" : ""} payée{paidPayments.length > 1 ? "s" : ""} — Total <span className="font-bold text-[hsl(var(--kpi-paid))]">{fmt(caCollecte)}</span></span>
+              <span className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{paidPayments.length}</span> échéance{paidPayments.length > 1 ? "s" : ""} payée{paidPayments.length > 1 ? "s" : ""} — Total <span className="font-bold text-foreground">{fmt(caCollecte)}</span></span>
               <ModalPagination page={safePage} totalPages={totalPages} setPage={setModalPage} />
             </div>
           </div>
@@ -263,8 +265,8 @@ export default function FinancialKPIs(props: Props) {
         const totalImpaye = lateOrLostPayments.reduce((s, p) => s + p.amount, 0);
         return (
           <div>
-            <div className="grid grid-cols-[1fr_100px_56px_80px_68px_90px] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              <span>Client</span><span>Date éch.</span><span className="text-center">N°</span><span className="text-center">Date paiem.</span><span className="text-center">Statut</span><span className="text-right">Montant</span>
+            <div className="grid grid-cols-[1fr_100px_56px_68px_90px] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span>Client</span><span>Date éch.</span><span className="text-center">N°</span><span className="text-center">Statut</span><span className="text-right">Montant</span>
             </div>
             <div className="divide-y divide-border/40">
               {items.map((p, idx) => {
@@ -272,16 +274,15 @@ export default function FinancialKPIs(props: Props) {
                 const contact = sale ? contactMap.get(sale.contact_id) : null;
                 const cfg = statusCfg[p.status] || statusCfg.pending;
                 return (
-                  <div key={p.id} className={`grid grid-cols-[1fr_100px_56px_80px_68px_90px] gap-3 items-center px-3 py-2.5 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
+                  <div key={p.id} className={`grid grid-cols-[1fr_100px_56px_68px_90px] gap-3 items-center px-3 py-2.5 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0"><User className="h-3 w-3 text-muted-foreground" /></div>
                       <span className="text-xs font-medium text-foreground truncate">{contact?.full_name || "Inconnu"}</span>
                     </div>
                     <span className="text-[11px] text-muted-foreground tabular-nums">{formatDate(p.due_date)}</span>
                     <span className="text-[11px] font-medium text-foreground tabular-nums text-center">{p.payment_number}/{p.total_payments}</span>
-                    <span className="text-[11px] text-muted-foreground tabular-nums text-center">{p.paid_at ? formatDate(p.paid_at) : "—"}</span>
                     <div className="flex justify-center"><Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${cfg.className}`}>{cfg.label}</Badge></div>
-                    <span className="text-xs font-bold text-destructive tabular-nums text-right">{fmt(p.amount)}</span>
+                    <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(p.amount)}</span>
                   </div>
                 );
               })}
@@ -307,7 +308,7 @@ export default function FinancialKPIs(props: Props) {
                 const name = c.beneficiary_user_id ? profileMap.get(c.beneficiary_user_id)?.full_name : c.beneficiary_external;
                 const sale = saleMap.get(c.sale_id);
                 const clientName = sale ? contactMap.get(sale.contact_id)?.full_name : null;
-                const payment = c.payment_id ? paymentMap.get(c.payment_id) : null;
+                const payment = c.payment_id ? allPaymentMap.get(c.payment_id) : null;
                 const cfg = statusCfg[c.status || "pending"] || statusCfg.pending;
                 return (
                   <div key={c.id} className={`grid grid-cols-[1fr_1fr_70px_50px_56px_80px_68px_80px] gap-2 items-center px-3 py-2.5 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
