@@ -77,9 +77,8 @@ export default function ImpayesListCard({ salesLate, salesLost, contactMap, paym
         </CardHeader>
         <CardContent className="pt-0">
           {/* Table header */}
-          <div className="grid grid-cols-[1fr_120px_100px_80px_24px] gap-2 px-2 pb-1.5 border-b border-border text-[11px] font-medium text-muted-foreground">
+          <div className="grid grid-cols-[1fr_100px_80px_24px] gap-2 px-2 pb-1.5 border-b border-border text-[11px] font-medium text-muted-foreground">
             <span>Client</span>
-            <span>Produit</span>
             <span className="text-right">Montant</span>
             <span className="text-center">Statut</span>
             <span />
@@ -94,24 +93,23 @@ export default function ImpayesListCard({ salesLate, salesLost, contactMap, paym
                   <button
                     key={sale.id}
                     onClick={() => setSelectedSale(sale)}
-                    className="grid grid-cols-[1fr_120px_100px_80px_24px] gap-2 items-center w-full px-2 py-2 hover:bg-muted/40 transition-colors text-left group"
+                    className="grid grid-cols-[1fr_100px_80px_24px] gap-2 items-center w-full px-2 py-2 hover:bg-muted/40 transition-colors text-left group"
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className={`h-7 w-7 rounded-full flex items-center justify-center flex-shrink-0 ${isLost ? "bg-destructive/10" : "bg-amber-500/10"}`}>
-                        <User className={`h-3.5 w-3.5 ${isLost ? "text-destructive" : "text-amber-500"}`} />
+                      <div className={`h-7 w-7 rounded-full flex items-center justify-center flex-shrink-0 ${isLost ? "bg-[hsl(var(--kpi-lost)/0.2)]" : "bg-[hsl(var(--kpi-late)/0.15)]"}`}>
+                        <User className={`h-3.5 w-3.5 ${isLost ? "text-[hsl(var(--kpi-lost))]" : "text-[hsl(var(--kpi-late))]"}`} />
                       </div>
                       <span className="text-xs font-medium text-foreground truncate">
                         {contact?.full_name || "Inconnu"}
                       </span>
                     </div>
-                    <span className="text-[11px] text-muted-foreground truncate">{sale.product}</span>
                     <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(sale.amount_ht)}</span>
                     <div className="flex justify-center">
                       <Badge
                         className={`text-[10px] px-1.5 py-0 leading-4 border ${
                           isLost
-                            ? "bg-destructive/10 text-destructive border-destructive/20"
-                            : "bg-amber-500/10 text-amber-600 border-amber-500/30"
+                            ? "bg-[hsl(var(--kpi-lost)/0.2)] text-[hsl(var(--kpi-lost))] border-[hsl(var(--kpi-lost)/0.5)]"
+                            : "bg-[hsl(var(--kpi-late)/0.15)] text-[hsl(var(--kpi-late))] border-[hsl(var(--kpi-late)/0.4)]"
                         }`}
                       >
                         {isLost ? "Perdu" : "Retard"}
