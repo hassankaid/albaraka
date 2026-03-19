@@ -51,7 +51,8 @@ function FinancialTab() {
           salesLostCount={data.salesLost.length}
           salesPaidCount={data.salesPaid.length}
           salesInProgressCount={data.salesInProgress.length}
-          impayesCA={impayesCA}
+          lateCA={lateCA}
+          lostCA={lostCA}
         />
         <TreasuryCard
           tresoIn={data.tresoIn}
