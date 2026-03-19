@@ -167,9 +167,14 @@ export function useFinancialData() {
   const commissionsPaid = commissions.filter((c) => c.status === "paid").reduce((sum, c) => sum + (c.amount || 0), 0);
   const commissionsDue = commissions.filter((c) => c.status === "due" || c.status === "invoiced").reduce((sum, c) => sum + (c.amount || 0), 0);
 
-  // Charges: Salaires fixes mensuels
-  const activeSalaries = profiles.filter((p) => p.fixed_salary_active && p.fixed_salary && p.fixed_salary > 0);
-  const totalSalariesMensuel = activeSalaries.reduce((sum, p) => sum + (p.fixed_salary || 0), 0);
+  // Charges: Salaires fixes mensuels (currently active salary periods)
+  const today = new Date().toISOString().slice(0, 10);
+  const activeSalaryPeriods = salaryPeriods.filter((sp) => sp.start_date <= today && (!sp.end_date || sp.end_date >= today));
+  const activeSalaries = activeSalaryPeriods.map((sp) => {
+    const profile = profiles.find((p) => p.id === sp.profile_id);
+    return { id: sp.id, profile_id: sp.profile_id, full_name: profile?.full_name || "Inconnu", amount: sp.amount, start_date: sp.start_date, end_date: sp.end_date };
+  });
+  const totalSalariesMensuel = activeSalaries.reduce((sum, s) => sum + s.amount, 0);
 
   // Charges: Fixed charges (monthly equivalent)
   const activeCharges = fixedCharges.filter((c) => c.is_active);
