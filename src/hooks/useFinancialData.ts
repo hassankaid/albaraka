@@ -2,6 +2,17 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAllRows } from "@/lib/fetchAllRows";
 
+interface Ad {
+  id: string;
+  date: string;
+  campaign_name: string;
+  campaign_id: string;
+  channel: string | null;
+  amount_spent: number;
+  impressions: number;
+  clicks: number;
+}
+
 interface Sale {
   id: string;
   amount_ht: number;
@@ -147,6 +158,11 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     },
   });
 
+  const adsQuery = useQuery({
+    queryKey: ["financial-ads"],
+    queryFn: () => fetchAllRows<Ad>("ads", "id, date, campaign_name, campaign_id, channel, amount_spent, impressions, clicks"),
+  });
+
   // Raw data (unfiltered)
   const allSales = salesQuery.data || [];
   const allPayments = paymentsQuery.data || [];
@@ -155,6 +171,7 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
   const contacts = contactsQuery.data || [];
   const fixedCharges = fixedChargesQuery.data || [];
   const salaryPeriods = salaryPeriodsQuery.data || [];
+  const allAds = adsQuery.data || [];
 
   // ── Apply date range filtering ──
   const range = dateRange ?? null;
@@ -280,11 +297,20 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     return sum + c.amount * months;
   }, 0);
 
-  // Total charges
-  const totalChargesMensuel = totalSalariesMensuel + totalFixedChargesMensuel;
-  const totalChargesCumul = totalSalariesCumul + totalFixedChargesCumul;
+  // ── Ads: filter by date ──
+  const ads = range
+    ? allAds.filter((a) => inRange(a.date, range))
+    : allAds;
+  const totalAdsCumul = ads.reduce((sum, a) => sum + (a.amount_spent || 0), 0);
 
-  // Bénéfice = CA collecté - toutes les sorties (commissions + charges)
+  // ROI = CA Généré / Dépenses Ads (multiplicateur)
+  const roi = totalAdsCumul > 0 ? caGenere / totalAdsCumul : null;
+
+  // Total charges (now includes ads)
+  const totalChargesMensuel = totalSalariesMensuel + totalFixedChargesMensuel;
+  const totalChargesCumul = totalSalariesCumul + totalFixedChargesCumul + totalAdsCumul;
+
+  // Bénéfice = CA collecté - toutes les sorties (commissions + charges incl. ads)
   const benefice = caCollecte - commissionsPaid - totalChargesCumul;
 
   // MRR: uses ALL payments (unfiltered) — MRR is its own time-series
@@ -306,12 +332,12 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
   const allSalesLost = allSalesWithStatus.filter((s) => s.payment_status === "lost");
   const impayesList = [...allSalesLate, ...allSalesLost];
 
-  // Treasury
+  // Treasury (includes ads spend)
   const tresoIn = caCollecte;
   const tresoOut = commissionsPaid + totalChargesCumul;
   const tresoRemaining = tresoIn - tresoOut;
 
-  const isLoading = salesQuery.isLoading || paymentsQuery.isLoading || commissionsQuery.isLoading || profilesQuery.isLoading || fixedChargesQuery.isLoading || contactsQuery.isLoading || salaryPeriodsQuery.isLoading;
+  const isLoading = salesQuery.isLoading || paymentsQuery.isLoading || commissionsQuery.isLoading || profilesQuery.isLoading || fixedChargesQuery.isLoading || contactsQuery.isLoading || salaryPeriodsQuery.isLoading || adsQuery.isLoading;
 
   return {
     isLoading,
@@ -363,5 +389,8 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     refetchCharges: fixedChargesQuery.refetch,
     salaryPeriods,
     refetchSalaryPeriods: salaryPeriodsQuery.refetch,
+    totalAdsCumul,
+    roi,
+    ads,
   };
 }

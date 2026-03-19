@@ -9,6 +9,7 @@ interface Props {
   commissionsPaid: number;
   totalSalariesCumul: number;
   totalFixedChargesCumul: number;
+  totalAdsCumul: number;
 }
 
 function fmt(n: number) {
@@ -20,7 +21,7 @@ function pct(part: number, total: number) {
   return Math.round((part / total) * 100);
 }
 
-export default function TreasuryCard({ tresoIn, tresoOut, tresoRemaining, commissionsPaid, totalSalariesCumul, totalFixedChargesCumul }: Props) {
+export default function TreasuryCard({ tresoIn, tresoOut, tresoRemaining, commissionsPaid, totalSalariesCumul, totalFixedChargesCumul, totalAdsCumul }: Props) {
   const [showDetails, setShowDetails] = useState(false);
   const isPositive = tresoRemaining >= 0;
   const margin = tresoIn > 0 ? ((tresoRemaining / tresoIn) * 100).toFixed(1) : "0.0";
@@ -29,6 +30,7 @@ export default function TreasuryCard({ tresoIn, tresoOut, tresoRemaining, commis
     { label: "Commissions", amount: commissionsPaid, color: "bg-orange-400" },
     { label: "Salaires", amount: totalSalariesCumul, color: "bg-blue-400" },
     { label: "Charges fixes", amount: totalFixedChargesCumul, color: "bg-violet-400" },
+    { label: "Publicité", amount: totalAdsCumul, color: "bg-rose-400" },
   ];
 
   return (

@@ -86,6 +86,8 @@ interface Props {
   activeCharges: ActiveCharge[];
   allPayments: Payment[];
   allSales: Sale[];
+  totalAdsCumul: number;
+  roi: number | null;
 }
 
 function fmt(n: number) {
@@ -146,6 +148,7 @@ export default function FinancialKPIs(props: Props) {
     sales, payments, contactMap, commissions, profiles,
     totalSalariesCumul, totalFixedChargesCumul, commissionsPaid,
     activeSalaries, activeCharges, allPayments, allSales,
+    totalAdsCumul, roi,
   } = props;
 
   const [openModal, setOpenModal] = useState<KpiKey | null>(null);
@@ -168,7 +171,7 @@ export default function FinancialKPIs(props: Props) {
     { key: "commissions", label: "Commissions", value: fmt(totalCommissions), icon: CreditCard, color: "text-orange-500", hasDetail: true },
     { key: "charges", label: "Charges", value: fmt(totalChargesCumul), icon: BarChart3, color: "text-muted-foreground", hasDetail: true },
     { key: "benefice", label: "Bénéfice", value: fmt(benefice), icon: PiggyBank, color: benefice >= 0 ? "text-emerald-500" : "text-destructive", hasDetail: true },
-    { key: "roi", label: "ROI Ads", value: "—", icon: TrendingDown, color: "text-muted-foreground", hasDetail: false },
+    { key: "roi", label: "ROI", value: roi !== null ? `x${roi.toFixed(1)}` : "—", icon: TrendingUp, color: roi !== null && roi >= 1 ? "text-emerald-500" : roi !== null ? "text-destructive" : "text-muted-foreground", hasDetail: false },
   ];
 
   const sortedSalesForCA = useMemo(() => [...sales].sort((a, b) => (b.sold_at || "").localeCompare(a.sold_at || "")), [sales]);
@@ -469,7 +472,15 @@ export default function FinancialKPIs(props: Props) {
               )}
             </div>
 
-            {/* Total */}
+            {/* Publicité */}
+            <div>
+              <div className="flex items-center gap-2 px-3 pb-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
+                <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Publicité</span>
+                <span className="ml-auto text-sm font-bold text-foreground tabular-nums">{fmt(totalAdsCumul)}</span>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between pt-3 border-t-2 border-border px-3">
               <span className="text-sm font-semibold text-foreground">Total charges</span>
               <span className="text-lg font-bold text-foreground tabular-nums">{fmt(totalChargesCumul)}</span>
@@ -485,6 +496,7 @@ export default function FinancialKPIs(props: Props) {
           { label: "Commissions payées", amount: commissionsPaid, color: "text-foreground", sign: "−" },
           { label: "Salaires fixes", amount: totalSalariesCumul, color: "text-foreground", sign: "−" },
           { label: "Charges fixes", amount: totalFixedChargesCumul, color: "text-foreground", sign: "−" },
+          { label: "Publicité", amount: totalAdsCumul, color: "text-foreground", sign: "−" },
         ];
         return (
           <div>
@@ -520,7 +532,7 @@ export default function FinancialKPIs(props: Props) {
     commissions: "Détail — Commissions",
     charges: "Détail — Charges",
     benefice: "Détail — Bénéfice net",
-    roi: "ROI Ads",
+    roi: "ROI",
   };
 
   // Wider dialog for commissions (more columns)
