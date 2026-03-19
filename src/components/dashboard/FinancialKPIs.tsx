@@ -472,7 +472,15 @@ export default function FinancialKPIs(props: Props) {
               )}
             </div>
 
-            {/* Total */}
+            {/* Publicité */}
+            <div>
+              <div className="flex items-center gap-2 px-3 pb-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
+                <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Publicité</span>
+                <span className="ml-auto text-sm font-bold text-foreground tabular-nums">{fmt(totalAdsCumul)}</span>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between pt-3 border-t-2 border-border px-3">
               <span className="text-sm font-semibold text-foreground">Total charges</span>
               <span className="text-lg font-bold text-foreground tabular-nums">{fmt(totalChargesCumul)}</span>
