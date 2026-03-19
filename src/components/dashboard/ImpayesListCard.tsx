@@ -108,8 +108,11 @@ export default function ImpayesListCard({ salesLate, salesLost, contactMap, paym
                     <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(sale.amount_ht)}</span>
                     <div className="flex justify-center">
                       <Badge
-                        variant={isLost ? "destructive" : "outline"}
-                        className="text-[10px] px-1.5 py-0 leading-4"
+                        className={`text-[10px] px-1.5 py-0 leading-4 border ${
+                          isLost
+                            ? "bg-destructive/10 text-destructive border-destructive/20"
+                            : "bg-amber-500/10 text-amber-600 border-amber-500/30"
+                        }`}
                       >
                         {isLost ? "Perdu" : "Retard"}
                       </Badge>
