@@ -7,15 +7,15 @@ interface Props {
   tresoOut: number;
   tresoRemaining: number;
   commissionsPaid: number;
-  totalSalariesMensuel: number;
-  totalFixedChargesMensuel: number;
+  totalSalariesCumul: number;
+  totalFixedChargesCumul: number;
 }
 
 function fmt(n: number) {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 }
 
-export default function TreasuryCard({ tresoIn, tresoOut, tresoRemaining, commissionsPaid, totalSalariesMensuel, totalFixedChargesMensuel }: Props) {
+export default function TreasuryCard({ tresoIn, tresoOut, tresoRemaining, commissionsPaid, totalSalariesCumul, totalFixedChargesCumul }: Props) {
   const [showDetails, setShowDetails] = useState(false);
 
   return (
