@@ -304,17 +304,33 @@ export default function ChargesCard({
           </div>
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
+              <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-muted-foreground">Autres charges</span>
+            </div>
+            <span className="font-medium">{totalOneTimeCharges > 0 ? fmt(totalOneTimeCharges) : <span className="text-muted-foreground text-xs italic">—</span>}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
               <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-muted-foreground">Frais transaction</span>
             </div>
             <span className="text-muted-foreground text-xs italic">À venir</span>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <Receipt className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-muted-foreground">Commissions</span>
+          <div className="border-t border-border pt-2 mt-2 space-y-1">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <Receipt className="h-3.5 w-3.5 text-[hsl(var(--kpi-paid))]" />
+                <span className="text-muted-foreground">Commissions payées</span>
+              </div>
+              <span className="font-medium text-[hsl(var(--kpi-paid))]">{fmt(commissionsPaid)}</span>
             </div>
-            <span className="font-medium">{fmt(commissionsPaid + commissionsDue)}</span>
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <Receipt className="h-3.5 w-3.5 text-[hsl(var(--kpi-late))]" />
+                <span className="text-muted-foreground">Commissions dues</span>
+              </div>
+              <span className="font-medium text-[hsl(var(--kpi-late))]">{fmt(commissionsDue)}</span>
+            </div>
           </div>
         </CardContent>
       </Card>
