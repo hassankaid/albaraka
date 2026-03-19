@@ -413,7 +413,7 @@ export default function FinancialKPIs(props: Props) {
       </div>
 
       <Dialog open={!!openModal} onOpenChange={() => setOpenModal(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle className="text-base">{openModal ? modalTitles[openModal] : ""}</DialogTitle>
           </DialogHeader>
