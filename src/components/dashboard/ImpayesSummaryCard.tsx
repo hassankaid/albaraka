@@ -9,7 +9,8 @@ interface Props {
   salesLostCount: number;
   salesPaidCount: number;
   salesInProgressCount: number;
-  impayesCA: number;
+  lateCA: number;
+  lostCA: number;
 }
 
 function fmt(n: number) {
@@ -23,15 +24,13 @@ const SEGMENTS = [
   { key: "lost", label: "Perdu", color: "#ef4444" },
 ];
 
-export default function ImpayesSummaryCard({ tauxImpayes, salesLateCount, salesLostCount, salesPaidCount, salesInProgressCount, impayesCA }: Props) {
+export default function ImpayesSummaryCard({ tauxImpayes, salesLateCount, salesLostCount, salesPaidCount, salesInProgressCount, lateCA, lostCA }: Props) {
   const total = salesLateCount + salesLostCount + salesPaidCount + salesInProgressCount;
-  const impayesCount = salesLateCount + salesLostCount;
-
   const counts = [salesPaidCount, salesInProgressCount, salesLateCount, salesLostCount];
   const data = SEGMENTS.map((s, i) => ({ name: s.label, value: counts[i] })).filter((d) => d.value > 0);
 
   return (
-    <Card>
+    <Card className="flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-semibold flex items-center justify-between">
           <span className="flex items-center gap-1.5">
@@ -42,22 +41,19 @@ export default function ImpayesSummaryCard({ tauxImpayes, salesLateCount, salesL
             {tauxImpayes.toFixed(1)}%
           </Badge>
         </CardTitle>
-        <p className="text-xs text-muted-foreground">
-          {impayesCount} impayé{impayesCount > 1 ? "s" : ""} · {fmt(impayesCA)} à risque
-        </p>
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="flex items-center gap-5">
+      <CardContent className="pt-0 flex-1 flex flex-col justify-between gap-4">
+        <div className="flex items-center gap-4">
           {/* Donut */}
-          <div className="relative w-[120px] h-[120px] flex-shrink-0">
+          <div className="relative w-[110px] h-[110px] flex-shrink-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={data}
                   cx="50%"
                   cy="50%"
-                  innerRadius={36}
-                  outerRadius={54}
+                  innerRadius={34}
+                  outerRadius={50}
                   paddingAngle={3}
                   dataKey="value"
                   strokeWidth={0}
@@ -71,34 +67,43 @@ export default function ImpayesSummaryCard({ tauxImpayes, salesLateCount, salesL
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-xl font-bold text-foreground leading-none">{total}</span>
+              <span className="text-lg font-bold text-foreground leading-none">{total}</span>
               <span className="text-[10px] text-muted-foreground mt-0.5">ventes</span>
             </div>
           </div>
 
-          {/* Legend */}
-          <div className="flex-1 space-y-2">
+          {/* Legend compact */}
+          <div className="flex-1 space-y-1.5">
             {SEGMENTS.map((s, i) => {
               const count = counts[i];
               const pct = total > 0 ? (count / total) * 100 : 0;
               return (
-                <div key={s.key} className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: s.color }} />
-                      <span className="text-xs text-foreground font-medium">{s.label}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-foreground tabular-nums">{count}</span>
-                      <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">{pct.toFixed(0)}%</span>
-                    </div>
+                <div key={s.key} className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
+                    <span className="text-[11px] text-muted-foreground">{s.label}</span>
                   </div>
-                  <div className="ml-[18px] h-1 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: s.color }} />
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-foreground tabular-nums">{count}</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums w-7 text-right">{pct.toFixed(0)}%</span>
                   </div>
                 </div>
               );
             })}
+          </div>
+        </div>
+
+        {/* Bottom: à risque vs en perte */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-lg px-3 py-2 bg-amber-500/10 border border-amber-500/20">
+            <p className="text-[10px] font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wide">À risque</p>
+            <p className="text-sm font-bold text-foreground tabular-nums mt-0.5">{fmt(lateCA)}</p>
+            <p className="text-[10px] text-muted-foreground">{salesLateCount} vente{salesLateCount > 1 ? "s" : ""} en retard</p>
+          </div>
+          <div className="rounded-lg px-3 py-2 bg-destructive/10 border border-destructive/20">
+            <p className="text-[10px] font-medium text-destructive uppercase tracking-wide">En perte</p>
+            <p className="text-sm font-bold text-foreground tabular-nums mt-0.5">{fmt(lostCA)}</p>
+            <p className="text-[10px] text-muted-foreground">{salesLostCount} vente{salesLostCount > 1 ? "s" : ""} perdue{salesLostCount > 1 ? "s" : ""}</p>
           </div>
         </div>
       </CardContent>
