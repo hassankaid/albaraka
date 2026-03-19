@@ -100,8 +100,8 @@ export default function ImpayesSummaryCard({ tauxImpayes, salesLateCount, salesL
             <p className="text-sm font-bold text-foreground tabular-nums mt-0.5">{fmt(lateCA)}</p>
             <p className="text-[10px] text-muted-foreground">{salesLateCount} vente{salesLateCount > 1 ? "s" : ""} en retard</p>
           </div>
-          <div className="rounded-lg px-3 py-2 bg-destructive/10 border border-destructive/20">
-            <p className="text-[10px] font-medium text-destructive uppercase tracking-wide">En perte</p>
+          <div className="rounded-lg px-3 py-2 bg-red-500/15 border border-red-500/30">
+            <p className="text-[10px] font-medium text-red-400 uppercase tracking-wide">En perte</p>
             <p className="text-sm font-bold text-foreground tabular-nums mt-0.5">{fmt(lostCA)}</p>
             <p className="text-[10px] text-muted-foreground">{salesLostCount} vente{salesLostCount > 1 ? "s" : ""} perdue{salesLostCount > 1 ? "s" : ""}</p>
           </div>
