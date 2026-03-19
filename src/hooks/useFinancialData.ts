@@ -335,6 +335,7 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     allSalesLate,
     allSalesLost,
     totalCommissions,
+    commissions,
     commissionsPaid,
     commissionsDue,
     benefice,
