@@ -26,17 +26,18 @@ export default function MRRChart({ data }: Props) {
         {chartData.length === 0 ? (
           <p className="text-sm text-muted-foreground py-8 text-center">Aucune donnée de paiement récurrent</p>
         ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis dataKey="label" className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-              <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+          <ResponsiveContainer width="100%" height={340}>
+            <BarChart data={chartData} barCategoryGap="20%">
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+              <XAxis dataKey="label" className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
               <Tooltip
+                cursor={{ fill: "hsl(var(--muted)/0.3)" }}
                 formatter={(value: number) => [fmt(value), "MRR"]}
                 contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
                 labelStyle={{ color: "hsl(var(--foreground))" }}
               />
-              <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}
