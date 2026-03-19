@@ -249,7 +249,7 @@ export default function FinancialKPIs(props: Props) {
               })}
             </div>
             <div className="flex items-center justify-between pt-3 border-t border-border px-3">
-              <span className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{paidPayments.length}</span> échéance{paidPayments.length > 1 ? "s" : ""} payée{paidPayments.length > 1 ? "s" : ""} — Total <span className="font-bold text-[hsl(var(--kpi-paid))]">{fmt(caCollecte)}</span></span>
+              <span className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{paidPayments.length}</span> échéance{paidPayments.length > 1 ? "s" : ""} payée{paidPayments.length > 1 ? "s" : ""} — Total <span className="font-bold text-foreground">{fmt(caCollecte)}</span></span>
               <ModalPagination page={safePage} totalPages={totalPages} setPage={setModalPage} />
             </div>
           </div>
