@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarIcon, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, addWeeks, subWeeks, getISOWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -31,23 +31,21 @@ function buildYears() {
 export default function PeriodFilter({ value, onChange }: Props) {
   const [activePreset, setActivePreset] = useState<PresetKey>("all");
 
-  // Sub-picker states
   const now = new Date();
-  const [selMonth, setSelMonth] = useState(now.getMonth()); // 0-based
+  const [selMonth, setSelMonth] = useState(now.getMonth());
   const [selMonthYear, setSelMonthYear] = useState(now.getFullYear());
-  const [selWeekRef, setSelWeekRef] = useState(now); // reference date for week
-  const [selQuarter, setSelQuarter] = useState(Math.floor(now.getMonth() / 3)); // 0-based
+  const [selWeekRef, setSelWeekRef] = useState(now);
+  const [selQuarter, setSelQuarter] = useState(Math.floor(now.getMonth() / 3));
   const [selQuarterYear, setSelQuarterYear] = useState(now.getFullYear());
   const [selYear, setSelYear] = useState(now.getFullYear());
 
-  // Custom
   const [customOpen, setCustomOpen] = useState(false);
   const [customFrom, setCustomFrom] = useState<Date | undefined>();
   const [customTo, setCustomTo] = useState<Date | undefined>();
+  const [weekPickerOpen, setWeekPickerOpen] = useState(false);
 
   const years = useMemo(() => buildYears(), []);
 
-  // ── Apply range based on preset + sub-picker values ──
   const applyMonth = (month: number, year: number) => {
     setSelMonth(month);
     setSelMonthYear(year);
@@ -83,6 +81,25 @@ export default function PeriodFilter({ value, onChange }: Props) {
     if (key === "custom") { setCustomOpen(true); return; }
   };
 
+  const resetToCurrent = () => {
+    const today = new Date();
+    if (activePreset === "week") { applyWeek(today); }
+    if (activePreset === "month") { applyMonth(today.getMonth(), today.getFullYear()); }
+    if (activePreset === "quarter") { applyQuarter(Math.floor(today.getMonth() / 3), today.getFullYear()); }
+    if (activePreset === "year") { applyYear(today.getFullYear()); }
+  };
+
+  const isCurrentPeriod = () => {
+    const today = new Date();
+    if (activePreset === "week") {
+      return getISOWeek(selWeekRef) === getISOWeek(today) && selWeekRef.getFullYear() === today.getFullYear();
+    }
+    if (activePreset === "month") return selMonth === today.getMonth() && selMonthYear === today.getFullYear();
+    if (activePreset === "quarter") return selQuarter === Math.floor(today.getMonth() / 3) && selQuarterYear === today.getFullYear();
+    if (activePreset === "year") return selYear === today.getFullYear();
+    return true;
+  };
+
   const applyCustom = () => {
     if (customFrom && customTo) {
       onChange({ from: customFrom, to: customTo });
@@ -90,7 +107,6 @@ export default function PeriodFilter({ value, onChange }: Props) {
     }
   };
 
-  // Week display helpers
   const weekStart = startOfWeek(selWeekRef, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(selWeekRef, { weekStartsOn: 1 });
   const weekNum = getISOWeek(selWeekRef);
@@ -103,6 +119,8 @@ export default function PeriodFilter({ value, onChange }: Props) {
     { key: "all", label: "Tout" },
     { key: "custom", label: "Personnalisé" },
   ];
+
+  const showResetButton = activePreset !== "all" && activePreset !== "custom" && !isCurrentPeriod();
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
@@ -129,9 +147,29 @@ export default function PeriodFilter({ value, onChange }: Props) {
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => applyWeek(subWeeks(selWeekRef, 1))}>
             <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
-          <span className="text-xs font-medium text-foreground min-w-[180px] text-center">
-            S{weekNum} — {format(weekStart, "d MMM", { locale: fr })} → {format(weekEnd, "d MMM yyyy", { locale: fr })}
-          </span>
+
+          <Popover open={weekPickerOpen} onOpenChange={setWeekPickerOpen}>
+            <PopoverTrigger asChild>
+              <button className="text-xs font-medium text-foreground min-w-[180px] text-center hover:bg-muted/50 rounded-md px-2 py-1 transition-colors">
+                S{weekNum} — {format(weekStart, "d MMM", { locale: fr })} → {format(weekEnd, "d MMM yyyy", { locale: fr })}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={selWeekRef}
+                onSelect={(date) => {
+                  if (date) {
+                    applyWeek(date);
+                    setWeekPickerOpen(false);
+                  }
+                }}
+                locale={fr}
+                className="p-2 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => applyWeek(addWeeks(selWeekRef, 1))}>
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>
@@ -184,6 +222,19 @@ export default function PeriodFilter({ value, onChange }: Props) {
         </Select>
       )}
 
+      {/* ── "Aujourd'hui" reset button ── */}
+      {showResetButton && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs gap-1.5"
+          onClick={resetToCurrent}
+        >
+          <RotateCcw className="h-3 w-3" />
+          Aujourd'hui
+        </Button>
+      )}
+
       {/* ── CUSTOM date picker ── */}
       {activePreset === "custom" && (
         <Popover open={customOpen} onOpenChange={setCustomOpen}>
@@ -228,7 +279,6 @@ export default function PeriodFilter({ value, onChange }: Props) {
         </Popover>
       )}
 
-      {/* ── Range label for custom ── */}
       {value && activePreset === "custom" && customFrom && customTo && (
         <span className="text-[11px] text-muted-foreground">
           {format(value.from, "d MMM yyyy", { locale: fr })} → {format(value.to, "d MMM yyyy", { locale: fr })}
