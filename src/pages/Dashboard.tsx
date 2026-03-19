@@ -32,7 +32,7 @@ function FinancialTab() {
         tauxCashCollecte={data.tauxCashCollecte}
         tauxImpayes={data.tauxImpayes}
         benefice={data.benefice}
-        totalChargesMensuel={data.totalChargesMensuel}
+        totalChargesCumul={data.totalChargesCumul}
         totalCommissions={data.totalCommissions}
       />
 
@@ -86,11 +86,6 @@ function FinancialTab() {
           onRefreshCharges={() => data.refetchCharges()}
           onRefreshSalaries={() => data.refetchSalaryPeriods()}
         />
-        <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center justify-center text-center space-y-2">
-          <p className="text-sm font-semibold text-foreground">ROI Global</p>
-          <p className="text-muted-foreground text-xs">L'intégration des dépenses publicitaires permettra de calculer le ROI automatiquement.</p>
-          <p className="text-3xl font-bold text-muted-foreground">—</p>
-        </div>
       </div>
     </div>
   );
