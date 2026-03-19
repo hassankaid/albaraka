@@ -145,7 +145,7 @@ export default function FinancialKPIs(props: Props) {
     totalChargesCumul, totalCommissions, isFiltered,
     sales, payments, contactMap, commissions, profiles,
     totalSalariesCumul, totalFixedChargesCumul, commissionsPaid,
-    activeSalaries, activeCharges, allPayments,
+    activeSalaries, activeCharges, allPayments, allSales,
   } = props;
 
   const [openModal, setOpenModal] = useState<KpiKey | null>(null);
@@ -155,7 +155,8 @@ export default function FinancialKPIs(props: Props) {
   const handleOpenModal = (key: KpiKey) => { setModalPage(0); setCommFilterBenef("all"); setCommFilterSale("all"); setOpenModal(key); };
 
   const profileMap = new Map(profiles.map(p => [p.id, p]));
-  const saleMap = new Map(sales.map(s => [s.id, s]));
+  // Use allSales for lookups so filtered payments always find their sale/contact
+  const saleMap = new Map(allSales.map(s => [s.id, s]));
   // Use allPayments for commission lookups (commissions may reference payments outside filtered range)
   const allPaymentMap = new Map(allPayments.map(p => [p.id, p]));
 
