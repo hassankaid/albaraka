@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
-import { useFinancialData } from "@/hooks/useFinancialData";
+import { useFinancialData, type FinancialDateRange } from "@/hooks/useFinancialData";
 import FinancialKPIs from "@/components/dashboard/FinancialKPIs";
 import PaymentSplitCard from "@/components/dashboard/PaymentSplitCard";
 import ImpayesSummaryCard from "@/components/dashboard/ImpayesSummaryCard";
@@ -8,10 +9,18 @@ import ImpayesListCard from "@/components/dashboard/ImpayesListCard";
 import MRRChart from "@/components/dashboard/MRRChart";
 import TreasuryCard from "@/components/dashboard/TreasuryCard";
 import ChargesCard from "@/components/dashboard/ChargesCard";
+import PeriodFilter, { type DateRange } from "@/components/dashboard/PeriodFilter";
 import { Loader2 } from "lucide-react";
 
 function FinancialTab() {
-  const data = useFinancialData();
+  const [dateRange, setDateRange] = useState<DateRange | null>(null);
+
+  // Convert to FinancialDateRange for the hook
+  const financialRange: FinancialDateRange | null = dateRange
+    ? { from: dateRange.from, to: dateRange.to }
+    : null;
+
+  const data = useFinancialData(financialRange);
 
   if (data.isLoading) {
     return (
@@ -26,6 +35,8 @@ function FinancialTab() {
 
   return (
     <div className="space-y-4">
+      <PeriodFilter value={dateRange} onChange={setDateRange} />
+
       <FinancialKPIs
         caGenere={data.caGenere}
         caCollecte={data.caCollecte}
@@ -73,20 +84,18 @@ function FinancialTab() {
 
       <MRRChart data={data.mrrData} payments={data.payments} contactMap={data.contactMap} sales={data.sales} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ChargesCard
-          fixedCharges={data.fixedCharges}
-          activeSalaries={data.activeSalaries}
-          totalFixedChargesMensuel={data.totalFixedChargesMensuel}
-          totalSalariesMensuel={data.totalSalariesMensuel}
-          commissionsPaid={data.commissionsPaid}
-          commissionsDue={data.commissionsDue}
-          salaryPeriods={data.salaryPeriods}
-          profiles={data.profiles}
-          onRefreshCharges={() => data.refetchCharges()}
-          onRefreshSalaries={() => data.refetchSalaryPeriods()}
-        />
-      </div>
+      <ChargesCard
+        fixedCharges={data.fixedCharges}
+        activeSalaries={data.activeSalaries}
+        totalFixedChargesMensuel={data.totalFixedChargesMensuel}
+        totalSalariesMensuel={data.totalSalariesMensuel}
+        commissionsPaid={data.commissionsPaid}
+        commissionsDue={data.commissionsDue}
+        salaryPeriods={data.salaryPeriods}
+        profiles={data.profiles}
+        onRefreshCharges={() => data.refetchCharges()}
+        onRefreshSalaries={() => data.refetchSalaryPeriods()}
+      />
     </div>
   );
 }
