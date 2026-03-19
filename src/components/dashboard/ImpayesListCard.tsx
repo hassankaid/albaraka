@@ -183,34 +183,32 @@ export default function ImpayesListCard({ salesLate, salesLost, contactMap, paym
 
           {/* Horizontal payment grid */}
           <div className="mt-2">
-            <div className="grid grid-cols-[50px_90px_1fr_80px] gap-3 px-2 pb-1.5 border-b border-border text-[11px] font-medium text-muted-foreground">
+            <div className="grid grid-cols-[50px_110px_1fr_80px] gap-3 px-2 pb-1.5 border-b border-border text-[11px] font-medium text-muted-foreground">
               <span>N°</span>
               <span>Échéance</span>
               <span>Statut</span>
               <span className="text-right">Montant</span>
             </div>
-            <ScrollArea className="max-h-[260px]">
-              <div className="divide-y divide-border/50">
-                {modalPayments.map((p) => {
-                  const cfg = paymentStatusConfig[p.status] || paymentStatusConfig.pending;
-                  return (
-                    <div key={p.id} className="grid grid-cols-[50px_90px_1fr_80px] gap-3 items-center px-2 py-2">
-                      <span className="text-xs text-muted-foreground tabular-nums">
-                        {p.payment_number}/{p.total_payments}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{formatDate(p.due_date)}</span>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${cfg.className}`}>
-                          {cfg.label}
-                        </Badge>
-                        {p.paid_at && <span className="text-[10px] text-muted-foreground">payé le {formatDate(p.paid_at)}</span>}
-                      </div>
-                      <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(p.amount)}</span>
+            <div className="divide-y divide-border/50">
+              {modalPayments.map((p) => {
+                const cfg = paymentStatusConfig[p.status] || paymentStatusConfig.pending;
+                return (
+                  <div key={p.id} className="grid grid-cols-[50px_110px_1fr_80px] gap-3 items-center px-2 py-1.5">
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {p.payment_number}/{p.total_payments}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{formatDate(p.due_date)}</span>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${cfg.className}`}>
+                        {cfg.label}
+                      </Badge>
+                      {p.paid_at && <span className="text-[10px] text-muted-foreground">payé le {formatDate(p.paid_at)}</span>}
                     </div>
-                  );
-                })}
-              </div>
-            </ScrollArea>
+                    <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(p.amount)}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
