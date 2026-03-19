@@ -66,11 +66,15 @@ export default function MRRChart({ data, payments = [], contactMap = new Map(), 
   const saleMap = new Map(sales.map((s) => [s.id, s]));
 
   // Payments for the selected month, sorted by due_date
-  const monthPayments = selectedMonth
+  const allMonthPayments = selectedMonth
     ? payments
         .filter((p) => p.status !== "lost" && p.total_payments > 1 && p.due_date.startsWith(selectedMonth))
         .sort((a, b) => a.due_date.localeCompare(b.due_date))
     : [];
+
+  const monthPayments = statusFilter
+    ? allMonthPayments.filter((p) => p.status === statusFilter)
+    : allMonthPayments;
 
   const monthTotal = monthPayments.reduce((s, p) => s + p.amount, 0);
   const monthLabel = selectedMonth
