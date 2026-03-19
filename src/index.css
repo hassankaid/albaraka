@@ -94,6 +94,11 @@
 
     --gradient-from: 239 84% 67%;
     --gradient-to: 292 84% 49%;
+
+    --kpi-paid: 152 64% 46%;
+    --kpi-in-progress: 216 90% 63%;
+    --kpi-late: 41 96% 58%;
+    --kpi-lost: 0 84% 64%;
   }
 }
 
