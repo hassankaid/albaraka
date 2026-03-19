@@ -120,23 +120,23 @@ export default function MRRChart({ data, payments = [], contactMap = new Map(), 
       </Card>
 
       <Dialog open={!!selectedMonth} onOpenChange={() => setSelectedMonth(null)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader className="pb-0">
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+          <DialogHeader className="pb-0 flex-shrink-0">
             <DialogTitle className="text-base font-semibold capitalize">
               {monthLabel} — {fmt(monthTotal)}
               <Badge variant="secondary" className="text-[11px] ml-2">{monthPayments.length} paiements</Badge>
             </DialogTitle>
           </DialogHeader>
 
-          <div className="mt-2">
-            <div className="grid grid-cols-[1fr_120px_60px_80px_80px] gap-3 px-2 pb-1.5 border-b border-border text-[11px] font-medium text-muted-foreground">
+          <div className="mt-2 flex flex-col min-h-0 flex-1">
+            <div className="grid grid-cols-[1fr_120px_60px_80px_80px] gap-3 px-2 pb-1.5 border-b border-border text-[11px] font-medium text-muted-foreground flex-shrink-0">
               <span>Client</span>
               <span>Échéance</span>
               <span className="text-center">N°</span>
               <span className="text-center">Statut</span>
               <span className="text-right">Montant</span>
             </div>
-            <div className="divide-y divide-border/50">
+            <div className="divide-y divide-border/50 overflow-y-auto">
               {monthPayments.map((p) => {
                 const sale = p.sale_id ? saleMap.get(p.sale_id) : null;
                 const contact = sale ? contactMap.get(sale.contact_id) : null;
