@@ -265,8 +265,8 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
   const totalChargesMensuel = totalSalariesMensuel + totalFixedChargesMensuel;
   const totalChargesCumul = totalSalariesCumul + totalFixedChargesCumul;
 
-  // Bénéfice = CA collecté - commissions payées
-  const benefice = caCollecte - commissionsPaid;
+  // Bénéfice = CA collecté - toutes les sorties (commissions + charges)
+  const benefice = caCollecte - commissionsPaid - totalChargesCumul;
 
   // MRR: uses ALL payments (unfiltered) — MRR is its own time-series
   const mrrByMonth: Record<string, number> = {};
