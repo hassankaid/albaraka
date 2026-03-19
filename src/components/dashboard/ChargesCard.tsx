@@ -187,6 +187,7 @@ export default function ChargesCard({
 
   const recurringCharges = fixedCharges.filter(c => c.is_active && c.frequency !== "one_time");
   const oneTimeCharges = fixedCharges.filter(c => c.is_active && c.frequency === "one_time");
+  const totalOneTimeCharges = oneTimeCharges.reduce((sum, c) => sum + c.amount, 0);
 
   // ── Actions ──
   const handleAddSalary = async () => {
