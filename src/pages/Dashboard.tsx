@@ -80,6 +80,13 @@ function FinancialTab() {
         />
       </div>
 
+      <PeriodSalesCard
+        sales={data.sales}
+        payments={data.allPayments}
+        contactMap={data.contactMap}
+        profiles={data.profiles}
+      />
+
       <ImpayesListCard
         salesLate={data.allSalesLate}
         salesLost={data.allSalesLost}
