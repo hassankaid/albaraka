@@ -42,7 +42,7 @@ export default function ImpayesSummaryCard({ tauxImpayes, salesLateCount, salesL
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0 flex-1 flex flex-col justify-between gap-4">
+      <CardContent className="pt-0 flex-1 flex flex-col gap-3">
         <div className="flex items-center gap-4">
           {/* Donut */}
           <div className="relative w-[110px] h-[110px] flex-shrink-0">
