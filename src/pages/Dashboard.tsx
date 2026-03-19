@@ -92,6 +92,7 @@ function FinancialTab() {
           commissionsPaid={data.commissionsPaid}
           totalSalariesCumul={data.totalSalariesCumul}
           totalFixedChargesCumul={data.totalFixedChargesCumul}
+          totalAdsCumul={data.totalAdsCumul}
         />
       </div>
 
