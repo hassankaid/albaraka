@@ -106,6 +106,10 @@ export default function FinancialKPIs(props: Props) {
   } = props;
 
   const [openModal, setOpenModal] = useState<KpiKey | null>(null);
+  const [modalPage, setModalPage] = useState(0);
+
+  // Reset page when modal changes
+  const handleOpenModal = (key: KpiKey) => { setModalPage(0); setOpenModal(key); };
 
   const profileMap = new Map(profiles.map(p => [p.id, p]));
   const saleMap = new Map(sales.map(s => [s.id, s]));
