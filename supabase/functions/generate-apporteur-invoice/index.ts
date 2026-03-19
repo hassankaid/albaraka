@@ -75,10 +75,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get apporteur profile (including fixed salary fields)
+    // Get apporteur profile
     const { data: apporteurProfile } = await supabaseAdmin
       .from("profiles")
-      .select("full_name, email, address, postal_code, city, country, siret, bank_details, fixed_salary, fixed_salary_active")
+      .select("full_name, email, address, postal_code, city, country, siret, bank_details")
       .eq("id", apporteur_id)
       .single();
 
