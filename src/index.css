@@ -47,6 +47,11 @@
 
     --gradient-from: 239 84% 67%;
     --gradient-to: 292 84% 49%;
+
+    --kpi-paid: 152 70% 38%;
+    --kpi-in-progress: 217 91% 56%;
+    --kpi-late: 38 92% 50%;
+    --kpi-lost: 0 79% 55%;
   }
 
   .dark {
