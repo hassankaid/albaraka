@@ -272,18 +272,9 @@ export default function Payments() {
       );
     }
 
-    // When grouping by sale, sort by sale_id then payment_number
-    if (groupBySale) {
-      result = [...result].sort((a, b) => {
-        const saleA = a.sale_id || "";
-        const saleB = b.sale_id || "";
-        if (saleA !== saleB) return saleA.localeCompare(saleB);
-        return a.payment_number - b.payment_number;
-      });
-    }
 
     return result;
-  }, [allPayments, statusFilter, periodFilter, search, groupBySale]);
+  }, [allPayments, statusFilter, periodFilter, search]);
 
   useEffect(() => { setPage(0); }, [statusFilter, periodFilter, search]);
 
