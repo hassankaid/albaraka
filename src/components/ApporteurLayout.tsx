@@ -78,7 +78,7 @@ export default function ApporteurLayout() {
           ))}
         </nav>
 
-        {profile?.is_also_apporteur && (
+        {(realProfile?.is_also_apporteur || isViewingAs) && (
           <div className="p-3 border-t border-border shrink-0">
             <NavLink
               to="/dashboard"
