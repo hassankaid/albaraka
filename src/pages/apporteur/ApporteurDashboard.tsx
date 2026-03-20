@@ -77,7 +77,7 @@ interface LeadItem {
 }
 
 export default function ApporteurDashboard() {
-  const { profile } = useAuth();
+  const { profile } = useEffectiveProfile();
   const navigate = useNavigate();
   const [period, setPeriod] = useState<PeriodFilter>("all");
   const [loading, setLoading] = useState(true);

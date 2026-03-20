@@ -148,6 +148,26 @@ export default function ApporteurLayout() {
           </div>
         </header>
 
+        {/* ViewAs banner */}
+        {isViewingAs && viewAsProfile && (
+          <div className="bg-amber-500/15 border-b border-amber-500/30 px-6 py-2 flex items-center justify-between sticky top-16 z-20">
+            <div className="flex items-center gap-2 text-sm">
+              <Eye className="h-4 w-4 text-amber-400" />
+              <span className="text-amber-300 font-medium">
+                Vue simulée de <strong>{viewAsProfile.full_name}</strong>
+              </span>
+              <span className="text-amber-400/60 text-xs">({viewAsProfile.role} — espace apporteur)</span>
+            </div>
+            <button
+              onClick={stopViewAs}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-medium transition-colors"
+            >
+              <XCircle className="h-3.5 w-3.5" />
+              Revenir à ma vue
+            </button>
+          </div>
+        )}
+
         <main className="flex-1 p-6">
           <Outlet />
         </main>
