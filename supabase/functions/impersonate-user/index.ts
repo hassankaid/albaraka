@@ -89,14 +89,14 @@ Deno.serve(async (req) => {
     }
 
     // Generate a magic link for the target user
-    const origin = req.headers.get("origin") || supabaseUrl;
+    const finalRedirect = redirect_to || req.headers.get("origin") || supabaseUrl;
 
     const { data: linkData, error: linkError } =
       await adminClient.auth.admin.generateLink({
         type: "magiclink",
         email: targetProfile.email,
         options: {
-          redirectTo: origin,
+          redirectTo: finalRedirect,
         },
       });
 
