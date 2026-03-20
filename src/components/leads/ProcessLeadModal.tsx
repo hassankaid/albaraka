@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { AlertTriangle, Save } from "lucide-react";
+import { AlertTriangle, Save, UserMinus } from "lucide-react";
 import { formatDateTime } from "@/lib/formatDate";
 
 type LeadEnriched = Tables<"leads_enriched">;
@@ -37,6 +37,7 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
   const [status, setStatus] = useState("");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const [releasing, setReleasing] = useState(false);
   const [otherLeadsCount, setOtherLeadsCount] = useState(0);
 
   useEffect(() => {
@@ -111,7 +112,35 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
     }
   };
 
+  const handleRelease = async () => {
+    if (!user || !lead.id) return;
+    setReleasing(true);
+    try {
+      await supabase
+        .from("leads")
+        .update({ assigned_to: null, assigned_at: null, updated_at: new Date().toISOString() })
+        .eq("id", lead.id);
+
+      await supabase.from("lead_activities").insert({
+        lead_id: lead.id,
+        user_id: user.id,
+        action: "unassign",
+        old_value: lead.assigned_to_name || lead.assigned_to,
+        new_value: null,
+      });
+
+      toast({ title: "Lead libéré" });
+      onSuccess();
+      onClose();
+    } catch {
+      toast({ title: "Erreur", variant: "destructive" });
+    } finally {
+      setReleasing(false);
+    }
+  };
+
   const canEdit = lead.assigned_to === user?.id || user?.role === "ceo";
+  const canRelease = canEdit && lead.assigned_to !== null;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -196,10 +225,18 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
 
         {/* Save or read-only message */}
         {canEdit ? (
-          <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
-            <Save className="h-4 w-4" />
-            {saving ? "Enregistrement..." : "Enregistrer"}
-          </Button>
+          <div className="flex gap-2">
+            {canRelease && (
+              <Button variant="outline" onClick={handleRelease} disabled={releasing} className="gap-2 text-muted-foreground">
+                <UserMinus className="h-4 w-4" />
+                {releasing ? "…" : "Libérer"}
+              </Button>
+            )}
+            <Button onClick={handleSave} disabled={saving} className="flex-1 gap-2">
+              <Save className="h-4 w-4" />
+              {saving ? "Enregistrement..." : "Enregistrer"}
+            </Button>
+          </div>
         ) : (
           <p className="text-xs text-muted-foreground text-center py-2">
             Seul {lead.assigned_to_name || "le collaborateur assigné"} ou le CEO peut modifier ce lead
