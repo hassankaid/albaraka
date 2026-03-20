@@ -148,12 +148,11 @@ export default function Leads() {
   };
 
   const handleReassign = async (leadId: string, oldAssignedTo: string | null, newUserId: string, currentStatus?: string | null) => {
-    if (!user) return;
+    if (!realUser) return;
     const updatePayload: Record<string, unknown> = {
       assigned_to: newUserId,
       assigned_at: new Date().toISOString(),
     };
-    // When assigning a recycled lead, reset status to a_qualifier
     if (currentStatus === "a_recycler") {
       updatePayload.status = "a_qualifier";
     }
@@ -166,7 +165,7 @@ export default function Leads() {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
       await supabase.from("lead_activities").insert({
-        lead_id: leadId, user_id: user.id, action: "reassigned",
+        lead_id: leadId, user_id: realUser.id, action: "reassigned",
         old_value: oldAssignedTo, new_value: newUserId,
       });
       toast({ title: "Lead réassigné avec succès" });
