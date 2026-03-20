@@ -192,7 +192,7 @@ export default function Leads() {
   };
 
   const handleBulkAssign = async (newUserId: string) => {
-    if (!user || selectedIds.size === 0) return;
+    if (!realUser || selectedIds.size === 0) return;
     setBulkAssigning(true);
     const ids = Array.from(selectedIds);
     const { error } = await supabase
@@ -204,7 +204,7 @@ export default function Leads() {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
       const activities = ids.map((id) => ({
-        lead_id: id, user_id: user.id, action: "reassigned",
+        lead_id: id, user_id: realUser.id, action: "reassigned",
         old_value: null, new_value: newUserId,
         note: "Affectation en masse depuis recyclage",
       }));
