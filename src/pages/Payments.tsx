@@ -149,7 +149,7 @@ export default function Payments() {
           id, payment_number, total_payments, amount, due_date, paid_at, status, notes, sale_id,
           contacts!payments_contact_id_fkey(full_name, email, phone_normalized)
         `)
-        .order("due_date", { ascending: true })
+        .order("due_date", { ascending: false })
         .range(from, from + batchSize - 1);
 
       if (data && data.length > 0) {
