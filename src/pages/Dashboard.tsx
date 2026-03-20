@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"; // dashboard
-import { useEffectiveProfile } from "@/hooks/useEffectiveProfile";
+import { useAuth } from "@/hooks/useAuth";
 import { useFinancialData, type FinancialDateRange } from "@/hooks/useFinancialData";
 import FinancialKPIs from "@/components/dashboard/FinancialKPIs";
 import PaymentSplitCard from "@/components/dashboard/PaymentSplitCard";
