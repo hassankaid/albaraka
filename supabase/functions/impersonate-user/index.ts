@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
     }
 
     const tokenHash = linkData.properties?.hashed_token;
-    const redirectUrl = `${supabaseUrl}/auth/v1/verify?token=${tokenHash}&type=magiclink&redirect_to=${encodeURIComponent(origin)}`;
+    const redirectUrl = `${supabaseUrl}/auth/v1/verify?token=${tokenHash}&type=magiclink&redirect_to=${encodeURIComponent(finalRedirect)}`;
 
     return new Response(
       JSON.stringify({ url: redirectUrl }),
