@@ -121,9 +121,9 @@ export default function Leads() {
   };
 
   const handleAssignToMe = async (leadId: string, currentStatus?: string | null) => {
-    if (!user) return;
+    if (!realUser) return;
     const updatePayload: Record<string, unknown> = {
-      assigned_to: user.id,
+      assigned_to: realUser.id,
       assigned_at: new Date().toISOString(),
     };
     if (currentStatus === "a_recycler") {
@@ -140,8 +140,8 @@ export default function Leads() {
     }
 
     await supabase.from("lead_activities").insert({
-      lead_id: leadId, user_id: user.id, action: "assigned",
-      old_value: null, new_value: user.id, note: currentStatus === "a_recycler" ? "Réaffectation depuis recyclage" : null,
+      lead_id: leadId, user_id: realUser.id, action: "assigned",
+      old_value: null, new_value: realUser.id, note: currentStatus === "a_recycler" ? "Réaffectation depuis recyclage" : null,
     });
     toast({ title: "Lead affecté avec succès" });
     fetchLeads();
