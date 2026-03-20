@@ -4,6 +4,20 @@ import type { Database } from './types';
 
 const SUPABASE_URL = "https://ktvszjzryabjgxyobtyc.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0dnN6anpyeWFiamd4eW9idHljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMDQwODYsImV4cCI6MjA4NzU4MDA4Nn0.Hck5qF0GQ9-KEMvJiuu10-i-9562mEWBOBuHMTG33ZY";
+const DEFAULT_STORAGE_KEY = "sb-ktvszjzryabjgxyobtyc-auth-token";
+const IMPERSONATION_STORAGE_KEY = `${DEFAULT_STORAGE_KEY}-impersonation`;
+const IMPERSONATION_CONTEXT_KEY = "ethicarena-auth-context";
+
+if (typeof window !== "undefined") {
+  const url = new URL(window.location.href);
+  if (url.searchParams.get("impersonation") === "1") {
+    window.sessionStorage.setItem(IMPERSONATION_CONTEXT_KEY, "impersonation");
+  }
+}
+
+const isImpersonationContext =
+  typeof window !== "undefined" &&
+  window.sessionStorage.getItem(IMPERSONATION_CONTEXT_KEY) === "impersonation";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +25,7 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: localStorage,
+    storageKey: isImpersonationContext ? IMPERSONATION_STORAGE_KEY : DEFAULT_STORAGE_KEY,
     persistSession: true,
     autoRefreshToken: true,
   }
