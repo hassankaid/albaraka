@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     }
 
     // Get target user ID
-    const { target_user_id } = await req.json();
+    const { target_user_id, redirect_to } = await req.json();
     if (!target_user_id) {
       return new Response(
         JSON.stringify({ error: "target_user_id is required" }),
@@ -89,14 +89,14 @@ Deno.serve(async (req) => {
     }
 
     // Generate a magic link for the target user
-    const origin = req.headers.get("origin") || supabaseUrl;
+    const finalRedirect = redirect_to || req.headers.get("origin") || supabaseUrl;
 
     const { data: linkData, error: linkError } =
       await adminClient.auth.admin.generateLink({
         type: "magiclink",
         email: targetProfile.email,
         options: {
-          redirectTo: origin,
+          redirectTo: finalRedirect,
         },
       });
 
@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
     }
 
     const tokenHash = linkData.properties?.hashed_token;
-    const redirectUrl = `${supabaseUrl}/auth/v1/verify?token=${tokenHash}&type=magiclink&redirect_to=${encodeURIComponent(origin)}`;
+    const redirectUrl = `${supabaseUrl}/auth/v1/verify?token=${tokenHash}&type=magiclink&redirect_to=${encodeURIComponent(finalRedirect)}`;
 
     return new Response(
       JSON.stringify({ url: redirectUrl }),
