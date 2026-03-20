@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { AlertTriangle, Save, UserMinus } from "lucide-react";
+import { AlertTriangle, Save } from "lucide-react";
 import { formatDateTime } from "@/lib/formatDate";
 
 type LeadEnriched = Tables<"leads_enriched">;
