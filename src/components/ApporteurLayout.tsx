@@ -1,12 +1,10 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import logo from "@/assets/ethicarena-logo.png";
-import { BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X, ArrowLeftRight, ChevronDown, User, Eye, XCircle } from "lucide-react";
+import { BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X, ArrowLeftRight, ChevronDown, User } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useViewAs } from "@/hooks/useViewAs";
-import { useEffectiveProfile } from "@/hooks/useEffectiveProfile";
 
 const navItems = [
   { title: "Dashboard", path: "/my-space", icon: BarChart3 },
@@ -29,9 +27,7 @@ export default function ApporteurLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { profile: realProfile, signOut } = useAuth();
-  const { viewAsProfile, stopViewAs, isViewingAs } = useViewAs();
-  const { profile } = useEffectiveProfile();
+  const { profile, signOut } = useAuth();
 
   const pageTitle = pageTitles[location.pathname] || "Mon espace";
   const initials = profile?.full_name
@@ -78,7 +74,7 @@ export default function ApporteurLayout() {
           ))}
         </nav>
 
-        {(realProfile?.is_also_apporteur || isViewingAs) && (
+        {profile?.is_also_apporteur && (
           <div className="p-3 border-t border-border shrink-0">
             <NavLink
               to="/dashboard"
@@ -148,25 +144,7 @@ export default function ApporteurLayout() {
           </div>
         </header>
 
-        {/* ViewAs banner */}
-        {isViewingAs && viewAsProfile && (
-          <div className="bg-amber-500/15 border-b border-amber-500/30 px-6 py-2 flex items-center justify-between sticky top-16 z-20">
-            <div className="flex items-center gap-2 text-sm">
-              <Eye className="h-4 w-4 text-amber-400" />
-              <span className="text-amber-300 font-medium">
-                Vue simulée de <strong>{viewAsProfile.full_name}</strong>
-              </span>
-              <span className="text-amber-400/60 text-xs">({viewAsProfile.role} — espace apporteur)</span>
-            </div>
-            <button
-              onClick={stopViewAs}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-medium transition-colors"
-            >
-              <XCircle className="h-3.5 w-3.5" />
-              Revenir à ma vue
-            </button>
-          </div>
-        )}
+
 
         <main className="flex-1 p-6">
           <Outlet />

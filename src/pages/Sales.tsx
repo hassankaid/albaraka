@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffectiveProfile } from "@/hooks/useEffectiveProfile";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,7 +53,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 const PAGE_SIZE = 50;
 
 export default function Sales() {
-  const { profile } = useEffectiveProfile();
+  const { profile } = useAuth();
   const { toast } = useToast();
   const isCeo = profile?.role === "ceo";
 

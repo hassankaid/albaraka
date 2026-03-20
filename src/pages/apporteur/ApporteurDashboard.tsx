@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffectiveProfile } from "@/hooks/useEffectiveProfile";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -77,7 +77,7 @@ interface LeadItem {
 }
 
 export default function ApporteurDashboard() {
-  const { profile } = useEffectiveProfile();
+  const { profile } = useAuth();
   const navigate = useNavigate();
   const [period, setPeriod] = useState<PeriodFilter>("all");
   const [loading, setLoading] = useState(true);

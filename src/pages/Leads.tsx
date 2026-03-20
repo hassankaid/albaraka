@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffectiveProfile } from "@/hooks/useEffectiveProfile";
 import { useToast } from "@/hooks/use-toast";
 import { Tables } from "@/integrations/supabase/types";
 import { Badge } from "@/components/ui/badge";
@@ -48,8 +47,8 @@ const CEO_TABS = [
 ] as const;
 
 export default function Leads() {
-  const { profile: realUser } = useAuth();
-  const { profile: user, isViewingAs } = useEffectiveProfile();
+  const { profile: user } = useAuth();
+  const realUser = user;
   const { toast } = useToast();
   const [leads, setLeads] = useState<LeadEnriched[]>([]);
   const [loading, setLoading] = useState(true);

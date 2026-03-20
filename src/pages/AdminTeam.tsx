@@ -1,8 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useViewAs } from "@/hooks/useViewAs";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,8 +35,6 @@ type Tab = "collaborateurs" | "apporteurs";
 
 export default function AdminTeam() {
   const { profile: user } = useAuth();
-  const { startViewAs } = useViewAs();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -333,23 +329,20 @@ export default function AdminTeam() {
                       </Button>
                     </DropdownMenuTrigger>
                      <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem onClick={() => {
-                        startViewAs({
-                          id: member.id,
-                          full_name: member.full_name,
-                          email: member.email,
-                          role: member.role,
-                          collaborateur_level: member.collaborateur_level,
-                          is_also_apporteur: member.is_also_apporteur,
-                          can_add_instagram_leads: null,
-                          avatar_url: member.avatar_url,
-                          timezone: null,
-                          is_active: member.is_active,
-                        });
-                        navigate("/dashboard");
+                      <DropdownMenuItem onClick={async () => {
+                        toast({ title: "Connexion en cours…", description: `Ouverture du compte de ${member.full_name} dans un nouvel onglet` });
+                        try {
+                          const { data, error } = await supabase.functions.invoke("impersonate-user", {
+                            body: { target_user_id: member.id },
+                          });
+                          if (error || !data?.url) throw new Error(error?.message || "Lien non généré");
+                          window.open(data.url, "_blank");
+                        } catch (err: any) {
+                          toast({ title: "Erreur", description: err.message, variant: "destructive" });
+                        }
                       }}>
                         <Eye className="h-4 w-4 mr-2 text-amber-400" />
-                        Voir en tant que
+                        Se connecter en tant que
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       {member.role === "collaborateur" && (
