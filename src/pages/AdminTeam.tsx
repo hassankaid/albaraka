@@ -330,7 +330,23 @@ export default function AdminTeam() {
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
+                     <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={() => startViewAs({
+                        id: member.id,
+                        full_name: member.full_name,
+                        email: member.email,
+                        role: member.role,
+                        collaborateur_level: member.collaborateur_level,
+                        is_also_apporteur: member.is_also_apporteur,
+                        can_add_instagram_leads: null,
+                        avatar_url: member.avatar_url,
+                        timezone: null,
+                        is_active: member.is_active,
+                      })}>
+                        <Eye className="h-4 w-4 mr-2 text-amber-400" />
+                        Voir en tant que
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       {member.role === "collaborateur" && (
                         member.collaborateur_level === "confirme" ? (
                           <DropdownMenuItem onClick={() => changeLevel(member, "intermediaire")}>
