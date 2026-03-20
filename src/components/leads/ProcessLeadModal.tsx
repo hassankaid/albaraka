@@ -196,18 +196,10 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
 
         {/* Save or read-only message */}
         {canEdit ? (
-          <div className="flex gap-2">
-            {canRelease && (
-              <Button variant="outline" onClick={handleRelease} disabled={releasing} className="gap-2 text-muted-foreground">
-                <UserMinus className="h-4 w-4" />
-                {releasing ? "…" : "Libérer"}
-              </Button>
-            )}
-            <Button onClick={handleSave} disabled={saving} className="flex-1 gap-2">
-              <Save className="h-4 w-4" />
-              {saving ? "Enregistrement..." : "Enregistrer"}
-            </Button>
-          </div>
+          <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
+            <Save className="h-4 w-4" />
+            {saving ? "Enregistrement..." : "Enregistrer"}
+          </Button>
         ) : (
           <p className="text-xs text-muted-foreground text-center py-2">
             Seul {lead.assigned_to_name || "le collaborateur assigné"} ou le CEO peut modifier ce lead
