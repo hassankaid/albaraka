@@ -29,11 +29,13 @@ export default function ApporteurLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { profile, signOut } = useAuth();
+  const { profile: realProfile, signOut } = useAuth();
+  const { viewAsProfile, stopViewAs, isViewingAs } = useViewAs();
+  const { profile } = useEffectiveProfile();
 
   const pageTitle = pageTitles[location.pathname] || "Mon espace";
   const initials = profile?.full_name
-    ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    ? profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
   return (
