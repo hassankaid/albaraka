@@ -172,6 +172,24 @@ export default function Leads() {
     }
   };
 
+  const handleRelease = async (leadId: string, oldAssignedToName: string | null, oldAssignedTo: string | null) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from("leads")
+      .update({ assigned_to: null, assigned_at: null, updated_at: new Date().toISOString() })
+      .eq("id", leadId);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      await supabase.from("lead_activities").insert({
+        lead_id: leadId, user_id: user.id, action: "unassign",
+        old_value: oldAssignedToName || oldAssignedTo, new_value: null,
+      });
+      toast({ title: "Lead libéré" });
+      fetchLeads();
+    }
+  };
+
   const handleBulkAssign = async (newUserId: string) => {
     if (!user || selectedIds.size === 0) return;
     setBulkAssigning(true);
