@@ -1,9 +1,9 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -12,7 +12,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // 1. Authenticate the caller
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Missing authorization" }), {
@@ -25,7 +24,7 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Create a client with the caller's JWT to verify identity
+    // Verify caller identity
     const callerClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -41,7 +40,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 2. Check the caller is CEO
+    // Check caller is CEO
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
     const { data: callerProfile } = await adminClient
@@ -60,7 +59,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Get the target user ID
+    // Get target user ID
     const { target_user_id } = await req.json();
     if (!target_user_id) {
       return new Response(
@@ -72,7 +71,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 4. Get the target user's email
+    // Get target user's email
     const { data: targetProfile } = await adminClient
       .from("profiles")
       .select("email")
@@ -89,13 +88,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 5. Generate a magic link for the target user
+    // Generate a magic link for the target user
+    const origin = req.headers.get("origin") || supabaseUrl;
+
     const { data: linkData, error: linkError } =
       await adminClient.auth.admin.generateLink({
         type: "magiclink",
         email: targetProfile.email,
         options: {
-          redirectTo: `${supabaseUrl.replace('.supabase.co', '.supabase.co')}/`,
+          redirectTo: origin,
         },
       });
 
@@ -110,10 +111,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // The generateLink returns properties with the token hash
-    // We need to construct the proper verification URL
     const tokenHash = linkData.properties?.hashed_token;
-    const redirectUrl = `${supabaseUrl}/auth/v1/verify?token=${tokenHash}&type=magiclink&redirect_to=${encodeURIComponent(req.headers.get("origin") || supabaseUrl)}`;
+    const redirectUrl = `${supabaseUrl}/auth/v1/verify?token=${tokenHash}&type=magiclink&redirect_to=${encodeURIComponent(origin)}`;
 
     return new Response(
       JSON.stringify({ url: redirectUrl }),
