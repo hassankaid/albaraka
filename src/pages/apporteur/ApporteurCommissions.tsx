@@ -130,7 +130,7 @@ interface ApporteurCommissionsProps {
 }
 
 export default function ApporteurCommissions({ defaultRoleFilter }: ApporteurCommissionsProps = {}) {
-  const { profile } = useEffectiveProfile();
+  const { profile } = useAuth();
   const [allCommissions, setAllCommissions] = useState<CommissionRow[]>([]);
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [loading, setLoading] = useState(true);

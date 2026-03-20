@@ -115,7 +115,7 @@ function PaymentNotesCell({ paymentId, initialNotes, contactName, onSave }: { pa
 }
 
 export default function Payments() {
-  const { profile } = useEffectiveProfile();
+  const { profile } = useAuth();
   const { toast } = useToast();
   const isCeo = profile?.role === "ceo";
   const userTz = profile?.timezone || "Europe/Paris";

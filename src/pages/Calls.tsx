@@ -63,7 +63,7 @@ const MES_CALLS_TAB = { value: "mes_calls", label: "Mes calls" } as const;
 const PAGE_SIZE = 50;
 
 export default function Calls() {
-  const { profile } = useEffectiveProfile();
+  const { profile } = useAuth();
   const { toast } = useToast();
   const [calls, setCalls] = useState<CallEnriched[]>([]);
   const [loading, setLoading] = useState(true);

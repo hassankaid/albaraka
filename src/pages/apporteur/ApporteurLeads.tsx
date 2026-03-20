@@ -38,7 +38,7 @@ const STATUS_OPTIONS = [
 ];
 
 export default function ApporteurLeads() {
-  const { profile } = useEffectiveProfile();
+  const { profile } = useAuth();
   const { toast } = useToast();
   const [leads, setLeads] = useState<LeadEnriched[]>([]);
   const [loading, setLoading] = useState(true);

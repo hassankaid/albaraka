@@ -49,7 +49,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function ApporteurSales() {
-  const { profile } = useEffectiveProfile();
+  const { profile } = useAuth();
   const [sales, setSales] = useState<SaleRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSale, setSelectedSale] = useState<SaleRow | null>(null);
