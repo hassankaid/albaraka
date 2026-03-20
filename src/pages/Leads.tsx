@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   Users, UserPlus, RefreshCw, Search, Phone, Inbox, ChevronDown, Instagram, Pencil, Eye, Info, Copy,
-  ChevronLeft, ChevronRight, PartyPopper, CheckSquare,
+  ChevronLeft, ChevronRight, PartyPopper, CheckSquare, UserMinus,
 } from "lucide-react";
 import LeadInstagramForm from "@/components/LeadInstagramForm";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
@@ -168,6 +168,24 @@ export default function Leads() {
         old_value: oldAssignedTo, new_value: newUserId,
       });
       toast({ title: "Lead réassigné avec succès" });
+      fetchLeads();
+    }
+  };
+
+  const handleRelease = async (leadId: string, oldAssignedToName: string | null, oldAssignedTo: string | null) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from("leads")
+      .update({ assigned_to: null, assigned_at: null, updated_at: new Date().toISOString() })
+      .eq("id", leadId);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      await supabase.from("lead_activities").insert({
+        lead_id: leadId, user_id: user.id, action: "unassign",
+        old_value: oldAssignedToName || oldAssignedTo, new_value: null,
+      });
+      toast({ title: "Lead libéré" });
       fetchLeads();
     }
   };
@@ -618,6 +636,13 @@ export default function Leads() {
                                     {c.full_name}
                                   </DropdownMenuItem>
                                 ))}
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => handleRelease(lead.id!, lead.assigned_to_name, lead.assigned_to)}
+                              >
+                                <UserMinus className="h-3.5 w-3.5 mr-2" />
+                                Libérer
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         ) : (
