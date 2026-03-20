@@ -165,17 +165,13 @@ export default function FinancialKPIs(props: Props) {
 
   const roiDisplayValue = roi !== null
     ? `x${roi.toFixed(2)}`
-    : totalAdsCumul === 0 && caGenere > 0
-      ? "x∞"
-      : "—";
+    : "—";
 
-  const roiDisplayColor = roi !== null
+  const roiColor = roi !== null
     ? roi >= 1
       ? "text-emerald-500"
       : "text-destructive"
-    : totalAdsCumul === 0 && caGenere > 0
-      ? "text-emerald-500"
-      : "text-muted-foreground";
+    : "text-muted-foreground";
 
   const kpis: { key: KpiKey; label: string; value: string; icon: any; color: string; hasDetail: boolean }[] = [
     { key: "caGenere", label: "CA Généré", value: fmt(caGenere), icon: TrendingUp, color: "text-primary", hasDetail: true },
@@ -185,7 +181,7 @@ export default function FinancialKPIs(props: Props) {
     { key: "commissions", label: "Commissions", value: fmt(totalCommissions), icon: CreditCard, color: "text-orange-500", hasDetail: true },
     { key: "charges", label: "Charges", value: fmt(totalChargesCumul), icon: BarChart3, color: "text-muted-foreground", hasDetail: true },
     { key: "benefice", label: "Bénéfice", value: fmt(benefice), icon: PiggyBank, color: benefice >= 0 ? "text-emerald-500" : "text-destructive", hasDetail: true },
-    { key: "roi", label: "ROI", value: roiDisplayValue, icon: TrendingUp, color: roiDisplayColor, hasDetail: false },
+    { key: "roi", label: "ROI", value: roiDisplayValue, icon: TrendingUp, color: roiColor, hasDetail: false },
   ];
 
   const sortedSalesForCA = useMemo(() => [...sales].sort((a, b) => (b.sold_at || "").localeCompare(a.sold_at || "")), [sales]);
