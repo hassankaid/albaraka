@@ -63,9 +63,10 @@ export default function DashboardLayout() {
     return <Navigate to="/profile" replace />;
   }
 
+  const effectiveRole = isViewingAs ? viewAsProfile!.role : userRole;
   const pageTitle = pageTitles[location.pathname] || "Dashboard";
-  const userRole = profile?.role || "apporteur";
-  const navItems = allNavItems.filter((item) => item.roles.includes(userRole));
+  const navItems = allNavItems.filter((item) => item.roles.includes(effectiveRole));
+  const initials = profile?.full_name
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
