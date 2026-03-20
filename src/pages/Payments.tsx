@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -12,9 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare, MoreHorizontal, Clock, XCircle, CalendarIcon, Layers } from "lucide-react";
+import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare, MoreHorizontal, Clock, XCircle, CalendarIcon } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -129,7 +127,7 @@ export default function Payments() {
   const [periodFilter, setPeriodFilter] = useState("this_month");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
-  const [groupBySale, setGroupBySale] = useState(false);
+  
 
   // Lost confirmation dialog
   const [lostConfirmPayment, setLostConfirmPayment] = useState<PaymentRow | null>(null);
@@ -272,18 +270,9 @@ export default function Payments() {
       );
     }
 
-    // When grouping by sale, sort by sale_id then payment_number
-    if (groupBySale) {
-      result = [...result].sort((a, b) => {
-        const saleA = a.sale_id || "";
-        const saleB = b.sale_id || "";
-        if (saleA !== saleB) return saleA.localeCompare(saleB);
-        return a.payment_number - b.payment_number;
-      });
-    }
 
     return result;
-  }, [allPayments, statusFilter, periodFilter, search, groupBySale]);
+  }, [allPayments, statusFilter, periodFilter, search]);
 
   useEffect(() => { setPage(0); }, [statusFilter, periodFilter, search]);
 
@@ -367,23 +356,9 @@ export default function Payments() {
           />
         </div>
 
-        <div className="flex items-center gap-3 ml-auto">
-          <span className="text-xs text-muted-foreground font-medium tabular-nums">
-            {filteredPayments.length} paiement{filteredPayments.length > 1 ? "s" : ""}
-          </span>
-          <div className="flex items-center gap-1.5">
-            <Switch
-              id="group-by-sale"
-              checked={groupBySale}
-              onCheckedChange={setGroupBySale}
-              className="scale-75"
-            />
-            <Label htmlFor="group-by-sale" className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1">
-              <Layers className="h-3 w-3" />
-              Grouper
-            </Label>
-          </div>
-        </div>
+        <span className="text-xs text-muted-foreground font-medium tabular-nums ml-auto">
+          {filteredPayments.length} paiement{filteredPayments.length > 1 ? "s" : ""}
+        </span>
       </div>
 
       {/* Table */}
@@ -413,22 +388,9 @@ export default function Payments() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(() => {
-                  let lastSaleId: string | null | undefined = undefined;
-                  const colCount = isCeo ? 8 : 7;
-                  return paginatedPayments.map((p) => {
+                {paginatedPayments.map((p) => {
                     const statusInfo = getPaymentStatusInfo(p.status, p.due_date);
-                    const showSeparator = groupBySale && p.sale_id !== lastSaleId && lastSaleId !== undefined;
-                    lastSaleId = p.sale_id;
                     return (
-                      <Fragment key={p.id}>
-                        {showSeparator && (
-                          <TableRow className="hover:bg-transparent">
-                            <TableCell colSpan={colCount} className="p-0">
-                              <div className="border-t-2 border-dashed border-border/70" />
-                            </TableCell>
-                          </TableRow>
-                        )}
                         <TableRow className={`border-border hover:bg-secondary/50 transition-colors ${p.status === "lost" ? "opacity-60" : ""}`}>
                       <TableCell>
                         <div className="min-w-0">
@@ -509,10 +471,8 @@ export default function Payments() {
                         </TableCell>
                       )}
                     </TableRow>
-                      </Fragment>
                     );
-                  });
-                })()}
+                  })}
               </TableBody>
             </Table>
           </div>
