@@ -45,7 +45,6 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { profile, signOut } = useAuth();
-  const { viewAsProfile, stopViewAs, isViewingAs } = useViewAs();
 
   // Redirect pure apporteurs to their dedicated space
   if (profile?.role === "apporteur" && !profile?.is_also_apporteur) {
