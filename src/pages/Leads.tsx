@@ -636,6 +636,13 @@ export default function Leads() {
                                     {c.full_name}
                                   </DropdownMenuItem>
                                 ))}
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => handleRelease(lead.id!, lead.assigned_to_name, lead.assigned_to)}
+                              >
+                                <UserMinus className="h-3.5 w-3.5 mr-2" />
+                                Libérer
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         ) : (
