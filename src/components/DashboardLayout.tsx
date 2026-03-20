@@ -109,7 +109,7 @@ export default function DashboardLayout() {
           ))}
         </nav>
 
-        {(profile?.is_also_apporteur || (isViewingAs && viewAsProfile?.is_also_apporteur)) && (
+        {profile?.is_also_apporteur && (
           <div className="p-3 border-t border-border">
             <NavLink
               to="/my-space"
