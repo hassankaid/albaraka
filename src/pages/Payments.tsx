@@ -472,11 +472,8 @@ export default function Payments() {
                           ) : null}
                         </TableCell>
                       )}
-                    </TableRow>
-                      </Fragment>
                     );
-                  });
-                })()}
+                  })}
               </TableBody>
             </Table>
           </div>
