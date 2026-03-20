@@ -390,22 +390,9 @@ export default function Payments() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(() => {
-                  let lastSaleId: string | null | undefined = undefined;
-                  const colCount = isCeo ? 8 : 7;
-                  return paginatedPayments.map((p) => {
+                {paginatedPayments.map((p) => {
                     const statusInfo = getPaymentStatusInfo(p.status, p.due_date);
-                    const showSeparator = groupBySale && p.sale_id !== lastSaleId && lastSaleId !== undefined;
-                    lastSaleId = p.sale_id;
                     return (
-                      <Fragment key={p.id}>
-                        {showSeparator && (
-                          <TableRow className="hover:bg-transparent">
-                            <TableCell colSpan={colCount} className="p-0">
-                              <div className="border-t-2 border-dashed border-border/70" />
-                            </TableCell>
-                          </TableRow>
-                        )}
                         <TableRow className={`border-border hover:bg-secondary/50 transition-colors ${p.status === "lost" ? "opacity-60" : ""}`}>
                       <TableCell>
                         <div className="min-w-0">
