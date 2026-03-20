@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   Users, UserPlus, RefreshCw, Search, Phone, Inbox, ChevronDown, Instagram, Pencil, Eye, Info, Copy,
-  ChevronLeft, ChevronRight, PartyPopper, CheckSquare,
+  ChevronLeft, ChevronRight, PartyPopper, CheckSquare, UserMinus,
 } from "lucide-react";
 import LeadInstagramForm from "@/components/LeadInstagramForm";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
