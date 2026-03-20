@@ -129,7 +129,7 @@ export default function Payments() {
   const [periodFilter, setPeriodFilter] = useState("this_month");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
-  const [groupBySale, setGroupBySale] = useState(false);
+  
 
   // Lost confirmation dialog
   const [lostConfirmPayment, setLostConfirmPayment] = useState<PaymentRow | null>(null);
