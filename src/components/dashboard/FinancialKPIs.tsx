@@ -165,17 +165,13 @@ export default function FinancialKPIs(props: Props) {
 
   const roiDisplayValue = roi !== null
     ? `x${roi.toFixed(2)}`
-    : totalAdsCumul === 0 && caGenere > 0
-      ? "x∞"
-      : "—";
+    : "—";
 
-  const roiDisplayColor = roi !== null
+  const roiColor = roi !== null
     ? roi >= 1
       ? "text-emerald-500"
       : "text-destructive"
-    : totalAdsCumul === 0 && caGenere > 0
-      ? "text-emerald-500"
-      : "text-muted-foreground";
+    : "text-muted-foreground";
 
   const kpis: { key: KpiKey; label: string; value: string; icon: any; color: string; hasDetail: boolean }[] = [
     { key: "caGenere", label: "CA Généré", value: fmt(caGenere), icon: TrendingUp, color: "text-primary", hasDetail: true },
