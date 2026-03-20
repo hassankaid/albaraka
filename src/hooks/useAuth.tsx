@@ -52,6 +52,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    const applySessionFromHashIfPresent = async () => {
+      const hash = window.location.hash?.startsWith("#")
+        ? window.location.hash.slice(1)
+        : "";
+      if (!hash) return;
+
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
+
+      if (!accessToken || !refreshToken) return;
+
+      const { error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+
+      if (!error) {
+        const cleanUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+    };
+
     // Set up auth listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
@@ -71,16 +94,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check existing session
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      setSession(existingSession);
-      setUser(existingSession?.user ?? null);
-      if (existingSession?.user) {
-        fetchProfile(existingSession.user.id).finally(() => setIsLoading(false));
-      } else {
-        setIsLoading(false);
-      }
-    });
+    // THEN apply hash session if present, then read current session
+    applySessionFromHashIfPresent()
+      .catch(() => {
+        // ignore hash parsing errors and continue with regular session flow
+      })
+      .finally(() => {
+        supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+          setSession(existingSession);
+          setUser(existingSession?.user ?? null);
+          if (existingSession?.user) {
+            fetchProfile(existingSession.user.id).finally(() => setIsLoading(false));
+          } else {
+            setIsLoading(false);
+          }
+        });
+      });
 
     return () => subscription.unsubscribe();
   }, [fetchProfile, navigate]);

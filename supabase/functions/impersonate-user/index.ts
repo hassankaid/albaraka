@@ -111,8 +111,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    const tokenHash = linkData.properties?.hashed_token;
-    const redirectUrl = `${supabaseUrl}/auth/v1/verify?token=${tokenHash}&type=magiclink&redirect_to=${encodeURIComponent(finalRedirect)}`;
+    const actionLink = linkData.properties?.action_link;
+    if (!actionLink) {
+      return new Response(
+        JSON.stringify({ error: "No action link returned by Supabase" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const parsedLink = new URL(actionLink);
+    parsedLink.searchParams.set("redirect_to", finalRedirect);
+    const redirectUrl = parsedLink.toString();
 
     return new Response(
       JSON.stringify({ url: redirectUrl }),
