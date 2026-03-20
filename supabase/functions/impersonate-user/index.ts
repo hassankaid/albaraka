@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     }
 
     // Get target user ID
-    const { target_user_id } = await req.json();
+    const { target_user_id, redirect_to } = await req.json();
     if (!target_user_id) {
       return new Response(
         JSON.stringify({ error: "target_user_id is required" }),
