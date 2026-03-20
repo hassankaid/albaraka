@@ -181,7 +181,7 @@ export default function FinancialKPIs(props: Props) {
     { key: "commissions", label: "Commissions", value: fmt(totalCommissions), icon: CreditCard, color: "text-orange-500", hasDetail: true },
     { key: "charges", label: "Charges", value: fmt(totalChargesCumul), icon: BarChart3, color: "text-muted-foreground", hasDetail: true },
     { key: "benefice", label: "Bénéfice", value: fmt(benefice), icon: PiggyBank, color: benefice >= 0 ? "text-emerald-500" : "text-destructive", hasDetail: true },
-    { key: "roi", label: "ROI", value: roiDisplayValue, icon: TrendingUp, color: roiDisplayColor, hasDetail: false },
+    { key: "roi", label: "ROI", value: roiDisplayValue, icon: TrendingUp, color: roiColor, hasDetail: false },
   ];
 
   const sortedSalesForCA = useMemo(() => [...sales].sort((a, b) => (b.sold_at || "").localeCompare(a.sold_at || "")), [sales]);
