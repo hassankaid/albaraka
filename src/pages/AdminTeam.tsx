@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Search, RefreshCw, Users, UserCheck, UserX, ArrowUpRight,
   ShieldCheck, ShieldAlert, MoreHorizontal, ChevronDown, ChevronUp,
-  ToggleLeft, ToggleRight, ArrowDownRight,
+  ToggleLeft, ToggleRight, Eye,
 } from "lucide-react";
 
 interface TeamMember {
