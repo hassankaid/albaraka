@@ -1,10 +1,11 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import logo from "@/assets/ethicarena-logo.png";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, Eye, XCircle } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useViewAs } from "@/hooks/useViewAs";
 
 const allNavItems = [
   { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur"] },
@@ -45,6 +46,7 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { profile, signOut } = useAuth();
+  const { viewAsProfile, stopViewAs, isViewingAs } = useViewAs();
 
   // Redirect pure apporteurs to their dedicated space
   if (profile?.role === "apporteur" && !profile?.is_also_apporteur) {
@@ -61,9 +63,10 @@ export default function DashboardLayout() {
     return <Navigate to="/profile" replace />;
   }
 
-  const pageTitle = pageTitles[location.pathname] || "Dashboard";
   const userRole = profile?.role || "apporteur";
-  const navItems = allNavItems.filter((item) => item.roles.includes(userRole));
+  const effectiveRole = isViewingAs ? viewAsProfile!.role : userRole;
+  const pageTitle = pageTitles[location.pathname] || "Dashboard";
+  const navItems = allNavItems.filter((item) => item.roles.includes(effectiveRole));
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
@@ -179,6 +182,26 @@ export default function DashboardLayout() {
             </div>
           </div>
         </header>
+
+        {/* ViewAs banner */}
+        {isViewingAs && viewAsProfile && (
+          <div className="bg-amber-500/15 border-b border-amber-500/30 px-6 py-2 flex items-center justify-between sticky top-16 z-20">
+            <div className="flex items-center gap-2 text-sm">
+              <Eye className="h-4 w-4 text-amber-400" />
+              <span className="text-amber-300 font-medium">
+                Vue simulée de <strong>{viewAsProfile.full_name}</strong>
+              </span>
+              <span className="text-amber-400/60 text-xs">({viewAsProfile.role})</span>
+            </div>
+            <button
+              onClick={stopViewAs}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-medium transition-colors"
+            >
+              <XCircle className="h-3.5 w-3.5" />
+              Revenir à ma vue
+            </button>
+          </div>
+        )}
 
         <main className="flex-1 p-6">
           <Outlet />

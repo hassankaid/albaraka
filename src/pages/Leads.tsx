@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useEffectiveProfile } from "@/hooks/useEffectiveProfile";
 import { useToast } from "@/hooks/use-toast";
 import { Tables } from "@/integrations/supabase/types";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +48,8 @@ const CEO_TABS = [
 ] as const;
 
 export default function Leads() {
-  const { profile: user } = useAuth();
+  const { profile: realUser } = useAuth();
+  const { profile: user, isViewingAs } = useEffectiveProfile();
   const { toast } = useToast();
   const [leads, setLeads] = useState<LeadEnriched[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,9 +121,9 @@ export default function Leads() {
   };
 
   const handleAssignToMe = async (leadId: string, currentStatus?: string | null) => {
-    if (!user) return;
+    if (!realUser) return;
     const updatePayload: Record<string, unknown> = {
-      assigned_to: user.id,
+      assigned_to: realUser.id,
       assigned_at: new Date().toISOString(),
     };
     if (currentStatus === "a_recycler") {
@@ -138,20 +140,19 @@ export default function Leads() {
     }
 
     await supabase.from("lead_activities").insert({
-      lead_id: leadId, user_id: user.id, action: "assigned",
-      old_value: null, new_value: user.id, note: currentStatus === "a_recycler" ? "Réaffectation depuis recyclage" : null,
+      lead_id: leadId, user_id: realUser.id, action: "assigned",
+      old_value: null, new_value: realUser.id, note: currentStatus === "a_recycler" ? "Réaffectation depuis recyclage" : null,
     });
     toast({ title: "Lead affecté avec succès" });
     fetchLeads();
   };
 
   const handleReassign = async (leadId: string, oldAssignedTo: string | null, newUserId: string, currentStatus?: string | null) => {
-    if (!user) return;
+    if (!realUser) return;
     const updatePayload: Record<string, unknown> = {
       assigned_to: newUserId,
       assigned_at: new Date().toISOString(),
     };
-    // When assigning a recycled lead, reset status to a_qualifier
     if (currentStatus === "a_recycler") {
       updatePayload.status = "a_qualifier";
     }
@@ -164,7 +165,7 @@ export default function Leads() {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
       await supabase.from("lead_activities").insert({
-        lead_id: leadId, user_id: user.id, action: "reassigned",
+        lead_id: leadId, user_id: realUser.id, action: "reassigned",
         old_value: oldAssignedTo, new_value: newUserId,
       });
       toast({ title: "Lead réassigné avec succès" });
@@ -173,7 +174,7 @@ export default function Leads() {
   };
 
   const handleRelease = async (leadId: string, oldAssignedToName: string | null, oldAssignedTo: string | null) => {
-    if (!user) return;
+    if (!realUser) return;
     const { error } = await supabase
       .from("leads")
       .update({ assigned_to: null, assigned_at: null, updated_at: new Date().toISOString() })
@@ -182,7 +183,7 @@ export default function Leads() {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
       await supabase.from("lead_activities").insert({
-        lead_id: leadId, user_id: user.id, action: "unassign",
+        lead_id: leadId, user_id: realUser.id, action: "unassign",
         old_value: oldAssignedToName || oldAssignedTo, new_value: null,
       });
       toast({ title: "Lead libéré" });
@@ -191,7 +192,7 @@ export default function Leads() {
   };
 
   const handleBulkAssign = async (newUserId: string) => {
-    if (!user || selectedIds.size === 0) return;
+    if (!realUser || selectedIds.size === 0) return;
     setBulkAssigning(true);
     const ids = Array.from(selectedIds);
     const { error } = await supabase
@@ -203,7 +204,7 @@ export default function Leads() {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
       const activities = ids.map((id) => ({
-        lead_id: id, user_id: user.id, action: "reassigned",
+        lead_id: id, user_id: realUser.id, action: "reassigned",
         old_value: null, new_value: newUserId,
         note: "Affectation en masse depuis recyclage",
       }));

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useViewAs } from "@/hooks/useViewAs";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Search, RefreshCw, Users, UserCheck, UserX, ArrowUpRight,
   ShieldCheck, ShieldAlert, MoreHorizontal, ChevronDown, ChevronUp,
-  ToggleLeft, ToggleRight, ArrowDownRight,
+  ToggleLeft, ToggleRight, Eye,
 } from "lucide-react";
 
 interface TeamMember {
@@ -35,6 +36,7 @@ type Tab = "collaborateurs" | "apporteurs";
 
 export default function AdminTeam() {
   const { profile: user } = useAuth();
+  const { startViewAs } = useViewAs();
   const { toast } = useToast();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -328,7 +330,23 @@ export default function AdminTeam() {
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
+                     <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={() => startViewAs({
+                        id: member.id,
+                        full_name: member.full_name,
+                        email: member.email,
+                        role: member.role,
+                        collaborateur_level: member.collaborateur_level,
+                        is_also_apporteur: member.is_also_apporteur,
+                        can_add_instagram_leads: null,
+                        avatar_url: member.avatar_url,
+                        timezone: null,
+                        is_active: member.is_active,
+                      })}>
+                        <Eye className="h-4 w-4 mr-2 text-amber-400" />
+                        Voir en tant que
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       {member.role === "collaborateur" && (
                         member.collaborateur_level === "confirme" ? (
                           <DropdownMenuItem onClick={() => changeLevel(member, "intermediaire")}>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useEffectiveProfile } from "@/hooks/useEffectiveProfile";
 import { useToast } from "@/hooks/use-toast";
 import { Tables } from "@/integrations/supabase/types";
 import { Badge } from "@/components/ui/badge";
@@ -63,7 +64,7 @@ const MES_CALLS_TAB = { value: "mes_calls", label: "Mes calls" } as const;
 const PAGE_SIZE = 50;
 
 export default function Calls() {
-  const { profile } = useAuth();
+  const { profile } = useEffectiveProfile();
   const { toast } = useToast();
   const [calls, setCalls] = useState<CallEnriched[]>([]);
   const [loading, setLoading] = useState(true);

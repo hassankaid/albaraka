@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"; // dashboard
-import { useAuth } from "@/hooks/useAuth";
+import { useEffectiveProfile } from "@/hooks/useEffectiveProfile";
 import { useFinancialData, type FinancialDateRange } from "@/hooks/useFinancialData";
 import FinancialKPIs from "@/components/dashboard/FinancialKPIs";
 import PaymentSplitCard from "@/components/dashboard/PaymentSplitCard";
@@ -129,7 +129,7 @@ function FinancialTab() {
 }
 
 const Dashboard = () => {
-  const { profile } = useAuth();
+  const { profile } = useEffectiveProfile();
   const isCeo = profile?.role === "ceo";
 
   if (!isCeo) {
