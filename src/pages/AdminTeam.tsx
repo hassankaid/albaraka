@@ -333,7 +333,7 @@ export default function AdminTeam() {
                         toast({ title: "Connexion en cours…", description: `Ouverture du compte de ${member.full_name} dans un nouvel onglet` });
                         try {
                           const { data, error } = await supabase.functions.invoke("impersonate-user", {
-                            body: { target_user_id: member.id, redirect_to: window.location.origin },
+                            body: { target_user_id: member.id, redirect_to: `${window.location.origin}/dashboard?impersonation=1` },
                           });
                           if (error || !data?.url) throw new Error(error?.message || "Lien non généré");
                           window.open(data.url, "_blank");
