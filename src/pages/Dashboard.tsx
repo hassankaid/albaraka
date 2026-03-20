@@ -129,7 +129,7 @@ function FinancialTab() {
 }
 
 const Dashboard = () => {
-  const { profile } = useAuth();
+  const { profile } = useEffectiveProfile();
   const isCeo = profile?.role === "ceo";
 
   if (!isCeo) {

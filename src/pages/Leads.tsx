@@ -48,7 +48,8 @@ const CEO_TABS = [
 ] as const;
 
 export default function Leads() {
-  const { profile: user } = useAuth();
+  const { profile: realUser } = useAuth();
+  const { profile: user, isViewingAs } = useEffectiveProfile();
   const { toast } = useToast();
   const [leads, setLeads] = useState<LeadEnriched[]>([]);
   const [loading, setLoading] = useState(true);

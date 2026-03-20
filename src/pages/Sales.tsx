@@ -54,7 +54,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 const PAGE_SIZE = 50;
 
 export default function Sales() {
-  const { profile } = useAuth();
+  const { profile } = useEffectiveProfile();
   const { toast } = useToast();
   const isCeo = profile?.role === "ceo";
 
