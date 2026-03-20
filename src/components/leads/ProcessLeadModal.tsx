@@ -111,35 +111,7 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
     }
   };
 
-  const handleRelease = async () => {
-    if (!user || !lead.id) return;
-    setReleasing(true);
-    try {
-      await supabase
-        .from("leads")
-        .update({ assigned_to: null, assigned_at: null, updated_at: new Date().toISOString() })
-        .eq("id", lead.id);
-
-      await supabase.from("lead_activities").insert({
-        lead_id: lead.id,
-        user_id: user.id,
-        action: "unassign",
-        old_value: lead.assigned_to_name || lead.assigned_to,
-        new_value: null,
-      });
-
-      toast({ title: "Lead libéré" });
-      onSuccess();
-      onClose();
-    } catch {
-      toast({ title: "Erreur", variant: "destructive" });
-    } finally {
-      setReleasing(false);
-    }
-  };
-
   const canEdit = lead.assigned_to === user?.id || user?.role === "ceo";
-  const canRelease = canEdit && lead.assigned_to !== null;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
