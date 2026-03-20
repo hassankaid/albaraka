@@ -358,23 +358,9 @@ export default function Payments() {
           />
         </div>
 
-        <div className="flex items-center gap-3 ml-auto">
-          <span className="text-xs text-muted-foreground font-medium tabular-nums">
-            {filteredPayments.length} paiement{filteredPayments.length > 1 ? "s" : ""}
-          </span>
-          <div className="flex items-center gap-1.5">
-            <Switch
-              id="group-by-sale"
-              checked={groupBySale}
-              onCheckedChange={setGroupBySale}
-              className="scale-75"
-            />
-            <Label htmlFor="group-by-sale" className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1">
-              <Layers className="h-3 w-3" />
-              Grouper
-            </Label>
-          </div>
-        </div>
+        <span className="text-xs text-muted-foreground font-medium tabular-nums ml-auto">
+          {filteredPayments.length} paiement{filteredPayments.length > 1 ? "s" : ""}
+        </span>
       </div>
 
       {/* Table */}
