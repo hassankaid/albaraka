@@ -472,6 +472,7 @@ export default function Payments() {
                           ) : null}
                         </TableCell>
                       )}
+                    </TableRow>
                     );
                   })}
               </TableBody>
