@@ -27,9 +27,7 @@ export default function ApporteurLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { profile: realProfile, signOut } = useAuth();
-  const { viewAsProfile, stopViewAs, isViewingAs } = useViewAs();
-  const { profile } = useEffectiveProfile();
+  const { profile, signOut } = useAuth();
 
   const pageTitle = pageTitles[location.pathname] || "Mon espace";
   const initials = profile?.full_name
