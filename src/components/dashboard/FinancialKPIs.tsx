@@ -164,7 +164,7 @@ export default function FinancialKPIs(props: Props) {
   const allPaymentMap = new Map(allPayments.map(p => [p.id, p]));
 
   const roiDisplayValue = roi !== null
-    ? `x${roi.toFixed(1)}`
+    ? `x${roi.toFixed(2)}`
     : totalAdsCumul === 0 && caGenere > 0
       ? "x∞"
       : "—";
