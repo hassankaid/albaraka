@@ -37,7 +37,6 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
   const [status, setStatus] = useState("");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
-  const [releasing, setReleasing] = useState(false);
   const [otherLeadsCount, setOtherLeadsCount] = useState(0);
 
   useEffect(() => {
