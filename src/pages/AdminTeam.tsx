@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useViewAs } from "@/hooks/useViewAs";
@@ -37,6 +38,7 @@ type Tab = "collaborateurs" | "apporteurs";
 export default function AdminTeam() {
   const { profile: user } = useAuth();
   const { startViewAs } = useViewAs();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -331,18 +333,21 @@ export default function AdminTeam() {
                       </Button>
                     </DropdownMenuTrigger>
                      <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem onClick={() => startViewAs({
-                        id: member.id,
-                        full_name: member.full_name,
-                        email: member.email,
-                        role: member.role,
-                        collaborateur_level: member.collaborateur_level,
-                        is_also_apporteur: member.is_also_apporteur,
-                        can_add_instagram_leads: null,
-                        avatar_url: member.avatar_url,
-                        timezone: null,
-                        is_active: member.is_active,
-                      })}>
+                      <DropdownMenuItem onClick={() => {
+                        startViewAs({
+                          id: member.id,
+                          full_name: member.full_name,
+                          email: member.email,
+                          role: member.role,
+                          collaborateur_level: member.collaborateur_level,
+                          is_also_apporteur: member.is_also_apporteur,
+                          can_add_instagram_leads: null,
+                          avatar_url: member.avatar_url,
+                          timezone: null,
+                          is_active: member.is_active,
+                        });
+                        navigate("/dashboard");
+                      }}>
                         <Eye className="h-4 w-4 mr-2 text-amber-400" />
                         Voir en tant que
                       </DropdownMenuItem>
