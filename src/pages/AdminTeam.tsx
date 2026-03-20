@@ -36,7 +36,6 @@ type Tab = "collaborateurs" | "apporteurs";
 export default function AdminTeam() {
   const { profile: user } = useAuth();
   const { toast } = useToast();
-  const { toast } = useToast();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
