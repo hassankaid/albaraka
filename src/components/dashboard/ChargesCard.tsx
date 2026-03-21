@@ -632,11 +632,11 @@ export default function ChargesCard({
               </div>
 
               {/* List */}
-              {recurringCharges.length === 0 ? (
+              {[...monthlyCharges, ...yearlyCharges].length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">Aucun abonnement configuré</p>
               ) : (
                 <div className="space-y-2">
-                  {recurringCharges.map(c => (
+                  {[...monthlyCharges, ...yearlyCharges].map(c => (
                     <div key={c.id} className="rounded-xl border border-border bg-card p-4 flex items-center justify-between group shadow-sm">
                       <div>
                         <div className="flex items-center gap-2">
