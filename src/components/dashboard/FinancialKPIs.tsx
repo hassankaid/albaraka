@@ -166,14 +166,17 @@ export default function FinancialKPIs(props: Props) {
   // Use allPayments for commission lookups (commissions may reference payments outside filtered range)
   const allPaymentMap = new Map(allPayments.map(p => [p.id, p]));
 
-  const roiDisplayValue = roi !== null
-    ? `x${roi.toFixed(2)}`
-    : "—";
+  const roiGenere = totalAdsCumul > 0 ? caGenere / totalAdsCumul : null;
+  const roiCollecte = totalAdsCumul > 0 ? caCollecte / totalAdsCumul : null;
 
-  const roiColor = roi !== null
-    ? roi >= 1
-      ? "text-emerald-500"
-      : "text-destructive"
+  const roiGenereDisplay = roiGenere !== null ? `x${roiGenere.toFixed(2)}` : "—";
+  const roiCollecteDisplay = roiCollecte !== null ? `x${roiCollecte.toFixed(2)}` : "—";
+
+  const roiGenereColor = roiGenere !== null
+    ? roiGenere >= 1 ? "text-emerald-500" : "text-destructive"
+    : "text-muted-foreground";
+  const roiCollecteColor = roiCollecte !== null
+    ? roiCollecte >= 1 ? "text-emerald-500" : "text-destructive"
     : "text-muted-foreground";
 
   const kpis: { key: KpiKey; label: string; value: string; icon: any; color: string; hasDetail: boolean }[] = [
@@ -184,7 +187,6 @@ export default function FinancialKPIs(props: Props) {
     { key: "commissions", label: "Commissions", value: fmt(totalCommissions), icon: CreditCard, color: "text-orange-500", hasDetail: true },
     { key: "charges", label: "Charges", value: fmt(totalChargesCumul), icon: BarChart3, color: "text-muted-foreground", hasDetail: true },
     { key: "benefice", label: "Bénéfice", value: fmt(benefice), icon: PiggyBank, color: benefice >= 0 ? "text-emerald-500" : "text-destructive", hasDetail: true },
-    { key: "roi", label: "ROI", value: roiDisplayValue, icon: TrendingUp, color: roiColor, hasDetail: false },
   ];
 
   const sortedSalesForCA = useMemo(() => [...sales].sort((a, b) => (b.sold_at || "").localeCompare(a.sold_at || "")), [sales]);
