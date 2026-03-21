@@ -502,14 +502,6 @@ export default function FinancialKPIs(props: Props) {
         type ChargeLine = { month: string; category: string; name: string; amount: number };
         const rawLines: ChargeLine[] = [];
 
-        // Commissions payées by month
-        commissions.filter(c => c.status === "paid" && c.paid_at).forEach(c => {
-          const m = (c.paid_at || "").substring(0, 7);
-          if (!months.includes(m)) return;
-          const ben = c.beneficiary_user_id ? profileMap.get(c.beneficiary_user_id)?.full_name : c.beneficiary_external;
-          rawLines.push({ month: m, category: "Commissions", name: ben || roleLabels[c.role] || c.role, amount: c.amount || 0 });
-        });
-
         // Salaires per month
         salaryPeriods.forEach(sp => {
           const name = profileMap.get(sp.profile_id)?.full_name || "Inconnu";
@@ -560,10 +552,15 @@ export default function FinancialKPIs(props: Props) {
 
         const categoryTotals: Record<string, number> = {};
         finalLines.forEach(l => { categoryTotals[l.category] = (categoryTotals[l.category] || 0) + l.amount; });
+        const grandTotal = finalLines.reduce((s, l) => s + l.amount, 0);
 
-        const catColors: Record<string, string> = {
-          "Commissions": "bg-orange-400", "Salaires": "bg-blue-400", "Charges fixes": "bg-violet-400", "Publicité": "bg-rose-400",
+        const catColors: Record<string, { dot: string; active: string }> = {
+          "Salaires": { dot: "bg-blue-400", active: "bg-blue-500 text-white" },
+          "Charges fixes": { dot: "bg-violet-400", active: "bg-violet-500 text-white" },
+          "Publicité": { dot: "bg-rose-400", active: "bg-rose-500 text-white" },
         };
+
+        const cats = ["Tout", "Salaires", "Charges fixes", "Publicité"] as const;
 
         const ChargesTable = ({ lines, showCat }: { lines: ChargeLine[]; showCat: boolean }) => {
           const { items, safePage, totalPages } = paginate(lines);
@@ -586,7 +583,7 @@ export default function FinancialKPIs(props: Props) {
                         {showCat && (
                           <td className="px-3 py-1.5">
                             <div className="flex items-center gap-1.5">
-                              <span className={`h-2 w-2 rounded-full flex-shrink-0 ${catColors[l.category] || "bg-muted"}`} />
+                              <span className={`h-2 w-2 rounded-full flex-shrink-0 ${catColors[l.category]?.dot || "bg-muted"}`} />
                               <span className="text-muted-foreground">{l.category}</span>
                             </div>
                           </td>
@@ -609,33 +606,16 @@ export default function FinancialKPIs(props: Props) {
           );
         };
 
-        const cats = ["Tout", "Commissions", "Salaires", "Charges fixes", "Publicité"] as const;
-
         return (
-          <Tabs defaultValue="Tout" className="space-y-3">
-            <TabsList className="h-8 p-0.5 bg-muted/50 w-full justify-start">
-              {cats.map(cat => (
-                <TabsTrigger key={cat} value={cat} className="text-xs h-7 px-2.5 data-[state=active]:bg-card">
-                  {cat}
-                  {cat !== "Tout" && <span className="ml-1 text-[10px] text-muted-foreground tabular-nums">{fmt(categoryTotals[cat] || 0)}</span>}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            <TabsContent value="Tout" className="mt-0 space-y-2">
-              <ChargesTable lines={finalLines} showCat={true} />
-            </TabsContent>
-            {(["Commissions", "Salaires", "Charges fixes", "Publicité"] as const).map(cat => (
-              <TabsContent key={cat} value={cat} className="mt-0 space-y-2">
-                <ChargesTable lines={finalLines.filter(l => l.category === cat)} showCat={false} />
-              </TabsContent>
-            ))}
-
-            <div className="flex items-center justify-between px-3 pt-2 border-t-2 border-border">
-              <span className="text-sm font-semibold text-foreground">Total charges (cumul période)</span>
-              <span className="text-lg font-bold text-foreground tabular-nums">{fmt(totalChargesCumul)}</span>
-            </div>
-          </Tabs>
+          <ChargesModalContent
+            cats={cats}
+            categoryTotals={categoryTotals}
+            catColors={catColors}
+            grandTotal={grandTotal}
+            finalLines={finalLines}
+            ChargesTable={ChargesTable}
+            setModalPage={setModalPage}
+          />
         );
       }
 
