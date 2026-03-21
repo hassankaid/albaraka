@@ -589,8 +589,22 @@ export default function ChargesCard({
       <Dialog open={manageOpen} onOpenChange={setManageOpen}>
         <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col gap-0 p-0">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
-            <DialogTitle className="text-lg">Gestion des charges</DialogTitle>
-            <DialogDescription className="text-xs">Gérez vos coûts opérationnels : salaires, abonnements et charges ponctuelles.</DialogDescription>
+            <DialogTitle className="text-lg flex items-center gap-2">
+              Gestion des charges
+              {isFiltered && (
+                <Badge variant="secondary" className="text-[10px] px-2 py-0.5 font-normal">
+                  {dateRange.from.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}
+                  {dateRange.from.getMonth() !== dateRange.to.getMonth() || dateRange.from.getFullYear() !== dateRange.to.getFullYear()
+                    ? ` → ${dateRange.to.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}`
+                    : ""}
+                </Badge>
+              )}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {isFiltered
+                ? "Affichage filtré selon la période sélectionnée sur le dashboard."
+                : "Gérez vos coûts opérationnels : salaires, abonnements et charges ponctuelles."}
+            </DialogDescription>
           </DialogHeader>
 
           <Tabs defaultValue="salaries" className="flex-1 min-h-0 flex flex-col">
