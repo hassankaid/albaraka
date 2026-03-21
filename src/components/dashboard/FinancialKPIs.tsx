@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
-import { TrendingUp, TrendingDown, Wallet, CreditCard, Percent, AlertTriangle, PiggyBank, BarChart3, User, ChevronLeft, ChevronRight, CheckCheck, Filter } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, CreditCard, Percent, AlertTriangle, PiggyBank, BarChart3, User, ChevronLeft, ChevronRight, CheckCheck, Filter, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -282,10 +283,14 @@ export default function FinancialKPIs(props: Props) {
     ? roiCollecte >= 1 ? "text-emerald-500" : "text-destructive"
     : "text-muted-foreground";
 
-  const kpis: { key: KpiKey; label: string; value: string; icon: any; color: string; hasDetail: boolean }[] = [
+  const tauxCollecteTooltip = isFiltered
+    ? "Avec un filtre de période : ratio entre les échéances payées et le total des échéances de la période."
+    : "Sans filtre (Tout) : ratio global entre le CA Collecté et le CA Généré depuis le début.";
+
+  const kpis: { key: KpiKey; label: string; value: string; icon: any; color: string; hasDetail: boolean; tooltip?: string }[] = [
     { key: "caGenere", label: "CA Généré", value: fmt(caGenere), icon: TrendingUp, color: "text-primary", hasDetail: true },
     { key: "caCollecte", label: "CA Collecté", value: fmt(caCollecte), icon: Wallet, color: "text-emerald-500", hasDetail: true },
-    { key: "tauxCollecte", label: isFiltered ? "Taux collecte" : "Taux encaissé", value: `${tauxCashCollecte.toFixed(1)}%`, icon: Percent, color: "text-blue-500", hasDetail: true },
+    { key: "tauxCollecte", label: isFiltered ? "Taux collecte" : "Taux encaissé", value: `${tauxCashCollecte.toFixed(1)}%`, icon: Percent, color: "text-blue-500", hasDetail: true, tooltip: tauxCollecteTooltip },
     { key: "tauxImpayes", label: isFiltered ? "Éch. impayées" : "Taux d'impayés", value: `${tauxImpayes.toFixed(1)}%`, icon: AlertTriangle, color: tauxImpayes > 10 ? "text-destructive" : "text-amber-500", hasDetail: true },
     { key: "commissions", label: "Commissions", value: fmt(totalCommissions), icon: CreditCard, color: "text-orange-500", hasDetail: true },
     { key: "charges", label: "Charges", value: fmt(totalChargesCumul), icon: BarChart3, color: "text-muted-foreground", hasDetail: true },
@@ -766,23 +771,39 @@ export default function FinancialKPIs(props: Props) {
 
   return (
     <>
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-        {kpis.map((k) => (
-          <button
-            key={k.key}
-            onClick={() => k.hasDetail && handleOpenModal(k.key)}
-            disabled={!k.hasDetail}
-            className={`bg-card border border-border rounded-xl p-3 flex flex-col gap-1 text-left transition-all ${
-              k.hasDetail ? "hover:border-primary/30 hover:shadow-sm cursor-pointer" : "cursor-default"
-            }`}
-          >
-            <div className="flex items-center gap-1.5">
-              <k.icon className={`h-3.5 w-3.5 ${k.color}`} />
-              <span className="text-[11px] text-muted-foreground font-medium truncate">{k.label}</span>
-            </div>
-            <span className="text-sm font-bold text-foreground">{k.value}</span>
-          </button>
-        ))}
+      <TooltipProvider delayDuration={200}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+          {kpis.map((k) => {
+            const card = (
+              <button
+                key={k.key}
+                onClick={() => k.hasDetail && handleOpenModal(k.key)}
+                disabled={!k.hasDetail}
+                className={`bg-card border border-border rounded-xl p-3 flex flex-col gap-1 text-left transition-all ${
+                  k.hasDetail ? "hover:border-primary/30 hover:shadow-sm cursor-pointer" : "cursor-default"
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <k.icon className={`h-3.5 w-3.5 ${k.color}`} />
+                  <span className="text-[11px] text-muted-foreground font-medium truncate">{k.label}</span>
+                  {k.tooltip && <Info className="h-3 w-3 text-muted-foreground/50" />}
+                </div>
+                <span className="text-sm font-bold text-foreground">{k.value}</span>
+              </button>
+            );
+
+            if (k.tooltip) {
+              return (
+                <Tooltip key={k.key}>
+                  <TooltipTrigger asChild>{card}</TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[260px] text-xs leading-relaxed">
+                    <p>{k.tooltip}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            }
+            return card;
+          })}
         {/* ROI dual card */}
         <div className="bg-card border border-border rounded-xl p-3 flex flex-col gap-1.5 cursor-default">
           <div className="flex items-center gap-1.5">
@@ -801,7 +822,8 @@ export default function FinancialKPIs(props: Props) {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </TooltipProvider>
 
       <Dialog open={!!openModal} onOpenChange={() => setOpenModal(null)}>
         <DialogContent className={dialogSize}>
