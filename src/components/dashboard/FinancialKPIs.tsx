@@ -183,6 +183,7 @@ export default function FinancialKPIs(props: Props) {
     totalSalariesCumul, totalFixedChargesCumul, commissionsPaid,
     activeSalaries, activeCharges, allPayments, allSales,
     totalAdsCumul, roi,
+    salaryPeriods = [], fixedChargesDetail = [], adsDetail = [], dateRange,
   } = props;
 
   const [openModal, setOpenModal] = useState<KpiKey | null>(null);
