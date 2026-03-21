@@ -31,6 +31,7 @@ interface PaymentRow {
   contact_phone: string | null;
   sale_id: string | null;
   closed_by: string | null;
+  _isUserInvolved: boolean;
 }
 
 const getPaymentStatusInfo = (status: string, dueDate: string) => {
