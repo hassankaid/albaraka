@@ -66,6 +66,10 @@ function FinancialTab() {
         allSales={data.allSales}
         totalAdsCumul={data.totalAdsCumul}
         roi={data.roi}
+        salaryPeriods={data.salaryPeriods}
+        fixedChargesDetail={data.fixedCharges}
+        adsDetail={data.ads}
+        dateRange={dateRange}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
