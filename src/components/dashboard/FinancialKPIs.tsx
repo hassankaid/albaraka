@@ -287,9 +287,25 @@ export default function FinancialKPIs(props: Props) {
       // ═══════════════════ CA COLLECTÉ / TAUX COLLECTE ═══════════════════
       case "caCollecte":
       case "tauxCollecte": {
-        const { items, safePage, totalPages } = paginate(paidPayments);
+        const q = searchQuery.toLowerCase();
+        const filtered = q
+          ? paidPayments.filter(p => {
+              const sale = p.sale_id ? saleMap.get(p.sale_id) : null;
+              const contact = sale ? contactMap.get(sale.contact_id) : null;
+              return (contact?.full_name || "").toLowerCase().includes(q);
+            })
+          : paidPayments;
+        const { items, safePage, totalPages } = paginate(filtered);
         return (
           <div>
+            <div className="px-3 pb-3">
+              <Input
+                placeholder="Rechercher un client…"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setModalPage(0); }}
+                className="h-8 text-xs"
+              />
+            </div>
             <div className="grid grid-cols-[1fr_100px_56px_80px_68px_90px] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               <span>Client</span><span>Date éch.</span><span className="text-center">N°</span><span className="text-center">Date paiem.</span><span className="text-center">Statut</span><span className="text-right">Montant</span>
             </div>
@@ -313,7 +329,7 @@ export default function FinancialKPIs(props: Props) {
               })}
             </div>
             <div className="flex items-center justify-between pt-3 border-t border-border px-3">
-              <span className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{paidPayments.length}</span> échéance{paidPayments.length > 1 ? "s" : ""} payée{paidPayments.length > 1 ? "s" : ""} — Total <span className="font-bold text-foreground">{fmt(caCollecte)}</span></span>
+              <span className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{filtered.length}</span> échéance{filtered.length > 1 ? "s" : ""} payée{filtered.length > 1 ? "s" : ""} — Total <span className="font-bold text-foreground">{fmt(filtered.reduce((s, p) => s + p.amount, 0))}</span></span>
               <ModalPagination page={safePage} totalPages={totalPages} setPage={setModalPage} />
             </div>
           </div>
