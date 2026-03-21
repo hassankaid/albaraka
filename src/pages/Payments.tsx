@@ -30,6 +30,7 @@ interface PaymentRow {
   contact_email: string | null;
   contact_phone: string | null;
   sale_id: string | null;
+  closed_by: string | null;
 }
 
 const getPaymentStatusInfo = (status: string, dueDate: string) => {
@@ -145,7 +146,8 @@ export default function Payments() {
         .from("payments")
         .select(`
           id, payment_number, total_payments, amount, due_date, paid_at, status, notes, sale_id,
-          contacts!payments_contact_id_fkey(full_name, email, phone_normalized)
+          contacts!payments_contact_id_fkey(full_name, email, phone_normalized),
+          sales!payments_sale_id_fkey(closed_by)
         `)
         .order("due_date", { ascending: false })
         .range(from, from + batchSize - 1);
@@ -173,6 +175,7 @@ export default function Payments() {
         contact_email: p.contacts?.email || null,
         contact_phone: p.contacts?.phone_normalized || null,
         sale_id: p.sale_id || null,
+        closed_by: p.sales?.closed_by || null,
       }))
     );
     setLoading(false);
@@ -283,11 +286,17 @@ export default function Payments() {
   );
 
   const thisMonth = getMonthRange(0);
-  const kpiPayments = allPayments.filter((p) => p.due_date >= thisMonth.start && p.due_date <= thisMonth.end);
+  // For collaborateurs, only show KPIs for their own payments (closed_by = their id)
+  const kpiBasePayments = useMemo(() => {
+    if (isCeo) return allPayments;
+    return allPayments.filter((p) => p.closed_by === profile?.id);
+  }, [allPayments, isCeo, profile?.id]);
+
+  const kpiPayments = kpiBasePayments.filter((p) => p.due_date >= thisMonth.start && p.due_date <= thisMonth.end);
   const totalPendingMonth = kpiPayments.filter((p) => p.status === "pending").reduce((s, p) => s + p.amount, 0);
   const totalPaidMonth = kpiPayments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
   const today = new Date().toISOString().split("T")[0];
-  const totalOverdue = allPayments
+  const totalOverdue = kpiBasePayments
     .filter((p) => (p.status === "pending" && p.due_date < today) || p.status === "late")
     .reduce((s, p) => s + p.amount, 0);
 
