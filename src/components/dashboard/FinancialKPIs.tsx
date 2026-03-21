@@ -481,87 +481,161 @@ export default function FinancialKPIs(props: Props) {
 
       // ═══════════════════ CHARGES ═══════════════════
       case "charges": {
-        const chargeLines: { category: string; name: string; amount: number; detail: string }[] = [];
+        const todayDate = new Date();
+        const rangeStart = dateRange?.from ?? new Date(2020, 0, 1);
+        const rangeEnd = dateRange?.to && dateRange.to > todayDate ? todayDate : (dateRange?.to ?? todayDate);
 
-        // Commissions payées — single summary line
-        chargeLines.push({ category: "Commissions", name: "Commissions payées", amount: commissionsPaid, detail: "" });
+        // Generate months in range
+        const months: string[] = [];
+        const cursor = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1);
+        const endMonth = new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), 1);
+        while (cursor <= endMonth) {
+          months.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`);
+          cursor.setMonth(cursor.getMonth() + 1);
+        }
 
-        // Salaires
-        activeSalaries.forEach(s => chargeLines.push({ category: "Salaires", name: s.full_name, amount: s.amount, detail: "/mois" }));
-
-        // Charges fixes
-        activeCharges.forEach(c => {
-          const detail = c.frequency === "monthly" ? "/mois" : c.frequency === "yearly" ? "/an" : "ponctuel";
-          chargeLines.push({ category: "Charges fixes", name: c.name, amount: c.amount, detail });
-        });
-
-        // Publicité
-        chargeLines.push({ category: "Publicité", name: "Dépenses Ads", amount: totalAdsCumul, detail: "cumul" });
-
-        const categoryColors: Record<string, string> = {
-          "Commissions": "bg-orange-400",
-          "Salaires": "bg-blue-400",
-          "Charges fixes": "bg-violet-400",
-          "Publicité": "bg-rose-400",
+        const monthLabel = (m: string) => {
+          const [y, mo] = m.split("-");
+          return new Date(+y, +mo - 1, 1).toLocaleDateString("fr-FR", { month: "short", year: "numeric" });
         };
 
-        // Group totals for summary header
-        const summaryItems = [
-          { label: "Commissions", amount: commissionsPaid, color: "bg-orange-400" },
-          { label: "Salaires", amount: totalSalariesCumul, color: "bg-blue-400" },
-          { label: "Charges", amount: totalFixedChargesCumul, color: "bg-violet-400" },
-          { label: "Publicité", amount: totalAdsCumul, color: "bg-rose-400" },
-        ];
+        type ChargeLine = { month: string; category: string; name: string; amount: number };
+        const rawLines: ChargeLine[] = [];
+
+        // Commissions payées by month
+        commissions.filter(c => c.status === "paid" && c.paid_at).forEach(c => {
+          const m = (c.paid_at || "").substring(0, 7);
+          if (!months.includes(m)) return;
+          const ben = c.beneficiary_user_id ? profileMap.get(c.beneficiary_user_id)?.full_name : c.beneficiary_external;
+          rawLines.push({ month: m, category: "Commissions", name: ben || roleLabels[c.role] || c.role, amount: c.amount || 0 });
+        });
+
+        // Salaires per month
+        salaryPeriods.forEach(sp => {
+          const name = profileMap.get(sp.profile_id)?.full_name || "Inconnu";
+          months.forEach(m => {
+            const [y, mo] = m.split("-").map(Number);
+            const mStart = new Date(y, mo - 1, 1);
+            const mEnd = new Date(y, mo, 0);
+            const spStart = new Date(sp.start_date);
+            const spEnd = sp.end_date ? new Date(sp.end_date) : rangeEnd;
+            if (spStart <= mEnd && spEnd >= mStart) {
+              rawLines.push({ month: m, category: "Salaires", name, amount: sp.amount });
+            }
+          });
+        });
+
+        // Charges fixes per month
+        fixedChargesDetail.filter(c => c.is_active).forEach(c => {
+          if (c.frequency === "one_time") {
+            const m = c.start_date.substring(0, 7);
+            if (months.includes(m)) rawLines.push({ month: m, category: "Charges fixes", name: c.name, amount: c.amount });
+          } else {
+            months.forEach(m => {
+              const [y, mo] = m.split("-").map(Number);
+              const mStart = new Date(y, mo - 1, 1);
+              const mEnd = new Date(y, mo, 0);
+              const cStart = new Date(c.start_date);
+              const cEnd = c.end_date ? new Date(c.end_date) : rangeEnd;
+              if (cStart <= mEnd && cEnd >= mStart) {
+                rawLines.push({ month: m, category: "Charges fixes", name: c.name, amount: c.frequency === "yearly" ? c.amount / 12 : c.amount });
+              }
+            });
+          }
+        });
+
+        // Publicité — aggregate by month+campaign
+        const adsAgg = new Map<string, ChargeLine>();
+        adsDetail.forEach(a => {
+          const m = a.date.substring(0, 7);
+          if (!months.includes(m)) return;
+          const key = `${m}|${a.campaign_name}`;
+          const existing = adsAgg.get(key);
+          if (existing) existing.amount += a.amount_spent;
+          else adsAgg.set(key, { month: m, category: "Publicité", name: a.campaign_name, amount: a.amount_spent });
+        });
+
+        const finalLines = [...rawLines, ...Array.from(adsAgg.values())]
+          .sort((a, b) => b.month.localeCompare(a.month) || a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+
+        const categoryTotals: Record<string, number> = {};
+        finalLines.forEach(l => { categoryTotals[l.category] = (categoryTotals[l.category] || 0) + l.amount; });
+
+        const catColors: Record<string, string> = {
+          "Commissions": "bg-orange-400", "Salaires": "bg-blue-400", "Charges fixes": "bg-violet-400", "Publicité": "bg-rose-400",
+        };
+
+        const ChargesTable = ({ lines, showCat }: { lines: ChargeLine[]; showCat: boolean }) => {
+          const { items, safePage, totalPages } = paginate(lines);
+          return (
+            <>
+              <div className="max-h-[300px] overflow-y-auto rounded-lg border border-border">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-card z-10">
+                    <tr className="border-b border-border text-muted-foreground">
+                      <th className="text-left font-medium px-3 py-2">Mois</th>
+                      {showCat && <th className="text-left font-medium px-3 py-2">Catégorie</th>}
+                      <th className="text-left font-medium px-3 py-2">Libellé</th>
+                      <th className="text-right font-medium px-3 py-2">Montant</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    {items.map((l, idx) => (
+                      <tr key={idx} className={idx % 2 === 1 ? "bg-muted/10" : ""}>
+                        <td className="px-3 py-1.5 text-muted-foreground whitespace-nowrap">{monthLabel(l.month)}</td>
+                        {showCat && (
+                          <td className="px-3 py-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`h-2 w-2 rounded-full flex-shrink-0 ${catColors[l.category] || "bg-muted"}`} />
+                              <span className="text-muted-foreground">{l.category}</span>
+                            </div>
+                          </td>
+                        )}
+                        <td className="px-3 py-1.5 font-medium text-foreground truncate max-w-[200px]">{l.name}</td>
+                        <td className="px-3 py-1.5 text-right font-bold text-foreground tabular-nums whitespace-nowrap">{fmt(l.amount)}</td>
+                      </tr>
+                    ))}
+                    {items.length === 0 && (
+                      <tr><td colSpan={showCat ? 4 : 3} className="px-3 py-6 text-center text-muted-foreground">Aucune charge</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex items-center justify-between px-1 pt-1">
+                <span className="text-[11px] text-muted-foreground"><span className="font-semibold text-foreground">{lines.length}</span> ligne{lines.length > 1 ? "s" : ""}</span>
+                <ModalPagination page={safePage} totalPages={totalPages} setPage={setModalPage} />
+              </div>
+            </>
+          );
+        };
+
+        const cats = ["Tout", "Commissions", "Salaires", "Charges fixes", "Publicité"] as const;
 
         return (
-          <div className="space-y-3">
-            {/* Summary chips */}
-            <div className="flex flex-wrap gap-2">
-              {summaryItems.map(s => (
-                <div key={s.label} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/30 border border-border/50">
-                  <span className={`h-2 w-2 rounded-full ${s.color}`} />
-                  <span className="text-[10px] text-muted-foreground">{s.label}</span>
-                  <span className="text-xs font-bold text-foreground tabular-nums">{fmt(s.amount)}</span>
-                </div>
+          <Tabs defaultValue="Tout" className="space-y-3">
+            <TabsList className="h-8 p-0.5 bg-muted/50 w-full justify-start">
+              {cats.map(cat => (
+                <TabsTrigger key={cat} value={cat} className="text-xs h-7 px-2.5 data-[state=active]:bg-card">
+                  {cat}
+                  {cat !== "Tout" && <span className="ml-1 text-[10px] text-muted-foreground tabular-nums">{fmt(categoryTotals[cat] || 0)}</span>}
+                </TabsTrigger>
               ))}
-            </div>
+            </TabsList>
 
-            {/* Table */}
-            <div className="max-h-[340px] overflow-y-auto rounded-lg border border-border">
-              <table className="w-full text-xs">
-                <thead className="sticky top-0 bg-card z-10">
-                  <tr className="border-b border-border text-muted-foreground">
-                    <th className="text-left font-medium px-3 py-2">Catégorie</th>
-                    <th className="text-left font-medium px-3 py-2">Libellé</th>
-                    <th className="text-right font-medium px-3 py-2">Montant</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/40">
-                  {chargeLines.map((l, idx) => (
-                    <tr key={idx} className={idx % 2 === 1 ? "bg-muted/10" : ""}>
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`h-2 w-2 rounded-full flex-shrink-0 ${categoryColors[l.category] || "bg-muted"}`} />
-                          <span className="text-muted-foreground">{l.category}</span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 font-medium text-foreground">{l.name}</td>
-                      <td className="px-3 py-2 text-right font-bold text-foreground tabular-nums whitespace-nowrap">
-                        {fmt(l.amount)}
-                        {l.detail && <span className="text-muted-foreground font-normal ml-1">{l.detail}</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <TabsContent value="Tout" className="mt-0 space-y-2">
+              <ChargesTable lines={finalLines} showCat={true} />
+            </TabsContent>
+            {(["Commissions", "Salaires", "Charges fixes", "Publicité"] as const).map(cat => (
+              <TabsContent key={cat} value={cat} className="mt-0 space-y-2">
+                <ChargesTable lines={finalLines.filter(l => l.category === cat)} showCat={false} />
+              </TabsContent>
+            ))}
 
-            {/* Total */}
             <div className="flex items-center justify-between px-3 pt-2 border-t-2 border-border">
               <span className="text-sm font-semibold text-foreground">Total charges (cumul période)</span>
               <span className="text-lg font-bold text-foreground tabular-nums">{fmt(totalChargesCumul)}</span>
             </div>
-          </div>
+          </Tabs>
         );
       }
 
