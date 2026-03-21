@@ -286,11 +286,17 @@ export default function Payments() {
   );
 
   const thisMonth = getMonthRange(0);
-  const kpiPayments = allPayments.filter((p) => p.due_date >= thisMonth.start && p.due_date <= thisMonth.end);
+  // For collaborateurs, only show KPIs for their own payments (closed_by = their id)
+  const kpiBasePayments = useMemo(() => {
+    if (isCeo) return allPayments;
+    return allPayments.filter((p) => p.closed_by === profile?.id);
+  }, [allPayments, isCeo, profile?.id]);
+
+  const kpiPayments = kpiBasePayments.filter((p) => p.due_date >= thisMonth.start && p.due_date <= thisMonth.end);
   const totalPendingMonth = kpiPayments.filter((p) => p.status === "pending").reduce((s, p) => s + p.amount, 0);
   const totalPaidMonth = kpiPayments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
   const today = new Date().toISOString().split("T")[0];
-  const totalOverdue = allPayments
+  const totalOverdue = kpiBasePayments
     .filter((p) => (p.status === "pending" && p.due_date < today) || p.status === "late")
     .reduce((s, p) => s + p.amount, 0);
 
