@@ -634,8 +634,8 @@ export default function ChargesCard({
               )}
 
               {/* List */}
-              {allSalaryPeriods.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">Aucun salaire fixe configuré</p>
+              {filteredSalaryPeriods.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Aucun salaire fixe{isFiltered ? " sur cette période" : " configuré"}</p>
               ) : (
                 <div className="space-y-2">
                   {allSalaryPeriods.map(sp => {
