@@ -563,7 +563,7 @@ export default function FinancialKPIs(props: Props) {
     commissions: "Détail — Commissions",
     charges: "Détail — Charges",
     benefice: "Détail — Bénéfice net",
-    roi: "ROI",
+    
   };
 
   // Wider dialog for commissions (more columns)
