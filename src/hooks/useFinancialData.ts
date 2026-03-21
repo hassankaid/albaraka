@@ -260,9 +260,6 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
   const commissionsDue = commissions.filter((c) => c.status === "due" || c.status === "invoiced").reduce((sum, c) => sum + (c.amount || 0), 0);
 
   // ── Charge range: use filter range or global ──
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-  const chargeRangeStart = range?.from ?? new Date(2020, 0, 1);
   const chargeRangeEnd = range?.to ?? new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
   // Charges: Salaires fixes
