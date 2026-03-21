@@ -464,10 +464,10 @@ export default function ChargesCard({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="ml-8 mt-1 mb-2 space-y-1.5">
-                {activeSalaries.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">Aucun salaire actif</p>
+                {filteredActiveSalaries.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Aucun salaire actif{isFiltered ? " sur cette période" : ""}</p>
                 ) : (
-                  activeSalaries.map(s => (
+                  filteredActiveSalaries.map(s => (
                     <div key={s.id} className="flex items-center justify-between text-xs py-0.5">
                       <div className="flex flex-col min-w-0 mr-2">
                         <span className="text-foreground font-medium truncate">{s.full_name}</span>
