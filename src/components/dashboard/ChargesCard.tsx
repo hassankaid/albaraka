@@ -164,6 +164,7 @@ export default function ChargesCard({
   salaryPeriods,
   profiles,
   ads,
+  onRefreshCharges,
   onRefreshSalaries,
 }: Props) {
   const [manageOpen, setManageOpen] = useState(false);
