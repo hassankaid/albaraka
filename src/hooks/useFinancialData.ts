@@ -191,6 +191,12 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     ? allPayments.filter((p) => inRange(p.due_date, range))
     : allPayments;
 
+  // Payments collected in period: paid_at falls in range (for CA Collecté)
+  // This captures payments actually received during the period, even if due_date is outside
+  const paidInPeriod = range
+    ? allPayments.filter((p) => p.status === "paid" && inRange(p.paid_at, range))
+    : allPayments.filter((p) => p.status === "paid");
+
   // Commissions: filter by linked payment's due_date via sale_id
   const filteredPaymentIds = range ? new Set(payments.map((p) => p.id)) : null;
   const filteredSaleIds = range ? new Set(sales.map((s) => s.id)) : null;
@@ -209,10 +215,8 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
   // KPI: CA Généré
   const caGenere = sales.reduce((sum, s) => sum + (s.amount_ht || 0), 0);
 
-  // KPI: CA Collecté (paid payments only)
-  const caCollecte = payments
-    .filter((p) => p.status === "paid")
-    .reduce((sum, p) => sum + (p.amount || 0), 0);
+  // KPI: CA Collecté — based on payments actually received (paid_at) in period
+  const caCollecte = paidInPeriod.reduce((sum, p) => sum + (p.amount || 0), 0);
 
   // KPI: Taux de cash collecté & Taux d'impayés
   // When a period filter is active, base these on échéances (payments) of the period
