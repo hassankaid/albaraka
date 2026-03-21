@@ -498,7 +498,7 @@ export default function ChargesCard({
             <CollapsibleContent>
               <div className="ml-8 mt-1 mb-2 space-y-1.5">
                 {oneTimeCharges.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">Aucune charge ponctuelle</p>
+                  <p className="text-xs text-muted-foreground italic">Aucune charge ponctuelle{isFiltered ? " sur cette période" : ""}</p>
                 ) : (
                   [...oneTimeCharges].sort((a, b) => b.start_date.localeCompare(a.start_date)).map(c => (
                     <div key={c.id} className="flex items-center justify-between text-xs py-0.5">
