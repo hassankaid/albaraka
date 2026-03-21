@@ -589,6 +589,24 @@ export default function FinancialKPIs(props: Props) {
             <span className="text-sm font-bold text-foreground">{k.value}</span>
           </button>
         ))}
+        {/* ROI dual card */}
+        <div className="bg-card border border-border rounded-xl p-3 flex flex-col gap-1.5 cursor-default">
+          <div className="flex items-center gap-1.5">
+            <TrendingUp className="h-3.5 w-3.5 text-primary" />
+            <span className="text-[11px] text-muted-foreground font-medium">ROI Ads</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-muted-foreground">Généré</span>
+              <span className={`text-sm font-bold ${roiGenereColor}`}>{roiGenereDisplay}</span>
+            </div>
+            <div className="w-px h-6 bg-border" />
+            <div className="flex flex-col">
+              <span className="text-[10px] text-muted-foreground">Collecté</span>
+              <span className={`text-sm font-bold ${roiCollecteColor}`}>{roiCollecteDisplay}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <Dialog open={!!openModal} onOpenChange={() => setOpenModal(null)}>
