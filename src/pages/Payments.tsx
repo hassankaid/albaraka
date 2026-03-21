@@ -258,7 +258,8 @@ export default function Payments() {
   };
 
   const filteredPayments = useMemo(() => {
-    let result = allPayments;
+    // For non-CEO, only show payments where user has commissions
+    let result = isCeo ? allPayments : allPayments.filter((p) => p._isUserInvolved);
 
     if (periodFilter === "this_month" || periodFilter === "next_month") {
       const offset = periodFilter === "this_month" ? 0 : 1;
