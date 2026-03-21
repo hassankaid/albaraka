@@ -320,6 +320,9 @@ export default function Payments() {
   const totalOverdue = kpiPayments
     .filter((p) => (p.status === "pending" && p.due_date < today) || p.status === "late")
     .reduce((s, p) => s + p.amount, 0);
+  const totalLost = kpiPayments
+    .filter((p) => p.status === "lost" || p.status === "cancelled")
+    .reduce((s, p) => s + p.amount, 0);
 
   const canChangeStatus = (status: string) => status === "pending" || status === "late";
 
@@ -342,6 +345,11 @@ export default function Payments() {
             <CircleDollarSign className="h-3.5 w-3.5 text-emerald-400" />
             <span className="text-sm font-bold text-foreground">{totalPaidMonth.toLocaleString("fr-FR")} €</span>
             <span className="text-xs text-muted-foreground">encaissé</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-zinc-600/30">
+            <XCircle className="h-3.5 w-3.5 text-zinc-400" />
+            <span className="text-sm font-bold text-foreground">{totalLost.toLocaleString("fr-FR")} €</span>
+            <span className="text-xs text-muted-foreground">perdu</span>
           </div>
         </div>
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefresh} disabled={refreshing} title="Actualiser">
