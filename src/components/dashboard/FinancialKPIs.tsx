@@ -822,7 +822,8 @@ export default function FinancialKPIs(props: Props) {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </TooltipProvider>
 
       <Dialog open={!!openModal} onOpenChange={() => setOpenModal(null)}>
         <DialogContent className={dialogSize}>
