@@ -756,7 +756,7 @@ export default function ChargesCard({
 
               {/* List */}
               {[...monthlyCharges, ...yearlyCharges].length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">Aucun abonnement configuré</p>
+                <p className="text-sm text-muted-foreground text-center py-8">Aucun abonnement{isFiltered ? " sur cette période" : " configuré"}</p>
               ) : (
                 <div className="space-y-2">
                   {[...monthlyCharges, ...yearlyCharges].map(c => (
