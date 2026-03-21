@@ -125,8 +125,8 @@ export default function Payments() {
   const [allPayments, setAllPayments] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [periodFilter, setPeriodFilter] = useState("this_month");
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
+  const [periodFilter, setPeriodFilter] = useState("today");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   
@@ -261,7 +261,10 @@ export default function Payments() {
     // For non-CEO, only show payments where user has commissions
     let result = isCeo ? allPayments : allPayments.filter((p) => p._isUserInvolved);
 
-    if (periodFilter === "this_month" || periodFilter === "next_month") {
+    if (periodFilter === "today") {
+      const todayStr = new Date().toISOString().split("T")[0];
+      result = result.filter((p) => p.due_date === todayStr);
+    } else if (periodFilter === "this_month" || periodFilter === "next_month") {
       const offset = periodFilter === "this_month" ? 0 : 1;
       const { start, end } = getMonthRange(offset);
       result = result.filter((p) => p.due_date >= start && p.due_date <= end);
@@ -270,10 +273,10 @@ export default function Payments() {
       result = result.filter((p) => p.due_date >= start && p.due_date <= end);
     }
 
-    if (statusFilter !== "all") {
+    if (statusFilters.length > 0) {
       result = result.filter((p) => {
         const info = getPaymentStatusInfo(p.status, p.due_date);
-        return info.key === statusFilter;
+        return statusFilters.includes(info.key);
       });
     }
 
@@ -288,9 +291,9 @@ export default function Payments() {
 
 
     return result;
-  }, [allPayments, statusFilter, periodFilter, search]);
+  }, [allPayments, statusFilters, periodFilter, search, isCeo]);
 
-  useEffect(() => { setPage(0); }, [statusFilter, periodFilter, search]);
+  useEffect(() => { setPage(0); }, [statusFilters, periodFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(filteredPayments.length / PAGE_SIZE));
   const paginatedPayments = useMemo(
@@ -302,7 +305,10 @@ export default function Payments() {
   const kpiPayments = useMemo(() => {
     let result = isCeo ? allPayments : allPayments.filter((p) => p._isUserInvolved);
 
-    if (periodFilter === "this_month" || periodFilter === "next_month") {
+    if (periodFilter === "today") {
+      const todayStr = new Date().toISOString().split("T")[0];
+      result = result.filter((p) => p.due_date === todayStr);
+    } else if (periodFilter === "this_month" || periodFilter === "next_month") {
       const offset = periodFilter === "this_month" ? 0 : 1;
       const { start, end } = getMonthRange(offset);
       result = result.filter((p) => p.due_date >= start && p.due_date <= end);
@@ -364,6 +370,7 @@ export default function Payments() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="today">Aujourd'hui</SelectItem>
             <SelectItem value="all">Toutes périodes</SelectItem>
             <SelectItem value="this_month">Ce mois</SelectItem>
             <SelectItem value="next_month">Mois prochain</SelectItem>
@@ -371,18 +378,46 @@ export default function Payments() {
           </SelectContent>
         </Select>
 
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous statuts</SelectItem>
-            <SelectItem value="pending">En attente</SelectItem>
-            <SelectItem value="late">En retard</SelectItem>
-            <SelectItem value="paid">Payé</SelectItem>
-            <SelectItem value="lost">Perdu</SelectItem>
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs bg-card min-w-[130px] justify-between">
+              {statusFilters.length === 0
+                ? "Tous statuts"
+                : statusFilters.length === 1
+                  ? { pending: "En attente", late: "En retard", paid: "Payé", lost: "Perdu" }[statusFilters[0]]
+                  : `${statusFilters.length} statuts`}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[160px] p-2" align="start">
+            {[
+              { key: "pending", label: "En attente" },
+              { key: "late", label: "En retard" },
+              { key: "paid", label: "Payé" },
+              { key: "lost", label: "Perdu" },
+            ].map((s) => (
+              <label key={s.key} className="flex items-center gap-2 px-2 py-1.5 text-xs cursor-pointer hover:bg-secondary rounded">
+                <input
+                  type="checkbox"
+                  checked={statusFilters.includes(s.key)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setStatusFilters((prev) => [...prev, s.key]);
+                    } else {
+                      setStatusFilters((prev) => prev.filter((f) => f !== s.key));
+                    }
+                  }}
+                  className="rounded border-border"
+                />
+                {s.label}
+              </label>
+            ))}
+            {statusFilters.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 h-7 text-xs" onClick={() => setStatusFilters([])}>
+                Réinitialiser
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
 
         <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
