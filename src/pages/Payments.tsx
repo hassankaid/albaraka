@@ -31,6 +31,7 @@ interface PaymentRow {
   contact_phone: string | null;
   sale_id: string | null;
   closed_by: string | null;
+  _isUserInvolved: boolean;
 }
 
 const getPaymentStatusInfo = (status: string, dueDate: string) => {
@@ -161,6 +162,16 @@ export default function Payments() {
       }
     }
 
+    // For non-CEO, fetch sale_ids where user has commissions
+    let userSaleIds: Set<string> | null = null;
+    if (!isCeo && profile?.id) {
+      const { data: comms } = await supabase
+        .from("commissions")
+        .select("sale_id")
+        .eq("beneficiary_user_id", profile.id);
+      userSaleIds = new Set((comms || []).map((c) => c.sale_id));
+    }
+
     setAllPayments(
       all.map((p: any) => ({
         id: p.id,
@@ -176,10 +187,11 @@ export default function Payments() {
         contact_phone: p.contacts?.phone_normalized || null,
         sale_id: p.sale_id || null,
         closed_by: p.sales?.closed_by || null,
+        _isUserInvolved: userSaleIds ? (p.sale_id ? userSaleIds.has(p.sale_id) : false) : true,
       }))
     );
     setLoading(false);
-  }, []);
+  }, [isCeo, profile?.id]);
 
   useEffect(() => { fetchPayments(); }, [fetchPayments]);
 
@@ -289,8 +301,8 @@ export default function Payments() {
   // For collaborateurs, only show KPIs for their own payments (closed_by = their id)
   const kpiBasePayments = useMemo(() => {
     if (isCeo) return allPayments;
-    return allPayments.filter((p) => p.closed_by === profile?.id);
-  }, [allPayments, isCeo, profile?.id]);
+    return allPayments.filter((p) => p._isUserInvolved);
+  }, [allPayments, isCeo]);
 
   const kpiPayments = kpiBasePayments.filter((p) => p.due_date >= thisMonth.start && p.due_date <= thisMonth.end);
   const totalPendingMonth = kpiPayments.filter((p) => p.status === "pending").reduce((s, p) => s + p.amount, 0);
