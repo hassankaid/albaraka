@@ -391,6 +391,7 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     tresoRemaining,
     sales,
     payments,
+    paidInPeriod,
     allPayments,
     allSales,
     refetchCharges: fixedChargesQuery.refetch,
