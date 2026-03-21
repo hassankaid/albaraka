@@ -129,6 +129,7 @@ function FinancialTab() {
         ads={data.ads}
         onRefreshCharges={() => data.refetchCharges()}
         onRefreshSalaries={() => data.refetchSalaryPeriods()}
+        dateRange={dateRange}
       />
     </div>
   );

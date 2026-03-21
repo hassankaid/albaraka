@@ -57,6 +57,11 @@ interface Ad {
   channel: string | null;
 }
 
+interface DateRange {
+  from: Date;
+  to: Date;
+}
+
 interface Props {
   fixedCharges: FixedCharge[];
   activeSalaries: SalaryProfile[];
@@ -70,6 +75,7 @@ interface Props {
   ads: Ad[];
   onRefreshCharges: () => void;
   onRefreshSalaries: () => void;
+  dateRange?: DateRange | null;
 }
 
 // ── Helpers ──
@@ -166,6 +172,7 @@ export default function ChargesCard({
   ads,
   onRefreshCharges,
   onRefreshSalaries,
+  dateRange,
 }: Props) {
   const [manageOpen, setManageOpen] = useState(false);
 
@@ -190,7 +197,44 @@ export default function ChargesCard({
   const [otcMonth, setOtcMonth] = useState<{ month: number; year: number } | null>(null);
   const [savingOtc, setSavingOtc] = useState(false);
 
-  const today = new Date().toISOString().slice(0, 10);
+   const today = new Date().toISOString().slice(0, 10);
+
+  // ── Period filtering helpers ──
+  const rangeFromStr = dateRange ? dateRange.from.toISOString().slice(0, 10) : null;
+  const rangeToStr = dateRange ? dateRange.to.toISOString().slice(0, 10) : null;
+  const isFiltered = !!dateRange;
+
+  // Check if a recurring charge (monthly) is active during the period
+  function isActiveInPeriod(startDate: string, endDate: string | null): boolean {
+    if (!rangeFromStr || !rangeToStr) return true;
+    const start = startDate.slice(0, 10);
+    const end = endDate ? endDate.slice(0, 10) : "9999-12-31";
+    return start <= rangeToStr && end >= rangeFromStr;
+  }
+
+  // Check if a yearly charge has a billing anniversary in the period
+  function hasYearlyBillingInPeriod(startDate: string, endDate: string | null): boolean {
+    if (!dateRange) return true;
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : new Date("9999-12-31");
+    const billingMonth = start.getMonth();
+    const billingDay = start.getDate();
+    // Check each year that could overlap
+    const startYear = dateRange.from.getFullYear();
+    const endYear = dateRange.to.getFullYear();
+    for (let y = startYear; y <= endYear; y++) {
+      const hit = new Date(y, billingMonth, billingDay);
+      if (hit >= dateRange.from && hit <= dateRange.to && hit >= start && hit <= end) return true;
+    }
+    return false;
+  }
+
+  // Check if a one-time charge falls in the period
+  function isOneTimeInPeriod(startDate: string): boolean {
+    if (!rangeFromStr || !rangeToStr) return true;
+    const d = startDate.slice(0, 10);
+    return d >= rangeFromStr && d <= rangeToStr;
+  }
 
   // ── Computed ──
   const activeSalaryProfileIds = new Set(salaryPeriods.filter(sp => !sp.end_date || sp.end_date >= today).map(sp => sp.profile_id));
@@ -206,9 +250,31 @@ export default function ChargesCard({
     return a.full_name.localeCompare(b.full_name);
   });
 
-  const yearlyCharges = fixedCharges.filter(c => c.is_active && c.frequency === "yearly");
-  const monthlyCharges = fixedCharges.filter(c => c.is_active && c.frequency === "monthly");
-  const oneTimeCharges = fixedCharges.filter(c => c.is_active && c.frequency === "one_time");
+  // Filter salaries by period
+  const filteredSalaryPeriods = isFiltered
+    ? allSalaryPeriods.filter(sp => isActiveInPeriod(sp.start_date, sp.end_date))
+    : allSalaryPeriods;
+
+  const allYearlyCharges = fixedCharges.filter(c => c.is_active && c.frequency === "yearly");
+  const allMonthlyCharges = fixedCharges.filter(c => c.is_active && c.frequency === "monthly");
+  const allOneTimeCharges = fixedCharges.filter(c => c.is_active && c.frequency === "one_time");
+
+  // Apply period filters
+  const yearlyCharges = isFiltered
+    ? allYearlyCharges.filter(c => hasYearlyBillingInPeriod(c.start_date, c.end_date))
+    : allYearlyCharges;
+  const monthlyCharges = isFiltered
+    ? allMonthlyCharges.filter(c => isActiveInPeriod(c.start_date, c.end_date))
+    : allMonthlyCharges;
+  const oneTimeCharges = isFiltered
+    ? allOneTimeCharges.filter(c => isOneTimeInPeriod(c.start_date))
+    : allOneTimeCharges;
+
+  // Also filter activeSalaries for the collapsible display
+  const filteredActiveSalaries = isFiltered
+    ? activeSalaries.filter(s => isActiveInPeriod(s.start_date, s.end_date))
+    : activeSalaries;
+
   const totalOneTimeCharges = oneTimeCharges.reduce((sum, c) => sum + c.amount, 0);
   const totalMonthlyCharges = monthlyCharges.reduce((sum, c) => sum + c.amount, 0);
   const totalYearlyCharges = yearlyCharges.reduce((sum, c) => sum + c.amount, 0);
@@ -337,7 +403,7 @@ export default function ChargesCard({
             <CollapsibleContent>
               <div className="ml-8 mt-1 mb-2 space-y-1.5">
                 {yearlyCharges.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">Aucun abonnement annuel</p>
+                  <p className="text-xs text-muted-foreground italic">Aucun abonnement annuel{isFiltered ? " sur cette période" : ""}</p>
                 ) : (
                   yearlyCharges.map(c => (
                     <div key={c.id} className="flex items-center justify-between text-xs py-0.5">
@@ -368,7 +434,7 @@ export default function ChargesCard({
             <CollapsibleContent>
               <div className="ml-8 mt-1 mb-2 space-y-1.5">
                 {monthlyCharges.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">Aucun abonnement mensuel</p>
+                  <p className="text-xs text-muted-foreground italic">Aucun abonnement mensuel{isFiltered ? " sur cette période" : ""}</p>
                 ) : (
                   monthlyCharges.map(c => (
                     <div key={c.id} className="flex items-center justify-between text-xs py-0.5">
@@ -398,10 +464,10 @@ export default function ChargesCard({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="ml-8 mt-1 mb-2 space-y-1.5">
-                {activeSalaries.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">Aucun salaire actif</p>
+                {filteredActiveSalaries.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Aucun salaire actif{isFiltered ? " sur cette période" : ""}</p>
                 ) : (
-                  activeSalaries.map(s => (
+                  filteredActiveSalaries.map(s => (
                     <div key={s.id} className="flex items-center justify-between text-xs py-0.5">
                       <div className="flex flex-col min-w-0 mr-2">
                         <span className="text-foreground font-medium truncate">{s.full_name}</span>
@@ -432,7 +498,7 @@ export default function ChargesCard({
             <CollapsibleContent>
               <div className="ml-8 mt-1 mb-2 space-y-1.5">
                 {oneTimeCharges.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">Aucune charge ponctuelle</p>
+                  <p className="text-xs text-muted-foreground italic">Aucune charge ponctuelle{isFiltered ? " sur cette période" : ""}</p>
                 ) : (
                   [...oneTimeCharges].sort((a, b) => b.start_date.localeCompare(a.start_date)).map(c => (
                     <div key={c.id} className="flex items-center justify-between text-xs py-0.5">
@@ -523,8 +589,22 @@ export default function ChargesCard({
       <Dialog open={manageOpen} onOpenChange={setManageOpen}>
         <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col gap-0 p-0">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
-            <DialogTitle className="text-lg">Gestion des charges</DialogTitle>
-            <DialogDescription className="text-xs">Gérez vos coûts opérationnels : salaires, abonnements et charges ponctuelles.</DialogDescription>
+            <DialogTitle className="text-lg flex items-center gap-2">
+              Gestion des charges
+              {isFiltered && (
+                <Badge variant="secondary" className="text-[10px] px-2 py-0.5 font-normal">
+                  {dateRange.from.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}
+                  {dateRange.from.getMonth() !== dateRange.to.getMonth() || dateRange.from.getFullYear() !== dateRange.to.getFullYear()
+                    ? ` → ${dateRange.to.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}`
+                    : ""}
+                </Badge>
+              )}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {isFiltered
+                ? "Affichage filtré selon la période sélectionnée sur le dashboard."
+                : "Gérez vos coûts opérationnels : salaires, abonnements et charges ponctuelles."}
+            </DialogDescription>
           </DialogHeader>
 
           <Tabs defaultValue="salaries" className="flex-1 min-h-0 flex flex-col">
@@ -568,11 +648,11 @@ export default function ChargesCard({
               )}
 
               {/* List */}
-              {allSalaryPeriods.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">Aucun salaire fixe configuré</p>
+              {filteredSalaryPeriods.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Aucun salaire fixe{isFiltered ? " sur cette période" : " configuré"}</p>
               ) : (
                 <div className="space-y-2">
-                  {allSalaryPeriods.map(sp => {
+                  {filteredSalaryPeriods.map(sp => {
                     const isActive = !sp.end_date || sp.end_date >= today;
                     const startParsed = parseMonth(sp.start_date);
                     const endParsed = sp.end_date ? parseMonth(sp.end_date) : null;
@@ -690,7 +770,7 @@ export default function ChargesCard({
 
               {/* List */}
               {[...monthlyCharges, ...yearlyCharges].length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">Aucun abonnement configuré</p>
+                <p className="text-sm text-muted-foreground text-center py-8">Aucun abonnement{isFiltered ? " sur cette période" : " configuré"}</p>
               ) : (
                 <div className="space-y-2">
                   {[...monthlyCharges, ...yearlyCharges].map(c => (
@@ -742,7 +822,7 @@ export default function ChargesCard({
 
               {/* List */}
               {oneTimeCharges.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">Aucune charge ponctuelle</p>
+                <p className="text-sm text-muted-foreground text-center py-8">Aucune charge ponctuelle{isFiltered ? " sur cette période" : ""}</p>
               ) : (
                 <div className="space-y-2">
                   {oneTimeCharges.map(c => (
