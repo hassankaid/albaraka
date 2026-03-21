@@ -284,8 +284,8 @@ export default function FinancialKPIs(props: Props) {
     : "text-muted-foreground";
 
   const tauxCollecteTooltip = isFiltered
-    ? "Avec un filtre de période : ratio entre les échéances payées et le total des échéances de la période."
-    : "Sans filtre (Tout) : ratio global entre le CA Collecté et le CA Généré depuis le début.";
+    ? "📊 Mode période : on regarde toutes les échéances prévues sur cette période. Combien ont été payées vs combien restent en attente ? Cela mesure votre efficacité de recouvrement mois par mois."
+    : "📊 Mode global (Tout) : on compare le total réellement encaissé (CA Collecté) au total des ventes signées (CA Généré) depuis le début. Cela montre où en est la maturité de vos encaissements sur l'ensemble de l'activité.";
 
   const kpis: { key: KpiKey; label: string; value: string; icon: any; color: string; hasDetail: boolean; tooltip?: string }[] = [
     { key: "caGenere", label: "CA Généré", value: fmt(caGenere), icon: TrendingUp, color: "text-primary", hasDetail: true },
