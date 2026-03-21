@@ -49,6 +49,14 @@ interface Profile {
   is_active: boolean;
 }
 
+interface Ad {
+  id: string;
+  date: string;
+  campaign_name: string;
+  amount_spent: number;
+  channel: string | null;
+}
+
 interface Props {
   fixedCharges: FixedCharge[];
   activeSalaries: SalaryProfile[];
@@ -59,6 +67,7 @@ interface Props {
   commissionsDue: number;
   salaryPeriods: SalaryPeriod[];
   profiles: Profile[];
+  ads: Ad[];
   onRefreshCharges: () => void;
   onRefreshSalaries: () => void;
 }
