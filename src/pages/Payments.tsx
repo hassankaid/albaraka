@@ -305,7 +305,10 @@ export default function Payments() {
   const kpiPayments = useMemo(() => {
     let result = isCeo ? allPayments : allPayments.filter((p) => p._isUserInvolved);
 
-    if (periodFilter === "this_month" || periodFilter === "next_month") {
+    if (periodFilter === "today") {
+      const todayStr = new Date().toISOString().split("T")[0];
+      result = result.filter((p) => p.due_date === todayStr);
+    } else if (periodFilter === "this_month" || periodFilter === "next_month") {
       const offset = periodFilter === "this_month" ? 0 : 1;
       const { start, end } = getMonthRange(offset);
       result = result.filter((p) => p.due_date >= start && p.due_date <= end);
