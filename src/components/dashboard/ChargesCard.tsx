@@ -197,7 +197,44 @@ export default function ChargesCard({
   const [otcMonth, setOtcMonth] = useState<{ month: number; year: number } | null>(null);
   const [savingOtc, setSavingOtc] = useState(false);
 
-  const today = new Date().toISOString().slice(0, 10);
+   const today = new Date().toISOString().slice(0, 10);
+
+  // ── Period filtering helpers ──
+  const rangeFromStr = dateRange ? dateRange.from.toISOString().slice(0, 10) : null;
+  const rangeToStr = dateRange ? dateRange.to.toISOString().slice(0, 10) : null;
+  const isFiltered = !!dateRange;
+
+  // Check if a recurring charge (monthly) is active during the period
+  function isActiveInPeriod(startDate: string, endDate: string | null): boolean {
+    if (!rangeFromStr || !rangeToStr) return true;
+    const start = startDate.slice(0, 10);
+    const end = endDate ? endDate.slice(0, 10) : "9999-12-31";
+    return start <= rangeToStr && end >= rangeFromStr;
+  }
+
+  // Check if a yearly charge has a billing anniversary in the period
+  function hasYearlyBillingInPeriod(startDate: string, endDate: string | null): boolean {
+    if (!dateRange) return true;
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : new Date("9999-12-31");
+    const billingMonth = start.getMonth();
+    const billingDay = start.getDate();
+    // Check each year that could overlap
+    const startYear = dateRange.from.getFullYear();
+    const endYear = dateRange.to.getFullYear();
+    for (let y = startYear; y <= endYear; y++) {
+      const hit = new Date(y, billingMonth, billingDay);
+      if (hit >= dateRange.from && hit <= dateRange.to && hit >= start && hit <= end) return true;
+    }
+    return false;
+  }
+
+  // Check if a one-time charge falls in the period
+  function isOneTimeInPeriod(startDate: string): boolean {
+    if (!rangeFromStr || !rangeToStr) return true;
+    const d = startDate.slice(0, 10);
+    return d >= rangeFromStr && d <= rangeToStr;
+  }
 
   // ── Computed ──
   const activeSalaryProfileIds = new Set(salaryPeriods.filter(sp => !sp.end_date || sp.end_date >= today).map(sp => sp.profile_id));
@@ -213,9 +250,31 @@ export default function ChargesCard({
     return a.full_name.localeCompare(b.full_name);
   });
 
-  const yearlyCharges = fixedCharges.filter(c => c.is_active && c.frequency === "yearly");
-  const monthlyCharges = fixedCharges.filter(c => c.is_active && c.frequency === "monthly");
-  const oneTimeCharges = fixedCharges.filter(c => c.is_active && c.frequency === "one_time");
+  // Filter salaries by period
+  const filteredSalaryPeriods = isFiltered
+    ? allSalaryPeriods.filter(sp => isActiveInPeriod(sp.start_date, sp.end_date))
+    : allSalaryPeriods;
+
+  const allYearlyCharges = fixedCharges.filter(c => c.is_active && c.frequency === "yearly");
+  const allMonthlyCharges = fixedCharges.filter(c => c.is_active && c.frequency === "monthly");
+  const allOneTimeCharges = fixedCharges.filter(c => c.is_active && c.frequency === "one_time");
+
+  // Apply period filters
+  const yearlyCharges = isFiltered
+    ? allYearlyCharges.filter(c => hasYearlyBillingInPeriod(c.start_date, c.end_date))
+    : allYearlyCharges;
+  const monthlyCharges = isFiltered
+    ? allMonthlyCharges.filter(c => isActiveInPeriod(c.start_date, c.end_date))
+    : allMonthlyCharges;
+  const oneTimeCharges = isFiltered
+    ? allOneTimeCharges.filter(c => isOneTimeInPeriod(c.start_date))
+    : allOneTimeCharges;
+
+  // Also filter activeSalaries for the collapsible display
+  const filteredActiveSalaries = isFiltered
+    ? activeSalaries.filter(s => isActiveInPeriod(s.start_date, s.end_date))
+    : activeSalaries;
+
   const totalOneTimeCharges = oneTimeCharges.reduce((sum, c) => sum + c.amount, 0);
   const totalMonthlyCharges = monthlyCharges.reduce((sum, c) => sum + c.amount, 0);
   const totalYearlyCharges = yearlyCharges.reduce((sum, c) => sum + c.amount, 0);
