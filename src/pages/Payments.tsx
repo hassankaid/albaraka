@@ -125,8 +125,8 @@ export default function Payments() {
   const [allPayments, setAllPayments] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [periodFilter, setPeriodFilter] = useState("this_month");
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
+  const [periodFilter, setPeriodFilter] = useState("today");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   
