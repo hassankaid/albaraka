@@ -49,6 +49,14 @@ interface Profile {
   is_active: boolean;
 }
 
+interface Ad {
+  id: string;
+  date: string;
+  campaign_name: string;
+  amount_spent: number;
+  channel: string | null;
+}
+
 interface Props {
   fixedCharges: FixedCharge[];
   activeSalaries: SalaryProfile[];
@@ -59,6 +67,7 @@ interface Props {
   commissionsDue: number;
   salaryPeriods: SalaryPeriod[];
   profiles: Profile[];
+  ads: Ad[];
   onRefreshCharges: () => void;
   onRefreshSalaries: () => void;
 }
@@ -154,6 +163,7 @@ export default function ChargesCard({
   commissionsDue,
   salaryPeriods,
   profiles,
+  ads,
   onRefreshCharges,
   onRefreshSalaries,
 }: Props) {
@@ -413,14 +423,19 @@ export default function ChargesCard({
               <span className="font-medium">{totalOneTimeCharges > 0 ? fmt(totalOneTimeCharges) : <span className="text-muted-foreground text-xs italic">—</span>}</span>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <div className="ml-8 mt-1 mb-2 space-y-0.5">
+              <div className="ml-8 mt-1 mb-2 space-y-1.5">
                 {oneTimeCharges.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">Aucune charge ponctuelle</p>
                 ) : (
-                  oneTimeCharges.map(c => (
-                    <div key={c.id} className="flex items-center justify-between text-xs text-muted-foreground py-0.5">
-                      <span className="truncate mr-2">{c.name}</span>
-                      <span className="font-medium text-foreground whitespace-nowrap">{fmt(c.amount)}</span>
+                  [...oneTimeCharges].sort((a, b) => b.start_date.localeCompare(a.start_date)).map(c => (
+                    <div key={c.id} className="flex items-center justify-between text-xs py-0.5">
+                      <div className="flex flex-col min-w-0 mr-2">
+                        <span className="text-foreground font-medium truncate">{c.name}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(c.start_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                        </span>
+                      </div>
+                      <span className="font-bold text-foreground whitespace-nowrap">{fmt(c.amount)}</span>
                     </div>
                   ))
                 )}
@@ -428,14 +443,49 @@ export default function ChargesCard({
             </CollapsibleContent>
           </Collapsible>
 
-          {/* Publicité — non collapsible */}
-          <div className="flex items-center justify-between text-sm py-1 px-1 -mx-1">
-            <div className="flex items-center gap-2 ml-5">
-              <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-muted-foreground">Publicité (période)</span>
-            </div>
-            <span className="font-medium">{fmt(totalAdsCumul)}</span>
-          </div>
+          {/* Publicité — collapsible with campaign breakdown */}
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center justify-between text-sm w-full py-1 group hover:bg-muted/50 rounded-md px-1 -mx-1 transition-colors">
+              <div className="flex items-center gap-2">
+                <ChevronRight className="h-3 w-3 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
+                <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground">Publicité (période)</span>
+              </div>
+              <span className="font-medium">{fmt(totalAdsCumul)}</span>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="ml-8 mt-1 mb-2 space-y-1.5">
+                {(() => {
+                  // Aggregate ads by campaign
+                  const byCampaign = new Map<string, { name: string; channel: string | null; total: number; count: number }>();
+                  ads.forEach(a => {
+                    const existing = byCampaign.get(a.campaign_name);
+                    if (existing) {
+                      existing.total += a.amount_spent;
+                      existing.count++;
+                    } else {
+                      byCampaign.set(a.campaign_name, { name: a.campaign_name, channel: a.channel, total: a.amount_spent, count: 1 });
+                    }
+                  });
+                  const campaigns = Array.from(byCampaign.values()).sort((a, b) => b.total - a.total);
+                  if (campaigns.length === 0) {
+                    return <p className="text-xs text-muted-foreground italic">Aucune dépense publicitaire</p>;
+                  }
+                  return campaigns.map(c => (
+                    <div key={c.name} className="flex items-center justify-between text-xs py-0.5">
+                      <div className="flex flex-col min-w-0 mr-2">
+                        <span className="text-foreground font-medium truncate">{c.name}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {c.channel ? `${c.channel} · ` : ""}{c.count} jour{c.count > 1 ? "s" : ""} de diffusion
+                        </span>
+                      </div>
+                      <span className="font-bold text-foreground whitespace-nowrap">{fmt(c.total)}</span>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
           <div className="flex items-center justify-between text-sm py-1 px-1 -mx-1">
             <div className="flex items-center gap-2 ml-5">
               <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
