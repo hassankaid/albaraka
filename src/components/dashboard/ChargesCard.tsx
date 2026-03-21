@@ -808,7 +808,7 @@ export default function ChargesCard({
 
               {/* List */}
               {oneTimeCharges.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">Aucune charge ponctuelle</p>
+                <p className="text-sm text-muted-foreground text-center py-8">Aucune charge ponctuelle{isFiltered ? " sur cette période" : ""}</p>
               ) : (
                 <div className="space-y-2">
                   {oneTimeCharges.map(c => (
