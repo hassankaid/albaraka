@@ -273,10 +273,10 @@ export default function Payments() {
       result = result.filter((p) => p.due_date >= start && p.due_date <= end);
     }
 
-    if (statusFilter !== "all") {
+    if (statusFilters.length > 0) {
       result = result.filter((p) => {
         const info = getPaymentStatusInfo(p.status, p.due_date);
-        return info.key === statusFilter;
+        return statusFilters.includes(info.key);
       });
     }
 
