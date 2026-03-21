@@ -157,7 +157,8 @@ export default function FinancialKPIs(props: Props) {
   const [modalPage, setModalPage] = useState(0);
   const [commFilterBenef, setCommFilterBenef] = useState<string>("all");
   const [commFilterSale, setCommFilterSale] = useState<string>("all");
-  const handleOpenModal = (key: KpiKey) => { setModalPage(0); setCommFilterBenef("all"); setCommFilterSale("all"); setOpenModal(key); };
+  const [searchQuery, setSearchQuery] = useState("");
+  const handleOpenModal = (key: KpiKey) => { setModalPage(0); setCommFilterBenef("all"); setCommFilterSale("all"); setSearchQuery(""); setOpenModal(key); };
 
   const profileMap = new Map(profiles.map(p => [p.id, p]));
   // Use allSales for lookups so filtered payments always find their sale/contact
