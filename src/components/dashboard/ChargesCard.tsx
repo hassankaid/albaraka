@@ -298,37 +298,97 @@ export default function ChargesCard({
             </Button>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-muted-foreground">Abonnements</span>
-            </div>
-            <span className="font-medium">{fmt(totalFixedChargesMensuel)}/mois</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <Users className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-muted-foreground">Salaires fixes</span>
-            </div>
-            <span className="font-medium">{fmt(totalSalariesMensuel)}/mois</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-muted-foreground">Autres charges</span>
-            </div>
-            <span className="font-medium">{totalOneTimeCharges > 0 ? fmt(totalOneTimeCharges) : <span className="text-muted-foreground text-xs italic">—</span>}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
+        <CardContent className="space-y-1">
+          {/* Abonnements — collapsible */}
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center justify-between text-sm w-full py-1 group hover:bg-muted/50 rounded-md px-1 -mx-1 transition-colors">
+              <div className="flex items-center gap-2">
+                <ChevronRight className="h-3 w-3 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
+                <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground">Abonnements</span>
+              </div>
+              <span className="font-medium">{fmt(totalFixedChargesMensuel)}/mois</span>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="ml-8 mt-1 mb-2 space-y-0.5">
+                {recurringCharges.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Aucun abonnement actif</p>
+                ) : (
+                  recurringCharges.map(c => (
+                    <div key={c.id} className="flex items-center justify-between text-xs text-muted-foreground py-0.5">
+                      <span className="truncate mr-2">{c.name}</span>
+                      <span className="font-medium text-foreground whitespace-nowrap">
+                        {c.frequency === "yearly" ? `${fmt(c.amount / 12)}/mois` : `${fmt(c.amount)}/mois`}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Salaires — collapsible */}
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center justify-between text-sm w-full py-1 group hover:bg-muted/50 rounded-md px-1 -mx-1 transition-colors">
+              <div className="flex items-center gap-2">
+                <ChevronRight className="h-3 w-3 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
+                <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground">Salaires fixes</span>
+              </div>
+              <span className="font-medium">{fmt(totalSalariesMensuel)}/mois</span>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="ml-8 mt-1 mb-2 space-y-0.5">
+                {activeSalaries.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Aucun salaire actif</p>
+                ) : (
+                  activeSalaries.map(s => (
+                    <div key={s.id} className="flex items-center justify-between text-xs text-muted-foreground py-0.5">
+                      <span className="truncate mr-2">{s.full_name}</span>
+                      <span className="font-medium text-foreground whitespace-nowrap">{fmt(s.amount)}/mois</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Autres charges — collapsible */}
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center justify-between text-sm w-full py-1 group hover:bg-muted/50 rounded-md px-1 -mx-1 transition-colors">
+              <div className="flex items-center gap-2">
+                <ChevronRight className="h-3 w-3 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
+                <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground">Autres charges</span>
+              </div>
+              <span className="font-medium">{totalOneTimeCharges > 0 ? fmt(totalOneTimeCharges) : <span className="text-muted-foreground text-xs italic">—</span>}</span>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="ml-8 mt-1 mb-2 space-y-0.5">
+                {oneTimeCharges.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Aucune charge ponctuelle</p>
+                ) : (
+                  oneTimeCharges.map(c => (
+                    <div key={c.id} className="flex items-center justify-between text-xs text-muted-foreground py-0.5">
+                      <span className="truncate mr-2">{c.name}</span>
+                      <span className="font-medium text-foreground whitespace-nowrap">{fmt(c.amount)}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Publicité — non collapsible */}
+          <div className="flex items-center justify-between text-sm py-1 px-1 -mx-1">
+            <div className="flex items-center gap-2 ml-5">
               <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-muted-foreground">Publicité (période)</span>
             </div>
             <span className="font-medium">{fmt(totalAdsCumul)}</span>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between text-sm py-1 px-1 -mx-1">
+            <div className="flex items-center gap-2 ml-5">
               <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-muted-foreground">Frais transaction</span>
             </div>
