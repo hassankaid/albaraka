@@ -301,8 +301,8 @@ export default function Payments() {
   // For collaborateurs, only show KPIs for their own payments (closed_by = their id)
   const kpiBasePayments = useMemo(() => {
     if (isCeo) return allPayments;
-    return allPayments.filter((p) => p.closed_by === profile?.id);
-  }, [allPayments, isCeo, profile?.id]);
+    return allPayments.filter((p) => p._isUserInvolved);
+  }, [allPayments, isCeo]);
 
   const kpiPayments = kpiBasePayments.filter((p) => p.due_date >= thisMonth.start && p.due_date <= thisMonth.end);
   const totalPendingMonth = kpiPayments.filter((p) => p.status === "pending").reduce((s, p) => s + p.amount, 0);
