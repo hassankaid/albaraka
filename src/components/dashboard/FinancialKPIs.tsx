@@ -284,7 +284,7 @@ export default function FinancialKPIs(props: Props) {
     : "text-muted-foreground";
 
   const tauxCollecteTooltip = isFiltered
-    ? "📊 Mode période : on regarde toutes les échéances prévues sur cette période. Combien ont été payées vs combien restent en attente ? Cela mesure votre efficacité de recouvrement mois par mois."
+    ? "📊 Mode période : sur toutes les échéances prévues dans cette période, quel pourcentage a bien été encaissé ? Les échéances en retard ou perdues font baisser ce taux. Cela mesure votre efficacité de recouvrement sur la période choisie."
     : "📊 Mode global (Tout) : on compare le total réellement encaissé (CA Collecté) au total des ventes signées (CA Généré) depuis le début. Cela montre où en est la maturité de vos encaissements sur l'ensemble de l'activité.";
 
   const kpis: { key: KpiKey; label: string; value: string; icon: any; color: string; hasDetail: boolean; tooltip?: string }[] = [
