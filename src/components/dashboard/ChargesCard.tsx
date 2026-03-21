@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, Trash2, Building2, Users, CreditCard, Receipt, Settings2, Wallet, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Building2, Users, CreditCard, Receipt, Settings2, Wallet, ChevronRight, CalendarClock, RotateCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -196,9 +196,24 @@ export default function ChargesCard({
     return a.full_name.localeCompare(b.full_name);
   });
 
-  const recurringCharges = fixedCharges.filter(c => c.is_active && c.frequency !== "one_time");
+  const yearlyCharges = fixedCharges.filter(c => c.is_active && c.frequency === "yearly");
+  const monthlyCharges = fixedCharges.filter(c => c.is_active && c.frequency === "monthly");
   const oneTimeCharges = fixedCharges.filter(c => c.is_active && c.frequency === "one_time");
   const totalOneTimeCharges = oneTimeCharges.reduce((sum, c) => sum + c.amount, 0);
+  const totalMonthlyCharges = monthlyCharges.reduce((sum, c) => sum + c.amount, 0);
+  const totalYearlyCharges = yearlyCharges.reduce((sum, c) => sum + c.amount, 0);
+
+  // Compute next billing date for yearly charges
+  function nextYearlyBilling(startDate: string): string {
+    const start = new Date(startDate);
+    const now = new Date();
+    const billingMonth = start.getMonth();
+    const billingDay = start.getDate();
+    let year = now.getFullYear();
+    let next = new Date(year, billingMonth, billingDay);
+    if (next <= now) next = new Date(year + 1, billingMonth, billingDay);
+    return next.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  }
 
   // ── Actions ──
   const handleAddSalary = async () => {
@@ -299,27 +314,61 @@ export default function ChargesCard({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
-          {/* Abonnements — collapsible */}
+          {/* Abonnements annuels — collapsible */}
           <Collapsible>
             <CollapsibleTrigger className="flex items-center justify-between text-sm w-full py-1 group hover:bg-muted/50 rounded-md px-1 -mx-1 transition-colors">
               <div className="flex items-center gap-2">
                 <ChevronRight className="h-3 w-3 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
-                <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-muted-foreground">Abonnements</span>
+                <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground">Abonnements annuels</span>
               </div>
-              <span className="font-medium">{recurringCharges.length} actif{recurringCharges.length > 1 ? "s" : ""}</span>
+              <span className="font-medium">{fmt(totalYearlyCharges)}/an</span>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <div className="ml-8 mt-1 mb-2 space-y-0.5">
-                {recurringCharges.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">Aucun abonnement actif</p>
+              <div className="ml-8 mt-1 mb-2 space-y-1.5">
+                {yearlyCharges.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Aucun abonnement annuel</p>
                 ) : (
-                  recurringCharges.map(c => (
-                    <div key={c.id} className="flex items-center justify-between text-xs text-muted-foreground py-0.5">
-                      <span className="truncate mr-2">{c.name}</span>
-                      <span className="font-medium text-foreground whitespace-nowrap">
-                        {fmt(c.amount)}{c.frequency === "yearly" ? "/an" : "/mois"}
-                      </span>
+                  yearlyCharges.map(c => (
+                    <div key={c.id} className="flex items-center justify-between text-xs py-0.5">
+                      <div className="flex flex-col min-w-0 mr-2">
+                        <span className="text-foreground font-medium truncate">{c.name}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          Prochaine éch. : {nextYearlyBilling(c.start_date)}
+                        </span>
+                      </div>
+                      <span className="font-bold text-foreground whitespace-nowrap">{fmt(c.amount)}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Abonnements mensuels — collapsible */}
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center justify-between text-sm w-full py-1 group hover:bg-muted/50 rounded-md px-1 -mx-1 transition-colors">
+              <div className="flex items-center gap-2">
+                <ChevronRight className="h-3 w-3 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
+                <RotateCw className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground">Abonnements mensuels</span>
+              </div>
+              <span className="font-medium">{fmt(totalMonthlyCharges)}/mois</span>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="ml-8 mt-1 mb-2 space-y-1.5">
+                {monthlyCharges.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Aucun abonnement mensuel</p>
+                ) : (
+                  monthlyCharges.map(c => (
+                    <div key={c.id} className="flex items-center justify-between text-xs py-0.5">
+                      <div className="flex flex-col min-w-0 mr-2">
+                        <span className="text-foreground font-medium truncate">{c.name}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          Depuis {formatMonthYear(c.start_date)}{c.end_date ? ` → ${formatMonthYear(c.end_date)}` : ""}
+                        </span>
+                      </div>
+                      <span className="font-bold text-foreground whitespace-nowrap">{fmt(c.amount)}</span>
                     </div>
                   ))
                 )}
@@ -583,11 +632,11 @@ export default function ChargesCard({
               </div>
 
               {/* List */}
-              {recurringCharges.length === 0 ? (
+              {[...monthlyCharges, ...yearlyCharges].length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">Aucun abonnement configuré</p>
               ) : (
                 <div className="space-y-2">
-                  {recurringCharges.map(c => (
+                  {[...monthlyCharges, ...yearlyCharges].map(c => (
                     <div key={c.id} className="rounded-xl border border-border bg-card p-4 flex items-center justify-between group shadow-sm">
                       <div>
                         <div className="flex items-center gap-2">
