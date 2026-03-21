@@ -291,9 +291,9 @@ export default function Payments() {
 
 
     return result;
-  }, [allPayments, statusFilter, periodFilter, search]);
+  }, [allPayments, statusFilters, periodFilter, search, isCeo]);
 
-  useEffect(() => { setPage(0); }, [statusFilter, periodFilter, search]);
+  useEffect(() => { setPage(0); }, [statusFilters, periodFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(filteredPayments.length / PAGE_SIZE));
   const paginatedPayments = useMemo(
