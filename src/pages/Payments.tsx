@@ -146,7 +146,8 @@ export default function Payments() {
         .from("payments")
         .select(`
           id, payment_number, total_payments, amount, due_date, paid_at, status, notes, sale_id,
-          contacts!payments_contact_id_fkey(full_name, email, phone_normalized)
+          contacts!payments_contact_id_fkey(full_name, email, phone_normalized),
+          sales!payments_sale_id_fkey(closed_by)
         `)
         .order("due_date", { ascending: false })
         .range(from, from + batchSize - 1);
@@ -174,6 +175,7 @@ export default function Payments() {
         contact_email: p.contacts?.email || null,
         contact_phone: p.contacts?.phone_normalized || null,
         sale_id: p.sale_id || null,
+        closed_by: p.sales?.closed_by || null,
       }))
     );
     setLoading(false);
