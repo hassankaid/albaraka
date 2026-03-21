@@ -89,7 +89,7 @@ interface Props {
   allPayments: Payment[];
   allSales: Sale[];
   totalAdsCumul: number;
-  roi: number | null;
+  roi?: number | null;
 }
 
 function fmt(n: number) {
@@ -123,7 +123,7 @@ const freqLabels: Record<string, string> = {
   one_time: "Ponctuel",
 };
 
-type KpiKey = "caGenere" | "caCollecte" | "tauxCollecte" | "tauxImpayes" | "commissions" | "charges" | "benefice" | "roi";
+type KpiKey = "caGenere" | "caCollecte" | "tauxCollecte" | "tauxImpayes" | "commissions" | "charges" | "benefice";
 
 const MODAL_PAGE_SIZE = 15;
 
@@ -166,14 +166,17 @@ export default function FinancialKPIs(props: Props) {
   // Use allPayments for commission lookups (commissions may reference payments outside filtered range)
   const allPaymentMap = new Map(allPayments.map(p => [p.id, p]));
 
-  const roiDisplayValue = roi !== null
-    ? `x${roi.toFixed(2)}`
-    : "—";
+  const roiGenere = totalAdsCumul > 0 ? caGenere / totalAdsCumul : null;
+  const roiCollecte = totalAdsCumul > 0 ? caCollecte / totalAdsCumul : null;
 
-  const roiColor = roi !== null
-    ? roi >= 1
-      ? "text-emerald-500"
-      : "text-destructive"
+  const roiGenereDisplay = roiGenere !== null ? `x${roiGenere.toFixed(2)}` : "—";
+  const roiCollecteDisplay = roiCollecte !== null ? `x${roiCollecte.toFixed(2)}` : "—";
+
+  const roiGenereColor = roiGenere !== null
+    ? roiGenere >= 1 ? "text-emerald-500" : "text-destructive"
+    : "text-muted-foreground";
+  const roiCollecteColor = roiCollecte !== null
+    ? roiCollecte >= 1 ? "text-emerald-500" : "text-destructive"
     : "text-muted-foreground";
 
   const kpis: { key: KpiKey; label: string; value: string; icon: any; color: string; hasDetail: boolean }[] = [
@@ -184,7 +187,6 @@ export default function FinancialKPIs(props: Props) {
     { key: "commissions", label: "Commissions", value: fmt(totalCommissions), icon: CreditCard, color: "text-orange-500", hasDetail: true },
     { key: "charges", label: "Charges", value: fmt(totalChargesCumul), icon: BarChart3, color: "text-muted-foreground", hasDetail: true },
     { key: "benefice", label: "Bénéfice", value: fmt(benefice), icon: PiggyBank, color: benefice >= 0 ? "text-emerald-500" : "text-destructive", hasDetail: true },
-    { key: "roi", label: "ROI", value: roiDisplayValue, icon: TrendingUp, color: roiColor, hasDetail: false },
   ];
 
   const sortedSalesForCA = useMemo(() => [...sales].sort((a, b) => (b.sold_at || "").localeCompare(a.sold_at || "")), [sales]);
@@ -561,7 +563,7 @@ export default function FinancialKPIs(props: Props) {
     commissions: "Détail — Commissions",
     charges: "Détail — Charges",
     benefice: "Détail — Bénéfice net",
-    roi: "ROI",
+    
   };
 
   // Wider dialog for commissions (more columns)
@@ -587,6 +589,24 @@ export default function FinancialKPIs(props: Props) {
             <span className="text-sm font-bold text-foreground">{k.value}</span>
           </button>
         ))}
+        {/* ROI dual card */}
+        <div className="bg-card border border-border rounded-xl p-3 flex flex-col gap-1.5 cursor-default">
+          <div className="flex items-center gap-1.5">
+            <TrendingUp className="h-3.5 w-3.5 text-primary" />
+            <span className="text-[11px] text-muted-foreground font-medium">ROI Ads</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-muted-foreground">Généré</span>
+              <span className={`text-sm font-bold ${roiGenereColor}`}>{roiGenereDisplay}</span>
+            </div>
+            <div className="w-px h-6 bg-border" />
+            <div className="flex flex-col">
+              <span className="text-[10px] text-muted-foreground">Collecté</span>
+              <span className={`text-sm font-bold ${roiCollecteColor}`}>{roiCollecteDisplay}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <Dialog open={!!openModal} onOpenChange={() => setOpenModal(null)}>
