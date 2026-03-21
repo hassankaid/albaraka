@@ -434,7 +434,7 @@ export default function ChargesCard({
             <CollapsibleContent>
               <div className="ml-8 mt-1 mb-2 space-y-1.5">
                 {monthlyCharges.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">Aucun abonnement mensuel</p>
+                  <p className="text-xs text-muted-foreground italic">Aucun abonnement mensuel{isFiltered ? " sur cette période" : ""}</p>
                 ) : (
                   monthlyCharges.map(c => (
                     <div key={c.id} className="flex items-center justify-between text-xs py-0.5">
