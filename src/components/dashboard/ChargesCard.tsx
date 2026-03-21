@@ -638,7 +638,7 @@ export default function ChargesCard({
                 <p className="text-sm text-muted-foreground text-center py-8">Aucun salaire fixe{isFiltered ? " sur cette période" : " configuré"}</p>
               ) : (
                 <div className="space-y-2">
-                  {allSalaryPeriods.map(sp => {
+                  {filteredSalaryPeriods.map(sp => {
                     const isActive = !sp.end_date || sp.end_date >= today;
                     const startParsed = parseMonth(sp.start_date);
                     const endParsed = sp.end_date ? parseMonth(sp.end_date) : null;
