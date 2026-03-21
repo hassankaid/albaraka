@@ -159,6 +159,76 @@ type KpiKey = "caGenere" | "caCollecte" | "tauxCollecte" | "tauxImpayes" | "comm
 
 const MODAL_PAGE_SIZE = 15;
 
+type ChargeLine = { month: string; category: string; name: string; amount: number };
+
+function ChargesModalContent({
+  cats,
+  categoryTotals,
+  catColors,
+  grandTotal,
+  finalLines,
+  ChargesTable,
+  setModalPage,
+}: {
+  cats: readonly string[];
+  categoryTotals: Record<string, number>;
+  catColors: Record<string, { dot: string; active: string }>;
+  grandTotal: number;
+  finalLines: ChargeLine[];
+  ChargesTable: React.ComponentType<{ lines: ChargeLine[]; showCat: boolean }>;
+  setModalPage: (fn: (p: number) => number) => void;
+}) {
+  const [activeCat, setActiveCat] = useState("Tout");
+
+  const handleCat = (cat: string) => {
+    setActiveCat(cat);
+    setModalPage(() => 0);
+  };
+
+  const displayedLines = activeCat === "Tout" ? finalLines : finalLines.filter(l => l.category === activeCat);
+
+  return (
+    <div className="space-y-3">
+      {/* Category pills */}
+      <div className="flex flex-wrap gap-2">
+        {cats.map(cat => {
+          const isActive = activeCat === cat;
+          const total = cat === "Tout" ? grandTotal : (categoryTotals[cat] || 0);
+          const colors = catColors[cat];
+          return (
+            <button
+              key={cat}
+              onClick={() => handleCat(cat)}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all border ${
+                isActive
+                  ? cat === "Tout"
+                    ? "bg-foreground text-background border-foreground"
+                    : `${colors?.active || "bg-foreground text-background"} border-transparent`
+                  : "bg-card border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
+              }`}
+            >
+              {cat !== "Tout" && !isActive && (
+                <span className={`h-2 w-2 rounded-full flex-shrink-0 ${colors?.dot || "bg-muted"}`} />
+              )}
+              <span>{cat}</span>
+              <span className={`tabular-nums ${isActive ? "opacity-80" : "opacity-60"}`}>{fmt(total)}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Table */}
+      <ChargesTable lines={displayedLines} showCat={activeCat === "Tout"} />
+
+      {/* Grand total */}
+      <div className="flex items-center justify-between px-3 pt-2 border-t-2 border-border">
+        <span className="text-sm font-semibold text-foreground">Total charges (cumul période)</span>
+        <span className="text-lg font-bold text-foreground tabular-nums">{fmt(grandTotal)}</span>
+      </div>
+    </div>
+  );
+}
+
 // Reusable pagination footer
 function ModalPagination({ page, totalPages, setPage }: { page: number; totalPages: number; setPage: (fn: (p: number) => number) => void }) {
   if (totalPages <= 1) return null;
