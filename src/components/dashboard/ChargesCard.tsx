@@ -307,7 +307,7 @@ export default function ChargesCard({
                 <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-muted-foreground">Abonnements</span>
               </div>
-              <span className="font-medium">{fmt(totalFixedChargesMensuel)}/mois</span>
+              <span className="font-medium">{recurringCharges.length} actif{recurringCharges.length > 1 ? "s" : ""}</span>
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="ml-8 mt-1 mb-2 space-y-0.5">
@@ -318,7 +318,7 @@ export default function ChargesCard({
                     <div key={c.id} className="flex items-center justify-between text-xs text-muted-foreground py-0.5">
                       <span className="truncate mr-2">{c.name}</span>
                       <span className="font-medium text-foreground whitespace-nowrap">
-                        {c.frequency === "yearly" ? `${fmt(c.amount / 12)}/mois` : `${fmt(c.amount)}/mois`}
+                        {fmt(c.amount)}{c.frequency === "yearly" ? "/an" : "/mois"}
                       </span>
                     </div>
                   ))
