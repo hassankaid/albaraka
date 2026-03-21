@@ -289,16 +289,36 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     if (c.frequency === "one_time") return sum;
     return sum + c.amount;
   }, 0);
+
+  // Helper: count how many yearly billing dates fall within a range
+  function countYearlyHitsInRange(startDate: string, endDate: string | null, rangeStart: Date, rangeEnd: Date): number {
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : rangeEnd;
+    const effectiveEnd = end < rangeEnd ? end : rangeEnd;
+    let count = 0;
+    // The billing month is the start_date month; it recurs every 12 months
+    const billingMonth = start.getMonth();
+    const billingDay = start.getDate();
+    let year = start.getFullYear();
+    while (true) {
+      const hitDate = new Date(year, billingMonth, billingDay);
+      if (hitDate > effectiveEnd) break;
+      if (hitDate >= rangeStart && hitDate >= start) count++;
+      year++;
+    }
+    return count;
+  }
+
   // Cumulative total in range
   const totalFixedChargesCumul = fixedCharges.filter((c) => c.is_active).reduce((sum, c) => {
     if (c.frequency === "one_time") {
-      // Only count if the one-time charge falls within the range
       if (inRange(c.start_date, range)) return sum + c.amount;
       return sum;
     }
     if (c.frequency === "yearly") {
-      const months = countMonthsInRange(c.start_date, c.end_date, chargeRangeStart, chargeRangeEnd);
-      return sum + (c.amount / 12) * months;
+      // Full amount on each anniversary that falls within the range
+      const hits = countYearlyHitsInRange(c.start_date, c.end_date, chargeRangeStart, chargeRangeEnd);
+      return sum + c.amount * hits;
     }
     const months = countMonthsInRange(c.start_date, c.end_date, chargeRangeStart, chargeRangeEnd);
     return sum + c.amount * months;
