@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
 import { TrendingUp, TrendingDown, Wallet, CreditCard, Percent, AlertTriangle, PiggyBank, BarChart3, User, ChevronLeft, ChevronRight, CheckCheck, Filter } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -76,6 +77,7 @@ interface Props {
   isFiltered?: boolean;
   sales: Sale[];
   payments: Payment[];
+  paidInPeriod: Payment[];
   contactMap: Map<string, ContactInfo>;
   commissions: Commission[];
   profiles: ProfileInfo[];
@@ -145,7 +147,7 @@ export default function FinancialKPIs(props: Props) {
   const {
     caGenere, caCollecte, tauxCashCollecte, tauxImpayes, benefice,
     totalChargesCumul, totalCommissions, isFiltered,
-    sales, payments, contactMap, commissions, profiles,
+    sales, payments, paidInPeriod, contactMap, commissions, profiles,
     totalSalariesCumul, totalFixedChargesCumul, commissionsPaid,
     activeSalaries, activeCharges, allPayments, allSales,
     totalAdsCumul, roi,
@@ -155,7 +157,8 @@ export default function FinancialKPIs(props: Props) {
   const [modalPage, setModalPage] = useState(0);
   const [commFilterBenef, setCommFilterBenef] = useState<string>("all");
   const [commFilterSale, setCommFilterSale] = useState<string>("all");
-  const handleOpenModal = (key: KpiKey) => { setModalPage(0); setCommFilterBenef("all"); setCommFilterSale("all"); setOpenModal(key); };
+  const [searchQuery, setSearchQuery] = useState("");
+  const handleOpenModal = (key: KpiKey) => { setModalPage(0); setCommFilterBenef("all"); setCommFilterSale("all"); setSearchQuery(""); setOpenModal(key); };
 
   const profileMap = new Map(profiles.map(p => [p.id, p]));
   // Use allSales for lookups so filtered payments always find their sale/contact
@@ -185,7 +188,7 @@ export default function FinancialKPIs(props: Props) {
   ];
 
   const sortedSalesForCA = useMemo(() => [...sales].sort((a, b) => (b.sold_at || "").localeCompare(a.sold_at || "")), [sales]);
-  const paidPayments = useMemo(() => [...payments].filter(p => p.status === "paid").sort((a, b) => b.due_date.localeCompare(a.due_date)), [payments]);
+  const paidPayments = useMemo(() => [...paidInPeriod].sort((a, b) => (b.paid_at || b.due_date).localeCompare(a.paid_at || a.due_date)), [paidInPeriod]);
   const lateOrLostPayments = useMemo(() => [...payments].filter(p => p.status === "late" || p.status === "lost").sort((a, b) => b.due_date.localeCompare(a.due_date)), [payments]);
   const engagedCommissions = useMemo(() => {
     const getDate = (c: Commission) => {
@@ -284,9 +287,25 @@ export default function FinancialKPIs(props: Props) {
       // ═══════════════════ CA COLLECTÉ / TAUX COLLECTE ═══════════════════
       case "caCollecte":
       case "tauxCollecte": {
-        const { items, safePage, totalPages } = paginate(paidPayments);
+        const q = searchQuery.toLowerCase();
+        const filtered = q
+          ? paidPayments.filter(p => {
+              const sale = p.sale_id ? saleMap.get(p.sale_id) : null;
+              const contact = sale ? contactMap.get(sale.contact_id) : null;
+              return (contact?.full_name || "").toLowerCase().includes(q);
+            })
+          : paidPayments;
+        const { items, safePage, totalPages } = paginate(filtered);
         return (
           <div>
+            <div className="px-3 pb-3">
+              <Input
+                placeholder="Rechercher un client…"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setModalPage(0); }}
+                className="h-8 text-xs"
+              />
+            </div>
             <div className="grid grid-cols-[1fr_100px_56px_80px_68px_90px] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               <span>Client</span><span>Date éch.</span><span className="text-center">N°</span><span className="text-center">Date paiem.</span><span className="text-center">Statut</span><span className="text-right">Montant</span>
             </div>
@@ -310,7 +329,7 @@ export default function FinancialKPIs(props: Props) {
               })}
             </div>
             <div className="flex items-center justify-between pt-3 border-t border-border px-3">
-              <span className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{paidPayments.length}</span> échéance{paidPayments.length > 1 ? "s" : ""} payée{paidPayments.length > 1 ? "s" : ""} — Total <span className="font-bold text-foreground">{fmt(caCollecte)}</span></span>
+              <span className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{filtered.length}</span> échéance{filtered.length > 1 ? "s" : ""} payée{filtered.length > 1 ? "s" : ""} — Total <span className="font-bold text-foreground">{fmt(filtered.reduce((s, p) => s + p.amount, 0))}</span></span>
               <ModalPagination page={safePage} totalPages={totalPages} setPage={setModalPage} />
             </div>
           </div>

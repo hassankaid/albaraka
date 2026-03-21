@@ -52,6 +52,7 @@ function FinancialTab() {
         totalCommissions={data.totalCommissions}
         isFiltered={dateRange !== null}
         sales={data.sales}
+        paidInPeriod={data.paidInPeriod}
         payments={data.payments}
         contactMap={data.contactMap}
         commissions={data.commissions}
