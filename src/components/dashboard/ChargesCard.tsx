@@ -196,9 +196,24 @@ export default function ChargesCard({
     return a.full_name.localeCompare(b.full_name);
   });
 
-  const recurringCharges = fixedCharges.filter(c => c.is_active && c.frequency !== "one_time");
+  const yearlyCharges = fixedCharges.filter(c => c.is_active && c.frequency === "yearly");
+  const monthlyCharges = fixedCharges.filter(c => c.is_active && c.frequency === "monthly");
   const oneTimeCharges = fixedCharges.filter(c => c.is_active && c.frequency === "one_time");
   const totalOneTimeCharges = oneTimeCharges.reduce((sum, c) => sum + c.amount, 0);
+  const totalMonthlyCharges = monthlyCharges.reduce((sum, c) => sum + c.amount, 0);
+  const totalYearlyCharges = yearlyCharges.reduce((sum, c) => sum + c.amount, 0);
+
+  // Compute next billing date for yearly charges
+  function nextYearlyBilling(startDate: string): string {
+    const start = new Date(startDate);
+    const now = new Date();
+    const billingMonth = start.getMonth();
+    const billingDay = start.getDate();
+    let year = now.getFullYear();
+    let next = new Date(year, billingMonth, billingDay);
+    if (next <= now) next = new Date(year + 1, billingMonth, billingDay);
+    return next.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  }
 
   // ── Actions ──
   const handleAddSalary = async () => {
