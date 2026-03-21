@@ -30,6 +30,7 @@ interface PaymentRow {
   contact_email: string | null;
   contact_phone: string | null;
   sale_id: string | null;
+  closed_by: string | null;
 }
 
 const getPaymentStatusInfo = (status: string, dueDate: string) => {
