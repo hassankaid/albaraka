@@ -592,7 +592,25 @@ export default function FinancialKPIs(props: Props) {
           if (c.frequency === "one_time") {
             const m = c.start_date.substring(0, 7);
             if (months.includes(m)) rawLines.push({ month: m, category: "Charges fixes", name: c.name, amount: c.amount });
+          } else if (c.frequency === "yearly") {
+            // Full amount only on the anniversary month (same month as start_date)
+            const cStart = new Date(c.start_date);
+            const cEnd = c.end_date ? new Date(c.end_date) : rangeEnd;
+            const billingMonth = cStart.getMonth(); // 0-indexed
+            let year = cStart.getFullYear();
+            while (true) {
+              const hitDate = new Date(year, billingMonth, 1);
+              if (hitDate > cEnd || hitDate > rangeEnd) break;
+              if (hitDate >= rangeStart && hitDate >= cStart) {
+                const m = `${year}-${String(billingMonth + 1).padStart(2, "0")}`;
+                if (months.includes(m)) {
+                  rawLines.push({ month: m, category: "Charges fixes", name: c.name, amount: c.amount });
+                }
+              }
+              year++;
+            }
           } else {
+            // Monthly
             months.forEach(m => {
               const [y, mo] = m.split("-").map(Number);
               const mStart = new Date(y, mo - 1, 1);
@@ -600,7 +618,7 @@ export default function FinancialKPIs(props: Props) {
               const cStart = new Date(c.start_date);
               const cEnd = c.end_date ? new Date(c.end_date) : rangeEnd;
               if (cStart <= mEnd && cEnd >= mStart) {
-                rawLines.push({ month: m, category: "Charges fixes", name: c.name, amount: c.frequency === "yearly" ? c.amount / 12 : c.amount });
+                rawLines.push({ month: m, category: "Charges fixes", name: c.name, amount: c.amount });
               }
             });
           }
