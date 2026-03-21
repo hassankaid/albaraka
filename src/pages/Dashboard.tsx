@@ -126,6 +126,7 @@ function FinancialTab() {
         commissionsDue={data.commissionsDue}
         salaryPeriods={data.salaryPeriods}
         profiles={data.profiles}
+        ads={data.ads}
         onRefreshCharges={() => data.refetchCharges()}
         onRefreshSalaries={() => data.refetchSalaryPeriods()}
       />
