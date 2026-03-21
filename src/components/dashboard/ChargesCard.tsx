@@ -57,6 +57,11 @@ interface Ad {
   channel: string | null;
 }
 
+interface DateRange {
+  from: Date;
+  to: Date;
+}
+
 interface Props {
   fixedCharges: FixedCharge[];
   activeSalaries: SalaryProfile[];
@@ -70,6 +75,7 @@ interface Props {
   ads: Ad[];
   onRefreshCharges: () => void;
   onRefreshSalaries: () => void;
+  dateRange?: DateRange | null;
 }
 
 // ── Helpers ──
