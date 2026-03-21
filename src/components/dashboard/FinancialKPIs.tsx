@@ -123,7 +123,7 @@ const freqLabels: Record<string, string> = {
   one_time: "Ponctuel",
 };
 
-type KpiKey = "caGenere" | "caCollecte" | "tauxCollecte" | "tauxImpayes" | "commissions" | "charges" | "benefice" | "roi";
+type KpiKey = "caGenere" | "caCollecte" | "tauxCollecte" | "tauxImpayes" | "commissions" | "charges" | "benefice";
 
 const MODAL_PAGE_SIZE = 15;
 
