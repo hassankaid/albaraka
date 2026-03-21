@@ -298,18 +298,26 @@ export default function Payments() {
     [filteredPayments, page]
   );
 
-  const thisMonth = getMonthRange(0);
-  // For collaborateurs, only show KPIs for their own payments (closed_by = their id)
-  const kpiBasePayments = useMemo(() => {
-    if (isCeo) return allPayments;
-    return allPayments.filter((p) => p._isUserInvolved);
-  }, [allPayments, isCeo]);
+  // KPIs: based on the same period/user filters as the table (but before status/search filters)
+  const kpiPayments = useMemo(() => {
+    let result = isCeo ? allPayments : allPayments.filter((p) => p._isUserInvolved);
 
-  const kpiPayments = kpiBasePayments.filter((p) => p.due_date >= thisMonth.start && p.due_date <= thisMonth.end);
+    if (periodFilter === "this_month" || periodFilter === "next_month") {
+      const offset = periodFilter === "this_month" ? 0 : 1;
+      const { start, end } = getMonthRange(offset);
+      result = result.filter((p) => p.due_date >= start && p.due_date <= end);
+    } else if (periodFilter === "billing_period") {
+      const { start, end } = getMonthRange(-1);
+      result = result.filter((p) => p.due_date >= start && p.due_date <= end);
+    }
+
+    return result;
+  }, [allPayments, isCeo, periodFilter]);
+
   const totalPendingMonth = kpiPayments.filter((p) => p.status === "pending").reduce((s, p) => s + p.amount, 0);
   const totalPaidMonth = kpiPayments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
   const today = new Date().toISOString().split("T")[0];
-  const totalOverdue = kpiBasePayments
+  const totalOverdue = kpiPayments
     .filter((p) => (p.status === "pending" && p.due_date < today) || p.status === "late")
     .reduce((s, p) => s + p.amount, 0);
 
