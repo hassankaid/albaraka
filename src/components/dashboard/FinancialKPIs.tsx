@@ -448,72 +448,84 @@ export default function FinancialKPIs(props: Props) {
 
       // ═══════════════════ CHARGES ═══════════════════
       case "charges": {
+        const chargeLines: { category: string; name: string; amount: number; detail: string }[] = [];
+
+        // Commissions payées — single summary line
+        chargeLines.push({ category: "Commissions", name: "Commissions payées", amount: commissionsPaid, detail: "" });
+
+        // Salaires
+        activeSalaries.forEach(s => chargeLines.push({ category: "Salaires", name: s.full_name, amount: s.amount, detail: "/mois" }));
+
+        // Charges fixes
+        activeCharges.forEach(c => {
+          const detail = c.frequency === "monthly" ? "/mois" : c.frequency === "yearly" ? "/an" : "ponctuel";
+          chargeLines.push({ category: "Charges fixes", name: c.name, amount: c.amount, detail });
+        });
+
+        // Publicité
+        chargeLines.push({ category: "Publicité", name: "Dépenses Ads", amount: totalAdsCumul, detail: "cumul" });
+
+        const categoryColors: Record<string, string> = {
+          "Commissions": "bg-orange-400",
+          "Salaires": "bg-blue-400",
+          "Charges fixes": "bg-violet-400",
+          "Publicité": "bg-rose-400",
+        };
+
+        // Group totals for summary header
+        const summaryItems = [
+          { label: "Commissions", amount: commissionsPaid, color: "bg-orange-400" },
+          { label: "Salaires", amount: totalSalariesCumul, color: "bg-blue-400" },
+          { label: "Charges", amount: totalFixedChargesCumul, color: "bg-violet-400" },
+          { label: "Publicité", amount: totalAdsCumul, color: "bg-rose-400" },
+        ];
+
         return (
-          <div className="space-y-4">
-            {/* Commissions payées */}
-            <div>
-              <div className="flex items-center gap-2 px-3 pb-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-orange-400" />
-                <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Commissions payées</span>
-                <span className="ml-auto text-sm font-bold text-foreground tabular-nums">{fmt(commissionsPaid)}</span>
-              </div>
-            </div>
-
-            {/* Salaires fixes */}
-            <div>
-              <div className="flex items-center gap-2 px-3 pb-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-blue-400" />
-                <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Salaires fixes</span>
-                <span className="ml-auto text-sm font-bold text-foreground tabular-nums">{fmt(totalSalariesCumul)}</span>
-              </div>
-              {activeSalaries.length > 0 && (
-                <div className="border border-border rounded-lg mx-3 divide-y divide-border/40">
-                  {activeSalaries.map((s, idx) => (
-                    <div key={s.id} className={`flex items-center justify-between px-3 py-2 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0"><User className="h-3 w-3 text-muted-foreground" /></div>
-                        <span className="text-xs font-medium text-foreground truncate">{s.full_name}</span>
-                      </div>
-                      <span className="text-xs font-bold text-foreground tabular-nums">{fmt(s.amount)}/mois</span>
-                    </div>
-                  ))}
+          <div className="space-y-3">
+            {/* Summary chips */}
+            <div className="flex flex-wrap gap-2">
+              {summaryItems.map(s => (
+                <div key={s.label} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/30 border border-border/50">
+                  <span className={`h-2 w-2 rounded-full ${s.color}`} />
+                  <span className="text-[10px] text-muted-foreground">{s.label}</span>
+                  <span className="text-xs font-bold text-foreground tabular-nums">{fmt(s.amount)}</span>
                 </div>
-              )}
+              ))}
             </div>
 
-            {/* Charges fixes */}
-            <div>
-              <div className="flex items-center gap-2 px-3 pb-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-violet-400" />
-                <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Charges fixes</span>
-                <span className="ml-auto text-sm font-bold text-foreground tabular-nums">{fmt(totalFixedChargesCumul)}</span>
-              </div>
-              {activeCharges.length > 0 && (
-                <div className="border border-border rounded-lg mx-3 divide-y divide-border/40">
-                  {activeCharges.map((c, idx) => (
-                    <div key={c.id} className={`flex items-center justify-between px-3 py-2 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-medium text-foreground truncate">{c.name}</span>
-                        <span className="text-[10px] text-muted-foreground">{freqLabels[c.frequency] || c.frequency}</span>
-                      </div>
-                      <span className="text-xs font-bold text-foreground tabular-nums">{fmt(c.amount)}{c.frequency === "monthly" ? "/mois" : c.frequency === "yearly" ? "/an" : ""}</span>
-                    </div>
+            {/* Table */}
+            <div className="max-h-[340px] overflow-y-auto rounded-lg border border-border">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-card z-10">
+                  <tr className="border-b border-border text-muted-foreground">
+                    <th className="text-left font-medium px-3 py-2">Catégorie</th>
+                    <th className="text-left font-medium px-3 py-2">Libellé</th>
+                    <th className="text-right font-medium px-3 py-2">Montant</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {chargeLines.map((l, idx) => (
+                    <tr key={idx} className={idx % 2 === 1 ? "bg-muted/10" : ""}>
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`h-2 w-2 rounded-full flex-shrink-0 ${categoryColors[l.category] || "bg-muted"}`} />
+                          <span className="text-muted-foreground">{l.category}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 font-medium text-foreground">{l.name}</td>
+                      <td className="px-3 py-2 text-right font-bold text-foreground tabular-nums whitespace-nowrap">
+                        {fmt(l.amount)}
+                        {l.detail && <span className="text-muted-foreground font-normal ml-1">{l.detail}</span>}
+                      </td>
+                    </tr>
                   ))}
-                </div>
-              )}
+                </tbody>
+              </table>
             </div>
 
-            {/* Publicité */}
-            <div>
-              <div className="flex items-center gap-2 px-3 pb-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
-                <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Publicité</span>
-                <span className="ml-auto text-sm font-bold text-foreground tabular-nums">{fmt(totalAdsCumul)}</span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-3 border-t-2 border-border px-3">
-              <span className="text-sm font-semibold text-foreground">Total charges</span>
+            {/* Total */}
+            <div className="flex items-center justify-between px-3 pt-2 border-t-2 border-border">
+              <span className="text-sm font-semibold text-foreground">Total charges (cumul période)</span>
               <span className="text-lg font-bold text-foreground tabular-nums">{fmt(totalChargesCumul)}</span>
             </div>
           </div>
