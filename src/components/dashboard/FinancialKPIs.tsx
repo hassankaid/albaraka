@@ -76,6 +76,7 @@ interface Props {
   isFiltered?: boolean;
   sales: Sale[];
   payments: Payment[];
+  paidInPeriod: Payment[];
   contactMap: Map<string, ContactInfo>;
   commissions: Commission[];
   profiles: ProfileInfo[];
