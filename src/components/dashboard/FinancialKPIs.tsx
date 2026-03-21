@@ -147,7 +147,7 @@ export default function FinancialKPIs(props: Props) {
   const {
     caGenere, caCollecte, tauxCashCollecte, tauxImpayes, benefice,
     totalChargesCumul, totalCommissions, isFiltered,
-    sales, payments, contactMap, commissions, profiles,
+    sales, payments, paidInPeriod, contactMap, commissions, profiles,
     totalSalariesCumul, totalFixedChargesCumul, commissionsPaid,
     activeSalaries, activeCharges, allPayments, allSales,
     totalAdsCumul, roi,
