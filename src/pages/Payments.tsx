@@ -162,6 +162,16 @@ export default function Payments() {
       }
     }
 
+    // For non-CEO, fetch sale_ids where user has commissions
+    let userSaleIds: Set<string> | null = null;
+    if (!isCeo && profile?.id) {
+      const { data: comms } = await supabase
+        .from("commissions")
+        .select("sale_id")
+        .eq("beneficiary_user_id", profile.id);
+      userSaleIds = new Set((comms || []).map((c) => c.sale_id));
+    }
+
     setAllPayments(
       all.map((p: any) => ({
         id: p.id,
@@ -177,10 +187,11 @@ export default function Payments() {
         contact_phone: p.contacts?.phone_normalized || null,
         sale_id: p.sale_id || null,
         closed_by: p.sales?.closed_by || null,
+        _isUserInvolved: userSaleIds ? (p.sale_id ? userSaleIds.has(p.sale_id) : false) : true,
       }))
     );
     setLoading(false);
-  }, []);
+  }, [isCeo, profile?.id]);
 
   useEffect(() => { fetchPayments(); }, [fetchPayments]);
 
