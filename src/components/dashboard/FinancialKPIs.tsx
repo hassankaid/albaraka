@@ -89,7 +89,7 @@ interface Props {
   allPayments: Payment[];
   allSales: Sale[];
   totalAdsCumul: number;
-  roi: number | null;
+  roi?: number | null;
 }
 
 function fmt(n: number) {
