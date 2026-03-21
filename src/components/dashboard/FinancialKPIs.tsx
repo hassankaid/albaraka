@@ -676,12 +676,19 @@ export default function FinancialKPIs(props: Props) {
           );
         };
 
+        // Use authoritative totals from the hook to match KPI exactly
+        const authoritativeTotals: Record<string, number> = {
+          "Salaires": totalSalariesCumul,
+          "Charges fixes": totalFixedChargesCumul,
+          "Publicité": totalAdsCumul,
+        };
+
         return (
           <ChargesModalContent
             cats={cats}
-            categoryTotals={categoryTotals}
+            categoryTotals={authoritativeTotals}
             catColors={catColors}
-            grandTotal={grandTotal}
+            grandTotal={totalChargesCumul}
             finalLines={finalLines}
             ChargesTable={ChargesTable}
             setModalPage={setModalPage}
