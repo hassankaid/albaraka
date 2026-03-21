@@ -397,14 +397,21 @@ export default function ChargesCard({
               <span className="font-medium">{fmt(totalSalariesMensuel)}/mois</span>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <div className="ml-8 mt-1 mb-2 space-y-0.5">
+              <div className="ml-8 mt-1 mb-2 space-y-1.5">
                 {activeSalaries.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">Aucun salaire actif</p>
                 ) : (
                   activeSalaries.map(s => (
-                    <div key={s.id} className="flex items-center justify-between text-xs text-muted-foreground py-0.5">
-                      <span className="truncate mr-2">{s.full_name}</span>
-                      <span className="font-medium text-foreground whitespace-nowrap">{fmt(s.amount)}/mois</span>
+                    <div key={s.id} className="flex items-center justify-between text-xs py-0.5">
+                      <div className="flex flex-col min-w-0 mr-2">
+                        <span className="text-foreground font-medium truncate">{s.full_name}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {s.end_date
+                            ? `${formatMonthYear(s.start_date)} → ${formatMonthYear(s.end_date)}`
+                            : `Depuis ${formatMonthYear(s.start_date)}`}
+                        </span>
+                      </div>
+                      <span className="font-bold text-foreground whitespace-nowrap">{fmt(s.amount)}/mois</span>
                     </div>
                   ))
                 )}
