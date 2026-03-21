@@ -172,6 +172,7 @@ export default function ChargesCard({
   ads,
   onRefreshCharges,
   onRefreshSalaries,
+  dateRange,
 }: Props) {
   const [manageOpen, setManageOpen] = useState(false);
 
