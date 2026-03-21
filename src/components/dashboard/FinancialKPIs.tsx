@@ -67,6 +67,32 @@ interface ActiveCharge {
   category: string;
 }
 
+interface SalaryPeriod {
+  id: string;
+  profile_id: string;
+  amount: number;
+  start_date: string;
+  end_date: string | null;
+}
+
+interface FixedChargeDetail {
+  id: string;
+  name: string;
+  amount: number;
+  frequency: string;
+  category: string;
+  is_active: boolean;
+  start_date: string;
+  end_date: string | null;
+}
+
+interface Ad {
+  id: string;
+  date: string;
+  campaign_name: string;
+  amount_spent: number;
+}
+
 interface Props {
   caGenere: number;
   caCollecte: number;
@@ -91,6 +117,11 @@ interface Props {
   allSales: Sale[];
   totalAdsCumul: number;
   roi?: number | null;
+  // For charges detail modal
+  salaryPeriods?: SalaryPeriod[];
+  fixedChargesDetail?: FixedChargeDetail[];
+  adsDetail?: Ad[];
+  dateRange?: { from: Date; to: Date } | null;
 }
 
 function fmt(n: number) {
