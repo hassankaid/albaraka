@@ -188,7 +188,7 @@ export default function FinancialKPIs(props: Props) {
   ];
 
   const sortedSalesForCA = useMemo(() => [...sales].sort((a, b) => (b.sold_at || "").localeCompare(a.sold_at || "")), [sales]);
-  const paidPayments = useMemo(() => [...payments].filter(p => p.status === "paid").sort((a, b) => b.due_date.localeCompare(a.due_date)), [payments]);
+  const paidPayments = useMemo(() => [...paidInPeriod].sort((a, b) => (b.paid_at || b.due_date).localeCompare(a.paid_at || a.due_date)), [paidInPeriod]);
   const lateOrLostPayments = useMemo(() => [...payments].filter(p => p.status === "late" || p.status === "lost").sort((a, b) => b.due_date.localeCompare(a.due_date)), [payments]);
   const engagedCommissions = useMemo(() => {
     const getDate = (c: Commission) => {
