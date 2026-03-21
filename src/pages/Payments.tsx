@@ -370,6 +370,7 @@ export default function Payments() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="today">Aujourd'hui</SelectItem>
             <SelectItem value="all">Toutes périodes</SelectItem>
             <SelectItem value="this_month">Ce mois</SelectItem>
             <SelectItem value="next_month">Mois prochain</SelectItem>
@@ -377,18 +378,46 @@ export default function Payments() {
           </SelectContent>
         </Select>
 
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[130px] h-8 text-xs bg-card">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous statuts</SelectItem>
-            <SelectItem value="pending">En attente</SelectItem>
-            <SelectItem value="late">En retard</SelectItem>
-            <SelectItem value="paid">Payé</SelectItem>
-            <SelectItem value="lost">Perdu</SelectItem>
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs bg-card min-w-[130px] justify-between">
+              {statusFilters.length === 0
+                ? "Tous statuts"
+                : statusFilters.length === 1
+                  ? { pending: "En attente", late: "En retard", paid: "Payé", lost: "Perdu" }[statusFilters[0]]
+                  : `${statusFilters.length} statuts`}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[160px] p-2" align="start">
+            {[
+              { key: "pending", label: "En attente" },
+              { key: "late", label: "En retard" },
+              { key: "paid", label: "Payé" },
+              { key: "lost", label: "Perdu" },
+            ].map((s) => (
+              <label key={s.key} className="flex items-center gap-2 px-2 py-1.5 text-xs cursor-pointer hover:bg-secondary rounded">
+                <input
+                  type="checkbox"
+                  checked={statusFilters.includes(s.key)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setStatusFilters((prev) => [...prev, s.key]);
+                    } else {
+                      setStatusFilters((prev) => prev.filter((f) => f !== s.key));
+                    }
+                  }}
+                  className="rounded border-border"
+                />
+                {s.label}
+              </label>
+            ))}
+            {statusFilters.length > 0 && (
+              <Button variant="ghost" size="sm" className="w-full mt-1 h-7 text-xs" onClick={() => setStatusFilters([])}>
+                Réinitialiser
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
 
         <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
