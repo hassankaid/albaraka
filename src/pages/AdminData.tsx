@@ -24,6 +24,7 @@ interface LeadRow {
   raw_email: string | null;
   raw_phone: string | null;
   source: string;
+  source_detail: string | null;
   status: string;
   contact_id: string | null;
   contact_name: string | null;
