@@ -24,6 +24,7 @@ interface LeadRow {
   raw_email: string | null;
   raw_phone: string | null;
   source: string;
+  source_detail: string | null;
   status: string;
   contact_id: string | null;
   contact_name: string | null;
@@ -253,7 +254,7 @@ export default function AdminData() {
     const data = await fetchAllRows<any>((offset, limit) =>
       supabase
         .from("leads_enriched")
-        .select("id, raw_full_name, raw_email, raw_phone, source, status, contact_id, contact_full_name, assigned_to, assigned_to_name, apporteur_id, apporteur_name, created_at")
+        .select("id, raw_full_name, raw_email, raw_phone, source, source_detail, status, contact_id, contact_full_name, assigned_to, assigned_to_name, apporteur_id, apporteur_name, created_at")
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1)
     );
@@ -467,7 +468,7 @@ export default function AdminData() {
       const actors = [l.assigned_to_name && `Setter: ${l.assigned_to_name}`, l.apporteur_name && `Apporteur: ${l.apporteur_name}`].filter(Boolean).join(" · ");
       return {
         id: l.id,
-        label: `${l.raw_full_name || "Sans nom"} — ${getSourceLabel(l.source)} — ${formatDate(l.created_at)}`,
+        label: `${l.raw_full_name || "Sans nom"} — ${getSourceLabel(l.source, l.source_detail)} — ${formatDate(l.created_at)}`,
         sub: [details, actors].filter(Boolean).join(" — ") || "",
       };
     });

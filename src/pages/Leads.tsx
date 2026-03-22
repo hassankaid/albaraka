@@ -600,8 +600,8 @@ export default function Leads() {
                     {/* Source */}
                     <TableCell>
                       {lead.source && (
-                        <Badge variant="outline" className={`text-[10px] leading-tight ${getSourceBadgeClass(lead.source)}`}>
-                          {getSourceLabel(lead.source)}
+                        <Badge variant="outline" className={`text-[10px] leading-tight ${getSourceBadgeClass(lead.source, lead.source_detail)}`}>
+                          {getSourceLabel(lead.source, lead.source_detail)}
                         </Badge>
                       )}
                     </TableCell>

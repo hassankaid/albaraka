@@ -4,6 +4,8 @@ export const leadSourceConfig: Record<string, { label: string; color: string }> 
   vsl_a: { label: "VSL A", color: "blue" },
   vsl_b: { label: "VSL B", color: "indigo" },
   webi: { label: "Webinaire", color: "purple" },
+  vsl_webi: { label: "Webinaire", color: "purple" },
+  meta_ads: { label: "Meta Ads", color: "blue" },
   instagram_ads: { label: "Instagram Ads", color: "pink" },
   whatsapp_ads: { label: "WhatsApp Ads", color: "green" },
   instagram_organic: { label: "Instagram Organic", color: "fuchsia" },
@@ -40,13 +42,23 @@ const COLOR_CLASSES: Record<string, string> = {
   "red-light": "bg-red-300/20 text-red-300 border-red-300/30",
 };
 
-export function getSourceBadgeClass(sourceKey: string): string {
+export function getSourceBadgeClass(sourceKey: string, sourceDetail?: string | null): string {
+  // For meta_ads, resolve via source_detail for a more specific badge
+  if (sourceKey === "meta_ads" && sourceDetail) {
+    const detailCfg = leadSourceConfig[sourceDetail];
+    if (detailCfg) return COLOR_CLASSES[detailCfg.color] || COLOR_CLASSES.gray;
+  }
   const cfg = leadSourceConfig[sourceKey];
   if (!cfg) return COLOR_CLASSES.gray;
   return COLOR_CLASSES[cfg.color] || COLOR_CLASSES.gray;
 }
 
-export function getSourceLabel(sourceKey: string): string {
+export function getSourceLabel(sourceKey: string, sourceDetail?: string | null): string {
+  // For meta_ads, resolve via source_detail for a more specific label
+  if (sourceKey === "meta_ads" && sourceDetail) {
+    const detailCfg = leadSourceConfig[sourceDetail];
+    if (detailCfg) return detailCfg.label;
+  }
   return leadSourceConfig[sourceKey]?.label || sourceKey;
 }
 
@@ -107,7 +119,7 @@ export const SOURCE_FILTER_OPTIONS = [
 export const SOURCE_GROUPS = [
   {
     label: "Ads",
-    sources: ["vsl_a", "vsl_b", "webi", "instagram_ads", "whatsapp_ads"],
+    sources: ["vsl_a", "vsl_b", "webi", "meta_ads", "instagram_ads", "whatsapp_ads"],
   },
   {
     label: "Organique",
