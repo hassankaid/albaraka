@@ -467,7 +467,7 @@ export default function AdminData() {
       const actors = [l.assigned_to_name && `Setter: ${l.assigned_to_name}`, l.apporteur_name && `Apporteur: ${l.apporteur_name}`].filter(Boolean).join(" · ");
       return {
         id: l.id,
-        label: `${l.raw_full_name || "Sans nom"} — ${getSourceLabel(l.source)} — ${formatDate(l.created_at)}`,
+        label: `${l.raw_full_name || "Sans nom"} — ${getSourceLabel(l.source, l.source_detail)} — ${formatDate(l.created_at)}`,
         sub: [details, actors].filter(Boolean).join(" — ") || "",
       };
     });
