@@ -42,13 +42,23 @@ const COLOR_CLASSES: Record<string, string> = {
   "red-light": "bg-red-300/20 text-red-300 border-red-300/30",
 };
 
-export function getSourceBadgeClass(sourceKey: string): string {
+export function getSourceBadgeClass(sourceKey: string, sourceDetail?: string | null): string {
+  // For meta_ads, resolve via source_detail for a more specific badge
+  if (sourceKey === "meta_ads" && sourceDetail) {
+    const detailCfg = leadSourceConfig[sourceDetail];
+    if (detailCfg) return COLOR_CLASSES[detailCfg.color] || COLOR_CLASSES.gray;
+  }
   const cfg = leadSourceConfig[sourceKey];
   if (!cfg) return COLOR_CLASSES.gray;
   return COLOR_CLASSES[cfg.color] || COLOR_CLASSES.gray;
 }
 
-export function getSourceLabel(sourceKey: string): string {
+export function getSourceLabel(sourceKey: string, sourceDetail?: string | null): string {
+  // For meta_ads, resolve via source_detail for a more specific label
+  if (sourceKey === "meta_ads" && sourceDetail) {
+    const detailCfg = leadSourceConfig[sourceDetail];
+    if (detailCfg) return detailCfg.label;
+  }
   return leadSourceConfig[sourceKey]?.label || sourceKey;
 }
 
