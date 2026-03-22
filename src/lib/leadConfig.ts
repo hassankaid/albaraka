@@ -4,8 +4,6 @@ export const leadSourceConfig: Record<string, { label: string; color: string }> 
   vsl_a: { label: "VSL A", color: "blue" },
   vsl_b: { label: "VSL B", color: "indigo" },
   webi: { label: "Webinaire", color: "purple" },
-  vsl_webi: { label: "Webinaire", color: "purple" },
-  meta_ads: { label: "Meta Ads", color: "blue" },
   instagram_ads: { label: "Instagram Ads", color: "pink" },
   whatsapp_ads: { label: "WhatsApp Ads", color: "green" },
   instagram_organic: { label: "Instagram Organic", color: "fuchsia" },
@@ -119,7 +117,7 @@ export const SOURCE_FILTER_OPTIONS = [
 export const SOURCE_GROUPS = [
   {
     label: "Ads",
-    sources: ["vsl_a", "vsl_b", "webi", "meta_ads", "instagram_ads", "whatsapp_ads"],
+    sources: ["vsl_a", "vsl_b", "webi", "instagram_ads", "whatsapp_ads"],
   },
   {
     label: "Organique",
