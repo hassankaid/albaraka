@@ -117,7 +117,7 @@ export const SOURCE_FILTER_OPTIONS = [
 export const SOURCE_GROUPS = [
   {
     label: "Ads",
-    sources: ["vsl_a", "vsl_b", "webi", "meta_ads", "instagram_ads", "whatsapp_ads"],
+    sources: ["vsl_a", "vsl_b", "webi", "instagram_ads", "whatsapp_ads"],
   },
   {
     label: "Organique",
