@@ -230,8 +230,8 @@ export default function ApporteurLeads() {
                     <TableCell className="text-sm text-foreground">{lead.contact_phone || "—"}</TableCell>
                     <TableCell>
                       {lead.source && (
-                        <Badge variant="outline" className={`text-xs ${getSourceBadgeClass(lead.source)}`}>
-                          {getSourceLabel(lead.source)}
+                        <Badge variant="outline" className={`text-xs ${getSourceBadgeClass(lead.source, lead.source_detail)}`}>
+                          {getSourceLabel(lead.source, lead.source_detail)}
                         </Badge>
                       )}
                     </TableCell>
