@@ -59,6 +59,9 @@ export default function Leads() {
   const [sourceFilter, setSourceFilter] = useState<string[]>(ADS_SOURCES);
   const [search, setSearch] = useState("");
   const [collaborateurs, setCollaborateurs] = useState<{ id: string; full_name: string; collaborateur_level: string | null }[]>([]);
+  const [apporteurs, setApporteurs] = useState<{ id: string; full_name: string }[]>([]);
+  const [collabFilter, setCollabFilter] = useState("all");
+  const [apporteurFilter, setApporteurFilter] = useState("all");
   const [igFormOpen, setIgFormOpen] = useState(false);
   const [apporteurFormOpen, setApporteurFormOpen] = useState(false);
   const [processLead, setProcessLead] = useState<LeadEnriched | null>(null);
