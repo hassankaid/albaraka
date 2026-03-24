@@ -271,6 +271,8 @@ export default function Leads() {
 
     if (statusFilter !== "all") result = result.filter((l) => l.status === statusFilter);
     if (sourceFilter.length > 0) result = result.filter((l) => l.source && sourceFilter.includes(l.source));
+    if (collabFilter !== "all") result = result.filter((l) => l.assigned_to === collabFilter);
+    if (apporteurFilter !== "all") result = result.filter((l) => l.apporteur_id === apporteurFilter);
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -285,7 +287,7 @@ export default function Leads() {
     }
 
     return result;
-  }, [leads, scopedLeads, tab, statusFilter, sourceFilter, search, user]);
+  }, [leads, scopedLeads, tab, statusFilter, sourceFilter, collabFilter, apporteurFilter, search, user]);
 
   useEffect(() => {
     setPage(0);
