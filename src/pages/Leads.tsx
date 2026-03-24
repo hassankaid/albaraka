@@ -59,6 +59,9 @@ export default function Leads() {
   const [sourceFilter, setSourceFilter] = useState<string[]>(ADS_SOURCES);
   const [search, setSearch] = useState("");
   const [collaborateurs, setCollaborateurs] = useState<{ id: string; full_name: string; collaborateur_level: string | null }[]>([]);
+  const [apporteurs, setApporteurs] = useState<{ id: string; full_name: string }[]>([]);
+  const [collabFilter, setCollabFilter] = useState("all");
+  const [apporteurFilter, setApporteurFilter] = useState("all");
   const [igFormOpen, setIgFormOpen] = useState(false);
   const [apporteurFormOpen, setApporteurFormOpen] = useState(false);
   const [processLead, setProcessLead] = useState<LeadEnriched | null>(null);
@@ -99,10 +102,21 @@ export default function Leads() {
     if (data) setCollaborateurs(data);
   }, []);
 
+  const fetchApporteurs = useCallback(async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .eq("role", "apporteur")
+      .eq("is_active", true)
+      .order("full_name");
+    if (data) setApporteurs(data);
+  }, []);
+
   useEffect(() => {
     fetchLeads();
     fetchCollaborateurs();
-  }, [fetchLeads, fetchCollaborateurs]);
+    fetchApporteurs();
+  }, [fetchLeads, fetchCollaborateurs, fetchApporteurs]);
 
   useEffect(() => {
     const channel = supabase
@@ -257,6 +271,8 @@ export default function Leads() {
 
     if (statusFilter !== "all") result = result.filter((l) => l.status === statusFilter);
     if (sourceFilter.length > 0) result = result.filter((l) => l.source && sourceFilter.includes(l.source));
+    if (collabFilter !== "all") result = result.filter((l) => l.assigned_to === collabFilter);
+    if (apporteurFilter !== "all") result = result.filter((l) => l.apporteur_id === apporteurFilter);
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -271,16 +287,17 @@ export default function Leads() {
     }
 
     return result;
-  }, [leads, scopedLeads, tab, statusFilter, sourceFilter, search, user]);
+  }, [leads, scopedLeads, tab, statusFilter, sourceFilter, collabFilter, apporteurFilter, search, user]);
 
   useEffect(() => {
     setPage(0);
     setSelectedIds(new Set());
-    // Reset source filter: Ads only for "À affecter", all sources for other tabs
     setSourceFilter(tab === "a_affecter" ? ADS_SOURCES : []);
+    setCollabFilter("all");
+    setApporteurFilter("all");
   }, [tab]);
 
-  useEffect(() => { setPage(0); }, [statusFilter, sourceFilter.length, search]);
+  useEffect(() => { setPage(0); }, [statusFilter, sourceFilter.length, search, collabFilter, apporteurFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
   const paginatedLeads = useMemo(
@@ -363,7 +380,7 @@ export default function Leads() {
         </div>
       </div>
 
-      {/* Tabs + filters row */}
+      {/* Tabs + search row */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center bg-card border border-border rounded-lg p-0.5">
           {(isCeo ? CEO_TABS : COLLAB_TABS).map((t) => (
@@ -386,9 +403,22 @@ export default function Leads() {
           ))}
         </div>
 
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher par nom, email, téléphone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-8 text-xs bg-card"
+          />
+        </div>
+      </div>
+
+      {/* Filters row */}
+      <div className="flex flex-wrap items-center gap-2">
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 text-xs bg-card gap-1.5 min-w-[130px] justify-between">
+            <Button variant="outline" size="sm" className="h-7 text-xs bg-card gap-1.5 justify-between">
               {sourceFilter.length === 0 ? "Sources" : `${sourceFilter.length} source${sourceFilter.length > 1 ? "s" : ""}`}
               <ChevronDown className="h-3 w-3 opacity-50" />
             </Button>
@@ -458,7 +488,7 @@ export default function Leads() {
         </Popover>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px] h-8 text-xs bg-card">
+          <SelectTrigger className="w-[140px] h-7 text-xs bg-card">
             <SelectValue placeholder="Statut" />
           </SelectTrigger>
           <SelectContent>
@@ -470,15 +500,49 @@ export default function Leads() {
           </SelectContent>
         </Select>
 
-        <div className="relative flex-1 min-w-[250px]">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher par nom, email, téléphone..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 h-8 text-xs bg-card"
-          />
-        </div>
+        {isCeo && (
+          <>
+            <Select value={collabFilter} onValueChange={setCollabFilter}>
+              <SelectTrigger className="w-[150px] h-7 text-xs bg-card">
+                <SelectValue placeholder="Collaborateur" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Collab : Tous</SelectItem>
+                {collaborateurs.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={apporteurFilter} onValueChange={setApporteurFilter}>
+              <SelectTrigger className="w-[150px] h-7 text-xs bg-card">
+                <SelectValue placeholder="Apporteur" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Apporteur : Tous</SelectItem>
+                {apporteurs.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>{a.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        )}
+
+        {(statusFilter !== "all" || collabFilter !== "all" || apporteurFilter !== "all" || sourceFilter.length > 0) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs text-muted-foreground"
+            onClick={() => {
+              setStatusFilter("all");
+              setCollabFilter("all");
+              setApporteurFilter("all");
+              setSourceFilter(tab === "a_affecter" ? ADS_SOURCES : []);
+            }}
+          >
+            Réinitialiser
+          </Button>
+        )}
       </div>
 
       {/* Table */}

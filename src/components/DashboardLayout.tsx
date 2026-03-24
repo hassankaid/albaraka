@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 const allNavItems = [
   { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur"] },
-  { title: "Mes Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"] },
+  { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"] },
   { title: "Mes Calls", path: "/calls", icon: Phone, roles: ["ceo", "collaborateur"] },
   { title: "Contacts", path: "/contacts", icon: BookUser, roles: ["ceo"] },
   { title: "Mes Ventes", path: "/sales", icon: BadgeEuro, roles: ["ceo", "collaborateur", "apporteur"] },
@@ -24,7 +24,7 @@ const allNavItems = [
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Mon Dashboard",
-  "/leads": "Mes Leads",
+  "/leads": "Leads",
   "/calls": "Mes Calls",
   "/contacts": "Contacts",
   "/sales": "Mes Ventes",
