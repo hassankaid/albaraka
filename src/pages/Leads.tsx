@@ -102,10 +102,21 @@ export default function Leads() {
     if (data) setCollaborateurs(data);
   }, []);
 
+  const fetchApporteurs = useCallback(async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .eq("role", "apporteur")
+      .eq("is_active", true)
+      .order("full_name");
+    if (data) setApporteurs(data);
+  }, []);
+
   useEffect(() => {
     fetchLeads();
     fetchCollaborateurs();
-  }, [fetchLeads, fetchCollaborateurs]);
+    fetchApporteurs();
+  }, [fetchLeads, fetchCollaborateurs, fetchApporteurs]);
 
   useEffect(() => {
     const channel = supabase
