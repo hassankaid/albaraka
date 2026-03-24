@@ -24,7 +24,7 @@ const allNavItems = [
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Mon Dashboard",
-  "/leads": "Mes Leads",
+  "/leads": "Leads",
   "/calls": "Mes Calls",
   "/contacts": "Contacts",
   "/sales": "Mes Ventes",
