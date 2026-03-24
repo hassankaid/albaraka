@@ -292,11 +292,12 @@ export default function Leads() {
   useEffect(() => {
     setPage(0);
     setSelectedIds(new Set());
-    // Reset source filter: Ads only for "À affecter", all sources for other tabs
     setSourceFilter(tab === "a_affecter" ? ADS_SOURCES : []);
+    setCollabFilter("all");
+    setApporteurFilter("all");
   }, [tab]);
 
-  useEffect(() => { setPage(0); }, [statusFilter, sourceFilter.length, search]);
+  useEffect(() => { setPage(0); }, [statusFilter, sourceFilter.length, search, collabFilter, apporteurFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
   const paginatedLeads = useMemo(
