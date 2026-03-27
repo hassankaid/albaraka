@@ -71,7 +71,7 @@ export default function LeadInstagramForm({
       source_detail: source,
       assigned_to: profile.id,
       assigned_at: new Date().toISOString(),
-      status: "nouveau",
+      status: "a_qualifier",
     });
 
     if (insertError) {
