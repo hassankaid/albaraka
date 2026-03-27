@@ -71,7 +71,7 @@ export default function LeadInstagramForm({
       source_detail: source,
       assigned_to: profile.id,
       assigned_at: new Date().toISOString(),
-      status: "a_qualifier",
+      status: "inscrit_conference",
     });
 
     if (insertError) {
