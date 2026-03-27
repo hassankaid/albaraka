@@ -568,9 +568,7 @@ export default function Leads() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  {collaborateurs
-                    .filter((c) => c.collaborateur_level === "intermediaire")
-                    .map((c) => (
+                  {collaborateurs.map((c) => (
                       <DropdownMenuItem key={c.id} onClick={() => handleBulkAssign(c.id)}>
                         {c.full_name}
                       </DropdownMenuItem>
@@ -722,9 +720,7 @@ export default function Leads() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start">
-                            {collaborateurs
-                              .filter((c) => c.collaborateur_level === "intermediaire")
-                              .map((c) => (
+                            {collaborateurs.map((c) => (
                                 <DropdownMenuItem key={c.id} onClick={() => handleReassign(lead.id!, null, c.id, lead.status)}>
                                   {c.full_name}
                                 </DropdownMenuItem>
