@@ -17,7 +17,6 @@ interface Space {
   bgColor: string;
   path: string;
   description: string;
-  condition?: (profile: any) => boolean;
 }
 
 const getSpaces = (profile: any): Space[] => [
