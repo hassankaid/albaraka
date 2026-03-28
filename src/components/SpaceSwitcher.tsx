@@ -75,7 +75,7 @@ export default function SpaceSwitcher() {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
-        {availableSpaces.map((space) => {
+        {spaces.map((space) => {
           const SpaceIcon = space.icon;
           const isActive = space.id === currentSpace.id;
 
