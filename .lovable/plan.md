@@ -1,34 +1,59 @@
 
 
-## Renommage sidebar coaching + simplification du SpaceSwitcher
+## Amélioration UX du Builder coaching
 
-### Changements
+### Résumé
+Trois améliorations de l'éditeur d'étapes dans le Sheet du Builder :
+1. **Tips** : liste dynamique avec champs individuels + ajout/suppression
+2. **Scripts** : éditeur riche (gras, italique, souligné) via Tiptap
+3. **Débriefs** : options individuelles avec champs + ajout/suppression
 
-**1. SpaceSwitcher -- passer de 3 a 2 espaces**
+---
 
-Fusionner les 3 entrées actuelles en 2 :
-- **ETHICARENA TRACKING** (bleu, icone BarChart3) → `/dashboard`
-- **ETHICARENA COACHING** (ambre, icone GraduationCap) → `/coaching` si coach/CEO, sinon `/mon-coaching`
+### 1. Tips — Liste dynamique
 
-La detection de l'espace actif : si le pathname commence par `/coaching` ou `/mon-coaching` → COACHING, sinon → TRACKING.
+Remplacer le textarea "un par ligne" par une liste d'inputs individuels :
+- Chaque tip = un `Input` avec un bouton suppression (Trash2)
+- Bouton "+ Ajouter un tip" en bas
+- Stockage inchangé : `tips: string[]` dans `coach_steps`
 
-**2. DashboardLayout -- renommer les liens coaching**
+### 2. Scripts — Éditeur riche avec Tiptap
 
-Modifier `coachingNavItems` :
-- `"Sessions"` → **`"Évaluations"`** (path `/coaching`, visible coach/CEO uniquement)
-- `"Mon Coaching"` → **`"Historique"`** (path `/mon-coaching`, visible par tous)
+**Dépendances à installer** : `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-underline`
 
-Mettre a jour `pageTitles` en conséquence.
+**Migration SQL** : Ajouter une colonne `script_content text` à `coach_script_refs` pour stocker le HTML. Les anciennes données restent dans `script_lines` comme fallback.
 
-### Fichiers modifies
+**Composant** : Créer `src/components/ui/rich-text-editor.tsx` — un petit wrapper Tiptap avec toolbar (B, I, U).
+
+**Builder** : Remplacer le textarea des scripts par ce composant. Au chargement, si `script_content` est null, on initialise depuis `script_lines.join("<br>")`.
+
+**Session de notation** (`CoachingSession.tsx` + `SessionDetail.tsx`) : Rendre `script_content` avec `dangerouslySetInnerHTML` si disponible, sinon afficher `script_lines` comme avant (liste à puces).
+
+### 3. Débriefs — Options individuelles
+
+Remplacer le textarea "une option par ligne" par :
+- Chaque option = un `Input` avec bouton suppression
+- Bouton "+ Ajouter une option" en bas
+- Stockage inchangé : `options: string[]` dans `coach_debrief_options`
+
+---
+
+### Fichiers modifiés
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/components/SpaceSwitcher.tsx` | Supprimer l'entrée "coaching-student", ne garder que 2 espaces. Adapter le path de COACHING selon le role. |
-| `src/components/DashboardLayout.tsx` | Renommer les titres dans `coachingNavItems` et `pageTitles`. |
+| `package.json` | Ajouter dépendances Tiptap |
+| `src/components/ui/rich-text-editor.tsx` | Nouveau composant éditeur riche |
+| `src/components/admin-coaching/AdminCoachingBuilder.tsx` | Tips en liste, scripts en éditeur riche, débriefs en items individuels |
+| `src/pages/CoachingSession.tsx` | Rendu `script_content` HTML si disponible |
+| `src/pages/SessionDetail.tsx` | Rendu `script_content` HTML si disponible |
+| Migration SQL | `ALTER TABLE coach_script_refs ADD COLUMN script_content text` |
 
-### Résultat
+### Section technique
 
-SpaceSwitcher : 2 choix (TRACKING / COACHING).
-Sidebar coaching : "Évaluations" (coach) + "Historique" (tous).
+- Tiptap extensions : `StarterKit` (bold, italic) + `Underline`
+- Le composant `RichTextEditor` prend `content: string` et `onChange: (html: string) => void`
+- Toolbar minimaliste : 3 boutons toggle (B/I/U) avec état actif
+- La mutation `updateScript` envoie `script_content` au lieu de `script_lines`
+- Fallback : si `script_content` est null/vide, on lit `script_lines` comme avant
 
