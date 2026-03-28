@@ -510,6 +510,118 @@ export type Database = {
           },
         ]
       }
+      coaching_scores: {
+        Row: {
+          created_at: string | null
+          criteria_scores: number[]
+          debrief_responses: string[] | null
+          id: string
+          notes: string | null
+          session_id: string
+          step_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          criteria_scores?: number[]
+          debrief_responses?: string[] | null
+          id?: string
+          notes?: string | null
+          session_id: string
+          step_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          criteria_scores?: number[]
+          debrief_responses?: string[] | null
+          id?: string
+          notes?: string | null
+          session_id?: string
+          step_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coaching_scores_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "coaching_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coaching_scores_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "coach_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coaching_sessions: {
+        Row: {
+          coach_type_id: string
+          coach_user_id: string
+          created_at: string | null
+          global_score: number | null
+          id: string
+          session_date: string
+          session_number: number
+          status: string
+          student_user_id: string
+          sub_mode: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          coach_type_id: string
+          coach_user_id: string
+          created_at?: string | null
+          global_score?: number | null
+          id?: string
+          session_date: string
+          session_number?: number
+          status?: string
+          student_user_id: string
+          sub_mode?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          coach_type_id?: string
+          coach_user_id?: string
+          created_at?: string | null
+          global_score?: number | null
+          id?: string
+          session_date?: string
+          session_number?: number
+          status?: string
+          student_user_id?: string
+          sub_mode?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coaching_sessions_coach_type_id_fkey"
+            columns: ["coach_type_id"]
+            isOneToOne: false
+            referencedRelation: "coach_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coaching_sessions_coach_user_id_fkey"
+            columns: ["coach_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coaching_sessions_student_user_id_fkey"
+            columns: ["student_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commissions: {
         Row: {
           amount: number | null
@@ -976,6 +1088,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_also_apporteur: boolean | null
+          is_coach: boolean | null
           onboarding_completed: boolean
           phone: string | null
           postal_code: string | null
@@ -1002,6 +1115,7 @@ export type Database = {
           id: string
           is_active?: boolean
           is_also_apporteur?: boolean | null
+          is_coach?: boolean | null
           onboarding_completed?: boolean
           phone?: string | null
           postal_code?: string | null
@@ -1028,6 +1142,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_also_apporteur?: boolean | null
+          is_coach?: boolean | null
           onboarding_completed?: boolean
           phone?: string | null
           postal_code?: string | null
@@ -1330,6 +1445,10 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_session_global_score: {
+        Args: { p_session_id: string }
+        Returns: number
+      }
       compute_sale_payment_status: {
         Args: { p_sale_id: string }
         Returns: string
