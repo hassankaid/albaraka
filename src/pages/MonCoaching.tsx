@@ -36,8 +36,8 @@ export default function MonCoaching() {
         .select(`
           *,
           coach_type:coach_types(id, label, theme_color),
-          student:profiles!coaching_sessions_student_user_id_fkey(id, email),
-          coach:profiles!coaching_sessions_coach_user_id_fkey(id, email)
+          student:profiles!coaching_sessions_student_user_id_fkey(id, email, full_name),
+          coach:profiles!coaching_sessions_coach_user_id_fkey(id, email, full_name)
         `)
         .eq("student_user_id", profile!.id)
         .eq("status", "completed")
@@ -56,8 +56,8 @@ export default function MonCoaching() {
         .select(`
           *,
           coach_type:coach_types(id, label, theme_color),
-          student:profiles!coaching_sessions_student_user_id_fkey(id, email),
-          coach:profiles!coaching_sessions_coach_user_id_fkey(id, email)
+          student:profiles!coaching_sessions_student_user_id_fkey(id, email, full_name),
+          coach:profiles!coaching_sessions_coach_user_id_fkey(id, email, full_name)
         `)
         .neq("student_user_id", profile!.id)
         .eq("status", "completed")
