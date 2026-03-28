@@ -1,0 +1,120 @@
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown, BarChart3, GraduationCap, BookOpen, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface Space {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  color: string;
+  bgColor: string;
+  path: string;
+  description: string;
+  condition?: (profile: any) => boolean;
+}
+
+const spaces: Space[] = [
+  {
+    id: "tracking",
+    label: "TRACKING",
+    icon: BarChart3,
+    color: "text-blue-500",
+    bgColor: "bg-blue-500/10",
+    path: "/dashboard",
+    description: "Leads, Calls, Sales, Payments",
+  },
+  {
+    id: "coaching-coach",
+    label: "COACHING",
+    icon: GraduationCap,
+    color: "text-amber-500",
+    bgColor: "bg-amber-500/10",
+    path: "/coaching",
+    description: "Espace Coach",
+    condition: (profile) => profile?.is_coach || profile?.role === "ceo",
+  },
+  {
+    id: "coaching-student",
+    label: "MON COACHING",
+    icon: BookOpen,
+    color: "text-green-500",
+    bgColor: "bg-green-500/10",
+    path: "/mon-coaching",
+    description: "Mes sessions reçues",
+  },
+];
+
+export default function SpaceSwitcher() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { profile } = useAuth();
+
+  const availableSpaces = spaces.filter(
+    (space) => !space.condition || space.condition(profile)
+  );
+
+  const getCurrentSpace = (): Space => {
+    if (location.pathname.startsWith("/mon-coaching")) {
+      return spaces.find((s) => s.id === "coaching-student") || spaces[0];
+    }
+    if (location.pathname.startsWith("/coaching")) {
+      return spaces.find((s) => s.id === "coaching-coach") || spaces[0];
+    }
+    return spaces[0];
+  };
+
+  const currentSpace = getCurrentSpace();
+  const Icon = currentSpace.icon;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary/50 transition-colors text-left">
+          <div className={cn("p-1.5 rounded-lg", currentSpace.bgColor)}>
+            <Icon className={cn("h-4 w-4", currentSpace.color)} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-muted-foreground tracking-wider">ETHICARENA</p>
+            <p className={cn("text-sm font-semibold", currentSpace.color)}>
+              {currentSpace.label}
+            </p>
+          </div>
+          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-64">
+        {availableSpaces.map((space) => {
+          const SpaceIcon = space.icon;
+          const isActive = space.id === currentSpace.id;
+
+          return (
+            <DropdownMenuItem
+              key={space.id}
+              onClick={() => navigate(space.path)}
+              className={cn(
+                "flex items-center gap-3 p-3 cursor-pointer",
+                isActive && "bg-muted"
+              )}
+            >
+              <div className={cn("p-1.5 rounded-lg", space.bgColor)}>
+                <SpaceIcon className={cn("h-4 w-4", space.color)} />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold">{space.label}</p>
+                <p className="text-xs text-muted-foreground">{space.description}</p>
+              </div>
+              {isActive && <Check className="h-4 w-4 text-primary" />}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
