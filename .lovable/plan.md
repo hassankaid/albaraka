@@ -1,25 +1,30 @@
 
 
-## Fix du scroll : colonnes indépendantes dans le Builder
+## Simplifier le scroll du Builder
 
-### Problème
-Les deux colonnes (liste + éditeur) scrollent avec la page globale. Quand on clique une étape, il faut scroller manuellement pour voir l'éditeur.
+### Probleme
+Le layout actuel avec hauteur fixe et deux scrolls independants (liste + editeur) est confus -- trop de zones de scroll imbriquees.
 
 ### Solution
-Fixer le layout master-detail à la hauteur restante du viewport (`h-[calc(100vh-280px)]`) et donner à chaque colonne son propre `overflow-y-auto` indépendant. Ainsi :
-- Cliquer sur une étape affiche toujours l'éditeur en haut de la zone droite
-- La liste des étapes à gauche reste visible et scrollable indépendamment
+Revenir a un scroll unique (la page) et utiliser `scrollIntoView` pour amener automatiquement l'editeur dans le viewport quand on clique une etape.
 
 ### Changements dans `AdminCoachingBuilder.tsx`
 
-1. Le wrapper flex principal garde `min-h-[calc(100vh-280px)]` mais ajoute `h-[calc(100vh-280px)]` pour **contraindre** la hauteur (pas juste un minimum)
-2. Colonne gauche : ajouter `overflow-y-auto` pour scroll indépendant
-3. Colonne droite : ajouter `overflow-y-auto` sur le wrapper (pas juste sur le contenu interne)
-4. La Card de l'éditeur perd le `h-full` et le `flex flex-col` interne pour juste se dérouler naturellement dans la zone scrollable droite
+1. **Supprimer la contrainte de hauteur fixe** : remplacer `h-[calc(100vh-280px)]` par juste `min-h-[calc(100vh-280px)]`
+2. **Supprimer `overflow-y-auto`** des deux colonnes -- tout scrolle avec la page normalement
+3. **Ajouter un `ref`** sur la Card editeur (colonne droite)
+4. **`scrollIntoView({ behavior: 'smooth', block: 'start' })`** quand on selectionne une etape -- l'editeur remonte automatiquement en vue
+5. La colonne gauche reste `sticky top-4` pour rester visible pendant le scroll de l'editeur
 
-### Fichier modifié
+### Resultat
+- Un seul scroll (la page), plus naturel
+- Cliquer une etape = l'editeur apparait en haut automatiquement
+- La liste des etapes reste visible grace au `sticky`
+- Plus de sensation de "fouilli" avec des scrolls multiples
+
+### Fichier modifie
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/components/admin-coaching/AdminCoachingBuilder.tsx` | Fixer hauteur du layout + scroll indépendant par colonne |
+| `src/components/admin-coaching/AdminCoachingBuilder.tsx` | Scroll unique + sticky sidebar + scrollIntoView |
 
