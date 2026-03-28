@@ -25,7 +25,9 @@ import {
   AlertTriangle,
   CheckCircle,
   Circle,
+  Download,
 } from "lucide-react";
+import { downloadSessionPdf } from "@/components/coaching/SessionPdfExport";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -43,6 +45,19 @@ export default function SessionDetail() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const [showEvolution, setShowEvolution] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportPdf = async () => {
+    if (!session || !scores || !steps) return;
+    setIsExporting(true);
+    try {
+      await downloadSessionPdf(session, scores, steps, strengths, weaknesses);
+    } catch (error) {
+      console.error("Erreur export PDF:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // ── Current session ──
   const { data: session, isLoading: sessionLoading } = useQuery({
@@ -313,6 +328,14 @@ export default function SessionDetail() {
             {session.sub_mode && <Badge variant="secondary">{session.sub_mode}</Badge>}
           </div>
         </div>
+        <Button variant="outline" onClick={handleExportPdf} disabled={isExporting}>
+          {isExporting ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <Download className="h-4 w-4 mr-2" />
+          )}
+          Exporter PDF
+        </Button>
       </div>
 
       {/* ── KPI row ── */}
