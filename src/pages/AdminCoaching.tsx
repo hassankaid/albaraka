@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutDashboard, Users, Wrench, Calendar } from "lucide-react";
 import AdminCoachingDashboard from "@/components/admin-coaching/AdminCoachingDashboard";
 import AdminCoachingCoachs from "@/components/admin-coaching/AdminCoachingCoachs";
+import AdminCoachingBuilder from "@/components/admin-coaching/AdminCoachingBuilder";
 
 export default function AdminCoaching() {
   const { profile } = useAuth();
@@ -52,7 +53,7 @@ export default function AdminCoaching() {
         </TabsContent>
 
         <TabsContent value="builder">
-          <p className="text-muted-foreground">Builder - prompt suivant</p>
+          <AdminCoachingBuilder />
         </TabsContent>
 
         <TabsContent value="sessions">
