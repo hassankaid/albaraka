@@ -64,7 +64,11 @@ export default function DashboardLayout() {
 
   const userRole = profile?.role || "apporteur";
   const pageTitle = pageTitles[location.pathname] || "Dashboard";
-  const navItems = allNavItems.filter((item) => item.roles.includes(userRole));
+  const navItems = allNavItems.filter((item) => {
+    if (!item.roles.includes(userRole)) return false;
+    if (item.path === "/coaching") return profile?.is_coach || profile?.role === "ceo";
+    return true;
+  });
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
