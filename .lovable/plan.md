@@ -1,35 +1,25 @@
 
 
-## Builder coaching : passer de Sheet à master-detail
+## Fix du scroll : colonnes indépendantes dans le Builder
 
-### Principe
+### Problème
+Les deux colonnes (liste + éditeur) scrollent avec la page globale. Quand on clique une étape, il faut scroller manuellement pour voir l'éditeur.
 
-Remplacer le Sheet latéral par un layout en deux colonnes intégré dans l'onglet Builder :
-- **Colonne gauche (~300px)** : sélecteur de type (tabs ou dropdown) + liste des étapes cliquables
-- **Colonne droite (flex-1)** : contenu complet de l'étape sélectionnée (titre, objectif, tips, critères, scripts, débriefs)
-
-Quand aucune étape n'est sélectionnée, la zone droite affiche un état vide ("Sélectionnez une étape").
+### Solution
+Fixer le layout master-detail à la hauteur restante du viewport (`h-[calc(100vh-280px)]`) et donner à chaque colonne son propre `overflow-y-auto` indépendant. Ainsi :
+- Cliquer sur une étape affiche toujours l'éditeur en haut de la zone droite
+- La liste des étapes à gauche reste visible et scrollable indépendamment
 
 ### Changements dans `AdminCoachingBuilder.tsx`
 
-1. **Supprimer** le composant `Sheet`/`SheetContent` et les états `showStepSheet`
-2. **Restructurer le JSX** :
-   - Wrapper `flex gap-6` sur toute la hauteur
-   - Gauche : `w-80 shrink-0` avec les types en tabs verticaux ou dropdown + liste des étapes (cards cliquables, highlight sur l'étape active)
-   - Droite : `flex-1 overflow-y-auto` avec le contenu de l'étape (même contenu que l'ancien Sheet, mais dans un Card ou directement)
-3. **Conserver les Dialogs** existants (nouveau type, nouvelle étape, édition type) -- ils restent en modal car ce sont des actions ponctuelles
-4. **Accordion ouvert par défaut** : les sections critères/scripts/débriefs peuvent être toutes visibles puisqu'on a plus d'espace
-
-### Résultat
-
-- Plus de contenu coupé
-- Navigation fluide entre étapes (clic = changement instantané)
-- Boutons "+ Ajouter une étape" et "⚙ Type" restent dans la colonne gauche
-- Le bouton "Supprimer l'étape" reste en bas de la zone droite
+1. Le wrapper flex principal garde `min-h-[calc(100vh-280px)]` mais ajoute `h-[calc(100vh-280px)]` pour **contraindre** la hauteur (pas juste un minimum)
+2. Colonne gauche : ajouter `overflow-y-auto` pour scroll indépendant
+3. Colonne droite : ajouter `overflow-y-auto` sur le wrapper (pas juste sur le contenu interne)
+4. La Card de l'éditeur perd le `h-full` et le `flex flex-col` interne pour juste se dérouler naturellement dans la zone scrollable droite
 
 ### Fichier modifié
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/components/admin-coaching/AdminCoachingBuilder.tsx` | Remplacer Sheet par layout master-detail en deux colonnes |
+| `src/components/admin-coaching/AdminCoachingBuilder.tsx` | Fixer hauteur du layout + scroll indépendant par colonne |
 
