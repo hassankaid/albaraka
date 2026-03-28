@@ -7,7 +7,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
-const allNavItems = [
+const trackingNavItems = [
   { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur"] },
   { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"] },
   { title: "Mes Calls", path: "/calls", icon: Phone, roles: ["ceo", "collaborateur"] },
@@ -15,14 +15,17 @@ const allNavItems = [
   { title: "Mes Ventes", path: "/sales", icon: BadgeEuro, roles: ["ceo", "collaborateur", "apporteur"] },
   { title: "Mes Paiements", path: "/payments", icon: CreditCard, roles: ["ceo", "collaborateur"] },
   { title: "Mes Commissions", path: "/my-commissions", icon: Receipt, roles: ["ceo", "collaborateur"] },
-  { title: "Coaching", path: "/coaching", icon: GraduationCap, roles: ["ceo", "collaborateur"] },
-  { title: "Mon Coaching", path: "/mon-coaching", icon: BookOpen, roles: ["ceo", "collaborateur"] },
   { title: "Équipe", path: "/admin/team", icon: UsersRound, roles: ["ceo"] },
   { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"] },
   { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
   { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"] },
   { title: "Mon profil", path: "/profile", icon: User, roles: ["agence"] },
+];
+
+const coachingNavItems = [
+  { title: "Sessions", path: "/coaching", icon: GraduationCap, roles: ["ceo", "collaborateur"], coachOnly: true },
+  { title: "Mon Coaching", path: "/mon-coaching", icon: BookOpen, roles: ["ceo", "collaborateur"] },
 ];
 
 const pageTitles: Record<string, string> = {
