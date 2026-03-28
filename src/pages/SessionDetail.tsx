@@ -25,7 +25,9 @@ import {
   AlertTriangle,
   CheckCircle,
   Circle,
+  Download,
 } from "lucide-react";
+import { downloadSessionPdf } from "@/components/coaching/SessionPdfExport";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
