@@ -24,8 +24,8 @@ const trackingNavItems = [
 ];
 
 const coachingNavItems = [
-  { title: "Sessions", path: "/coaching", icon: GraduationCap, roles: ["ceo", "collaborateur"], coachOnly: true },
-  { title: "Mon Coaching", path: "/mon-coaching", icon: BookOpen, roles: ["ceo", "collaborateur"] },
+  { title: "Évaluations", path: "/coaching", icon: GraduationCap, roles: ["ceo", "collaborateur"], coachOnly: true },
+  { title: "Historique", path: "/mon-coaching", icon: BookOpen, roles: ["ceo", "collaborateur"] },
 ];
 
 const pageTitles: Record<string, string> = {

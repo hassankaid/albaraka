@@ -20,7 +20,7 @@ interface Space {
   condition?: (profile: any) => boolean;
 }
 
-const spaces: Space[] = [
+const getSpaces = (profile: any): Space[] => [
   {
     id: "tracking",
     label: "TRACKING",
@@ -31,23 +31,13 @@ const spaces: Space[] = [
     description: "Leads, Calls, Sales, Payments",
   },
   {
-    id: "coaching-coach",
+    id: "coaching",
     label: "COACHING",
     icon: GraduationCap,
     color: "text-amber-500",
     bgColor: "bg-amber-500/10",
-    path: "/coaching",
-    description: "Espace Coach",
-    condition: (profile) => profile?.is_coach || profile?.role === "ceo",
-  },
-  {
-    id: "coaching-student",
-    label: "MON COACHING",
-    icon: BookOpen,
-    color: "text-green-500",
-    bgColor: "bg-green-500/10",
-    path: "/mon-coaching",
-    description: "Mes sessions reçues",
+    path: profile?.is_coach || profile?.role === "ceo" ? "/coaching" : "/mon-coaching",
+    description: "Évaluations & Historique",
   },
 ];
 
