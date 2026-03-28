@@ -319,109 +319,102 @@ export default function AdminCoachingBuilder() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Sélectionnez un type puis cliquez sur une étape pour la modifier.
-        </p>
-        <Button onClick={() => setShowNewTypeDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nouveau type
-        </Button>
+      {/* Top bar — Type selector */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap flex-1">
+          {types?.map((type) => (
+            <button
+              key={type.id}
+              onClick={() => {
+                setSelectedTypeId(type.id);
+                setSelectedStep(null);
+              }}
+              className={cn(
+                "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
+                activeTypeId === type.id
+                  ? "border-transparent text-white shadow-sm"
+                  : "border-border bg-card text-foreground hover:bg-muted"
+              )}
+              style={activeTypeId === type.id ? { backgroundColor: type.theme_color } : undefined}
+            >
+              {activeTypeId !== type.id && (
+                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: type.theme_color }} />
+              )}
+              <span className="truncate max-w-[140px]">{type.label}</span>
+              {!type.is_active && <Badge variant="secondary" className="text-[10px] px-1">Off</Badge>}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1">
+          {activeType && (
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditTypeDialog(activeType)}>
+              <Settings className="h-4 w-4" />
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => setShowNewTypeDialog(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Nouveau type
+          </Button>
+        </div>
       </div>
 
       {/* Master-detail layout */}
       <div className="flex gap-6 min-h-[calc(100vh-280px)]">
-        {/* LEFT COLUMN — Type selector + steps list */}
-        <div className="w-80 shrink-0 flex flex-col gap-4 sticky top-4 self-start">
-          {/* Type tabs */}
-          <div className="space-y-1">
-            {types?.map((type) => (
-              <button
-                key={type.id}
-                onClick={() => {
-                  setSelectedTypeId(type.id);
-                  setSelectedStep(null);
-                }}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-sm",
-                  activeTypeId === type.id
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "hover:bg-muted text-foreground"
-                )}
-              >
-                <div
-                  className="w-3 h-3 rounded-full shrink-0"
-                  style={{ backgroundColor: type.theme_color }}
-                />
-                <span className="flex-1 truncate">{type.label}</span>
-                {!type.is_active && <Badge variant="secondary" className="text-[10px] px-1">Off</Badge>}
-                <Badge variant="outline" className="text-[10px] px-1.5">{type.steps?.length || 0}</Badge>
-              </button>
-            ))}
-          </div>
+        {/* LEFT COLUMN — Steps list only */}
+        {activeType && (
+          <div className="w-64 shrink-0 flex flex-col gap-3 sticky top-4 self-start">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground">Étapes</h3>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openNewStepDialog(activeType.id)}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
 
-          <Separator />
+            {activeType.coaches?.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Coachs : {activeType.coaches.map((c: any) => c?.full_name || c?.email).filter(Boolean).join(", ")}
+              </p>
+            )}
 
-          {/* Active type info + steps */}
-          {activeType && (
-            <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-foreground truncate">{activeType.label}</h3>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openNewStepDialog(activeType.id)}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditTypeDialog(activeType)}>
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {activeType.coaches?.length > 0 && (
-                <p className="text-xs text-muted-foreground mb-3">
-                  Coachs : {activeType.coaches.map((c: any) => c?.full_name || c?.email).filter(Boolean).join(", ")}
+            <div className="space-y-1.5">
+              {activeType.steps?.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Aucune étape.
                 </p>
               )}
-
-              <ScrollArea className="flex-1">
-                <div className="space-y-1.5 pr-2">
-                  {activeType.steps?.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      Aucune étape.
-                    </p>
+              {activeType.steps?.map((step: any) => (
+                <button
+                  key={step.id}
+                  onClick={() => openStep(step)}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-2 rounded-md text-left transition-colors text-sm",
+                    selectedStep?.id === step.id
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted text-foreground",
+                    !step.is_active && "opacity-50"
                   )}
-                  {activeType.steps?.map((step: any) => (
-                    <button
-                      key={step.id}
-                      onClick={() => openStep(step)}
-                      className={cn(
-                        "w-full flex items-center gap-2 px-3 py-2 rounded-md text-left transition-colors text-sm",
-                        selectedStep?.id === step.id
-                          ? "bg-primary text-primary-foreground"
-                          : "hover:bg-muted text-foreground",
-                        !step.is_active && "opacity-50"
-                      )}
-                    >
-                      <span className="flex-1 min-w-0">
-                        <span className="block font-medium text-xs">{step.label}</span>
-                        <span className={cn(
-                          "block text-xs truncate",
-                          selectedStep?.id === step.id ? "text-primary-foreground/70" : "text-muted-foreground"
-                        )}>{step.title}</span>
-                      </span>
-                      {!step.is_active && <Badge variant="secondary" className="text-[10px]">Off</Badge>}
-                      <ChevronRight className={cn(
-                        "h-3.5 w-3.5 shrink-0",
-                        selectedStep?.id === step.id ? "text-primary-foreground/70" : "text-muted-foreground"
-                      )} />
-                    </button>
-                  ))}
-                </div>
-              </ScrollArea>
+                >
+                  <span className="flex-1 min-w-0">
+                    <span className="block font-medium text-xs">{step.label}</span>
+                    <span className={cn(
+                      "block text-xs truncate",
+                      selectedStep?.id === step.id ? "text-primary-foreground/70" : "text-muted-foreground"
+                    )}>{step.title}</span>
+                  </span>
+                  {!step.is_active && <Badge variant="secondary" className="text-[10px]">Off</Badge>}
+                  <ChevronRight className={cn(
+                    "h-3.5 w-3.5 shrink-0",
+                    selectedStep?.id === step.id ? "text-primary-foreground/70" : "text-muted-foreground"
+                  )} />
+                </button>
+              ))}
+
+              <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => openNewStepDialog(activeType.id)}>
+                <Plus className="h-4 w-4 mr-1" /> Ajouter une étape
+              </Button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* RIGHT COLUMN — Step detail editor */}
         <div ref={editorRef} className="flex-1 min-w-0">
