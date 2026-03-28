@@ -39,6 +39,8 @@ const pageTitles: Record<string, string> = {
   "/admin/create": "Création complète",
   "/my-space": "Mon espace",
   "/profile": "Mon profil",
+  "/coaching": "Coaching",
+  "/mon-coaching": "Mon Coaching",
 };
 
 export default function DashboardLayout() {
