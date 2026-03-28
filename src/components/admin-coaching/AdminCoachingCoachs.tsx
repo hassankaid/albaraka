@@ -1,16 +1,22 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Loader2, Star, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AdminCoachingCoachs() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [editingType, setEditingType] = useState<any>(null);
+  const [selectedCoaches, setSelectedCoaches] = useState<string[]>([]);
+  const [primaryCoach, setPrimaryCoach] = useState<string | null>(null);
 
   const { data: profiles, isLoading } = useQuery({
     queryKey: ["admin-profiles-coach"],
@@ -27,14 +33,38 @@ export default function AdminCoachingCoachs() {
   });
 
   const { data: coachTypes } = useQuery({
-    queryKey: ["admin-coach-types-assign"],
+    queryKey: ["admin-coach-types-with-assignments"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: types, error: typesError } = await supabase
         .from("coach_types")
-        .select("id, label, theme_color, assigned_coach_id")
+        .select("id, label, theme_color")
         .order("display_order");
-      if (error) throw error;
-      return data;
+      if (typesError) throw typesError;
+
+      const typesWithAssignments = await Promise.all(
+        (types || []).map(async (type) => {
+          const { data: assignments } = await supabase
+            .from("coach_type_assignments" as any)
+            .select("id, is_primary, coach_id")
+            .eq("coach_type_id", type.id);
+
+          // Resolve coach profiles
+          const enriched = await Promise.all(
+            (assignments || []).map(async (a: any) => {
+              const { data: coach } = await supabase
+                .from("profiles")
+                .select("id, full_name, email")
+                .eq("id", a.coach_id)
+                .maybeSingle();
+              return { ...a, coach };
+            })
+          );
+
+          return { ...type, assignments: enriched };
+        })
+      );
+
+      return typesWithAssignments;
     },
   });
 
@@ -53,19 +83,68 @@ export default function AdminCoachingCoachs() {
     },
   });
 
-  const assignCoach = useMutation({
-    mutationFn: async ({ typeId, coachId }: { typeId: string; coachId: string | null }) => {
-      const { error } = await supabase
+  const saveAssignments = useMutation({
+    mutationFn: async ({
+      typeId,
+      coachIds,
+      primaryId,
+    }: {
+      typeId: string;
+      coachIds: string[];
+      primaryId: string | null;
+    }) => {
+      // Delete old assignments
+      await supabase
+        .from("coach_type_assignments" as any)
+        .delete()
+        .eq("coach_type_id", typeId);
+
+      // Insert new ones
+      if (coachIds.length > 0) {
+        const rows = coachIds.map((coachId) => ({
+          coach_type_id: typeId,
+          coach_id: coachId,
+          is_primary: coachId === primaryId,
+        }));
+
+        const { error } = await supabase
+          .from("coach_type_assignments" as any)
+          .insert(rows);
+        if (error) throw error;
+      }
+
+      // Also update the legacy assigned_coach_id field
+      await supabase
         .from("coach_types")
-        .update({ assigned_coach_id: coachId })
+        .update({ assigned_coach_id: primaryId })
         .eq("id", typeId);
-      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-coach-types-assign"] });
-      toast({ title: "Assignation mise à jour" });
+      queryClient.invalidateQueries({ queryKey: ["admin-coach-types-with-assignments"] });
+      toast({ title: "Assignations mises à jour" });
+      setEditingType(null);
     },
   });
+
+  const openEditDialog = (type: any) => {
+    setEditingType(type);
+    const currentCoachIds =
+      type.assignments?.map((a: any) => a.coach?.id).filter(Boolean) || [];
+    const currentPrimary =
+      type.assignments?.find((a: any) => a.is_primary)?.coach?.id || null;
+    setSelectedCoaches(currentCoachIds);
+    setPrimaryCoach(currentPrimary);
+  };
+
+  const toggleCoachSelection = (coachId: string) => {
+    setSelectedCoaches((prev) => {
+      if (prev.includes(coachId)) {
+        if (primaryCoach === coachId) setPrimaryCoach(null);
+        return prev.filter((id) => id !== coachId);
+      }
+      return [...prev, coachId];
+    });
+  };
 
   if (isLoading) {
     return (
@@ -79,56 +158,72 @@ export default function AdminCoachingCoachs() {
 
   return (
     <div className="space-y-6">
+      {/* Assignments section */}
       <Card>
         <CardHeader>
           <CardTitle>Assignation aux types de coaching</CardTitle>
           <CardDescription>
-            Chaque type de coaching peut être assigné à un coach principal.
+            Assignez un ou plusieurs coachs à chaque type. Le coach principal est
+            affiché en premier.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {coachTypes?.map((type) => (
-              <div key={type.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
+              <div
+                key={type.id}
+                className="flex items-center justify-between p-4 border rounded-lg"
+              >
+                <div className="flex items-start gap-3">
                   <div
-                    className="w-4 h-4 rounded-full"
+                    className="w-4 h-4 rounded-full mt-1 shrink-0"
                     style={{ backgroundColor: type.theme_color }}
                   />
-                  <span className="font-medium">{type.label}</span>
+                  <div>
+                    <p className="font-medium">{type.label}</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {type.assignments?.length > 0 ? (
+                        type.assignments.map((a: any) => (
+                          <Badge
+                            key={a.id}
+                            variant={a.is_primary ? "default" : "secondary"}
+                            className="text-xs"
+                          >
+                            {a.is_primary && (
+                              <Star className="h-3 w-3 mr-1 fill-current" />
+                            )}
+                            {a.coach?.full_name || a.coach?.email}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          Aucun coach assigné
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <Select
-                  value={type.assigned_coach_id || "none"}
-                  onValueChange={(value) =>
-                    assignCoach.mutate({
-                      typeId: type.id,
-                      coachId: value === "none" ? null : value,
-                    })
-                  }
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openEditDialog(type)}
                 >
-                  <SelectTrigger className="w-56">
-                    <SelectValue placeholder="Non assigné" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Non assigné</SelectItem>
-                    {coaches.map((coach) => (
-                      <SelectItem key={coach.id} value={coach.id}>
-                        {coach.full_name || coach.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <Users className="h-4 w-4 mr-2" />
+                  Gérer
+                </Button>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
 
+      {/* Toggle coach status */}
       <Card>
         <CardHeader>
           <CardTitle>Désigner les coachs</CardTitle>
           <CardDescription>
-            Activez le statut "Coach" pour permettre à un collaborateur de créer des sessions.
+            Activez le statut "Coach" pour permettre à un collaborateur de créer
+            des sessions.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -165,6 +260,94 @@ export default function AdminCoachingCoachs() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit dialog */}
+      <Dialog
+        open={!!editingType}
+        onOpenChange={(open) => !open && setEditingType(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div
+                className="w-4 h-4 rounded-full"
+                style={{ backgroundColor: editingType?.theme_color }}
+              />
+              Coachs pour {editingType?.label}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Sélectionnez les coachs et désignez un coach principal.
+            </p>
+
+            {coaches.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4">
+                Aucun coach disponible. Activez d'abord le statut coach.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {coaches.map((coach) => (
+                  <div
+                    key={coach.id}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={selectedCoaches.includes(coach.id)}
+                        onCheckedChange={() => toggleCoachSelection(coach.id)}
+                      />
+                      <span className="text-sm font-medium">
+                        {coach.full_name || coach.email}
+                      </span>
+                    </div>
+                    {selectedCoaches.includes(coach.id) && (
+                      <Button
+                        variant={
+                          primaryCoach === coach.id ? "default" : "ghost"
+                        }
+                        size="sm"
+                        onClick={() => setPrimaryCoach(coach.id)}
+                      >
+                        <Star
+                          className={`h-3 w-3 mr-1 ${
+                            primaryCoach === coach.id ? "fill-current" : ""
+                          }`}
+                        />
+                        {primaryCoach === coach.id
+                          ? "Principal"
+                          : "Définir principal"}
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingType(null)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={() =>
+                saveAssignments.mutate({
+                  typeId: editingType.id,
+                  coachIds: selectedCoaches,
+                  primaryId: primaryCoach,
+                })
+              }
+              disabled={saveAssignments.isPending}
+            >
+              {saveAssignments.isPending && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              Enregistrer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
