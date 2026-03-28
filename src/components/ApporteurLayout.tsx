@@ -35,7 +35,9 @@ export default function ApporteurLayout() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { profile, signOut } = useAuth();
 
+  const isCoachingSpace = location.pathname.startsWith("/mon-coaching");
   const pageTitle = pageTitles[location.pathname] || "Mon espace";
+  const navItems = isCoachingSpace ? coachingNavItems : trackingNavItems;
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
@@ -51,12 +53,14 @@ export default function ApporteurLayout() {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="h-16 flex items-center gap-3 px-6 border-b border-border shrink-0">
-          <img src={logo} alt="Ethicarena" className="w-9 h-9 object-contain" />
-          <span className="font-bold text-foreground">Ethicarena</span>
-          <button className="ml-auto lg:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
-            <X className="h-5 w-5" />
-          </button>
+        <div className="border-b border-border">
+          <div className="h-14 flex items-center gap-3 px-6">
+            <img src={logo} alt="Ethicarena" className="w-8 h-8 object-contain" />
+            <button className="ml-auto lg:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <SpaceSwitcher />
         </div>
 
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
