@@ -10,7 +10,7 @@ import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Plus, Settings, Trash2, Star, FileText, MessageSquare, ChevronRight, MousePointerClick } from "lucide-react";
@@ -319,43 +319,38 @@ export default function AdminCoachingBuilder() {
 
   return (
     <div className="space-y-4">
-      {/* Top bar — Type selector */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2 flex-wrap flex-1">
-          {types?.map((type) => (
-            <button
-              key={type.id}
-              onClick={() => {
-                setSelectedTypeId(type.id);
-                setSelectedStep(null);
-              }}
-              className={cn(
-                "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
-                activeTypeId === type.id
-                  ? "border-transparent text-white shadow-sm"
-                  : "border-border bg-card text-foreground hover:bg-muted"
+      {/* Top bar — Type selector (dropdown) */}
+      <div className="flex items-center gap-3">
+        <Select value={activeTypeId || ""} onValueChange={(val) => { setSelectedTypeId(val); setSelectedStep(null); }}>
+          <SelectTrigger className="w-[280px]">
+            <div className="flex items-center gap-2">
+              {activeType && (
+                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: activeType.theme_color }} />
               )}
-              style={activeTypeId === type.id ? { backgroundColor: type.theme_color } : undefined}
-            >
-              {activeTypeId !== type.id && (
-                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: type.theme_color }} />
-              )}
-              <span className="truncate max-w-[140px]">{type.label}</span>
-              {!type.is_active && <Badge variant="secondary" className="text-[10px] px-1">Off</Badge>}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-1">
-          {activeType && (
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditTypeDialog(activeType)}>
-              <Settings className="h-4 w-4" />
-            </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={() => setShowNewTypeDialog(true)}>
-            <Plus className="h-4 w-4 mr-1" />
-            Nouveau type
+              <SelectValue placeholder="Sélectionner un type…" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            {types?.map((type) => (
+              <SelectItem key={type.id} value={type.id}>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: type.theme_color }} />
+                  <span>{type.label}</span>
+                  {!type.is_active && <Badge variant="secondary" className="text-[10px] px-1 ml-1">Off</Badge>}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {activeType && (
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditTypeDialog(activeType)}>
+            <Settings className="h-4 w-4" />
           </Button>
-        </div>
+        )}
+        <Button variant="outline" size="sm" onClick={() => setShowNewTypeDialog(true)}>
+          <Plus className="h-4 w-4 mr-1" />
+          Nouveau type
+        </Button>
       </div>
 
       {/* Master-detail layout */}
