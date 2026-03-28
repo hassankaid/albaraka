@@ -232,7 +232,6 @@ export default function AdminCoachingCoachs() {
               <TableRow>
                 <TableHead>Nom</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Rôle</TableHead>
                 <TableHead>Peut coacher</TableHead>
               </TableRow>
             </TableHeader>
