@@ -45,6 +45,19 @@ export default function SessionDetail() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const [showEvolution, setShowEvolution] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportPdf = async () => {
+    if (!session || !scores || !steps) return;
+    setIsExporting(true);
+    try {
+      await downloadSessionPdf(session, scores, steps, strengths, weaknesses);
+    } catch (error) {
+      console.error("Erreur export PDF:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // ── Current session ──
   const { data: session, isLoading: sessionLoading } = useQuery({
