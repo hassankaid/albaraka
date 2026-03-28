@@ -2,6 +2,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutDashboard, Users, Wrench, Calendar } from "lucide-react";
+import AdminCoachingDashboard from "@/components/admin-coaching/AdminCoachingDashboard";
 
 export default function AdminCoaching() {
   const { profile } = useAuth();
@@ -42,7 +43,7 @@ export default function AdminCoaching() {
         </TabsList>
 
         <TabsContent value="dashboard">
-          <p className="text-muted-foreground">Dashboard - prompt suivant</p>
+          <AdminCoachingDashboard />
         </TabsContent>
 
         <TabsContent value="coachs">
