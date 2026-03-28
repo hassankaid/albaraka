@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, Plus, Settings, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -74,10 +74,7 @@ export default function AdminCoachingBuilder() {
         .limit(1);
 
       const nextOrder = (existingTypes?.[0]?.display_order || 0) + 1;
-      const name = data.label
-        .toLowerCase()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_]/g, "");
+      const name = data.label.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
 
       const { error } = await supabase.from("coach_types").insert({
         name,
@@ -173,12 +170,14 @@ export default function AdminCoachingBuilder() {
     );
   }
 
+  const defaultTab = types?.[0]?.id || "";
+
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Cliquez sur une étape pour la modifier. Gérez les types et leurs étapes.
+          Sélectionnez un type puis cliquez sur une étape pour la modifier.
         </p>
         <Button variant="outline" size="sm" onClick={() => setShowNewTypeDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -186,86 +185,105 @@ export default function AdminCoachingBuilder() {
         </Button>
       </div>
 
-      {/* Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {types?.map((type) => (
-          <Card key={type.id} className="flex flex-col">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full shrink-0"
-                    style={{ backgroundColor: type.theme_color }}
-                  />
-                  <CardTitle className="text-sm">{type.label}</CardTitle>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => openEditTypeDialog(type)}
-                >
-                  <Settings className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-              {type.coaches?.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {type.coaches.map((c: any) => c.full_name || c.email).join(", ")}
-                </p>
-              )}
-              {!type.is_active && (
-                <Badge variant="secondary" className="w-fit text-xs">
-                  Inactif
-                </Badge>
-              )}
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col pt-0">
-              <ScrollArea className="flex-1 max-h-80">
-                <div className="space-y-1.5">
-                  {type.steps?.map((step: any) => (
-                    <div
-                      key={step.id}
-                      className={cn(
-                        "flex items-center justify-between p-2.5 rounded-md border cursor-pointer transition-colors",
-                        "hover:bg-accent/50",
-                        !step.is_active && "opacity-50"
+      {/* Tabs by type */}
+      {types && types.length > 0 && (
+        <Tabs defaultValue={defaultTab} className="space-y-4">
+          <TabsList>
+            {types.map((type) => (
+              <TabsTrigger key={type.id} value={type.id} className="flex items-center gap-2">
+                <div
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{ backgroundColor: type.theme_color }}
+                />
+                {type.label}
+                {!type.is_active && (
+                  <Badge variant="secondary" className="text-[10px] px-1 py-0 ml-1">Off</Badge>
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {types.map((type) => (
+            <TabsContent key={type.id} value={type.id}>
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        {type.label}
+                        <Badge variant="outline" className="text-xs font-normal">
+                          {type.steps.length} étape{type.steps.length > 1 ? "s" : ""}
+                        </Badge>
+                      </CardTitle>
+                      {type.coaches?.length > 0 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Coach{type.coaches.length > 1 ? "s" : ""} :{" "}
+                          {type.coaches.map((c: any) => c.full_name || c.email).join(", ")}
+                        </p>
                       )}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div
-                          className="w-1.5 h-1.5 rounded-full shrink-0"
-                          style={{ backgroundColor: type.theme_color }}
-                        />
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{step.label}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {step.title}
-                          </p>
-                        </div>
-                      </div>
-                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     </div>
-                  ))}
-                  {type.steps?.length === 0 && (
-                    <p className="text-xs text-muted-foreground text-center py-4">
-                      Aucune étape
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openNewStepDialog(type.id)}
+                      >
+                        <Plus className="h-3.5 w-3.5 mr-1" />
+                        Ajouter une étape
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => openEditTypeDialog(type)}
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {type.steps.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {type.steps.map((step: any) => (
+                        <div
+                          key={step.id}
+                          className={cn(
+                            "flex items-center justify-between p-3 rounded-md border cursor-pointer transition-colors",
+                            "hover:bg-accent/50",
+                            !step.is_active && "opacity-50"
+                          )}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div
+                              className="w-2 h-2 rounded-full shrink-0"
+                              style={{ backgroundColor: type.theme_color }}
+                            />
+                            <span className="text-sm font-medium">{step.label}</span>
+                            <span className="text-sm text-muted-foreground truncate">
+                              {step.title}
+                            </span>
+                            {!step.is_active && (
+                              <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                                Inactif
+                              </Badge>
+                            )}
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Aucune étape pour ce type. Cliquez sur "Ajouter une étape" pour commencer.
                     </p>
                   )}
-                </div>
-              </ScrollArea>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full mt-2"
-                onClick={() => openNewStepDialog(type.id)}
-              >
-                <Plus className="h-3.5 w-3.5 mr-1" />
-                Ajouter une étape
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
 
       {/* New type dialog */}
       <Dialog open={showNewTypeDialog} onOpenChange={setShowNewTypeDialog}>
@@ -300,9 +318,7 @@ export default function AdminCoachingBuilder() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewTypeDialog(false)}>
-              Annuler
-            </Button>
+            <Button variant="outline" onClick={() => setShowNewTypeDialog(false)}>Annuler</Button>
             <Button
               onClick={() => createType.mutate(newTypeData)}
               disabled={!newTypeData.label || createType.isPending}
@@ -358,9 +374,7 @@ export default function AdminCoachingBuilder() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowEditTypeDialog(false); setEditingType(null); }}>
-              Annuler
-            </Button>
+            <Button variant="outline" onClick={() => { setShowEditTypeDialog(false); setEditingType(null); }}>Annuler</Button>
             <Button
               onClick={() => updateType.mutate(editingType)}
               disabled={updateType.isPending}
@@ -397,17 +411,9 @@ export default function AdminCoachingBuilder() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewStepDialog(false)}>
-              Annuler
-            </Button>
+            <Button variant="outline" onClick={() => setShowNewStepDialog(false)}>Annuler</Button>
             <Button
-              onClick={() =>
-                createStep.mutate({
-                  typeId: newStepTypeId,
-                  label: newStepData.label,
-                  title: newStepData.title,
-                })
-              }
+              onClick={() => createStep.mutate({ typeId: newStepTypeId, label: newStepData.label, title: newStepData.title })}
               disabled={!newStepData.label || !newStepData.title || createStep.isPending}
             >
               {createStep.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
