@@ -19,8 +19,8 @@ interface SessionWithDetails {
   global_score: number | null;
   sub_mode: string | null;
   coach_type: { id: string; label: string; theme_color: string };
-  student: { id: string; email: string };
-  coach: { id: string; email: string };
+  student: { id: string; email: string; full_name: string | null };
+  coach: { id: string; email: string; full_name: string | null };
 }
 
 export default function MonCoaching() {
@@ -36,8 +36,8 @@ export default function MonCoaching() {
         .select(`
           *,
           coach_type:coach_types(id, label, theme_color),
-          student:profiles!coaching_sessions_student_user_id_fkey(id, email),
-          coach:profiles!coaching_sessions_coach_user_id_fkey(id, email)
+          student:profiles!coaching_sessions_student_user_id_fkey(id, email, full_name),
+          coach:profiles!coaching_sessions_coach_user_id_fkey(id, email, full_name)
         `)
         .eq("student_user_id", profile!.id)
         .eq("status", "completed")
@@ -56,8 +56,8 @@ export default function MonCoaching() {
         .select(`
           *,
           coach_type:coach_types(id, label, theme_color),
-          student:profiles!coaching_sessions_student_user_id_fkey(id, email),
-          coach:profiles!coaching_sessions_coach_user_id_fkey(id, email)
+          student:profiles!coaching_sessions_student_user_id_fkey(id, email, full_name),
+          coach:profiles!coaching_sessions_coach_user_id_fkey(id, email, full_name)
         `)
         .neq("student_user_id", profile!.id)
         .eq("status", "completed")
@@ -120,9 +120,9 @@ export default function MonCoaching() {
           </p>
           <p className="text-xs text-muted-foreground">
             {showStudent ? (
-              <>Élève : {session.student?.email}</>
+              <>Élève : {session.student?.full_name || session.student?.email}</>
             ) : (
-              <>Coach : {session.coach?.email}</>
+              <>Coach : {session.coach?.full_name || session.coach?.email}</>
             )}
           </p>
         </div>
@@ -272,11 +272,11 @@ export default function MonCoaching() {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <p>
                   <span className="text-muted-foreground">Élève : </span>
-                  <span className="font-medium">{selectedSession.student?.email}</span>
+                  <span className="font-medium">{selectedSession.student?.full_name || selectedSession.student?.email}</span>
                 </p>
                 <p>
                   <span className="text-muted-foreground">Coach : </span>
-                  <span className="font-medium">{selectedSession.coach?.email}</span>
+                  <span className="font-medium">{selectedSession.coach?.full_name || selectedSession.coach?.email}</span>
                 </p>
                 <p>
                   <span className="text-muted-foreground">Date : </span>
