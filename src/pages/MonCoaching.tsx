@@ -19,8 +19,8 @@ interface SessionWithDetails {
   global_score: number | null;
   sub_mode: string | null;
   coach_type: { id: string; label: string; theme_color: string };
-  student: { id: string; email: string };
-  coach: { id: string; email: string };
+  student: { id: string; email: string; full_name: string | null };
+  coach: { id: string; email: string; full_name: string | null };
 }
 
 export default function MonCoaching() {
