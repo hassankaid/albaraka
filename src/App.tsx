@@ -29,6 +29,7 @@ import Coaching from "./pages/Coaching";
 import AdminCoaching from "./pages/AdminCoaching";
 import CoachingSession from "./pages/CoachingSession";
 import MonCoaching from "./pages/MonCoaching";
+import SessionDetail from "./pages/SessionDetail";
 import ApporteurDashboard from "./pages/apporteur/ApporteurDashboard";
 import ApporteurLeads from "./pages/apporteur/ApporteurLeads";
 import ApporteurSales from "./pages/apporteur/ApporteurSales";
