@@ -1,17 +1,34 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Users, TrendingUp, Calendar, GraduationCap, ClipboardList } from "lucide-react";
+import { Loader2, Plus, Users, TrendingUp, Calendar, GraduationCap, ClipboardList, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import NewSessionDialog from "@/components/coaching/NewSessionDialog";
 
 export default function Coaching() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const deleteSession = useMutation({
+    mutationFn: async (id: string) => {
+      await supabase.from("coaching_scores").delete().eq("session_id", id);
+      const { error } = await supabase.from("coaching_sessions").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["coaching-sessions"] });
+      toast({ title: "Session supprimée" });
+    },
+  });
 
   const { data: sessions, isLoading: sessionsLoading } = useQuery({
     queryKey: ["coaching-sessions", profile?.id],
@@ -127,6 +144,13 @@ export default function Coaching() {
               {sessions.map((session) => (
                 <div
                   key={session.id}
+                  onClick={() => {
+                    if (session.status === "draft") {
+                      navigate(`/coaching/session/${session.id}`);
+                    } else {
+                      navigate(`/mon-coaching/session/${session.id}`);
+                    }
+                  }}
                   className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg border border-border hover:bg-secondary/50 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
@@ -165,6 +189,21 @@ export default function Coaching() {
                     </Badge>
                     {session.global_score != null && (
                       <span className="font-semibold text-foreground">{Number(session.global_score).toFixed(1)}/5</span>
+                    )}
+                    {session.status === "draft" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm("Supprimer cette session brouillon ?")) {
+                            deleteSession.mutate(session.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     )}
                   </div>
                 </div>
