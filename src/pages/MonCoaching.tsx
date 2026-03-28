@@ -120,9 +120,9 @@ export default function MonCoaching() {
           </p>
           <p className="text-xs text-muted-foreground">
             {showStudent ? (
-              <>Élève : {session.student?.email}</>
+              <>Élève : {session.student?.full_name || session.student?.email}</>
             ) : (
-              <>Coach : {session.coach?.email}</>
+              <>Coach : {session.coach?.full_name || session.coach?.email}</>
             )}
           </p>
         </div>
@@ -272,11 +272,11 @@ export default function MonCoaching() {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <p>
                   <span className="text-muted-foreground">Élève : </span>
-                  <span className="font-medium">{selectedSession.student?.email}</span>
+                  <span className="font-medium">{selectedSession.student?.full_name || selectedSession.student?.email}</span>
                 </p>
                 <p>
                   <span className="text-muted-foreground">Coach : </span>
-                  <span className="font-medium">{selectedSession.coach?.email}</span>
+                  <span className="font-medium">{selectedSession.coach?.full_name || selectedSession.coach?.email}</span>
                 </p>
                 <p>
                   <span className="text-muted-foreground">Date : </span>
