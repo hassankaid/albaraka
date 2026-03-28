@@ -293,6 +293,223 @@ export type Database = {
           },
         ]
       }
+      coach_criteria: {
+        Row: {
+          created_at: string | null
+          criteria_text: string
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          step_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          criteria_text: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          step_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          criteria_text?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          step_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_criteria_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "coach_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coach_debrief_options: {
+        Row: {
+          created_at: string | null
+          debrief_label: string
+          display_order: number | null
+          id: string
+          options: string[]
+          step_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          debrief_label: string
+          display_order?: number | null
+          id?: string
+          options: string[]
+          step_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          debrief_label?: string
+          display_order?: number | null
+          id?: string
+          options?: string[]
+          step_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_debrief_options_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "coach_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coach_script_refs: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          script_lines: string[]
+          step_id: string
+          sub_mode: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          script_lines: string[]
+          step_id: string
+          sub_mode?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          script_lines?: string[]
+          step_id?: string
+          sub_mode?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_script_refs_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "coach_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coach_steps: {
+        Row: {
+          coach_type_id: string
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          label: string
+          objective: string | null
+          step_id: string
+          step_number: number
+          tips: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          coach_type_id: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          label: string
+          objective?: string | null
+          step_id: string
+          step_number: number
+          tips?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          coach_type_id?: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          objective?: string | null
+          step_id?: string
+          step_number?: number
+          tips?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_steps_coach_type_id_fkey"
+            columns: ["coach_type_id"]
+            isOneToOne: false
+            referencedRelation: "coach_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coach_types: {
+        Row: {
+          assigned_coach_id: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          label: string
+          name: string
+          sub_modes: string[] | null
+          theme_bg: string | null
+          theme_color: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_coach_id?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          label: string
+          name: string
+          sub_modes?: string[] | null
+          theme_bg?: string | null
+          theme_color: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_coach_id?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          name?: string
+          sub_modes?: string[] | null
+          theme_bg?: string | null
+          theme_color?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_types_assigned_coach_id_fkey"
+            columns: ["assigned_coach_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commissions: {
         Row: {
           amount: number | null
