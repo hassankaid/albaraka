@@ -232,13 +232,38 @@ export default function SessionDetail() {
                   {debriefResponses.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-muted-foreground">Observations</p>
-                      <div className="flex flex-wrap gap-1">
-                        {debriefResponses.map((opt: string, i: number) => (
-                          <Badge key={i} variant="secondary" className="text-xs">
-                            {opt}
-                          </Badge>
-                        ))}
-                      </div>
+                      {step.debriefs && step.debriefs.length > 0 ? (
+                        <div className="space-y-3">
+                          {step.debriefs.map((debrief: any) => {
+                            const matchedOptions = debriefResponses.filter((opt: string) =>
+                              debrief.options?.includes(opt)
+                            );
+                            if (matchedOptions.length === 0) return null;
+                            return (
+                              <div key={debrief.id} className="p-3 bg-muted/30 rounded-lg">
+                                <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                                  {debrief.debrief_label}
+                                </p>
+                                <div className="flex flex-wrap gap-1">
+                                  {matchedOptions.map((opt: string, j: number) => (
+                                    <Badge key={j} variant="secondary" className="text-xs">
+                                      {opt}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {debriefResponses.map((opt: string, i: number) => (
+                            <Badge key={i} variant="secondary" className="text-xs">
+                              {opt}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
