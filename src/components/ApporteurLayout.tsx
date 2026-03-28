@@ -1,17 +1,22 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import logo from "@/assets/ethicarena-logo.png";
-import { BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X, ArrowLeftRight, ChevronDown, User } from "lucide-react";
+import SpaceSwitcher from "./SpaceSwitcher";
+import { BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X, ArrowLeftRight, ChevronDown, User, BookOpen } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
-const navItems = [
+const trackingNavItems = [
   { title: "Dashboard", path: "/my-space", icon: BarChart3 },
   { title: "Mes Leads", path: "/my-space/leads", icon: Users },
   { title: "Mes Ventes", path: "/my-space/sales", icon: BadgeEuro },
   { title: "Commissions & Factures", path: "/my-space/commissions", icon: Receipt },
   { title: "Mon Profil", path: "/my-space/profile", icon: Settings },
+];
+
+const coachingNavItems = [
+  { title: "Historique", path: "/mon-coaching", icon: BookOpen },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -20,6 +25,7 @@ const pageTitles: Record<string, string> = {
   "/my-space/sales": "Mes Ventes",
   "/my-space/commissions": "Commissions & Factures",
   "/my-space/profile": "Mon Profil",
+  "/mon-coaching": "Historique",
 };
 
 export default function ApporteurLayout() {

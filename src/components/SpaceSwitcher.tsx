@@ -19,26 +19,29 @@ interface Space {
   description: string;
 }
 
-const getSpaces = (profile: any): Space[] => [
-  {
-    id: "tracking",
-    label: "TRACKING",
-    icon: BarChart3,
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
-    path: "/dashboard",
-    description: "Leads, Calls, Sales, Payments",
-  },
-  {
-    id: "coaching",
-    label: "COACHING",
-    icon: GraduationCap,
-    color: "text-amber-500",
-    bgColor: "bg-amber-500/10",
-    path: profile?.is_coach || profile?.role === "ceo" ? "/coaching" : "/mon-coaching",
-    description: "Évaluations & Historique",
-  },
-];
+const getSpaces = (profile: any): Space[] => {
+  const isApporteur = profile?.role === "apporteur";
+  return [
+    {
+      id: "tracking",
+      label: "TRACKING",
+      icon: BarChart3,
+      color: "text-blue-500",
+      bgColor: "bg-blue-500/10",
+      path: isApporteur ? "/my-space" : "/dashboard",
+      description: "Leads, Calls, Sales, Payments",
+    },
+    {
+      id: "coaching",
+      label: "COACHING",
+      icon: GraduationCap,
+      color: "text-amber-500",
+      bgColor: "bg-amber-500/10",
+      path: profile?.is_coach || profile?.role === "ceo" ? "/coaching" : "/mon-coaching",
+      description: "Évaluations & Historique",
+    },
+  ];
+};
 
 export default function SpaceSwitcher() {
   const location = useLocation();
