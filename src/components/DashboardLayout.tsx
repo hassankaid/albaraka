@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import logo from "@/assets/ethicarena-logo.png";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -26,6 +26,7 @@ const trackingNavItems = [
 const coachingNavItems = [
   { title: "Évaluations", path: "/coaching", icon: GraduationCap, roles: ["ceo", "collaborateur"], coachOnly: true },
   { title: "Historique", path: "/mon-coaching", icon: BookOpen, roles: ["ceo", "collaborateur"] },
+  { title: "Administration", path: "/admin/coaching", icon: Settings2, roles: ["ceo"] },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -45,6 +46,7 @@ const pageTitles: Record<string, string> = {
   "/profile": "Mon profil",
   "/coaching": "Évaluations",
   "/mon-coaching": "Historique",
+  "/admin/coaching": "Administration Coaching",
 };
 
 export default function DashboardLayout() {
