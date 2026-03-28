@@ -45,9 +45,32 @@ export default function SessionDetail() {
     enabled: !!sessionId,
   });
 
-  // Snapshot steps or empty
+  // Snapshot steps or fallback to live data
   const snapshot = session?.structure_snapshot as any;
-  const steps: any[] = snapshot?.steps || [];
+  const hasSnapshot = !!snapshot?.steps;
+
+  // Fallback: fetch live steps when no snapshot exists
+  const { data: liveSteps } = useQuery({
+    queryKey: ["session-live-steps", session?.coach_type_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("coach_steps")
+        .select(`
+          id, step_id, step_number, label, title, objective, tips, display_order,
+          criteria:coach_criteria(id, criteria_text, display_order),
+          scripts:coach_script_refs(id, sub_mode, script_lines, display_order),
+          debriefs:coach_debrief_options(id, debrief_label, options, display_order)
+        `)
+        .eq("coach_type_id", session!.coach_type_id)
+        .eq("is_active", true)
+        .order("display_order");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!session?.coach_type_id && !hasSnapshot,
+  });
+
+  const steps: any[] = hasSnapshot ? snapshot.steps : (liveSteps || []);
 
   // Map scores to steps
   const stepsWithScores = steps.map((step: any) => {
