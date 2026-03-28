@@ -10,11 +10,10 @@ import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Loader2, Plus, Settings, ChevronRight, Trash2, Star, FileText, MessageSquare } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Loader2, Plus, Settings, Trash2, Star, FileText, MessageSquare, ChevronRight, MousePointerClick } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -22,8 +21,8 @@ export default function AdminCoachingBuilder() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
   const [selectedStep, setSelectedStep] = useState<any>(null);
-  const [showStepSheet, setShowStepSheet] = useState(false);
   const [showNewTypeDialog, setShowNewTypeDialog] = useState(false);
   const [showNewStepDialog, setShowNewStepDialog] = useState(false);
   const [showEditTypeDialog, setShowEditTypeDialog] = useState(false);
@@ -73,6 +72,10 @@ export default function AdminCoachingBuilder() {
       return typesWithSteps;
     },
   });
+
+  // Auto-select first type
+  const activeTypeId = selectedTypeId || types?.[0]?.id || null;
+  const activeType = types?.find((t) => t.id === activeTypeId);
 
   // Récupérer les détails d'une étape
   const { data: stepDetails, isLoading: stepLoading, refetch: refetchStep } = useQuery({
@@ -186,7 +189,6 @@ export default function AdminCoachingBuilder() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-builder-types"] });
-      setShowStepSheet(false);
       setSelectedStep(null);
       toast({ title: "Étape supprimée" });
     },
@@ -291,7 +293,6 @@ export default function AdminCoachingBuilder() {
 
   const openStep = (step: any) => {
     setSelectedStep(step);
-    setShowStepSheet(true);
   };
 
   const openEditTypeDialog = (type: any) => {
@@ -312,14 +313,12 @@ export default function AdminCoachingBuilder() {
     );
   }
 
-  const defaultTab = types?.[0]?.id || "";
-
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Cliquez sur une étape pour la modifier.
+          Sélectionnez un type puis cliquez sur une étape pour la modifier.
         </p>
         <Button onClick={() => setShowNewTypeDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -327,312 +326,337 @@ export default function AdminCoachingBuilder() {
         </Button>
       </div>
 
-      {/* Tabs par type */}
-      <Tabs defaultValue={defaultTab} className="space-y-4">
-        <TabsList className="flex-wrap h-auto gap-1">
-          {types?.map((type) => (
-            <TabsTrigger key={type.id} value={type.id} className="flex items-center gap-2">
-              <div
-                className="w-2.5 h-2.5 rounded-full shrink-0"
-                style={{ backgroundColor: type.theme_color }}
-              />
-              {type.label}
-              {!type.is_active && <Badge variant="secondary" className="text-[10px] px-1">Off</Badge>}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {types?.map((type) => (
-          <TabsContent key={type.id} value={type.id}>
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-4 h-4 rounded-full shrink-0"
-                      style={{ backgroundColor: type.theme_color }}
-                    />
-                    <CardTitle className="text-lg">{type.label}</CardTitle>
-                    <Badge variant="outline">{type.steps?.length || 0} étapes</Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => openNewStepDialog(type.id)}>
-                      <Plus className="h-4 w-4 mr-1" />
-                      Ajouter une étape
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditTypeDialog(type)}>
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                {type.coaches?.length > 0 && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Coachs : {type.coaches.map((c: any) => c?.full_name || c?.email).filter(Boolean).join(", ")}
-                  </p>
+      {/* Master-detail layout */}
+      <div className="flex gap-6 min-h-[calc(100vh-280px)]">
+        {/* LEFT COLUMN — Type selector + steps list */}
+        <div className="w-80 shrink-0 flex flex-col gap-4">
+          {/* Type tabs */}
+          <div className="space-y-1">
+            {types?.map((type) => (
+              <button
+                key={type.id}
+                onClick={() => {
+                  setSelectedTypeId(type.id);
+                  setSelectedStep(null);
+                }}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-sm",
+                  activeTypeId === type.id
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "hover:bg-muted text-foreground"
                 )}
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {type.steps?.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      Aucune étape. Cliquez sur "Ajouter une étape" pour commencer.
-                    </p>
-                  )}
-                  {type.steps?.map((step: any) => (
-                    <div
-                      key={step.id}
-                      onClick={() => openStep(step)}
-                      className={cn(
-                        "flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors",
-                        "hover:border-primary hover:bg-muted/50",
-                        !step.is_active && "opacity-50"
-                      )}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm">{step.label}</p>
-                        <p className="text-xs text-muted-foreground">{step.title}</p>
-                      </div>
-                      {!step.is_active && <Badge variant="secondary" className="text-[10px]">Inactif</Badge>}
-                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        ))}
-      </Tabs>
+              >
+                <div
+                  className="w-3 h-3 rounded-full shrink-0"
+                  style={{ backgroundColor: type.theme_color }}
+                />
+                <span className="flex-1 truncate">{type.label}</span>
+                {!type.is_active && <Badge variant="secondary" className="text-[10px] px-1">Off</Badge>}
+                <Badge variant="outline" className="text-[10px] px-1.5">{type.steps?.length || 0}</Badge>
+              </button>
+            ))}
+          </div>
 
-      {/* Sheet d'édition d'étape */}
-      <Sheet open={showStepSheet} onOpenChange={setShowStepSheet}>
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{stepDetails?.label} — {stepDetails?.title}</SheetTitle>
-          </SheetHeader>
+          <Separator />
 
-          {stepLoading ? (
-            <div className="flex items-center justify-center py-10">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-          ) : stepDetails ? (
-            <div className="space-y-6 mt-6">
-              {/* Infos de base */}
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Label</Label>
-                    <Input
-                      value={stepDetails.label}
-                      onChange={(e) => updateStep.mutate({ ...stepDetails, label: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Titre</Label>
-                    <Input
-                      value={stepDetails.title}
-                      onChange={(e) => updateStep.mutate({ ...stepDetails, title: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Objectif</Label>
-                  <Textarea
-                    value={stepDetails.objective || ""}
-                    onChange={(e) => updateStep.mutate({ ...stepDetails, objective: e.target.value })}
-                    rows={3}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Tips</Label>
-                  <div className="space-y-2">
-                    {(stepDetails.tips || []).map((tip: string, i: number) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <Input
-                          value={tip}
-                          onChange={(e) => {
-                            const newTips = [...(stepDetails.tips || [])];
-                            newTips[i] = e.target.value;
-                            updateStep.mutate({ ...stepDetails, tips: newTips });
-                          }}
-                          className="flex-1"
-                          placeholder={`Tip ${i + 1}`}
-                        />
-                        <Button variant="ghost" size="icon" className="shrink-0" onClick={() => {
-                          const newTips = (stepDetails.tips || []).filter((_: any, idx: number) => idx !== i);
-                          updateStep.mutate({ ...stepDetails, tips: newTips });
-                        }}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button variant="outline" size="sm" onClick={() => {
-                      updateStep.mutate({ ...stepDetails, tips: [...(stepDetails.tips || []), ""] });
-                    }}>
-                      <Plus className="h-4 w-4 mr-1" /> Ajouter un tip
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label>Actif</Label>
-                  <Switch
-                    checked={stepDetails.is_active}
-                    onCheckedChange={(checked) => updateStep.mutate({ ...stepDetails, is_active: checked })}
-                  />
+          {/* Active type info + steps */}
+          {activeType && (
+            <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-foreground truncate">{activeType.label}</h3>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openNewStepDialog(activeType.id)}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditTypeDialog(activeType)}>
+                    <Settings className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
 
-              <Accordion type="multiple" className="w-full">
-                {/* Critères */}
-                <AccordionItem value="criteres">
-                  <AccordionTrigger>
-                    <div className="flex items-center gap-2">
-                      <Star className="h-4 w-4" />
-                      Critères d'évaluation ({stepDetails.criteria?.length || 0})
+              {activeType.coaches?.length > 0 && (
+                <p className="text-xs text-muted-foreground mb-3">
+                  Coachs : {activeType.coaches.map((c: any) => c?.full_name || c?.email).filter(Boolean).join(", ")}
+                </p>
+              )}
+
+              <ScrollArea className="flex-1">
+                <div className="space-y-1.5 pr-2">
+                  {activeType.steps?.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Aucune étape.
+                    </p>
+                  )}
+                  {activeType.steps?.map((step: any) => (
+                    <button
+                      key={step.id}
+                      onClick={() => openStep(step)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 rounded-md text-left transition-colors text-sm",
+                        selectedStep?.id === step.id
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-muted text-foreground",
+                        !step.is_active && "opacity-50"
+                      )}
+                    >
+                      <span className="flex-1 min-w-0">
+                        <span className="block font-medium text-xs">{step.label}</span>
+                        <span className={cn(
+                          "block text-xs truncate",
+                          selectedStep?.id === step.id ? "text-primary-foreground/70" : "text-muted-foreground"
+                        )}>{step.title}</span>
+                      </span>
+                      {!step.is_active && <Badge variant="secondary" className="text-[10px]">Off</Badge>}
+                      <ChevronRight className={cn(
+                        "h-3.5 w-3.5 shrink-0",
+                        selectedStep?.id === step.id ? "text-primary-foreground/70" : "text-muted-foreground"
+                      )} />
+                    </button>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN — Step detail editor */}
+        <div className="flex-1 min-w-0">
+          {!selectedStep ? (
+            <Card className="h-full flex items-center justify-center">
+              <div className="text-center space-y-3 text-muted-foreground">
+                <MousePointerClick className="h-12 w-12 mx-auto opacity-30" />
+                <div>
+                  <p className="font-medium">Sélectionnez une étape</p>
+                  <p className="text-sm">Cliquez sur une étape dans la liste pour modifier son contenu.</p>
+                </div>
+              </div>
+            </Card>
+          ) : stepLoading ? (
+            <Card className="h-full flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </Card>
+          ) : stepDetails ? (
+            <Card className="h-full flex flex-col">
+              <CardHeader className="pb-4 shrink-0">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">
+                    {stepDetails.label} — {stepDetails.title}
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm text-muted-foreground">Actif</Label>
+                    <Switch
+                      checked={stepDetails.is_active}
+                      onCheckedChange={(checked) => updateStep.mutate({ ...stepDetails, is_active: checked })}
+                    />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-y-auto space-y-8 pb-8">
+                {/* Infos de base */}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Label</Label>
+                      <Input
+                        value={stepDetails.label}
+                        onChange={(e) => updateStep.mutate({ ...stepDetails, label: e.target.value })}
+                      />
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-2 pt-2">
-                      {stepDetails.criteria?.map((c: any) => (
-                        <div key={c.id} className="flex items-start gap-2">
-                          <Textarea
-                            value={c.criteria_text}
-                            onChange={(e) => updateCriteria.mutate({ id: c.id, criteria_text: e.target.value })}
-                            rows={2}
+                    <div className="space-y-2">
+                      <Label>Titre</Label>
+                      <Input
+                        value={stepDetails.title}
+                        onChange={(e) => updateStep.mutate({ ...stepDetails, title: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Objectif</Label>
+                    <Textarea
+                      value={stepDetails.objective || ""}
+                      onChange={(e) => updateStep.mutate({ ...stepDetails, objective: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tips</Label>
+                    <div className="space-y-2">
+                      {(stepDetails.tips || []).map((tip: string, i: number) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <Input
+                            value={tip}
+                            onChange={(e) => {
+                              const newTips = [...(stepDetails.tips || [])];
+                              newTips[i] = e.target.value;
+                              updateStep.mutate({ ...stepDetails, tips: newTips });
+                            }}
                             className="flex-1"
+                            placeholder={`Tip ${i + 1}`}
                           />
-                          <Button variant="ghost" size="icon" onClick={() => deleteCriteria.mutate(c.id)}>
+                          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => {
+                            const newTips = (stepDetails.tips || []).filter((_: any, idx: number) => idx !== i);
+                            updateStep.mutate({ ...stepDetails, tips: newTips });
+                          }}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
                       ))}
-                      <Button variant="outline" size="sm" onClick={() => addCriteria.mutate(stepDetails.id)}>
-                        <Plus className="h-4 w-4 mr-1" /> Ajouter
+                      <Button variant="outline" size="sm" onClick={() => {
+                        updateStep.mutate({ ...stepDetails, tips: [...(stepDetails.tips || []), ""] });
+                      }}>
+                        <Plus className="h-4 w-4 mr-1" /> Ajouter un tip
                       </Button>
                     </div>
-                  </AccordionContent>
-                </AccordionItem>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Critères */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Star className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="font-semibold text-sm">Critères d'évaluation ({stepDetails.criteria?.length || 0})</h3>
+                  </div>
+                  <div className="space-y-2">
+                    {stepDetails.criteria?.map((c: any) => (
+                      <div key={c.id} className="flex items-start gap-2">
+                        <Textarea
+                          value={c.criteria_text}
+                          onChange={(e) => updateCriteria.mutate({ id: c.id, criteria_text: e.target.value })}
+                          rows={2}
+                          className="flex-1"
+                        />
+                        <Button variant="ghost" size="icon" onClick={() => deleteCriteria.mutate(c.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button variant="outline" size="sm" onClick={() => addCriteria.mutate(stepDetails.id)}>
+                      <Plus className="h-4 w-4 mr-1" /> Ajouter
+                    </Button>
+                  </div>
+                </div>
+
+                <Separator />
 
                 {/* Scripts */}
-                <AccordionItem value="scripts">
-                  <AccordionTrigger>
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      Scripts de référence ({stepDetails.scripts?.length || 0})
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4 pt-2">
-                      {stepDetails.scripts?.map((s: any) => (
-                        <div key={s.id} className="p-3 border rounded-lg space-y-2">
-                          <div className="flex items-center justify-between">
-                            {s.sub_mode ? (
-                              <Badge variant="secondary">{s.sub_mode}</Badge>
-                            ) : (
-                              <Badge variant="outline">Général</Badge>
-                            )}
-                            <Button variant="ghost" size="icon" onClick={() => deleteScript.mutate(s.id)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                          <RichTextEditor
-                            content={s.script_content || s.script_lines?.join("<br>") || ""}
-                            onChange={(html) => updateScript.mutate({ id: s.id, script_content: html })}
-                            placeholder="Script de référence…"
-                          />
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="font-semibold text-sm">Scripts de référence ({stepDetails.scripts?.length || 0})</h3>
+                  </div>
+                  <div className="space-y-4">
+                    {stepDetails.scripts?.map((s: any) => (
+                      <div key={s.id} className="p-3 border rounded-lg space-y-2">
+                        <div className="flex items-center justify-between">
+                          {s.sub_mode ? (
+                            <Badge variant="secondary">{s.sub_mode}</Badge>
+                          ) : (
+                            <Badge variant="outline">Général</Badge>
+                          )}
+                          <Button variant="ghost" size="icon" onClick={() => deleteScript.mutate(s.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
                         </div>
-                      ))}
-                      <Button variant="outline" size="sm" onClick={() => addScript.mutate({ stepId: stepDetails.id })}>
-                        <Plus className="h-4 w-4 mr-1" /> Ajouter un script
-                      </Button>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
+                        <RichTextEditor
+                          content={s.script_content || s.script_lines?.join("<br>") || ""}
+                          onChange={(html) => updateScript.mutate({ id: s.id, script_content: html })}
+                          placeholder="Script de référence…"
+                        />
+                      </div>
+                    ))}
+                    <Button variant="outline" size="sm" onClick={() => addScript.mutate({ stepId: stepDetails.id })}>
+                      <Plus className="h-4 w-4 mr-1" /> Ajouter un script
+                    </Button>
+                  </div>
+                </div>
+
+                <Separator />
 
                 {/* Débriefs */}
-                <AccordionItem value="debriefs">
-                  <AccordionTrigger>
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4" />
-                      Options de débrief ({stepDetails.debriefs?.length || 0})
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4 pt-2">
-                      {stepDetails.debriefs?.map((d: any) => (
-                        <div key={d.id} className="p-3 border rounded-lg space-y-3">
-                          <div className="flex items-center justify-between">
-                            <Input
-                              value={d.debrief_label}
-                              onChange={(e) => updateDebrief.mutate({
-                                id: d.id, debrief_label: e.target.value, options: d.options,
-                              })}
-                              className="flex-1 mr-2"
-                              placeholder="Titre du débrief"
-                            />
-                            <Button variant="ghost" size="icon" onClick={() => deleteDebrief.mutate(d.id)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-xs text-muted-foreground">Options de réponse</Label>
-                            {(d.options || []).map((opt: string, i: number) => (
-                              <div key={i} className="flex items-center gap-2">
-                                <Checkbox checked disabled className="shrink-0 opacity-50" />
-                                <Input
-                                  value={opt}
-                                  onChange={(e) => {
-                                    const newOpts = [...(d.options || [])];
-                                    newOpts[i] = e.target.value;
-                                    updateDebrief.mutate({ id: d.id, debrief_label: d.debrief_label, options: newOpts });
-                                  }}
-                                  className="flex-1"
-                                  placeholder={`Option ${i + 1}`}
-                                />
-                                <Button variant="ghost" size="icon" className="shrink-0" onClick={() => {
-                                  const newOpts = (d.options || []).filter((_: any, idx: number) => idx !== i);
-                                  updateDebrief.mutate({ id: d.id, debrief_label: d.debrief_label, options: newOpts });
-                                }}>
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </div>
-                            ))}
-                            <Button variant="outline" size="sm" onClick={() => {
-                              updateDebrief.mutate({
-                                id: d.id, debrief_label: d.debrief_label,
-                                options: [...(d.options || []), ""],
-                              });
-                            }}>
-                              <Plus className="h-4 w-4 mr-1" /> Ajouter une option
-                            </Button>
-                          </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="font-semibold text-sm">Options de débrief ({stepDetails.debriefs?.length || 0})</h3>
+                  </div>
+                  <div className="space-y-4">
+                    {stepDetails.debriefs?.map((d: any) => (
+                      <div key={d.id} className="p-3 border rounded-lg space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Input
+                            value={d.debrief_label}
+                            onChange={(e) => updateDebrief.mutate({
+                              id: d.id, debrief_label: e.target.value, options: d.options,
+                            })}
+                            className="flex-1 mr-2"
+                            placeholder="Titre du débrief"
+                          />
+                          <Button variant="ghost" size="icon" onClick={() => deleteDebrief.mutate(d.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
                         </div>
-                      ))}
-                      <Button variant="outline" size="sm" onClick={() => addDebrief.mutate(stepDetails.id)}>
-                        <Plus className="h-4 w-4 mr-1" /> Ajouter un débrief
-                      </Button>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground">Options de réponse</Label>
+                          {(d.options || []).map((opt: string, i: number) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <Checkbox checked disabled className="shrink-0 opacity-50" />
+                              <Input
+                                value={opt}
+                                onChange={(e) => {
+                                  const newOpts = [...(d.options || [])];
+                                  newOpts[i] = e.target.value;
+                                  updateDebrief.mutate({ id: d.id, debrief_label: d.debrief_label, options: newOpts });
+                                }}
+                                className="flex-1"
+                                placeholder={`Option ${i + 1}`}
+                              />
+                              <Button variant="ghost" size="icon" className="shrink-0" onClick={() => {
+                                const newOpts = (d.options || []).filter((_: any, idx: number) => idx !== i);
+                                updateDebrief.mutate({ id: d.id, debrief_label: d.debrief_label, options: newOpts });
+                              }}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button variant="outline" size="sm" onClick={() => {
+                            updateDebrief.mutate({
+                              id: d.id, debrief_label: d.debrief_label,
+                              options: [...(d.options || []), ""],
+                            });
+                          }}>
+                            <Plus className="h-4 w-4 mr-1" /> Ajouter une option
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    <Button variant="outline" size="sm" onClick={() => addDebrief.mutate(stepDetails.id)}>
+                      <Plus className="h-4 w-4 mr-1" /> Ajouter un débrief
+                    </Button>
+                  </div>
+                </div>
 
-              {/* Actions */}
-              <div className="flex justify-between pt-4 border-t">
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    if (confirm("Supprimer cette étape et tout son contenu ?")) {
-                      deleteStep.mutate(stepDetails.id);
-                    }
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Supprimer l'étape
-                </Button>
-              </div>
-            </div>
+                <Separator />
+
+                {/* Supprimer */}
+                <div className="flex justify-end">
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      if (confirm("Supprimer cette étape et tout son contenu ?")) {
+                        deleteStep.mutate(stepDetails.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Supprimer l'étape
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           ) : null}
-        </SheetContent>
-      </Sheet>
+        </div>
+      </div>
 
       {/* Dialog nouveau type */}
       <Dialog open={showNewTypeDialog} onOpenChange={setShowNewTypeDialog}>
