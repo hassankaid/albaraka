@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
@@ -82,6 +83,16 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
     },
     enabled: !!selectedStudentId && !!selectedTypeId,
   });
+
+  const assignedType = coachTypes?.find((t) => t.assigned_coach_id === profile?.id);
+  const hasFixedType = !!assignedType && profile?.role !== "ceo";
+
+  // Pre-select assigned type
+  useEffect(() => {
+    if (assignedType && !selectedTypeId) {
+      setSelectedTypeId(assignedType.id);
+    }
+  }, [assignedType, selectedTypeId]);
 
   const selectedType = coachTypes?.find((t) => t.id === selectedTypeId);
 
@@ -171,36 +182,47 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
           {/* Type de coaching */}
           <div className="space-y-2">
             <Label>Type de coaching *</Label>
-            <Select
-              value={selectedTypeId}
-              onValueChange={(value) => {
-                setSelectedTypeId(value);
-                setSelectedSubMode("");
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Choisir un type" />
-              </SelectTrigger>
-              <SelectContent>
-                {typesLoading ? (
-                  <div className="flex justify-center py-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  </div>
-                ) : (
-                  coachTypes?.map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      <span className="flex items-center gap-2">
-                        <span
-                          className="h-2.5 w-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: type.theme_color }}
-                        />
-                        {type.label}
-                      </span>
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+            {hasFixedType ? (
+              <div className="flex items-center gap-2 p-3 border border-border rounded-md bg-muted/50">
+                <span
+                  className="h-2.5 w-2.5 rounded-full shrink-0"
+                  style={{ backgroundColor: assignedType?.theme_color }}
+                />
+                <span className="font-medium text-foreground">{assignedType?.label}</span>
+                <Badge variant="secondary" className="ml-auto">Assigné</Badge>
+              </div>
+            ) : (
+              <Select
+                value={selectedTypeId}
+                onValueChange={(value) => {
+                  setSelectedTypeId(value);
+                  setSelectedSubMode("");
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir un type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {typesLoading ? (
+                    <div className="flex justify-center py-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </div>
+                  ) : (
+                    coachTypes?.map((type) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="h-2.5 w-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: type.theme_color }}
+                          />
+                          {type.label}
+                        </span>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Sous-mode */}
