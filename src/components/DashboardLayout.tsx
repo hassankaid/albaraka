@@ -70,10 +70,11 @@ export default function DashboardLayout() {
   }
 
   const userRole = profile?.role || "apporteur";
+  const isCoachingSpace = location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching");
   const pageTitle = pageTitles[location.pathname] || "Dashboard";
-  const navItems = allNavItems.filter((item) => {
+  const navItems = (isCoachingSpace ? coachingNavItems : trackingNavItems).filter((item) => {
     if (!item.roles.includes(userRole)) return false;
-    if (item.path === "/coaching") return profile?.is_coach || profile?.role === "ceo";
+    if ('coachOnly' in item && item.coachOnly) return profile?.is_coach || profile?.role === "ceo";
     return true;
   });
   const initials = profile?.full_name
