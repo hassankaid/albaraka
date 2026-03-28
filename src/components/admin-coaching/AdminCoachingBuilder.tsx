@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -327,9 +327,9 @@ export default function AdminCoachingBuilder() {
       </div>
 
       {/* Master-detail layout */}
-      <div className="flex gap-6 h-[calc(100vh-280px)]">
+      <div className="flex gap-6 min-h-[calc(100vh-280px)]">
         {/* LEFT COLUMN — Type selector + steps list */}
-        <div className="w-80 shrink-0 flex flex-col gap-4 overflow-y-auto">
+        <div className="w-80 shrink-0 flex flex-col gap-4 sticky top-4 self-start">
           {/* Type tabs */}
           <div className="space-y-1">
             {types?.map((type) => (
@@ -420,7 +420,7 @@ export default function AdminCoachingBuilder() {
         </div>
 
         {/* RIGHT COLUMN — Step detail editor */}
-        <div className="flex-1 min-w-0 overflow-y-auto">
+        <div ref={editorRef} className="flex-1 min-w-0">
           {!selectedStep ? (
             <Card className="h-full flex items-center justify-center">
               <div className="text-center space-y-3 text-muted-foreground">
@@ -451,7 +451,7 @@ export default function AdminCoachingBuilder() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto space-y-8 pb-8">
+              <CardContent className="space-y-8 pb-8">
                 {/* Infos de base */}
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
