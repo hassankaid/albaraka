@@ -54,76 +54,55 @@ export default function CoachingSession() {
     enabled: !!sessionId,
   });
 
-  // ── Steps ──
-  const { data: steps } = useQuery({
-    queryKey: ["coach-steps", session?.coach_type_id],
+  // ── Steps: use snapshot if available, else live ──
+  const snapshot = session?.structure_snapshot as any;
+  const hasSnapshot = !!snapshot?.steps;
+
+  const { data: liveSteps } = useQuery({
+    queryKey: ["coach-steps-live", session?.coach_type_id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: stepsData, error: stepsError } = await supabase
         .from("coach_steps")
         .select("*")
         .eq("coach_type_id", session!.coach_type_id)
         .eq("is_active", true)
         .order("display_order");
-      if (error) throw error;
-      return data;
+      if (stepsError) throw stepsError;
+
+      // Fetch criteria, scripts, debriefs for each step
+      const enriched = await Promise.all(
+        (stepsData || []).map(async (step) => {
+          const [criteriaRes, scriptsRes, debriefsRes] = await Promise.all([
+            supabase.from("coach_criteria").select("*").eq("step_id", step.id).eq("is_active", true).order("display_order"),
+            (() => {
+              let q = supabase.from("coach_script_refs").select("*").eq("step_id", step.id);
+              if (session?.sub_mode) {
+                q = q.or(`sub_mode.eq.${session.sub_mode},sub_mode.is.null`);
+              } else {
+                q = q.is("sub_mode", null);
+              }
+              return q.order("display_order");
+            })(),
+            supabase.from("coach_debrief_options").select("*").eq("step_id", step.id).order("display_order"),
+          ]);
+          return {
+            ...step,
+            criteria: criteriaRes.data || [],
+            scripts: scriptsRes.data || [],
+            debriefs: debriefsRes.data || [],
+          };
+        })
+      );
+      return enriched;
     },
-    enabled: !!session?.coach_type_id,
+    enabled: !!session?.coach_type_id && !hasSnapshot,
   });
 
+  const steps = hasSnapshot ? snapshot.steps : liveSteps;
   const currentStep = steps?.[currentStepIndex];
-
-  // ── Criteria for current step ──
-  const { data: criteria } = useQuery({
-    queryKey: ["coach-criteria", currentStep?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("coach_criteria")
-        .select("*")
-        .eq("step_id", currentStep!.id)
-        .eq("is_active", true)
-        .order("display_order");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!currentStep?.id,
-  });
-
-  // ── Scripts for current step ──
-  const { data: scripts } = useQuery({
-    queryKey: ["coach-scripts", currentStep?.id, session?.sub_mode],
-    queryFn: async () => {
-      let query = supabase
-        .from("coach_script_refs")
-        .select("*")
-        .eq("step_id", currentStep!.id);
-
-      if (session?.sub_mode) {
-        query = query.or(`sub_mode.eq.${session.sub_mode},sub_mode.is.null`);
-      } else {
-        query = query.is("sub_mode", null);
-      }
-
-      const { data, error } = await query.order("display_order");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!currentStep?.id,
-  });
-
-  // ── Debriefs for current step ──
-  const { data: debriefs } = useQuery({
-    queryKey: ["coach-debriefs", currentStep?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("coach_debrief_options")
-        .select("*")
-        .eq("step_id", currentStep!.id)
-        .order("display_order");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!currentStep?.id,
-  });
+  const criteria = currentStep?.criteria || [];
+  const scripts = currentStep?.scripts || [];
+  const debriefs = currentStep?.debriefs || [];
 
   // ── Existing scores (to hydrate state & decide insert vs update) ──
   const { data: existingScores } = useQuery({
