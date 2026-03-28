@@ -568,6 +568,7 @@ export type Database = {
           session_date: string
           session_number: number
           status: string
+          structure_snapshot: Json | null
           student_user_id: string
           sub_mode: string | null
           updated_at: string | null
@@ -581,6 +582,7 @@ export type Database = {
           session_date: string
           session_number?: number
           status?: string
+          structure_snapshot?: Json | null
           student_user_id: string
           sub_mode?: string | null
           updated_at?: string | null
@@ -594,6 +596,7 @@ export type Database = {
           session_date?: string
           session_number?: number
           status?: string
+          structure_snapshot?: Json | null
           student_user_id?: string
           sub_mode?: string | null
           updated_at?: string | null
