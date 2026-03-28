@@ -349,16 +349,26 @@ export default function CoachingSession() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ul className="space-y-1.5">
-                      {scripts.flatMap((script) =>
-                        script.script_lines?.map((line: string, i: number) => (
-                          <li key={`${script.id}-${i}`} className="text-sm flex gap-2">
-                            <span className="text-muted-foreground shrink-0">•</span>
-                            <span className="text-foreground">{line}</span>
-                          </li>
-                        )),
-                      )}
-                    </ul>
+                    {scripts.some((s: any) => s.script_content) ? (
+                      <div className="prose prose-sm max-w-none text-foreground">
+                        {scripts.map((script: any) => (
+                          <div key={script.id} dangerouslySetInnerHTML={{
+                            __html: script.script_content || script.script_lines?.join("<br>") || ""
+                          }} />
+                        ))}
+                      </div>
+                    ) : (
+                      <ul className="space-y-1.5">
+                        {scripts.flatMap((script: any) =>
+                          script.script_lines?.map((line: string, i: number) => (
+                            <li key={`${script.id}-${i}`} className="text-sm flex gap-2">
+                              <span className="text-muted-foreground shrink-0">•</span>
+                              <span className="text-foreground">{line}</span>
+                            </li>
+                          )),
+                        )}
+                      </ul>
+                    )}
                   </CardContent>
                 </Card>
               )}
