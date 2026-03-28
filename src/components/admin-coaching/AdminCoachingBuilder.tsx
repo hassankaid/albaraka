@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -238,8 +240,8 @@ export default function AdminCoachingBuilder() {
   });
 
   const updateScript = useMutation({
-    mutationFn: async ({ id, script_lines }: { id: string; script_lines: string[] }) => {
-      const { error } = await supabase.from("coach_script_refs").update({ script_lines }).eq("id", id);
+    mutationFn: async ({ id, script_content }: { id: string; script_content: string }) => {
+      const { error } = await supabase.from("coach_script_refs").update({ script_content } as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => refetchStep(),
@@ -441,15 +443,34 @@ export default function AdminCoachingBuilder() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Tips (un par ligne)</Label>
-                  <Textarea
-                    value={stepDetails.tips?.join("\n") || ""}
-                    onChange={(e) => updateStep.mutate({
-                      ...stepDetails,
-                      tips: e.target.value.split("\n").filter((t: string) => t.trim()),
-                    })}
-                    rows={4}
-                  />
+                  <Label>Tips</Label>
+                  <div className="space-y-2">
+                    {(stepDetails.tips || []).map((tip: string, i: number) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <Input
+                          value={tip}
+                          onChange={(e) => {
+                            const newTips = [...(stepDetails.tips || [])];
+                            newTips[i] = e.target.value;
+                            updateStep.mutate({ ...stepDetails, tips: newTips });
+                          }}
+                          className="flex-1"
+                          placeholder={`Tip ${i + 1}`}
+                        />
+                        <Button variant="ghost" size="icon" className="shrink-0" onClick={() => {
+                          const newTips = (stepDetails.tips || []).filter((_: any, idx: number) => idx !== i);
+                          updateStep.mutate({ ...stepDetails, tips: newTips });
+                        }}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button variant="outline" size="sm" onClick={() => {
+                      updateStep.mutate({ ...stepDetails, tips: [...(stepDetails.tips || []), ""] });
+                    }}>
+                      <Plus className="h-4 w-4 mr-1" /> Ajouter un tip
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <Label>Actif</Label>
@@ -513,14 +534,10 @@ export default function AdminCoachingBuilder() {
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
-                          <Textarea
-                            value={s.script_lines?.join("\n") || ""}
-                            onChange={(e) => updateScript.mutate({
-                              id: s.id,
-                              script_lines: e.target.value.split("\n").filter((l: string) => l.trim()),
-                            })}
-                            rows={4}
-                            placeholder="Une ligne de script par ligne"
+                          <RichTextEditor
+                            content={s.script_content || s.script_lines?.join("<br>") || ""}
+                            onChange={(html) => updateScript.mutate({ id: s.id, script_content: html })}
+                            placeholder="Script de référence…"
                           />
                         </div>
                       ))}
@@ -542,7 +559,7 @@ export default function AdminCoachingBuilder() {
                   <AccordionContent>
                     <div className="space-y-4 pt-2">
                       {stepDetails.debriefs?.map((d: any) => (
-                        <div key={d.id} className="p-3 border rounded-lg space-y-2">
+                        <div key={d.id} className="p-3 border rounded-lg space-y-3">
                           <div className="flex items-center justify-between">
                             <Input
                               value={d.debrief_label}
@@ -556,15 +573,38 @@ export default function AdminCoachingBuilder() {
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
-                          <Textarea
-                            value={d.options?.join("\n") || ""}
-                            onChange={(e) => updateDebrief.mutate({
-                              id: d.id, debrief_label: d.debrief_label,
-                              options: e.target.value.split("\n").filter((o: string) => o.trim()),
-                            })}
-                            rows={3}
-                            placeholder="Une option par ligne"
-                          />
+                          <div className="space-y-2">
+                            <Label className="text-xs text-muted-foreground">Options de réponse</Label>
+                            {(d.options || []).map((opt: string, i: number) => (
+                              <div key={i} className="flex items-center gap-2">
+                                <Checkbox checked disabled className="shrink-0 opacity-50" />
+                                <Input
+                                  value={opt}
+                                  onChange={(e) => {
+                                    const newOpts = [...(d.options || [])];
+                                    newOpts[i] = e.target.value;
+                                    updateDebrief.mutate({ id: d.id, debrief_label: d.debrief_label, options: newOpts });
+                                  }}
+                                  className="flex-1"
+                                  placeholder={`Option ${i + 1}`}
+                                />
+                                <Button variant="ghost" size="icon" className="shrink-0" onClick={() => {
+                                  const newOpts = (d.options || []).filter((_: any, idx: number) => idx !== i);
+                                  updateDebrief.mutate({ id: d.id, debrief_label: d.debrief_label, options: newOpts });
+                                }}>
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            ))}
+                            <Button variant="outline" size="sm" onClick={() => {
+                              updateDebrief.mutate({
+                                id: d.id, debrief_label: d.debrief_label,
+                                options: [...(d.options || []), ""],
+                              });
+                            }}>
+                              <Plus className="h-4 w-4 mr-1" /> Ajouter une option
+                            </Button>
+                          </div>
                         </div>
                       ))}
                       <Button variant="outline" size="sm" onClick={() => addDebrief.mutate(stepDetails.id)}>
