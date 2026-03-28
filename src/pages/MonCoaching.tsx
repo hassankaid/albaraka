@@ -1,15 +1,13 @@
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, User, Users, TrendingUp, Calendar, Star, FileText } from "lucide-react";
+import { Loader2, User, Users, TrendingUp, Calendar, Star } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Separator } from "@/components/ui/separator";
 
 interface SessionWithDetails {
   id: string;
@@ -25,8 +23,7 @@ interface SessionWithDetails {
 
 export default function MonCoaching() {
   const { profile } = useAuth();
-  const [selectedSession, setSelectedSession] = useState<SessionWithDetails | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
+  const navigate = useNavigate();
 
   const { data: mySessions, isLoading: mySessionsLoading } = useQuery({
     queryKey: ["my-coaching-sessions", profile?.id],
@@ -69,20 +66,6 @@ export default function MonCoaching() {
     enabled: !!profile?.id,
   });
 
-  const { data: sessionScores, isLoading: scoresLoading } = useQuery({
-    queryKey: ["session-scores-detail", selectedSession?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("coaching_scores")
-        .select(`*, step:coach_steps(id, label, title)`)
-        .eq("session_id", selectedSession!.id)
-        .order("created_at");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!selectedSession?.id,
-  });
-
   const myStats = {
     totalSessions: mySessions?.length || 0,
     averageScore: (() => {
@@ -95,11 +78,6 @@ export default function MonCoaching() {
       : "—",
   };
 
-  const openSessionDetails = (session: SessionWithDetails) => {
-    setSelectedSession(session);
-    setShowDetails(true);
-  };
-
   const SessionCard = ({
     session,
     showStudent = false,
@@ -108,7 +86,7 @@ export default function MonCoaching() {
     showStudent?: boolean;
   }) => (
     <div
-      onClick={() => openSessionDetails(session)}
+      onClick={() => navigate(`/mon-coaching/session/${session.id}`)}
       className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
     >
       <div className="flex items-center gap-3">
@@ -252,112 +230,6 @@ export default function MonCoaching() {
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Detail modal */}
-      <Dialog open={showDetails} onOpenChange={setShowDetails}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: selectedSession?.coach_type?.theme_color }}
-              />
-              {selectedSession?.coach_type?.label}
-              {selectedSession?.sub_mode && ` — ${selectedSession.sub_mode}`}
-            </DialogTitle>
-          </DialogHeader>
-
-          {selectedSession && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <p>
-                  <span className="text-muted-foreground">Élève : </span>
-                  <span className="font-medium">{selectedSession.student?.full_name || selectedSession.student?.email}</span>
-                </p>
-                <p>
-                  <span className="text-muted-foreground">Coach : </span>
-                  <span className="font-medium">{selectedSession.coach?.full_name || selectedSession.coach?.email}</span>
-                </p>
-                <p>
-                  <span className="text-muted-foreground">Date : </span>
-                  <span className="font-medium">
-                    {format(new Date(selectedSession.session_date), "d MMMM yyyy", { locale: fr })}
-                  </span>
-                </p>
-                <p className="flex items-center gap-1">
-                  <span className="text-muted-foreground">Score global : </span>
-                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                  <span className="font-medium">
-                    {selectedSession.global_score?.toFixed(1) || "—"}/5
-                  </span>
-                </p>
-              </div>
-
-              <Separator />
-
-              {scoresLoading ? (
-                <div className="flex justify-center py-6">
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                </div>
-              ) : sessionScores && sessionScores.length > 0 ? (
-                <div className="space-y-4">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <FileText className="h-4 w-4" /> Détail par étape
-                  </h3>
-                  {sessionScores.map((score) => (
-                    <Card key={score.id}>
-                      <CardHeader className="py-3">
-                        <CardTitle className="text-sm">
-                          {(score as any).step?.label} — {(score as any).step?.title}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3 py-2">
-                        {score.criteria_scores &&
-                          (score.criteria_scores as number[]).length > 0 && (
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-xs text-muted-foreground">Scores :</span>
-                              {(score.criteria_scores as number[]).map((s, i) => (
-                                <Badge key={i} variant="secondary">
-                                  {s}/5
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-
-                        {score.debrief_responses &&
-                          (score.debrief_responses as string[]).length > 0 && (
-                            <div>
-                              <span className="text-xs text-muted-foreground">Observations :</span>
-                              <ul className="mt-1 space-y-1">
-                                {(score.debrief_responses as string[]).map((opt, i) => (
-                                  <li key={i} className="text-sm flex gap-2">
-                                    <span className="text-muted-foreground">•</span>
-                                    <span>{opt}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                        {score.notes && (
-                          <div>
-                            <span className="text-xs text-muted-foreground">Notes :</span>
-                            <p className="text-sm mt-1 bg-muted/50 p-2 rounded">{score.notes}</p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Aucun détail disponible pour cette session.
-                </p>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
