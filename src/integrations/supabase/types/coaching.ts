@@ -56,3 +56,35 @@ export interface CoachDebriefOption {
   created_at: string;
   updated_at: string;
 }
+
+export interface CoachingSession {
+  id: string;
+  coach_type_id: string;
+  coach_user_id: string;
+  student_user_id: string;
+  sub_mode: string | null;
+  session_number: number;
+  session_date: string;
+  global_score: number | null;
+  status: 'draft' | 'completed';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CoachingScore {
+  id: string;
+  session_id: string;
+  step_id: string;
+  criteria_scores: number[];
+  debrief_responses: string[];
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CoachingSessionWithRelations extends CoachingSession {
+  coach_type?: CoachType;
+  coach_user?: { id: string; full_name: string };
+  student_user?: { id: string; full_name: string };
+  scores?: CoachingScore[];
+}
