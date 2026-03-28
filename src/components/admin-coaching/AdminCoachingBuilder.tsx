@@ -327,9 +327,9 @@ export default function AdminCoachingBuilder() {
       </div>
 
       {/* Master-detail layout */}
-      <div className="flex gap-6 min-h-[calc(100vh-280px)]">
+      <div className="flex gap-6 h-[calc(100vh-280px)]">
         {/* LEFT COLUMN — Type selector + steps list */}
-        <div className="w-80 shrink-0 flex flex-col gap-4">
+        <div className="w-80 shrink-0 flex flex-col gap-4 overflow-y-auto">
           {/* Type tabs */}
           <div className="space-y-1">
             {types?.map((type) => (
@@ -420,7 +420,7 @@ export default function AdminCoachingBuilder() {
         </div>
 
         {/* RIGHT COLUMN — Step detail editor */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-y-auto">
           {!selectedStep ? (
             <Card className="h-full flex items-center justify-center">
               <div className="text-center space-y-3 text-muted-foreground">
@@ -436,7 +436,7 @@ export default function AdminCoachingBuilder() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </Card>
           ) : stepDetails ? (
-            <Card className="h-full flex flex-col">
+            <Card>
               <CardHeader className="pb-4 shrink-0">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">
