@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, Users, TrendingUp, Calendar, GraduationCap, ClipboardList } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import NewSessionDialog from "@/components/coaching/NewSessionDialog";
 
 export default function Coaching() {
   const { profile } = useAuth();
@@ -30,6 +32,7 @@ export default function Coaching() {
     enabled: !!profile?.id,
   });
 
+  const [showNewSession, setShowNewSession] = useState(false);
   const canCoach = profile?.is_coach || profile?.role === "ceo";
 
   if (sessionsLoading) {
@@ -74,7 +77,7 @@ export default function Coaching() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl font-bold text-foreground">Espace Coaching</h1>
-        <Button className="gradient-primary gap-2">
+        <Button className="gradient-primary gap-2" onClick={() => setShowNewSession(true)}>
           <Plus className="h-4 w-4" />
           Nouvelle session
         </Button>
@@ -171,7 +174,7 @@ export default function Coaching() {
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <GraduationCap className="h-10 w-10 text-muted-foreground mb-3" />
               <p className="text-muted-foreground mb-4">Aucune session de coaching pour le moment.</p>
-              <Button className="gradient-primary gap-2">
+              <Button className="gradient-primary gap-2" onClick={() => setShowNewSession(true)}>
                 <Plus className="h-4 w-4" />
                 Créer ma première session
               </Button>
@@ -179,6 +182,7 @@ export default function Coaching() {
           )}
         </CardContent>
       </Card>
+      <NewSessionDialog open={showNewSession} onOpenChange={setShowNewSession} />
     </div>
   );
 }
