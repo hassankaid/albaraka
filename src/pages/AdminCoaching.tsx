@@ -5,6 +5,7 @@ import { LayoutDashboard, Users, Wrench, Calendar } from "lucide-react";
 import AdminCoachingDashboard from "@/components/admin-coaching/AdminCoachingDashboard";
 import AdminCoachingCoachs from "@/components/admin-coaching/AdminCoachingCoachs";
 import AdminCoachingBuilder from "@/components/admin-coaching/AdminCoachingBuilder";
+import AdminCoachingSessions from "@/components/admin-coaching/AdminCoachingSessions";
 
 export default function AdminCoaching() {
   const { profile } = useAuth();
@@ -57,7 +58,7 @@ export default function AdminCoaching() {
         </TabsContent>
 
         <TabsContent value="sessions">
-          <p className="text-muted-foreground">Sessions - prompt suivant</p>
+          <AdminCoachingSessions />
         </TabsContent>
       </Tabs>
     </div>
