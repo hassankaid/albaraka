@@ -98,6 +98,52 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
 
   const createSession = useMutation({
     mutationFn: async () => {
+      // 1. Récupérer le type de coaching sélectionné
+      const { data: selectedTypeData, error: typeError } = await supabase
+        .from("coach_types")
+        .select("id, name, label, theme_color")
+        .eq("id", selectedTypeId)
+        .single();
+      if (typeError) throw typeError;
+
+      // 2. Récupérer la structure complète pour le snapshot
+      const { data: steps, error: stepsError } = await supabase
+        .from("coach_steps")
+        .select(`
+          id, step_id, step_number, label, title, objective, tips, display_order,
+          criteria:coach_criteria(id, criteria_text, display_order),
+          scripts:coach_script_refs(id, sub_mode, script_lines, display_order),
+          debriefs:coach_debrief_options(id, debrief_label, options, display_order)
+        `)
+        .eq("coach_type_id", selectedTypeId)
+        .eq("is_active", true)
+        .order("display_order");
+      if (stepsError) throw stepsError;
+
+      // 3. Filtrer les scripts par sous-mode si applicable
+      const filteredSteps = steps?.map(step => ({
+        ...step,
+        criteria: (step.criteria || []).filter((c: any) => c.is_active !== false),
+        scripts: (step.scripts || []).filter((s: any) =>
+          !s.sub_mode || s.sub_mode === selectedSubMode || !selectedSubMode
+        ),
+        debriefs: step.debriefs || [],
+      }));
+
+      // 4. Construire le snapshot
+      const structureSnapshot = {
+        coach_type: {
+          id: selectedTypeData.id,
+          name: selectedTypeData.name,
+          label: selectedTypeData.label,
+          theme_color: selectedTypeData.theme_color,
+        },
+        sub_mode: selectedSubMode || null,
+        steps: filteredSteps,
+        snapshot_date: new Date().toISOString(),
+      };
+
+      // 5. Créer la session avec le snapshot
       const { data, error } = await supabase
         .from("coaching_sessions")
         .insert({
@@ -108,6 +154,7 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
           session_number: (sessionCount || 0) + 1,
           session_date: sessionDate,
           status: "draft",
+          structure_snapshot: structureSnapshot,
         })
         .select()
         .single();
@@ -125,12 +172,12 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
       navigate(`/coaching/session/${data.id}`);
     },
     onError: (error) => {
+      console.error("Erreur création session:", error);
       toast({
         title: "Erreur",
         description: "Impossible de créer la session.",
         variant: "destructive",
       });
-      console.error(error);
     },
   });
 
