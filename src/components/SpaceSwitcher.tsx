@@ -46,16 +46,11 @@ export default function SpaceSwitcher() {
   const navigate = useNavigate();
   const { profile } = useAuth();
 
-  const availableSpaces = spaces.filter(
-    (space) => !space.condition || space.condition(profile)
-  );
+  const spaces = getSpaces(profile);
 
   const getCurrentSpace = (): Space => {
-    if (location.pathname.startsWith("/mon-coaching")) {
-      return spaces.find((s) => s.id === "coaching-student") || spaces[0];
-    }
-    if (location.pathname.startsWith("/coaching")) {
-      return spaces.find((s) => s.id === "coaching-coach") || spaces[0];
+    if (location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching")) {
+      return spaces.find((s) => s.id === "coaching") || spaces[0];
     }
     return spaces[0];
   };
