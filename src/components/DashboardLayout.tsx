@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import logo from "@/assets/ethicarena-logo.png";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -15,6 +15,7 @@ const allNavItems = [
   { title: "Mes Paiements", path: "/payments", icon: CreditCard, roles: ["ceo", "collaborateur"] },
   { title: "Mes Commissions", path: "/my-commissions", icon: Receipt, roles: ["ceo", "collaborateur"] },
   { title: "Coaching", path: "/coaching", icon: GraduationCap, roles: ["ceo", "collaborateur"] },
+  { title: "Mon Coaching", path: "/mon-coaching", icon: BookOpen, roles: ["ceo", "collaborateur"] },
   { title: "Équipe", path: "/admin/team", icon: UsersRound, roles: ["ceo"] },
   { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"] },
   { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
@@ -38,6 +39,8 @@ const pageTitles: Record<string, string> = {
   "/admin/create": "Création complète",
   "/my-space": "Mon espace",
   "/profile": "Mon profil",
+  "/coaching": "Coaching",
+  "/mon-coaching": "Mon Coaching",
 };
 
 export default function DashboardLayout() {

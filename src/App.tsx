@@ -27,6 +27,7 @@ import AdminTeam from "./pages/AdminTeam";
 import NotFound from "./pages/NotFound";
 import Coaching from "./pages/Coaching";
 import CoachingSession from "./pages/CoachingSession";
+import MonCoaching from "./pages/MonCoaching";
 import ApporteurDashboard from "./pages/apporteur/ApporteurDashboard";
 import ApporteurLeads from "./pages/apporteur/ApporteurLeads";
 import ApporteurSales from "./pages/apporteur/ApporteurSales";
@@ -69,6 +70,7 @@ const App = () => (
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/coaching" element={<Coaching />} />
                   <Route path="/coaching/session/:sessionId" element={<CoachingSession />} />
+                  <Route path="/mon-coaching" element={<MonCoaching />} />
                 </Route>
                 {/* Apporteur layout */}
                 <Route element={<ApporteurLayout />}>
