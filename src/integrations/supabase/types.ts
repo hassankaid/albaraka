@@ -460,6 +460,45 @@ export type Database = {
           },
         ]
       }
+      coach_type_assignments: {
+        Row: {
+          coach_id: string
+          coach_type_id: string
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+        }
+        Insert: {
+          coach_id: string
+          coach_type_id: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+        }
+        Update: {
+          coach_id?: string
+          coach_type_id?: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_type_assignments_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_type_assignments_coach_type_id_fkey"
+            columns: ["coach_type_id"]
+            isOneToOne: false
+            referencedRelation: "coach_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coach_types: {
         Row: {
           assigned_coach_id: string | null
