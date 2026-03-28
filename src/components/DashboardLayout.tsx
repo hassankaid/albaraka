@@ -72,7 +72,7 @@ export default function DashboardLayout() {
   }
 
   const userRole = profile?.role || "apporteur";
-  const isCoachingSpace = location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching");
+  const isCoachingSpace = location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching") || location.pathname === "/admin/coaching";
   const pageTitle = pageTitles[location.pathname] || "Dashboard";
   const navItems = (isCoachingSpace ? coachingNavItems : trackingNavItems).filter((item) => {
     if (!item.roles.includes(userRole)) return false;
