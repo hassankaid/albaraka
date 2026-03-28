@@ -41,7 +41,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
   // Sync external content changes (only if truly different)
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content, false);
+      editor.commands.setContent(content);
     }
   }, [content, editor]);
 
