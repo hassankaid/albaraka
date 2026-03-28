@@ -21,6 +21,7 @@ export default function AdminCoachingBuilder() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const editorRef = useRef<HTMLDivElement>(null);
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
   const [selectedStep, setSelectedStep] = useState<any>(null);
   const [showNewTypeDialog, setShowNewTypeDialog] = useState(false);
@@ -293,6 +294,9 @@ export default function AdminCoachingBuilder() {
 
   const openStep = (step: any) => {
     setSelectedStep(step);
+    setTimeout(() => {
+      editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const openEditTypeDialog = (type: any) => {
