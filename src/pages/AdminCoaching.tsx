@@ -2,6 +2,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutDashboard, Users, Wrench, Calendar } from "lucide-react";
+import AdminCoachingDashboard from "@/components/admin-coaching/AdminCoachingDashboard";
 
 export default function AdminCoaching() {
   const { profile } = useAuth();
