@@ -319,97 +319,87 @@ export default function AdminCoachingBuilder() {
 
   return (
     <div className="space-y-4">
-      {/* Top bar — Type selector (dropdown) */}
-      <div className="flex items-center gap-3">
-        <Select value={activeTypeId || ""} onValueChange={(val) => { setSelectedTypeId(val); setSelectedStep(null); }}>
-          <SelectTrigger className="w-[280px]">
-            <div className="flex items-center gap-2">
-              {activeType && (
-                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: activeType.theme_color }} />
-              )}
-              <SelectValue placeholder="Sélectionner un type…" />
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            {types?.map((type) => (
-              <SelectItem key={type.id} value={type.id}>
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: type.theme_color }} />
-                  <span>{type.label}</span>
-                  {!type.is_active && <Badge variant="secondary" className="text-[10px] px-1 ml-1">Off</Badge>}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {activeType && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditTypeDialog(activeType)}>
-            <Settings className="h-4 w-4" />
-          </Button>
-        )}
-        <Button variant="outline" size="sm" onClick={() => setShowNewTypeDialog(true)}>
-          <Plus className="h-4 w-4 mr-1" />
-          Nouveau type
-        </Button>
-      </div>
-
       {/* Master-detail layout */}
       <div className="flex gap-6 min-h-[calc(100vh-280px)]">
-        {/* LEFT COLUMN — Steps list only */}
-        {activeType && (
-          <div className="w-64 shrink-0 flex flex-col gap-3 sticky top-4 self-start">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-foreground">Étapes</h3>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openNewStepDialog(activeType.id)}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
+        {/* LEFT COLUMN — Type selector + Steps list */}
+        <div className="w-64 shrink-0 flex flex-col gap-4 sticky top-4 self-start">
+          {/* Type dropdown — clean, no color dot in trigger */}
+          <Select value={activeTypeId || ""} onValueChange={(val) => { setSelectedTypeId(val); setSelectedStep(null); }}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Type de coaching…" />
+            </SelectTrigger>
+            <SelectContent>
+              {types?.map((type) => (
+                <SelectItem key={type.id} value={type.id}>
+                  <span className={cn(!type.is_active && "opacity-50")}>{type.label}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-            {activeType.coaches?.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                Coachs : {activeType.coaches.map((c: any) => c?.full_name || c?.email).filter(Boolean).join(", ")}
-              </p>
-            )}
-
-            <div className="space-y-1.5">
-              {activeType.steps?.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  Aucune étape.
+          {/* Steps */}
+          {activeType && (
+            <div className="flex flex-col gap-2">
+              {activeType.coaches?.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Coachs : {activeType.coaches.map((c: any) => c?.full_name || c?.email).filter(Boolean).join(", ")}
                 </p>
               )}
-              {activeType.steps?.map((step: any) => (
-                <button
-                  key={step.id}
-                  onClick={() => openStep(step)}
-                  className={cn(
-                    "w-full flex items-center gap-2 px-3 py-2 rounded-md text-left transition-colors text-sm",
-                    selectedStep?.id === step.id
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted text-foreground",
-                    !step.is_active && "opacity-50"
-                  )}
-                >
-                  <span className="flex-1 min-w-0">
-                    <span className="block font-medium text-xs">{step.label}</span>
-                    <span className={cn(
-                      "block text-xs truncate",
-                      selectedStep?.id === step.id ? "text-primary-foreground/70" : "text-muted-foreground"
-                    )}>{step.title}</span>
-                  </span>
-                  {!step.is_active && <Badge variant="secondary" className="text-[10px]">Off</Badge>}
-                  <ChevronRight className={cn(
-                    "h-3.5 w-3.5 shrink-0",
-                    selectedStep?.id === step.id ? "text-primary-foreground/70" : "text-muted-foreground"
-                  )} />
-                </button>
-              ))}
 
-              <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => openNewStepDialog(activeType.id)}>
-                <Plus className="h-4 w-4 mr-1" /> Ajouter une étape
-              </Button>
+              <div className="space-y-1.5">
+                {activeType.steps?.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Aucune étape.
+                  </p>
+                )}
+                {activeType.steps?.map((step: any) => (
+                  <button
+                    key={step.id}
+                    onClick={() => openStep(step)}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 rounded-md text-left transition-colors text-sm",
+                      selectedStep?.id === step.id
+                        ? "bg-primary text-primary-foreground"
+                        : "hover:bg-muted text-foreground",
+                      !step.is_active && "opacity-50"
+                    )}
+                  >
+                    <span className="flex-1 min-w-0">
+                      <span className="block font-medium text-xs">{step.label}</span>
+                      <span className={cn(
+                        "block text-xs truncate",
+                        selectedStep?.id === step.id ? "text-primary-foreground/70" : "text-muted-foreground"
+                      )}>{step.title}</span>
+                    </span>
+                    {!step.is_active && <Badge variant="secondary" className="text-[10px]">Off</Badge>}
+                    <ChevronRight className={cn(
+                      "h-3.5 w-3.5 shrink-0",
+                      selectedStep?.id === step.id ? "text-primary-foreground/70" : "text-muted-foreground"
+                    )} />
+                  </button>
+                ))}
+
+                <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => openNewStepDialog(activeType.id)}>
+                  <Plus className="h-4 w-4 mr-1" /> Ajouter une étape
+                </Button>
+              </div>
+
+              <Separator />
+
+              {/* Actions on type — tucked at bottom of sidebar */}
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" className="flex-1 justify-start text-muted-foreground" onClick={() => openEditTypeDialog(activeType)}>
+                  <Settings className="h-3.5 w-3.5 mr-1.5" />
+                  Paramètres
+                </Button>
+                <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setShowNewTypeDialog(true)}>
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                  Type
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* RIGHT COLUMN — Step detail editor */}
         <div ref={editorRef} className="flex-1 min-w-0">
