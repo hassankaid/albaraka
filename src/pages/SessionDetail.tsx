@@ -328,6 +328,14 @@ export default function SessionDetail() {
             {session.sub_mode && <Badge variant="secondary">{session.sub_mode}</Badge>}
           </div>
         </div>
+        <Button variant="outline" onClick={handleExportPdf} disabled={isExporting}>
+          {isExporting ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <Download className="h-4 w-4 mr-2" />
+          )}
+          Exporter PDF
+        </Button>
       </div>
 
       {/* ── KPI row ── */}
