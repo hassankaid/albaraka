@@ -1,59 +1,35 @@
 
 
-## Amélioration UX du Builder coaching
+## Builder coaching : passer de Sheet à master-detail
 
-### Résumé
-Trois améliorations de l'éditeur d'étapes dans le Sheet du Builder :
-1. **Tips** : liste dynamique avec champs individuels + ajout/suppression
-2. **Scripts** : éditeur riche (gras, italique, souligné) via Tiptap
-3. **Débriefs** : options individuelles avec champs + ajout/suppression
+### Principe
 
----
+Remplacer le Sheet latéral par un layout en deux colonnes intégré dans l'onglet Builder :
+- **Colonne gauche (~300px)** : sélecteur de type (tabs ou dropdown) + liste des étapes cliquables
+- **Colonne droite (flex-1)** : contenu complet de l'étape sélectionnée (titre, objectif, tips, critères, scripts, débriefs)
 
-### 1. Tips — Liste dynamique
+Quand aucune étape n'est sélectionnée, la zone droite affiche un état vide ("Sélectionnez une étape").
 
-Remplacer le textarea "un par ligne" par une liste d'inputs individuels :
-- Chaque tip = un `Input` avec un bouton suppression (Trash2)
-- Bouton "+ Ajouter un tip" en bas
-- Stockage inchangé : `tips: string[]` dans `coach_steps`
+### Changements dans `AdminCoachingBuilder.tsx`
 
-### 2. Scripts — Éditeur riche avec Tiptap
+1. **Supprimer** le composant `Sheet`/`SheetContent` et les états `showStepSheet`
+2. **Restructurer le JSX** :
+   - Wrapper `flex gap-6` sur toute la hauteur
+   - Gauche : `w-80 shrink-0` avec les types en tabs verticaux ou dropdown + liste des étapes (cards cliquables, highlight sur l'étape active)
+   - Droite : `flex-1 overflow-y-auto` avec le contenu de l'étape (même contenu que l'ancien Sheet, mais dans un Card ou directement)
+3. **Conserver les Dialogs** existants (nouveau type, nouvelle étape, édition type) -- ils restent en modal car ce sont des actions ponctuelles
+4. **Accordion ouvert par défaut** : les sections critères/scripts/débriefs peuvent être toutes visibles puisqu'on a plus d'espace
 
-**Dépendances à installer** : `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-underline`
+### Résultat
 
-**Migration SQL** : Ajouter une colonne `script_content text` à `coach_script_refs` pour stocker le HTML. Les anciennes données restent dans `script_lines` comme fallback.
+- Plus de contenu coupé
+- Navigation fluide entre étapes (clic = changement instantané)
+- Boutons "+ Ajouter une étape" et "⚙ Type" restent dans la colonne gauche
+- Le bouton "Supprimer l'étape" reste en bas de la zone droite
 
-**Composant** : Créer `src/components/ui/rich-text-editor.tsx` — un petit wrapper Tiptap avec toolbar (B, I, U).
-
-**Builder** : Remplacer le textarea des scripts par ce composant. Au chargement, si `script_content` est null, on initialise depuis `script_lines.join("<br>")`.
-
-**Session de notation** (`CoachingSession.tsx` + `SessionDetail.tsx`) : Rendre `script_content` avec `dangerouslySetInnerHTML` si disponible, sinon afficher `script_lines` comme avant (liste à puces).
-
-### 3. Débriefs — Options individuelles
-
-Remplacer le textarea "une option par ligne" par :
-- Chaque option = un `Input` avec bouton suppression
-- Bouton "+ Ajouter une option" en bas
-- Stockage inchangé : `options: string[]` dans `coach_debrief_options`
-
----
-
-### Fichiers modifiés
+### Fichier modifié
 
 | Fichier | Modification |
 |---------|-------------|
-| `package.json` | Ajouter dépendances Tiptap |
-| `src/components/ui/rich-text-editor.tsx` | Nouveau composant éditeur riche |
-| `src/components/admin-coaching/AdminCoachingBuilder.tsx` | Tips en liste, scripts en éditeur riche, débriefs en items individuels |
-| `src/pages/CoachingSession.tsx` | Rendu `script_content` HTML si disponible |
-| `src/pages/SessionDetail.tsx` | Rendu `script_content` HTML si disponible |
-| Migration SQL | `ALTER TABLE coach_script_refs ADD COLUMN script_content text` |
-
-### Section technique
-
-- Tiptap extensions : `StarterKit` (bold, italic) + `Underline`
-- Le composant `RichTextEditor` prend `content: string` et `onChange: (html: string) => void`
-- Toolbar minimaliste : 3 boutons toggle (B/I/U) avec état actif
-- La mutation `updateScript` envoie `script_content` au lieu de `script_lines`
-- Fallback : si `script_content` est null/vide, on lit `script_lines` comme avant
+| `src/components/admin-coaching/AdminCoachingBuilder.tsx` | Remplacer Sheet par layout master-detail en deux colonnes |
 
