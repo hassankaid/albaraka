@@ -1,0 +1,1 @@
+ALTER TABLE coach_script_refs ADD COLUMN IF NOT EXISTS script_content text;

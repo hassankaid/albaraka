@@ -374,6 +374,7 @@ export type Database = {
           created_at: string | null
           display_order: number | null
           id: string
+          script_content: string | null
           script_lines: string[]
           step_id: string
           sub_mode: string | null
@@ -383,6 +384,7 @@ export type Database = {
           created_at?: string | null
           display_order?: number | null
           id?: string
+          script_content?: string | null
           script_lines: string[]
           step_id: string
           sub_mode?: string | null
@@ -392,6 +394,7 @@ export type Database = {
           created_at?: string | null
           display_order?: number | null
           id?: string
+          script_content?: string | null
           script_lines?: string[]
           step_id?: string
           sub_mode?: string | null
