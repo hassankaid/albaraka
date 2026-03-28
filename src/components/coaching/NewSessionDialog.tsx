@@ -60,7 +60,7 @@ export default function NewSessionDialog({ open, onOpenChange }: NewSessionDialo
       const { data, error } = await supabase
         .from("profiles")
         .select("id, full_name, role")
-        .in("role", ["collaborateur", "ceo"])
+        .in("role", ["collaborateur", "apporteur"])
         .eq("is_active", true)
         .order("full_name");
       if (error) throw error;
