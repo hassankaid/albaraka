@@ -48,7 +48,7 @@ export default function SpaceSwitcher() {
   const spaces = getSpaces(profile);
 
   const getCurrentSpace = (): Space => {
-    if (location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching")) {
+    if (location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching") || location.pathname === "/admin/coaching") {
       return spaces.find((s) => s.id === "coaching") || spaces[0];
     }
     return spaces[0];
