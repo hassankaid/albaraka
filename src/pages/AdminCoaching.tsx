@@ -43,7 +43,7 @@ export default function AdminCoaching() {
         </TabsList>
 
         <TabsContent value="dashboard">
-          <p className="text-muted-foreground">Dashboard - prompt suivant</p>
+          <AdminCoachingDashboard />
         </TabsContent>
 
         <TabsContent value="coachs">
