@@ -1,30 +1,36 @@
 
 
-## Simplifier le scroll du Builder
+## Builder : type en haut, étapes en sidebar
 
-### Probleme
-Le layout actuel avec hauteur fixe et deux scrolls independants (liste + editeur) est confus -- trop de zones de scroll imbriquees.
+### Principe
 
-### Solution
-Revenir a un scroll unique (la page) et utiliser `scrollIntoView` pour amener automatiquement l'editeur dans le viewport quand on clique une etape.
+Réorganiser le Builder en séparant les deux niveaux de navigation :
+
+```text
+┌─────────────────────────────────────────────────┐
+│  [Appel Setter] [Appel Closer] [RDV] [Clos.]   │  ← Tabs colorés en haut
+│  + Nouveau type                          ⚙️     │
+├────────────┬────────────────────────────────────┤
+│ Étapes     │                                    │
+│            │                                    │
+│ 1. Intro   │   Éditeur de l'étape               │
+│ 2. Découv. │   (titre, tips, critères,          │
+│ 3. Pitch   │    scripts, débriefs)              │
+│ 4. Close   │                                    │
+│            │                                    │
+│ + Étape    │                                    │
+├────────────┴────────────────────────────────────┘
+```
 
 ### Changements dans `AdminCoachingBuilder.tsx`
 
-1. **Supprimer la contrainte de hauteur fixe** : remplacer `h-[calc(100vh-280px)]` par juste `min-h-[calc(100vh-280px)]`
-2. **Supprimer `overflow-y-auto`** des deux colonnes -- tout scrolle avec la page normalement
-3. **Ajouter un `ref`** sur la Card editeur (colonne droite)
-4. **`scrollIntoView({ behavior: 'smooth', block: 'start' })`** quand on selectionne une etape -- l'editeur remonte automatiquement en vue
-5. La colonne gauche reste `sticky top-4` pour rester visible pendant le scroll de l'editeur
+1. **Haut de page** : barre horizontale avec les types de coaching en tabs colorés (badge avec `theme_color`), bouton "+ Nouveau type" à droite, bouton ⚙️ sur le type actif
+2. **Sidebar gauche (w-64)** : uniquement les étapes du type sélectionné + bouton "+ Ajouter une étape" en bas -- `sticky top-4`
+3. **Zone droite** : éditeur inchangé
 
-### Resultat
-- Un seul scroll (la page), plus naturel
-- Cliquer une etape = l'editeur apparait en haut automatiquement
-- La liste des etapes reste visible grace au `sticky`
-- Plus de sensation de "fouilli" avec des scrolls multiples
+### Fichier modifié
 
-### Fichier modifie
-
-| Fichier | Modification |
-|---------|-------------|
-| `src/components/admin-coaching/AdminCoachingBuilder.tsx` | Scroll unique + sticky sidebar + scrollIntoView |
+| Fichier | Action |
+|---------|--------|
+| `src/components/admin-coaching/AdminCoachingBuilder.tsx` | Déplacer sélecteur de type en haut, sidebar = étapes uniquement |
 
