@@ -17,10 +17,9 @@ interface Space {
   bgColor: string;
   path: string;
   description: string;
-  condition?: (profile: any) => boolean;
 }
 
-const spaces: Space[] = [
+const getSpaces = (profile: any): Space[] => [
   {
     id: "tracking",
     label: "TRACKING",
@@ -31,23 +30,13 @@ const spaces: Space[] = [
     description: "Leads, Calls, Sales, Payments",
   },
   {
-    id: "coaching-coach",
+    id: "coaching",
     label: "COACHING",
     icon: GraduationCap,
     color: "text-amber-500",
     bgColor: "bg-amber-500/10",
-    path: "/coaching",
-    description: "Espace Coach",
-    condition: (profile) => profile?.is_coach || profile?.role === "ceo",
-  },
-  {
-    id: "coaching-student",
-    label: "MON COACHING",
-    icon: BookOpen,
-    color: "text-green-500",
-    bgColor: "bg-green-500/10",
-    path: "/mon-coaching",
-    description: "Mes sessions reçues",
+    path: profile?.is_coach || profile?.role === "ceo" ? "/coaching" : "/mon-coaching",
+    description: "Évaluations & Historique",
   },
 ];
 
@@ -56,16 +45,11 @@ export default function SpaceSwitcher() {
   const navigate = useNavigate();
   const { profile } = useAuth();
 
-  const availableSpaces = spaces.filter(
-    (space) => !space.condition || space.condition(profile)
-  );
+  const spaces = getSpaces(profile);
 
   const getCurrentSpace = (): Space => {
-    if (location.pathname.startsWith("/mon-coaching")) {
-      return spaces.find((s) => s.id === "coaching-student") || spaces[0];
-    }
-    if (location.pathname.startsWith("/coaching")) {
-      return spaces.find((s) => s.id === "coaching-coach") || spaces[0];
+    if (location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching")) {
+      return spaces.find((s) => s.id === "coaching") || spaces[0];
     }
     return spaces[0];
   };
@@ -90,7 +74,7 @@ export default function SpaceSwitcher() {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
-        {availableSpaces.map((space) => {
+        {spaces.map((space) => {
           const SpaceIcon = space.icon;
           const isActive = space.id === currentSpace.id;
 
