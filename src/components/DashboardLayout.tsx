@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import logo from "@/assets/ethicarena-logo.png";
+import SpaceSwitcher from "./SpaceSwitcher";
 import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
@@ -89,12 +90,14 @@ export default function DashboardLayout() {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="h-16 flex items-center gap-3 px-6 border-b border-border">
-          <img src={logo} alt="Ethicarena" className="w-9 h-9 object-contain" />
-          <span className="font-bold text-foreground">Ethicarena</span>
-          <button className="ml-auto lg:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
-            <X className="h-5 w-5" />
-          </button>
+        <div className="border-b border-border">
+          <div className="h-14 flex items-center gap-3 px-6">
+            <img src={logo} alt="Ethicarena" className="w-8 h-8 object-contain" />
+            <button className="ml-auto lg:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <SpaceSwitcher />
         </div>
 
         <nav className="flex-1 py-4 px-3 space-y-1">
