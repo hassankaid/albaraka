@@ -73,6 +73,7 @@ const App = () => (
                   <Route path="/coaching" element={<Coaching />} />
                   <Route path="/coaching/session/:sessionId" element={<CoachingSession />} />
                   <Route path="/mon-coaching" element={<MonCoaching />} />
+                  <Route path="/mon-coaching/session/:sessionId" element={<SessionDetail />} />
                   <Route path="/admin/coaching" element={<AdminCoaching />} />
                 </Route>
                 {/* Apporteur layout */}
