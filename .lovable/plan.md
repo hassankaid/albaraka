@@ -1,75 +1,34 @@
 
 
-## Plan : Espaces séparés TRACKING et COACHING avec sidebars distinctes
+## Renommage sidebar coaching + simplification du SpaceSwitcher
 
-### Problème actuel
-Les liens "Coaching" et "Mon Coaching" sont mélangés dans la sidebar TRACKING. Or, l'idée est d'avoir **deux espaces complètement séparés** avec chacun sa propre sidebar.
+### Changements
 
-### Architecture cible
+**1. SpaceSwitcher -- passer de 3 a 2 espaces**
 
-```text
-┌─────────────────────────────────────────────────┐
-│  SpaceSwitcher (en haut de la sidebar)           │
-│  ┌─────────────┐  ┌──────────────────┐          │
-│  │  TRACKING    │  │  COACHING         │          │
-│  └─────────────┘  └──────────────────┘          │
-├─────────────────────────────────────────────────┤
-│                                                  │
-│  SI espace = TRACKING :                          │
-│    Dashboard, Leads, Calls, Contacts,            │
-│    Ventes, Paiements, Commissions,               │
-│    Admin (Équipe, Factures, etc.)                 │
-│                                                  │
-│  SI espace = COACHING :                          │
-│    Coach → "Sessions" (/coaching)                │
-│    Élève → "Mon Coaching" (/mon-coaching)        │
-│                                                  │
-└─────────────────────────────────────────────────┘
-```
+Fusionner les 3 entrées actuelles en 2 :
+- **ETHICARENA TRACKING** (bleu, icone BarChart3) → `/dashboard`
+- **ETHICARENA COACHING** (ambre, icone GraduationCap) → `/coaching` si coach/CEO, sinon `/mon-coaching`
 
-### Modifications
+La detection de l'espace actif : si le pathname commence par `/coaching` ou `/mon-coaching` → COACHING, sinon → TRACKING.
 
-**1. `src/components/DashboardLayout.tsx`**
-- Séparer `allNavItems` en deux listes : `trackingNavItems` et `coachingNavItems`
-- `trackingNavItems` : tous les items actuels SAUF "Coaching" et "Mon Coaching"
-- `coachingNavItems` : 
-  - "Sessions" (`/coaching`, icône GraduationCap) — visible si `is_coach` ou `ceo`
-  - "Mon Coaching" (`/mon-coaching`, icône BookOpen) — visible pour tous
-- Détecter l'espace actuel via le pathname : si `/coaching` ou `/mon-coaching` → espace COACHING, sinon → TRACKING
-- Afficher dynamiquement la bonne liste de liens selon l'espace actuel
-- Supprimer les entrées "Coaching" et "Mon Coaching" de `allNavItems`
+**2. DashboardLayout -- renommer les liens coaching**
 
-**2. `src/components/SpaceSwitcher.tsx`**
-- Aucune modification nécessaire, il gère déjà la navigation et la détection d'espace
+Modifier `coachingNavItems` :
+- `"Sessions"` → **`"Évaluations"`** (path `/coaching`, visible coach/CEO uniquement)
+- `"Mon Coaching"` → **`"Historique"`** (path `/mon-coaching`, visible par tous)
 
-### Comportement par rôle
+Mettre a jour `pageTitles` en conséquence.
 
-| Rôle | Espace TRACKING | Espace COACHING |
-|------|-----------------|-----------------|
-| CEO | Sidebar complète (dashboard, leads, admin...) | Sessions (coach) + Mon Coaching |
-| Collaborateur coach | Sa sidebar collaborateur | Sessions (coach) + Mon Coaching |
-| Collaborateur non-coach | Sa sidebar collaborateur | Mon Coaching uniquement |
-| Apporteur | N/A (espace ApporteurLayout) | N/A |
+### Fichiers modifies
 
-### Détail technique
+| Fichier | Modification |
+|---------|-------------|
+| `src/components/SpaceSwitcher.tsx` | Supprimer l'entrée "coaching-student", ne garder que 2 espaces. Adapter le path de COACHING selon le role. |
+| `src/components/DashboardLayout.tsx` | Renommer les titres dans `coachingNavItems` et `pageTitles`. |
 
-Dans `DashboardLayout.tsx`, on ajoute une détection :
-```tsx
-const isCoachingSpace = location.pathname.startsWith("/coaching") 
-  || location.pathname.startsWith("/mon-coaching");
+### Résultat
 
-const navItems = isCoachingSpace ? coachingNavItems : trackingNavItems;
-```
-
-Les items coaching :
-```tsx
-const coachingNavItems = [
-  { title: "Sessions", path: "/coaching", icon: GraduationCap, 
-    roles: ["ceo", "collaborateur"], coachOnly: true },
-  { title: "Mon Coaching", path: "/mon-coaching", icon: BookOpen, 
-    roles: ["ceo", "collaborateur"] },
-];
-```
-
-Le filtrage `coachOnly` applique la même règle que maintenant (`is_coach || role === 'ceo'`).
+SpaceSwitcher : 2 choix (TRACKING / COACHING).
+Sidebar coaching : "Évaluations" (coach) + "Historique" (tous).
 
