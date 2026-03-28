@@ -243,9 +243,6 @@ export default function AdminCoachingCoachs() {
                   </TableCell>
                   <TableCell>{p.email}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{p.role}</Badge>
-                  </TableCell>
-                  <TableCell>
                     <Switch
                       checked={p.is_coach ?? false}
                       onCheckedChange={(checked) =>
