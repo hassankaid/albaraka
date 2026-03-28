@@ -90,10 +90,7 @@ export default function SpaceSwitcher() {
               <div className={cn("p-1.5 rounded-lg", space.bgColor)}>
                 <SpaceIcon className={cn("h-4 w-4", space.color)} />
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold">{space.label}</p>
-                <p className="text-xs text-muted-foreground">{space.description}</p>
-              </div>
+              <p className="text-sm font-semibold">{space.label}</p>
               {isActive && <Check className="h-4 w-4 text-primary" />}
             </DropdownMenuItem>
           );
