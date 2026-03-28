@@ -232,7 +232,6 @@ export default function AdminCoachingCoachs() {
               <TableRow>
                 <TableHead>Nom</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Rôle</TableHead>
                 <TableHead>Peut coacher</TableHead>
               </TableRow>
             </TableHeader>
@@ -243,9 +242,6 @@ export default function AdminCoachingCoachs() {
                     {p.full_name || "—"}
                   </TableCell>
                   <TableCell>{p.email}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{p.role}</Badge>
-                  </TableCell>
                   <TableCell>
                     <Switch
                       checked={p.is_coach ?? false}
