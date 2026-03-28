@@ -1,17 +1,22 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import logo from "@/assets/ethicarena-logo.png";
-import { BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X, ArrowLeftRight, ChevronDown, User } from "lucide-react";
+import SpaceSwitcher from "./SpaceSwitcher";
+import { BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X, ArrowLeftRight, ChevronDown, User, BookOpen } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
-const navItems = [
+const trackingNavItems = [
   { title: "Dashboard", path: "/my-space", icon: BarChart3 },
   { title: "Mes Leads", path: "/my-space/leads", icon: Users },
   { title: "Mes Ventes", path: "/my-space/sales", icon: BadgeEuro },
   { title: "Commissions & Factures", path: "/my-space/commissions", icon: Receipt },
   { title: "Mon Profil", path: "/my-space/profile", icon: Settings },
+];
+
+const coachingNavItems = [
+  { title: "Historique", path: "/mon-coaching", icon: BookOpen },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -20,6 +25,7 @@ const pageTitles: Record<string, string> = {
   "/my-space/sales": "Mes Ventes",
   "/my-space/commissions": "Commissions & Factures",
   "/my-space/profile": "Mon Profil",
+  "/mon-coaching": "Historique",
 };
 
 export default function ApporteurLayout() {
@@ -29,7 +35,9 @@ export default function ApporteurLayout() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { profile, signOut } = useAuth();
 
+  const isCoachingSpace = location.pathname.startsWith("/mon-coaching");
   const pageTitle = pageTitles[location.pathname] || "Mon espace";
+  const navItems = isCoachingSpace ? coachingNavItems : trackingNavItems;
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
@@ -45,12 +53,14 @@ export default function ApporteurLayout() {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="h-16 flex items-center gap-3 px-6 border-b border-border shrink-0">
-          <img src={logo} alt="Ethicarena" className="w-9 h-9 object-contain" />
-          <span className="font-bold text-foreground">Ethicarena</span>
-          <button className="ml-auto lg:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
-            <X className="h-5 w-5" />
-          </button>
+        <div className="border-b border-border">
+          <div className="h-14 flex items-center gap-3 px-6">
+            <img src={logo} alt="Ethicarena" className="w-8 h-8 object-contain" />
+            <button className="ml-auto lg:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <SpaceSwitcher />
         </div>
 
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">

@@ -25,7 +25,7 @@ const trackingNavItems = [
 
 const coachingNavItems = [
   { title: "Évaluations", path: "/coaching", icon: GraduationCap, roles: ["ceo", "collaborateur"], coachOnly: true },
-  { title: "Historique", path: "/mon-coaching", icon: BookOpen, roles: ["ceo", "collaborateur"] },
+  { title: "Historique", path: "/mon-coaching", icon: BookOpen, roles: ["ceo", "collaborateur", "apporteur"] },
   { title: "Administration", path: "/admin/coaching", icon: Settings2, roles: ["ceo"] },
 ];
 
@@ -56,8 +56,9 @@ export default function DashboardLayout() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { profile, signOut } = useAuth();
 
-  // Redirect pure apporteurs to their dedicated space
-  if (profile?.role === "apporteur" && !profile?.is_also_apporteur) {
+  // Redirect pure apporteurs to their dedicated space (except coaching routes)
+  const isCoachingRoute = location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching");
+  if (profile?.role === "apporteur" && !profile?.is_also_apporteur && !isCoachingRoute) {
     return <Navigate to="/my-space" replace />;
   }
 
