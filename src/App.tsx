@@ -25,6 +25,7 @@ import AdminData from "./pages/AdminData";
 import AdminCreateWizard from "./pages/AdminCreateWizard";
 import AdminTeam from "./pages/AdminTeam";
 import NotFound from "./pages/NotFound";
+import Coaching from "./pages/Coaching";
 import ApporteurDashboard from "./pages/apporteur/ApporteurDashboard";
 import ApporteurLeads from "./pages/apporteur/ApporteurLeads";
 import ApporteurSales from "./pages/apporteur/ApporteurSales";
@@ -65,6 +66,7 @@ const App = () => (
                   <Route path="/admin/data" element={<AdminData />} />
                   <Route path="/admin/create" element={<AdminCreateWizard />} />
                   <Route path="/profile" element={<Profile />} />
+                  <Route path="/coaching" element={<Coaching />} />
                 </Route>
                 {/* Apporteur layout */}
                 <Route element={<ApporteurLayout />}>
