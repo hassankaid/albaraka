@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import logo from "@/assets/ethicarena-logo.png";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2 } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -29,6 +29,14 @@ const coachingNavItems = [
   { title: "Administration", path: "/admin/coaching", icon: Settings2, roles: ["ceo"] },
 ];
 
+const workingNavItems = [
+  { title: "Accueil", path: "/working", icon: Briefcase, roles: ["ceo", "collaborateur"] },
+  { title: "Scripts Setting", path: "/working/scripts/setting", icon: MessageSquare, roles: ["ceo", "collaborateur"] },
+  { title: "Scripts Closing", path: "/working/scripts/closing", icon: Phone, roles: ["ceo", "collaborateur"] },
+  { title: "Générateur Contenu", path: "/working/content", icon: Sparkles, roles: ["ceo", "collaborateur"] },
+  { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur"] },
+];
+
 const pageTitles: Record<string, string> = {
   "/dashboard": "Mon Dashboard",
   "/leads": "Leads",
@@ -47,6 +55,11 @@ const pageTitles: Record<string, string> = {
   "/coaching": "Évaluations",
   "/mon-coaching": "Historique",
   "/admin/coaching": "Administration Coaching",
+  "/working": "Espace de travail",
+  "/working/scripts/setting": "Scripts Setting",
+  "/working/scripts/closing": "Scripts Closing",
+  "/working/content": "Générateur de Contenu",
+  "/working/agent": "Agent IA",
 };
 
 export default function DashboardLayout() {
@@ -74,8 +87,19 @@ export default function DashboardLayout() {
 
   const userRole = profile?.role || "apporteur";
   const isCoachingSpace = location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching") || location.pathname === "/admin/coaching";
+  const isWorkingSpace = location.pathname.startsWith("/working");
   const pageTitle = pageTitles[location.pathname] || "Dashboard";
-  const navItems = (isCoachingSpace ? coachingNavItems : trackingNavItems).filter((item) => {
+
+  let currentNavItems;
+  if (isWorkingSpace) {
+    currentNavItems = workingNavItems;
+  } else if (isCoachingSpace) {
+    currentNavItems = coachingNavItems;
+  } else {
+    currentNavItems = trackingNavItems;
+  }
+
+  const navItems = currentNavItems.filter((item) => {
     if (!item.roles.includes(userRole)) return false;
     if ('coachOnly' in item && item.coachOnly) return profile?.is_coach || profile?.role === "ceo";
     return true;

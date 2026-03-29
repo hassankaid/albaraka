@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, BarChart3, GraduationCap, BookOpen, Check } from "lucide-react";
+import { ChevronDown, BarChart3, GraduationCap, Briefcase, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Space {
@@ -32,6 +32,15 @@ const getSpaces = (profile: any): Space[] => {
       description: "Leads, Calls, Sales, Payments",
     },
     {
+      id: "working",
+      label: "WORKING",
+      icon: Briefcase,
+      color: "text-emerald-500",
+      bgColor: "bg-emerald-500/10",
+      path: "/working",
+      description: "Scripts, Contenu, Outils IA",
+    },
+    {
       id: "coaching",
       label: "COACHING",
       icon: GraduationCap,
@@ -51,6 +60,9 @@ export default function SpaceSwitcher() {
   const spaces = getSpaces(profile);
 
   const getCurrentSpace = (): Space => {
+    if (location.pathname.startsWith("/working")) {
+      return spaces.find((s) => s.id === "working") || spaces[0];
+    }
     if (location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching") || location.pathname === "/admin/coaching") {
       return spaces.find((s) => s.id === "coaching") || spaces[0];
     }
@@ -93,7 +105,10 @@ export default function SpaceSwitcher() {
               <div className={cn("p-1.5 rounded-lg", space.bgColor)}>
                 <SpaceIcon className={cn("h-4 w-4", space.color)} />
               </div>
-              <p className="text-sm font-semibold">{space.label}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">{space.label}</p>
+                <p className="text-xs text-muted-foreground">{space.description}</p>
+              </div>
               {isActive && <Check className="h-4 w-4 text-primary" />}
             </DropdownMenuItem>
           );
