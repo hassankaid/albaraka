@@ -37,6 +37,7 @@ import ApporteurCommissions from "./pages/apporteur/ApporteurCommissions";
 import ApporteurProfile from "./pages/apporteur/ApporteurProfile";
 import ApporteurOnboarding from "./pages/apporteur/ApporteurOnboarding";
 import Working from "./pages/Working";
+import ScriptsSetting from "./pages/working/ScriptsSetting";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +78,7 @@ const App = () => (
                   <Route path="/mon-coaching/session/:sessionId" element={<SessionDetail />} />
                   <Route path="/admin/coaching" element={<AdminCoaching />} />
                   <Route path="/working" element={<Working />} />
+                  <Route path="/working/scripts/setting" element={<ScriptsSetting />} />
                 </Route>
                 {/* Apporteur layout */}
                 <Route element={<ApporteurLayout />}>
