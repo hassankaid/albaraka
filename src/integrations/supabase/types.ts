@@ -1121,6 +1121,7 @@ export type Database = {
           bank_country: string | null
           bank_details: Json | null
           bank_rib_url: string | null
+          calendly_email: string | null
           can_add_instagram_leads: boolean | null
           city: string | null
           collaborateur_level: string | null
@@ -1148,6 +1149,7 @@ export type Database = {
           bank_country?: string | null
           bank_details?: Json | null
           bank_rib_url?: string | null
+          calendly_email?: string | null
           can_add_instagram_leads?: boolean | null
           city?: string | null
           collaborateur_level?: string | null
@@ -1175,6 +1177,7 @@ export type Database = {
           bank_country?: string | null
           bank_details?: Json | null
           bank_rib_url?: string | null
+          calendly_email?: string | null
           can_add_instagram_leads?: boolean | null
           city?: string | null
           collaborateur_level?: string | null
