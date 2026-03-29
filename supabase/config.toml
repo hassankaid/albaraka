@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.impersonate-user]
 verify_jwt = false
+
+[functions.claude-content-generator]
+verify_jwt = false
