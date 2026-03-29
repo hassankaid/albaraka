@@ -38,6 +38,7 @@ import ApporteurProfile from "./pages/apporteur/ApporteurProfile";
 import ApporteurOnboarding from "./pages/apporteur/ApporteurOnboarding";
 import Working from "./pages/Working";
 import ScriptsSetting from "./pages/working/ScriptsSetting";
+import ScriptsClosing from "./pages/working/ScriptsClosing";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,7 @@ const App = () => (
                   <Route path="/admin/coaching" element={<AdminCoaching />} />
                   <Route path="/working" element={<Working />} />
                   <Route path="/working/scripts/setting" element={<ScriptsSetting />} />
+                  <Route path="/working/scripts/closing" element={<ScriptsClosing />} />
                 </Route>
                 {/* Apporteur layout */}
                 <Route element={<ApporteurLayout />}>
