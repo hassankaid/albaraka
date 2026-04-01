@@ -1249,9 +1249,12 @@ export type Database = {
           id: string
           lead_id: string | null
           mensualites: number | null
+          parent_sale_id: string | null
           payment_status: string | null
           product: string
+          sale_type: string | null
           sold_at: string | null
+          systeme_io_order_id: string | null
         }
         Insert: {
           amount_ht: number
@@ -1262,9 +1265,12 @@ export type Database = {
           id?: string
           lead_id?: string | null
           mensualites?: number | null
+          parent_sale_id?: string | null
           payment_status?: string | null
           product: string
+          sale_type?: string | null
           sold_at?: string | null
+          systeme_io_order_id?: string | null
         }
         Update: {
           amount_ht?: number
@@ -1275,9 +1281,12 @@ export type Database = {
           id?: string
           lead_id?: string | null
           mensualites?: number | null
+          parent_sale_id?: string | null
           payment_status?: string | null
           product?: string
+          sale_type?: string | null
           sold_at?: string | null
+          systeme_io_order_id?: string | null
         }
         Relationships: [
           {
@@ -1327,6 +1336,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads_enriched"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_parent_sale_id_fkey"
+            columns: ["parent_sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
             referencedColumns: ["id"]
           },
         ]
