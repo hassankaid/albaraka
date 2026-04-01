@@ -294,7 +294,7 @@ export default function AdminInvoices() {
 
     const list = Object.values(grouped).sort((a, b) => a.full_name.localeCompare(b.full_name));
     setBeneficiaries(list);
-    setSelectedIds(new Set(list.map(a => a.beneficiary_user_id)));
+    setSelectedIds(new Set());
     setLoadingBeneficiaries(false);
   }, [genMonth, genYear]);
 
