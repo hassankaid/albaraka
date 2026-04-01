@@ -1,36 +1,26 @@
 
 
-## Builder : type en haut, étapes en sidebar
+## Désélectionner les bénéficiaires par défaut sur la page Factures
 
-### Principe
+### Changement
 
-Réorganiser le Builder en séparant les deux niveaux de navigation :
+Dans `src/pages/AdminInvoices.tsx`, ligne 297, remplacer :
 
-```text
-┌─────────────────────────────────────────────────┐
-│  [Appel Setter] [Appel Closer] [RDV] [Clos.]   │  ← Tabs colorés en haut
-│  + Nouveau type                          ⚙️     │
-├────────────┬────────────────────────────────────┤
-│ Étapes     │                                    │
-│            │                                    │
-│ 1. Intro   │   Éditeur de l'étape               │
-│ 2. Découv. │   (titre, tips, critères,          │
-│ 3. Pitch   │    scripts, débriefs)              │
-│ 4. Close   │                                    │
-│            │                                    │
-│ + Étape    │                                    │
-├────────────┴────────────────────────────────────┘
+```ts
+setSelectedIds(new Set(list.map(a => a.beneficiary_user_id)));
 ```
 
-### Changements dans `AdminCoachingBuilder.tsx`
+par :
 
-1. **Haut de page** : barre horizontale avec les types de coaching en tabs colorés (badge avec `theme_color`), bouton "+ Nouveau type" à droite, bouton ⚙️ sur le type actif
-2. **Sidebar gauche (w-64)** : uniquement les étapes du type sélectionné + bouton "+ Ajouter une étape" en bas -- `sticky top-4`
-3. **Zone droite** : éditeur inchangé
+```ts
+setSelectedIds(new Set());
+```
+
+Cela initialise la sélection à vide au lieu de tout cocher. Le bouton "Tout sélectionner" reste disponible pour cocher en masse si besoin.
 
 ### Fichier modifié
 
-| Fichier | Action |
-|---------|--------|
-| `src/components/admin-coaching/AdminCoachingBuilder.tsx` | Déplacer sélecteur de type en haut, sidebar = étapes uniquement |
+| Fichier | Modification |
+|---------|-------------|
+| `src/pages/AdminInvoices.tsx` | Initialiser `selectedIds` à un Set vide au chargement des bénéficiaires |
 
