@@ -14,6 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_kpis: {
+        Row: {
+          ai_feedback: string | null
+          appointments: number
+          created_at: string
+          id: string
+          messages_sent: number
+          replies_received: number
+          sales_made: number
+          updated_at: string
+          user_id: string
+          videos_published: number
+          week_start: string
+        }
+        Insert: {
+          ai_feedback?: string | null
+          appointments?: number
+          created_at?: string
+          id?: string
+          messages_sent?: number
+          replies_received?: number
+          sales_made?: number
+          updated_at?: string
+          user_id: string
+          videos_published?: number
+          week_start: string
+        }
+        Update: {
+          ai_feedback?: string | null
+          appointments?: number
+          created_at?: string
+          id?: string
+          messages_sent?: number
+          replies_received?: number
+          sales_made?: number
+          updated_at?: string
+          user_id?: string
+          videos_published?: number
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_kpis_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_objectives: {
+        Row: {
+          created_at: string
+          id: string
+          kpi_key: string
+          updated_at: string
+          weekly_target: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kpi_key: string
+          updated_at?: string
+          weekly_target?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kpi_key?: string
+          updated_at?: string
+          weekly_target?: number
+        }
+        Relationships: []
+      }
       ads: {
         Row: {
           amount_spent: number
