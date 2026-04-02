@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Video, MessageCircle, Mail, CalendarCheck, ShoppingCart, Sparkles, TrendingUp } from "lucide-react";
+import { Loader2, Video, MessageCircle, Mail, CalendarCheck, ShoppingCart, Sparkles, TrendingUp, Trophy, Medal } from "lucide-react";
 import { toast } from "sonner";
 import { startOfWeek, format, subWeeks } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -20,33 +20,35 @@ const KPI_CONFIG = [
   { key: "sales_made", label: "Ventes réalisées", icon: ShoppingCart, color: "hsl(350 70% 55%)" },
 ] as const;
 
+// Only these 3 KPIs have weekly objectives
+const OBJECTIVE_KEYS = ["videos_published", "messages_sent", "appointments"] as const;
+
 const OBJ_MAP: Record<string, string> = {
   videos_published: "videos",
   messages_sent: "messages",
-  replies_received: "replies",
   appointments: "appointments",
-  sales_made: "sales",
 };
 
 function getMonday(date: Date) {
   return startOfWeek(date, { weekStartsOn: 1 });
 }
 
-export default function MyActivity() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+function computeScore(kpis: any, objectives: Record<string, number>) {
+  const ratios = OBJECTIVE_KEYS.map((key) => {
+    const target = objectives[OBJ_MAP[key]] || 1;
+    return (kpis[key] || 0) / target;
+  });
+  const avg = ratios.reduce((a, b) => a + b, 0) / ratios.length * 100;
+  const attained = ratios.filter((r) => r >= 1).length;
+  const bonus = 1 + 0.1 * attained;
+  return Math.round(avg * bonus);
+}
+
+// ─── CEO Admin View ───
+function CeoLeaderboard() {
   const currentMonday = getMonday(new Date());
   const weekLabel = `Semaine du ${format(currentMonday, "d MMMM", { locale: fr })}`;
 
-  const [form, setForm] = useState({
-    videos_published: 0,
-    messages_sent: 0,
-    replies_received: 0,
-    appointments: 0,
-    sales_made: 0,
-  });
-
-  // Fetch objectives
   const { data: objectives } = useQuery({
     queryKey: ["activity-objectives"],
     queryFn: async () => {
@@ -58,7 +60,122 @@ export default function MyActivity() {
     },
   });
 
-  // Fetch current week KPI
+  const { data: allKpis, isLoading } = useQuery({
+    queryKey: ["activity-kpis", "all", format(currentMonday, "yyyy-MM-dd")],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("activity_kpis")
+        .select("*, profiles:user_id(full_name, avatar_url)")
+        .eq("week_start", format(currentMonday, "yyyy-MM-dd"));
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const ranked = useMemo(() => {
+    if (!allKpis || !objectives) return [];
+    return allKpis
+      .map((k: any) => ({
+        ...k,
+        name: k.profiles?.full_name || "Inconnu",
+        score: computeScore(k, objectives),
+      }))
+      .sort((a: any, b: any) => b.score - a.score);
+  }, [allKpis, objectives]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const medalIcons = [
+    <Trophy className="h-5 w-5 text-amber-500" />,
+    <Medal className="h-5 w-5 text-gray-400" />,
+    <Medal className="h-5 w-5 text-orange-600" />,
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground">Classement Activité</h2>
+        <p className="text-muted-foreground">{weekLabel}</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-amber-500" />
+            Classement de la semaine
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {ranked.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Aucune saisie cette semaine.</p>
+          ) : (
+            <div className="space-y-3">
+              {ranked.map((r: any, i: number) => (
+                <div key={r.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                  <div className="w-8 text-center">
+                    {i < 3 ? medalIcons[i] : <span className="text-sm font-medium text-muted-foreground">{i + 1}</span>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{r.name}</p>
+                    <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+                      <span>📹 {r.videos_published}</span>
+                      <span>💬 {r.messages_sent}</span>
+                      <span>📩 {r.replies_received}</span>
+                      <span>📅 {r.appointments}</span>
+                      <span>🛒 {r.sales_made}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-lg font-bold text-foreground">{r.score}</span>
+                    <p className="text-xs text-muted-foreground">pts</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─── Apporteur/Collaborateur View ───
+export default function MyActivity() {
+  const { user, profile } = useAuth();
+  const queryClient = useQueryClient();
+  const currentMonday = getMonday(new Date());
+  const weekLabel = `Semaine du ${format(currentMonday, "d MMMM", { locale: fr })}`;
+
+  // CEO sees the leaderboard
+  if (profile?.role === "ceo") {
+    return <CeoLeaderboard />;
+  }
+
+  const [form, setForm] = useState({
+    videos_published: 0,
+    messages_sent: 0,
+    replies_received: 0,
+    appointments: 0,
+    sales_made: 0,
+  });
+
+  const { data: objectives } = useQuery({
+    queryKey: ["activity-objectives"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("activity_objectives").select("*");
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      data?.forEach((o: any) => { map[o.kpi_key] = o.weekly_target; });
+      return map;
+    },
+  });
+
   const { data: currentKpi, isLoading } = useQuery({
     queryKey: ["activity-kpis", "current", user?.id],
     queryFn: async () => {
@@ -74,7 +191,6 @@ export default function MyActivity() {
     enabled: !!user?.id,
   });
 
-  // Fetch history (last 8 weeks)
   const { data: history } = useQuery({
     queryKey: ["activity-kpis", "history", user?.id],
     queryFn: async () => {
@@ -91,7 +207,6 @@ export default function MyActivity() {
     enabled: !!user?.id,
   });
 
-  // Pre-fill form when currentKpi loads
   useMemo(() => {
     if (currentKpi) {
       setForm({
@@ -104,7 +219,6 @@ export default function MyActivity() {
     }
   }, [currentKpi]);
 
-  // Submit mutation
   const submitMutation = useMutation({
     mutationFn: async () => {
       const weekStart = format(currentMonday, "yyyy-MM-dd");
@@ -118,7 +232,6 @@ export default function MyActivity() {
         if (error) throw error;
       }
 
-      // Call AI coach
       try {
         const historyForAI = (history || []).slice(-4).map((h: any) => ({
           week: h.week_start,
@@ -154,13 +267,12 @@ export default function MyActivity() {
   const getObjective = (kpiKey: string) => objectives?.[OBJ_MAP[kpiKey]] || 0;
   const getPercentage = (value: number, target: number) => target > 0 ? Math.round((value / target) * 100) : 0;
 
-  // Build chart data
   const chartData = useMemo(() => {
     if (!history || history.length < 2) return [];
     return history.map((h: any) => ({
       week: format(new Date(h.week_start), "d MMM", { locale: fr }),
       Vidéos: h.videos_published,
-      Messages: Math.round(h.messages_sent / 10), // scale down for chart
+      Messages: Math.round(h.messages_sent / 10),
       Réponses: h.replies_received,
       RDV: h.appointments,
       Ventes: h.sales_made,
@@ -185,6 +297,8 @@ export default function MyActivity() {
     sales_made: currentKpi.sales_made,
   } : form;
 
+  const objectiveKpis = KPI_CONFIG.filter((k) => (OBJECTIVE_KEYS as readonly string[]).includes(k.key));
+
   return (
     <div className="space-y-6">
       <div>
@@ -192,7 +306,7 @@ export default function MyActivity() {
         <p className="text-muted-foreground">{weekLabel}</p>
       </div>
 
-      {/* Objectifs hebdo */}
+      {/* Objectifs hebdo — only 3 KPIs */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
@@ -201,7 +315,7 @@ export default function MyActivity() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {KPI_CONFIG.map(({ key, label, icon: Icon, color }) => {
+          {objectiveKpis.map(({ key, label, icon: Icon, color }) => {
             const value = displayValues[key];
             const target = getObjective(key);
             const pct = getPercentage(value, target);
@@ -245,7 +359,7 @@ export default function MyActivity() {
         </CardContent>
       </Card>
 
-      {/* Saisie hebdo */}
+      {/* Saisie hebdo — all 5 KPIs */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Saisie hebdomadaire</CardTitle>
