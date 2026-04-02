@@ -524,7 +524,6 @@ export default function MyActivity() {
                   </div>
                   <span className={`font-semibold ${pct >= 100 ? "text-emerald-500" : "text-foreground"}`}>
                     {value}/{target} ({pct}%)
-                    {pct > 100 && <span className="ml-1 text-xs bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded-full">×{(pct / 100).toFixed(1)}</span>}
                   </span>
                 </div>
                 <Progress value={capped} className="h-2" />
