@@ -102,6 +102,48 @@ export default function AdminCoachingDashboard() {
     },
   });
 
+  // Top apporteurs leaderboard
+  const currentMonday = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const { data: leaderboard } = useQuery({
+    queryKey: ["admin-coaching-leaderboard", currentMonday],
+    queryFn: async () => {
+      // Get objectives
+      const { data: objData } = await supabase.from("activity_objectives").select("*");
+      const objMap: Record<string, number> = {};
+      objData?.forEach((o: any) => { objMap[o.kpi_key] = o.weekly_target; });
+
+      // Get this week's KPIs
+      const { data: kpis } = await supabase
+        .from("activity_kpis")
+        .select("*, user:profiles!activity_kpis_user_id_fkey(full_name, email, avatar_url)")
+        .eq("week_start", currentMonday);
+
+      if (!kpis || kpis.length === 0) return [];
+
+      return kpis.map((k: any) => {
+        const ratios = [
+          (objMap.videos || 7) > 0 ? k.videos_published / (objMap.videos || 7) : 0,
+          (objMap.messages || 500) > 0 ? k.messages_sent / (objMap.messages || 500) : 0,
+          (objMap.replies || 10) > 0 ? k.replies_received / (objMap.replies || 10) : 0,
+          (objMap.appointments || 10) > 0 ? k.appointments / (objMap.appointments || 10) : 0,
+          (objMap.sales || 3) > 0 ? k.sales_made / (objMap.sales || 3) : 0,
+        ];
+        const avgPct = (ratios.reduce((a, b) => a + b, 0) / 5) * 100;
+        const kpisReached = ratios.filter(r => r >= 1).length;
+        const bonus = 1 + 0.1 * kpisReached;
+        const score = avgPct * bonus;
+
+        return {
+          name: k.user?.full_name || k.user?.email || "—",
+          avatar: k.user?.avatar_url,
+          avgPct: Math.round(avgPct),
+          kpisReached,
+          score: Math.round(score * 10) / 10,
+        };
+      }).sort((a: any, b: any) => b.score - a.score).slice(0, 5);
+    },
+  });
+
   if (statsLoading) {
     return (
       <div className="flex items-center justify-center py-12">
