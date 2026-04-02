@@ -19,15 +19,16 @@ interface NavItem {
 
 const workingNavItems: NavItem[] = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
-  { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur"] },
-  { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"] },
-  { title: "Mes Calls", path: "/calls", icon: Phone, roles: ["ceo", "collaborateur"] },
-  { title: "Contacts", path: "/contacts", icon: BookUser, roles: ["ceo"] },
-  { title: "Mes Ventes", path: "/sales", icon: BadgeEuro, roles: ["ceo", "collaborateur", "apporteur"] },
-  { title: "Mes Paiements", path: "/payments", icon: CreditCard, roles: ["ceo", "collaborateur"] },
-  { title: "Mes Commissions", path: "/my-commissions", icon: Receipt, roles: ["ceo", "collaborateur"] },
   { title: "Générateur Contenu", path: "/working/content", icon: Sparkles, roles: ["ceo", "collaborateur"] },
   { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur"] },
+  // After separator
+  { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur"], adminSection: true },
+  { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"], adminSection: true },
+  { title: "Mes Calls", path: "/calls", icon: Phone, roles: ["ceo", "collaborateur"], adminSection: true },
+  { title: "Contacts", path: "/contacts", icon: BookUser, roles: ["ceo"], adminSection: true },
+  { title: "Mes Ventes", path: "/sales", icon: BadgeEuro, roles: ["ceo", "collaborateur", "apporteur"], adminSection: true },
+  { title: "Mes Paiements", path: "/payments", icon: CreditCard, roles: ["ceo", "collaborateur"], adminSection: true },
+  { title: "Mes Commissions", path: "/my-commissions", icon: Receipt, roles: ["ceo", "collaborateur"], adminSection: true },
   { title: "Mon profil", path: "/profile", icon: User, roles: ["agence"] },
 ];
 
@@ -140,12 +141,26 @@ export default function DashboardLayout() {
       const items = filterItems(adminNavItems);
       return items.map((item) => <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />);
     }
-    // Working mode: flat list, no admin separator
-    const items = filterItems(workingNavItems);
-    return items.map((item) => {
-      const displayTitle = isCeo && item.path === "/working/activity" ? "Suivi Activité" : item.title;
-      return <SidebarNavLink key={item.path} item={{ ...item, title: displayTitle }} onClose={() => setSidebarOpen(false)} />;
-    });
+    // Working mode: tools first, then separator, then tracking/operational pages
+    const allItems = filterItems(workingNavItems);
+    const toolItems = allItems.filter((i) => !i.adminSection);
+    const trackingItems = allItems.filter((i) => i.adminSection);
+    return (
+      <>
+        {toolItems.map((item) => {
+          const displayTitle = isCeo && item.path === "/working/activity" ? "Suivi Activité" : item.title;
+          return <SidebarNavLink key={item.path} item={{ ...item, title: displayTitle }} onClose={() => setSidebarOpen(false)} />;
+        })}
+        {trackingItems.length > 0 && (
+          <>
+            <div className="my-3 mx-1 h-px bg-border" />
+            {trackingItems.map((item) => (
+              <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />
+            ))}
+          </>
+        )}
+      </>
+    );
   };
 
   return (
