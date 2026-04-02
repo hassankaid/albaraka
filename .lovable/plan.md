@@ -1,42 +1,36 @@
 
 
-## Corrections "Mon Activité" — 4 points
+## Corrections "Mon Activité" — 3 points
 
-### 1. Objectifs limités à 3 KPIs seulement
+### 1. Fix Coach IA (Edge Function)
 
-Dans `MyActivity.tsx`, la section "Objectifs hebdomadaires" affiche actuellement les 5 KPIs avec barres de progression. Il faut n'afficher les barres d'objectifs que pour les 3 KPIs ayant un objectif : **Vidéos (7)**, **Messages (500)**, **RDV (10)**. Les "Réponses reçues" et "Ventes réalisées" restent dans la saisie hebdomadaire mais disparaissent de la section objectifs.
+Les logs montrent : `Anthropic error: 404 model: claude-3-5-sonnet-20241022`. Le modèle Claude utilisé n'existe plus. Il faut le remplacer par `claude-sonnet-4-20250514` dans `supabase/functions/activity-ai-coach/index.ts` (ligne 38).
 
-Ajout d'une constante `OBJECTIVE_KEYS` pour filtrer, et boucle sur cette liste dans la carte objectifs au lieu de `KPI_CONFIG`.
+### 2. Ajouter le leaderboard pour les apporteurs
 
-### 2. Supprimer la page "Accueil" Working
+Actuellement, seul le CEO voit le classement. Les apporteurs doivent aussi voir un mini-leaderboard en bas de leur page "Mon Activité", montrant :
+- Le classement de la semaine (tous les apporteurs ayant saisi)
+- Leur propre ligne mise en surbrillance
+- Leur score et leur rang
 
-La page `/working` (Working.tsx) est supprimée de la navigation. Les utilisateurs arrivent directement sur `/working/activity` (Mon Activité).
+Cela nécessite que les apporteurs puissent lire les KPIs de tous les utilisateurs pour la semaine en cours. Il faudra ajouter une politique RLS `SELECT` sur `activity_kpis` pour les utilisateurs authentifiés (lecture seule sur la semaine courante), ou utiliser une approche plus simple : permettre la lecture à tous les authentifiés.
 
-**Fichiers modifiés :**
-- `DashboardLayout.tsx` : retirer l'item "Accueil" (`path: "/working"`) de `workingNavItems` + retirer `/working` de `pageTitles`
-- `App.tsx` : changer `<Route path="/working" element={<Working />} />` en un redirect `<Route path="/working" element={<Navigate to="/working/activity" replace />} />`
-- `ApporteurLayout.tsx` : pas de changement nécessaire (n'a pas "Accueil")
+### 3. Note explicative du score
 
-### 3. Fix sidebar double-highlight
+Ajouter une petite carte "Comment est calculé mon score ?" avec un texte concis :
 
-Le problème vient du fait que NavLink pour `/working` (Accueil) est actif quand on est sur `/working/activity` car `/working` est un préfixe. En supprimant "Accueil" (point 2), ce problème disparaît automatiquement.
-
-### 4. CEO ne doit pas voir le formulaire de saisie
-
-Le CEO n'est pas un apporteur qui saisit des KPIs. Sur `MyActivity.tsx`, il faut conditionner l'affichage :
-- Si `profile.role === "ceo"` : afficher une **vue admin** avec le classement de tous les apporteurs de la semaine (réutiliser la logique du leaderboard déjà dans `AdminCoachingDashboard.tsx`, ou rediriger vers le classement)
-- Sinon : afficher le formulaire de saisie actuel
-
-Pour le CEO, la page affichera :
-- Le classement complet de la semaine (pas juste top 5) avec scores
-- Les détails KPI de chaque apporteur
-- Pas de formulaire de saisie
+> Ton score = moyenne de tes % d'atteinte sur les 3 objectifs (vidéos, messages, RDV) × bonus régularité. Dépasser un objectif rapporte plus de points. Bonus : +10% par objectif atteint ou dépassé (max +50%).
 
 ### Fichiers modifiés
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/pages/working/MyActivity.tsx` | Objectifs limités à 3 KPIs + vue admin CEO (classement) au lieu du formulaire |
-| `src/components/DashboardLayout.tsx` | Retirer "Accueil" de workingNavItems + pageTitles |
-| `src/App.tsx` | Redirect `/working` → `/working/activity` |
+| `supabase/functions/activity-ai-coach/index.ts` | Changer le modèle Claude → `claude-sonnet-4-20250514` |
+| `src/pages/working/MyActivity.tsx` | Ajouter leaderboard pour apporteurs + note explicative du score |
+| Migration SQL | Ajouter politique RLS lecture `activity_kpis` pour tous les authentifiés |
+
+### Étapes
+1. Migration : politique RLS lecture sur `activity_kpis` pour authenticated
+2. Fix modèle dans edge function
+3. Ajouter section leaderboard + note score dans la vue apporteur
 
