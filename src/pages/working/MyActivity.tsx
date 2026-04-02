@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Video, MessageCircle, Mail, CalendarCheck, ShoppingCart, Sparkles, TrendingUp, Trophy, Medal } from "lucide-react";
+import { Loader2, Video, MessageCircle, Mail, CalendarCheck, ShoppingCart, Sparkles, TrendingUp, Trophy, Medal, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { startOfWeek, format, subWeeks } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -20,7 +20,6 @@ const KPI_CONFIG = [
   { key: "sales_made", label: "Ventes réalisées", icon: ShoppingCart, color: "hsl(350 70% 55%)" },
 ] as const;
 
-// Only these 3 KPIs have weekly objectives
 const OBJECTIVE_KEYS = ["videos_published", "messages_sent", "appointments"] as const;
 
 const OBJ_MAP: Record<string, string> = {
@@ -42,6 +41,72 @@ function computeScore(kpis: any, objectives: Record<string, number>) {
   const attained = ratios.filter((r) => r >= 1).length;
   const bonus = 1 + 0.1 * attained;
   return Math.round(avg * bonus);
+}
+
+const medalIcons = [
+  <Trophy key="gold" className="h-5 w-5 text-amber-500" />,
+  <Medal key="silver" className="h-5 w-5 text-gray-400" />,
+  <Medal key="bronze" className="h-5 w-5 text-orange-600" />,
+];
+
+// ─── Shared Leaderboard Component ───
+function Leaderboard({ ranked, highlightUserId }: { ranked: any[]; highlightUserId?: string }) {
+  if (ranked.length === 0) {
+    return <p className="text-sm text-muted-foreground">Aucune saisie cette semaine.</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {ranked.map((r: any, i: number) => {
+        const isMe = highlightUserId && r.user_id === highlightUserId;
+        return (
+          <div
+            key={r.id}
+            className={`flex items-center gap-3 p-3 rounded-lg ${isMe ? "bg-primary/10 ring-1 ring-primary/30" : "bg-secondary/50"}`}
+          >
+            <div className="w-8 text-center">
+              {i < 3 ? medalIcons[i] : <span className="text-sm font-medium text-muted-foreground">{i + 1}</span>}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm truncate">
+                {isMe ? `${r.name} (moi)` : r.name}
+              </p>
+              <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+                <span>📹 {r.videos_published}</span>
+                <span>💬 {r.messages_sent}</span>
+                <span>📩 {r.replies_received}</span>
+                <span>📅 {r.appointments}</span>
+                <span>🛒 {r.sales_made}</span>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-lg font-bold text-foreground">{r.score}</span>
+              <p className="text-xs text-muted-foreground">pts</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Score Explanation Card ───
+function ScoreExplanation() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <HelpCircle className="h-4 w-4 text-muted-foreground" />
+          Comment est calculé mon score ?
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground">
+          Ton score = moyenne de tes % d'atteinte sur les 3 objectifs (vidéos, messages, RDV) × bonus régularité. Dépasser un objectif rapporte plus de points. Bonus : +10% par objectif atteint ou dépassé (max +30%).
+        </p>
+      </CardContent>
+    </Card>
+  );
 }
 
 // ─── CEO Admin View ───
@@ -91,12 +156,6 @@ function CeoLeaderboard() {
     );
   }
 
-  const medalIcons = [
-    <Trophy className="h-5 w-5 text-amber-500" />,
-    <Medal className="h-5 w-5 text-gray-400" />,
-    <Medal className="h-5 w-5 text-orange-600" />,
-  ];
-
   return (
     <div className="space-y-6">
       <div>
@@ -112,35 +171,11 @@ function CeoLeaderboard() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {ranked.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucune saisie cette semaine.</p>
-          ) : (
-            <div className="space-y-3">
-              {ranked.map((r: any, i: number) => (
-                <div key={r.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
-                  <div className="w-8 text-center">
-                    {i < 3 ? medalIcons[i] : <span className="text-sm font-medium text-muted-foreground">{i + 1}</span>}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{r.name}</p>
-                    <div className="flex gap-3 text-xs text-muted-foreground mt-1">
-                      <span>📹 {r.videos_published}</span>
-                      <span>💬 {r.messages_sent}</span>
-                      <span>📩 {r.replies_received}</span>
-                      <span>📅 {r.appointments}</span>
-                      <span>🛒 {r.sales_made}</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-lg font-bold text-foreground">{r.score}</span>
-                    <p className="text-xs text-muted-foreground">pts</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <Leaderboard ranked={ranked} />
         </CardContent>
       </Card>
+
+      <ScoreExplanation />
     </div>
   );
 }
@@ -202,6 +237,31 @@ export default function MyActivity() {
     },
     enabled: !!user?.id,
   });
+
+  // Leaderboard data for apporteurs
+  const { data: allKpis } = useQuery({
+    queryKey: ["activity-kpis", "all", format(currentMonday, "yyyy-MM-dd")],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("activity_kpis")
+        .select("*, profiles:user_id(full_name, avatar_url)")
+        .eq("week_start", format(currentMonday, "yyyy-MM-dd"));
+      if (error) throw error;
+      return data;
+    },
+    enabled: !isCeo,
+  });
+
+  const ranked = useMemo(() => {
+    if (!allKpis || !objectives) return [];
+    return allKpis
+      .map((k: any) => ({
+        ...k,
+        name: k.profiles?.full_name || "Inconnu",
+        score: computeScore(k, objectives),
+      }))
+      .sort((a: any, b: any) => b.score - a.score);
+  }, [allKpis, objectives]);
 
   useMemo(() => {
     if (currentKpi) {
@@ -285,7 +345,6 @@ export default function MyActivity() {
     );
   }
 
-  // CEO sees the leaderboard instead of the form
   if (isCeo) {
     return <CeoLeaderboard />;
   }
@@ -392,6 +451,22 @@ export default function MyActivity() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Classement de la semaine */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-amber-500" />
+            Classement de la semaine
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Leaderboard ranked={ranked} highlightUserId={user?.id} />
+        </CardContent>
+      </Card>
+
+      {/* Note explicative du score */}
+      <ScoreExplanation />
 
       {/* Graphique d'évolution */}
       {chartData.length >= 2 && (
