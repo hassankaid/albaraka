@@ -41,8 +41,9 @@ export default function ApporteurLayout() {
   const { profile, signOut } = useAuth();
 
   const isCoachingSpace = location.pathname.startsWith("/mon-coaching");
+  const isWorkingSpace = location.pathname.startsWith("/working");
   const pageTitle = pageTitles[location.pathname] || "Mon espace";
-  const navItems = isCoachingSpace ? coachingNavItems : trackingNavItems;
+  const navItems = isWorkingSpace ? workingNavItems : isCoachingSpace ? coachingNavItems : trackingNavItems;
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";

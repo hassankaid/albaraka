@@ -56,6 +56,7 @@ const pageTitles: Record<string, string> = {
   "/coaching": "Évaluations",
   "/mon-coaching": "Historique",
   "/admin/coaching": "Administration Coaching",
+  "/working/activity": "Mon Activité",
   "/working": "Espace de travail",
   "/working/scripts/setting": "Scripts Setting",
   "/working/scripts/closing": "Scripts Closing",
