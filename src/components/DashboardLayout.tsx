@@ -100,9 +100,11 @@ export default function DashboardLayout() {
     currentNavItems = trackingNavItems;
   }
 
+  const isApporteurLike = profile?.role === "apporteur" || profile?.is_also_apporteur;
   const navItems = currentNavItems.filter((item) => {
     if (!item.roles.includes(userRole)) return false;
     if ('coachOnly' in item && item.coachOnly) return profile?.is_coach || profile?.role === "ceo";
+    if ('apporteurOnly' in item && item.apporteurOnly) return isApporteurLike || profile?.role === "ceo";
     return true;
   });
   const initials = profile?.full_name
