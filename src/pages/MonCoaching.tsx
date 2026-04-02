@@ -25,6 +25,8 @@ export default function MonCoaching() {
   const { profile } = useAuth();
   const navigate = useNavigate();
 
+  const canSeeTeam = profile?.role === 'ceo' || profile?.is_coach === true;
+
   const { data: mySessions, isLoading: mySessionsLoading } = useQuery({
     queryKey: ["my-coaching-sessions", profile?.id],
     queryFn: async () => {
@@ -48,7 +50,7 @@ export default function MonCoaching() {
   const { data: teamSessions, isLoading: teamSessionsLoading } = useQuery({
     queryKey: ["team-coaching-sessions", profile?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("coaching_sessions")
         .select(`
           *,
@@ -56,14 +58,22 @@ export default function MonCoaching() {
           student:profiles!coaching_sessions_student_user_id_fkey(id, email, full_name),
           coach:profiles!coaching_sessions_coach_user_id_fkey(id, email, full_name)
         `)
-        .neq("student_user_id", profile!.id)
         .eq("status", "completed")
         .order("session_date", { ascending: false })
         .limit(50);
+
+      if (profile?.role === 'ceo') {
+        query = query.neq("student_user_id", profile!.id);
+      } else {
+        // Coach: voir les sessions qu'il a menées
+        query = query.eq("coach_user_id", profile!.id);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as unknown as SessionWithDetails[];
     },
-    enabled: !!profile?.id,
+    enabled: !!profile?.id && canSeeTeam,
   });
 
   const myStats = {
