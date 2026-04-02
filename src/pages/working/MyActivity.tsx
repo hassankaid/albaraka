@@ -157,26 +157,26 @@ function LeaderboardWithTabs({ weeklyRanked, allTimeRanked, highlightUserId }: {
 }) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <Trophy className="h-4 w-4 text-amber-500" />
-          Classement
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="week">
-          <TabsList className="mb-4">
-            <TabsTrigger value="week">Cette semaine</TabsTrigger>
-            <TabsTrigger value="alltime">All Time</TabsTrigger>
+      <Tabs defaultValue="week">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-amber-500" />
+            Classement
+          </CardTitle>
+          <TabsList className="h-8">
+            <TabsTrigger value="week" className="text-xs px-3 h-7">Semaine</TabsTrigger>
+            <TabsTrigger value="alltime" className="text-xs px-3 h-7">All Time</TabsTrigger>
           </TabsList>
-          <TabsContent value="week">
+        </CardHeader>
+        <CardContent>
+          <TabsContent value="week" className="mt-0">
             <Leaderboard ranked={weeklyRanked} highlightUserId={highlightUserId} />
           </TabsContent>
-          <TabsContent value="alltime">
+          <TabsContent value="alltime" className="mt-0">
             <Leaderboard ranked={allTimeRanked} highlightUserId={highlightUserId} />
           </TabsContent>
-        </Tabs>
-      </CardContent>
+        </CardContent>
+      </Tabs>
     </Card>
   );
 }
