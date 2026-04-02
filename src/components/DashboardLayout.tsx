@@ -28,13 +28,15 @@ const workingNavItems: NavItem[] = [
   { title: "Mes Commissions", path: "/my-commissions", icon: Receipt, roles: ["ceo", "collaborateur"] },
   { title: "Générateur Contenu", path: "/working/content", icon: Sparkles, roles: ["ceo", "collaborateur"] },
   { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur"] },
-  // Admin CEO section (after separator)
-  { title: "Équipe", path: "/admin/team", icon: UsersRound, roles: ["ceo"], adminSection: true },
-  { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"], adminSection: true },
-  { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"], adminSection: true },
-  { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"], adminSection: true },
-  { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"], adminSection: true },
   { title: "Mon profil", path: "/profile", icon: User, roles: ["agence"] },
+];
+
+const adminNavItems: NavItem[] = [
+  { title: "Équipe", path: "/admin/team", icon: UsersRound, roles: ["ceo"] },
+  { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"] },
+  { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
+  { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
+  { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"] },
 ];
 
 const trainingNavItems: NavItem[] = [
@@ -47,7 +49,6 @@ const coachingNavItems: NavItem[] = [
   { title: "Historique", path: "/mon-coaching", icon: BookOpen, roles: ["ceo", "collaborateur", "apporteur"] },
   { title: "Administration", path: "/admin/coaching", icon: Settings2, roles: ["ceo"] },
 ];
-
 const pageTitles: Record<string, string> = {
   "/dashboard": "Mon Dashboard",
   "/leads": "Leads",
