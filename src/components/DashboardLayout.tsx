@@ -28,13 +28,15 @@ const workingNavItems: NavItem[] = [
   { title: "Mes Commissions", path: "/my-commissions", icon: Receipt, roles: ["ceo", "collaborateur"] },
   { title: "Générateur Contenu", path: "/working/content", icon: Sparkles, roles: ["ceo", "collaborateur"] },
   { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur"] },
-  // Admin CEO section (after separator)
-  { title: "Équipe", path: "/admin/team", icon: UsersRound, roles: ["ceo"], adminSection: true },
-  { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"], adminSection: true },
-  { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"], adminSection: true },
-  { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"], adminSection: true },
-  { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"], adminSection: true },
   { title: "Mon profil", path: "/profile", icon: User, roles: ["agence"] },
+];
+
+const adminNavItems: NavItem[] = [
+  { title: "Équipe", path: "/admin/team", icon: UsersRound, roles: ["ceo"] },
+  { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"] },
+  { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
+  { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
+  { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"] },
 ];
 
 const trainingNavItems: NavItem[] = [
@@ -47,7 +49,6 @@ const coachingNavItems: NavItem[] = [
   { title: "Historique", path: "/mon-coaching", icon: BookOpen, roles: ["ceo", "collaborateur", "apporteur"] },
   { title: "Administration", path: "/admin/coaching", icon: Settings2, roles: ["ceo"] },
 ];
-
 const pageTitles: Record<string, string> = {
   "/dashboard": "Mon Dashboard",
   "/leads": "Leads",
@@ -97,24 +98,30 @@ export default function DashboardLayout() {
   }
 
   const userRole = profile?.role || "apporteur";
+  const isCeo = profile?.role === "ceo";
   const isCoachingSpace = location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching") || location.pathname === "/admin/coaching";
   const isTrainingSpace = location.pathname.startsWith("/training");
-  const pageTitle = pageTitles[location.pathname] || "Dashboard";
+  const isAdminSpace = location.pathname.startsWith("/admin/") && location.pathname !== "/admin/coaching";
+
+  // Dynamic page title: CEO sees "Suivi Activité" instead of "Mon Activité"
+  const rawTitle = pageTitles[location.pathname] || "Dashboard";
+  const pageTitle = isCeo && location.pathname === "/working/activity" ? "Suivi Activité" : rawTitle;
 
   const isApporteurLike = profile?.role === "apporteur" || profile?.is_also_apporteur;
 
   const filterItems = (items: NavItem[]) =>
     items.filter((item) => {
       if (!item.roles.includes(userRole)) return false;
-      if (item.coachOnly) return profile?.is_coach || profile?.role === "ceo";
-      if (item.apporteurOnly) return isApporteurLike || profile?.role === "ceo";
+      if (item.coachOnly) return profile?.is_coach || isCeo;
+      if (item.apporteurOnly) return isApporteurLike || isCeo;
       return true;
     });
 
   // Determine which nav to render
-  let currentNavMode: "working" | "training" | "coaching" = "working";
+  let currentNavMode: "working" | "training" | "coaching" | "admin" = "working";
   if (isTrainingSpace) currentNavMode = "training";
   else if (isCoachingSpace) currentNavMode = "coaching";
+  else if (isAdminSpace) currentNavMode = "admin";
 
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -129,21 +136,16 @@ export default function DashboardLayout() {
       const items = filterItems(coachingNavItems);
       return items.map((item) => <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />);
     }
-    // Working mode: flat list with separator before admin items
-    const allItems = filterItems(workingNavItems);
-    const mainItems = allItems.filter((i) => !i.adminSection);
-    const adminItems = allItems.filter((i) => i.adminSection);
-    return (
-      <>
-        {mainItems.map((item) => <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />)}
-        {adminItems.length > 0 && (
-          <>
-            <div className="my-3 mx-1 h-px bg-border" />
-            {adminItems.map((item) => <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />)}
-          </>
-        )}
-      </>
-    );
+    if (currentNavMode === "admin") {
+      const items = filterItems(adminNavItems);
+      return items.map((item) => <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />);
+    }
+    // Working mode: flat list, no admin separator
+    const items = filterItems(workingNavItems);
+    return items.map((item) => {
+      const displayTitle = isCeo && item.path === "/working/activity" ? "Suivi Activité" : item.title;
+      return <SidebarNavLink key={item.path} item={{ ...item, title: displayTitle }} onClose={() => setSidebarOpen(false)} />;
+    });
   };
 
   return (

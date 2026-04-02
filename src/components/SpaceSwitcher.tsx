@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Briefcase, GraduationCap, BookOpenCheck, Check } from "lucide-react";
+import { ChevronDown, Briefcase, GraduationCap, BookOpenCheck, Check, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Space {
@@ -21,6 +21,8 @@ interface Space {
 
 const getSpaces = (profile: any): Space[] => {
   const isApporteur = profile?.role === "apporteur";
+  const isCeo = profile?.role === "ceo";
+
   const spaces: Space[] = [
     {
       id: "working",
@@ -28,7 +30,7 @@ const getSpaces = (profile: any): Space[] => {
       icon: Briefcase,
       color: "text-emerald-500",
       bgColor: "bg-emerald-500/10",
-      path: isApporteur ? "/working/activity" : (profile?.role === "ceo" ? "/dashboard" : "/working/activity"),
+      path: isCeo ? "/dashboard" : "/working/activity",
       description: "Suivi commercial & Outils",
     },
     {
@@ -46,10 +48,23 @@ const getSpaces = (profile: any): Space[] => {
       icon: GraduationCap,
       color: "text-amber-500",
       bgColor: "bg-amber-500/10",
-      path: profile?.is_coach || profile?.role === "ceo" ? "/coaching" : "/mon-coaching",
+      path: profile?.is_coach || isCeo ? "/coaching" : "/mon-coaching",
       description: "Évaluations & Historique",
     },
   ];
+
+  // Admin space — CEO only
+  if (isCeo) {
+    spaces.push({
+      id: "admin",
+      label: "ADMIN",
+      icon: Settings2,
+      color: "text-rose-500",
+      bgColor: "bg-rose-500/10",
+      path: "/admin/team",
+      description: "Gestion & Administration",
+    });
+  }
 
   // Apporteurs purs n'ont pas accès au training
   if (isApporteur && !profile?.is_also_apporteur) {
@@ -70,10 +85,14 @@ export default function SpaceSwitcher() {
     if (location.pathname.startsWith("/training")) {
       return spaces.find((s) => s.id === "training") || spaces[0];
     }
-    if (location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching") || location.pathname === "/admin/coaching") {
+    if (location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching")) {
       return spaces.find((s) => s.id === "coaching") || spaces[0];
     }
-    return spaces[0]; // WORKING is default (covers /dashboard, /my-space, /working/*, /leads, etc.)
+    // Admin routes (except /admin/coaching which is coaching space)
+    if (location.pathname.startsWith("/admin/") && location.pathname !== "/admin/coaching") {
+      return spaces.find((s) => s.id === "admin") || spaces[0];
+    }
+    return spaces[0]; // WORKING is default
   };
 
   const currentSpace = getCurrentSpace();
