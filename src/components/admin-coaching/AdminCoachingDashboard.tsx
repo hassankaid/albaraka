@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Calendar, TrendingUp, Users, AlertTriangle, Star } from "lucide-react";
-import { format, subDays, startOfMonth } from "date-fns";
+import { Loader2, Calendar, TrendingUp, Users, AlertTriangle, Star, Medal, Trophy } from "lucide-react";
+import { format, subDays, startOfMonth, startOfWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 
 export default function AdminCoachingDashboard() {
