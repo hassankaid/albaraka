@@ -11,18 +11,15 @@ interface NavItem {
   title: string;
   path: string;
   icon: React.ElementType;
-  section?: "suivi" | "outils";
 }
 
 const mainNavItems: NavItem[] = [
-  // Section SUIVI
-  { title: "Dashboard", path: "/my-space", icon: BarChart3, section: "suivi" },
-  { title: "Mes Leads", path: "/my-space/leads", icon: Users, section: "suivi" },
-  { title: "Mes Ventes", path: "/my-space/sales", icon: BadgeEuro, section: "suivi" },
-  { title: "Commissions & Factures", path: "/my-space/commissions", icon: Receipt, section: "suivi" },
-  { title: "Mon Profil", path: "/my-space/profile", icon: Settings, section: "suivi" },
-  // Section OUTILS
-  { title: "Mon Activité", path: "/working/activity", icon: TrendingUp, section: "outils" },
+  { title: "Mon Activité", path: "/working/activity", icon: TrendingUp },
+  { title: "Dashboard", path: "/my-space", icon: BarChart3 },
+  { title: "Mes Leads", path: "/my-space/leads", icon: Users },
+  { title: "Mes Ventes", path: "/my-space/sales", icon: BadgeEuro },
+  { title: "Commissions & Factures", path: "/my-space/commissions", icon: Receipt },
+  { title: "Mon Profil", path: "/my-space/profile", icon: Settings },
 ];
 
 const coachingNavItems: NavItem[] = [
