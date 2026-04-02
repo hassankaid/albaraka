@@ -40,6 +40,7 @@ import Working from "./pages/Working";
 import ScriptsSetting from "./pages/working/ScriptsSetting";
 import ScriptsClosing from "./pages/working/ScriptsClosing";
 import ContentGenerator from "./pages/working/ContentGenerator";
+import MyActivity from "./pages/working/MyActivity";
 
 const queryClient = new QueryClient();
 
