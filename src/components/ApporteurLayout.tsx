@@ -30,6 +30,7 @@ const pageTitles: Record<string, string> = {
   "/my-space/commissions": "Commissions & Factures",
   "/my-space/profile": "Mon Profil",
   "/mon-coaching": "Historique",
+  "/working/activity": "Mon Activité",
 };
 
 export default function ApporteurLayout() {
