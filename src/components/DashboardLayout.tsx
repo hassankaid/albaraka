@@ -7,35 +7,46 @@ import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
-const trackingNavItems = [
-  { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur"] },
-  { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"] },
-  { title: "Mes Calls", path: "/calls", icon: Phone, roles: ["ceo", "collaborateur"] },
-  { title: "Contacts", path: "/contacts", icon: BookUser, roles: ["ceo"] },
-  { title: "Mes Ventes", path: "/sales", icon: BadgeEuro, roles: ["ceo", "collaborateur", "apporteur"] },
-  { title: "Mes Paiements", path: "/payments", icon: CreditCard, roles: ["ceo", "collaborateur"] },
-  { title: "Mes Commissions", path: "/my-commissions", icon: Receipt, roles: ["ceo", "collaborateur"] },
-  { title: "Équipe", path: "/admin/team", icon: UsersRound, roles: ["ceo"] },
-  { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"] },
-  { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
-  { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
-  { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"] },
-  { title: "Mon profil", path: "/profile", icon: User, roles: ["agence"] },
+interface NavItem {
+  title: string;
+  path: string;
+  icon: React.ElementType;
+  roles: string[];
+  section?: "suivi" | "outils";
+  coachOnly?: boolean;
+  apporteurOnly?: boolean;
+}
+
+const workingNavItems: NavItem[] = [
+  // Section SUIVI
+  { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur"], section: "suivi" },
+  { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"], section: "suivi" },
+  { title: "Mes Calls", path: "/calls", icon: Phone, roles: ["ceo", "collaborateur"], section: "suivi" },
+  { title: "Contacts", path: "/contacts", icon: BookUser, roles: ["ceo"], section: "suivi" },
+  { title: "Mes Ventes", path: "/sales", icon: BadgeEuro, roles: ["ceo", "collaborateur", "apporteur"], section: "suivi" },
+  { title: "Mes Paiements", path: "/payments", icon: CreditCard, roles: ["ceo", "collaborateur"], section: "suivi" },
+  { title: "Mes Commissions", path: "/my-commissions", icon: Receipt, roles: ["ceo", "collaborateur"], section: "suivi" },
+  { title: "Équipe", path: "/admin/team", icon: UsersRound, roles: ["ceo"], section: "suivi" },
+  { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"], section: "suivi" },
+  { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"], section: "suivi" },
+  { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"], section: "suivi" },
+  { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"], section: "suivi" },
+  { title: "Mon profil", path: "/profile", icon: User, roles: ["agence"], section: "suivi" },
+  // Section OUTILS
+  { title: "Mon Activité", path: "/working/activity", icon: TrendingUp, roles: ["ceo", "collaborateur", "apporteur"], section: "outils", apporteurOnly: true },
+  { title: "Générateur Contenu", path: "/working/content", icon: Sparkles, roles: ["ceo", "collaborateur"], section: "outils" },
+  { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur"], section: "outils" },
 ];
 
-const coachingNavItems = [
+const trainingNavItems: NavItem[] = [
+  { title: "Scripts Setting", path: "/training/scripts/setting", icon: MessageSquare, roles: ["ceo", "collaborateur"] },
+  { title: "Scripts Closing", path: "/training/scripts/closing", icon: Phone, roles: ["ceo", "collaborateur"] },
+];
+
+const coachingNavItems: NavItem[] = [
   { title: "Évaluations", path: "/coaching", icon: GraduationCap, roles: ["ceo", "collaborateur"], coachOnly: true },
   { title: "Historique", path: "/mon-coaching", icon: BookOpen, roles: ["ceo", "collaborateur", "apporteur"] },
   { title: "Administration", path: "/admin/coaching", icon: Settings2, roles: ["ceo"] },
-];
-
-const workingNavItems = [
-  { title: "Mon Activité", path: "/working/activity", icon: TrendingUp, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
-  
-  { title: "Scripts Setting", path: "/working/scripts/setting", icon: MessageSquare, roles: ["ceo", "collaborateur"] },
-  { title: "Scripts Closing", path: "/working/scripts/closing", icon: Phone, roles: ["ceo", "collaborateur"] },
-  { title: "Générateur Contenu", path: "/working/content", icon: Sparkles, roles: ["ceo", "collaborateur"] },
-  { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur"] },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -57,11 +68,10 @@ const pageTitles: Record<string, string> = {
   "/mon-coaching": "Historique",
   "/admin/coaching": "Administration Coaching",
   "/working/activity": "Mon Activité",
-  
-  "/working/scripts/setting": "Scripts Setting",
-  "/working/scripts/closing": "Scripts Closing",
   "/working/content": "Générateur de Contenu",
   "/working/agent": "Agent IA",
+  "/training/scripts/setting": "Scripts Setting",
+  "/training/scripts/closing": "Scripts Closing",
 };
 
 export default function DashboardLayout() {
@@ -89,28 +99,58 @@ export default function DashboardLayout() {
 
   const userRole = profile?.role || "apporteur";
   const isCoachingSpace = location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching") || location.pathname === "/admin/coaching";
-  const isWorkingSpace = location.pathname.startsWith("/working");
+  const isTrainingSpace = location.pathname.startsWith("/training");
   const pageTitle = pageTitles[location.pathname] || "Dashboard";
 
-  let currentNavItems;
-  if (isWorkingSpace) {
-    currentNavItems = workingNavItems;
-  } else if (isCoachingSpace) {
-    currentNavItems = coachingNavItems;
-  } else {
-    currentNavItems = trackingNavItems;
-  }
-
   const isApporteurLike = profile?.role === "apporteur" || profile?.is_also_apporteur;
-  const navItems = currentNavItems.filter((item) => {
-    if (!item.roles.includes(userRole)) return false;
-    if ('coachOnly' in item && item.coachOnly) return profile?.is_coach || profile?.role === "ceo";
-    if ('apporteurOnly' in item && item.apporteurOnly) return isApporteurLike || profile?.role === "ceo";
-    return true;
-  });
+
+  const filterItems = (items: NavItem[]) =>
+    items.filter((item) => {
+      if (!item.roles.includes(userRole)) return false;
+      if (item.coachOnly) return profile?.is_coach || profile?.role === "ceo";
+      if (item.apporteurOnly) return isApporteurLike || profile?.role === "ceo";
+      return true;
+    });
+
+  // Determine which nav to render
+  let currentNavMode: "working" | "training" | "coaching" = "working";
+  if (isTrainingSpace) currentNavMode = "training";
+  else if (isCoachingSpace) currentNavMode = "coaching";
+
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
+
+  const renderNavItems = () => {
+    if (currentNavMode === "training") {
+      const items = filterItems(trainingNavItems);
+      return items.map((item) => <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />);
+    }
+    if (currentNavMode === "coaching") {
+      const items = filterItems(coachingNavItems);
+      return items.map((item) => <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />);
+    }
+    // Working mode: sections SUIVI + OUTILS
+    const allItems = filterItems(workingNavItems);
+    const suiviItems = allItems.filter((i) => i.section === "suivi");
+    const outilsItems = allItems.filter((i) => i.section === "outils");
+    return (
+      <>
+        {suiviItems.length > 0 && (
+          <>
+            <p className="px-3 pt-2 pb-1 text-[10px] font-bold text-muted-foreground/60 tracking-widest uppercase">Suivi</p>
+            {suiviItems.map((item) => <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />)}
+          </>
+        )}
+        {outilsItems.length > 0 && (
+          <>
+            <p className="px-3 pt-4 pb-1 text-[10px] font-bold text-muted-foreground/60 tracking-widest uppercase">Outils</p>
+            {outilsItems.map((item) => <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />)}
+          </>
+        )}
+      </>
+    );
+  };
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -135,24 +175,8 @@ export default function DashboardLayout() {
           <SpaceSwitcher />
         </div>
 
-        <nav className="flex-1 py-4 px-3 space-y-1">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? "gradient-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                }`
-              }
-            >
-              <item.icon className="h-4 w-4" />
-              {item.title}
-            </NavLink>
-          ))}
+        <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+          {renderNavItems()}
         </nav>
 
         {profile?.is_also_apporteur && (
@@ -226,12 +250,29 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-
-
         <main className="flex-1 p-6">
           <Outlet />
         </main>
       </div>
     </div>
+  );
+}
+
+function SidebarNavLink({ item, onClose }: { item: NavItem; onClose: () => void }) {
+  return (
+    <NavLink
+      to={item.path}
+      onClick={onClose}
+      className={({ isActive }) =>
+        `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+          isActive
+            ? "gradient-primary text-primary-foreground"
+            : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+        }`
+      }
+    >
+      <item.icon className="h-4 w-4" />
+      {item.title}
+    </NavLink>
   );
 }
