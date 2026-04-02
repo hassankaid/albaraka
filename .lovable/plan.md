@@ -1,36 +1,45 @@
 
 
-## Corrections "Mon Activité" — 3 points
+## Optimisations "Mon Activité" — 4 points
 
-### 1. Fix Coach IA (Edge Function)
+### 1. Score Explanation mieux structuré
 
-Les logs montrent : `Anthropic error: 404 model: claude-3-5-sonnet-20241022`. Le modèle Claude utilisé n'existe plus. Il faut le remplacer par `claude-sonnet-4-20250514` dans `supabase/functions/activity-ai-coach/index.ts` (ligne 38).
+Remplacer le bloc de texte brut par une mise en page structurée avec des éléments visuels :
+- Titre "Comment est calculé mon score ?"
+- 3 lignes distinctes avec icônes/puces :
+  - **Base** : Moyenne des % d'atteinte sur les 3 objectifs (vidéos, messages, RDV)
+  - **Dépassement** : Pas de cap à 100% — dépasser un objectif rapporte plus de points
+  - **Bonus régularité** : +10% par objectif atteint ou dépassé (max +30%)
 
-### 2. Ajouter le leaderboard pour les apporteurs
+### 2. Leaderboard avec onglets "Semaine" / "All Time"
 
-Actuellement, seul le CEO voit le classement. Les apporteurs doivent aussi voir un mini-leaderboard en bas de leur page "Mon Activité", montrant :
-- Le classement de la semaine (tous les apporteurs ayant saisi)
-- Leur propre ligne mise en surbrillance
-- Leur score et leur rang
+Pour les deux vues (CEO et apporteur) :
+- Ajouter des `Tabs` avec deux onglets : **Cette semaine** et **All Time**
+- **Cette semaine** : classement existant (filtré sur `week_start` du lundi courant)
+- **All Time** : requête de toutes les `activity_kpis` sans filtre de semaine, agrégées par `user_id` (somme des KPIs), puis calcul du score moyen par utilisateur. On utilisera une requête qui récupère tous les KPIs, puis on agrège côté client par user_id en calculant le score moyen sur l'ensemble des semaines saisies.
 
-Cela nécessite que les apporteurs puissent lire les KPIs de tous les utilisateurs pour la semaine en cours. Il faudra ajouter une politique RLS `SELECT` sur `activity_kpis` pour les utilisateurs authentifiés (lecture seule sur la semaine courante), ou utiliser une approche plus simple : permettre la lecture à tous les authentifiés.
+### 3. Navigation semaine par semaine (apporteurs)
 
-### 3. Note explicative du score
+Ajouter un état `selectedMonday` initialisé au lundi courant, avec des boutons chevron gauche/droite pour naviguer :
+- **Chevron gauche** : `selectedMonday - 1 semaine`
+- **Chevron droite** : `selectedMonday + 1 semaine` (désactivé si >= lundi courant)
+- La requête `currentKpi` et la soumission utilisent `selectedMonday` au lieu de `currentMonday`
+- Le formulaire se réinitialise quand on change de semaine
+- Afficher la date de saisie/mise à jour (`updated_at`) sous le formulaire si une saisie existe pour cette semaine
 
-Ajouter une petite carte "Comment est calculé mon score ?" avec un texte concis :
+### 4. Format de la semaine "Semaine du lundi X au dimanche Y AAAA"
 
-> Ton score = moyenne de tes % d'atteinte sur les 3 objectifs (vidéos, messages, RDV) × bonus régularité. Dépasser un objectif rapporte plus de points. Bonus : +10% par objectif atteint ou dépassé (max +50%).
+Remplacer `Semaine du {d MMMM}` par `Semaine du {lundi d MMMM} au {dimanche d MMMM yyyy}`.
+Exemple : "Semaine du 31 mars au 6 avril 2025"
 
-### Fichiers modifiés
+### Fichier modifié
 
 | Fichier | Modification |
 |---------|-------------|
-| `supabase/functions/activity-ai-coach/index.ts` | Changer le modèle Claude → `claude-sonnet-4-20250514` |
-| `src/pages/working/MyActivity.tsx` | Ajouter leaderboard pour apporteurs + note explicative du score |
-| Migration SQL | Ajouter politique RLS lecture `activity_kpis` pour tous les authentifiés |
+| `src/pages/working/MyActivity.tsx` | Les 4 points ci-dessus |
 
-### Étapes
-1. Migration : politique RLS lecture sur `activity_kpis` pour authenticated
-2. Fix modèle dans edge function
-3. Ajouter section leaderboard + note score dans la vue apporteur
+### Imports à ajouter
+- `addDays` de `date-fns` (pour calculer le dimanche = lundi + 6)
+- `ChevronLeft`, `ChevronRight` de `lucide-react`
+- `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` de `@/components/ui/tabs`
 
