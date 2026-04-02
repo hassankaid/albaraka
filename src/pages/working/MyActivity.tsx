@@ -48,7 +48,7 @@ function computeScore(kpis: any, objectives: Record<string, number>) {
   const avg = ratios.reduce((a, b) => a + b, 0) / ratios.length * 100;
   const attained = ratios.filter((r) => r >= 1).length;
   const bonus = 1 + 0.1 * attained;
-  return Math.round(avg * bonus);
+  return parseFloat((avg * bonus).toFixed(1));
 }
 
 const medalIcons = [
@@ -88,7 +88,7 @@ function Leaderboard({ ranked, highlightUserId }: { ranked: any[]; highlightUser
               </div>
             </div>
             <div className="text-right">
-              <span className="text-lg font-bold text-foreground">{r.score}</span>
+              <span className="text-lg font-bold text-foreground">{typeof r.score === 'number' ? r.score.toFixed(1) : r.score}</span>
               <p className="text-xs text-muted-foreground">pts</p>
             </div>
           </div>
@@ -102,34 +102,46 @@ function Leaderboard({ ranked, highlightUserId }: { ranked: any[]; highlightUser
 function ScoreExplanation() {
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <HelpCircle className="h-4 w-4 text-muted-foreground" />
           Comment est calculé mon score ?
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          <div className="flex items-start gap-3">
-            <Target className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-foreground">Base</p>
-              <p className="text-sm text-muted-foreground">Moyenne de tes % d'atteinte sur les 3 objectifs : vidéos, messages et RDV.</p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10">
+                <Target className="h-4 w-4 text-primary" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">Base</p>
             </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Moyenne de tes % d'atteinte sur les 3 objectifs : vidéos, messages et RDV.
+            </p>
           </div>
-          <div className="flex items-start gap-3">
-            <Zap className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-foreground">Dépassement</p>
-              <p className="text-sm text-muted-foreground">Pas de plafond à 100 % — dépasser un objectif rapporte plus de points.</p>
+          <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-amber-500/10">
+                <Zap className="h-4 w-4 text-amber-500" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">Dépassement</p>
             </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Pas de plafond à 100 % — dépasser un objectif rapporte plus de points.
+            </p>
           </div>
-          <div className="flex items-start gap-3">
-            <Award className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-foreground">Bonus régularité</p>
-              <p className="text-sm text-muted-foreground">+10 % par objectif atteint ou dépassé (max +30 %).</p>
+          <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-emerald-500/10">
+                <Award className="h-4 w-4 text-emerald-500" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">Bonus régularité</p>
             </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              +10 % par objectif atteint ou dépassé (max +30 %).
+            </p>
           </div>
         </div>
       </CardContent>
@@ -145,26 +157,26 @@ function LeaderboardWithTabs({ weeklyRanked, allTimeRanked, highlightUserId }: {
 }) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <Trophy className="h-4 w-4 text-amber-500" />
-          Classement
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="week">
-          <TabsList className="mb-4">
-            <TabsTrigger value="week">Cette semaine</TabsTrigger>
-            <TabsTrigger value="alltime">All Time</TabsTrigger>
+      <Tabs defaultValue="week">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-amber-500" />
+            Classement
+          </CardTitle>
+          <TabsList className="h-8">
+            <TabsTrigger value="week" className="text-xs px-3 h-7">Semaine</TabsTrigger>
+            <TabsTrigger value="alltime" className="text-xs px-3 h-7">All Time</TabsTrigger>
           </TabsList>
-          <TabsContent value="week">
+        </CardHeader>
+        <CardContent>
+          <TabsContent value="week" className="mt-0">
             <Leaderboard ranked={weeklyRanked} highlightUserId={highlightUserId} />
           </TabsContent>
-          <TabsContent value="alltime">
+          <TabsContent value="alltime" className="mt-0">
             <Leaderboard ranked={allTimeRanked} highlightUserId={highlightUserId} />
           </TabsContent>
-        </Tabs>
-      </CardContent>
+        </CardContent>
+      </Tabs>
     </Card>
   );
 }
@@ -196,7 +208,7 @@ function useAllTimeRanked(objectives: Record<string, number> | undefined) {
     return Object.entries(byUser)
       .map(([user_id, { name, weeks }]) => {
         const totalScore = weeks.reduce((sum, w) => sum + computeScore(w, objectives), 0);
-        const avgScore = Math.round(totalScore / weeks.length);
+        const avgScore = parseFloat((totalScore / weeks.length).toFixed(1));
         const totals = weeks.reduce(
           (acc, w) => ({
             videos_published: acc.videos_published + w.videos_published,
@@ -512,7 +524,6 @@ export default function MyActivity() {
                   </div>
                   <span className={`font-semibold ${pct >= 100 ? "text-emerald-500" : "text-foreground"}`}>
                     {value}/{target} ({pct}%)
-                    {pct > 100 && <span className="ml-1 text-xs bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded-full">×{(pct / 100).toFixed(1)}</span>}
                   </span>
                 </div>
                 <Progress value={capped} className="h-2" />
@@ -532,7 +543,12 @@ export default function MyActivity() {
         </CardHeader>
         <CardContent>
           {latestFeedback ? (
-            <p className="text-sm whitespace-pre-line">{latestFeedback}</p>
+            <div className="text-sm space-y-2">
+              {latestFeedback.split('\n').filter(Boolean).map((line: string, i: number) => {
+                const html = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                return <p key={i} dangerouslySetInnerHTML={{ __html: html }} />;
+              })}
+            </div>
           ) : (
             <p className="text-sm text-muted-foreground">
               Bienvenue ! Remplis ta première semaine pour démarrer ton suivi et recevoir des conseils personnalisés. 🚀
