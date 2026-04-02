@@ -1,17 +1,15 @@
-## "Mon Activité" — Plan d'implémentation complet
 
-### Rappel du périmètre
 
-Nouvelle page "Mon Activité" dans l'espace WORKING pour les apporteurs (purs et collaborateurs-apporteurs) : saisie hebdo de 5 KPIs, objectifs, graphique d'évolution, coach IA post-soumission, classement CEO.
+## "Mon Activité" — Plan d'implémentation
 
-### Algorithme de classement révisé
+### Algorithme de classement révisé (sans cap)
 
-Le cap à 100% est supprimé. Le classement utilise un **score composite à deux dimensions** :
+Le cap à 100% est supprimé. Le score utilise la **moyenne d'atteinte non capée + bonus régularité** :
 
 ```text
-Score = Moyenne d'atteinte (sans cap) × Bonus régularité
+Score = Moyenne_atteinte × Bonus_régularité
 
-Moyenne d'atteinte = moyenne(
+Moyenne_atteinte = moyenne(
   videos / obj_videos,
   messages / obj_messages,
   réponses / obj_réponses,
@@ -19,67 +17,42 @@ Moyenne d'atteinte = moyenne(
   ventes / obj_ventes
 ) × 100
 
-Bonus régularité = 1 + 0.1 × nombre_de_KPIs_≥_objectif
-  (varie de 1.0 à 1.5 selon combien de KPIs atteignent l'objectif)
+Bonus_régularité = 1 + 0.1 × nombre_KPIs_≥_objectif
+  (de 1.0 si aucun objectif atteint, à 1.5 si les 5 sont atteints)
 ```
 
-Exemple concret :
-- **Apporteur A** : 150% messages, 120% vidéos, 80% réponses, 50% rdv, 30% ventes → Moyenne = 86%, 2 KPIs atteints → Score = 86 × 1.2 = **103.2**
-- **Apporteur B** : 100% sur les 5 → Moyenne = 100%, 5 KPIs atteints → Score = 100 × 1.5 = **150.0**
-- **Apporteur C** : 200% messages, 200% vidéos, 100% réponses, 100% rdv, 100% ventes → Moyenne = 160%, 5 atteints → Score = 160 × 1.5 = **240.0**
+Exemples :
+- **A** : 150% msg, 120% vidéos, 80% rép, 50% rdv, 30% ventes → Moy=86%, 2 atteints → 86×1.2 = **103**
+- **B** : 100% partout → Moy=100%, 5 atteints → 100×1.5 = **150**
+- **C** : 200% msg, 200% vidéos, 100% rép+rdv+ventes → Moy=160%, 5 atteints → 160×1.5 = **240**
 
-Résultat : le dépassement est récompensé, la régularité donne un bonus, et il n'y a plus d'ex-aequo artificiels à 100%.
+Un apporteur qui dépasse les objectifs est récompensé, et la régularité sur tous les axes donne un bonus supplémentaire. Plus d'ex-aequo artificiels.
 
 ### Base de données
 
-**Table `activity_kpis`** :
-- `id` uuid PK, `user_id` uuid (ref profiles), `week_start` date (lundi), `videos_published` int, `messages_sent` int, `replies_received` int, `appointments` int, `sales_made` int, `ai_feedback` text, `created_at`, `updated_at`
-- Contrainte unique : `(user_id, week_start)`
+**Table `activity_kpis`** : id, user_id, week_start (lundi), 5 KPIs int, ai_feedback text, created_at, updated_at. Unique (user_id, week_start).
 
-**Table `activity_objectives`** :
-- `id` uuid PK, `kpi_key` text, `weekly_target` int, `created_at`, `updated_at`
-- Seed : videos=7, messages=500, replies=10, appointments=10, sales=3
+**Table `activity_objectives`** : id, kpi_key, weekly_target, created_at, updated_at. Seed : videos=7, messages=500, replies=10, appointments=10, sales=3.
 
-RLS : chaque user lit/écrit ses propres `activity_kpis` ; CEO lit tout. `activity_objectives` lisible par tous les authentifiés, modifiable par CEO.
+RLS : user lit/écrit ses propres KPIs, CEO lit tout. Objectifs lisibles par tous, modifiables par CEO.
 
-### Page MyActivity — Layout
-
-```text
-┌──────────────────────────────────────────────────────┐
-│  OBJECTIFS HEBDO (5 barres de progression)           │
-│  Peuvent dépasser 100% (barre pleine + badge ×1.5)  │
-├──────────────────────────────────────────────────────┤
-│  COACH IA (dernier feedback après soumission)        │
-│  Message statique d'accueil si première visite       │
-├──────────────────────────────────────────────────────┤
-│  SAISIE HEBDO (semaine du XX au XX)                  │
-│  5 champs numériques + bouton Valider                │
-├──────────────────────────────────────────────────────┤
-│  ÉVOLUTION (graphique barres groupées par semaine)   │
-│  Apparaît dès ≥ 2 semaines de données               │
-└──────────────────────────────────────────────────────┘
-```
-
-### Classement CEO (AdminCoachingDashboard)
-
-Section "Top Apporteurs de la semaine" : liste classée par score composite (sans cap), avec % moyen d'atteinte + nombre de KPIs atteints affichés. Médailles pour le top 3.
-
-### Fichiers à créer/modifier
+### Fichiers
 
 | Fichier | Action |
 |---------|--------|
-| Migration SQL | Tables `activity_kpis` + `activity_objectives` + RLS + seed |
-| `src/pages/working/MyActivity.tsx` | Page complète |
-| `src/components/DashboardLayout.tsx` | Nav item "Mon Activité" pour apporteurs/collaborateurs-apporteurs |
-| `src/components/ApporteurLayout.tsx` | Nav item WORKING "Mon Activité" |
+| Migration SQL | Tables + RLS + seed objectifs |
+| `src/pages/working/MyActivity.tsx` | Saisie hebdo + objectifs + graphique + feedback IA |
+| `src/components/DashboardLayout.tsx` | Nav "Mon Activité" pour apporteurs/collab-apporteurs |
+| `src/components/ApporteurLayout.tsx` | Nav WORKING "Mon Activité" |
 | `src/App.tsx` | Route `/working/activity` |
-| `supabase/functions/activity-ai-coach/index.ts` | Edge function feedback IA post-soumission |
-| `src/components/admin-coaching/AdminCoachingDashboard.tsx` | Section classement hebdo |
+| `supabase/functions/activity-ai-coach/index.ts` | Edge function feedback post-soumission |
+| `src/components/admin-coaching/AdminCoachingDashboard.tsx` | Top 3 apporteurs hebdo |
 
 ### Étapes
 
-1. Migration DB
-2. Page MyActivity (saisie + objectifs + graphique)
-3. Routes + navigation
-4. Edge function coach IA
-5. Classement CEO
+1. Migration DB (tables + RLS + seed)
+2. Page MyActivity (saisie + objectifs barres sans cap + graphique)
+3. Routes + navigation (deux layouts)
+4. Edge function coach IA (post-soumission)
+5. Classement CEO dans admin coaching (score non capé + bonus régularité)
+
