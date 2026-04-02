@@ -97,6 +97,7 @@ export const LEAD_MANUAL_STATUSES = [
   "pas_qualifie",
   "a_relancer",
   "perdu",
+  "close",
 ] as const;
 
 export const LEAD_STATUS_LIST = LEAD_MANUAL_STATUSES.map((key) => ({
