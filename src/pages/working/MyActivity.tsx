@@ -88,7 +88,7 @@ function Leaderboard({ ranked, highlightUserId }: { ranked: any[]; highlightUser
               </div>
             </div>
             <div className="text-right">
-              <span className="text-lg font-bold text-foreground">{r.score}</span>
+              <span className="text-lg font-bold text-foreground">{typeof r.score === 'number' ? r.score.toFixed(1) : r.score}</span>
               <p className="text-xs text-muted-foreground">pts</p>
             </div>
           </div>
