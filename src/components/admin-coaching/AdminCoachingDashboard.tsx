@@ -274,6 +274,36 @@ export default function AdminCoachingDashboard() {
           </CardContent>
         </Card>
       </div>
+      {/* Leaderboard */}
+      {leaderboard && leaderboard.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-amber-500" />
+              Top Apporteurs — {format(new Date(currentMonday), "d MMM", { locale: fr })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {leaderboard.map((entry: any, idx: number) => {
+                const medals = ["🥇", "🥈", "🥉"];
+                return (
+                  <div key={idx} className="flex items-center gap-3">
+                    <span className="text-lg w-8 text-center">{medals[idx] || `${idx + 1}.`}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{entry.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {entry.avgPct}% moy. · {entry.kpisReached}/5 objectifs atteints
+                      </p>
+                    </div>
+                    <span className="text-sm font-bold text-primary">{entry.score}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
