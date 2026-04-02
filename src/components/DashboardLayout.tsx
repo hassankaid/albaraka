@@ -31,7 +31,7 @@ const coachingNavItems = [
 
 const workingNavItems = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
-  { title: "Accueil", path: "/working", icon: Briefcase, roles: ["ceo", "collaborateur"] },
+  
   { title: "Scripts Setting", path: "/working/scripts/setting", icon: MessageSquare, roles: ["ceo", "collaborateur"] },
   { title: "Scripts Closing", path: "/working/scripts/closing", icon: Phone, roles: ["ceo", "collaborateur"] },
   { title: "Générateur Contenu", path: "/working/content", icon: Sparkles, roles: ["ceo", "collaborateur"] },
