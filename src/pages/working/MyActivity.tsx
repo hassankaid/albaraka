@@ -543,7 +543,12 @@ export default function MyActivity() {
         </CardHeader>
         <CardContent>
           {latestFeedback ? (
-            <p className="text-sm whitespace-pre-line">{latestFeedback}</p>
+            <div className="text-sm space-y-2">
+              {latestFeedback.split('\n').filter(Boolean).map((line: string, i: number) => {
+                const html = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                return <p key={i} dangerouslySetInnerHTML={{ __html: html }} />;
+              })}
+            </div>
           ) : (
             <p className="text-sm text-muted-foreground">
               Bienvenue ! Remplis ta première semaine pour démarrer ton suivi et recevoir des conseils personnalisés. 🚀
