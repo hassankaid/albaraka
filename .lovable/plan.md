@@ -1,53 +1,58 @@
 
 
-## Repenser la sidebar WORKING — Supprimer les sections SUIVI/OUTILS
+## Créer l'espace ADMIN (CEO only) et réorganiser WORKING
 
-### Constat
+### Objectif
 
-Les labels "SUIVI" et "OUTILS" créent une séparation artificielle. "Mon Activité" est autant du suivi qu'un outil, et l'utilisateur veut que ce soit la première page affichée. Plutôt que des sous-sections, on adopte une **liste unique ordonnée** sans labels de section, comme le font Slack ou Stripe Dashboard.
+Extraire les pages admin du CEO (Équipe, Commissions, Factures, Données, Créer) dans un nouvel espace **ETHICARENA ADMIN** accessible uniquement au CEO. Dans WORKING, le CEO voit :
+- **Suivi Activité** (renommé depuis "Mon Activité" — vue admin du leaderboard/suivi des apporteurs)
+- Générateur Contenu
+- Agent IA
+- Mon Dashboard, Leads, Calls, Contacts, Ventes, Paiements, Commissions
 
-### Nouvelle organisation de la sidebar (DashboardLayout)
+### Architecture cible
 
-L'ordre reflète la priorité d'usage, avec "Mon Activité" en premier :
+```text
+WORKING (tous les rôles)
+  Suivi Activité (CEO) / Mon Activité (autres)
+  Mon Dashboard
+  Leads, Calls, Contacts, Ventes, Paiements, Commissions
+  Générateur Contenu, Agent IA
 
-1. Mon Activité *(apporteurs + CEO)*
-2. Mon Dashboard
-3. Leads
-4. Mes Calls
-5. Contacts *(CEO)*
-6. Mes Ventes
-7. Mes Paiements
-8. Mes Commissions
-9. Générateur Contenu
-10. Agent IA
-11. ── séparateur visuel (trait fin) ──
-12. Équipe *(CEO)*
-13. Commissions *(CEO)*
-14. Factures *(CEO)*
-15. Données *(CEO)*
-16. Créer *(CEO)*
+ADMIN (CEO uniquement)
+  Équipe
+  Commissions
+  Factures
+  Données
+  Créer
 
-Le séparateur sépare les pages perso/équipe des pages admin CEO — c'est plus logique qu'un label "outils".
+TRAINING (CEO + collaborateurs)
+  Scripts Setting, Scripts Closing
 
-### Nouvelle organisation (ApporteurLayout)
+COACHING (inchangé)
+  Évaluations, Historique, Administration
+```
 
-Liste unique sans labels :
-1. Mon Activité
-2. Dashboard
-3. Mes Leads
-4. Mes Ventes
-5. Commissions & Factures
-6. Mon Profil
+### Changements
 
-### Page par défaut
+#### 1. SpaceSwitcher.tsx
+- Ajouter un 4e espace **ADMIN** (icône `Settings2`, couleur rouge/rose, path `/admin/team`)
+- Visible uniquement pour `role === "ceo"`
+- Détection : routes `/admin/*` (sauf `/admin/coaching`) → espace ADMIN
+- WORKING path pour CEO : `/working/activity` (comme les autres, plus `/dashboard`)
 
-La redirection `/working` → `/working/activity` existe déjà. Pour que "Mon Activité" soit vraiment la landing page quand on arrive sur l'espace WORKING, il faut aussi que le SpaceSwitcher pointe vers `/working/activity` au lieu de `/dashboard` pour les rôles qui y ont accès. Le CEO, lui, arrive toujours sur `/dashboard`.
+#### 2. DashboardLayout.tsx
+- Retirer les items `adminSection: true` de `workingNavItems`
+- Créer `adminNavItems` : Équipe, Commissions, Factures, Données, Créer (CEO only)
+- Ajouter un `currentNavMode: "admin"` quand route = `/admin/*` (sauf `/admin/coaching`)
+- Renommer "Mon Activité" en "Suivi Activité" pour le CEO dans le rendu (ou via un titre conditionnel)
+- Retirer le séparateur admin dans le mode working (plus besoin)
+- Mettre à jour `pageTitles` : `/working/activity` → "Suivi Activité" pour CEO
 
-### Fichiers modifiés
+#### 3. Fichiers modifiés
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/components/DashboardLayout.tsx` | Supprimer les sections "suivi"/"outils", réordonner les items, ajouter un séparateur avant les items admin CEO |
-| `src/components/ApporteurLayout.tsx` | Supprimer les sections, réordonner avec Mon Activité en premier |
-| `src/components/SpaceSwitcher.tsx` | Pour apporteurs/collaborateurs, pointer WORKING vers `/working/activity` au lieu de `/dashboard` |
+| `src/components/SpaceSwitcher.tsx` | Ajouter espace ADMIN (CEO only), détection route admin |
+| `src/components/DashboardLayout.tsx` | Extraire adminNavItems, ajouter mode "admin", titre conditionnel "Suivi Activité" pour CEO |
 
