@@ -1,26 +1,27 @@
 
 
-## Désélectionner les bénéficiaires par défaut sur la page Factures
+## Restreindre la visibilité des sessions coaching par rôle
 
-### Changement
+### Règles de visibilité
 
-Dans `src/pages/AdminInvoices.tsx`, ligne 297, remplacer :
+| Profil | Mes sessions (en tant qu'élève) | Sessions d'équipe |
+|--------|---|----|
+| **CEO** | ✅ Ses sessions en tant qu'élève | ✅ Toutes les sessions (onglet visible) |
+| **Coach** (is_coach=true) | ✅ Ses sessions en tant qu'élève | ✅ Sessions qu'il a coachées (onglet visible) |
+| **Collaborateur non-coach** | ✅ Ses sessions en tant qu'élève | ❌ Onglet masqué |
+| **Apporteur non-coach** | ✅ Ses sessions en tant qu'élève | ❌ Onglet masqué |
 
-```ts
-setSelectedIds(new Set(list.map(a => a.beneficiary_user_id)));
-```
+### Changements dans `src/pages/MonCoaching.tsx`
 
-par :
+1. **Déterminer si l'utilisateur a accès aux sessions d'équipe** : `const canSeeTeam = profile?.role === 'ceo' || profile?.is_coach === true`
 
-```ts
-setSelectedIds(new Set());
-```
+2. **Conditionner la requête `teamSessions`** : ajouter `enabled: !!profile?.id && canSeeTeam`. Pour les coachs (non-CEO), filtrer avec `.eq("coach_user_id", profile.id)` au lieu de `.neq("student_user_id", profile.id)` — ils voient les sessions qu'ils ont menées. Pour le CEO, garder le `.neq("student_user_id")` actuel (voit tout).
 
-Cela initialise la sélection à vide au lieu de tout cocher. Le bouton "Tout sélectionner" reste disponible pour cocher en masse si besoin.
+3. **Masquer l'onglet "Sessions équipe"** : ne rendre le `TabsTrigger` et le `TabsContent` "team" que si `canSeeTeam` est true. Sans cet onglet, le `Tabs` component n'a plus besoin de tabs du tout pour les non-coachs — on peut simplement retirer le wrapper `Tabs` et afficher directement la liste "Mes sessions".
 
 ### Fichier modifié
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/pages/AdminInvoices.tsx` | Initialiser `selectedIds` à un Set vide au chargement des bénéficiaires |
+| `src/pages/MonCoaching.tsx` | Masquer onglet équipe pour non-coachs, filtrer par coach_user_id pour les coachs |
 
