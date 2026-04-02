@@ -25,6 +25,8 @@ export default function MonCoaching() {
   const { profile } = useAuth();
   const navigate = useNavigate();
 
+  const canSeeTeam = profile?.role === 'ceo' || profile?.is_coach === true;
+
   const { data: mySessions, isLoading: mySessionsLoading } = useQuery({
     queryKey: ["my-coaching-sessions", profile?.id],
     queryFn: async () => {
@@ -48,7 +50,7 @@ export default function MonCoaching() {
   const { data: teamSessions, isLoading: teamSessionsLoading } = useQuery({
     queryKey: ["team-coaching-sessions", profile?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("coaching_sessions")
         .select(`
           *,
@@ -56,14 +58,22 @@ export default function MonCoaching() {
           student:profiles!coaching_sessions_student_user_id_fkey(id, email, full_name),
           coach:profiles!coaching_sessions_coach_user_id_fkey(id, email, full_name)
         `)
-        .neq("student_user_id", profile!.id)
         .eq("status", "completed")
         .order("session_date", { ascending: false })
         .limit(50);
+
+      if (profile?.role === 'ceo') {
+        query = query.neq("student_user_id", profile!.id);
+      } else {
+        // Coach: voir les sessions qu'il a menées
+        query = query.eq("coach_user_id", profile!.id);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as unknown as SessionWithDetails[];
     },
-    enabled: !!profile?.id,
+    enabled: !!profile?.id && canSeeTeam,
   });
 
   const myStats = {
@@ -168,68 +178,92 @@ export default function MonCoaching() {
         </Card>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="mine">
-        <TabsList>
-          <TabsTrigger value="mine" className="flex items-center gap-2">
-            <User className="h-4 w-4" /> Mes sessions
-          </TabsTrigger>
-          <TabsTrigger value="team" className="flex items-center gap-2">
-            <Users className="h-4 w-4" /> Sessions équipe
-          </TabsTrigger>
-        </TabsList>
+      {/* Sessions */}
+      {canSeeTeam ? (
+        <Tabs defaultValue="mine">
+          <TabsList>
+            <TabsTrigger value="mine" className="flex items-center gap-2">
+              <User className="h-4 w-4" /> Mes sessions
+            </TabsTrigger>
+            <TabsTrigger value="team" className="flex items-center gap-2">
+              <Users className="h-4 w-4" /> Sessions coachées
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="mine">
-          <Card>
-            <CardHeader>
-              <CardTitle>Mes sessions de coaching</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {mySessions && mySessions.length > 0 ? (
-                <div className="space-y-3">
-                  {mySessions.map((s) => (
-                    <SessionCard key={s.id} session={s} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Calendar className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                  <p>Vous n'avez pas encore reçu de session de coaching.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+          <TabsContent value="mine">
+            <Card>
+              <CardHeader>
+                <CardTitle>Mes sessions de coaching</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {mySessions && mySessions.length > 0 ? (
+                  <div className="space-y-3">
+                    {mySessions.map((s) => (
+                      <SessionCard key={s.id} session={s} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Calendar className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                    <p>Vous n'avez pas encore reçu de session de coaching.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="team">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sessions de l'équipe</CardTitle>
-              <CardDescription>
-                Consultez les sessions des autres membres pour apprendre de leurs expériences.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {teamSessionsLoading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                </div>
-              ) : teamSessions && teamSessions.length > 0 ? (
-                <div className="space-y-3">
-                  {teamSessions.map((s) => (
-                    <SessionCard key={s.id} session={s} showStudent />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                  <p>Aucune session d'équipe disponible pour le moment.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="team">
+            <Card>
+              <CardHeader>
+                <CardTitle>{profile?.role === 'ceo' ? "Sessions de l'équipe" : "Sessions que j'ai coachées"}</CardTitle>
+                <CardDescription>
+                  {profile?.role === 'ceo'
+                    ? "Consultez l'ensemble des sessions de coaching."
+                    : "Retrouvez les sessions que vous avez menées en tant que coach."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {teamSessionsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                ) : teamSessions && teamSessions.length > 0 ? (
+                  <div className="space-y-3">
+                    {teamSessions.map((s) => (
+                      <SessionCard key={s.id} session={s} showStudent />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                    <p>Aucune session disponible pour le moment.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Mes sessions de coaching</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {mySessions && mySessions.length > 0 ? (
+              <div className="space-y-3">
+                {mySessions.map((s) => (
+                  <SessionCard key={s.id} session={s} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Calendar className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                <p>Vous n'avez pas encore reçu de session de coaching.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
