@@ -285,6 +285,11 @@ export default function MyActivity() {
     );
   }
 
+  // CEO sees the leaderboard instead of the form
+  if (isCeo) {
+    return <CeoLeaderboard />;
+  }
+
   const displayValues = currentKpi ? {
     videos_published: currentKpi.videos_published,
     messages_sent: currentKpi.messages_sent,
