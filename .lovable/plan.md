@@ -1,79 +1,53 @@
 
 
-## Restructuration des espaces — WORKING absorbe TRACKING + nouveau TRAINING
+## Repenser la sidebar WORKING — Supprimer les sections SUIVI/OUTILS
 
-### Architecture cible
+### Constat
 
-```text
-AVANT (3 espaces)              APRÈS (3 espaces)
-─────────────────              ──────────────────
-TRACKING                       WORKING (fusionné)
-  Dashboard, Leads, Calls...     ┌─ Section "Suivi" ──────────┐
-                                 │  Dashboard, Leads, Calls,  │
-WORKING                          │  Ventes, Paiements, etc.   │
-  Mon Activité, Scripts,         └────────────────────────────-┘
-  Générateur, Agent IA           ┌─ Section "Outils" ─────────┐
-                                 │  Mon Activité, Générateur,  │
-COACHING                         │  Agent IA                   │
-  Évaluations, Historique        └─────────────────────────────┘
+Les labels "SUIVI" et "OUTILS" créent une séparation artificielle. "Mon Activité" est autant du suivi qu'un outil, et l'utilisateur veut que ce soit la première page affichée. Plutôt que des sous-sections, on adopte une **liste unique ordonnée** sans labels de section, comme le font Slack ou Stripe Dashboard.
 
-                               TRAINING (nouveau)
-                                 Scripts Setting
-                                 Scripts Closing
+### Nouvelle organisation de la sidebar (DashboardLayout)
 
-                               COACHING (inchangé)
-                                 Évaluations, Historique, Admin
-```
+L'ordre reflète la priorité d'usage, avec "Mon Activité" en premier :
 
-Je recommande les **sections séparées avec sous-titres** (petits labels gris "SUIVI" et "OUTILS" dans la sidebar). C'est le pattern le plus courant dans les SaaS pro (Notion, Linear, etc.), lisible sans surcharger l'UI, et cohérent avec le design existant.
+1. Mon Activité *(apporteurs + CEO)*
+2. Mon Dashboard
+3. Leads
+4. Mes Calls
+5. Contacts *(CEO)*
+6. Mes Ventes
+7. Mes Paiements
+8. Mes Commissions
+9. Générateur Contenu
+10. Agent IA
+11. ── séparateur visuel (trait fin) ──
+12. Équipe *(CEO)*
+13. Commissions *(CEO)*
+14. Factures *(CEO)*
+15. Données *(CEO)*
+16. Créer *(CEO)*
 
-### Détail des changements
+Le séparateur sépare les pages perso/équipe des pages admin CEO — c'est plus logique qu'un label "outils".
 
-#### 1. SpaceSwitcher.tsx
-- Remplacer les 3 espaces par : **WORKING**, **TRAINING**, **COACHING**
-- WORKING : icône Briefcase, path `/dashboard` (CEO/collab) ou `/my-space` (apporteur)
-- TRAINING : icône BookOpenCheck, path `/training/scripts/setting`
-- COACHING : inchangé
-- Détection espace courant : `/training/*` → TRAINING, `/coaching|/mon-coaching` → COACHING, tout le reste → WORKING
+### Nouvelle organisation (ApporteurLayout)
 
-#### 2. DashboardLayout.tsx
-- Fusionner `trackingNavItems` et `workingNavItems` en une seule liste avec un champ `section`
-- Section "SUIVI" : Dashboard, Leads, Calls, Contacts, Ventes, Paiements, Commissions, Équipe, Commissions admin, Factures, Données, Créer, Profil
-- Section "OUTILS" : Mon Activité, Générateur Contenu, Agent IA
-- Nouveau `trainingNavItems` : Scripts Setting (`/training/scripts/setting`), Scripts Closing (`/training/scripts/closing`)
-- Rendu sidebar : si espace WORKING → afficher les deux sections avec label. Si espace TRAINING → `trainingNavItems`. Si COACHING → `coachingNavItems`
+Liste unique sans labels :
+1. Mon Activité
+2. Dashboard
+3. Mes Leads
+4. Mes Ventes
+5. Commissions & Factures
+6. Mon Profil
 
-#### 3. ApporteurLayout.tsx
-- Même logique : fusionner tracking + working nav items
-- Section "SUIVI" : Dashboard, Leads, Ventes, Commissions, Profil
-- Section "OUTILS" : Mon Activité
-- Pas d'accès TRAINING pour les apporteurs (pas de scripts)
+### Page par défaut
 
-#### 4. App.tsx — Routes
-- Renommer `/working/scripts/setting` → `/training/scripts/setting`
-- Renommer `/working/scripts/closing` → `/training/scripts/closing`
-- Ajouter redirect `/training` → `/training/scripts/setting`
-- Les routes `/working/activity` et `/working/content` restent inchangées
-- La route `/working` redirige toujours vers `/working/activity`
-
-#### 5. Working.tsx (page hub)
-- Cette page n'est plus utilisée (le redirect `/working` → `/working/activity` existe déjà). Aucun changement nécessaire.
-
-### Gestion du switch collab/apporteur
-Le bouton "Espace Apporteur" / "Espace Collaborateur" en bas de sidebar reste identique. Il change juste de layout (DashboardLayout ↔ ApporteurLayout), les deux étant maintenant dans l'espace WORKING.
+La redirection `/working` → `/working/activity` existe déjà. Pour que "Mon Activité" soit vraiment la landing page quand on arrive sur l'espace WORKING, il faut aussi que le SpaceSwitcher pointe vers `/working/activity` au lieu de `/dashboard` pour les rôles qui y ont accès. Le CEO, lui, arrive toujours sur `/dashboard`.
 
 ### Fichiers modifiés
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/components/SpaceSwitcher.tsx` | 3 espaces : WORKING, TRAINING, COACHING |
-| `src/components/DashboardLayout.tsx` | Fusionner nav items avec sections "SUIVI" / "OUTILS" + ajouter trainingNavItems |
-| `src/components/ApporteurLayout.tsx` | Fusionner tracking + working avec sections |
-| `src/App.tsx` | Routes scripts → `/training/*`, redirect `/training` |
-
-### Points de vigilance
-- Les routes `/working/activity` et `/working/content` ne changent PAS de préfixe
-- Seuls les scripts changent de `/working/scripts/*` à `/training/scripts/*`
-- Le coaching est totalement inchangé
-- Les redirections existantes dans ProtectedRoute.tsx restent valides (elles pointent vers `/dashboard`, `/my-space`, etc.)
+| `src/components/DashboardLayout.tsx` | Supprimer les sections "suivi"/"outils", réordonner les items, ajouter un séparateur avant les items admin CEO |
+| `src/components/ApporteurLayout.tsx` | Supprimer les sections, réordonner avec Mon Activité en premier |
+| `src/components/SpaceSwitcher.tsx` | Pour apporteurs/collaborateurs, pointer WORKING vers `/working/activity` au lieu de `/dashboard` |
 
