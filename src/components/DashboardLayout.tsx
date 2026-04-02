@@ -141,12 +141,26 @@ export default function DashboardLayout() {
       const items = filterItems(adminNavItems);
       return items.map((item) => <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />);
     }
-    // Working mode: flat list, no admin separator
-    const items = filterItems(workingNavItems);
-    return items.map((item) => {
-      const displayTitle = isCeo && item.path === "/working/activity" ? "Suivi Activité" : item.title;
-      return <SidebarNavLink key={item.path} item={{ ...item, title: displayTitle }} onClose={() => setSidebarOpen(false)} />;
-    });
+    // Working mode: tools first, then separator, then tracking/operational pages
+    const allItems = filterItems(workingNavItems);
+    const toolItems = allItems.filter((i) => !i.adminSection);
+    const trackingItems = allItems.filter((i) => i.adminSection);
+    return (
+      <>
+        {toolItems.map((item) => {
+          const displayTitle = isCeo && item.path === "/working/activity" ? "Suivi Activité" : item.title;
+          return <SidebarNavLink key={item.path} item={{ ...item, title: displayTitle }} onClose={() => setSidebarOpen(false)} />;
+        })}
+        {trackingItems.length > 0 && (
+          <>
+            <div className="my-3 mx-1 h-px bg-border" />
+            {trackingItems.map((item) => (
+              <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />
+            ))}
+          </>
+        )}
+      </>
+    );
   };
 
   return (
