@@ -1,36 +1,24 @@
 
 
-## Optimisations "Mon Activité" — 4 points
+## Optimisations "Mon Activité" — 4 corrections
 
-### 1. Score Explanation mieux structuré
+### 1. Formatage du feedback Coach IA (markdown)
 
-Remplacer le bloc de texte brut par une mise en page structurée avec des éléments visuels :
-- Titre "Comment est calculé mon score ?"
-- 3 lignes distinctes avec icônes/puces :
-  - **Base** : Moyenne des % d'atteinte sur les 3 objectifs (vidéos, messages, RDV)
-  - **Dépassement** : Pas de cap à 100% — dépasser un objectif rapporte plus de points
-  - **Bonus régularité** : +10% par objectif atteint ou dépassé (max +30%)
+Le feedback AI contient du markdown (`**gras**`, emojis sur nouvelles lignes) mais est rendu en texte brut via `<p className="whitespace-pre-line">`. Solution : parser le markdown simple (gras, retours ligne) en JSX. On utilisera un rendu simple avec `dangerouslySetInnerHTML` après conversion des `**...**` en `<strong>` et des `\n` en `<br/>`, ou mieux, installer/utiliser un petit composant de rendu markdown léger. Vu que le projet n'a pas de lib markdown, on fera un rendu manuel simple : split par `\n`, remplacer `**...**` par `<strong>`.
 
-### 2. Leaderboard avec onglets "Semaine" / "All Time"
+### 2. Retirer le badge "×1.3" sur chaque barre d'objectif
 
-Pour les deux vues (CEO et apporteur) :
-- Ajouter des `Tabs` avec deux onglets : **Cette semaine** et **All Time**
-- **Cette semaine** : classement existant (filtré sur `week_start` du lundi courant)
-- **All Time** : requête de toutes les `activity_kpis` sans filtre de semaine, agrégées par `user_id` (somme des KPIs), puis calcul du score moyen par utilisateur. On utilisera une requête qui récupère tous les KPIs, puis on agrège côté client par user_id en calculant le score moyen sur l'ensemble des semaines saisies.
+Le `×{(pct / 100).toFixed(1)}` sur chaque ligne individuelle porte à confusion car le bonus s'applique au score global, pas par KPI. On retire ce badge. On garde juste `valeur/objectif (pourcentage%)` en vert quand >= 100%.
 
-### 3. Navigation semaine par semaine (apporteurs)
+### 3. Amélioration design du Classement
 
-Ajouter un état `selectedMonday` initialisé au lundi courant, avec des boutons chevron gauche/droite pour naviguer :
-- **Chevron gauche** : `selectedMonday - 1 semaine`
-- **Chevron droite** : `selectedMonday + 1 semaine` (désactivé si >= lundi courant)
-- La requête `currentKpi` et la soumission utilisent `selectedMonday` au lieu de `currentMonday`
-- Le formulaire se réinitialise quand on change de semaine
-- Afficher la date de saisie/mise à jour (`updated_at`) sous le formulaire si une saisie existe pour cette semaine
+- Déplacer le toggle Semaine/All Time en haut à droite du header de la Card (inline avec le titre)
+- Score avec 1 décimale (`computeScore` retourne un float arrondi à 1 décimale)
+- Meilleur espacement et structure visuelle des items du leaderboard
 
-### 4. Format de la semaine "Semaine du lundi X au dimanche Y AAAA"
+### 4. Score avec décimale
 
-Remplacer `Semaine du {d MMMM}` par `Semaine du {lundi d MMMM} au {dimanche d MMMM yyyy}`.
-Exemple : "Semaine du 31 mars au 6 avril 2025"
+Modifier `computeScore` pour retourner un nombre à 1 décimale : `parseFloat((avg * bonus).toFixed(1))` au lieu de `Math.round(...)`. Idem dans `useAllTimeRanked`.
 
 ### Fichier modifié
 
@@ -38,8 +26,17 @@ Exemple : "Semaine du 31 mars au 6 avril 2025"
 |---------|-------------|
 | `src/pages/working/MyActivity.tsx` | Les 4 points ci-dessus |
 
-### Imports à ajouter
-- `addDays` de `date-fns` (pour calculer le dimanche = lundi + 6)
-- `ChevronLeft`, `ChevronRight` de `lucide-react`
-- `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` de `@/components/ui/tabs`
+### Détail des changements
+
+**Ligne 51** : `Math.round(avg * bonus)` → `parseFloat((avg * bonus).toFixed(1))`
+
+**Ligne 91** : `{r.score}` → `{r.score.toFixed(1)}`
+
+**Ligne 199** : `Math.round(totalScore / weeks.length)` → `parseFloat((totalScore / weeks.length).toFixed(1))`
+
+**Lignes 515** : Retirer le span avec `×{(pct / 100).toFixed(1)}`
+
+**Lignes 534-535** : Remplacer le `<p>` brut par un rendu qui convertit `**text**` en `<strong>` et respecte les sauts de ligne
+
+**Lignes 146-169** : Restructurer `LeaderboardWithTabs` pour mettre le toggle en haut à droite du `CardHeader`
 
