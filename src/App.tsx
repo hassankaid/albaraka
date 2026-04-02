@@ -84,6 +84,7 @@ const App = () => (
                   <Route path="/working/scripts/setting" element={<ScriptsSetting />} />
                   <Route path="/working/scripts/closing" element={<ScriptsClosing />} />
                   <Route path="/working/content" element={<ContentGenerator />} />
+                  <Route path="/working/activity" element={<MyActivity />} />
                 </Route>
                 {/* Apporteur layout */}
                 <Route element={<ApporteurLayout />}>
