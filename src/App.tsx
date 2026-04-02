@@ -40,6 +40,7 @@ import Working from "./pages/Working";
 import ScriptsSetting from "./pages/working/ScriptsSetting";
 import ScriptsClosing from "./pages/working/ScriptsClosing";
 import ContentGenerator from "./pages/working/ContentGenerator";
+import MyActivity from "./pages/working/MyActivity";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,7 @@ const App = () => (
                   <Route path="/working/scripts/setting" element={<ScriptsSetting />} />
                   <Route path="/working/scripts/closing" element={<ScriptsClosing />} />
                   <Route path="/working/content" element={<ContentGenerator />} />
+                  <Route path="/working/activity" element={<MyActivity />} />
                 </Route>
                 {/* Apporteur layout */}
                 <Route element={<ApporteurLayout />}>
@@ -91,6 +93,7 @@ const App = () => (
                   <Route path="/my-space/sales" element={<ApporteurSales />} />
                   <Route path="/my-space/commissions" element={<ApporteurCommissions />} />
                   <Route path="/my-space/profile" element={<ApporteurProfile />} />
+                  <Route path="/working/activity" element={<MyActivity />} />
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />

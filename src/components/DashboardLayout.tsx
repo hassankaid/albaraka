@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import logo from "@/assets/ethicarena-logo.png";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -30,6 +30,7 @@ const coachingNavItems = [
 ];
 
 const workingNavItems = [
+  { title: "Mon Activité", path: "/working/activity", icon: TrendingUp, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Accueil", path: "/working", icon: Briefcase, roles: ["ceo", "collaborateur"] },
   { title: "Scripts Setting", path: "/working/scripts/setting", icon: MessageSquare, roles: ["ceo", "collaborateur"] },
   { title: "Scripts Closing", path: "/working/scripts/closing", icon: Phone, roles: ["ceo", "collaborateur"] },
@@ -55,6 +56,7 @@ const pageTitles: Record<string, string> = {
   "/coaching": "Évaluations",
   "/mon-coaching": "Historique",
   "/admin/coaching": "Administration Coaching",
+  "/working/activity": "Mon Activité",
   "/working": "Espace de travail",
   "/working/scripts/setting": "Scripts Setting",
   "/working/scripts/closing": "Scripts Closing",
@@ -99,9 +101,11 @@ export default function DashboardLayout() {
     currentNavItems = trackingNavItems;
   }
 
+  const isApporteurLike = profile?.role === "apporteur" || profile?.is_also_apporteur;
   const navItems = currentNavItems.filter((item) => {
     if (!item.roles.includes(userRole)) return false;
     if ('coachOnly' in item && item.coachOnly) return profile?.is_coach || profile?.role === "ceo";
+    if ('apporteurOnly' in item && item.apporteurOnly) return isApporteurLike || profile?.role === "ceo";
     return true;
   });
   const initials = profile?.full_name

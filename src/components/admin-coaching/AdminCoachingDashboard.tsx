@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Calendar, TrendingUp, Users, AlertTriangle, Star } from "lucide-react";
-import { format, subDays, startOfMonth } from "date-fns";
+import { Loader2, Calendar, TrendingUp, Users, AlertTriangle, Star, Medal, Trophy } from "lucide-react";
+import { format, subDays, startOfMonth, startOfWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 
 export default function AdminCoachingDashboard() {
@@ -99,6 +99,48 @@ export default function AdminCoachingDashboard() {
       }
 
       return alertsList.slice(0, 5);
+    },
+  });
+
+  // Top apporteurs leaderboard
+  const currentMonday = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const { data: leaderboard } = useQuery({
+    queryKey: ["admin-coaching-leaderboard", currentMonday],
+    queryFn: async () => {
+      // Get objectives
+      const { data: objData } = await supabase.from("activity_objectives").select("*");
+      const objMap: Record<string, number> = {};
+      objData?.forEach((o: any) => { objMap[o.kpi_key] = o.weekly_target; });
+
+      // Get this week's KPIs
+      const { data: kpis } = await supabase
+        .from("activity_kpis")
+        .select("*, user:profiles!activity_kpis_user_id_fkey(full_name, email, avatar_url)")
+        .eq("week_start", currentMonday);
+
+      if (!kpis || kpis.length === 0) return [];
+
+      return kpis.map((k: any) => {
+        const ratios = [
+          (objMap.videos || 7) > 0 ? k.videos_published / (objMap.videos || 7) : 0,
+          (objMap.messages || 500) > 0 ? k.messages_sent / (objMap.messages || 500) : 0,
+          (objMap.replies || 10) > 0 ? k.replies_received / (objMap.replies || 10) : 0,
+          (objMap.appointments || 10) > 0 ? k.appointments / (objMap.appointments || 10) : 0,
+          (objMap.sales || 3) > 0 ? k.sales_made / (objMap.sales || 3) : 0,
+        ];
+        const avgPct = (ratios.reduce((a, b) => a + b, 0) / 5) * 100;
+        const kpisReached = ratios.filter(r => r >= 1).length;
+        const bonus = 1 + 0.1 * kpisReached;
+        const score = avgPct * bonus;
+
+        return {
+          name: k.user?.full_name || k.user?.email || "—",
+          avatar: k.user?.avatar_url,
+          avgPct: Math.round(avgPct),
+          kpisReached,
+          score: Math.round(score * 10) / 10,
+        };
+      }).sort((a: any, b: any) => b.score - a.score).slice(0, 5);
     },
   });
 
@@ -232,6 +274,36 @@ export default function AdminCoachingDashboard() {
           </CardContent>
         </Card>
       </div>
+      {/* Leaderboard */}
+      {leaderboard && leaderboard.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-amber-500" />
+              Top Apporteurs — {format(new Date(currentMonday), "d MMM", { locale: fr })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {leaderboard.map((entry: any, idx: number) => {
+                const medals = ["🥇", "🥈", "🥉"];
+                return (
+                  <div key={idx} className="flex items-center gap-3">
+                    <span className="text-lg w-8 text-center">{medals[idx] || `${idx + 1}.`}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{entry.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {entry.avgPct}% moy. · {entry.kpisReached}/5 objectifs atteints
+                      </p>
+                    </div>
+                    <span className="text-sm font-bold text-primary">{entry.score}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

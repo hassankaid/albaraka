@@ -37,7 +37,7 @@ const getSpaces = (profile: any): Space[] => {
       icon: Briefcase,
       color: "text-emerald-500",
       bgColor: "bg-emerald-500/10",
-      path: "/working",
+      path: (isApporteur || profile?.is_also_apporteur) ? "/working/activity" : "/working",
       description: "Scripts, Contenu, Outils IA",
     },
     {

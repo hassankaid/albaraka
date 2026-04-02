@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import logo from "@/assets/ethicarena-logo.png";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X, ArrowLeftRight, ChevronDown, User, BookOpen } from "lucide-react";
+import { BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X, ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -19,6 +19,10 @@ const coachingNavItems = [
   { title: "Historique", path: "/mon-coaching", icon: BookOpen },
 ];
 
+const workingNavItems = [
+  { title: "Mon Activité", path: "/working/activity", icon: TrendingUp },
+];
+
 const pageTitles: Record<string, string> = {
   "/my-space": "Dashboard",
   "/my-space/leads": "Mes Leads",
@@ -26,6 +30,7 @@ const pageTitles: Record<string, string> = {
   "/my-space/commissions": "Commissions & Factures",
   "/my-space/profile": "Mon Profil",
   "/mon-coaching": "Historique",
+  "/working/activity": "Mon Activité",
 };
 
 export default function ApporteurLayout() {
@@ -36,8 +41,9 @@ export default function ApporteurLayout() {
   const { profile, signOut } = useAuth();
 
   const isCoachingSpace = location.pathname.startsWith("/mon-coaching");
+  const isWorkingSpace = location.pathname.startsWith("/working");
   const pageTitle = pageTitles[location.pathname] || "Mon espace";
-  const navItems = isCoachingSpace ? coachingNavItems : trackingNavItems;
+  const navItems = isWorkingSpace ? workingNavItems : isCoachingSpace ? coachingNavItems : trackingNavItems;
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
