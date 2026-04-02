@@ -12,30 +12,29 @@ interface NavItem {
   path: string;
   icon: React.ElementType;
   roles: string[];
-  section?: "suivi" | "outils";
+  adminSection?: boolean;
   coachOnly?: boolean;
   apporteurOnly?: boolean;
 }
 
 const workingNavItems: NavItem[] = [
-  // Section SUIVI
-  { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur"], section: "suivi" },
-  { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"], section: "suivi" },
-  { title: "Mes Calls", path: "/calls", icon: Phone, roles: ["ceo", "collaborateur"], section: "suivi" },
-  { title: "Contacts", path: "/contacts", icon: BookUser, roles: ["ceo"], section: "suivi" },
-  { title: "Mes Ventes", path: "/sales", icon: BadgeEuro, roles: ["ceo", "collaborateur", "apporteur"], section: "suivi" },
-  { title: "Mes Paiements", path: "/payments", icon: CreditCard, roles: ["ceo", "collaborateur"], section: "suivi" },
-  { title: "Mes Commissions", path: "/my-commissions", icon: Receipt, roles: ["ceo", "collaborateur"], section: "suivi" },
-  { title: "Équipe", path: "/admin/team", icon: UsersRound, roles: ["ceo"], section: "suivi" },
-  { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"], section: "suivi" },
-  { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"], section: "suivi" },
-  { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"], section: "suivi" },
-  { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"], section: "suivi" },
-  { title: "Mon profil", path: "/profile", icon: User, roles: ["agence"], section: "suivi" },
-  // Section OUTILS
-  { title: "Mon Activité", path: "/working/activity", icon: TrendingUp, roles: ["ceo", "collaborateur", "apporteur"], section: "outils", apporteurOnly: true },
-  { title: "Générateur Contenu", path: "/working/content", icon: Sparkles, roles: ["ceo", "collaborateur"], section: "outils" },
-  { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur"], section: "outils" },
+  { title: "Mon Activité", path: "/working/activity", icon: TrendingUp, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
+  { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur"] },
+  { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"] },
+  { title: "Mes Calls", path: "/calls", icon: Phone, roles: ["ceo", "collaborateur"] },
+  { title: "Contacts", path: "/contacts", icon: BookUser, roles: ["ceo"] },
+  { title: "Mes Ventes", path: "/sales", icon: BadgeEuro, roles: ["ceo", "collaborateur", "apporteur"] },
+  { title: "Mes Paiements", path: "/payments", icon: CreditCard, roles: ["ceo", "collaborateur"] },
+  { title: "Mes Commissions", path: "/my-commissions", icon: Receipt, roles: ["ceo", "collaborateur"] },
+  { title: "Générateur Contenu", path: "/working/content", icon: Sparkles, roles: ["ceo", "collaborateur"] },
+  { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur"] },
+  // Admin CEO section (after separator)
+  { title: "Équipe", path: "/admin/team", icon: UsersRound, roles: ["ceo"], adminSection: true },
+  { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"], adminSection: true },
+  { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"], adminSection: true },
+  { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"], adminSection: true },
+  { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"], adminSection: true },
+  { title: "Mon profil", path: "/profile", icon: User, roles: ["agence"] },
 ];
 
 const trainingNavItems: NavItem[] = [
@@ -130,22 +129,17 @@ export default function DashboardLayout() {
       const items = filterItems(coachingNavItems);
       return items.map((item) => <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />);
     }
-    // Working mode: sections SUIVI + OUTILS
+    // Working mode: flat list with separator before admin items
     const allItems = filterItems(workingNavItems);
-    const suiviItems = allItems.filter((i) => i.section === "suivi");
-    const outilsItems = allItems.filter((i) => i.section === "outils");
+    const mainItems = allItems.filter((i) => !i.adminSection);
+    const adminItems = allItems.filter((i) => i.adminSection);
     return (
       <>
-        {suiviItems.length > 0 && (
+        {mainItems.map((item) => <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />)}
+        {adminItems.length > 0 && (
           <>
-            <p className="px-3 pt-2 pb-1 text-[10px] font-bold text-muted-foreground/60 tracking-widest uppercase">Suivi</p>
-            {suiviItems.map((item) => <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />)}
-          </>
-        )}
-        {outilsItems.length > 0 && (
-          <>
-            <p className="px-3 pt-4 pb-1 text-[10px] font-bold text-muted-foreground/60 tracking-widest uppercase">Outils</p>
-            {outilsItems.map((item) => <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />)}
+            <div className="my-3 mx-1 h-px bg-border" />
+            {adminItems.map((item) => <SidebarNavLink key={item.path} item={item} onClose={() => setSidebarOpen(false)} />)}
           </>
         )}
       </>
