@@ -151,11 +151,7 @@ export default function MyActivity() {
   const queryClient = useQueryClient();
   const currentMonday = getMonday(new Date());
   const weekLabel = `Semaine du ${format(currentMonday, "d MMMM", { locale: fr })}`;
-
-  // CEO sees the leaderboard
-  if (profile?.role === "ceo") {
-    return <CeoLeaderboard />;
-  }
+  const isCeo = profile?.role === "ceo";
 
   const [form, setForm] = useState({
     videos_published: 0,
