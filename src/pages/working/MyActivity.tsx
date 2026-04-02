@@ -208,7 +208,7 @@ function useAllTimeRanked(objectives: Record<string, number> | undefined) {
     return Object.entries(byUser)
       .map(([user_id, { name, weeks }]) => {
         const totalScore = weeks.reduce((sum, w) => sum + computeScore(w, objectives), 0);
-        const avgScore = Math.round(totalScore / weeks.length);
+        const avgScore = parseFloat((totalScore / weeks.length).toFixed(1));
         const totals = weeks.reduce(
           (acc, w) => ({
             videos_published: acc.videos_published + w.videos_published,
