@@ -48,7 +48,7 @@ function computeScore(kpis: any, objectives: Record<string, number>) {
   const avg = ratios.reduce((a, b) => a + b, 0) / ratios.length * 100;
   const attained = ratios.filter((r) => r >= 1).length;
   const bonus = 1 + 0.1 * attained;
-  return Math.round(avg * bonus);
+  return parseFloat((avg * bonus).toFixed(1));
 }
 
 const medalIcons = [
