@@ -68,54 +68,22 @@ export default function ApporteurLayout() {
       ));
     }
 
-    // WORKING: sections SUIVI + OUTILS
-    const suiviItems = mainNavItems.filter((i) => i.section === "suivi");
-    const outilsItems = mainNavItems.filter((i) => i.section === "outils");
-    return (
-      <>
-        {suiviItems.length > 0 && (
-          <>
-            <p className="px-3 pt-2 pb-1 text-[10px] font-bold text-muted-foreground/60 tracking-widest uppercase">Suivi</p>
-            {suiviItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.path === "/my-space"}
-                onClick={() => setSidebarOpen(false)}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    isActive ? "gradient-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                  }`
-                }
-              >
-                <item.icon className="h-4 w-4" />
-                {item.title}
-              </NavLink>
-            ))}
-          </>
-        )}
-        {outilsItems.length > 0 && (
-          <>
-            <p className="px-3 pt-4 pb-1 text-[10px] font-bold text-muted-foreground/60 tracking-widest uppercase">Outils</p>
-            {outilsItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={() => setSidebarOpen(false)}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    isActive ? "gradient-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                  }`
-                }
-              >
-                <item.icon className="h-4 w-4" />
-                {item.title}
-              </NavLink>
-            ))}
-          </>
-        )}
-      </>
-    );
+    return mainNavItems.map((item) => (
+      <NavLink
+        key={item.path}
+        to={item.path}
+        end={item.path === "/my-space"}
+        onClick={() => setSidebarOpen(false)}
+        className={({ isActive }) =>
+          `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            isActive ? "gradient-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+          }`
+        }
+      >
+        <item.icon className="h-4 w-4" />
+        {item.title}
+      </NavLink>
+    ));
   };
 
   return (
