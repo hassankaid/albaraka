@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Video, MessageCircle, Mail, CalendarCheck, ShoppingCart, Sparkles, TrendingUp, Trophy, Medal, HelpCircle } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Loader2, Video, MessageCircle, Mail, CalendarCheck, ShoppingCart, Sparkles, TrendingUp, Trophy, Medal, HelpCircle, ChevronLeft, ChevronRight, Target, Zap, Award } from "lucide-react";
 import { toast } from "sonner";
-import { startOfWeek, format, subWeeks } from "date-fns";
+import { startOfWeek, format, subWeeks, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
@@ -30,6 +31,13 @@ const OBJ_MAP: Record<string, string> = {
 
 function getMonday(date: Date) {
   return startOfWeek(date, { weekStartsOn: 1 });
+}
+
+function formatWeekLabel(monday: Date) {
+  const sunday = addDays(monday, 6);
+  const monLabel = format(monday, "d MMMM", { locale: fr });
+  const sunLabel = format(sunday, "d MMMM yyyy", { locale: fr });
+  return `Semaine du ${monLabel} au ${sunLabel}`;
 }
 
 function computeScore(kpis: any, objectives: Record<string, number>) {
@@ -61,7 +69,7 @@ function Leaderboard({ ranked, highlightUserId }: { ranked: any[]; highlightUser
         const isMe = highlightUserId && r.user_id === highlightUserId;
         return (
           <div
-            key={r.id}
+            key={r.id || r.user_id}
             className={`flex items-center gap-3 p-3 rounded-lg ${isMe ? "bg-primary/10 ring-1 ring-primary/30" : "bg-secondary/50"}`}
           >
             <div className="w-8 text-center">
@@ -101,18 +109,114 @@ function ScoreExplanation() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground">
-          Ton score = moyenne de tes % d'atteinte sur les 3 objectifs (vidéos, messages, RDV) × bonus régularité. Dépasser un objectif rapporte plus de points. Bonus : +10% par objectif atteint ou dépassé (max +30%).
-        </p>
+        <div className="space-y-3">
+          <div className="flex items-start gap-3">
+            <Target className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Base</p>
+              <p className="text-sm text-muted-foreground">Moyenne de tes % d'atteinte sur les 3 objectifs : vidéos, messages et RDV.</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <Zap className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Dépassement</p>
+              <p className="text-sm text-muted-foreground">Pas de plafond à 100 % — dépasser un objectif rapporte plus de points.</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <Award className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Bonus régularité</p>
+              <p className="text-sm text-muted-foreground">+10 % par objectif atteint ou dépassé (max +30 %).</p>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
 }
 
+// ─── Leaderboard with Tabs ───
+function LeaderboardWithTabs({ weeklyRanked, allTimeRanked, highlightUserId }: {
+  weeklyRanked: any[];
+  allTimeRanked: any[];
+  highlightUserId?: string;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Trophy className="h-4 w-4 text-amber-500" />
+          Classement
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="week">
+          <TabsList className="mb-4">
+            <TabsTrigger value="week">Cette semaine</TabsTrigger>
+            <TabsTrigger value="alltime">All Time</TabsTrigger>
+          </TabsList>
+          <TabsContent value="week">
+            <Leaderboard ranked={weeklyRanked} highlightUserId={highlightUserId} />
+          </TabsContent>
+          <TabsContent value="alltime">
+            <Leaderboard ranked={allTimeRanked} highlightUserId={highlightUserId} />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── All-time leaderboard hook ───
+function useAllTimeRanked(objectives: Record<string, number> | undefined) {
+  const { data: allKpisAllTime } = useQuery({
+    queryKey: ["activity-kpis", "all-time"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("activity_kpis")
+        .select("*, profiles:user_id(full_name, avatar_url)");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  return useMemo(() => {
+    if (!allKpisAllTime || !objectives) return [];
+    const byUser: Record<string, { name: string; weeks: any[] }> = {};
+    allKpisAllTime.forEach((k: any) => {
+      const uid = k.user_id;
+      if (!byUser[uid]) {
+        byUser[uid] = { name: k.profiles?.full_name || "Inconnu", weeks: [] };
+      }
+      byUser[uid].weeks.push(k);
+    });
+
+    return Object.entries(byUser)
+      .map(([user_id, { name, weeks }]) => {
+        const totalScore = weeks.reduce((sum, w) => sum + computeScore(w, objectives), 0);
+        const avgScore = Math.round(totalScore / weeks.length);
+        const totals = weeks.reduce(
+          (acc, w) => ({
+            videos_published: acc.videos_published + w.videos_published,
+            messages_sent: acc.messages_sent + w.messages_sent,
+            replies_received: acc.replies_received + w.replies_received,
+            appointments: acc.appointments + w.appointments,
+            sales_made: acc.sales_made + w.sales_made,
+          }),
+          { videos_published: 0, messages_sent: 0, replies_received: 0, appointments: 0, sales_made: 0 }
+        );
+        return { user_id, name, score: avgScore, ...totals };
+      })
+      .sort((a, b) => b.score - a.score);
+  }, [allKpisAllTime, objectives]);
+}
+
 // ─── CEO Admin View ───
 function CeoLeaderboard() {
   const currentMonday = getMonday(new Date());
-  const weekLabel = `Semaine du ${format(currentMonday, "d MMMM", { locale: fr })}`;
+  const weekLabel = formatWeekLabel(currentMonday);
 
   const { data: objectives } = useQuery({
     queryKey: ["activity-objectives"],
@@ -137,7 +241,7 @@ function CeoLeaderboard() {
     },
   });
 
-  const ranked = useMemo(() => {
+  const weeklyRanked = useMemo(() => {
     if (!allKpis || !objectives) return [];
     return allKpis
       .map((k: any) => ({
@@ -147,6 +251,8 @@ function CeoLeaderboard() {
       }))
       .sort((a: any, b: any) => b.score - a.score);
   }, [allKpis, objectives]);
+
+  const allTimeRanked = useAllTimeRanked(objectives);
 
   if (isLoading) {
     return (
@@ -163,18 +269,7 @@ function CeoLeaderboard() {
         <p className="text-muted-foreground">{weekLabel}</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-amber-500" />
-            Classement de la semaine
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Leaderboard ranked={ranked} />
-        </CardContent>
-      </Card>
-
+      <LeaderboardWithTabs weeklyRanked={weeklyRanked} allTimeRanked={allTimeRanked} />
       <ScoreExplanation />
     </div>
   );
@@ -185,8 +280,11 @@ export default function MyActivity() {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const currentMonday = getMonday(new Date());
-  const weekLabel = `Semaine du ${format(currentMonday, "d MMMM", { locale: fr })}`;
   const isCeo = profile?.role === "ceo";
+
+  const [selectedMonday, setSelectedMonday] = useState(currentMonday);
+  const weekLabel = formatWeekLabel(selectedMonday);
+  const isCurrentWeek = format(selectedMonday, "yyyy-MM-dd") === format(currentMonday, "yyyy-MM-dd");
 
   const [form, setForm] = useState({
     videos_published: 0,
@@ -208,13 +306,13 @@ export default function MyActivity() {
   });
 
   const { data: currentKpi, isLoading } = useQuery({
-    queryKey: ["activity-kpis", "current", user?.id],
+    queryKey: ["activity-kpis", "current", user?.id, format(selectedMonday, "yyyy-MM-dd")],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("activity_kpis")
         .select("*")
         .eq("user_id", user!.id)
-        .eq("week_start", format(currentMonday, "yyyy-MM-dd"))
+        .eq("week_start", format(selectedMonday, "yyyy-MM-dd"))
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -238,7 +336,7 @@ export default function MyActivity() {
     enabled: !!user?.id,
   });
 
-  // Leaderboard data for apporteurs
+  // Leaderboard data
   const { data: allKpis } = useQuery({
     queryKey: ["activity-kpis", "all", format(currentMonday, "yyyy-MM-dd")],
     queryFn: async () => {
@@ -252,7 +350,7 @@ export default function MyActivity() {
     enabled: !isCeo,
   });
 
-  const ranked = useMemo(() => {
+  const weeklyRanked = useMemo(() => {
     if (!allKpis || !objectives) return [];
     return allKpis
       .map((k: any) => ({
@@ -263,6 +361,8 @@ export default function MyActivity() {
       .sort((a: any, b: any) => b.score - a.score);
   }, [allKpis, objectives]);
 
+  const allTimeRanked = useAllTimeRanked(objectives);
+
   useMemo(() => {
     if (currentKpi) {
       setForm({
@@ -272,12 +372,14 @@ export default function MyActivity() {
         appointments: currentKpi.appointments,
         sales_made: currentKpi.sales_made,
       });
+    } else {
+      setForm({ videos_published: 0, messages_sent: 0, replies_received: 0, appointments: 0, sales_made: 0 });
     }
   }, [currentKpi]);
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      const weekStart = format(currentMonday, "yyyy-MM-dd");
+      const weekStart = format(selectedMonday, "yyyy-MM-dd");
       const payload = { user_id: user!.id, week_start: weekStart, ...form };
 
       if (currentKpi) {
@@ -361,9 +463,29 @@ export default function MyActivity() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">Mon Activité</h2>
-        <p className="text-muted-foreground">{weekLabel}</p>
+      {/* Header with week navigation */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Mon Activité</h2>
+          <p className="text-muted-foreground">{weekLabel}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setSelectedMonday(subWeeks(selectedMonday, 1))}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setSelectedMonday(addDays(selectedMonday, 7))}
+            disabled={isCurrentWeek}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Objectifs hebdo — only 3 KPIs */}
@@ -449,21 +571,16 @@ export default function MyActivity() {
             {submitMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             {currentKpi ? "Mettre à jour" : "Valider ma semaine"}
           </Button>
+          {currentKpi?.updated_at && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Dernière saisie : {format(new Date(currentKpi.updated_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+            </p>
+          )}
         </CardContent>
       </Card>
 
-      {/* Classement de la semaine */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-amber-500" />
-            Classement de la semaine
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Leaderboard ranked={ranked} highlightUserId={user?.id} />
-        </CardContent>
-      </Card>
+      {/* Classement */}
+      <LeaderboardWithTabs weeklyRanked={weeklyRanked} allTimeRanked={allTimeRanked} highlightUserId={user?.id} />
 
       {/* Note explicative du score */}
       <ScoreExplanation />
