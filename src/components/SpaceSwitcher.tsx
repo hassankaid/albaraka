@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, BarChart3, GraduationCap, Briefcase, Check } from "lucide-react";
+import { ChevronDown, Briefcase, GraduationCap, BookOpenCheck, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Space {
@@ -21,24 +21,24 @@ interface Space {
 
 const getSpaces = (profile: any): Space[] => {
   const isApporteur = profile?.role === "apporteur";
-  return [
-    {
-      id: "tracking",
-      label: "TRACKING",
-      icon: BarChart3,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10",
-      path: isApporteur ? "/my-space" : "/dashboard",
-      description: "Leads, Calls, Sales, Payments",
-    },
+  const spaces: Space[] = [
     {
       id: "working",
       label: "WORKING",
       icon: Briefcase,
       color: "text-emerald-500",
       bgColor: "bg-emerald-500/10",
-      path: (isApporteur || profile?.is_also_apporteur) ? "/working/activity" : "/working",
-      description: "Scripts, Contenu, Outils IA",
+      path: isApporteur ? "/my-space" : "/dashboard",
+      description: "Suivi commercial & Outils",
+    },
+    {
+      id: "training",
+      label: "TRAINING",
+      icon: BookOpenCheck,
+      color: "text-purple-500",
+      bgColor: "bg-purple-500/10",
+      path: "/training/scripts/setting",
+      description: "Scripts Setting & Closing",
     },
     {
       id: "coaching",
@@ -50,6 +50,13 @@ const getSpaces = (profile: any): Space[] => {
       description: "Évaluations & Historique",
     },
   ];
+
+  // Apporteurs purs n'ont pas accès au training
+  if (isApporteur && !profile?.is_also_apporteur) {
+    return spaces.filter((s) => s.id !== "training");
+  }
+
+  return spaces;
 };
 
 export default function SpaceSwitcher() {
@@ -60,13 +67,13 @@ export default function SpaceSwitcher() {
   const spaces = getSpaces(profile);
 
   const getCurrentSpace = (): Space => {
-    if (location.pathname.startsWith("/working")) {
-      return spaces.find((s) => s.id === "working") || spaces[0];
+    if (location.pathname.startsWith("/training")) {
+      return spaces.find((s) => s.id === "training") || spaces[0];
     }
     if (location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching") || location.pathname === "/admin/coaching") {
       return spaces.find((s) => s.id === "coaching") || spaces[0];
     }
-    return spaces[0];
+    return spaces[0]; // WORKING is default (covers /dashboard, /my-space, /working/*, /leads, etc.)
   };
 
   const currentSpace = getCurrentSpace();
