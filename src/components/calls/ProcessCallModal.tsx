@@ -56,6 +56,7 @@ const STATUS_LIST = [
   { value: "renvoye_conference", label: "Renvoi Conférence" },
   { value: "rediffusion", label: "Rediffusion" },
   { value: "follow_up", label: "Follow up" },
+  { value: "close", label: "Close" },
 ];
 
 interface Props {
