@@ -19,6 +19,10 @@ const coachingNavItems = [
   { title: "Historique", path: "/mon-coaching", icon: BookOpen },
 ];
 
+const workingNavItems = [
+  { title: "Mon Activité", path: "/working/activity", icon: TrendingUp },
+];
+
 const pageTitles: Record<string, string> = {
   "/my-space": "Dashboard",
   "/my-space/leads": "Mes Leads",
