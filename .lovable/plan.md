@@ -1,42 +1,79 @@
 
 
-## Optimisations "Mon Activité" — 4 corrections
+## Restructuration des espaces — WORKING absorbe TRACKING + nouveau TRAINING
 
-### 1. Formatage du feedback Coach IA (markdown)
+### Architecture cible
 
-Le feedback AI contient du markdown (`**gras**`, emojis sur nouvelles lignes) mais est rendu en texte brut via `<p className="whitespace-pre-line">`. Solution : parser le markdown simple (gras, retours ligne) en JSX. On utilisera un rendu simple avec `dangerouslySetInnerHTML` après conversion des `**...**` en `<strong>` et des `\n` en `<br/>`, ou mieux, installer/utiliser un petit composant de rendu markdown léger. Vu que le projet n'a pas de lib markdown, on fera un rendu manuel simple : split par `\n`, remplacer `**...**` par `<strong>`.
+```text
+AVANT (3 espaces)              APRÈS (3 espaces)
+─────────────────              ──────────────────
+TRACKING                       WORKING (fusionné)
+  Dashboard, Leads, Calls...     ┌─ Section "Suivi" ──────────┐
+                                 │  Dashboard, Leads, Calls,  │
+WORKING                          │  Ventes, Paiements, etc.   │
+  Mon Activité, Scripts,         └────────────────────────────-┘
+  Générateur, Agent IA           ┌─ Section "Outils" ─────────┐
+                                 │  Mon Activité, Générateur,  │
+COACHING                         │  Agent IA                   │
+  Évaluations, Historique        └─────────────────────────────┘
 
-### 2. Retirer le badge "×1.3" sur chaque barre d'objectif
+                               TRAINING (nouveau)
+                                 Scripts Setting
+                                 Scripts Closing
 
-Le `×{(pct / 100).toFixed(1)}` sur chaque ligne individuelle porte à confusion car le bonus s'applique au score global, pas par KPI. On retire ce badge. On garde juste `valeur/objectif (pourcentage%)` en vert quand >= 100%.
+                               COACHING (inchangé)
+                                 Évaluations, Historique, Admin
+```
 
-### 3. Amélioration design du Classement
-
-- Déplacer le toggle Semaine/All Time en haut à droite du header de la Card (inline avec le titre)
-- Score avec 1 décimale (`computeScore` retourne un float arrondi à 1 décimale)
-- Meilleur espacement et structure visuelle des items du leaderboard
-
-### 4. Score avec décimale
-
-Modifier `computeScore` pour retourner un nombre à 1 décimale : `parseFloat((avg * bonus).toFixed(1))` au lieu de `Math.round(...)`. Idem dans `useAllTimeRanked`.
-
-### Fichier modifié
-
-| Fichier | Modification |
-|---------|-------------|
-| `src/pages/working/MyActivity.tsx` | Les 4 points ci-dessus |
+Je recommande les **sections séparées avec sous-titres** (petits labels gris "SUIVI" et "OUTILS" dans la sidebar). C'est le pattern le plus courant dans les SaaS pro (Notion, Linear, etc.), lisible sans surcharger l'UI, et cohérent avec le design existant.
 
 ### Détail des changements
 
-**Ligne 51** : `Math.round(avg * bonus)` → `parseFloat((avg * bonus).toFixed(1))`
+#### 1. SpaceSwitcher.tsx
+- Remplacer les 3 espaces par : **WORKING**, **TRAINING**, **COACHING**
+- WORKING : icône Briefcase, path `/dashboard` (CEO/collab) ou `/my-space` (apporteur)
+- TRAINING : icône BookOpenCheck, path `/training/scripts/setting`
+- COACHING : inchangé
+- Détection espace courant : `/training/*` → TRAINING, `/coaching|/mon-coaching` → COACHING, tout le reste → WORKING
 
-**Ligne 91** : `{r.score}` → `{r.score.toFixed(1)}`
+#### 2. DashboardLayout.tsx
+- Fusionner `trackingNavItems` et `workingNavItems` en une seule liste avec un champ `section`
+- Section "SUIVI" : Dashboard, Leads, Calls, Contacts, Ventes, Paiements, Commissions, Équipe, Commissions admin, Factures, Données, Créer, Profil
+- Section "OUTILS" : Mon Activité, Générateur Contenu, Agent IA
+- Nouveau `trainingNavItems` : Scripts Setting (`/training/scripts/setting`), Scripts Closing (`/training/scripts/closing`)
+- Rendu sidebar : si espace WORKING → afficher les deux sections avec label. Si espace TRAINING → `trainingNavItems`. Si COACHING → `coachingNavItems`
 
-**Ligne 199** : `Math.round(totalScore / weeks.length)` → `parseFloat((totalScore / weeks.length).toFixed(1))`
+#### 3. ApporteurLayout.tsx
+- Même logique : fusionner tracking + working nav items
+- Section "SUIVI" : Dashboard, Leads, Ventes, Commissions, Profil
+- Section "OUTILS" : Mon Activité
+- Pas d'accès TRAINING pour les apporteurs (pas de scripts)
 
-**Lignes 515** : Retirer le span avec `×{(pct / 100).toFixed(1)}`
+#### 4. App.tsx — Routes
+- Renommer `/working/scripts/setting` → `/training/scripts/setting`
+- Renommer `/working/scripts/closing` → `/training/scripts/closing`
+- Ajouter redirect `/training` → `/training/scripts/setting`
+- Les routes `/working/activity` et `/working/content` restent inchangées
+- La route `/working` redirige toujours vers `/working/activity`
 
-**Lignes 534-535** : Remplacer le `<p>` brut par un rendu qui convertit `**text**` en `<strong>` et respecte les sauts de ligne
+#### 5. Working.tsx (page hub)
+- Cette page n'est plus utilisée (le redirect `/working` → `/working/activity` existe déjà). Aucun changement nécessaire.
 
-**Lignes 146-169** : Restructurer `LeaderboardWithTabs` pour mettre le toggle en haut à droite du `CardHeader`
+### Gestion du switch collab/apporteur
+Le bouton "Espace Apporteur" / "Espace Collaborateur" en bas de sidebar reste identique. Il change juste de layout (DashboardLayout ↔ ApporteurLayout), les deux étant maintenant dans l'espace WORKING.
+
+### Fichiers modifiés
+
+| Fichier | Modification |
+|---------|-------------|
+| `src/components/SpaceSwitcher.tsx` | 3 espaces : WORKING, TRAINING, COACHING |
+| `src/components/DashboardLayout.tsx` | Fusionner nav items avec sections "SUIVI" / "OUTILS" + ajouter trainingNavItems |
+| `src/components/ApporteurLayout.tsx` | Fusionner tracking + working avec sections |
+| `src/App.tsx` | Routes scripts → `/training/*`, redirect `/training` |
+
+### Points de vigilance
+- Les routes `/working/activity` et `/working/content` ne changent PAS de préfixe
+- Seuls les scripts changent de `/working/scripts/*` à `/training/scripts/*`
+- Le coaching est totalement inchangé
+- Les redirections existantes dans ProtectedRoute.tsx restent valides (elles pointent vers `/dashboard`, `/my-space`, etc.)
 
