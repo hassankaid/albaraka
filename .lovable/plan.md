@@ -1,58 +1,42 @@
 
 
-## "Mon Activité" — Plan d'implémentation
+## Corrections "Mon Activité" — 4 points
 
-### Algorithme de classement révisé (sans cap)
+### 1. Objectifs limités à 3 KPIs seulement
 
-Le cap à 100% est supprimé. Le score utilise la **moyenne d'atteinte non capée + bonus régularité** :
+Dans `MyActivity.tsx`, la section "Objectifs hebdomadaires" affiche actuellement les 5 KPIs avec barres de progression. Il faut n'afficher les barres d'objectifs que pour les 3 KPIs ayant un objectif : **Vidéos (7)**, **Messages (500)**, **RDV (10)**. Les "Réponses reçues" et "Ventes réalisées" restent dans la saisie hebdomadaire mais disparaissent de la section objectifs.
 
-```text
-Score = Moyenne_atteinte × Bonus_régularité
+Ajout d'une constante `OBJECTIVE_KEYS` pour filtrer, et boucle sur cette liste dans la carte objectifs au lieu de `KPI_CONFIG`.
 
-Moyenne_atteinte = moyenne(
-  videos / obj_videos,
-  messages / obj_messages,
-  réponses / obj_réponses,
-  rdv / obj_rdv,
-  ventes / obj_ventes
-) × 100
+### 2. Supprimer la page "Accueil" Working
 
-Bonus_régularité = 1 + 0.1 × nombre_KPIs_≥_objectif
-  (de 1.0 si aucun objectif atteint, à 1.5 si les 5 sont atteints)
-```
+La page `/working` (Working.tsx) est supprimée de la navigation. Les utilisateurs arrivent directement sur `/working/activity` (Mon Activité).
 
-Exemples :
-- **A** : 150% msg, 120% vidéos, 80% rép, 50% rdv, 30% ventes → Moy=86%, 2 atteints → 86×1.2 = **103**
-- **B** : 100% partout → Moy=100%, 5 atteints → 100×1.5 = **150**
-- **C** : 200% msg, 200% vidéos, 100% rép+rdv+ventes → Moy=160%, 5 atteints → 160×1.5 = **240**
+**Fichiers modifiés :**
+- `DashboardLayout.tsx` : retirer l'item "Accueil" (`path: "/working"`) de `workingNavItems` + retirer `/working` de `pageTitles`
+- `App.tsx` : changer `<Route path="/working" element={<Working />} />` en un redirect `<Route path="/working" element={<Navigate to="/working/activity" replace />} />`
+- `ApporteurLayout.tsx` : pas de changement nécessaire (n'a pas "Accueil")
 
-Un apporteur qui dépasse les objectifs est récompensé, et la régularité sur tous les axes donne un bonus supplémentaire. Plus d'ex-aequo artificiels.
+### 3. Fix sidebar double-highlight
 
-### Base de données
+Le problème vient du fait que NavLink pour `/working` (Accueil) est actif quand on est sur `/working/activity` car `/working` est un préfixe. En supprimant "Accueil" (point 2), ce problème disparaît automatiquement.
 
-**Table `activity_kpis`** : id, user_id, week_start (lundi), 5 KPIs int, ai_feedback text, created_at, updated_at. Unique (user_id, week_start).
+### 4. CEO ne doit pas voir le formulaire de saisie
 
-**Table `activity_objectives`** : id, kpi_key, weekly_target, created_at, updated_at. Seed : videos=7, messages=500, replies=10, appointments=10, sales=3.
+Le CEO n'est pas un apporteur qui saisit des KPIs. Sur `MyActivity.tsx`, il faut conditionner l'affichage :
+- Si `profile.role === "ceo"` : afficher une **vue admin** avec le classement de tous les apporteurs de la semaine (réutiliser la logique du leaderboard déjà dans `AdminCoachingDashboard.tsx`, ou rediriger vers le classement)
+- Sinon : afficher le formulaire de saisie actuel
 
-RLS : user lit/écrit ses propres KPIs, CEO lit tout. Objectifs lisibles par tous, modifiables par CEO.
+Pour le CEO, la page affichera :
+- Le classement complet de la semaine (pas juste top 5) avec scores
+- Les détails KPI de chaque apporteur
+- Pas de formulaire de saisie
 
-### Fichiers
+### Fichiers modifiés
 
-| Fichier | Action |
-|---------|--------|
-| Migration SQL | Tables + RLS + seed objectifs |
-| `src/pages/working/MyActivity.tsx` | Saisie hebdo + objectifs + graphique + feedback IA |
-| `src/components/DashboardLayout.tsx` | Nav "Mon Activité" pour apporteurs/collab-apporteurs |
-| `src/components/ApporteurLayout.tsx` | Nav WORKING "Mon Activité" |
-| `src/App.tsx` | Route `/working/activity` |
-| `supabase/functions/activity-ai-coach/index.ts` | Edge function feedback post-soumission |
-| `src/components/admin-coaching/AdminCoachingDashboard.tsx` | Top 3 apporteurs hebdo |
-
-### Étapes
-
-1. Migration DB (tables + RLS + seed)
-2. Page MyActivity (saisie + objectifs barres sans cap + graphique)
-3. Routes + navigation (deux layouts)
-4. Edge function coach IA (post-soumission)
-5. Classement CEO dans admin coaching (score non capé + bonus régularité)
+| Fichier | Modification |
+|---------|-------------|
+| `src/pages/working/MyActivity.tsx` | Objectifs limités à 3 KPIs + vue admin CEO (classement) au lieu du formulaire |
+| `src/components/DashboardLayout.tsx` | Retirer "Accueil" de workingNavItems + pageTitles |
+| `src/App.tsx` | Redirect `/working` → `/working/activity` |
 
