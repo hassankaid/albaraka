@@ -848,6 +848,49 @@ export default function Leads() {
         open={!!contactSheetId}
         onClose={() => setContactSheetId(null)}
       />
+
+      {/* Confirmation dialog for bulk assign conflicts */}
+      <AlertDialog open={!!bulkConfirm} onOpenChange={(open) => !open && setBulkConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leads déjà assignés</AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkConfirm && (
+                <>
+                  <strong>{bulkConfirm.alreadyAssigned.length}</strong> lead{bulkConfirm.alreadyAssigned.length > 1 ? "s" : ""} sur{" "}
+                  <strong>{bulkConfirm.allIds.length}</strong> {bulkConfirm.allIds.length > 1 ? "sont" : "est"} déjà assigné{bulkConfirm.allIds.length > 1 ? "s" : ""} à un collaborateur.
+                  <br />
+                  Voulez-vous quand même les réaffecter à <strong>{bulkConfirm.targetName}</strong> ?
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            {bulkConfirm && bulkConfirm.alreadyAssigned.length < bulkConfirm.allIds.length && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const excludeIds = new Set(bulkConfirm.alreadyAssigned.map((a) => a.id));
+                  const onlyNew = bulkConfirm.allIds.filter((id) => !excludeIds.has(id));
+                  executeBulkAssign(onlyNew, bulkConfirm.targetUserId);
+                }}
+                disabled={bulkAssigning}
+              >
+                Affecter uniquement les non-assignés ({bulkConfirm.allIds.length - bulkConfirm.alreadyAssigned.length})
+              </Button>
+            )}
+            {bulkConfirm && (
+              <Button
+                onClick={() => executeBulkAssign(bulkConfirm.allIds, bulkConfirm.targetUserId)}
+                disabled={bulkAssigning}
+              >
+                Tout réaffecter ({bulkConfirm.allIds.length})
+              </Button>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
