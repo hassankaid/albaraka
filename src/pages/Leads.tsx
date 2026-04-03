@@ -216,8 +216,31 @@ export default function Leads() {
 
   const handleBulkAssign = async (newUserId: string) => {
     if (!realUser || selectedIds.size === 0) return;
-    setBulkAssigning(true);
+
     const ids = Array.from(selectedIds);
+    // Check for leads already assigned to someone else
+    const alreadyAssigned = leads
+      .filter((l) => ids.includes(l.id!) && l.assigned_to && l.assigned_to !== newUserId)
+      .map((l) => ({ id: l.id!, assignedToName: l.assigned_to_name || null }));
+
+    const targetCollab = collaborateurs.find((c) => c.id === newUserId);
+
+    if (alreadyAssigned.length > 0) {
+      setBulkConfirm({
+        targetUserId: newUserId,
+        targetName: targetCollab?.full_name || "Collaborateur",
+        allIds: ids,
+        alreadyAssigned,
+      });
+      return;
+    }
+
+    await executeBulkAssign(ids, newUserId);
+  };
+
+  const executeBulkAssign = async (ids: string[], newUserId: string) => {
+    if (!realUser) return;
+    setBulkAssigning(true);
     const { error } = await supabase
       .from("leads")
       .update({ assigned_to: newUserId, assigned_at: new Date().toISOString(), status: "a_qualifier" })
@@ -237,6 +260,7 @@ export default function Leads() {
       fetchLeads();
     }
     setBulkAssigning(false);
+    setBulkConfirm(null);
   };
 
   const isCeo = user?.role === "ceo";
