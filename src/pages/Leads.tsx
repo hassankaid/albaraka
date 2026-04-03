@@ -4,6 +4,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Tables } from "@/integrations/supabase/types";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -69,6 +73,12 @@ export default function Leads() {
   const [page, setPage] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkAssigning, setBulkAssigning] = useState(false);
+  const [bulkConfirm, setBulkConfirm] = useState<{
+    targetUserId: string;
+    targetName: string;
+    allIds: string[];
+    alreadyAssigned: { id: string; assignedToName: string | null }[];
+  } | null>(null);
   const PAGE_SIZE = 50;
 
   const fetchLeads = useCallback(async () => {
@@ -206,8 +216,31 @@ export default function Leads() {
 
   const handleBulkAssign = async (newUserId: string) => {
     if (!realUser || selectedIds.size === 0) return;
-    setBulkAssigning(true);
+
     const ids = Array.from(selectedIds);
+    // Check for leads already assigned to someone else
+    const alreadyAssigned = leads
+      .filter((l) => ids.includes(l.id!) && l.assigned_to && l.assigned_to !== newUserId)
+      .map((l) => ({ id: l.id!, assignedToName: l.assigned_to_name || null }));
+
+    const targetCollab = collaborateurs.find((c) => c.id === newUserId);
+
+    if (alreadyAssigned.length > 0) {
+      setBulkConfirm({
+        targetUserId: newUserId,
+        targetName: targetCollab?.full_name || "Collaborateur",
+        allIds: ids,
+        alreadyAssigned,
+      });
+      return;
+    }
+
+    await executeBulkAssign(ids, newUserId);
+  };
+
+  const executeBulkAssign = async (ids: string[], newUserId: string) => {
+    if (!realUser) return;
+    setBulkAssigning(true);
     const { error } = await supabase
       .from("leads")
       .update({ assigned_to: newUserId, assigned_at: new Date().toISOString(), status: "a_qualifier" })
@@ -227,6 +260,7 @@ export default function Leads() {
       fetchLeads();
     }
     setBulkAssigning(false);
+    setBulkConfirm(null);
   };
 
   const isCeo = user?.role === "ceo";
@@ -814,6 +848,49 @@ export default function Leads() {
         open={!!contactSheetId}
         onClose={() => setContactSheetId(null)}
       />
+
+      {/* Confirmation dialog for bulk assign conflicts */}
+      <AlertDialog open={!!bulkConfirm} onOpenChange={(open) => !open && setBulkConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leads déjà assignés</AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkConfirm && (
+                <>
+                  <strong>{bulkConfirm.alreadyAssigned.length}</strong> lead{bulkConfirm.alreadyAssigned.length > 1 ? "s" : ""} sur{" "}
+                  <strong>{bulkConfirm.allIds.length}</strong> {bulkConfirm.allIds.length > 1 ? "sont" : "est"} déjà assigné{bulkConfirm.allIds.length > 1 ? "s" : ""} à un collaborateur.
+                  <br />
+                  Voulez-vous quand même les réaffecter à <strong>{bulkConfirm.targetName}</strong> ?
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            {bulkConfirm && bulkConfirm.alreadyAssigned.length < bulkConfirm.allIds.length && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const excludeIds = new Set(bulkConfirm.alreadyAssigned.map((a) => a.id));
+                  const onlyNew = bulkConfirm.allIds.filter((id) => !excludeIds.has(id));
+                  executeBulkAssign(onlyNew, bulkConfirm.targetUserId);
+                }}
+                disabled={bulkAssigning}
+              >
+                Affecter uniquement les non-assignés ({bulkConfirm.allIds.length - bulkConfirm.alreadyAssigned.length})
+              </Button>
+            )}
+            {bulkConfirm && (
+              <Button
+                onClick={() => executeBulkAssign(bulkConfirm.allIds, bulkConfirm.targetUserId)}
+                disabled={bulkAssigning}
+              >
+                Tout réaffecter ({bulkConfirm.allIds.length})
+              </Button>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
