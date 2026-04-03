@@ -73,6 +73,12 @@ export default function Leads() {
   const [page, setPage] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkAssigning, setBulkAssigning] = useState(false);
+  const [bulkConfirm, setBulkConfirm] = useState<{
+    targetUserId: string;
+    targetName: string;
+    allIds: string[];
+    alreadyAssigned: { id: string; assignedToName: string | null }[];
+  } | null>(null);
   const PAGE_SIZE = 50;
 
   const fetchLeads = useCallback(async () => {
