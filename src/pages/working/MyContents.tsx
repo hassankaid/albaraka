@@ -77,7 +77,7 @@ function ContentRow({
     <div
       onClick={() => onResume(content.id)}
       className="grid items-center px-4 h-12 border-b last:border-b-0 hover:bg-muted/50 cursor-pointer transition-colors group"
-      style={{ gridTemplateColumns: "2fr 1.2fr 90px 120px 100px 60px" }}
+      style={{ gridTemplateColumns: "2.5fr 1.5fr 100px 140px 120px 60px" }}
     >
       {/* Title */}
       <p className="font-medium text-sm text-foreground truncate pr-4">
