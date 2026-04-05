@@ -275,7 +275,7 @@ export default function MyContents() {
                   <span>Thème · Format</span>
                   <span>Statut</span>
                   <span>Progression</span>
-                  <span className="text-right">Modifié</span>
+                  <span>Modifié</span>
                   <span />
                 </div>
                 {filteredContents.map((content) => (
