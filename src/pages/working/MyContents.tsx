@@ -29,10 +29,10 @@ import {
   Play,
   Calendar,
   CheckCircle2,
-  Archive,
-  FileText,
   Clock,
   Library,
+  Pencil,
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
@@ -43,30 +43,20 @@ const STATUS_CONFIG: Record<
   ContentPieceStatus,
   { label: string; icon: React.ElementType; badgeClass: string }
 > = {
-  draft: {
-    label: "Brouillon",
-    icon: FileText,
-    badgeClass: "bg-secondary text-secondary-foreground",
+  en_cours: {
+    label: "En cours",
+    icon: Pencil,
+    badgeClass: "bg-amber-500/10 text-amber-500 border-amber-500/30",
   },
-  ready: {
+  pret: {
     label: "Prêt",
     icon: CheckCircle2,
     badgeClass: "bg-blue-500/10 text-blue-500 border-blue-500/30",
   },
-  scheduled: {
-    label: "Planifié",
-    icon: Calendar,
-    badgeClass: "bg-amber-500/10 text-amber-500 border-amber-500/30",
-  },
-  published: {
+  publie: {
     label: "Publié",
-    icon: CheckCircle2,
+    icon: Send,
     badgeClass: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30",
-  },
-  archived: {
-    label: "Archivé",
-    icon: Archive,
-    badgeClass: "bg-secondary text-muted-foreground",
   },
 };
 
@@ -79,18 +69,18 @@ function ContentPieceCard({
   onResume: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
-  const statusConfig = STATUS_CONFIG[content.status];
+  const statusConfig = STATUS_CONFIG[content.status] || STATUS_CONFIG.en_cours;
   const StatusIcon = statusConfig.icon;
   const theme = THEMES.find((t) => t.id === content.theme);
   const fmt = FORMATS.find((f) => f.id === content.format);
   const progressPercent = Math.round((content.current_step / 5) * 100);
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-4 space-y-3">
+    <Card className="hover:shadow-md transition-shadow min-h-[260px] flex flex-col">
+      <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="font-semibold text-foreground truncate">
+            <p className="font-semibold text-foreground line-clamp-2">
               {content.title || "Contenu sans titre"}
             </p>
             {content.selected_idea?.accroche && (
@@ -150,7 +140,7 @@ function ContentPieceCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 pt-1">
+        <div className="flex items-center gap-2 pt-1 mt-auto">
           <Button
             size="sm"
             onClick={() => onResume(content.id)}
@@ -204,9 +194,7 @@ export default function MyContents() {
   const deleteMutation = useDeleteContentPiece();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"all" | ContentPieceStatus>(
-    "all"
-  );
+  const [activeTab, setActiveTab] = useState<"all" | ContentPieceStatus>("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const filteredContents = useMemo(() => {
@@ -232,11 +220,9 @@ export default function MyContents() {
   const counts = useMemo(() => {
     const c: Record<string, number> = {
       all: contents?.length || 0,
-      draft: 0,
-      ready: 0,
-      scheduled: 0,
-      published: 0,
-      archived: 0,
+      en_cours: 0,
+      pret: 0,
+      publie: 0,
     };
     contents?.forEach((item) => {
       c[item.status] = (c[item.status] || 0) + 1;
@@ -308,18 +294,12 @@ export default function MyContents() {
           >
             <TabsList className="flex-wrap h-auto gap-1">
               <TabsTrigger value="all">Tous ({counts.all})</TabsTrigger>
-              <TabsTrigger value="draft">
-                Brouillons ({counts.draft})
+              <TabsTrigger value="en_cours">
+                En cours ({counts.en_cours})
               </TabsTrigger>
-              <TabsTrigger value="ready">Prêts ({counts.ready})</TabsTrigger>
-              <TabsTrigger value="scheduled">
-                Planifiés ({counts.scheduled})
-              </TabsTrigger>
-              <TabsTrigger value="published">
-                Publiés ({counts.published})
-              </TabsTrigger>
-              <TabsTrigger value="archived">
-                Archivés ({counts.archived})
+              <TabsTrigger value="pret">Prêts ({counts.pret})</TabsTrigger>
+              <TabsTrigger value="publie">
+                Publiés ({counts.publie})
               </TabsTrigger>
             </TabsList>
 

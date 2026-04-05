@@ -51,7 +51,7 @@ export interface PublicationChecklist {
 
 export type WizardStep = 1 | 2 | 3 | 4 | 5;
 
-export type ContentPieceStatusType = "draft" | "ready" | "scheduled" | "published" | "archived";
+export type ContentPieceStatusType = "en_cours" | "pret" | "publie";
 
 export type SaveState = "idle" | "saving" | "saved" | "error";
 
