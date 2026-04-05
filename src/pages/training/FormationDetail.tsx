@@ -219,7 +219,7 @@ export default function FormationDetail() {
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-4">
           <Accordion type="multiple" defaultValue={defaultOpen}>
             {modules.map((module, idx) => {
               const modDraft = module.status === "draft";
