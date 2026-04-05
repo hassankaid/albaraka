@@ -23,7 +23,7 @@ const PLATFORMS: {
 ];
 
 export function Step5Publication() {
-  const { state, togglePublicationPlatform, goToStep, reset, setScheduledFor, setStatus } =
+  const { state, togglePublicationPlatform, goToStep, reset, setScheduledFor } =
     useContentWizard();
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
