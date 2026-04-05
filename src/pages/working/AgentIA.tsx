@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -464,6 +465,8 @@ function MessageBubble({
 
   const parsed = parseAgentResponse(message.content);
 
+  const mdClass = "prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5 prose-headings:my-2 text-foreground";
+
   if (parsed.isThreeBlocks) {
     return (
       <div className="flex justify-start">
@@ -472,7 +475,9 @@ function MessageBubble({
             <div className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider mb-1">
               🧠 Ce qui se cache derrière
             </div>
-            <p className="text-sm text-foreground leading-relaxed">{parsed.blocks.psychology}</p>
+            <div className={mdClass}>
+              <ReactMarkdown>{parsed.blocks.psychology || ""}</ReactMarkdown>
+            </div>
           </div>
 
           <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-3">
@@ -490,16 +495,18 @@ function MessageBubble({
                 Copier
               </Button>
             </div>
-            <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-              {parsed.blocks.response}
-            </p>
+            <div className={mdClass}>
+              <ReactMarkdown>{parsed.blocks.response || ""}</ReactMarkdown>
+            </div>
           </div>
 
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
             <div className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider mb-1">
               ✅ Pourquoi cette réponse
             </div>
-            <p className="text-sm text-foreground leading-relaxed">{parsed.blocks.why}</p>
+            <div className={mdClass}>
+              <ReactMarkdown>{parsed.blocks.why || ""}</ReactMarkdown>
+            </div>
           </div>
         </div>
       </div>
@@ -511,9 +518,9 @@ function MessageBubble({
       <div className="max-w-[90%] bg-secondary rounded-2xl rounded-tl-sm px-4 py-3">
         <div className="flex items-start gap-2">
           <Bot className="h-3.5 w-3.5 mt-1 shrink-0 opacity-70" />
-          <p className="text-sm text-foreground whitespace-pre-wrap break-words leading-relaxed">
-            {parsed.blocks.direct}
-          </p>
+          <div className={mdClass}>
+            <ReactMarkdown>{parsed.blocks.direct || ""}</ReactMarkdown>
+          </div>
         </div>
         <Button
           variant="ghost"
