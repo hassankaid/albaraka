@@ -93,12 +93,12 @@ async function fetchInvoiceData(invoiceId: string): Promise<InvoicePdfData> {
   const [{ data: lines }, { data: profile }] = await Promise.all([
     supabase
       .from("invoice_lines")
-      .select("client_name, payment_amount, payment_date, commission_percentage, commission_amount, sale_id")
+      .select("client_name, payment_amount, payment_date, commission_percentage, commission_amount, sale_id, payment_id, payments!invoice_lines_payment_id_fkey(payment_number, total_payments)")
       .eq("invoice_id", invoiceId)
       .order("created_at", { ascending: true }),
     supabase
       .from("profiles")
-      .select("full_name, address, postal_code, city, siret, bank_details")
+      .select("full_name, email, phone, address, postal_code, city, country, siret, bank_details")
       .eq("id", invoice.apporteur_id)
       .single(),
   ]);
@@ -110,13 +110,25 @@ async function fetchInvoiceData(invoiceId: string): Promise<InvoicePdfData> {
     totalAmount: Number(invoice.total_amount),
     apporteur: {
       full_name: profile?.full_name,
+      email: profile?.email,
+      phone: profile?.phone,
       address: profile?.address,
       postal_code: profile?.postal_code,
       city: profile?.city,
+      country: profile?.country,
       siret: profile?.siret,
     },
     bankDetails: profile?.bank_details as InvoicePdfData["bankDetails"],
-    lines: (lines || []) as InvoicePdfLine[],
+    lines: (lines || []).map((l: any) => ({
+      client_name: l.client_name,
+      payment_amount: l.payment_amount,
+      payment_date: l.payment_date,
+      commission_percentage: l.commission_percentage,
+      commission_amount: l.commission_amount,
+      sale_id: l.sale_id,
+      payment_number: l.payments?.payment_number ?? null,
+      total_payments: l.payments?.total_payments ?? null,
+    })),
   };
 }
 
