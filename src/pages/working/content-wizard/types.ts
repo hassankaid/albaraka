@@ -1,0 +1,65 @@
+export type ContentFormat = "voixoff" | "brolls" | "facecam";
+
+export type ContentTheme =
+  | "storytelling"
+  | "douleurs"
+  | "educatif"
+  | "hijra"
+  | "valeurs"
+  | "motivation"
+  | "temoignage"
+  | "argent"
+  | "famille"
+  | "mythes";
+
+export interface ContentIdea {
+  titre: string;
+  accroche: string;
+}
+
+export interface ContentScript {
+  hook: string;
+  keywords_pexels_1: string[];
+  valeur: string;
+  keywords_pexels_2: string[];
+  cta: string;
+  keywords_pexels_3: string[];
+  full_text: string;
+}
+
+export interface ContentDescription {
+  accroche: string;
+  valeur: string;
+  cta: string;
+  hashtags: string[];
+  full_text: string;
+}
+
+export interface MontageChecklist {
+  pexels_downloaded: boolean;
+  edited_in_capcut: boolean;
+  voiceover_recorded: boolean;
+  subtitles_added: boolean;
+}
+
+export interface PublicationChecklist {
+  instagram: boolean;
+  tiktok: boolean;
+  youtube_shorts: boolean;
+  facebook: boolean;
+}
+
+export type WizardStep = 1 | 2 | 3 | 4 | 5;
+
+export interface ContentWizardState {
+  format: ContentFormat;
+  theme: ContentTheme;
+  ideas: ContentIdea[];
+  selectedIdea: ContentIdea | null;
+  script: ContentScript | null;
+  montageChecklist: MontageChecklist;
+  description: ContentDescription | null;
+  publicationChecklist: PublicationChecklist;
+  currentStep: WizardStep;
+  stepsToRegenerate: number[];
+}
