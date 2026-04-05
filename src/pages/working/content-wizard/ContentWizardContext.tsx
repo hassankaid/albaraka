@@ -9,9 +9,16 @@ import {
   MontageChecklist,
   PublicationChecklist,
   WizardStep,
+  ContentPieceStatusType,
+  SaveState,
 } from "./types";
+import type { ContentPiece } from "@/hooks/useContentPiece";
 
 const initialState: ContentWizardState = {
+  contentPieceId: null,
+  title: null,
+  status: "draft",
+  scheduledFor: null,
   format: "voixoff",
   theme: "storytelling",
   ideas: [],
@@ -32,6 +39,8 @@ const initialState: ContentWizardState = {
   },
   currentStep: 1,
   stepsToRegenerate: [],
+  saveState: "idle",
+  lastSavedAt: null,
 };
 
 type Action =
@@ -44,6 +53,12 @@ type Action =
   | { type: "SET_DESCRIPTION"; payload: ContentDescription }
   | { type: "TOGGLE_PUBLICATION"; payload: keyof PublicationChecklist }
   | { type: "GO_TO_STEP"; payload: WizardStep }
+  | { type: "SET_STATUS"; payload: ContentPieceStatusType }
+  | { type: "SET_SCHEDULED_FOR"; payload: string | null }
+  | { type: "SET_TITLE"; payload: string | null }
+  | { type: "SET_CONTENT_PIECE_ID"; payload: string }
+  | { type: "SET_SAVE_STATE"; payload: { state: SaveState; lastSavedAt?: string } }
+  | { type: "LOAD_FROM_CONTENT_PIECE"; payload: ContentPiece }
   | { type: "RESET" };
 
 function reducer(state: ContentWizardState, action: Action): ContentWizardState {
@@ -65,6 +80,7 @@ function reducer(state: ContentWizardState, action: Action): ContentWizardState 
       return {
         ...state,
         selectedIdea: action.payload,
+        title: action.payload.titre,
         stepsToRegenerate:
           state.script || state.description
             ? Array.from(new Set([...state.stepsToRegenerate, 2, 4]))
@@ -100,6 +116,41 @@ function reducer(state: ContentWizardState, action: Action): ContentWizardState 
       };
     case "GO_TO_STEP":
       return { ...state, currentStep: action.payload };
+    case "SET_STATUS":
+      return { ...state, status: action.payload };
+    case "SET_SCHEDULED_FOR":
+      return { ...state, scheduledFor: action.payload };
+    case "SET_TITLE":
+      return { ...state, title: action.payload };
+    case "SET_CONTENT_PIECE_ID":
+      return { ...state, contentPieceId: action.payload };
+    case "SET_SAVE_STATE":
+      return {
+        ...state,
+        saveState: action.payload.state,
+        lastSavedAt: action.payload.lastSavedAt ?? state.lastSavedAt,
+      };
+    case "LOAD_FROM_CONTENT_PIECE": {
+      const cp = action.payload;
+      return {
+        contentPieceId: cp.id,
+        title: cp.title,
+        status: cp.status,
+        scheduledFor: cp.scheduled_for,
+        format: cp.format,
+        theme: cp.theme,
+        ideas: cp.ideas || [],
+        selectedIdea: cp.selected_idea,
+        script: cp.script,
+        montageChecklist: cp.montage_checklist || initialState.montageChecklist,
+        description: cp.description,
+        publicationChecklist: cp.publication_checklist || initialState.publicationChecklist,
+        currentStep: Math.max(1, Math.min(5, cp.current_step || 1)) as WizardStep,
+        stepsToRegenerate: [],
+        saveState: "saved",
+        lastSavedAt: cp.updated_at,
+      };
+    }
     case "RESET":
       return initialState;
     default:
@@ -118,6 +169,12 @@ const ContentWizardContext = createContext<{
   setDescription: (d: ContentDescription) => void;
   togglePublicationPlatform: (k: keyof PublicationChecklist) => void;
   goToStep: (s: WizardStep) => void;
+  setStatus: (s: ContentPieceStatusType) => void;
+  setScheduledFor: (d: string | null) => void;
+  setTitle: (t: string | null) => void;
+  setContentPieceId: (id: string) => void;
+  setSaveState: (state: SaveState, lastSavedAt?: string) => void;
+  loadFromContentPiece: (cp: ContentPiece) => void;
   reset: () => void;
 } | null>(null);
 
@@ -138,6 +195,14 @@ export function ContentWizardProvider({ children }: { children: ReactNode }) {
     togglePublicationPlatform: (k: keyof PublicationChecklist) =>
       dispatch({ type: "TOGGLE_PUBLICATION", payload: k }),
     goToStep: (s: WizardStep) => dispatch({ type: "GO_TO_STEP", payload: s }),
+    setStatus: (s: ContentPieceStatusType) => dispatch({ type: "SET_STATUS", payload: s }),
+    setScheduledFor: (d: string | null) => dispatch({ type: "SET_SCHEDULED_FOR", payload: d }),
+    setTitle: (t: string | null) => dispatch({ type: "SET_TITLE", payload: t }),
+    setContentPieceId: (id: string) => dispatch({ type: "SET_CONTENT_PIECE_ID", payload: id }),
+    setSaveState: (s: SaveState, lastSavedAt?: string) =>
+      dispatch({ type: "SET_SAVE_STATE", payload: { state: s, lastSavedAt } }),
+    loadFromContentPiece: (cp: ContentPiece) =>
+      dispatch({ type: "LOAD_FROM_CONTENT_PIECE", payload: cp }),
     reset: () => dispatch({ type: "RESET" }),
   };
 
