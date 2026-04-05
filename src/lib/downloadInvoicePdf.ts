@@ -76,7 +76,7 @@ export async function regenerateInvoicePdf(invoiceId: string): Promise<void> {
 const html2pdfOptions = {
   margin: 0,
   image: { type: "jpeg" as const, quality: 0.98 },
-  html2canvas: { scale: 2 },
+  html2canvas: { scale: 2, useCORS: true },
   jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
 };
 
@@ -140,15 +140,42 @@ async function downloadHtml(storedPath: string): Promise<string> {
   return await data.text();
 }
 
+/**
+ * Renders the full HTML document inside a hidden iframe so the browser applies
+ * all styles correctly, then converts the rendered body to PDF via html2pdf.js.
+ */
 async function htmlToPdfBlob(htmlString: string, filename: string): Promise<Blob> {
-  const container = document.createElement("div");
-  container.innerHTML = htmlString;
-  container.style.width = "210mm";
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.left = "-9999px";
+  iframe.style.top = "0";
+  iframe.style.width = "210mm";
+  iframe.style.height = "297mm";
+  iframe.style.border = "none";
+  document.body.appendChild(iframe);
 
-  return await html2pdf()
-    .set({ ...html2pdfOptions, filename: `${filename}.pdf` })
-    .from(container)
-    .outputPdf("blob");
+  try {
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) throw new Error("Impossible de créer l'iframe de rendu");
+
+    iframeDoc.open();
+    iframeDoc.write(htmlString);
+    iframeDoc.close();
+
+    // Wait for the iframe content to render
+    await new Promise((resolve) => {
+      if (iframeDoc.readyState === "complete") resolve(undefined);
+      else iframe.addEventListener("load", resolve);
+    });
+
+    const body = iframeDoc.body;
+    return await html2pdf()
+      .set({ ...html2pdfOptions, filename: `${filename}.pdf` })
+      .from(body)
+      .outputPdf("blob");
+  } finally {
+    document.body.removeChild(iframe);
+  }
 }
 
 function triggerBrowserDownload(blob: Blob, filename: string): void {
