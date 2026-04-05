@@ -2087,8 +2087,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      reorder_chapitres: { Args: { p_updates: Json }; Returns: undefined }
       reorder_formations: {
         Args: { p_formation_ids: string[] }
+        Returns: undefined
+      }
+      reorder_modules: {
+        Args: { p_formation_id: string; p_module_ids: string[] }
         Returns: undefined
       }
       set_chapter_completion: {
