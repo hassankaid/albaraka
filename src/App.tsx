@@ -103,6 +103,7 @@ const App = () => (
                   <Route path="/my-space/profile" element={<ApporteurProfile />} />
                   <Route path="/working/activity" element={<MyActivity />} />
                   <Route path="/training" element={<TrainingList />} />
+                  <Route path="/training/:slug" element={<FormationDetail />} />
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />
