@@ -42,6 +42,7 @@ import ScriptsClosing from "./pages/working/ScriptsClosing";
 import ContentGenerator from "./pages/working/ContentGenerator";
 import MyContents from "./pages/working/MyContents";
 import MyActivity from "./pages/working/MyActivity";
+import AgentIA from "./pages/working/AgentIA";
 
 const queryClient = new QueryClient();
 
