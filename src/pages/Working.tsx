@@ -10,7 +10,7 @@ const workingModules = [
     icon: MessageSquare,
     color: "text-teal-500",
     bgColor: "bg-teal-500/10",
-    path: "/working/scripts/setting",
+    path: "/training/scripts/setting",
   },
   {
     id: "scripts-closing",
@@ -19,7 +19,7 @@ const workingModules = [
     icon: Phone,
     color: "text-purple-500",
     bgColor: "bg-purple-500/10",
-    path: "/working/scripts/closing",
+    path: "/training/scripts/closing",
   },
   {
     id: "content-generator",
