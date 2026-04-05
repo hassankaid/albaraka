@@ -107,7 +107,7 @@ export default function DashboardLayout() {
   const userRole = profile?.role || "apporteur";
   const isCeo = profile?.role === "ceo";
   const isCoachingSpace = location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching") || location.pathname === "/admin/coaching";
-  const isTrainingSpace = location.pathname.startsWith("/training");
+  const isTrainingSpace = location.pathname.startsWith("/training") || location.pathname.startsWith("/admin/training");
   const isAdminSpace = location.pathname.startsWith("/admin/") && location.pathname !== "/admin/coaching";
 
   // Dynamic page title: CEO sees "Suivi Activité" instead of "Mon Activité"
