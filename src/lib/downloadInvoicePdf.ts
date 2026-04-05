@@ -1,135 +1,160 @@
-import html2pdf from "html2pdf.js";
 import { supabase } from "@/integrations/supabase/client";
 
-export async function fetchInvoiceHtml(pdfUrl: string): Promise<string> {
+/**
+ * Fetches the HTML version of an invoice for preview purposes.
+ * The path stored in apporteur_invoices.pdf_url may be either a .pdf (new) or a .html (legacy).
+ * This helper tries to find the .html sibling if the stored path is a .pdf.
+ */
+export async function fetchInvoiceHtml(storedPath: string): Promise<string> {
+  const htmlPath = storedPath.endsWith(".pdf")
+    ? storedPath.replace(/\.pdf$/, ".html")
+    : storedPath;
+
   const { data, error } = await supabase.storage
     .from("invoices")
-    .createSignedUrl(pdfUrl, 3600);
+    .createSignedUrl(htmlPath, 3600);
 
   if (error || !data?.signedUrl) {
-    throw new Error("Impossible de récupérer la facture");
+    throw new Error("Impossible de récupérer l'aperçu de la facture");
   }
 
   const response = await fetch(data.signedUrl);
+  if (!response.ok) {
+    throw new Error("Impossible de charger l'aperçu");
+  }
   return await response.text();
 }
 
 /**
- * Creates an offscreen iframe that renders the full invoice HTML document
- * (including <head>, <style>, <link>, <body>) and resolves once it has loaded.
+ * Downloads the canonical PDF for an invoice.
  *
- * This is the same rendering mechanism used by InvoicePreviewModal's <iframe srcDoc={...}>,
- * which guarantees the downloaded PDF matches the preview pixel for pixel.
- *
- * The previous implementation extracted only the <body> content into a hidden <div>
- * with opacity:0 and left:-9999px, which caused two problems:
- *   1. Multiple <style> blocks and external styles were lost, breaking layout.
- *   2. html2canvas captured an invisible element with no computed dimensions,
- *      producing a blank PDF.
+ * Strategy:
+ *   1. If the stored path ends with .pdf, download it directly from Storage.
+ *   2. If the stored path ends with .html (legacy invoices), try the .pdf sibling first.
+ *   3. If no .pdf sibling exists yet, trigger a server-side regeneration via the
+ *      generate-apporteur-invoice edge function in "regenerate" mode, then download.
  */
-async function createOffscreenIframe(htmlContent: string): Promise<HTMLIFrameElement> {
-  return new Promise((resolve, reject) => {
-    const iframe = document.createElement("iframe");
+export async function downloadInvoicePdf(
+  invoiceNumber: string,
+  storedPath: string,
+  invoiceId?: string
+): Promise<void> {
+  const pdfPath = storedPath.endsWith(".pdf")
+    ? storedPath
+    : storedPath.replace(/\.html$/, ".pdf");
 
-    // Position offscreen but keep it visually renderable (NO opacity:0, NO display:none).
-    // html2canvas needs a real rendered layout with computed styles to capture correctly.
-    iframe.style.position = "fixed";
-    iframe.style.top = "0";
-    iframe.style.left = "-10000px";
-    iframe.style.width = "210mm"; // A4 width
-    iframe.style.height = "297mm"; // A4 height (minimum — content can grow)
-    iframe.style.border = "0";
-    iframe.setAttribute("aria-hidden", "true");
-    iframe.setAttribute("tabindex", "-1");
+  let blob: Blob | null = null;
+  try {
+    const { data, error } = await supabase.storage
+      .from("invoices")
+      .download(pdfPath);
+    if (!error && data) {
+      blob = data;
+    }
+  } catch {
+    // fall through to regeneration
+  }
 
-    iframe.onload = () => {
-      // Give the iframe a tick to finalize layout & font loading
-      setTimeout(() => resolve(iframe), 100);
-    };
-    iframe.onerror = () => reject(new Error("Failed to load invoice iframe"));
+  if (!blob && invoiceId) {
+    const { data: invoice } = await supabase
+      .from("apporteur_invoices")
+      .select("apporteur_id, period_month, period_year")
+      .eq("id", invoiceId)
+      .maybeSingle();
 
-    // Use srcdoc (same as the working preview modal)
-    iframe.srcdoc = htmlContent;
-    document.body.appendChild(iframe);
-  });
-}
+    if (invoice) {
+      const { data: regenResult, error: regenError } =
+        await supabase.functions.invoke("generate-apporteur-invoice", {
+          body: {
+            apporteur_id: invoice.apporteur_id,
+            month: invoice.period_month,
+            year: invoice.period_year,
+            regenerate: true,
+          },
+        });
 
-function getPdfOptions(invoiceNumber: string) {
-  return {
-    margin: 10,
-    filename: `${invoiceNumber}.pdf`,
-    image: { type: "jpeg" as const, quality: 0.98 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      letterRendering: true,
-      scrollX: 0,
-      scrollY: 0,
-      windowWidth: 794, // 210mm at 96dpi
-    },
-    jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
-  };
+      if (regenError || (regenResult as any)?.error) {
+        throw new Error(
+          (regenResult as any)?.error ??
+            regenError?.message ??
+            "Impossible de régénérer la facture"
+        );
+      }
+
+      const { data, error } = await supabase.storage
+        .from("invoices")
+        .download(pdfPath);
+      if (error || !data) {
+        throw new Error("Impossible de télécharger le PDF après régénération");
+      }
+      blob = data;
+    }
+  }
+
+  if (!blob) {
+    throw new Error("Impossible de télécharger la facture");
+  }
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${invoiceNumber}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 /**
- * Extracts the rendered body element from the offscreen iframe and feeds it to html2pdf.
- * The iframe is removed from the DOM in a finally block to prevent leaks even on error.
+ * Returns the PDF as a Blob — used by the bulk download zipper.
+ * Same fallback logic as downloadInvoicePdf.
  */
-async function renderIframeToPdf(
-  iframe: HTMLIFrameElement,
-  invoiceNumber: string
-): Promise<{ save: () => Promise<void>; toBlob: () => Promise<Blob> }> {
-  const doc = iframe.contentDocument;
-  if (!doc || !doc.body) {
-    throw new Error("Iframe document not available");
-  }
-
-  // Wait for any async resources (fonts, images) to settle
-  if (doc.fonts && doc.fonts.ready) {
-    try {
-      await doc.fonts.ready;
-    } catch {
-      // fonts.ready may reject in some environments — non-fatal
-    }
-  }
-
-  const element = doc.body;
-
-  return {
-    save: async () => {
-      await html2pdf().set(getPdfOptions(invoiceNumber)).from(element).save();
-    },
-    toBlob: async () => {
-      const worker = html2pdf().set(getPdfOptions(invoiceNumber)).from(element).toPdf();
-      const pdf = await worker.get("pdf");
-      return pdf.output("blob") as Blob;
-    },
-  };
-}
-
-export async function downloadInvoicePdf(invoiceNumber: string, htmlContent: string) {
-  const iframe = await createOffscreenIframe(htmlContent);
-  try {
-    const renderer = await renderIframeToPdf(iframe, invoiceNumber);
-    await renderer.save();
-  } finally {
-    if (iframe.parentNode) {
-      iframe.parentNode.removeChild(iframe);
-    }
-  }
-}
-
 export async function generateInvoicePdfBlob(
   invoiceNumber: string,
-  htmlContent: string
+  storedPath: string,
+  invoiceId?: string
 ): Promise<Blob> {
-  const iframe = await createOffscreenIframe(htmlContent);
+  const pdfPath = storedPath.endsWith(".pdf")
+    ? storedPath
+    : storedPath.replace(/\.html$/, ".pdf");
+
   try {
-    const renderer = await renderIframeToPdf(iframe, invoiceNumber);
-    return await renderer.toBlob();
-  } finally {
-    if (iframe.parentNode) {
-      iframe.parentNode.removeChild(iframe);
+    const { data, error } = await supabase.storage
+      .from("invoices")
+      .download(pdfPath);
+    if (!error && data) {
+      return data;
+    }
+  } catch {
+    // fall through
+  }
+
+  if (invoiceId) {
+    const { data: invoice } = await supabase
+      .from("apporteur_invoices")
+      .select("apporteur_id, period_month, period_year")
+      .eq("id", invoiceId)
+      .maybeSingle();
+
+    if (invoice) {
+      await supabase.functions.invoke("generate-apporteur-invoice", {
+        body: {
+          apporteur_id: invoice.apporteur_id,
+          month: invoice.period_month,
+          year: invoice.period_year,
+          regenerate: true,
+        },
+      });
+
+      const { data, error } = await supabase.storage
+        .from("invoices")
+        .download(pdfPath);
+      if (error || !data) {
+        throw new Error("Impossible de récupérer le PDF après régénération");
+      }
+      return data;
     }
   }
+
+  throw new Error(`Aucun PDF disponible pour la facture ${invoiceNumber}`);
 }
