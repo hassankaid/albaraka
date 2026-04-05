@@ -78,6 +78,7 @@ const pageTitles: Record<string, string> = {
   "/training/scripts/setting": "Scripts Setting",
   "/training/scripts/closing": "Scripts Closing",
   "/training": "Formation",
+  "/admin/training": "Gestion des formations",
 };
 
 export default function DashboardLayout() {
