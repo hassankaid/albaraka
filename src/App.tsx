@@ -89,6 +89,7 @@ const App = () => (
                   <Route path="/admin/coaching" element={<AdminCoaching />} />
                   <Route path="/working" element={<Navigate to="/working/activity" replace />} />
                   <Route path="/admin/training" element={<AdminTrainingList />} />
+                  <Route path="/admin/training/:slug" element={<FormationEditor />} />
                   <Route path="/training" element={<TrainingList />} />
                   <Route path="/training/:slug" element={<FormationDetail />} />
                   <Route path="/training/:slug/chapitre/:chapitreId" element={<ChapterViewer />} />
