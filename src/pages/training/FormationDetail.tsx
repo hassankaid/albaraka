@@ -227,8 +227,7 @@ export default function FormationDetail() {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          <Accordion type="multiple" defaultValue={defaultOpen}>
+          <Accordion type="multiple" defaultValue={defaultOpen} className="space-y-4">
             {modules.map((module, idx) => {
               const modDraft = module.status === "draft";
               const modChapitresVisible = module.chapitres.filter(
