@@ -70,7 +70,7 @@ const SOURCE_FILTER_LABELS: Record<string, { label: string; class: string; icon:
   collaborateur: { label: "Collaborateur", class: "bg-blue-500/20 text-blue-300 border-blue-500/30", icon: Briefcase },
 };
 
-function InvoiceActions({ pdfUrl, invoiceNumber }: { pdfUrl: string; invoiceNumber: string }) {
+function InvoiceActions({ pdfUrl, invoiceNumber, invoiceId }: { pdfUrl: string; invoiceNumber: string; invoiceId: string }) {
   const [downloading, setDownloading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewHtml, setPreviewHtml] = useState("");
@@ -92,8 +92,7 @@ function InvoiceActions({ pdfUrl, invoiceNumber }: { pdfUrl: string; invoiceNumb
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      const html = previewHtml || await fetchInvoiceHtml(pdfUrl);
-      await downloadInvoicePdf(invoiceNumber, html);
+      await downloadInvoicePdf(invoiceNumber, pdfUrl, invoiceId, { skipRegeneration: true });
     } catch {
       toast({ title: "Erreur", description: "Impossible de télécharger la facture", variant: "destructive" });
     } finally {
@@ -119,6 +118,8 @@ function InvoiceActions({ pdfUrl, invoiceNumber }: { pdfUrl: string; invoiceNumb
         invoiceNumber={invoiceNumber}
         htmlContent={previewHtml}
         loading={previewLoading}
+        invoiceId={invoiceId}
+        skipRegeneration
       />
     </>
   );
@@ -558,7 +559,7 @@ export default function ApporteurCommissions({ defaultRoleFilter }: ApporteurCom
                       <Badge variant="outline" className={`text-xs ${statusInfo.class}`}>{statusInfo.label}</Badge>
                     </div>
                     {inv.pdf_url && (
-                      <InvoiceActions pdfUrl={inv.pdf_url} invoiceNumber={inv.invoice_number} />
+                      <InvoiceActions pdfUrl={inv.pdf_url} invoiceNumber={inv.invoice_number} invoiceId={inv.id} />
                     )}
                   </CardContent>
                 </Card>

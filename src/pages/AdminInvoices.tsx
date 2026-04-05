@@ -1069,6 +1069,7 @@ export default function AdminInvoices() {
         invoiceNumber={previewInvoice?.invoice_number || ""}
         htmlContent={previewHtml}
         loading={previewLoading}
+        invoiceId={previewInvoice?.id}
       />
       {/* ── FIXED SALARY MODAL ── */}
       <Dialog open={salaryModalOpen} onOpenChange={setSalaryModalOpen}>

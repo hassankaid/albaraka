@@ -11,15 +11,17 @@ interface InvoicePreviewModalProps {
   invoiceNumber: string;
   htmlContent: string;
   loading?: boolean;
+  invoiceId?: string;
+  skipRegeneration?: boolean;
 }
 
-export default function InvoicePreviewModal({ open, onOpenChange, invoiceNumber, htmlContent, loading }: InvoicePreviewModalProps) {
+export default function InvoicePreviewModal({ open, onOpenChange, invoiceNumber, htmlContent, loading, invoiceId, skipRegeneration }: InvoicePreviewModalProps) {
   const [downloading, setDownloading] = useState(false);
 
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      await downloadInvoicePdf(invoiceNumber, htmlContent);
+      await downloadInvoicePdf(invoiceNumber, htmlContent, invoiceId, { skipRegeneration });
     } catch {
       toast({ title: "Erreur", description: "Impossible de générer le PDF", variant: "destructive" });
     } finally {

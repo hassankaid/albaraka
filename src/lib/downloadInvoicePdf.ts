@@ -149,14 +149,17 @@ async function buildPdfBlob(data: InvoicePdfData): Promise<Blob> {
 export async function downloadInvoicePdf(
   invoiceNumber: string,
   _storedPath: string,
-  invoiceId?: string
+  invoiceId?: string,
+  options?: { skipRegeneration?: boolean }
 ): Promise<void> {
   if (!invoiceId) {
     throw new Error("invoiceId requis pour régénérer la facture");
   }
 
-  // Regenerate HTML in Storage (keeps preview in sync)
-  await invokeRegeneration(invoiceId);
+  // Regenerate HTML in Storage (keeps preview in sync) — CEO only
+  if (!options?.skipRegeneration) {
+    await invokeRegeneration(invoiceId);
+  }
 
   // Build real PDF from database data
   const data = await fetchInvoiceData(invoiceId);
@@ -171,13 +174,16 @@ export async function downloadInvoicePdf(
 export async function generateInvoicePdfBlob(
   invoiceNumber: string,
   _storedPath: string,
-  invoiceId?: string
+  invoiceId?: string,
+  options?: { skipRegeneration?: boolean }
 ): Promise<Blob> {
   if (!invoiceId) {
     throw new Error(`invoiceId requis pour régénérer ${invoiceNumber}`);
   }
 
-  await invokeRegeneration(invoiceId);
+  if (!options?.skipRegeneration) {
+    await invokeRegeneration(invoiceId);
+  }
 
   const data = await fetchInvoiceData(invoiceId);
   return buildPdfBlob(data);
