@@ -106,6 +106,7 @@ const App = () => (
                   <Route path="/working/activity" element={<MyActivity />} />
                   <Route path="/training" element={<TrainingList />} />
                   <Route path="/training/:slug" element={<FormationDetail />} />
+                  <Route path="/training/:slug/chapitre/:chapitreId" element={<ChapterViewer />} />
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />
