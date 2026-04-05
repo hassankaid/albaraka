@@ -33,11 +33,15 @@ import {
   Library,
   Pencil,
   Send,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { THEMES, FORMATS } from "./content-wizard/constants";
+
+type ViewMode = "grid" | "list";
 
 const STATUS_CONFIG: Record<
   ContentPieceStatus,
@@ -76,15 +80,15 @@ function ContentPieceCard({
   const progressPercent = Math.round((content.current_step / 5) * 100);
 
   return (
-    <Card className="hover:shadow-md transition-shadow min-h-[260px] flex flex-col">
-      <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
-        <div className="flex items-start justify-between gap-2">
+    <Card className="hover:shadow-md transition-shadow min-h-[280px] flex flex-col">
+      <CardContent className="p-5 space-y-4 flex-1 flex flex-col">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className="font-semibold text-foreground line-clamp-2">
+            <p className="font-semibold text-base text-foreground line-clamp-2">
               {content.title || "Contenu sans titre"}
             </p>
             {content.selected_idea?.accroche && (
-              <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+              <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
                 {content.selected_idea.accroche}
               </p>
             )}
@@ -132,7 +136,7 @@ function ContentPieceCard({
             <span>Étape {content.current_step}/5</span>
             <span>{progressPercent}%</span>
           </div>
-          <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+          <div className="h-2 rounded-full bg-secondary overflow-hidden">
             <div
               className="h-full rounded-full bg-primary transition-all"
               style={{ width: `${progressPercent}%` }}
@@ -163,6 +167,93 @@ function ContentPieceCard({
   );
 }
 
+function ContentPieceRow({
+  content,
+  onResume,
+  onDelete,
+}: {
+  content: ContentPiece;
+  onResume: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const statusConfig = STATUS_CONFIG[content.status] || STATUS_CONFIG.en_cours;
+  const StatusIcon = statusConfig.icon;
+  const theme = THEMES.find((t) => t.id === content.theme);
+  const fmt = FORMATS.find((f) => f.id === content.format);
+  const progressPercent = Math.round((content.current_step / 5) * 100);
+
+  return (
+    <div
+      onClick={() => onResume(content.id)}
+      className="flex items-center gap-4 px-4 py-3 border-b last:border-b-0 hover:bg-muted/50 cursor-pointer transition-colors group"
+    >
+      {/* Title + accroche */}
+      <div className="min-w-0 flex-1">
+        <p className="font-medium text-sm text-foreground truncate">
+          {content.title || "Contenu sans titre"}
+        </p>
+        {content.selected_idea?.accroche && (
+          <p className="text-xs text-muted-foreground truncate mt-0.5">
+            {content.selected_idea.accroche}
+          </p>
+        )}
+      </div>
+
+      {/* Theme + Format */}
+      <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground shrink-0 w-40">
+        {theme && <span>{theme.emoji} {theme.label}</span>}
+        {theme && fmt && <span>•</span>}
+        {fmt && <span>{fmt.emoji} {fmt.label}</span>}
+      </div>
+
+      {/* Status badge */}
+      <div className="shrink-0">
+        <Badge variant="outline" className={`${statusConfig.badgeClass} text-[11px]`}>
+          <StatusIcon className="h-3 w-3 mr-1" />
+          {statusConfig.label}
+        </Badge>
+      </div>
+
+      {/* Progress */}
+      <div className="hidden sm:flex items-center gap-2 shrink-0 w-28">
+        <div className="h-1.5 rounded-full bg-secondary overflow-hidden flex-1">
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+        <span className="text-[11px] text-muted-foreground w-6 text-right">{progressPercent}%</span>
+      </div>
+
+      {/* Date */}
+      <div className="hidden lg:block text-xs text-muted-foreground shrink-0 w-28 text-right">
+        {formatDistanceToNow(new Date(content.updated_at), {
+          addSuffix: true,
+          locale: fr,
+        })}
+      </div>
+
+      {/* Actions */}
+      <div className="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button size="sm" variant="ghost" className="h-8 px-2">
+          <Play className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(content.id);
+          }}
+          className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function EmptyState({ onCreate }: { onCreate: () => void }) {
   return (
     <Card>
@@ -188,6 +279,27 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
   );
 }
 
+function ViewToggle({ view, onChange }: { view: ViewMode; onChange: (v: ViewMode) => void }) {
+  return (
+    <div className="flex items-center border rounded-md overflow-hidden">
+      <button
+        onClick={() => onChange("grid")}
+        className={`p-2 transition-colors ${view === "grid" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+        aria-label="Vue grille"
+      >
+        <LayoutGrid className="h-4 w-4" />
+      </button>
+      <button
+        onClick={() => onChange("list")}
+        className={`p-2 transition-colors ${view === "list" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+        aria-label="Vue liste"
+      >
+        <List className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
 export default function MyContents() {
   const navigate = useNavigate();
   const { data: contents, isLoading } = useContentPiecesList();
@@ -196,6 +308,14 @@ export default function MyContents() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | ContentPieceStatus>("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return (localStorage.getItem("mycontents-view") as ViewMode) || "grid";
+  });
+
+  const handleViewChange = (v: ViewMode) => {
+    setViewMode(v);
+    localStorage.setItem("mycontents-view", v);
+  };
 
   const filteredContents = useMemo(() => {
     if (!contents) return [];
@@ -268,10 +388,15 @@ export default function MyContents() {
             Retrouve et gère tous tes contenus créés avec le générateur
           </p>
         </div>
-        <Button onClick={handleCreate}>
-          <Sparkles className="h-4 w-4 mr-2" />
-          Nouveau contenu
-        </Button>
+        <div className="flex items-center gap-2">
+          {hasAnyContent && (
+            <ViewToggle view={viewMode} onChange={handleViewChange} />
+          )}
+          <Button onClick={handleCreate}>
+            <Sparkles className="h-4 w-4 mr-2" />
+            Nouveau contenu
+          </Button>
+        </div>
       </div>
 
       {!hasAnyContent ? (
@@ -314,8 +439,8 @@ export default function MyContents() {
                     </p>
                   </CardContent>
                 </Card>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              ) : viewMode === "grid" ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                   {filteredContents.map((content) => (
                     <ContentPieceCard
                       key={content.id}
@@ -325,6 +450,19 @@ export default function MyContents() {
                     />
                   ))}
                 </div>
+              ) : (
+                <Card>
+                  <div className="divide-y">
+                    {filteredContents.map((content) => (
+                      <ContentPieceRow
+                        key={content.id}
+                        content={content}
+                        onResume={handleResume}
+                        onDelete={setDeleteId}
+                      />
+                    ))}
+                  </div>
+                </Card>
               )}
             </TabsContent>
           </Tabs>
