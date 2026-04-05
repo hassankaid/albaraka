@@ -76,6 +76,7 @@ const pageTitles: Record<string, string> = {
   "/working/agent": "Agent IA",
   "/training/scripts/setting": "Scripts Setting",
   "/training/scripts/closing": "Scripts Closing",
+  "/training": "Formation",
 };
 
 export default function DashboardLayout() {

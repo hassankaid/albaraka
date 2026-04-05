@@ -35,6 +35,7 @@ const pageTitles: Record<string, string> = {
   "/my-space/profile": "Mon Profil",
   "/mon-coaching": "Historique",
   "/working/activity": "Mon Activité",
+  "/training": "Formation",
 };
 
 export default function ApporteurLayout() {
