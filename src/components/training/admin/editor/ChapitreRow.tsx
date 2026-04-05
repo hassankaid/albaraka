@@ -34,7 +34,8 @@ import {
   Film,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface ChapitreRowProps {
   chapitre: {
@@ -60,6 +61,30 @@ export function ChapitreRow({ chapitre, moduleId, isFirst, isLast }: ChapitreRow
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  // Sortable for chapter drag
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: chapitre.id,
+    data: {
+      type: "chapitre",
+      sourceModuleId: moduleId,
+      moduleId,
+      titre: chapitre.titre,
+    },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["admin-training", "modules-tree"] });
@@ -122,16 +147,19 @@ export function ChapitreRow({ chapitre, moduleId, isFirst, isLast }: ChapitreRow
 
   return (
     <>
-      <div className="flex items-center gap-2 px-4 py-3 hover:bg-muted/50 transition-colors">
-        {/* Drag placeholder */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="cursor-not-allowed text-muted-foreground/40">
-              <GripVertical className="h-4 w-4" />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>Le glisser-déposer arrive bientôt</TooltipContent>
-        </Tooltip>
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        className="flex items-center gap-2 px-4 py-3 hover:bg-muted/50 transition-colors"
+      >
+        {/* Drag handle — functional */}
+        <span
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <GripVertical className="h-4 w-4" />
+        </span>
 
         {/* Order */}
         <Badge variant="outline" className="text-[10px] font-mono shrink-0">

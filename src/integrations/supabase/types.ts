@@ -2077,6 +2077,14 @@ export type Database = {
         Returns: boolean
       }
       is_ceo: { Args: { p_user_id: string }; Returns: boolean }
+      move_chapitre: {
+        Args: {
+          p_chapitre_id: string
+          p_target_module_id: string
+          p_target_ordre: number
+        }
+        Returns: undefined
+      }
       normalize_phone_e164: { Args: { phone: string }; Returns: string }
       rebalance_commission_group: {
         Args: {
