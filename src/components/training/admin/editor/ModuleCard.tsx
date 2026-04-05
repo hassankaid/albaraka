@@ -42,7 +42,10 @@ import {
   EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSortable } from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 
 interface ModuleCardProps {
   module: {
@@ -78,6 +81,37 @@ export function ModuleCard({ module, isFirst, isLast, totalModules, formationId 
   const [editOpen, setEditOpen] = useState(false);
   const [createChapOpen, setCreateChapOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  // Sortable for module reordering
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setSortableRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: module.id,
+    data: {
+      type: "module",
+      titre: module.titre,
+    },
+  });
+
+  const sortableStyle = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  // Droppable zone for chapters
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+    id: `module-droppable-${module.id}`,
+    data: {
+      type: "module-droppable",
+      moduleId: module.id,
+    },
+  });
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["admin-training", "modules-tree"] });
@@ -145,18 +179,21 @@ export function ModuleCard({ module, isFirst, isLast, totalModules, formationId 
 
   return (
     <>
-      <Card className="overflow-hidden">
+      <Card
+        ref={setSortableRef}
+        style={sortableStyle}
+        {...attributes}
+        className="overflow-hidden"
+      >
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
           <div className="flex items-center gap-2 p-4">
-            {/* Drag handle placeholder */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="cursor-not-allowed text-muted-foreground/40">
-                  <GripVertical className="h-5 w-5" />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>Le glisser-déposer arrive bientôt</TooltipContent>
-            </Tooltip>
+            {/* Drag handle — functional */}
+            <span
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <GripVertical className="h-5 w-5" />
+            </span>
 
             {/* Order badge */}
             <Badge variant="outline" className="text-xs font-mono">
@@ -254,29 +291,37 @@ export function ModuleCard({ module, isFirst, isLast, totalModules, formationId 
             {module.description && (
               <p className="px-4 pb-2 text-sm text-muted-foreground">{module.description}</p>
             )}
-            <div className="divide-y border-t">
-              {module.chapitres.length === 0 ? (
-                <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
-                  Aucun chapitre dans ce module ·{" "}
-                  <button
-                    onClick={() => setCreateChapOpen(true)}
-                    className="text-primary hover:underline"
-                  >
-                    Ajouter le premier chapitre
-                  </button>
-                </div>
-              ) : (
-                module.chapitres.map((chap, idx) => (
-                  <ChapitreRow
-                    key={chap.id}
-                    chapitre={chap}
-                    moduleId={module.id}
-                    isFirst={idx === 0}
-                    isLast={idx === module.chapitres.length - 1}
-                  />
-                ))
-              )}
-            </div>
+            <SortableContext
+              items={module.chapitres.map((c) => c.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div
+                ref={setDroppableRef}
+                className={`divide-y border-t transition-colors ${isOver ? "bg-primary/5 ring-2 ring-primary/30" : ""}`}
+              >
+                {module.chapitres.length === 0 ? (
+                  <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+                    Aucun chapitre dans ce module ·{" "}
+                    <button
+                      onClick={() => setCreateChapOpen(true)}
+                      className="text-primary hover:underline"
+                    >
+                      Ajouter le premier chapitre
+                    </button>
+                  </div>
+                ) : (
+                  module.chapitres.map((chap, idx) => (
+                    <ChapitreRow
+                      key={chap.id}
+                      chapitre={chap}
+                      moduleId={module.id}
+                      isFirst={idx === 0}
+                      isLast={idx === module.chapitres.length - 1}
+                    />
+                  ))
+                )}
+              </div>
+            </SortableContext>
           </CollapsibleContent>
         </Collapsible>
       </Card>

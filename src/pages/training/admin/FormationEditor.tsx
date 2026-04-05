@@ -5,11 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EditFormationDialog } from "@/components/training/admin/EditFormationDialog";
 import { ModuleCard } from "@/components/training/admin/editor/ModuleCard";
 import { CreateModuleDialog } from "@/components/training/admin/editor/CreateModuleDialog";
 import { ArrowLeft, BookOpen, ExternalLink, Plus } from "lucide-react";
+import { DndContext, DragOverlay } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useFormationDnd } from "@/hooks/useFormationDnd";
 
 export default function FormationEditor() {
   const { slug } = useParams();
@@ -63,6 +67,15 @@ export default function FormationEditor() {
       return withChapters;
     },
   });
+
+  const {
+    sensors,
+    collisionDetection,
+    activeDrag,
+    handleDragStart,
+    handleDragEnd,
+    handleDragCancel,
+  } = useFormationDnd(formation?.id ?? "", modules ?? []);
 
   const isLoading = loadingFormation || loadingModules;
   const totalModules = modules?.length ?? 0;
@@ -150,7 +163,7 @@ export default function FormationEditor() {
         </div>
       </div>
 
-      {/* Modules tree */}
+      {/* Modules tree with DnD */}
       {totalModules === 0 ? (
         <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border bg-card py-16">
           <BookOpen className="h-12 w-12 text-muted-foreground" />
@@ -161,18 +174,42 @@ export default function FormationEditor() {
           </Button>
         </div>
       ) : (
-        <div className="space-y-4">
-          {modules!.map((mod, idx) => (
-            <ModuleCard
-              key={mod.id}
-              module={mod}
-              isFirst={idx === 0}
-              isLast={idx === totalModules - 1}
-              totalModules={totalModules}
-              formationId={formation.id}
-            />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={collisionDetection}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+        >
+          <SortableContext
+            items={modules!.map((m) => m.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-4">
+              {modules!.map((mod, idx) => (
+                <ModuleCard
+                  key={mod.id}
+                  module={mod}
+                  isFirst={idx === 0}
+                  isLast={idx === totalModules - 1}
+                  totalModules={totalModules}
+                  formationId={formation.id}
+                />
+              ))}
+            </div>
+          </SortableContext>
+          <DragOverlay>
+            {activeDrag ? (
+              <div className="pointer-events-none">
+                <Card className="px-4 py-3 shadow-lg border-primary/30 bg-card">
+                  <span className="text-sm font-medium text-foreground">
+                    {activeDrag.type === "module" ? "📦" : "📄"} {activeDrag.titre}
+                  </span>
+                </Card>
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       )}
 
       {/* Dialogs */}
