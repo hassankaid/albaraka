@@ -80,8 +80,10 @@ const monthNames = [
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
 ];
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n);
+const fmt = (n: number) => {
+  const parts = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).formatToParts(n);
+  return parts.map((p) => (p.type === "group" ? " " : p.value)).join("");
+};
 
 const fmtDate = (d: string) => {
   try { return new Date(d).toLocaleDateString("fr-FR"); } catch { return d; }
