@@ -47,6 +47,7 @@ import TrainingList from "./pages/training/TrainingList";
 import FormationDetail from "./pages/training/FormationDetail";
 import ChapterViewer from "./pages/training/ChapterViewer";
 import AdminTrainingList from "./pages/training/admin/AdminTrainingList";
+import FormationEditor from "./pages/training/admin/FormationEditor";
 
 const queryClient = new QueryClient();
 
