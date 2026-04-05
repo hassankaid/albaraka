@@ -1,29 +1,30 @@
 
 
-## Correction réaffectation + Protection anti-doublon
+## Refonte affichage "Mes Contenus" — Double vue Cards + Liste
 
-### 1. Réaffectation corrective (données)
+### Objectif
 
-Via l'outil d'insertion SQL, réaffecter :
-- **42 leads** actuellement chez Hedi → retour chez **Sabrina** (`071078ef-04ff-4ddc-9a38-f6ba8e6748c4`)
-- **15 leads** actuellement chez Saba → retour chez **Miradie** (`016f6199-a0a2-468e-8b36-73d815fb7e50`)
+Ajouter un toggle Cards/Liste sur la page "Mes Contenus". La vue **Cards** sera aérée (max 2 colonnes, plus de padding, texte plus grand). La vue **Liste** sera un tableau stylisé avec une ligne par contenu.
 
-Tous ces leads sont encore en `a_qualifier` et n'ont pas été traités. L'opération consiste en deux `UPDATE` sur la table `leads` + insertion d'activités de log pour traçabilité.
+### Ce qui change
 
-### 2. Protection dans l'affectation en masse
+**1. Toggle vue** — Deux icônes (grille / liste) en haut à droite, à côté du bouton "Nouveau contenu". L'état est stocké en `localStorage` pour persister entre les sessions.
 
-Modifier `handleBulkAssign` dans `src/pages/Leads.tsx` pour :
+**2. Vue Cards (améliorée)**
+- Grille 1 colonne mobile, **2 colonnes max** sur desktop (au lieu de 3)
+- Plus de padding (`p-5` au lieu de `p-4`), titre en `text-base` au lieu de taille par défaut
+- Badge statut plus visible, barre de progression plus épaisse (`h-2` au lieu de `h-1.5`)
+- Min-height augmenté pour plus d'aération
 
-1. **Avant d'affecter**, vérifier si certains leads sélectionnés sont déjà assignés à un autre collaborateur (`assigned_to IS NOT NULL`)
-2. **Si des leads déjà assignés sont détectés** : afficher une boîte de confirmation avec un message clair :
-   - "X leads sur Y sont déjà assignés à un collaborateur. Voulez-vous quand même les réaffecter ?"
-   - Boutons : "Annuler" / "Affecter uniquement les non-assignés" / "Tout réaffecter"
-3. Selon le choix, filtrer les IDs avant l'update
+**3. Vue Liste (nouvelle)**
+- Chaque contenu = une ligne horizontale dans une Card
+- Colonnes : Titre + accroche | Thème + Format | Statut (badge) | Progression (barre compacte) | Date | Actions (Reprendre / Supprimer)
+- Hover highlight sur chaque ligne
+- Clic sur la ligne = Reprendre (comme un lien)
 
-### Fichiers modifiés
+### Fichier modifié
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/pages/Leads.tsx` | Ajouter vérification pré-affectation + dialog de confirmation |
-| Base de données | UPDATE 42 + 15 leads + log d'activité |
+| `src/pages/working/MyContents.tsx` | Ajout toggle vue, nouveau composant `ContentPieceRow`, cards aérées, localStorage pour la préférence |
 
