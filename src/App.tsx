@@ -44,6 +44,7 @@ import MyContents from "./pages/working/MyContents";
 import MyActivity from "./pages/working/MyActivity";
 import AgentIA from "./pages/working/AgentIA";
 import TrainingList from "./pages/training/TrainingList";
+import FormationDetail from "./pages/training/FormationDetail";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +86,7 @@ const App = () => (
                   <Route path="/admin/coaching" element={<AdminCoaching />} />
                   <Route path="/working" element={<Navigate to="/working/activity" replace />} />
                   <Route path="/training" element={<TrainingList />} />
+                  <Route path="/training/:slug" element={<FormationDetail />} />
                   <Route path="/training/scripts/setting" element={<ScriptsSetting />} />
                   <Route path="/training/scripts/closing" element={<ScriptsClosing />} />
                   <Route path="/working/content" element={<ContentGenerator />} />
@@ -101,6 +103,7 @@ const App = () => (
                   <Route path="/my-space/profile" element={<ApporteurProfile />} />
                   <Route path="/working/activity" element={<MyActivity />} />
                   <Route path="/training" element={<TrainingList />} />
+                  <Route path="/training/:slug" element={<FormationDetail />} />
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />
