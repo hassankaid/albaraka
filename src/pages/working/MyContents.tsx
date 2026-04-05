@@ -133,11 +133,8 @@ function ContentRow({
       </div>
 
       {/* Date */}
-      <span className="text-xs text-muted-foreground truncate">
-        {formatDistanceToNow(new Date(content.updated_at), {
-          addSuffix: true,
-          locale: fr,
-        })}
+      <span className="text-xs text-muted-foreground whitespace-nowrap">
+        {shortTimeAgo(content.updated_at)}
       </span>
 
       {/* Actions — always visible */}
