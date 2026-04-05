@@ -168,16 +168,24 @@ function KeywordsPexels({
   keywords: string[];
   label: string;
 }) {
+  const handleClick = (e: React.MouseEvent, keyword: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `https://www.pexels.com/search/videos/${encodeURIComponent(keyword)}/`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-2 px-2">
       <span className="text-xs text-muted-foreground">{label} :</span>
       {keywords.map((kw, i) => (
-        <span
+        <button
           key={i}
-          className="text-xs px-2 py-1 rounded-full bg-accent text-accent-foreground"
+          onClick={(e) => handleClick(e, kw)}
+          className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors cursor-pointer border border-primary/20 hover:border-primary/40"
         >
           🔍 {kw}
-        </span>
+        </button>
       ))}
     </div>
   );
