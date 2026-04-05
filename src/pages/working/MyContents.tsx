@@ -93,7 +93,7 @@ function ContentRow({
   const StatusIcon = statusConfig.icon;
   const theme = THEMES.find((t) => t.id === content.theme);
   const fmt = FORMATS.find((f) => f.id === content.format);
-  const progressPercent = Math.round((content.current_step / 5) * 100);
+  const progressPercent = computeRealProgress(content);
 
   return (
     <div
