@@ -3,7 +3,9 @@ import { useContentWizard } from "../ContentWizardContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, RotateCcw, Copy, PartyPopper } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, RotateCcw, Copy, PartyPopper, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { PublicationChecklist } from "../types";
 import { ResetConfirmDialog } from "../components/ResetConfirmDialog";
@@ -21,7 +23,7 @@ const PLATFORMS: {
 ];
 
 export function Step5Publication() {
-  const { state, togglePublicationPlatform, goToStep, reset } =
+  const { state, togglePublicationPlatform, goToStep, reset, setScheduledFor, setStatus } =
     useContentWizard();
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
@@ -65,6 +67,40 @@ export function Step5Publication() {
               </p>
             </div>
           )}
+
+          {/* Date de publication prévue */}
+          <div className="p-4 rounded-lg border space-y-2">
+            <Label htmlFor="scheduled-date" className="flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4" />
+              Date de publication prévue (optionnel)
+            </Label>
+            <Input
+              id="scheduled-date"
+              type="date"
+              value={state.scheduledFor || ""}
+              onChange={(e) => {
+                const newDate = e.target.value || null;
+                if (newDate && state.status === "draft") {
+                  setStatus("scheduled");
+                } else if (!newDate && state.status === "scheduled") {
+                  setStatus("ready");
+                }
+                setScheduledFor(newDate);
+              }}
+              className="max-w-xs"
+            />
+            {state.scheduledFor && (
+              <p className="text-sm text-muted-foreground">
+                📅 Contenu planifié pour le{" "}
+                {new Date(state.scheduledFor).toLocaleDateString("fr-FR", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </p>
+            )}
+          </div>
 
           {state.description && (
             <Button variant="outline" className="w-full" onClick={copyDescription}>
