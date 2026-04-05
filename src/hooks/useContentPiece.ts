@@ -11,7 +11,7 @@ import type {
   PublicationChecklist,
 } from "@/pages/working/content-wizard/types";
 
-export type ContentPieceStatus = "draft" | "ready" | "scheduled" | "published" | "archived";
+export type ContentPieceStatus = "en_cours" | "pret" | "publie";
 
 export interface ContentPiece {
   id: string;

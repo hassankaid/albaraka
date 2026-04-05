@@ -9,15 +9,15 @@ import {
   MontageChecklist,
   PublicationChecklist,
   WizardStep,
-  ContentPieceStatusType,
   SaveState,
 } from "./types";
+import { computeStatus } from "./lib/computeStatus";
 import type { ContentPiece } from "@/hooks/useContentPiece";
 
 const initialState: ContentWizardState = {
   contentPieceId: null,
   title: null,
-  status: "draft",
+  status: "en_cours",
   scheduledFor: null,
   format: "voixoff",
   theme: "storytelling",
@@ -53,7 +53,6 @@ type Action =
   | { type: "SET_DESCRIPTION"; payload: ContentDescription }
   | { type: "TOGGLE_PUBLICATION"; payload: keyof PublicationChecklist }
   | { type: "GO_TO_STEP"; payload: WizardStep }
-  | { type: "SET_STATUS"; payload: ContentPieceStatusType }
   | { type: "SET_SCHEDULED_FOR"; payload: string | null }
   | { type: "SET_TITLE"; payload: string | null }
   | { type: "SET_CONTENT_PIECE_ID"; payload: string }
@@ -61,7 +60,7 @@ type Action =
   | { type: "LOAD_FROM_CONTENT_PIECE"; payload: ContentPiece }
   | { type: "RESET" };
 
-function reducer(state: ContentWizardState, action: Action): ContentWizardState {
+function rawReducer(state: ContentWizardState, action: Action): ContentWizardState {
   switch (action.type) {
     case "SET_FORMAT":
       return {
@@ -116,8 +115,6 @@ function reducer(state: ContentWizardState, action: Action): ContentWizardState 
       };
     case "GO_TO_STEP":
       return { ...state, currentStep: action.payload };
-    case "SET_STATUS":
-      return { ...state, status: action.payload };
     case "SET_SCHEDULED_FOR":
       return { ...state, scheduledFor: action.payload };
     case "SET_TITLE":
@@ -132,7 +129,7 @@ function reducer(state: ContentWizardState, action: Action): ContentWizardState 
       };
     case "LOAD_FROM_CONTENT_PIECE": {
       const cp = action.payload;
-      return {
+      const loadedState: ContentWizardState = {
         contentPieceId: cp.id,
         title: cp.title,
         status: cp.status,
@@ -150,12 +147,40 @@ function reducer(state: ContentWizardState, action: Action): ContentWizardState 
         saveState: "saved",
         lastSavedAt: cp.updated_at,
       };
+      return {
+        ...loadedState,
+        status: computeStatus(loadedState),
+      };
     }
     case "RESET":
       return initialState;
     default:
       return state;
   }
+}
+
+function reducer(state: ContentWizardState, action: Action): ContentWizardState {
+  const noRecomputeActions: Action["type"][] = [
+    "GO_TO_STEP",
+    "SET_CONTENT_PIECE_ID",
+    "SET_SAVE_STATE",
+    "SET_TITLE",
+  ];
+
+  const newState = rawReducer(state, action);
+
+  if (action.type === "LOAD_FROM_CONTENT_PIECE" || action.type === "RESET") {
+    return newState;
+  }
+
+  if (noRecomputeActions.includes(action.type)) {
+    return newState;
+  }
+
+  return {
+    ...newState,
+    status: computeStatus(newState),
+  };
 }
 
 const ContentWizardContext = createContext<{
@@ -169,7 +194,6 @@ const ContentWizardContext = createContext<{
   setDescription: (d: ContentDescription) => void;
   togglePublicationPlatform: (k: keyof PublicationChecklist) => void;
   goToStep: (s: WizardStep) => void;
-  setStatus: (s: ContentPieceStatusType) => void;
   setScheduledFor: (d: string | null) => void;
   setTitle: (t: string | null) => void;
   setContentPieceId: (id: string) => void;
@@ -195,7 +219,6 @@ export function ContentWizardProvider({ children }: { children: ReactNode }) {
     togglePublicationPlatform: (k: keyof PublicationChecklist) =>
       dispatch({ type: "TOGGLE_PUBLICATION", payload: k }),
     goToStep: (s: WizardStep) => dispatch({ type: "GO_TO_STEP", payload: s }),
-    setStatus: (s: ContentPieceStatusType) => dispatch({ type: "SET_STATUS", payload: s }),
     setScheduledFor: (d: string | null) => dispatch({ type: "SET_SCHEDULED_FOR", payload: d }),
     setTitle: (t: string | null) => dispatch({ type: "SET_TITLE", payload: t }),
     setContentPieceId: (id: string) => dispatch({ type: "SET_CONTENT_PIECE_ID", payload: id }),

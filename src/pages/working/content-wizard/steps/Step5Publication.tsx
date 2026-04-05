@@ -78,15 +78,7 @@ export function Step5Publication() {
               id="scheduled-date"
               type="date"
               value={state.scheduledFor || ""}
-              onChange={(e) => {
-                const newDate = e.target.value || null;
-                if (newDate && state.status === "draft") {
-                  setStatus("scheduled");
-                } else if (!newDate && state.status === "scheduled") {
-                  setStatus("ready");
-                }
-                setScheduledFor(newDate);
-              }}
+              onChange={(e) => setScheduledFor(e.target.value || null)}
               className="max-w-xs"
             />
             {state.scheduledFor && (
