@@ -1,5 +1,10 @@
-import html2pdf from "html2pdf.js";
+import { pdf } from "@react-pdf/renderer";
+import { createElement } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import InvoicePdfDocument, {
+  type InvoicePdfData,
+  type InvoicePdfLine,
+} from "@/components/invoices/InvoicePdfDocument";
 
 /**
  * Fetches the HTML version of an invoice for preview purposes.
@@ -24,7 +29,7 @@ export async function fetchInvoiceHtml(storedPath: string): Promise<string> {
   return await response.text();
 }
 
-/** Normalises any stored path to its .html variant (the only format the edge function uploads). */
+/** Normalises any stored path to its .html variant. */
 function toHtmlPath(storedPath: string): string {
   return storedPath.endsWith(".pdf")
     ? storedPath.replace(/\.pdf$/, ".html")
@@ -33,7 +38,6 @@ function toHtmlPath(storedPath: string): string {
 
 /**
  * Calls the edge function to regenerate an invoice's HTML in Storage.
- * Returns when the fresh file is uploaded and apporteur_invoices.pdf_url is updated.
  */
 async function invokeRegeneration(invoiceId: string): Promise<void> {
   const { data: invoice, error: invErr } = await supabase
@@ -72,44 +76,89 @@ export async function regenerateInvoicePdf(invoiceId: string): Promise<void> {
   await invokeRegeneration(invoiceId);
 }
 
-/** Shared html2pdf options for consistent output. */
-const html2pdfOptions = {
-  margin: 0,
-  image: { type: "jpeg" as const, quality: 0.98 },
-  html2canvas: { scale: 2, useCORS: true },
-  jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
-};
+/**
+ * Fetches all data needed to build the PDF from the database.
+ */
+async function fetchInvoiceData(invoiceId: string): Promise<InvoicePdfData> {
+  const { data: invoice, error: invErr } = await supabase
+    .from("apporteur_invoices")
+    .select("id, invoice_number, period_month, period_year, total_amount, apporteur_id")
+    .eq("id", invoiceId)
+    .single();
+
+  if (invErr || !invoice) {
+    throw new Error("Facture introuvable");
+  }
+
+  const [{ data: lines }, { data: profile }] = await Promise.all([
+    supabase
+      .from("invoice_lines")
+      .select("client_name, payment_amount, payment_date, commission_percentage, commission_amount, sale_id")
+      .eq("invoice_id", invoiceId)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("profiles")
+      .select("full_name, address, postal_code, city, siret, bank_details")
+      .eq("id", invoice.apporteur_id)
+      .single(),
+  ]);
+
+  return {
+    invoiceNumber: invoice.invoice_number,
+    month: invoice.period_month,
+    year: invoice.period_year,
+    totalAmount: Number(invoice.total_amount),
+    apporteur: {
+      full_name: profile?.full_name,
+      address: profile?.address,
+      postal_code: profile?.postal_code,
+      city: profile?.city,
+      siret: profile?.siret,
+    },
+    bankDetails: profile?.bank_details as InvoicePdfData["bankDetails"],
+    lines: (lines || []) as InvoicePdfLine[],
+  };
+}
 
 /**
- * Downloads a fresh HTML from Storage, converts it to a real PDF client-side,
- * and triggers a browser download.
+ * Builds a real PDF blob from invoice data using @react-pdf/renderer.
+ */
+async function buildPdfBlob(data: InvoicePdfData): Promise<Blob> {
+  const doc = createElement(InvoicePdfDocument, { data });
+  return await pdf(doc).toBlob();
+}
+
+/**
+ * Downloads a fresh PDF for an invoice.
  *
- * Every click triggers a fresh server-side regeneration before download.
+ * Every click triggers a fresh server-side regeneration (to keep Storage HTML in sync)
+ * then builds a real vector PDF client-side from the database data.
  */
 export async function downloadInvoicePdf(
   invoiceNumber: string,
-  storedPath: string,
+  _storedPath: string,
   invoiceId?: string
 ): Promise<void> {
   if (!invoiceId) {
     throw new Error("invoiceId requis pour régénérer la facture");
   }
 
+  // Regenerate HTML in Storage (keeps preview in sync)
   await invokeRegeneration(invoiceId);
 
-  const htmlString = await downloadHtml(storedPath);
-  const pdfBlob = await htmlToPdfBlob(htmlString, invoiceNumber);
+  // Build real PDF from database data
+  const data = await fetchInvoiceData(invoiceId);
+  const blob = await buildPdfBlob(data);
 
-  triggerBrowserDownload(pdfBlob, `${invoiceNumber}.pdf`);
+  triggerBrowserDownload(blob, `${invoiceNumber}.pdf`);
 }
 
 /**
  * Returns a fresh PDF as a Blob — used by the bulk download zipper.
- * Same always-regenerate behavior as downloadInvoicePdf.
  */
 export async function generateInvoicePdfBlob(
   invoiceNumber: string,
-  storedPath: string,
+  _storedPath: string,
   invoiceId?: string
 ): Promise<Blob> {
   if (!invoiceId) {
@@ -118,64 +167,8 @@ export async function generateInvoicePdfBlob(
 
   await invokeRegeneration(invoiceId);
 
-  const htmlString = await downloadHtml(storedPath);
-  return htmlToPdfBlob(htmlString, invoiceNumber);
-}
-
-/* ------------------------------------------------------------------ */
-/*  Internal helpers                                                   */
-/* ------------------------------------------------------------------ */
-
-async function downloadHtml(storedPath: string): Promise<string> {
-  const htmlPath = toHtmlPath(storedPath);
-
-  const { data, error } = await supabase.storage
-    .from("invoices")
-    .download(htmlPath);
-
-  if (error || !data) {
-    throw new Error("Impossible de télécharger la facture après régénération");
-  }
-
-  return await data.text();
-}
-
-/**
- * Renders the full HTML document inside a hidden iframe so the browser applies
- * all styles correctly, then converts the rendered body to PDF via html2pdf.js.
- */
-async function htmlToPdfBlob(htmlString: string, filename: string): Promise<Blob> {
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.left = "-9999px";
-  iframe.style.top = "0";
-  iframe.style.width = "210mm";
-  iframe.style.height = "297mm";
-  iframe.style.border = "none";
-  document.body.appendChild(iframe);
-
-  try {
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!iframeDoc) throw new Error("Impossible de créer l'iframe de rendu");
-
-    iframeDoc.open();
-    iframeDoc.write(htmlString);
-    iframeDoc.close();
-
-    // Wait for the iframe content to render
-    await new Promise((resolve) => {
-      if (iframeDoc.readyState === "complete") resolve(undefined);
-      else iframe.addEventListener("load", resolve);
-    });
-
-    const body = iframeDoc.body;
-    return await html2pdf()
-      .set({ ...html2pdfOptions, filename: `${filename}.pdf` })
-      .from(body)
-      .outputPdf("blob");
-  } finally {
-    document.body.removeChild(iframe);
-  }
+  const data = await fetchInvoiceData(invoiceId);
+  return buildPdfBlob(data);
 }
 
 function triggerBrowserDownload(blob: Blob, filename: string): void {
