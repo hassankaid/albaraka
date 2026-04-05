@@ -51,7 +51,15 @@ export interface PublicationChecklist {
 
 export type WizardStep = 1 | 2 | 3 | 4 | 5;
 
+export type ContentPieceStatusType = "draft" | "ready" | "scheduled" | "published" | "archived";
+
+export type SaveState = "idle" | "saving" | "saved" | "error";
+
 export interface ContentWizardState {
+  contentPieceId: string | null;
+  title: string | null;
+  status: ContentPieceStatusType;
+  scheduledFor: string | null;
   format: ContentFormat;
   theme: ContentTheme;
   ideas: ContentIdea[];
@@ -62,4 +70,6 @@ export interface ContentWizardState {
   publicationChecklist: PublicationChecklist;
   currentStep: WizardStep;
   stepsToRegenerate: number[];
+  saveState: SaveState;
+  lastSavedAt: string | null;
 }
