@@ -111,15 +111,15 @@ function ContentRow({
       </div>
 
       {/* Date */}
-      <span className="text-xs text-muted-foreground text-right truncate">
+      <span className="text-xs text-muted-foreground truncate">
         {formatDistanceToNow(new Date(content.updated_at), {
           addSuffix: true,
           locale: fr,
         })}
       </span>
 
-      {/* Actions */}
-      <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Actions — always visible */}
+      <div className="flex items-center justify-end gap-0.5">
         <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
           <Play className="h-3.5 w-3.5" />
         </Button>
