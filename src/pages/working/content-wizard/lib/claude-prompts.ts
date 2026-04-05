@@ -62,6 +62,40 @@ Réponds UNIQUEMENT avec un JSON valide au format suivant, sans texte avant ou a
 }`;
 }
 
+export function buildDescriptionPrompt(
+  ideaTitle: string,
+  scriptHook: string,
+  scriptCta: string
+): string {
+  return `Tu es un expert en copywriting pour réseaux sociaux (Instagram, TikTok, YouTube Shorts).
+
+Rédige une description optimisée pour une vidéo.
+
+CONTEXTE :
+- Titre de la vidéo : ${ideaTitle}
+- Hook du script : ${scriptHook}
+- CTA du script : ${scriptCta}
+
+STRUCTURE OBLIGATOIRE :
+1. ACCROCHE : 1 phrase forte qui donne envie de cliquer sur "voir plus"
+2. VALEUR : 3-4 lignes de contenu concret
+3. CTA : 1 appel à l'action naturel et fraternel
+4. HASHTAGS : 5 à 8 hashtags pertinents (avec le #)
+
+Ton : sincère, fraternel, authentique. Max 150 mots au total.
+
+Réponds UNIQUEMENT avec un JSON valide au format suivant, sans texte avant ou après, sans balises markdown :
+{
+  "description": {
+    "accroche": "L'accroche ici",
+    "valeur": "La valeur ici",
+    "cta": "Le CTA ici",
+    "hashtags": ["#hashtag1", "#hashtag2", "#hashtag3", "#hashtag4", "#hashtag5"],
+    "full_text": "[accroche]\\n\\n[valeur]\\n\\n[cta]\\n\\n#hashtag1 #hashtag2 #hashtag3 #hashtag4 #hashtag5"
+  }
+}`;
+}
+
 export function extractJsonFromResponse(text: string): any {
   try {
     return JSON.parse(text);
