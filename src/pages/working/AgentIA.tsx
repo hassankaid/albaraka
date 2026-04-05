@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -19,6 +21,14 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Loader2,
   Send,
   Plus,
@@ -29,6 +39,7 @@ import {
   MessageSquare,
   Flame,
   ChevronDown,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -47,6 +58,7 @@ import {
   useAppendAgentMessage,
   useAgentConversation,
   useAgentConversationsList,
+  useRenameAgentConversation,
   callAgentProspect,
 } from "@/hooks/useAgentConversation";
 
@@ -59,11 +71,14 @@ export default function AgentIA() {
   const [localMessages, setLocalMessages] = useState<
     { role: "user" | "assistant"; content: string }[]
   >([]);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const createConversation = useCreateAgentConversation();
   const appendMessage = useAppendAgentMessage();
+  const renameConversation = useRenameAgentConversation();
   const { data: conversationData } = useAgentConversation(activeConversationId);
   const { data: recentConversations } = useAgentConversationsList(20);
 
@@ -144,6 +159,26 @@ export default function AgentIA() {
 
   const handleLoadConversation = (id: string) => {
     setActiveConversationId(id);
+  };
+
+  const handleOpenRename = () => {
+    if (!conversationData?.conversation) return;
+    setRenameValue(conversationData.conversation.title || "");
+    setRenameDialogOpen(true);
+  };
+
+  const handleConfirmRename = async () => {
+    if (!activeConversationId || !renameValue.trim()) return;
+    try {
+      await renameConversation.mutateAsync({
+        id: activeConversationId,
+        title: renameValue.trim(),
+      });
+      setRenameDialogOpen(false);
+      toast.success("Conversation renommée");
+    } catch (error: any) {
+      toast.error("Erreur : " + (error?.message || "inconnue"));
+    }
   };
 
   const handleShortcut = (prompt: string) => {
@@ -246,6 +281,11 @@ export default function AgentIA() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
+              {activeConversationId && (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleOpenRename} title="Renommer">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={handleNewConversation}>
                 <Plus className="h-4 w-4 mr-1" />
                 Nouvelle
@@ -307,14 +347,16 @@ export default function AgentIA() {
                 rows={3}
                 className="resize-none border-0 focus-visible:ring-0 shadow-none p-0"
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                  if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     handleSend();
                   }
                 }}
               />
               <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-muted-foreground">Ctrl/Cmd + Enter pour envoyer</p>
+                <p className="text-xs text-muted-foreground">
+                  Entrée pour envoyer · Maj+Entrée pour aller à la ligne
+                </p>
                 <Button size="sm" onClick={handleSend} disabled={!input.trim() || isGenerating}>
                   {isGenerating ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -354,6 +396,45 @@ export default function AgentIA() {
           ))}
         </div>
       </TabsContent>
+
+      {/* Dialog de renommage */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Renommer la conversation</DialogTitle>
+            <DialogDescription>
+              Donne un nom parlant à cette conversation pour la retrouver facilement.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="rename-input">Titre</Label>
+            <Input
+              id="rename-input"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              placeholder="Ex: Prospect Karim objection budget"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleConfirmRename();
+                }
+              }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleConfirmRename} disabled={renameConversation.isPending}>
+              {renameConversation.isPending && (
+                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              )}
+              Renommer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Tabs>
   );
 }
