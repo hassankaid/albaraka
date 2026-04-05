@@ -267,13 +267,16 @@ export default function MyContents() {
             ) : (
               <Card>
                 {/* Header row */}
-                <div className="flex items-center gap-3 px-4 h-9 border-b text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-                  <span className="w-[260px] shrink-0">Titre</span>
-                  <span className="hidden md:block w-[160px] shrink-0">Thème · Format</span>
-                  <span className="shrink-0">Statut</span>
-                  <span className="hidden sm:block w-24 shrink-0">Progression</span>
-                  <span className="hidden lg:block w-24 shrink-0 text-right">Modifié</span>
-                  <span className="ml-auto shrink-0 w-[60px]" />
+                <div
+                  className="grid items-center px-4 h-9 border-b text-[11px] font-medium text-muted-foreground uppercase tracking-wide"
+                  style={{ gridTemplateColumns: "2fr 1.2fr 90px 120px 100px 60px" }}
+                >
+                  <span>Titre</span>
+                  <span>Thème · Format</span>
+                  <span>Statut</span>
+                  <span>Progression</span>
+                  <span className="text-right">Modifié</span>
+                  <span />
                 </div>
                 {filteredContents.map((content) => (
                   <ContentRow
