@@ -1,5 +1,131 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+function buildInvoiceHtml(params: {
+  invoiceNumber: string;
+  month: number;
+  year: number;
+  apporteurProfile: any;
+  commissionLines: any[];
+  fixedSalaryLine: any | null;
+  totalAmount: number;
+  bankDetails: any;
+}): string {
+  const { invoiceNumber, month, year, apporteurProfile, commissionLines, fixedSalaryLine, totalAmount, bankDetails } = params;
+  const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>${invoiceNumber}</title>
+<style>
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 40px; color: #1a1a2e; font-size: 14px; }
+  .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
+  .invoice-title { font-size: 28px; font-weight: 700; color: #6d28d9; }
+  .invoice-number { font-size: 16px; color: #666; margin-top: 4px; }
+  .section { margin-bottom: 24px; }
+  .section-title { font-size: 12px; text-transform: uppercase; color: #999; margin-bottom: 8px; font-weight: 600; letter-spacing: 0.5px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  th { background: #f3f0ff; color: #6d28d9; text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 12px; border-bottom: 1px solid #eee; }
+  .total-row { font-weight: 700; font-size: 16px; background: #f9fafb; }
+  .fixed-salary-row { background: #f0fdf4; font-style: italic; }
+  .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999; }
+  .bank-info { background: #f9fafb; padding: 16px; border-radius: 8px; margin-top: 20px; }
+  .bank-info p { margin: 4px 0; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="invoice-title">FACTURE</div>
+      <div class="invoice-number">${invoiceNumber}</div>
+      <div style="margin-top:8px;color:#666;">Date : ${new Date().toLocaleDateString("fr-FR")}</div>
+      <div style="color:#666;">Période : ${monthNames[month - 1]} ${year}</div>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;gap:40px;">
+    <div class="section" style="flex:1;">
+      <div class="section-title">Émetteur</div>
+      <strong>${apporteurProfile?.full_name || ""}</strong><br/>
+      ${apporteurProfile?.address || ""}<br/>
+      ${apporteurProfile?.postal_code || ""} ${apporteurProfile?.city || ""}<br/>
+      ${apporteurProfile?.siret ? `SIRET : ${apporteurProfile.siret}` : ""}
+    </div>
+    <div class="section" style="flex:1;">
+      <div class="section-title">Destinataire</div>
+      <strong>ETHICARENA</strong><br/>
+    </div>
+  </div>
+
+  ${commissionLines.length > 0 ? `
+  <table>
+    <thead>
+      <tr>
+        <th>Client</th>
+        <th>Montant encaissé</th>
+        <th>Date paiement</th>
+        <th>% Commission</th>
+        <th style="text-align:right;">Montant commission</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${commissionLines.map((l: any) => `
+      <tr>
+        <td>${l.client_name}</td>
+        <td>${Number(l.payment_amount).toLocaleString("fr-FR")} €</td>
+        <td>${new Date(l.payment_date).toLocaleDateString("fr-FR")}</td>
+        <td>${l.commission_percentage}%</td>
+        <td style="text-align:right;">${Number(l.commission_amount).toLocaleString("fr-FR")} €</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>` : ""}
+
+  ${fixedSalaryLine ? `
+  <table style="margin-top: ${commissionLines.length > 0 ? '8' : '16'}px;">
+    ${commissionLines.length === 0 ? `
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th style="text-align:right;">Montant</th>
+      </tr>
+    </thead>` : ""}
+    <tbody>
+      <tr class="fixed-salary-row">
+        <td ${commissionLines.length > 0 ? 'colspan="4"' : ''}>Salaire fixe mensuel</td>
+        <td style="text-align:right;">${Number(fixedSalaryLine.commission_amount).toLocaleString("fr-FR")} €</td>
+      </tr>
+    </tbody>
+  </table>` : ""}
+
+  <table style="margin-top: 4px;">
+    <tbody>
+      <tr class="total-row">
+        <td ${commissionLines.length > 0 ? 'colspan="4"' : ''}>TOTAL</td>
+        <td style="text-align:right;">${totalAmount.toLocaleString("fr-FR")} €</td>
+      </tr>
+    </tbody>
+  </table>
+
+  ${bankDetails ? `
+  <div class="bank-info">
+    <div class="section-title">Coordonnées bancaires</div>
+    ${bankDetails.account_holder ? `<p><strong>Titulaire :</strong> ${bankDetails.account_holder}</p>` : ""}
+    ${bankDetails.iban ? `<p><strong>IBAN :</strong> ${bankDetails.iban.replace(/(.{4})/g, "$1 ").trim()}</p>` : ""}
+    ${bankDetails.bic ? `<p><strong>BIC :</strong> ${bankDetails.bic}</p>` : ""}
+    ${bankDetails.bank_name ? `<p><strong>Banque :</strong> ${bankDetails.bank_name}</p>` : ""}
+  </div>` : ""}
+
+  <div class="footer">
+    TVA non applicable, article 293 B du CGI.<br/>
+    Facture générée automatiquement par Ethicarena.
+  </div>
+</body>
+</html>`;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -53,6 +179,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const apporteur_id = body.beneficiary_id || body.apporteur_id;
     const { month, year } = body;
+    const regenerate = body.regenerate === true;
 
     if (!apporteur_id || !month || !year) {
       return new Response(JSON.stringify({ error: "Missing parameters" }), {
@@ -63,16 +190,71 @@ Deno.serve(async (req) => {
     // Check if invoice already exists for this period
     const { data: existing } = await supabaseAdmin
       .from("apporteur_invoices")
-      .select("id")
+      .select("id, invoice_number, total_amount")
       .eq("apporteur_id", apporteur_id)
       .eq("period_month", month)
       .eq("period_year", year)
       .maybeSingle();
 
-    if (existing) {
+    if (existing && !regenerate) {
       return new Response(JSON.stringify({ error: "Invoice already exists for this period", invoice_id: existing.id }), {
         status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // --- REGENERATION PATH ---
+    if (existing && regenerate) {
+      const { data: invoiceLines } = await supabaseAdmin
+        .from("invoice_lines")
+        .select("*")
+        .eq("invoice_id", existing.id)
+        .order("created_at", { ascending: true });
+
+      const { data: apporteurProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("full_name, email, address, postal_code, city, country, siret, bank_details")
+        .eq("id", apporteur_id)
+        .single();
+
+      const lines = invoiceLines || [];
+      const commissionLines = lines.filter((l: any) => l.sale_id !== null);
+      const fixedSalaryLine = lines.find((l: any) => l.sale_id === null) || null;
+
+      const htmlContent = buildInvoiceHtml({
+        invoiceNumber: existing.invoice_number,
+        month,
+        year,
+        apporteurProfile,
+        commissionLines,
+        fixedSalaryLine,
+        totalAmount: Number(existing.total_amount),
+        bankDetails: apporteurProfile?.bank_details as any,
+      });
+
+      const filePath = `${apporteur_id}/${existing.invoice_number}.html`;
+      const { error: uploadError } = await supabaseAdmin.storage
+        .from("invoices")
+        .upload(filePath, new TextEncoder().encode(htmlContent), {
+          contentType: "text/html; charset=utf-8",
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error("Error uploading regenerated invoice:", uploadError);
+        return new Response(JSON.stringify({ error: "Failed to upload regenerated invoice" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      await supabaseAdmin
+        .from("apporteur_invoices")
+        .update({ pdf_url: filePath })
+        .eq("id", existing.id);
+
+      return new Response(
+        JSON.stringify({ success: true, invoice_id: existing.id, invoice_number: existing.invoice_number, total_amount: existing.total_amount }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Get apporteur profile
@@ -214,124 +396,22 @@ Deno.serve(async (req) => {
     }
 
     // Generate HTML invoice
-    const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
     const bankDetails = apporteurProfile?.bank_details as any;
 
     // Separate commission lines and fixed salary line for HTML
     const commissionLines = lines.filter((l: any) => l.sale_id !== null);
-    const fixedSalaryLine = lines.find((l: any) => l.sale_id === null);
+    const fixedSalaryLine = lines.find((l: any) => l.sale_id === null) || null;
 
-    const htmlContent = `<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>${invoiceNumber}</title>
-<style>
-  body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 40px; color: #1a1a2e; font-size: 14px; }
-  .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
-  .invoice-title { font-size: 28px; font-weight: 700; color: #6d28d9; }
-  .invoice-number { font-size: 16px; color: #666; margin-top: 4px; }
-  .section { margin-bottom: 24px; }
-  .section-title { font-size: 12px; text-transform: uppercase; color: #999; margin-bottom: 8px; font-weight: 600; letter-spacing: 0.5px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-  th { background: #f3f0ff; color: #6d28d9; text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-  td { padding: 10px 12px; border-bottom: 1px solid #eee; }
-  .total-row { font-weight: 700; font-size: 16px; background: #f9fafb; }
-  .fixed-salary-row { background: #f0fdf4; font-style: italic; }
-  .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999; }
-  .bank-info { background: #f9fafb; padding: 16px; border-radius: 8px; margin-top: 20px; }
-  .bank-info p { margin: 4px 0; }
-</style>
-</head>
-<body>
-  <div class="header">
-    <div>
-      <div class="invoice-title">FACTURE</div>
-      <div class="invoice-number">${invoiceNumber}</div>
-      <div style="margin-top:8px;color:#666;">Date : ${new Date().toLocaleDateString("fr-FR")}</div>
-      <div style="color:#666;">Période : ${monthNames[month - 1]} ${year}</div>
-    </div>
-  </div>
-
-  <div style="display:flex;justify-content:space-between;gap:40px;">
-    <div class="section" style="flex:1;">
-      <div class="section-title">Émetteur</div>
-      <strong>${apporteurProfile?.full_name || ""}</strong><br/>
-      ${apporteurProfile?.address || ""}<br/>
-      ${apporteurProfile?.postal_code || ""} ${apporteurProfile?.city || ""}<br/>
-      ${apporteurProfile?.siret ? `SIRET : ${apporteurProfile.siret}` : ""}
-    </div>
-    <div class="section" style="flex:1;">
-      <div class="section-title">Destinataire</div>
-      <strong>ETHICARENA</strong><br/>
-    </div>
-  </div>
-
-  ${commissionLines.length > 0 ? `
-  <table>
-    <thead>
-      <tr>
-        <th>Client</th>
-        <th>Montant encaissé</th>
-        <th>Date paiement</th>
-        <th>% Commission</th>
-        <th style="text-align:right;">Montant commission</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${commissionLines.map((l: any) => `
-      <tr>
-        <td>${l.client_name}</td>
-        <td>${Number(l.payment_amount).toLocaleString("fr-FR")} €</td>
-        <td>${new Date(l.payment_date).toLocaleDateString("fr-FR")}</td>
-        <td>${l.commission_percentage}%</td>
-        <td style="text-align:right;">${Number(l.commission_amount).toLocaleString("fr-FR")} €</td>
-      </tr>`).join("")}
-    </tbody>
-  </table>` : ""}
-
-  ${fixedSalaryLine ? `
-  <table style="margin-top: ${commissionLines.length > 0 ? '8' : '16'}px;">
-    ${commissionLines.length === 0 ? `
-    <thead>
-      <tr>
-        <th>Description</th>
-        <th style="text-align:right;">Montant</th>
-      </tr>
-    </thead>` : ""}
-    <tbody>
-      <tr class="fixed-salary-row">
-        <td ${commissionLines.length > 0 ? 'colspan="4"' : ''}>Salaire fixe mensuel</td>
-        <td style="text-align:right;">${Number(fixedSalaryLine.commission_amount).toLocaleString("fr-FR")} €</td>
-      </tr>
-    </tbody>
-  </table>` : ""}
-
-  <table style="margin-top: 4px;">
-    <tbody>
-      <tr class="total-row">
-        <td ${commissionLines.length > 0 ? 'colspan="4"' : ''}>TOTAL</td>
-        <td style="text-align:right;">${totalAmount.toLocaleString("fr-FR")} €</td>
-      </tr>
-    </tbody>
-  </table>
-
-  ${bankDetails ? `
-  <div class="bank-info">
-    <div class="section-title">Coordonnées bancaires</div>
-    ${bankDetails.account_holder ? `<p><strong>Titulaire :</strong> ${bankDetails.account_holder}</p>` : ""}
-    ${bankDetails.iban ? `<p><strong>IBAN :</strong> ${bankDetails.iban.replace(/(.{4})/g, "$1 ").trim()}</p>` : ""}
-    ${bankDetails.bic ? `<p><strong>BIC :</strong> ${bankDetails.bic}</p>` : ""}
-    ${bankDetails.bank_name ? `<p><strong>Banque :</strong> ${bankDetails.bank_name}</p>` : ""}
-  </div>` : ""}
-
-  <div class="footer">
-    TVA non applicable, article 293 B du CGI.<br/>
-    Facture générée automatiquement par Ethicarena.
-  </div>
-</body>
-</html>`;
+    const htmlContent = buildInvoiceHtml({
+      invoiceNumber,
+      month,
+      year,
+      apporteurProfile,
+      commissionLines,
+      fixedSalaryLine,
+      totalAmount,
+      bankDetails,
+    });
 
     // Upload HTML to storage
     const filePath = `${apporteur_id}/${invoiceNumber}.html`;
