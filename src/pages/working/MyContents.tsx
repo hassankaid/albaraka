@@ -76,40 +76,42 @@ function ContentRow({
   return (
     <div
       onClick={() => onResume(content.id)}
-      className="flex items-center gap-3 px-4 h-14 border-b last:border-b-0 hover:bg-muted/50 cursor-pointer transition-colors group"
+      className="grid items-center px-4 h-12 border-b last:border-b-0 hover:bg-muted/50 cursor-pointer transition-colors group"
+      style={{ gridTemplateColumns: "2fr 1.2fr 90px 120px 100px 60px" }}
     >
-      {/* Title — fixed width, truncated */}
-      <p className="font-medium text-sm text-foreground truncate w-[260px] shrink-0">
+      {/* Title */}
+      <p className="font-medium text-sm text-foreground truncate pr-4">
         {content.title || "Sans titre"}
       </p>
 
-      {/* Theme + Format — compact */}
-      <span className="hidden md:block text-xs text-muted-foreground truncate w-[160px] shrink-0">
-        {theme ? `${theme.emoji} ${theme.label}` : "—"}
-        {fmt ? ` · ${fmt.emoji} ${fmt.label}` : ""}
-      </span>
+      {/* Theme · Format — full label, no truncation issues */}
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground pr-4">
+        {theme && <span className="truncate">{theme.emoji} {theme.label}</span>}
+        {theme && fmt && <span className="shrink-0">·</span>}
+        {fmt && <span className="truncate">{fmt.emoji} {fmt.label}</span>}
+      </div>
 
       {/* Status */}
-      <Badge variant="outline" className={`${statusConfig.badgeClass} text-[11px] shrink-0`}>
-        <StatusIcon className="h-3 w-3 mr-1" />
-        {statusConfig.label}
-      </Badge>
+      <div>
+        <Badge variant="outline" className={`${statusConfig.badgeClass} text-[11px]`}>
+          <StatusIcon className="h-3 w-3 mr-1" />
+          {statusConfig.label}
+        </Badge>
+      </div>
 
-      {/* Progress bar */}
-      <div className="hidden sm:flex items-center gap-2 shrink-0 w-24">
-        <div className="h-1.5 rounded-full bg-secondary overflow-hidden flex-1">
+      {/* Progress — bar + percentage */}
+      <div className="flex items-center gap-2.5">
+        <div className="h-1.5 rounded-full bg-secondary overflow-hidden w-16">
           <div
             className="h-full rounded-full bg-primary transition-all"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-        <span className="text-[11px] text-muted-foreground tabular-nums w-7 text-right">
-          {content.current_step}/5
-        </span>
+        <span className="text-xs text-muted-foreground tabular-nums">{progressPercent}%</span>
       </div>
 
-      {/* Relative date */}
-      <span className="hidden lg:block text-[11px] text-muted-foreground shrink-0 w-24 text-right truncate">
+      {/* Date */}
+      <span className="text-xs text-muted-foreground text-right truncate">
         {formatDistanceToNow(new Date(content.updated_at), {
           addSuffix: true,
           locale: fr,
@@ -117,7 +119,7 @@ function ContentRow({
       </span>
 
       {/* Actions */}
-      <div className="ml-auto shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
           <Play className="h-3.5 w-3.5" />
         </Button>
@@ -265,13 +267,16 @@ export default function MyContents() {
             ) : (
               <Card>
                 {/* Header row */}
-                <div className="flex items-center gap-3 px-4 h-9 border-b text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-                  <span className="w-[260px] shrink-0">Titre</span>
-                  <span className="hidden md:block w-[160px] shrink-0">Thème · Format</span>
-                  <span className="shrink-0">Statut</span>
-                  <span className="hidden sm:block w-24 shrink-0">Progression</span>
-                  <span className="hidden lg:block w-24 shrink-0 text-right">Modifié</span>
-                  <span className="ml-auto shrink-0 w-[60px]" />
+                <div
+                  className="grid items-center px-4 h-9 border-b text-[11px] font-medium text-muted-foreground uppercase tracking-wide"
+                  style={{ gridTemplateColumns: "2fr 1.2fr 90px 120px 100px 60px" }}
+                >
+                  <span>Titre</span>
+                  <span>Thème · Format</span>
+                  <span>Statut</span>
+                  <span>Progression</span>
+                  <span className="text-right">Modifié</span>
+                  <span />
                 </div>
                 {filteredContents.map((content) => (
                   <ContentRow
