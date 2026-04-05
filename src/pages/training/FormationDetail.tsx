@@ -160,7 +160,15 @@ export default function FormationDetail() {
     progressPct,
   } = data;
   const isDraft = formation.status === "draft";
-  const defaultOpen = modules.length > 0 ? [modules[0].id] : [];
+  const firstIncompleteModule = modules.find((m) => {
+    const visibleChapitres = m.chapitres.filter(c => c.status === "published" || isCeo);
+    return visibleChapitres.some(c => !completedSet.has(c.id));
+  });
+  const defaultOpen = firstIncompleteModule
+    ? [firstIncompleteModule.id]
+    : modules.length > 0
+    ? [modules[modules.length - 1].id]
+    : [];
 
   return (
     <div className="space-y-6">
@@ -219,8 +227,7 @@ export default function FormationDetail() {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          <Accordion type="multiple" defaultValue={defaultOpen}>
+          <Accordion type="multiple" defaultValue={defaultOpen} className="space-y-4">
             {modules.map((module, idx) => {
               const modDraft = module.status === "draft";
               const modChapitresVisible = module.chapitres.filter(
@@ -318,7 +325,6 @@ export default function FormationDetail() {
               );
             })}
           </Accordion>
-        </div>
       )}
     </div>
   );
