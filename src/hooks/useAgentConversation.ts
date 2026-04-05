@@ -142,6 +142,29 @@ export function useDeleteAgentConversation() {
   });
 }
 
+export function useRenameAgentConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: { id: string; title: string }) => {
+      const { data, error } = await (supabase as any)
+        .from("agent_conversations")
+        .update({ title: input.title })
+        .eq("id", input.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as AgentConversation;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["agent-conversations"] });
+      queryClient.invalidateQueries({
+        queryKey: ["agent-conversations", "detail", data.id],
+      });
+    },
+  });
+}
+
 export async function callAgentProspect(
   messages: { role: "user" | "assistant"; content: string }[],
   contextType: AgentContextType

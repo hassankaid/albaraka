@@ -5,11 +5,16 @@ import { ChevronDown, Copy, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import type { AgentObjection } from "./objections";
 
+function cleanQuotes(text: string): string {
+  return text.replace(/^['"`]/, "").replace(/['"`]$/, "").trim();
+}
+
 export function ObjectionCard({ objection }: { objection: AgentObjection }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(objection.bonne_reponse);
+    const textToCopy = objection.verbatim || objection.bonne_reponse;
+    navigator.clipboard.writeText(textToCopy);
     toast.success("Réponse copiée !");
   };
 
@@ -20,9 +25,9 @@ export function ObjectionCard({ objection }: { objection: AgentObjection }) {
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="space-y-0.5">
-          <p className="font-medium text-sm">{objection.situation}</p>
+          <p className="font-medium text-sm">{cleanQuotes(objection.situation)}</p>
           {objection.question && (
-            <p className="text-xs text-muted-foreground">{objection.question}</p>
+            <p className="text-xs text-muted-foreground">{cleanQuotes(objection.question)}</p>
           )}
         </div>
         <ChevronDown
@@ -70,10 +75,24 @@ export function ObjectionCard({ objection }: { objection: AgentObjection }) {
               </div>
               <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={handleCopy}>
                 <Copy className="h-3 w-3 mr-1" />
-                Copier
+                Copier la réponse
               </Button>
             </div>
-            <p className="text-sm text-foreground leading-relaxed pl-5">
+
+            {/* Verbatim à copier (si disponible) mis en avant */}
+            {objection.verbatim && (
+              <div className="rounded-lg border border-purple-500/30 bg-purple-500/5 p-3 ml-5">
+                <p className="text-[10px] font-semibold text-purple-500 uppercase tracking-wider mb-1">
+                  💬 À envoyer au prospect
+                </p>
+                <p className="text-sm text-foreground leading-relaxed font-medium">
+                  {objection.verbatim}
+                </p>
+              </div>
+            )}
+
+            {/* Commentaire tactique / explication */}
+            <p className="text-sm text-muted-foreground leading-relaxed pl-5">
               {objection.bonne_reponse}
             </p>
           </div>
