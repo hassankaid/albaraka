@@ -46,6 +46,7 @@ import AgentIA from "./pages/working/AgentIA";
 import TrainingList from "./pages/training/TrainingList";
 import FormationDetail from "./pages/training/FormationDetail";
 import ChapterViewer from "./pages/training/ChapterViewer";
+import AdminTrainingList from "./pages/training/admin/AdminTrainingList";
 
 const queryClient = new QueryClient();
 
