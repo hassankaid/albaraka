@@ -100,6 +100,7 @@ const App = () => (
                   <Route path="/my-space/commissions" element={<ApporteurCommissions />} />
                   <Route path="/my-space/profile" element={<ApporteurProfile />} />
                   <Route path="/working/activity" element={<MyActivity />} />
+                  <Route path="/training" element={<TrainingList />} />
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />

@@ -20,6 +20,7 @@ const mainNavItems: NavItem[] = [
   { title: "Mes Ventes", path: "/my-space/sales", icon: BadgeEuro },
   { title: "Commissions & Factures", path: "/my-space/commissions", icon: Receipt },
   { title: "Mon Profil", path: "/my-space/profile", icon: Settings },
+  { title: "Formation", path: "/training", icon: GraduationCap },
 ];
 
 const coachingNavItems: NavItem[] = [
