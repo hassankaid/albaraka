@@ -33,8 +33,7 @@ import {
   Send,
 } from "lucide-react";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
-import { fr } from "date-fns/locale";
+import { differenceInMinutes, differenceInHours, differenceInDays } from "date-fns";
 import { THEMES, FORMATS } from "./content-wizard/constants";
 
 const STATUS_CONFIG: Record<
