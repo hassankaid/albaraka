@@ -88,6 +88,7 @@ const App = () => (
                   <Route path="/working" element={<Navigate to="/working/activity" replace />} />
                   <Route path="/training" element={<TrainingList />} />
                   <Route path="/training/:slug" element={<FormationDetail />} />
+                  <Route path="/training/:slug/chapitre/:chapitreId" element={<ChapterViewer />} />
                   <Route path="/training/scripts/setting" element={<ScriptsSetting />} />
                   <Route path="/training/scripts/closing" element={<ScriptsClosing />} />
                   <Route path="/working/content" element={<ContentGenerator />} />
