@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import logo from "@/assets/ethicarena-logo.png";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X, ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp } from "lucide-react";
+import { BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X, ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp, GraduationCap } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -20,6 +20,7 @@ const mainNavItems: NavItem[] = [
   { title: "Mes Ventes", path: "/my-space/sales", icon: BadgeEuro },
   { title: "Commissions & Factures", path: "/my-space/commissions", icon: Receipt },
   { title: "Mon Profil", path: "/my-space/profile", icon: Settings },
+  { title: "Formation", path: "/training", icon: GraduationCap },
 ];
 
 const coachingNavItems: NavItem[] = [
@@ -34,6 +35,7 @@ const pageTitles: Record<string, string> = {
   "/my-space/profile": "Mon Profil",
   "/mon-coaching": "Historique",
   "/working/activity": "Mon Activité",
+  "/training": "Formation",
 };
 
 export default function ApporteurLayout() {

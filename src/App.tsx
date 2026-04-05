@@ -43,6 +43,7 @@ import ContentGenerator from "./pages/working/ContentGenerator";
 import MyContents from "./pages/working/MyContents";
 import MyActivity from "./pages/working/MyActivity";
 import AgentIA from "./pages/working/AgentIA";
+import TrainingList from "./pages/training/TrainingList";
 
 const queryClient = new QueryClient();
 
@@ -83,7 +84,7 @@ const App = () => (
                   <Route path="/mon-coaching/session/:sessionId" element={<SessionDetail />} />
                   <Route path="/admin/coaching" element={<AdminCoaching />} />
                   <Route path="/working" element={<Navigate to="/working/activity" replace />} />
-                  <Route path="/training" element={<Navigate to="/training/scripts/setting" replace />} />
+                  <Route path="/training" element={<TrainingList />} />
                   <Route path="/training/scripts/setting" element={<ScriptsSetting />} />
                   <Route path="/training/scripts/closing" element={<ScriptsClosing />} />
                   <Route path="/working/content" element={<ContentGenerator />} />
@@ -99,6 +100,7 @@ const App = () => (
                   <Route path="/my-space/commissions" element={<ApporteurCommissions />} />
                   <Route path="/my-space/profile" element={<ApporteurProfile />} />
                   <Route path="/working/activity" element={<MyActivity />} />
+                  <Route path="/training" element={<TrainingList />} />
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />

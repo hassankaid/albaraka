@@ -42,6 +42,7 @@ const adminNavItems: NavItem[] = [
 ];
 
 const trainingNavItems: NavItem[] = [
+  { title: "Formation", path: "/training", icon: GraduationCap, roles: ["ceo", "collaborateur"] },
   { title: "Scripts Setting", path: "/training/scripts/setting", icon: MessageSquare, roles: ["ceo", "collaborateur"] },
   { title: "Scripts Closing", path: "/training/scripts/closing", icon: Phone, roles: ["ceo", "collaborateur"] },
 ];
@@ -75,6 +76,7 @@ const pageTitles: Record<string, string> = {
   "/working/agent": "Agent IA",
   "/training/scripts/setting": "Scripts Setting",
   "/training/scripts/closing": "Scripts Closing",
+  "/training": "Formation",
 };
 
 export default function DashboardLayout() {

@@ -434,6 +434,120 @@ export type Database = {
           },
         ]
       }
+      chapitre_progress: {
+        Row: {
+          chapitre_id: string
+          completed_at: string
+          id: string
+          time_spent_seconds: number
+          user_id: string
+        }
+        Insert: {
+          chapitre_id: string
+          completed_at?: string
+          id?: string
+          time_spent_seconds?: number
+          user_id: string
+        }
+        Update: {
+          chapitre_id?: string
+          completed_at?: string
+          id?: string
+          time_spent_seconds?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapitre_progress_chapitre_id_fkey"
+            columns: ["chapitre_id"]
+            isOneToOne: false
+            referencedRelation: "formation_chapitres"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chapitre_ressources: {
+        Row: {
+          chapitre_id: string
+          created_at: string
+          id: string
+          ordre: number
+          titre: string
+          type: string
+          url: string
+        }
+        Insert: {
+          chapitre_id: string
+          created_at?: string
+          id?: string
+          ordre?: number
+          titre: string
+          type: string
+          url: string
+        }
+        Update: {
+          chapitre_id?: string
+          created_at?: string
+          id?: string
+          ordre?: number
+          titre?: string
+          type?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapitre_ressources_chapitre_id_fkey"
+            columns: ["chapitre_id"]
+            isOneToOne: false
+            referencedRelation: "formation_chapitres"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chapitre_videos: {
+        Row: {
+          chapitre_id: string
+          created_at: string
+          duree_secondes: number | null
+          id: string
+          ordre: number
+          titre: string
+          updated_at: string
+          url: string | null
+          vimeo_id: string | null
+        }
+        Insert: {
+          chapitre_id: string
+          created_at?: string
+          duree_secondes?: number | null
+          id?: string
+          ordre?: number
+          titre: string
+          updated_at?: string
+          url?: string | null
+          vimeo_id?: string | null
+        }
+        Update: {
+          chapitre_id?: string
+          created_at?: string
+          duree_secondes?: number | null
+          id?: string
+          ordre?: number
+          titre?: string
+          updated_at?: string
+          url?: string | null
+          vimeo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapitre_videos_chapitre_id_fkey"
+            columns: ["chapitre_id"]
+            isOneToOne: false
+            referencedRelation: "formation_chapitres"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coach_criteria: {
         Row: {
           created_at: string | null
@@ -1044,6 +1158,180 @@ export type Database = {
         }
         Relationships: []
       }
+      formation_chapitres: {
+        Row: {
+          created_at: string
+          description: string | null
+          duree_estimee_minutes: number | null
+          id: string
+          legacy_id: string | null
+          module_id: string
+          ordre: number
+          status: string
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duree_estimee_minutes?: number | null
+          id?: string
+          legacy_id?: string | null
+          module_id: string
+          ordre?: number
+          status?: string
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duree_estimee_minutes?: number | null
+          id?: string
+          legacy_id?: string | null
+          module_id?: string
+          ordre?: number
+          status?: string
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formation_chapitres_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "formation_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formation_enrollments: {
+        Row: {
+          formation_id: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+          notes: string | null
+          revoked_at: string | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          formation_id: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          revoked_at?: string | null
+          source?: string
+          user_id: string
+        }
+        Update: {
+          formation_id?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          revoked_at?: string | null
+          source?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formation_enrollments_formation_id_fkey"
+            columns: ["formation_id"]
+            isOneToOne: false
+            referencedRelation: "formations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formation_modules: {
+        Row: {
+          created_at: string
+          description: string | null
+          formation_id: string
+          id: string
+          legacy_id: string | null
+          ordre: number
+          status: string
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          formation_id: string
+          id?: string
+          legacy_id?: string | null
+          ordre?: number
+          status?: string
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          formation_id?: string
+          id?: string
+          legacy_id?: string | null
+          ordre?: number
+          status?: string
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formation_modules_formation_id_fkey"
+            columns: ["formation_id"]
+            isOneToOne: false
+            referencedRelation: "formations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formations: {
+        Row: {
+          couleur: string | null
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          legacy_id: string | null
+          ordre: number
+          slug: string
+          status: string
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          couleur?: string | null
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          legacy_id?: string | null
+          ordre?: number
+          slug: string
+          status?: string
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          couleur?: string | null
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          legacy_id?: string | null
+          ordre?: number
+          slug?: string
+          status?: string
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoice_lines: {
         Row: {
           client_name: string
@@ -1556,6 +1844,41 @@ export type Database = {
           },
         ]
       }
+      video_progress: {
+        Row: {
+          completed: boolean
+          id: string
+          last_watched_at: string
+          user_id: string
+          video_id: string
+          watched_seconds: number
+        }
+        Insert: {
+          completed?: boolean
+          id?: string
+          last_watched_at?: string
+          user_id: string
+          video_id: string
+          watched_seconds?: number
+        }
+        Update: {
+          completed?: boolean
+          id?: string
+          last_watched_at?: string
+          user_id?: string
+          video_id?: string
+          watched_seconds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_progress_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "chapitre_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       calls_enriched: {
@@ -1730,7 +2053,16 @@ export type Database = {
         Args: { p_email: string; p_full_name?: string; p_phone: string }
         Returns: string
       }
+      get_formation_progress: {
+        Args: { p_formation_id: string; p_user_id: string }
+        Returns: number
+      }
       get_user_role: { Args: never; Returns: string }
+      has_formation_enrollment: {
+        Args: { p_formation_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_ceo: { Args: { p_user_id: string }; Returns: boolean }
       normalize_phone_e164: { Args: { phone: string }; Returns: string }
       rebalance_commission_group: {
         Args: {
