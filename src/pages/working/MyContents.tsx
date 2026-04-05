@@ -57,6 +57,29 @@ const STATUS_CONFIG: Record<
   },
 };
 
+function computeRealProgress(c: ContentPiece): number {
+  let steps = 0;
+  if (c.selected_idea) steps++;
+  if (c.script) steps++;
+  if (c.montage_checklist && Object.values(c.montage_checklist).some(Boolean)) steps++;
+  if (c.description) steps++;
+  if (c.publication_checklist && Object.values(c.publication_checklist).some(Boolean)) steps++;
+  return Math.round((steps / 5) * 100);
+}
+
+function shortTimeAgo(dateStr: string): string {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const mins = differenceInMinutes(now, date);
+  if (mins < 1) return "< 1 min";
+  if (mins < 60) return `${mins} min`;
+  const hours = differenceInHours(now, date);
+  if (hours < 24) return `${hours} h`;
+  const days = differenceInDays(now, date);
+  if (days < 30) return `${days} j`;
+  return `${Math.floor(days / 30)} mois`;
+}
+
 function ContentRow({
   content,
   onResume,
