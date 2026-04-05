@@ -40,6 +40,7 @@ import Working from "./pages/Working";
 import ScriptsSetting from "./pages/working/ScriptsSetting";
 import ScriptsClosing from "./pages/working/ScriptsClosing";
 import ContentGenerator from "./pages/working/ContentGenerator";
+import MyContents from "./pages/working/MyContents";
 import MyActivity from "./pages/working/MyActivity";
 
 const queryClient = new QueryClient();
@@ -85,6 +86,7 @@ const App = () => (
                   <Route path="/training/scripts/setting" element={<ScriptsSetting />} />
                   <Route path="/training/scripts/closing" element={<ScriptsClosing />} />
                   <Route path="/working/content" element={<ContentGenerator />} />
+                  <Route path="/working/contents" element={<MyContents />} />
                   <Route path="/working/activity" element={<MyActivity />} />
                 </Route>
                 {/* Apporteur layout */}
