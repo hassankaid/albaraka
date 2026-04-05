@@ -84,7 +84,7 @@ const App = () => (
                   <Route path="/mon-coaching/session/:sessionId" element={<SessionDetail />} />
                   <Route path="/admin/coaching" element={<AdminCoaching />} />
                   <Route path="/working" element={<Navigate to="/working/activity" replace />} />
-                  <Route path="/training" element={<Navigate to="/training/scripts/setting" replace />} />
+                  <Route path="/training" element={<TrainingList />} />
                   <Route path="/training/scripts/setting" element={<ScriptsSetting />} />
                   <Route path="/training/scripts/closing" element={<ScriptsClosing />} />
                   <Route path="/working/content" element={<ContentGenerator />} />
