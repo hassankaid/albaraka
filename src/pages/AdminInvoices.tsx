@@ -408,12 +408,12 @@ export default function AdminInvoices() {
     if (!inv.pdf_url) return;
     setDownloading(inv.id);
     try {
-      const html = await fetchInvoiceHtml(inv.pdf_url);
-      await downloadInvoicePdf(inv.invoice_number, html);
-    } catch {
-      toast({ title: "Erreur", description: "Impossible de télécharger la facture", variant: "destructive" });
-    } finally {
-      setDownloading(null);
+      await downloadInvoicePdf(inv.invoice_number, inv.pdf_url, inv.id);
+      } catch (err) {
+      const msg = err instanceof Error ? err.message : "Impossible de télécharger la facture";
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
+      } finally {
+    setDownloading(null);
     }
   };
 
@@ -487,27 +487,21 @@ export default function AdminInvoices() {
 
   const handleBulkDownload = async (invoicesToDownload: InvoiceRow[]) => {
     const withPdf = invoicesToDownload.filter(inv => inv.pdf_url);
-    if (withPdf.length === 0) {
-      toast({ title: "Aucune facture", description: "Aucune facture avec PDF à télécharger", variant: "destructive" });
-      return;
-    }
-
-    // Single invoice → direct download (no zip)
     if (withPdf.length === 1) {
-      setBulkDownloading(true);
-      setBulkDownloadProgress(0);
-      setBulkDownloadTotal(1);
-      try {
-        const html = await fetchInvoiceHtml(withPdf[0].pdf_url!);
-        await downloadInvoicePdf(withPdf[0].invoice_number, html);
-        setBulkDownloadProgress(1);
-        toast({ title: "Téléchargement terminé", description: "1 facture téléchargée" });
-      } catch {
-        toast({ title: "Erreur", description: "Impossible de télécharger la facture", variant: "destructive" });
-      }
-      setBulkDownloading(false);
-      return;
-    }
+  setBulkDownloading(true);
+  setBulkDownloadProgress(0);
+  setBulkDownloadTotal(1);
+  try {
+    await downloadInvoicePdf(withPdf[0].invoice_number, withPdf[0].pdf_url!, withPdf[0].id);
+    setBulkDownloadProgress(1);
+    toast({ title: "Téléchargement terminé", description: "1 facture téléchargée" });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Impossible de télécharger la facture";
+    toast({ title: "Erreur", description: msg, variant: "destructive" });
+  }
+  setBulkDownloading(false);
+  return;
+}
 
     setBulkDownloading(true);
     setBulkDownloadProgress(0);
@@ -518,16 +512,19 @@ export default function AdminInvoices() {
     let errorCount = 0;
 
     for (let i = 0; i < withPdf.length; i++) {
-      try {
-        const html = await fetchInvoiceHtml(withPdf[i].pdf_url!);
-        const blob = await generateInvoicePdfBlob(withPdf[i].invoice_number, html);
-        zip.file(`${withPdf[i].invoice_number}.pdf`, blob);
-        successCount++;
-      } catch {
-        errorCount++;
-      }
-      setBulkDownloadProgress(i + 1);
-    }
+  try {
+    const blob = await generateInvoicePdfBlob(
+      withPdf[i].invoice_number,
+      withPdf[i].pdf_url!,
+      withPdf[i].id
+    );
+    zip.file(`${withPdf[i].invoice_number}.pdf`, blob);
+    successCount++;
+  } catch {
+    errorCount++;
+  }
+  setBulkDownloadProgress(i + 1);
+}
 
     if (successCount > 0) {
       const zipBlob = await zip.generateAsync({ type: "blob" });
