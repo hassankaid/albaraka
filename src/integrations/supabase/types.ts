@@ -2049,6 +2049,7 @@ export type Database = {
         Args: { p_sale_id: string }
         Returns: string
       }
+      duplicate_formation: { Args: { p_formation_id: string }; Returns: string }
       find_or_create_contact: {
         Args: { p_email: string; p_full_name?: string; p_phone: string }
         Returns: string
@@ -2084,6 +2085,10 @@ export type Database = {
           p_role: string
           p_sale_id: string
         }
+        Returns: undefined
+      }
+      reorder_formations: {
+        Args: { p_formation_ids: string[] }
         Returns: undefined
       }
       set_chapter_completion: {

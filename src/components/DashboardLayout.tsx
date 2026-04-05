@@ -43,6 +43,7 @@ const adminNavItems: NavItem[] = [
 
 const trainingNavItems: NavItem[] = [
   { title: "Formation", path: "/training", icon: GraduationCap, roles: ["ceo", "collaborateur"] },
+  { title: "Gestion", path: "/admin/training", icon: Settings2, roles: ["ceo"] },
   { title: "Scripts Setting", path: "/training/scripts/setting", icon: MessageSquare, roles: ["ceo", "collaborateur"] },
   { title: "Scripts Closing", path: "/training/scripts/closing", icon: Phone, roles: ["ceo", "collaborateur"] },
 ];
@@ -77,6 +78,7 @@ const pageTitles: Record<string, string> = {
   "/training/scripts/setting": "Scripts Setting",
   "/training/scripts/closing": "Scripts Closing",
   "/training": "Formation",
+  "/admin/training": "Gestion des formations",
 };
 
 export default function DashboardLayout() {
@@ -105,8 +107,8 @@ export default function DashboardLayout() {
   const userRole = profile?.role || "apporteur";
   const isCeo = profile?.role === "ceo";
   const isCoachingSpace = location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching") || location.pathname === "/admin/coaching";
-  const isTrainingSpace = location.pathname.startsWith("/training");
-  const isAdminSpace = location.pathname.startsWith("/admin/") && location.pathname !== "/admin/coaching";
+  const isTrainingSpace = location.pathname.startsWith("/training") || location.pathname.startsWith("/admin/training");
+  const isAdminSpace = location.pathname.startsWith("/admin/") && location.pathname !== "/admin/coaching" && !location.pathname.startsWith("/admin/training");
 
   // Dynamic page title: CEO sees "Suivi Activité" instead of "Mon Activité"
   const rawTitle = pageTitles[location.pathname] || "Dashboard";
