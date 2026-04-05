@@ -2,6 +2,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Fetches the HTML version of an invoice for preview purposes.
+ * The preview intentionally does NOT trigger a regeneration — it reads the HTML sibling
+ * from Storage for a fast visual check. Use downloadInvoicePdf() when the user needs
+ * a guaranteed-fresh PDF on disk.
  */
 export async function fetchInvoiceHtml(storedPath: string): Promise<string> {
   const htmlPath = storedPath.endsWith(".pdf")
@@ -24,10 +27,10 @@ export async function fetchInvoiceHtml(storedPath: string): Promise<string> {
 }
 
 /**
- * Forces the edge function to regenerate the PDF for a given invoice.
- * Used by the "Regenerate" admin button and by downloadInvoicePdf(forceRegenerate=true).
+ * Calls the edge function to regenerate an invoice's HTML + PDF in Storage.
+ * Returns when the fresh files are uploaded and apporteur_invoices.pdf_url is updated.
  */
-export async function regenerateInvoicePdf(invoiceId: string): Promise<void> {
+async function invokeRegeneration(invoiceId: string): Promise<void> {
   const { data: invoice, error: invErr } = await supabase
     .from("apporteur_invoices")
     .select("apporteur_id, period_month, period_year")
@@ -58,82 +61,48 @@ export async function regenerateInvoicePdf(invoiceId: string): Promise<void> {
 }
 
 /**
+ * Public helper kept for backward compatibility with any caller that wants
+ * to explicitly regenerate without downloading.
+ */
+export async function regenerateInvoicePdf(invoiceId: string): Promise<void> {
+  await invokeRegeneration(invoiceId);
+}
+
+/**
  * Downloads the canonical PDF for an invoice.
  *
- * - If forceRegenerate is true, calls the edge function first to overwrite the stored PDF,
- *   then downloads the fresh result.
- * - Otherwise, tries to download the stored .pdf directly.
- * - If no .pdf exists (legacy), falls back to regeneration automatically.
+ * Every click triggers a fresh server-side regeneration before download. This guarantees:
+ *   - The PDF always reflects the latest data in the database.
+ *   - The PDF always reflects the latest version of the edge function (template, layout, fixes).
+ *   - No stale cached PDFs are ever served.
+ *
+ * The trade-off is a 2–6 second latency per download depending on the number of lines.
+ * This is intentional and acceptable for invoice use cases where freshness matters more
+ * than instant downloads.
  */
 export async function downloadInvoicePdf(
   invoiceNumber: string,
   storedPath: string,
-  invoiceId?: string,
-  forceRegenerate = false
+  invoiceId?: string
 ): Promise<void> {
   const pdfPath = storedPath.endsWith(".pdf")
     ? storedPath
     : storedPath.replace(/\.html$/, ".pdf");
 
-  if (forceRegenerate && invoiceId) {
-    await regenerateInvoicePdf(invoiceId);
+  if (!invoiceId) {
+    throw new Error("invoiceId requis pour régénérer la facture");
   }
 
-  let blob: Blob | null = null;
+  // Always regenerate first — this is the whole point of this function.
+  await invokeRegeneration(invoiceId);
 
-  if (!forceRegenerate) {
-    try {
-      const { data, error } = await supabase.storage
-        .from("invoices")
-        .download(pdfPath);
-      if (!error && data) {
-        blob = data;
-      }
-    } catch {
-      // fall through
-    }
-  }
+  // Then fetch the freshly uploaded PDF from Storage.
+  const { data: blob, error } = await supabase.storage
+    .from("invoices")
+    .download(pdfPath);
 
-  if (!blob && invoiceId) {
-    if (!forceRegenerate) {
-      const { data: invoice } = await supabase
-        .from("apporteur_invoices")
-        .select("apporteur_id, period_month, period_year")
-        .eq("id", invoiceId)
-        .maybeSingle();
-
-      if (invoice) {
-        const { data: regenResult, error: regenError } =
-          await supabase.functions.invoke("generate-apporteur-invoice", {
-            body: {
-              apporteur_id: invoice.apporteur_id,
-              month: invoice.period_month,
-              year: invoice.period_year,
-              regenerate: true,
-            },
-          });
-
-        if (regenError || (regenResult as any)?.error) {
-          throw new Error(
-            (regenResult as any)?.error ??
-              regenError?.message ??
-              "Impossible de régénérer la facture"
-          );
-        }
-      }
-    }
-
-    const { data, error } = await supabase.storage
-      .from("invoices")
-      .download(pdfPath);
-    if (error || !data) {
-      throw new Error("Impossible de télécharger le PDF après régénération");
-    }
-    blob = data;
-  }
-
-  if (!blob) {
-    throw new Error("Impossible de télécharger la facture");
+  if (error || !blob) {
+    throw new Error("Impossible de télécharger le PDF après régénération");
   }
 
   const url = URL.createObjectURL(blob);
@@ -147,63 +116,31 @@ export async function downloadInvoicePdf(
 }
 
 /**
- * Returns the PDF as a Blob — used by the bulk download zipper.
+ * Returns a fresh PDF as a Blob — used by the bulk download zipper.
+ * Same always-regenerate behavior as downloadInvoicePdf.
  */
 export async function generateInvoicePdfBlob(
   invoiceNumber: string,
   storedPath: string,
-  invoiceId?: string,
-  forceRegenerate = false
+  invoiceId?: string
 ): Promise<Blob> {
   const pdfPath = storedPath.endsWith(".pdf")
     ? storedPath
     : storedPath.replace(/\.html$/, ".pdf");
 
-  if (forceRegenerate && invoiceId) {
-    await regenerateInvoicePdf(invoiceId);
+  if (!invoiceId) {
+    throw new Error(`invoiceId requis pour régénérer ${invoiceNumber}`);
   }
 
-  if (!forceRegenerate) {
-    try {
-      const { data, error } = await supabase.storage
-        .from("invoices")
-        .download(pdfPath);
-      if (!error && data) {
-        return data;
-      }
-    } catch {
-      // fall through
-    }
+  await invokeRegeneration(invoiceId);
+
+  const { data, error } = await supabase.storage
+    .from("invoices")
+    .download(pdfPath);
+
+  if (error || !data) {
+    throw new Error(`Impossible de récupérer le PDF pour ${invoiceNumber}`);
   }
 
-  if (invoiceId) {
-    if (!forceRegenerate) {
-      const { data: invoice } = await supabase
-        .from("apporteur_invoices")
-        .select("apporteur_id, period_month, period_year")
-        .eq("id", invoiceId)
-        .maybeSingle();
-
-      if (invoice) {
-        await supabase.functions.invoke("generate-apporteur-invoice", {
-          body: {
-            apporteur_id: invoice.apporteur_id,
-            month: invoice.period_month,
-            year: invoice.period_year,
-            regenerate: true,
-          },
-        });
-      }
-    }
-
-    const { data, error } = await supabase.storage
-      .from("invoices")
-      .download(pdfPath);
-    if (error || !data) {
-      throw new Error("Impossible de récupérer le PDF après régénération");
-    }
-    return data;
-  }
-
-  throw new Error(`Aucun PDF disponible pour la facture ${invoiceNumber}`);
+  return data;
 }
