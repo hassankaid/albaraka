@@ -44,6 +44,7 @@ import MyContents from "./pages/working/MyContents";
 import MyActivity from "./pages/working/MyActivity";
 import AgentIA from "./pages/working/AgentIA";
 import TrainingList from "./pages/training/TrainingList";
+import FormationDetail from "./pages/training/FormationDetail";
 
 const queryClient = new QueryClient();
 

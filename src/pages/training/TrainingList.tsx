@@ -19,7 +19,7 @@ export default function TrainingList() {
       const { data, error } = await supabase
         .from("formations")
         .select("id, slug, titre, description, couleur, cover_url, status, ordre")
-        .order("ordre", { ascending: true });
+        .order("titre", { ascending: true });
       if (error) throw error;
       if (!data) return [];
 
