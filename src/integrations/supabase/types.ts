@@ -867,6 +867,74 @@ export type Database = {
         }
         Relationships: []
       }
+      content_pieces: {
+        Row: {
+          created_at: string | null
+          current_step: number | null
+          description: Json | null
+          format: string
+          id: string
+          ideas: Json | null
+          montage_checklist: Json | null
+          publication_checklist: Json | null
+          published_at: string | null
+          scheduled_for: string | null
+          script: Json | null
+          selected_idea: Json | null
+          status: string
+          theme: string
+          title: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_step?: number | null
+          description?: Json | null
+          format: string
+          id?: string
+          ideas?: Json | null
+          montage_checklist?: Json | null
+          publication_checklist?: Json | null
+          published_at?: string | null
+          scheduled_for?: string | null
+          script?: Json | null
+          selected_idea?: Json | null
+          status?: string
+          theme: string
+          title?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_step?: number | null
+          description?: Json | null
+          format?: string
+          id?: string
+          ideas?: Json | null
+          montage_checklist?: Json | null
+          publication_checklist?: Json | null
+          published_at?: string | null
+          scheduled_for?: string | null
+          script?: Json | null
+          selected_idea?: Json | null
+          status?: string
+          theme?: string
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_pieces_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fixed_charges: {
         Row: {
           amount: number
