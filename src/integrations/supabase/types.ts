@@ -2053,6 +2053,19 @@ export type Database = {
         Args: { p_email: string; p_full_name?: string; p_phone: string }
         Returns: string
       }
+      get_chapter_navigation: {
+        Args: { p_chapitre_id: string }
+        Returns: {
+          current_formation_id: string
+          current_formation_slug: string
+          next_chapitre_id: string
+          next_chapitre_titre: string
+          next_module_id: string
+          prev_chapitre_id: string
+          prev_chapitre_titre: string
+          prev_module_id: string
+        }[]
+      }
       get_formation_progress: {
         Args: { p_formation_id: string; p_user_id: string }
         Returns: number
@@ -2072,6 +2085,10 @@ export type Database = {
           p_sale_id: string
         }
         Returns: undefined
+      }
+      set_chapter_completion: {
+        Args: { p_chapitre_id: string; p_completed: boolean }
+        Returns: boolean
       }
     }
     Enums: {

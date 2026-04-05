@@ -45,6 +45,7 @@ import MyActivity from "./pages/working/MyActivity";
 import AgentIA from "./pages/working/AgentIA";
 import TrainingList from "./pages/training/TrainingList";
 import FormationDetail from "./pages/training/FormationDetail";
+import ChapterViewer from "./pages/training/ChapterViewer";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,7 @@ const App = () => (
                   <Route path="/working" element={<Navigate to="/working/activity" replace />} />
                   <Route path="/training" element={<TrainingList />} />
                   <Route path="/training/:slug" element={<FormationDetail />} />
+                  <Route path="/training/:slug/chapitre/:chapitreId" element={<ChapterViewer />} />
                   <Route path="/training/scripts/setting" element={<ScriptsSetting />} />
                   <Route path="/training/scripts/closing" element={<ScriptsClosing />} />
                   <Route path="/working/content" element={<ContentGenerator />} />
@@ -104,6 +106,7 @@ const App = () => (
                   <Route path="/working/activity" element={<MyActivity />} />
                   <Route path="/training" element={<TrainingList />} />
                   <Route path="/training/:slug" element={<FormationDetail />} />
+                  <Route path="/training/:slug/chapitre/:chapitreId" element={<ChapterViewer />} />
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />
