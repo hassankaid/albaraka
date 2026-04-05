@@ -160,7 +160,15 @@ export default function FormationDetail() {
     progressPct,
   } = data;
   const isDraft = formation.status === "draft";
-  const defaultOpen = modules.length > 0 ? [modules[0].id] : [];
+  const firstIncompleteModule = modules.find((m) => {
+    const visibleChapitres = m.chapitres.filter(c => c.status === "published" || isCeo);
+    return visibleChapitres.some(c => !completedSet.has(c.id));
+  });
+  const defaultOpen = firstIncompleteModule
+    ? [firstIncompleteModule.id]
+    : modules.length > 0
+    ? [modules[modules.length - 1].id]
+    : [];
 
   return (
     <div className="space-y-6">
