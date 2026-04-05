@@ -85,10 +85,10 @@ export function FormationCard({
           </span>
           <span>{Math.round(progress)}%</span>
         </div>
-        <div className="flex items-center justify-center gap-2 text-sm font-medium text-primary">
+        <Button variant="outline" size="sm" className="w-full gap-2 text-primary border-primary/30 hover:bg-primary/5">
           <Icon className="h-4 w-4" />
           {label}
-        </div>
+        </Button>
       </CardContent>
     </Card>
   );

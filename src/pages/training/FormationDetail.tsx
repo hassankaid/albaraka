@@ -325,7 +325,6 @@ export default function FormationDetail() {
               );
             })}
           </Accordion>
-        </div>
       )}
     </div>
   );
