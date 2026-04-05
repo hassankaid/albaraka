@@ -33,8 +33,7 @@ import {
   Send,
 } from "lucide-react";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
-import { fr } from "date-fns/locale";
+import { differenceInMinutes, differenceInHours, differenceInDays } from "date-fns";
 import { THEMES, FORMATS } from "./content-wizard/constants";
 
 const STATUS_CONFIG: Record<
@@ -58,6 +57,29 @@ const STATUS_CONFIG: Record<
   },
 };
 
+function computeRealProgress(c: ContentPiece): number {
+  let steps = 0;
+  if (c.selected_idea) steps++;
+  if (c.script) steps++;
+  if (c.montage_checklist && Object.values(c.montage_checklist).some(Boolean)) steps++;
+  if (c.description) steps++;
+  if (c.publication_checklist && Object.values(c.publication_checklist).some(Boolean)) steps++;
+  return Math.round((steps / 5) * 100);
+}
+
+function shortTimeAgo(dateStr: string): string {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const mins = differenceInMinutes(now, date);
+  if (mins < 1) return "< 1 min";
+  if (mins < 60) return `${mins} min`;
+  const hours = differenceInHours(now, date);
+  if (hours < 24) return `${hours} h`;
+  const days = differenceInDays(now, date);
+  if (days < 30) return `${days} j`;
+  return `${Math.floor(days / 30)} mois`;
+}
+
 function ContentRow({
   content,
   onResume,
@@ -71,7 +93,7 @@ function ContentRow({
   const StatusIcon = statusConfig.icon;
   const theme = THEMES.find((t) => t.id === content.theme);
   const fmt = FORMATS.find((f) => f.id === content.format);
-  const progressPercent = Math.round((content.current_step / 5) * 100);
+  const progressPercent = computeRealProgress(content);
 
   return (
     <div
@@ -111,11 +133,8 @@ function ContentRow({
       </div>
 
       {/* Date */}
-      <span className="text-xs text-muted-foreground truncate">
-        {formatDistanceToNow(new Date(content.updated_at), {
-          addSuffix: true,
-          locale: fr,
-        })}
+      <span className="text-xs text-muted-foreground whitespace-nowrap">
+        {shortTimeAgo(content.updated_at)}
       </span>
 
       {/* Actions — always visible */}
