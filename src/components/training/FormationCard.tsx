@@ -44,7 +44,10 @@ export function FormationCard({
       : { label: "Revoir", Icon: CheckCircle2 };
 
   return (
-    <Card className="overflow-hidden flex flex-col">
+    <Card
+      className="overflow-hidden flex flex-col cursor-pointer hover:border-primary/40 transition-colors"
+      onClick={onOpen}
+    >
       <div className="relative h-40 bg-muted">
         {formation.cover_url ? (
           <img
@@ -82,10 +85,10 @@ export function FormationCard({
           </span>
           <span>{Math.round(progress)}%</span>
         </div>
-        <Button onClick={onOpen} className="w-full gap-2" size="sm">
+        <div className="flex items-center justify-center gap-2 text-sm font-medium text-primary">
           <Icon className="h-4 w-4" />
           {label}
-        </Button>
+        </div>
       </CardContent>
     </Card>
   );
