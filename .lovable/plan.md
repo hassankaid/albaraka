@@ -1,30 +1,47 @@
 
 
-## Refonte affichage "Mes Contenus" — Double vue Cards + Liste
+## Corrections Training — 3 fixes
 
-### Objectif
+### Problemes identifies
 
-Ajouter un toggle Cards/Liste sur la page "Mes Contenus". La vue **Cards** sera aérée (max 2 colonnes, plus de padding, texte plus grand). La vue **Liste** sera un tableau stylisé avec une ligne par contenu.
+1. **Modules colles** — Le `space-y-4` est sur un div parent mais les `AccordionItem` sont enfants directs de `Accordion`, pas du div. Le gap ne s'applique pas correctement.
+2. **Bouton "Commencer" supprime** — La card est cliquable mais le label visuel (Commencer/Reprendre/Revoir) a ete retire. Il faut le remettre.
+3. **Module ouvert par defaut = le premier** — Il faut ouvrir le module qui contient le prochain chapitre non termine (ou le dernier module si tout est fait).
 
-### Ce qui change
+### Plan
 
-**1. Toggle vue** — Deux icônes (grille / liste) en haut à droite, à côté du bouton "Nouveau contenu". L'état est stocké en `localStorage` pour persister entre les sessions.
+**Fichier 1 : `src/pages/training/FormationDetail.tsx`**
 
-**2. Vue Cards (améliorée)**
-- Grille 1 colonne mobile, **2 colonnes max** sur desktop (au lieu de 3)
-- Plus de padding (`p-5` au lieu de `p-4`), titre en `text-base` au lieu de taille par défaut
-- Badge statut plus visible, barre de progression plus épaisse (`h-2` au lieu de `h-1.5`)
-- Min-height augmenté pour plus d'aération
+- Changer la logique `defaultOpen` : au lieu de toujours ouvrir `modules[0].id`, trouver le module qui contient le premier chapitre non complete (pas dans `completedSet`). Si tous sont completes, ouvrir le dernier module.
+- Ajouter une classe sur chaque `AccordionItem` pour le spacing : remplacer le wrapper `<div className="space-y-4">` + `<Accordion>` par un `<Accordion>` avec `className="space-y-4"` directement, car `space-y-*` applique du margin entre les enfants directs — et les `AccordionItem` sont les enfants directs de `Accordion`.
 
-**3. Vue Liste (nouvelle)**
-- Chaque contenu = une ligne horizontale dans une Card
-- Colonnes : Titre + accroche | Thème + Format | Statut (badge) | Progression (barre compacte) | Date | Actions (Reprendre / Supprimer)
-- Hover highlight sur chaque ligne
-- Clic sur la ligne = Reprendre (comme un lien)
+**Fichier 2 : `src/components/training/FormationCard.tsx`**
 
-### Fichier modifié
+- Remettre le bouton visuel "Commencer" / "Reprendre" / "Revoir" avec l'icone, en bas de la card (comme avant). La card entiere reste cliquable en plus.
 
-| Fichier | Modification |
-|---------|-------------|
-| `src/pages/working/MyContents.tsx` | Ajout toggle vue, nouveau composant `ContentPieceRow`, cards aérées, localStorage pour la préférence |
+### Details techniques
+
+Pour le module a ouvrir par defaut :
+```typescript
+const firstIncompleteModule = modules.find((m) => {
+  const visibleChapitres = m.chapitres.filter(c => c.status === "published" || isCeo);
+  return visibleChapitres.some(c => !completedSet.has(c.id));
+});
+const defaultOpen = firstIncompleteModule
+  ? [firstIncompleteModule.id]
+  : modules.length > 0
+  ? [modules[modules.length - 1].id]
+  : [];
+```
+
+Pour le spacing des modules, remplacer :
+```tsx
+<div className="space-y-4">
+  <Accordion type="multiple" defaultValue={defaultOpen}>
+```
+par :
+```tsx
+<Accordion type="multiple" defaultValue={defaultOpen} className="space-y-4">
+```
+et supprimer le `<div>` wrapper.
 
