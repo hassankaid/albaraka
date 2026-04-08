@@ -105,7 +105,7 @@ export default function MySpace() {
   }, [fetchData]);
 
   const counterCards = [
-    { label: "Leads apportés", value: totalLeads, icon: Users, gradient: "from-purple-500/20 to-blue-500/20" },
+    { label: "Leads apportés", value: totalLeads, icon: Users, gradient: "from-gold-400/20 to-gold-600/20" },
     { label: "En cours", value: enCours, icon: Clock, gradient: "from-orange-500/20 to-yellow-500/20" },
     { label: "Convertis", value: convertis, icon: CheckCircle2, gradient: "from-emerald-500/20 to-teal-500/20" },
     {
@@ -128,7 +128,7 @@ export default function MySpace() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Mon espace apporteur</h2>
+        <h2 className="text-2xl font-bold font-heading text-foreground">Mon espace apporteur</h2>
         <p className="text-sm text-muted-foreground mt-0.5">Bienvenue {profile?.full_name}</p>
       </div>
 

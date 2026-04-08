@@ -69,7 +69,7 @@ export default function TrainingList() {
           <GraduationCap className="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-foreground">Ethicarena Training</h2>
+          <h2 className="text-xl font-bold text-foreground">Al Baraka Training</h2>
           <p className="text-sm text-muted-foreground">
             Tes formations et ton parcours d'apprentissage
           </p>
@@ -104,7 +104,7 @@ export default function TrainingList() {
             Aucune formation disponible
           </h3>
           <p className="text-sm text-muted-foreground max-w-sm">
-            Tu n'as pas encore accès à une formation Ethicarena. Contacte l'équipe pour obtenir un accès.
+            Tu n'as pas encore accès à une formation Al Baraka. Contacte l'équipe pour obtenir un accès.
           </p>
         </div>
       )}

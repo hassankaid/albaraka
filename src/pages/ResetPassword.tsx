@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/ethicarena-logo.png";
+import logo from "@/assets/al-baraka-logo.jpeg";
 import { Lock, Eye, EyeOff, RefreshCw, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -59,9 +59,10 @@ const ResetPassword = () => {
 
   if (!isRecovery) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background bg-grid-pattern p-4">
-        <div className="w-full max-w-md space-y-6 text-center">
-          <img src={logo} alt="Ethicarena" className="w-16 h-16 object-contain mx-auto" />
+      <div className="min-h-screen flex items-center justify-center bg-[#050505] relative overflow-hidden p-4">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gold-500/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="w-full max-w-md space-y-6 text-center relative z-10">
+          <img src={logo} alt="Al Baraka" className="w-40 h-auto object-contain mx-auto rounded-lg" />
           <h1 className="text-xl font-bold text-foreground">Lien invalide</h1>
           <p className="text-muted-foreground text-sm">
             Ce lien de réinitialisation est invalide ou a expiré.
@@ -78,11 +79,13 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background bg-grid-pattern p-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="flex flex-col items-center space-y-2">
-          <img src={logo} alt="Ethicarena" className="w-20 h-20 object-contain" />
-          <h1 className="text-2xl font-bold text-foreground mt-6">Nouveau mot de passe</h1>
+    <div className="min-h-screen flex items-center justify-center bg-[#050505] relative overflow-hidden p-4">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gold-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="w-full max-w-md space-y-8 relative z-10">
+        <div className="flex flex-col items-center space-y-3">
+          <img src={logo} alt="Al Baraka" className="w-48 h-auto object-contain rounded-lg" />
+          <div className="w-16 h-px bg-gradient-to-r from-transparent via-gold-500/40 to-transparent mt-2" />
+          <h1 className="text-2xl font-heading font-semibold text-foreground mt-4">Nouveau mot de passe</h1>
           <p className="text-muted-foreground text-sm">Choisissez votre nouveau mot de passe</p>
         </div>
 
@@ -92,7 +95,7 @@ const ResetPassword = () => {
             Mot de passe mis à jour ! Redirection...
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="bg-card border border-border rounded-xl p-8 space-y-6 shadow-lg">
+          <form onSubmit={handleSubmit} className="bg-card/80 backdrop-blur-sm border border-gold-500/10 rounded-xl p-8 space-y-6 gold-glow-sm">
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Nouveau mot de passe</label>
               <div className="relative">

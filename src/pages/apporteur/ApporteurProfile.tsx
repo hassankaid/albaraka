@@ -316,7 +316,7 @@ export default function ApporteurProfile() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <h2 className="text-2xl font-bold text-foreground">Mon Profil</h2>
+      <h2 className="text-2xl font-bold font-heading text-foreground">Mon Profil</h2>
 
       {/* ── Completion indicator ── */}
       {isComplete ? (

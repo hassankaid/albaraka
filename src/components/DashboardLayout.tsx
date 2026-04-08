@@ -1,5 +1,4 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
-import logo from "@/assets/ethicarena-logo.png";
 import SpaceSwitcher from "./SpaceSwitcher";
 import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, Library } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -183,9 +182,14 @@ export default function DashboardLayout() {
         }`}
       >
         <div className="border-b border-border">
-          <div className="h-14 flex items-center gap-3 px-6">
-            <img src={logo} alt="Ethicarena" className="w-8 h-8 object-contain" />
-            <button className="ml-auto lg:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
+          <div className="flex items-center justify-between px-5 pt-5 pb-4">
+            <div className="flex flex-col">
+              <span className="font-heading text-xl font-semibold tracking-[0.25em] text-gold-gradient leading-none">
+                AL BARAKA
+              </span>
+              <div className="mt-2.5 h-px w-full bg-gradient-to-r from-gold-500/60 via-gold-400/30 to-transparent" />
+            </div>
+            <button className="ml-3 lg:hidden text-muted-foreground shrink-0" onClick={() => setSidebarOpen(false)}>
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -217,7 +221,7 @@ export default function DashboardLayout() {
             <button className="lg:hidden text-muted-foreground" onClick={() => setSidebarOpen(true)}>
               <Menu className="h-5 w-5" />
             </button>
-            <h1 className="text-lg font-bold text-foreground">{pageTitle}</h1>
+            <h1 className="text-lg font-bold text-foreground font-heading">{pageTitle}</h1>
           </div>
 
           <div className="flex items-center gap-3">

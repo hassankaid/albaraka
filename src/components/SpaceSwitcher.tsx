@@ -28,8 +28,8 @@ const getSpaces = (profile: any): Space[] => {
       id: "working",
       label: "WORKING",
       icon: Briefcase,
-      color: "text-emerald-500",
-      bgColor: "bg-emerald-500/10",
+      color: "text-gold-400",
+      bgColor: "bg-gold-400/10",
       path: isCeo ? "/dashboard" : "/working/activity",
       description: "Suivi commercial & Outils",
     },
@@ -37,8 +37,8 @@ const getSpaces = (profile: any): Space[] => {
       id: "training",
       label: "TRAINING",
       icon: BookOpenCheck,
-      color: "text-purple-500",
-      bgColor: "bg-purple-500/10",
+      color: "text-amber-400",
+      bgColor: "bg-amber-400/10",
       path: "/training/scripts/setting",
       description: "Scripts Setting & Closing",
     },
@@ -46,8 +46,8 @@ const getSpaces = (profile: any): Space[] => {
       id: "coaching",
       label: "COACHING",
       icon: GraduationCap,
-      color: "text-amber-500",
-      bgColor: "bg-amber-500/10",
+      color: "text-teal-400",
+      bgColor: "bg-teal-400/10",
       path: profile?.is_coach || isCeo ? "/coaching" : "/mon-coaching",
       description: "Évaluations & Historique",
     },
@@ -59,8 +59,8 @@ const getSpaces = (profile: any): Space[] => {
       id: "admin",
       label: "ADMIN",
       icon: Settings2,
-      color: "text-rose-500",
-      bgColor: "bg-rose-500/10",
+      color: "text-red-400",
+      bgColor: "bg-red-400/10",
       path: "/admin/team",
       description: "Gestion & Administration",
     });
@@ -106,7 +106,7 @@ export default function SpaceSwitcher() {
             <Icon className={cn("h-4 w-4", currentSpace.color)} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-muted-foreground tracking-wider">ETHICARENA</p>
+            <p className="text-xs font-bold text-muted-foreground tracking-wider font-heading">ESPACE</p>
             <p className={cn("text-sm font-semibold", currentSpace.color)}>
               {currentSpace.label}
             </p>

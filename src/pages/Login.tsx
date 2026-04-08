@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/ethicarena-logo.png";
+import logo from "@/assets/al-baraka-logo.jpeg";
 import { Eye, EyeOff, Mail, Lock, RefreshCw, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -58,28 +58,31 @@ const Login = () => {
 
   if (forgotMode) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background bg-grid-pattern p-4">
-        <div className="w-full max-w-md space-y-8">
-          <div className="flex flex-col items-center space-y-2">
-            <img src={logo} alt="Ethicarena" className="w-20 h-20 object-contain" />
-            <h1 className="text-2xl font-bold text-foreground mt-6">Mot de passe oublié</h1>
-            <p className="text-muted-foreground text-sm">Entrez votre email pour recevoir un lien de réinitialisation</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#050505] relative overflow-hidden p-4">
+        {/* Premium ambient glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gold-500/5 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="w-full max-w-md space-y-8 relative z-10">
+          <div className="flex flex-col items-center space-y-4">
+            <img src={logo} alt="Al Baraka" className="w-48 h-auto object-contain rounded-lg" />
+            <h1 className="text-2xl font-heading font-semibold text-foreground mt-4">Mot de passe oubli&eacute;</h1>
+            <p className="text-muted-foreground text-sm">Entrez votre email pour recevoir un lien de r&eacute;initialisation</p>
           </div>
 
           {resetSent ? (
             <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm rounded-lg p-4 text-center space-y-2">
-              <p className="font-medium">Email envoyé !</p>
-              <p>Vérifiez votre boîte mail (et vos spams) pour réinitialiser votre mot de passe.</p>
+              <p className="font-medium">Email envoy&eacute; !</p>
+              <p>V&eacute;rifiez votre bo&icirc;te mail (et vos spams) pour r&eacute;initialiser votre mot de passe.</p>
             </div>
           ) : (
-            <form onSubmit={handleForgotPassword} className="bg-card border border-border rounded-xl p-8 space-y-6 shadow-lg">
+            <form onSubmit={handleForgotPassword} className="bg-card/80 backdrop-blur-sm border border-gold-500/10 rounded-xl p-8 space-y-6 gold-glow-sm">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Email</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
                     type="email"
-                    placeholder="vous@ethicarena.ma"
+                    placeholder="vous@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -91,7 +94,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 rounded-full gradient-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-2.5 rounded-full gradient-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading && <RefreshCw className="h-4 w-4 animate-spin" />}
                 Envoyer le lien
@@ -104,7 +107,7 @@ const Login = () => {
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mx-auto"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Retour à la connexion
+            Retour &agrave; la connexion
           </button>
         </div>
       </div>
@@ -112,28 +115,34 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background bg-grid-pattern p-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="flex flex-col items-center space-y-2">
-          <img src={logo} alt="Ethicarena" className="w-20 h-20 object-contain" />
-          <h1 className="text-2xl font-bold text-foreground mt-6">Connexion</h1>
-          <p className="text-muted-foreground text-sm">Espace réservé aux membres Ethicarena</p>
+    <div className="min-h-screen flex items-center justify-center bg-[#050505] relative overflow-hidden p-4">
+      {/* Premium ambient glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gold-500/5 rounded-full blur-[120px] pointer-events-none" />
+      {/* Subtle top-right gold accent */}
+      <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-gold-400/3 rounded-full blur-[100px] pointer-events-none" />
+
+      <div className="w-full max-w-md space-y-8 relative z-10">
+        <div className="flex flex-col items-center space-y-3">
+          <img src={logo} alt="Al Baraka" className="w-56 h-auto object-contain rounded-lg" />
+          <div className="w-16 h-px bg-gradient-to-r from-transparent via-gold-500/40 to-transparent mt-2" />
+          <h1 className="text-2xl font-heading font-semibold text-foreground mt-4">Connexion</h1>
+          <p className="text-muted-foreground text-sm tracking-wide">Espace r&eacute;serv&eacute; aux membres Al Baraka</p>
         </div>
 
         {registered && (
           <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm rounded-lg p-3 text-center">
-            Compte créé avec succès ! Connectez-vous.
+            Compte cr&eacute;&eacute; avec succ&egrave;s ! Connectez-vous.
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-card border border-border rounded-xl p-8 space-y-6 shadow-lg">
+        <form onSubmit={handleSubmit} className="bg-card/80 backdrop-blur-sm border border-gold-500/10 rounded-xl p-8 space-y-6 gold-glow-sm">
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Email</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="email"
-                placeholder="vous@ethicarena.ma"
+                placeholder="vous@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -150,14 +159,14 @@ const Login = () => {
                 onClick={() => setForgotMode(true)}
                 className="text-xs text-primary hover:underline"
               >
-                Mot de passe oublié ?
+                Mot de passe oubli&eacute; ?
               </button>
             </div>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
+                placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -176,7 +185,7 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-full gradient-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-2.5 rounded-full gradient-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading && <RefreshCw className="h-4 w-4 animate-spin" />}
             Se connecter
@@ -184,9 +193,9 @@ const Login = () => {
         </form>
 
         <p className="text-center text-sm text-muted-foreground">
-          Vous êtes apporteur d'affaires ?{" "}
+          Vous &ecirc;tes apporteur d'affaires ?{" "}
           <Link to="/register" className="text-primary hover:underline font-medium">
-            Créer votre compte
+            Cr&eacute;er votre compte
           </Link>
         </p>
       </div>

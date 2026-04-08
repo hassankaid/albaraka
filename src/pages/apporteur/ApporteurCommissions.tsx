@@ -43,7 +43,7 @@ const MONTHS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet"
 const INVOICE_STATUS: Record<string, { label: string; class: string }> = {
   draft: { label: "Brouillon", class: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30" },
   generated: { label: "Générée", class: "bg-blue-500/20 text-blue-300 border-blue-500/30" },
-  sent: { label: "Envoyée", class: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
+  sent: { label: "Envoyée", class: "bg-gold-400/20 text-gold-200 border-gold-400/30" },
   paid: { label: "Payée", class: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
 };
 
@@ -66,7 +66,7 @@ const PRECISE_ROLE_LABELS: Record<string, string> = {
 };
 
 const SOURCE_FILTER_LABELS: Record<string, { label: string; class: string; icon: typeof Users }> = {
-  apporteur: { label: "Apport d'affaires", class: "bg-purple-500/20 text-purple-300 border-purple-500/30", icon: Users },
+  apporteur: { label: "Apport d'affaires", class: "bg-gold-400/20 text-gold-200 border-gold-400/30", icon: Users },
   collaborateur: { label: "Collaborateur", class: "bg-blue-500/20 text-blue-300 border-blue-500/30", icon: Briefcase },
 };
 

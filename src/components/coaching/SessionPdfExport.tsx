@@ -10,7 +10,7 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 20,
-    borderBottom: "2 solid #7C3AED",
+    borderBottom: "2 solid #C5A55A",
     paddingBottom: 15,
   },
   title: {
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   stepScore: {
     fontSize: 11,
     fontWeight: "bold",
-    color: "#7C3AED",
+    color: "#C5A55A",
   },
   stepContent: {
     padding: 10,
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   },
   debriefBadge: {
     fontSize: 8,
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#C5A55A",
     color: "#fff",
     paddingHorizontal: 6,
     paddingVertical: 3,
@@ -372,7 +372,7 @@ const SessionPdfDocument = ({ session, scores, steps, strengths, weaknesses }: S
 
         {/* Footer */}
         <Text style={styles.footer}>
-          Genere le {format(new Date(), "d MMMM yyyy", { locale: fr })} — ETHICARENA Coaching
+          Genere le {format(new Date(), "d MMMM yyyy", { locale: fr })} — AL BARAKA Coaching
         </Text>
       </Page>
     </Document>

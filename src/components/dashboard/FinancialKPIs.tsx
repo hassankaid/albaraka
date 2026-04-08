@@ -649,7 +649,7 @@ export default function FinancialKPIs(props: Props) {
 
         const catColors: Record<string, { dot: string; active: string }> = {
           "Salaires": { dot: "bg-blue-400", active: "bg-blue-500 text-white" },
-          "Charges fixes": { dot: "bg-violet-400", active: "bg-violet-500 text-white" },
+          "Charges fixes": { dot: "bg-gold-400", active: "bg-gold-500 text-white" },
           "Publicité": { dot: "bg-rose-400", active: "bg-rose-500 text-white" },
         };
 

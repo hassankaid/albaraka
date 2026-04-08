@@ -27,8 +27,8 @@ export const VOIX_CONFIG: Record<string, { label: string; color: string; bgColor
   raison: { label: "🧠 Voix de la raison", color: "text-slate-600 dark:text-slate-300", bgColor: "bg-slate-100 dark:bg-slate-800" },
   enthousiasme: { label: "🔥 Voix de l'enthousiasme", color: "text-orange-600 dark:text-orange-400", bgColor: "bg-orange-100 dark:bg-orange-900/30" },
   sincerite: { label: "💚 Voix de la sincérité", color: "text-emerald-600 dark:text-emerald-400", bgColor: "bg-emerald-100 dark:bg-emerald-900/30" },
-  curiosite: { label: "🤔 Voix de la curiosité", color: "text-purple-600 dark:text-purple-400", bgColor: "bg-purple-100 dark:bg-purple-900/30" },
-  mystere: { label: "🌙 Voix du mystère", color: "text-indigo-600 dark:text-indigo-400", bgColor: "bg-indigo-100 dark:bg-indigo-900/30" },
+  curiosite: { label: "🤔 Voix de la curiosité", color: "text-gold-500 dark:text-gold-300", bgColor: "bg-gold-100 dark:bg-gold-900/30" },
+  mystere: { label: "🌙 Voix du mystère", color: "text-gold-600 dark:text-gold-300", bgColor: "bg-gold-100 dark:bg-gold-900/30" },
   empathie: { label: "💜 Voix de l'empathie", color: "text-pink-600 dark:text-pink-400", bgColor: "bg-pink-100 dark:bg-pink-900/30" },
   certitude: { label: "💪 Voix de la certitude", color: "text-amber-600 dark:text-amber-400", bgColor: "bg-amber-100 dark:bg-amber-900/30" },
   evidence: { label: "✨ Voix de l'évidence", color: "text-cyan-600 dark:text-cyan-400", bgColor: "bg-cyan-100 dark:bg-cyan-900/30" },
@@ -216,7 +216,7 @@ export const SCRIPTS_CLOSING: Script[] = [
     id: "appel-ads",
     nom: "Appel Découverte Ads",
     icon: "📞",
-    couleur: "purple",
+    couleur: "gold",
     cat: "calls",
     description: "Script pour les prospects venant des publicités",
     phases: [
@@ -329,7 +329,7 @@ export const SCRIPTS_CLOSING: Script[] = [
     id: "appel-organique",
     nom: "Appel Découverte Organique",
     icon: "🎯",
-    couleur: "purple",
+    couleur: "gold",
     cat: "calls",
     description: "Script pour les prospects venant du sourcing organique",
     phases: [
@@ -338,7 +338,7 @@ export const SCRIPTS_CLOSING: Script[] = [
         voix: "enthousiasme",
         lines: [
           "Contrôler ses émotions avant l'appel. Les 4 premières secondes sont CAPITALES.",
-          "[Voix calme + enthousiaste] : 'Salamou 'alaykoum [Prénom], c'est [prénom] de l'équipe ETHICARENA, comment ça va ?'",
+          "[Voix calme + enthousiaste] : 'Salamou 'alaykoum [Prénom], c'est [prénom] de l'équipe AL BARAKA, comment ça va ?'",
           "[Voix curiosité] : 'Top top, au fait, t'es de quelle ville ? T'as du soleil chez toi aujourd'hui ?'",
           "'Juste avant de commencer, est-ce que t'es d'accord pour que j'enregistre l'appel ?'",
           "(Si demande pourquoi : 'Pour garder un souvenir de notre premier échange si tu souhaites aller plus loin.')"

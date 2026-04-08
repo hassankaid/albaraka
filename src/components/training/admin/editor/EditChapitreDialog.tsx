@@ -31,6 +31,7 @@ interface EditChapitreDialogProps {
     description: string | null;
     status: string;
     duree_estimee_minutes: number | null;
+    notes_formateur?: string | null;
   };
   onUpdated?: () => void;
 }
@@ -40,6 +41,7 @@ export function EditChapitreDialog({ open, onOpenChange, chapitre, onUpdated }: 
   const [description, setDescription] = useState(chapitre.description ?? "");
   const [duree, setDuree] = useState(chapitre.duree_estimee_minutes?.toString() ?? "");
   const [status, setStatus] = useState(chapitre.status);
+  const [notesFormateur, setNotesFormateur] = useState(chapitre.notes_formateur ?? "");
 
   useEffect(() => {
     if (open) {
@@ -47,6 +49,7 @@ export function EditChapitreDialog({ open, onOpenChange, chapitre, onUpdated }: 
       setDescription(chapitre.description ?? "");
       setDuree(chapitre.duree_estimee_minutes?.toString() ?? "");
       setStatus(chapitre.status);
+      setNotesFormateur(chapitre.notes_formateur ?? "");
     }
   }, [open, chapitre]);
 
@@ -59,6 +62,7 @@ export function EditChapitreDialog({ open, onOpenChange, chapitre, onUpdated }: 
           description: description || null,
           duree_estimee_minutes: duree ? parseInt(duree, 10) : null,
           status,
+          notes_formateur: notesFormateur || null,
         })
         .eq("id", chapitre.id);
       if (error) throw error;
@@ -100,6 +104,16 @@ export function EditChapitreDialog({ open, onOpenChange, chapitre, onUpdated }: 
               value={duree}
               onChange={(e) => setDuree(e.target.value)}
               min={1}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-chap-notes">Notes du formateur (À retenir)</Label>
+            <Textarea
+              id="edit-chap-notes"
+              value={notesFormateur}
+              onChange={(e) => setNotesFormateur(e.target.value)}
+              rows={4}
+              placeholder="Synthèse, points clés, introduction du chapitre..."
             />
           </div>
           <div className="space-y-2">

@@ -67,6 +67,7 @@ interface ModuleCardProps {
   isLast: boolean;
   totalModules: number;
   formationId: string;
+  formationSlug: string;
 }
 
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -75,7 +76,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   archived: { label: "Archivé", className: "bg-muted text-muted-foreground" },
 };
 
-export function ModuleCard({ module, isFirst, isLast, totalModules, formationId }: ModuleCardProps) {
+export function ModuleCard({ module, isFirst, isLast, totalModules, formationId, formationSlug }: ModuleCardProps) {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(totalModules <= 3);
   const [editOpen, setEditOpen] = useState(false);
@@ -315,6 +316,7 @@ export function ModuleCard({ module, isFirst, isLast, totalModules, formationId 
                       key={chap.id}
                       chapitre={chap}
                       moduleId={module.id}
+                      formationSlug={formationSlug}
                       isFirst={idx === 0}
                       isLast={idx === module.chapitres.length - 1}
                     />

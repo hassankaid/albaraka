@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ interface ChapitreRowProps {
     duree_estimee_minutes: number | null;
   };
   moduleId: string;
+  formationSlug: string;
   isFirst: boolean;
   isLast: boolean;
 }
@@ -57,7 +59,8 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   archived: { label: "Archivé", className: "bg-muted text-muted-foreground" },
 };
 
-export function ChapitreRow({ chapitre, moduleId, isFirst, isLast }: ChapitreRowProps) {
+export function ChapitreRow({ chapitre, moduleId, formationSlug, isFirst, isLast }: ChapitreRowProps) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -168,7 +171,12 @@ export function ChapitreRow({ chapitre, moduleId, isFirst, isLast }: ChapitreRow
 
         {/* Title + meta */}
         <div className="flex flex-1 items-center gap-2 min-w-0">
-          <span className="text-sm font-medium text-foreground truncate">{chapitre.titre}</span>
+          <button
+            onClick={() => navigate(`/admin/training/${formationSlug}/chapitre/${chapitre.id}`)}
+            className="text-sm font-medium text-foreground truncate hover:text-primary transition-colors text-left"
+          >
+            {chapitre.titre}
+          </button>
           <Badge className={`${sc.className} text-[10px]`}>{sc.label}</Badge>
           {chapitre.duree_estimee_minutes && (
             <span className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
@@ -214,7 +222,7 @@ export function ChapitreRow({ chapitre, moduleId, isFirst, isLast }: ChapitreRow
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => toast.info("Disponible dans le prochain prompt")}>
+              <DropdownMenuItem onClick={() => navigate(`/admin/training/${formationSlug}/chapitre/${chapitre.id}`)}>
                 <Film className="mr-2 h-4 w-4" />
                 Éditer vidéos & ressources
               </DropdownMenuItem>

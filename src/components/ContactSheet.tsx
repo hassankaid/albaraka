@@ -26,14 +26,14 @@ interface TimelineEvent {
 const STATUS_COLORS: Record<string, string> = {
   nouveau: "bg-muted text-muted-foreground border-border",
   a_qualifier: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  inscrit_conference: "bg-violet-500/20 text-violet-300 border-violet-500/30",
+  inscrit_conference: "bg-gold-500/20 text-gold-300 border-gold-500/30",
   faux_numero: "bg-red-300/20 text-red-300 border-red-300/30",
   pas_de_reponse: "bg-orange-500/20 text-orange-300 border-orange-500/30",
   pas_qualifie: "bg-muted text-muted-foreground border-border",
   a_relancer: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
   a_recycler: "bg-amber-500/20 text-amber-300 border-amber-500/30",
   contacte: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  call_booke: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  call_booke: "bg-gold-400/20 text-gold-200 border-gold-400/30",
   converti: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   perdu: "bg-red-500/20 text-red-300 border-red-500/30",
   planifie: "bg-blue-500/20 text-blue-300 border-blue-500/30",
@@ -44,8 +44,8 @@ const STATUS_COLORS: Record<string, string> = {
   disqualifie: "bg-orange-400/20 text-orange-300 border-orange-400/30",
   non_close: "bg-red-400/20 text-red-300 border-red-400/30",
   renvoye_pole_vente: "bg-blue-600/20 text-blue-300 border-blue-600/30",
-  renvoye_conference: "bg-violet-500/20 text-violet-300 border-violet-500/30",
-  rediffusion: "bg-purple-400/20 text-purple-300 border-purple-400/30",
+  renvoye_conference: "bg-gold-500/20 text-gold-300 border-gold-500/30",
+  rediffusion: "bg-gold-300/20 text-gold-200 border-gold-300/30",
   follow_up: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
   close: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   pending: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
@@ -272,7 +272,7 @@ function TimelineDot({ type, action }: { type: string; action?: string }) {
   let icon = "📌";
 
   if (type === "lead") {
-    className = "bg-purple-500/20 border-purple-500/40";
+    className = "bg-gold-400/20 border-gold-400/40";
     icon = "📥";
   } else if (type === "call") {
     className = "bg-blue-500/20 border-blue-500/40";
@@ -285,7 +285,7 @@ function TimelineDot({ type, action }: { type: string; action?: string }) {
       className = "bg-blue-500/20 border-blue-500/40";
       icon = "🔄";
     } else if (action === "reassigned" || action === "assigned") {
-      className = "bg-violet-500/20 border-violet-500/40";
+      className = "bg-gold-500/20 border-gold-500/40";
       icon = "👤";
     } else if (action === "unassigned") {
       className = "bg-amber-500/20 border-amber-500/40";
@@ -376,7 +376,7 @@ function LeadActivityEvent({ data, userTz }: { data: any; userTz: string }) {
   if (data.action === "reassigned") {
     return (
       <div className="flex items-center gap-2 flex-wrap">
-        <UserCheck className="w-4 h-4 text-violet-400 shrink-0" />
+        <UserCheck className="w-4 h-4 text-gold-400 shrink-0" />
         <p className="text-sm text-foreground">Lead réaffecté à <strong>{data._resolved_name || data.new_value || "—"}</strong></p>
         <span className="text-xs text-muted-foreground">par {userName}</span>
       </div>
@@ -479,7 +479,7 @@ function CallActivityEvent({ data, userTz }: { data: any; userTz: string }) {
   if (data.action === "reassigned") {
     return (
       <div className="flex items-center gap-2 flex-wrap">
-        <UserCheck className="w-4 h-4 text-violet-400 shrink-0" />
+        <UserCheck className="w-4 h-4 text-gold-400 shrink-0" />
         <p className="text-sm text-foreground">Call réaffecté à <strong>{data._resolved_name || data.new_value || "—"}</strong></p>
         <span className="text-xs text-muted-foreground">par {userName}</span>
       </div>

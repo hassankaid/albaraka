@@ -23,8 +23,8 @@ export const CALL_STATUS_COLORS: Record<string, string> = {
   disqualifie: "bg-orange-400/20 text-orange-300 border-orange-400/30",
   non_close: "bg-red-400/20 text-red-300 border-red-400/30",
   renvoye_pole_vente: "bg-blue-600/20 text-blue-300 border-blue-600/30",
-  renvoye_conference: "bg-violet-500/20 text-violet-300 border-violet-500/30",
-  rediffusion: "bg-purple-400/20 text-purple-300 border-purple-400/30",
+  renvoye_conference: "bg-gold-500/20 text-gold-300 border-gold-500/30",
+  rediffusion: "bg-gold-300/20 text-gold-200 border-gold-300/30",
   follow_up: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
   close: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   // Legacy

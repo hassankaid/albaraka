@@ -302,10 +302,10 @@ export default function AgentIA() {
                   <div className="text-center max-w-md space-y-4">
                     <Bot className="h-12 w-12 mx-auto text-muted-foreground/50" />
                     <div>
-                      <h3 className="text-lg font-semibold">Agent IA Ethicarena</h3>
+                      <h3 className="text-lg font-semibold">Agent IA Al Baraka</h3>
                       <p className="text-sm text-muted-foreground mt-1">
                         Colle un message de prospect ou pose une question. L'agent t'aide à formuler
-                        la meilleure réponse dans la méthodologie Ethicarena.
+                        la meilleure réponse dans la méthodologie Al Baraka.
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2 justify-center">
@@ -480,9 +480,9 @@ function MessageBubble({
             </div>
           </div>
 
-          <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-3">
+          <div className="rounded-xl border border-gold-400/30 bg-gold-400/5 p-3">
             <div className="flex items-center justify-between mb-1">
-              <div className="text-[10px] font-semibold text-purple-500 uppercase tracking-wider">
+              <div className="text-[10px] font-semibold text-gold-400 uppercase tracking-wider">
                 💬 Réponse à copier-coller
               </div>
               <Button

@@ -17,8 +17,8 @@ const workingModules = [
     title: "Scripts Closing",
     description: "Scripts pour les appels découverte et closing",
     icon: Phone,
-    color: "text-purple-500",
-    bgColor: "bg-purple-500/10",
+    color: "text-gold-400",
+    bgColor: "bg-gold-400/10",
     path: "/training/scripts/closing",
   },
   {
@@ -47,7 +47,7 @@ export default function Working() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Espace de travail</h2>
+        <h2 className="text-2xl font-bold font-heading text-foreground">Espace de travail</h2>
         <p className="text-muted-foreground mt-1">
           Scripts, générateur de contenu et outils IA pour ton activité
         </p>

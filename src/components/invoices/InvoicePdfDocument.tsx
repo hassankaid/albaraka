@@ -3,11 +3,11 @@ import { Document, Page, Text, View, StyleSheet, pdf } from "@react-pdf/renderer
 /* ------------------------------------------------------------------ */
 /*  Colour tokens                                                      */
 /* ------------------------------------------------------------------ */
-const PURPLE = "#6d28d9";
+const PURPLE = "#C5A55A";
 const GRAY_BG = "#f5f5f5";
 const GRAY_BORDER = "#e0e0e0";
 const GRAY_TEXT = "#666";
-const DARK = "#1a1a2e";
+const DARK = "#0a0a0a";
 
 /* ------------------------------------------------------------------ */
 /*  Styles                                                             */
@@ -274,7 +274,7 @@ const InvoicePdfDocument = ({ data }: { data: InvoicePdfData }) => {
         {/* ---- Footer ---- */}
         <Text style={s.footer}>
           {apporteur.full_name}{apporteur.address ? ` • ${apporteur.address}` : ""}{apporteur.postal_code ? ` ${apporteur.postal_code}` : ""}{apporteur.city ? ` ${apporteur.city}` : ""}{"\n"}
-          Facture générée automatiquement par Ethicarena
+          Facture générée automatiquement par Al Baraka
         </Text>
       </Page>
     </Document>

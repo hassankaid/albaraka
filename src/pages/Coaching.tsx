@@ -63,7 +63,7 @@ export default function Coaching() {
   if (!canCoach) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-foreground">Espace Coaching</h1>
+        <h1 className="text-2xl font-bold font-heading text-foreground">Espace Coaching</h1>
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <GraduationCap className="h-12 w-12 text-muted-foreground mb-4" />
@@ -93,7 +93,7 @@ export default function Coaching() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold text-foreground">Espace Coaching</h1>
+        <h1 className="text-2xl font-bold font-heading text-foreground">Espace Coaching</h1>
         <Button className="gradient-primary gap-2" onClick={() => setShowNewSession(true)}>
           <Plus className="h-4 w-4" />
           Nouvelle session

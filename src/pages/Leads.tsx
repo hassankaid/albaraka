@@ -397,7 +397,7 @@ export default function Leads() {
         </div>
         <div className="flex items-center gap-2">
           {user?.can_add_instagram_leads && (
-            <Button size="sm" onClick={() => setIgFormOpen(true)} className="bg-gradient-to-r from-pink-500 to-purple-500 text-primary-foreground text-xs gap-1.5">
+            <Button size="sm" onClick={() => setIgFormOpen(true)} className="bg-gradient-to-r from-gold-400 to-gold-600 text-primary-foreground text-xs gap-1.5">
               <Instagram className="h-3.5 w-3.5" />
               Lead IG
             </Button>

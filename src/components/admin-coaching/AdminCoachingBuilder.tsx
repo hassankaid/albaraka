@@ -29,7 +29,7 @@ export default function AdminCoachingBuilder() {
   const [showEditTypeDialog, setShowEditTypeDialog] = useState(false);
   const [editingType, setEditingType] = useState<any>(null);
   const [newStepTypeId, setNewStepTypeId] = useState("");
-  const [newTypeData, setNewTypeData] = useState({ label: "", theme_color: "#7C3AED" });
+  const [newTypeData, setNewTypeData] = useState({ label: "", theme_color: "#C5A55A" });
   const [newStepData, setNewStepData] = useState({ label: "", title: "" });
 
   // Récupérer les types avec leurs étapes
@@ -122,7 +122,7 @@ export default function AdminCoachingBuilder() {
       queryClient.invalidateQueries({ queryKey: ["admin-builder-types"] });
       toast({ title: "Type créé" });
       setShowNewTypeDialog(false);
-      setNewTypeData({ label: "", theme_color: "#7C3AED" });
+      setNewTypeData({ label: "", theme_color: "#C5A55A" });
     },
   });
 

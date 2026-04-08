@@ -123,7 +123,7 @@ export default function ScriptsSetting() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Scripts Setting</h1>
+        <h1 className="text-2xl font-bold font-heading">Scripts Setting</h1>
         <p className="text-muted-foreground">
           Scripts pour la prise de RDV et invitations conférence
         </p>

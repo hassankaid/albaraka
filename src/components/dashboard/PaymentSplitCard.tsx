@@ -15,8 +15,8 @@ function fmt(n: number) {
 }
 
 const SEGMENTS = [
-  { label: "One-shot", color: "#3b82f6" },
-  { label: "Plusieurs fois", color: "#f59e0b" },
+  { label: "One-shot", color: "#C5A55A" },
+  { label: "Plusieurs fois", color: "#8A7232" },
 ];
 
 export default function PaymentSplitCard({ oneShotPct, multiPct, oneShotCA, multiCA, oneShotCount, multiCount }: Props) {

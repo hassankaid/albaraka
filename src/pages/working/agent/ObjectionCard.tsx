@@ -81,8 +81,8 @@ export function ObjectionCard({ objection }: { objection: AgentObjection }) {
 
             {/* Verbatim à copier (si disponible) mis en avant */}
             {objection.verbatim && (
-              <div className="rounded-lg border border-purple-500/30 bg-purple-500/5 p-3 ml-5">
-                <p className="text-[10px] font-semibold text-purple-500 uppercase tracking-wider mb-1">
+              <div className="rounded-lg border border-gold-400/30 bg-gold-400/5 p-3 ml-5">
+                <p className="text-[10px] font-semibold text-gold-400 uppercase tracking-wider mb-1">
                   💬 À envoyer au prospect
                 </p>
                 <p className="text-sm text-foreground leading-relaxed font-medium">

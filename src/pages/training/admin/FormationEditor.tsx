@@ -58,7 +58,7 @@ export default function FormationEditor() {
         (mods ?? []).map(async (m) => {
           const { data: chaps } = await supabase
             .from("formation_chapitres")
-            .select("id, titre, description, ordre, status, duree_estimee_minutes")
+            .select("id, titre, description, ordre, status, duree_estimee_minutes, notes_formateur")
             .eq("module_id", m.id)
             .order("ordre", { ascending: true });
           return { ...m, chapitres: chaps ?? [] };
@@ -194,6 +194,7 @@ export default function FormationEditor() {
                   isLast={idx === totalModules - 1}
                   totalModules={totalModules}
                   formationId={formation.id}
+                  formationSlug={formation.slug}
                 />
               ))}
             </div>

@@ -195,7 +195,7 @@ export default function ApporteurSales() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Mes Ventes</h2>
+        <h2 className="text-2xl font-bold font-heading text-foreground">Mes Ventes</h2>
         <p className="text-sm text-muted-foreground">{sales.length} vente{sales.length > 1 ? "s" : ""}</p>
       </div>
 

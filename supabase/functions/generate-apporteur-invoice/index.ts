@@ -22,12 +22,12 @@ function buildInvoiceHtml(params: {
 <style>
   body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 40px; color: #1a1a2e; font-size: 14px; }
   .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
-  .invoice-title { font-size: 28px; font-weight: 700; color: #6d28d9; }
+  .invoice-title { font-size: 28px; font-weight: 700; color: #C5A55A; }
   .invoice-number { font-size: 16px; color: #666; margin-top: 4px; }
   .section { margin-bottom: 24px; }
   .section-title { font-size: 12px; text-transform: uppercase; color: #999; margin-bottom: 8px; font-weight: 600; letter-spacing: 0.5px; }
   table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-  th { background: #f3f0ff; color: #6d28d9; text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  th { background: #FDF8ED; color: #C5A55A; text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
   td { padding: 10px 12px; border-bottom: 1px solid #eee; }
   .total-row { font-weight: 700; font-size: 16px; background: #f9fafb; }
   .fixed-salary-row { background: #f0fdf4; font-style: italic; }

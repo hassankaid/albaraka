@@ -21,8 +21,8 @@ export const leadSourceConfig: Record<string, { label: string; color: string }> 
 // Tailwind badge classes keyed by color name
 const COLOR_CLASSES: Record<string, string> = {
   blue: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  indigo: "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
-  purple: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  indigo: "bg-gold-500/20 text-gold-300 border-gold-500/30",
+  purple: "bg-gold-400/20 text-gold-300 border-gold-400/30",
   pink: "bg-pink-500/20 text-pink-300 border-pink-500/30",
   fuchsia: "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30",
   green: "bg-green-500/20 text-green-300 border-green-500/30",
@@ -35,7 +35,7 @@ const COLOR_CLASSES: Record<string, string> = {
   orange: "bg-orange-500/20 text-orange-300 border-orange-500/30",
   yellow: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
   emerald: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  violet: "bg-violet-500/20 text-violet-300 border-violet-500/30",
+  violet: "bg-gold-600/20 text-gold-300 border-gold-600/30",
   zinc: "bg-zinc-600/20 text-zinc-400 border-zinc-600/30",
   "red-light": "bg-red-300/20 text-red-300 border-red-300/30",
 };

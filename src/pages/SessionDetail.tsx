@@ -312,7 +312,7 @@ export default function SessionDetail() {
               className="w-4 h-4 rounded-full"
               style={{ backgroundColor: session.coach_type?.theme_color }}
             />
-            <h1 className="text-2xl font-bold">
+            <h1 className="text-2xl font-bold font-heading">
               Session #{session.session_number} — {session.coach_type?.label}
             </h1>
           </div>

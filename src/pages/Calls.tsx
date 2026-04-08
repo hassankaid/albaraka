@@ -44,7 +44,7 @@ const TYPE_OPTIONS = [
 ];
 
 const TYPE_COLORS: Record<string, string> = {
-  appel_offert_vsl_a: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  appel_offert_vsl_a: "bg-gold-400/20 text-gold-200 border-gold-400/30",
   appel_offert_vsl_b: "bg-blue-500/20 text-blue-300 border-blue-500/30",
   appel_setting_webi: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   inscription_conference: "bg-amber-500/20 text-amber-300 border-amber-500/30",
@@ -204,7 +204,7 @@ export default function Calls() {
             <span className="text-xs text-muted-foreground">cette semaine</span>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
-            <Phone className="h-3.5 w-3.5 text-purple-400" />
+            <Phone className="h-3.5 w-3.5 text-gold-300" />
             <span className="text-sm font-bold text-foreground">{counts.planned}</span>
             <span className="text-xs text-muted-foreground">planifiés</span>
           </div>

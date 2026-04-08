@@ -289,7 +289,7 @@ export default function ApporteurDashboard() {
           </Select>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          <Card className="border-border/50 bg-gradient-to-br from-purple-500/10 to-blue-500/10">
+          <Card className="border-border/50 bg-gradient-to-br from-gold-400/10 to-gold-600/10">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 rounded-lg bg-background/50"><Users className="h-5 w-5 text-foreground" /></div>
               <div>

@@ -16,7 +16,7 @@ import { RefreshCw, Upload, Building2, Loader2, Check, ChevronsUpDown, Pencil, U
 import { cn } from "@/lib/utils";
 import { PhoneInput } from "react-international-phone";
 import "react-international-phone/style.css";
-import logo from "@/assets/ethicarena-logo.png";
+import logo from "@/assets/al-baraka-logo.jpeg";
 
 interface BankDetails {
   type?: string;
@@ -260,7 +260,7 @@ export default function ApporteurOnboarding() {
       return;
     }
 
-    toast({ title: "Bienvenue chez Ethicarena !" });
+    toast({ title: "Bienvenue chez Al Baraka !" });
     // Force profile refresh
     window.location.href = "/my-space";
   };
@@ -270,7 +270,7 @@ export default function ApporteurOnboarding() {
       <div className="w-full max-w-2xl space-y-6">
         {/* Header */}
         <div className="flex flex-col items-center space-y-3">
-          <img src={logo} alt="Ethicarena" className="w-16 h-16 object-contain" />
+          <img src={logo} alt="Al Baraka" className="w-16 h-16 object-contain" />
           <h1 className="text-2xl font-bold text-foreground">Complétez votre profil</h1>
           <p className="text-muted-foreground text-sm text-center max-w-md">
             Avant d'accéder à votre espace, merci de renseigner vos informations. Elles sont nécessaires pour la facturation.

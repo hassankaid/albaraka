@@ -15,6 +15,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Inter", "sans-serif"],
+        heading: ["Cormorant Garamond", "serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -60,6 +61,18 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        gold: {
+          50: "#FDF8ED",
+          100: "#F9EFD4",
+          200: "#F5D77A",
+          300: "#E8C84D",
+          400: "#D4AF37",
+          500: "#C5A55A",
+          600: "#A68B3E",
+          700: "#8A7232",
+          800: "#6E5A28",
+          900: "#523F1C",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -75,10 +88,20 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% center" },
+          "100%": { backgroundPosition: "200% center" },
+        },
+        "gold-pulse": {
+          "0%, 100%": { opacity: "0.4" },
+          "50%": { opacity: "0.8" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        shimmer: "shimmer 3s linear infinite",
+        "gold-pulse": "gold-pulse 3s ease-in-out infinite",
       },
     },
   },

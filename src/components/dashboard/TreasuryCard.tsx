@@ -29,7 +29,7 @@ export default function TreasuryCard({ tresoIn, tresoOut, tresoRemaining, commis
   const outbreakItems = [
     { label: "Commissions", amount: commissionsPaid, color: "bg-orange-400" },
     { label: "Salaires", amount: totalSalariesCumul, color: "bg-blue-400" },
-    { label: "Charges fixes", amount: totalFixedChargesCumul, color: "bg-violet-400" },
+    { label: "Charges fixes", amount: totalFixedChargesCumul, color: "bg-gold-400" },
     { label: "Publicité", amount: totalAdsCumul, color: "bg-rose-400" },
   ];
 

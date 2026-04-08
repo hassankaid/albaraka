@@ -198,7 +198,7 @@ export default function AdminTrainingList() {
           <div>
             <h2 className="text-xl font-bold text-foreground">Gestion des formations</h2>
             <p className="text-sm text-muted-foreground">
-              Crée, édite et organise tes formations Ethicarena Training
+              Crée, édite et organise tes formations Al Baraka Training
             </p>
           </div>
         </div>

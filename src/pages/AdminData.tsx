@@ -501,7 +501,7 @@ export default function AdminData() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <h2 className="text-2xl font-bold font-heading text-foreground flex items-center gap-2">
             <Database className="h-6 w-6" /> Gestion des données
           </h2>
           <p className="text-sm text-muted-foreground mt-0.5">Cliquez sur une valeur pour la modifier directement</p>
@@ -514,7 +514,7 @@ export default function AdminData() {
 
       {/* Counters */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border-border/50 cursor-pointer hover:ring-1 hover:ring-primary/50 transition-all" onClick={() => setTab("leads")}>
+        <Card className="bg-gradient-to-br from-gold-500/20 to-gold-600/20 border-border/50 cursor-pointer hover:ring-1 hover:ring-primary/50 transition-all" onClick={() => setTab("leads")}>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-background/50"><Users className="h-5 w-5 text-foreground" /></div>
             <div>
@@ -523,7 +523,7 @@ export default function AdminData() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 border-border/50 cursor-pointer hover:ring-1 hover:ring-primary/50 transition-all" onClick={() => setTab("calls")}>
+        <Card className="bg-gradient-to-br from-gold-400/20 to-gold-600/20 border-border/50 cursor-pointer hover:ring-1 hover:ring-primary/50 transition-all" onClick={() => setTab("calls")}>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-background/50"><Phone className="h-5 w-5 text-foreground" /></div>
             <div>

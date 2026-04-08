@@ -81,7 +81,7 @@ export const AGENT_SHORTCUTS: QuickShortcut[] = [
   },
   {
     label: "Les 4 piliers en bref",
-    prompt: "Explique-moi les 4 piliers de l'accompagnement Ethicarena, version courte pour réviser avant un closing.",
+    prompt: "Explique-moi les 4 piliers de l'accompagnement Al Baraka, version courte pour réviser avant un closing.",
   },
 ];
 

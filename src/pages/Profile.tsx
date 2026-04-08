@@ -326,7 +326,7 @@ export default function Profile() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Mon profil</h2>
+        <h2 className="text-2xl font-bold font-heading text-foreground">Mon profil</h2>
         <p className="text-sm text-muted-foreground mt-0.5">Gérez vos informations personnelles</p>
       </div>
 

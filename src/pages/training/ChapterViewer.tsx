@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ChapterSidebar } from "@/components/training/ChapterSidebar";
-import { VimeoPlayer } from "@/components/training/VimeoPlayer";
+import { VideoPlayer } from "@/components/training/VideoPlayer";
+import { ChapterCompletionModal } from "@/components/training/ChapterCompletionModal";
 import {
   ArrowLeft,
   ArrowRight,
@@ -31,6 +32,7 @@ interface ChapitreVideo {
   vimeo_id: string | null;
   ordre: number;
   duree_secondes: number | null;
+  notes: string | null;
 }
 
 interface ChapitreRessource {
@@ -39,6 +41,7 @@ interface ChapitreRessource {
   type: string;
   url: string;
   ordre: number;
+  video_id: string | null;
 }
 
 export default function ChapterViewer() {
@@ -49,6 +52,7 @@ export default function ChapterViewer() {
   const userId = profile?.id;
   const isCeo = profile?.role === "ceo";
   const [sidebarOpenMobile, setSidebarOpenMobile] = useState(false);
+  const [completionModalOpen, setCompletionModalOpen] = useState(false);
 
   // ── Load chapitre + videos + ressources ─────────────────────
   const { data: chapterData, isLoading: loadingChapter } = useQuery({
@@ -58,12 +62,12 @@ export default function ChapterViewer() {
       const { data: chapitre, error } = await (supabase as any)
         .from("formation_chapitres")
         .select(
-          `id, titre, description, ordre, status, duree_estimee_minutes,
+          `id, titre, description, ordre, status, duree_estimee_minutes, notes_formateur,
           formation_modules!inner(id, titre, formation_id,
             formations!inner(id, slug, titre)
           ),
-          chapitre_videos(id, titre, url, vimeo_id, ordre, duree_secondes),
-          chapitre_ressources(id, titre, type, url, ordre)`
+          chapitre_videos(id, titre, url, vimeo_id, ordre, duree_secondes, notes),
+          chapitre_ressources(id, titre, type, url, ordre, video_id)`
         )
         .eq("id", chapitreId!)
         .maybeSingle();
@@ -139,8 +143,8 @@ export default function ChapterViewer() {
     },
   });
 
-  // ── Mutation : toggle chapitre completion ───────────────────
-  const toggleCompletionMutation = useMutation({
+  // ── Mutation : set chapitre completion (used internally) ─────
+  const setChapterCompletion = useMutation({
     mutationFn: async (completed: boolean) => {
       const { error } = await (supabase as any).rpc("set_chapter_completion", {
         p_chapitre_id: chapitreId!,
@@ -150,7 +154,9 @@ export default function ChapterViewer() {
       return completed;
     },
     onSuccess: (completed) => {
-      toast(completed ? "Chapitre terminé !" : "Marqué comme non terminé");
+      if (completed) {
+        setCompletionModalOpen(true);
+      }
       refetchCompletion();
       queryClient.invalidateQueries({ queryKey: ["training"] });
     },
@@ -159,20 +165,32 @@ export default function ChapterViewer() {
     },
   });
 
-  // ── Callback : une vidéo atteint 95% ────────────────────────
-  const handleVideoNearEnd = async (videoId: string, watchedSeconds: number) => {
-    await (supabase as any).from("video_progress").upsert(
-      {
-        user_id: userId!,
-        video_id: videoId,
-        watched_seconds: Math.round(watchedSeconds),
-        completed: true,
-        last_watched_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id,video_id" }
-    );
+  // ── Toggle manual pour chapitres SANS vidéos ───────────────
+  const toggleChapterManual = useMutation({
+    mutationFn: async (completed: boolean) => {
+      const { error } = await (supabase as any).rpc("set_chapter_completion", {
+        p_chapitre_id: chapitreId!,
+        p_completed: completed,
+      });
+      if (error) throw error;
+      return completed;
+    },
+    onSuccess: (completed) => {
+      if (completed) {
+        setCompletionModalOpen(true);
+      } else {
+        toast("Marqué comme non terminé");
+      }
+      refetchCompletion();
+      queryClient.invalidateQueries({ queryKey: ["training"] });
+    },
+    onError: () => {
+      toast.error("Impossible de mettre à jour la progression.");
+    },
+  });
 
-    // Check if all videos are now completed
+  // ── Recalcul état chapitre basé sur les vidéos ─────────────
+  const recheckChapterFromVideos = async () => {
     const { data: allProgress } = await supabase
       .from("video_progress")
       .select("video_id, completed")
@@ -186,10 +204,52 @@ export default function ChapterViewer() {
       );
 
     if (allCompleted && !isCompleted) {
-      toggleCompletionMutation.mutate(true);
-    } else {
-      queryClient.invalidateQueries({ queryKey: ["training", "video-progress"] });
+      setChapterCompletion.mutate(true);
+    } else if (!allCompleted && isCompleted) {
+      // Une vidéo a été décochée → chapitre repasse en non terminé
+      await (supabase as any).rpc("set_chapter_completion", {
+        p_chapitre_id: chapitreId!,
+        p_completed: false,
+      });
+      refetchCompletion();
+      queryClient.invalidateQueries({ queryKey: ["training"] });
     }
+  };
+
+  // ── Callback : une vidéo atteint 95% (auto) ────────────────
+  const handleVideoNearEnd = async (videoId: string, watchedSeconds: number) => {
+    await (supabase as any).from("video_progress").upsert(
+      {
+        user_id: userId!,
+        video_id: videoId,
+        watched_seconds: Math.round(watchedSeconds),
+        completed: true,
+        last_watched_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,video_id" }
+    );
+
+    toast.success("Vidéo terminée ✓");
+    queryClient.invalidateQueries({ queryKey: ["training", "video-progress"] });
+    await recheckChapterFromVideos();
+  };
+
+  // ── Toggle manuel d'une vidéo (vue / non vue) ──────────────
+  const handleToggleVideo = async (videoId: string, markCompleted: boolean) => {
+    await (supabase as any).from("video_progress").upsert(
+      {
+        user_id: userId!,
+        video_id: videoId,
+        watched_seconds: 0,
+        completed: markCompleted,
+        last_watched_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,video_id" }
+    );
+
+    toast.success(markCompleted ? "Vidéo marquée comme vue" : "Vidéo marquée comme non vue");
+    queryClient.invalidateQueries({ queryKey: ["training", "video-progress"] });
+    await recheckChapterFromVideos();
   };
 
   // ── Loading state ───────────────────────────────────────────
@@ -232,6 +292,13 @@ export default function ChapterViewer() {
 
   const { chapitre, videos, ressources, formation, module: chapModule } = chapterData;
   const hasPlayableVideo = videos.some((v) => v.vimeo_id || v.url);
+  const hasVideos = videos.length > 0;
+  const videosCompleted = videoProgressMap
+    ? videos.filter((v) => videoProgressMap.get(v.id)?.completed).length
+    : 0;
+  const chapterRessources = ressources.filter((r) => !r.video_id);
+  const getVideoRessources = (videoId: string) =>
+    ressources.filter((r) => r.video_id === videoId);
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
@@ -289,7 +356,7 @@ export default function ChapterViewer() {
                 {chapitre.titre}
               </h1>
               {chapitre.description && (
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">
                   {chapitre.description}
                 </p>
               )}
@@ -306,23 +373,35 @@ export default function ChapterViewer() {
           {hasPlayableVideo ? (
             <div className="space-y-4">
               {videos.length === 1 ? (
-                <VimeoPlayer
-                  video={videos[0]}
-                  onNearEnd={() =>
-                    handleVideoNearEnd(
-                      videos[0].id,
-                      (videos[0].duree_secondes ?? 0) * 0.95
-                    )
-                  }
-                  initialWatchedSeconds={
-                    videoProgressMap?.get(videos[0].id)?.watched_seconds ?? 0
-                  }
-                />
+                <>
+                  <VideoPlayer
+                    video={videos[0]}
+                    onNearEnd={() =>
+                      handleVideoNearEnd(
+                        videos[0].id,
+                        (videos[0].duree_secondes ?? 0) * 0.95
+                      )
+                    }
+                    initialWatchedSeconds={
+                      videoProgressMap?.get(videos[0].id)?.watched_seconds ?? 0
+                    }
+                  />
+                  <VideoToggle
+                    completed={!!videoProgressMap?.get(videos[0].id)?.completed}
+                    onToggle={(val) => handleToggleVideo(videos[0].id, val)}
+                  />
+                  <VideoExtras
+                    notes={videos[0].notes}
+                    ressources={getVideoRessources(videos[0].id)}
+                  />
+                </>
               ) : (
                 <MultiVideoPlayer
                   videos={videos}
                   videoProgressMap={videoProgressMap}
                   onNearEnd={handleVideoNearEnd}
+                  onToggleVideo={handleToggleVideo}
+                  getVideoRessources={getVideoRessources}
                 />
               )}
             </div>
@@ -357,25 +436,38 @@ export default function ChapterViewer() {
               Précédent
             </Button>
 
-            <Button
-              variant={isCompleted ? "default" : "outline"}
-              size="sm"
-              onClick={() => toggleCompletionMutation.mutate(!isCompleted)}
-              disabled={toggleCompletionMutation.isPending}
-              className="gap-2"
-            >
-              {isCompleted ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4" />
-                  Terminé
-                </>
-              ) : (
-                <>
-                  <Circle className="h-4 w-4" />
-                  Marquer comme terminé
-                </>
-              )}
-            </Button>
+            {hasVideos ? (
+              <div className="flex items-center gap-2 text-sm">
+                {isCompleted ? (
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                ) : (
+                  <Circle className="h-4 w-4 text-muted-foreground" />
+                )}
+                <span className={isCompleted ? "text-primary font-medium" : "text-muted-foreground"}>
+                  {videosCompleted}/{videos.length} vidéo{videos.length > 1 ? "s" : ""} vue{videos.length > 1 ? "s" : ""}
+                </span>
+              </div>
+            ) : (
+              <Button
+                variant={isCompleted ? "default" : "outline"}
+                size="sm"
+                onClick={() => toggleChapterManual.mutate(!isCompleted)}
+                disabled={toggleChapterManual.isPending}
+                className="gap-2"
+              >
+                {isCompleted ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    Terminé
+                  </>
+                ) : (
+                  <>
+                    <Circle className="h-4 w-4" />
+                    Marquer comme terminé
+                  </>
+                )}
+              </Button>
+            )}
 
             <Button
               variant="outline"
@@ -394,46 +486,60 @@ export default function ChapterViewer() {
             </Button>
           </div>
 
-          {/* Ressources */}
-          {ressources.length > 0 && (
+          {/* Notes formateur (synthèse chapitre) */}
+          {chapitre.notes_formateur && (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  À retenir
+                </h3>
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <p className="text-sm text-foreground whitespace-pre-line">
+                    {chapitre.notes_formateur}
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Ressources du chapitre (non liées à une vidéo) */}
+          {chapterRessources.length > 0 && (
             <>
               <Separator />
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">
-                  Ressources ({ressources.length})
+                  Ressources ({chapterRessources.length})
                 </h3>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {ressources.map((r) => {
-                    const Icon =
-                      r.type === "pdf"
-                        ? FileText
-                        : r.type === "image"
-                        ? ImageIcon
-                        : LinkIcon;
-                    return (
-                      <a
-                        key={r.id}
-                        href={r.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:bg-secondary transition-colors"
-                      >
-                        <Icon className="h-4 w-4 text-primary shrink-0" />
-                        <span className="text-sm text-foreground flex-1 line-clamp-1">
-                          {r.titre}
-                        </span>
-                        <span className="text-xs text-muted-foreground uppercase">
-                          {r.type}
-                        </span>
-                      </a>
-                    );
-                  })}
+                  {chapterRessources.map((r) => (
+                    <RessourceLink key={r.id} ressource={r} />
+                  ))}
                 </div>
               </div>
             </>
           )}
         </div>
       </div>
+
+      {/* Modal de félicitations */}
+      <ChapterCompletionModal
+        open={completionModalOpen}
+        onOpenChange={setCompletionModalOpen}
+        chapterTitle={chapitre.titre}
+        hasNextChapter={!!navData?.next_chapitre_id}
+        onGoToNext={() => {
+          setCompletionModalOpen(false);
+          if (navData?.next_chapitre_id) {
+            navigate(`/training/${formation.slug}/chapitre/${navData.next_chapitre_id}`);
+          }
+        }}
+        onGoToFormation={() => {
+          setCompletionModalOpen(false);
+          navigate(`/training/${formation.slug}`);
+        }}
+      />
     </div>
   );
 }
@@ -443,17 +549,21 @@ function MultiVideoPlayer({
   videos,
   videoProgressMap,
   onNearEnd,
+  onToggleVideo,
+  getVideoRessources,
 }: {
   videos: ChapitreVideo[];
   videoProgressMap?: Map<string, { watched_seconds: number; completed: boolean }>;
   onNearEnd: (videoId: string, watchedSeconds: number) => void;
+  onToggleVideo: (videoId: string, completed: boolean) => void;
+  getVideoRessources: (videoId: string) => ChapitreRessource[];
 }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const active = videos[activeIdx];
 
   return (
     <div className="space-y-3">
-      <VimeoPlayer
+      <VideoPlayer
         key={active.id}
         video={active}
         onNearEnd={() =>
@@ -463,6 +573,10 @@ function MultiVideoPlayer({
           videoProgressMap?.get(active.id)?.watched_seconds ?? 0
         }
       />
+      <VideoExtras
+        notes={active.notes}
+        ressources={getVideoRessources(active.id)}
+      />
       <div className="space-y-1">
         <p className="text-xs font-medium text-muted-foreground">
           Vidéos du chapitre ({videos.length})
@@ -471,25 +585,112 @@ function MultiVideoPlayer({
           const done = videoProgressMap?.get(v.id)?.completed;
           const isActive = i === activeIdx;
           return (
-            <button
+            <div
               key={v.id}
-              onClick={() => setActiveIdx(i)}
-              className={`w-full flex items-center gap-3 p-3 rounded-lg text-left text-sm transition-colors ${
+              className={`flex items-center gap-3 p-3 rounded-lg text-sm transition-colors ${
                 isActive
                   ? "bg-primary/10 text-primary"
                   : "hover:bg-secondary text-foreground"
               }`}
             >
-              {done ? (
-                <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-              ) : (
-                <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
-              )}
-              <span className="flex-1">{v.titre}</span>
-            </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleVideo(v.id, !done);
+                }}
+                className="shrink-0 hover:scale-110 transition-transform"
+                title={done ? "Marquer comme non vue" : "Marquer comme vue"}
+              >
+                {done ? (
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                ) : (
+                  <Circle className="h-4 w-4 text-muted-foreground" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveIdx(i)}
+                className="flex-1 text-left"
+              >
+                {v.titre}
+              </button>
+            </div>
           );
         })}
       </div>
     </div>
+  );
+}
+
+// ─── Video toggle (vue / non vue) ─────────────────────────────
+function VideoToggle({
+  completed,
+  onToggle,
+}: {
+  completed: boolean;
+  onToggle: (val: boolean) => void;
+}) {
+  return (
+    <button
+      onClick={() => onToggle(!completed)}
+      className={`flex items-center gap-2 text-sm transition-colors ${
+        completed
+          ? "text-primary hover:text-primary/80"
+          : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {completed ? (
+        <CheckCircle2 className="h-4 w-4" />
+      ) : (
+        <Circle className="h-4 w-4" />
+      )}
+      {completed ? "Vidéo vue" : "Marquer comme vue"}
+    </button>
+  );
+}
+
+// ─── Video extras (notes + ressources) ────────────────────────
+function VideoExtras({
+  notes,
+  ressources,
+}: {
+  notes: string | null;
+  ressources: ChapitreRessource[];
+}) {
+  if (!notes && ressources.length === 0) return null;
+  return (
+    <div className="space-y-3">
+      {notes && (
+        <div className="rounded-lg border border-border bg-muted/50 p-4">
+          <p className="text-sm text-foreground whitespace-pre-line">{notes}</p>
+        </div>
+      )}
+      {ressources.length > 0 && (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {ressources.map((r) => (
+            <RessourceLink key={r.id} ressource={r} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Ressource link ───────────────────────────────────────────
+function RessourceLink({ ressource: r }: { ressource: ChapitreRessource }) {
+  const Icon =
+    r.type === "pdf" ? FileText : r.type === "image" ? ImageIcon : LinkIcon;
+  return (
+    <a
+      href={r.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:bg-secondary transition-colors"
+    >
+      <Icon className="h-4 w-4 text-primary shrink-0" />
+      <span className="text-sm text-foreground flex-1 line-clamp-1">
+        {r.titre}
+      </span>
+      <span className="text-xs text-muted-foreground uppercase">{r.type}</span>
+    </a>
   );
 }
