@@ -1,45 +1,5 @@
 export type AgentContextType = "setting_dm";
 
-export interface QuickShortcut {
-  label: string;
-  prompt: string;
-}
-
-export const AGENT_SHORTCUTS: QuickShortcut[] = [
-  {
-    label: "Silence total prospect",
-    prompt: "J'ai envoyé mon vocal d'accroche il y a 48h, le prospect ne répond pas. Comment relancer ?",
-  },
-  {
-    label: "'C'est combien ?'",
-    prompt: "Le prospect me dit dès le premier message : \"C'est combien votre truc ?\". Comment répondre ?",
-  },
-  {
-    label: "'Peux-tu m'en dire plus ?'",
-    prompt: "Le prospect a regardé la vidéo et demande plus d'infos par message. Comment répondre sans dévoiler le métier ?",
-  },
-  {
-    label: "'Ça ressemble à du MLM'",
-    prompt: "Le prospect me dit : \"Ça ressemble à du MLM votre truc\". Comment désamorcer ?",
-  },
-  {
-    label: "'Pas intéressé'",
-    prompt: "Le prospect répond sèchement qu'il n'est pas intéressé. Comment conclure proprement ?",
-  },
-  {
-    label: "'J'ai pas le temps'",
-    prompt: "Le prospect dit qu'il n'a pas le temps. Comment garder la porte ouverte ?",
-  },
-  {
-    label: "Qualifier le budget",
-    prompt: "Je suis à l'étape budget. Le prospect évite de répondre. Comment qualifier sans être intrusif ?",
-  },
-  {
-    label: "Inviter à la conférence",
-    prompt: "Le prospect est qualifié. Comment l'inviter à la conférence de dimanche de manière convaincante ?",
-  },
-];
-
 export interface ParsedAgentResponse {
   isThreeBlocks: boolean;
   blocks: {

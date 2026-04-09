@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,6 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
-  AGENT_SHORTCUTS,
   parseAgentResponse,
   extractTitleFromMessage,
 } from "./agent/constants";
@@ -60,6 +59,16 @@ export default function AgentIA() {
   const [renameValue, setRenameValue] = useState("");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize de la zone de saisie en fonction du contenu
+  useLayoutEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    const next = Math.min(ta.scrollHeight, 320);
+    ta.style.height = `${next}px`;
+  }, [input]);
 
   const createConversation = useCreateAgentConversation();
   const appendMessage = useAppendAgentMessage();
@@ -165,10 +174,6 @@ export default function AgentIA() {
     }
   };
 
-  const handleShortcut = (prompt: string) => {
-    setInput(prompt);
-  };
-
   const handleCopyResponse = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success("Réponse copiée !");
@@ -249,17 +254,6 @@ export default function AgentIA() {
                       la meilleure réponse en se basant sur les scripts et objections Al Baraka.
                     </p>
                   </div>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {AGENT_SHORTCUTS.slice(0, 6).map((s, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleShortcut(s.prompt)}
-                        className="text-xs px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
-                      >
-                        {s.label}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </div>
             )}
@@ -281,21 +275,24 @@ export default function AgentIA() {
 
         {/* Input */}
         <Card>
-          <CardContent className="p-3">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Colle le message du prospect ou pose ta question…"
-              rows={3}
-              className="resize-none border-0 focus-visible:ring-0 shadow-none p-0"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-            />
-            <div className="flex items-center justify-between mt-2">
+          <CardContent className="p-3 space-y-3">
+            <div className="rounded-xl border-2 border-gold-400/40 bg-background focus-within:border-gold-400/70 focus-within:ring-2 focus-within:ring-gold-400/20 transition-colors px-4 py-3">
+              <Textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Colle le message du prospect ou pose ta question…"
+                rows={3}
+                className="resize-none border-0 focus-visible:ring-0 shadow-none p-0 min-h-[72px] max-h-[320px] text-sm leading-relaxed bg-transparent"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+              />
+            </div>
+            <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
                 Entrée pour envoyer · Maj+Entrée pour aller à la ligne
               </p>
