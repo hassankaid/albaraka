@@ -64,56 +64,6 @@ export type Database = {
           },
         ]
       }
-      activity_kpis_legacy: {
-        Row: {
-          ai_feedback: string | null
-          appointments: number
-          created_at: string
-          id: string
-          messages_sent: number
-          replies_received: number
-          sales_made: number
-          updated_at: string
-          user_id: string
-          videos_published: number
-          week_start: string
-        }
-        Insert: {
-          ai_feedback?: string | null
-          appointments?: number
-          created_at?: string
-          id?: string
-          messages_sent?: number
-          replies_received?: number
-          sales_made?: number
-          updated_at?: string
-          user_id: string
-          videos_published?: number
-          week_start: string
-        }
-        Update: {
-          ai_feedback?: string | null
-          appointments?: number
-          created_at?: string
-          id?: string
-          messages_sent?: number
-          replies_received?: number
-          sales_made?: number
-          updated_at?: string
-          user_id?: string
-          videos_published?: number
-          week_start?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "activity_kpis_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       activity_objectives: {
         Row: {
           created_at: string
@@ -1160,7 +1110,6 @@ export type Database = {
           format: string
           id: string
           ideas: Json | null
-          montage_checklist: Json | null
           publication_checklist: Json | null
           published_at: string | null
           scheduled_for: string | null
@@ -1179,7 +1128,6 @@ export type Database = {
           format: string
           id?: string
           ideas?: Json | null
-          montage_checklist?: Json | null
           publication_checklist?: Json | null
           published_at?: string | null
           scheduled_for?: string | null
@@ -1198,7 +1146,6 @@ export type Database = {
           format?: string
           id?: string
           ideas?: Json | null
-          montage_checklist?: Json | null
           publication_checklist?: Json | null
           published_at?: string | null
           scheduled_for?: string | null

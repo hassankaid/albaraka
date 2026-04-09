@@ -6,7 +6,6 @@ import {
   ContentIdea,
   ContentScript,
   ContentDescription,
-  MontageChecklist,
   PublicationChecklist,
   WizardStep,
   SaveState,
@@ -24,12 +23,6 @@ const initialState: ContentWizardState = {
   ideas: [],
   selectedIdea: null,
   script: null,
-  montageChecklist: {
-    pexels_downloaded: false,
-    edited_in_capcut: false,
-    voiceover_recorded: false,
-    subtitles_added: false,
-  },
   description: null,
   publicationChecklist: {
     instagram: false,
@@ -49,7 +42,6 @@ type Action =
   | { type: "SET_IDEAS"; payload: ContentIdea[] }
   | { type: "SELECT_IDEA"; payload: ContentIdea }
   | { type: "SET_SCRIPT"; payload: ContentScript }
-  | { type: "TOGGLE_MONTAGE"; payload: keyof MontageChecklist }
   | { type: "SET_DESCRIPTION"; payload: ContentDescription }
   | { type: "TOGGLE_PUBLICATION"; payload: keyof PublicationChecklist }
   | { type: "GO_TO_STEP"; payload: WizardStep }
@@ -91,14 +83,6 @@ function rawReducer(state: ContentWizardState, action: Action): ContentWizardSta
         script: action.payload,
         stepsToRegenerate: state.stepsToRegenerate.filter((s) => s !== 2),
       };
-    case "TOGGLE_MONTAGE":
-      return {
-        ...state,
-        montageChecklist: {
-          ...state.montageChecklist,
-          [action.payload]: !state.montageChecklist[action.payload],
-        },
-      };
     case "SET_DESCRIPTION":
       return {
         ...state,
@@ -139,7 +123,6 @@ function rawReducer(state: ContentWizardState, action: Action): ContentWizardSta
         ideas: cp.ideas || [],
         selectedIdea: cp.selected_idea,
         script: cp.script,
-        montageChecklist: cp.montage_checklist || initialState.montageChecklist,
         description: cp.description,
         publicationChecklist: cp.publication_checklist || initialState.publicationChecklist,
         currentStep: Math.max(1, Math.min(5, cp.current_step || 1)) as WizardStep,
@@ -190,7 +173,6 @@ const ContentWizardContext = createContext<{
   setIdeas: (i: ContentIdea[]) => void;
   selectIdea: (i: ContentIdea) => void;
   setScript: (s: ContentScript) => void;
-  toggleMontageItem: (k: keyof MontageChecklist) => void;
   setDescription: (d: ContentDescription) => void;
   togglePublicationPlatform: (k: keyof PublicationChecklist) => void;
   goToStep: (s: WizardStep) => void;
@@ -212,8 +194,6 @@ export function ContentWizardProvider({ children }: { children: ReactNode }) {
     setIdeas: (i: ContentIdea[]) => dispatch({ type: "SET_IDEAS", payload: i }),
     selectIdea: (i: ContentIdea) => dispatch({ type: "SELECT_IDEA", payload: i }),
     setScript: (s: ContentScript) => dispatch({ type: "SET_SCRIPT", payload: s }),
-    toggleMontageItem: (k: keyof MontageChecklist) =>
-      dispatch({ type: "TOGGLE_MONTAGE", payload: k }),
     setDescription: (d: ContentDescription) =>
       dispatch({ type: "SET_DESCRIPTION", payload: d }),
     togglePublicationPlatform: (k: keyof PublicationChecklist) =>

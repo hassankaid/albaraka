@@ -35,13 +35,6 @@ export interface ContentDescription {
   full_text: string;
 }
 
-export interface MontageChecklist {
-  pexels_downloaded: boolean;
-  edited_in_capcut: boolean;
-  voiceover_recorded: boolean;
-  subtitles_added: boolean;
-}
-
 export interface PublicationChecklist {
   instagram: boolean;
   tiktok: boolean;
@@ -65,7 +58,6 @@ export interface ContentWizardState {
   ideas: ContentIdea[];
   selectedIdea: ContentIdea | null;
   script: ContentScript | null;
-  montageChecklist: MontageChecklist;
   description: ContentDescription | null;
   publicationChecklist: PublicationChecklist;
   currentStep: WizardStep;

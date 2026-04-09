@@ -7,7 +7,7 @@ import type { ContentPieceStatus } from "@/hooks/useContentPiece";
  *
  * Règles (dans l'ordre) :
  * 1. publie   : au moins une plateforme cochée
- * 2. pret     : tout rempli (idée + script + description + montage complet) ET date de publication définie
+ * 2. pret     : tout rempli (idée + script + description) ET date de publication définie
  * 3. en_cours : tous les autres cas
  */
 export function computeStatus(
@@ -16,7 +16,6 @@ export function computeStatus(
     | "selectedIdea"
     | "script"
     | "description"
-    | "montageChecklist"
     | "publicationChecklist"
     | "scheduledFor"
   >
@@ -29,13 +28,10 @@ export function computeStatus(
   const hasIdea = state.selectedIdea !== null;
   const hasScript = state.script !== null;
   const hasDescription = state.description !== null;
-  const montageComplete = Object.values(state.montageChecklist).every(
-    (v) => v === true
-  );
   const hasScheduledDate =
     state.scheduledFor !== null && state.scheduledFor !== "";
 
-  if (hasIdea && hasScript && hasDescription && montageComplete && hasScheduledDate) {
+  if (hasIdea && hasScript && hasDescription && hasScheduledDate) {
     return "pret";
   }
 

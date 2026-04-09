@@ -61,10 +61,9 @@ function computeRealProgress(c: ContentPiece): number {
   let steps = 0;
   if (c.selected_idea) steps++;
   if (c.script) steps++;
-  if (c.montage_checklist && Object.values(c.montage_checklist).some(Boolean)) steps++;
   if (c.description) steps++;
   if (c.publication_checklist && Object.values(c.publication_checklist).some(Boolean)) steps++;
-  return Math.round((steps / 5) * 100);
+  return Math.round((steps / 4) * 100);
 }
 
 function shortTimeAgo(dateStr: string): string {

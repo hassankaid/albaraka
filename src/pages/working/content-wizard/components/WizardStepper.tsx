@@ -14,7 +14,9 @@ export function WizardStepper() {
       case 2:
         return state.script !== null;
       case 3:
-        return Object.values(state.montageChecklist).every(Boolean);
+        // Étape informative (4 étapes de tournage/montage), considérée
+        // comme franchie dès que l'utilisateur passe à l'étape suivante.
+        return state.currentStep > 3;
       case 4:
         return state.description !== null;
       case 5:

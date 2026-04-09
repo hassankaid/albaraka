@@ -7,7 +7,6 @@ import type {
   ContentIdea,
   ContentScript,
   ContentDescription,
-  MontageChecklist,
   PublicationChecklist,
 } from "@/pages/working/content-wizard/types";
 
@@ -24,7 +23,6 @@ export interface ContentPiece {
   selected_idea: ContentIdea | null;
   script: ContentScript | null;
   description: ContentDescription | null;
-  montage_checklist: MontageChecklist;
   publication_checklist: PublicationChecklist;
   scheduled_for: string | null;
   published_at: string | null;
@@ -43,7 +41,6 @@ export interface ContentPieceUpsertInput {
   selected_idea?: ContentIdea | null;
   script?: ContentScript | null;
   description?: ContentDescription | null;
-  montage_checklist?: MontageChecklist;
   publication_checklist?: PublicationChecklist;
   scheduled_for?: string | null;
   current_step?: number;
