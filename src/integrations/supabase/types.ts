@@ -1566,6 +1566,7 @@ export type Database = {
           raw_email: string | null
           raw_full_name: string | null
           raw_phone: string | null
+          recycled_at: string | null
           source: string
           source_detail: string | null
           status: string
@@ -1591,6 +1592,7 @@ export type Database = {
           raw_email?: string | null
           raw_full_name?: string | null
           raw_phone?: string | null
+          recycled_at?: string | null
           source: string
           source_detail?: string | null
           status?: string
@@ -1616,6 +1618,7 @@ export type Database = {
           raw_email?: string | null
           raw_full_name?: string | null
           raw_phone?: string | null
+          recycled_at?: string | null
           source?: string
           source_detail?: string | null
           status?: string
@@ -2529,6 +2532,7 @@ export type Database = {
           raw_email: string | null
           raw_full_name: string | null
           raw_phone: string | null
+          recycled_at: string | null
           source: string | null
           source_detail: string | null
           source_label: string | null

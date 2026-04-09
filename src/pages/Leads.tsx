@@ -13,13 +13,17 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
+import type { DateRange } from "react-day-picker";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   Users, UserPlus, RefreshCw, Search, Phone, Inbox, ChevronDown, Instagram, Pencil, Eye, Info, Copy,
-  ChevronLeft, ChevronRight, PartyPopper, CheckSquare, UserMinus,
+  ChevronLeft, ChevronRight, PartyPopper, CheckSquare, UserMinus, CalendarRange,
 } from "lucide-react";
+import { getDateKey } from "@/lib/formatDate";
+import { fr } from "date-fns/locale";
 import LeadInstagramForm from "@/components/LeadInstagramForm";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
 import ProcessLeadModal from "@/components/leads/ProcessLeadModal";
@@ -33,10 +37,25 @@ import {
   getSourceBadgeClass,
   getSourceLabel,
 } from "@/lib/leadConfig";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
-
 type LeadEnriched = Tables<"leads_enriched">;
+
+// Convert a Date picked on the calendar (browser-local interpretation)
+// to a YYYY-MM-DD string based on its visible day parts — this is the day the user clicked.
+const dateToYMD = (d: Date): string => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+// A lead is in the logical "À recycler" queue when it has recycled_at set and no assignee.
+// recycled_at is set either:
+//  - instantly by ProcessLeadModal when a setter saves pas_de_reponse / pas_de_reponse_post_conference
+//  - by the daily cron (recycle-stale-leads) for organic leads unassigned > 14 days
+// The lead's status column remains unchanged — it still reflects the pipeline stage,
+// the reason for recycling lives in the activity log (action: 'recycled').
+const isRecycled = (l: Pick<LeadEnriched, "assigned_to" | "recycled_at">): boolean =>
+  !l.assigned_to && !!l.recycled_at;
 
 const COLLAB_TABS = [
   { value: "a_affecter", label: "À affecter" },
@@ -53,6 +72,7 @@ const CEO_TABS = [
 export default function Leads() {
   const { profile: user } = useAuth();
   const realUser = user;
+  const userTz = user?.timezone || "Europe/Paris";
   const { toast } = useToast();
   const [leads, setLeads] = useState<LeadEnriched[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +86,7 @@ export default function Leads() {
   const [apporteurs, setApporteurs] = useState<{ id: string; full_name: string }[]>([]);
   const [collabFilter, setCollabFilter] = useState("all");
   const [apporteurFilter, setApporteurFilter] = useState("all");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [igFormOpen, setIgFormOpen] = useState(false);
   const [apporteurFormOpen, setApporteurFormOpen] = useState(false);
   const [processLead, setProcessLead] = useState<LeadEnriched | null>(null);
@@ -145,12 +166,15 @@ export default function Leads() {
 
   const handleAssignToMe = async (leadId: string, currentStatus?: string | null) => {
     if (!realUser) return;
+    const leadRow = leads.find((l) => l.id === leadId);
+    const fromRecycled = !!leadRow && isRecycled(leadRow);
     const updatePayload: Record<string, unknown> = {
       assigned_to: realUser.id,
       assigned_at: new Date().toISOString(),
     };
-    if (currentStatus === "a_recycler") {
+    if (fromRecycled) {
       updatePayload.status = "a_qualifier";
+      updatePayload.recycled_at = null;
     }
     const { error } = await supabase
       .from("leads")
@@ -164,20 +188,31 @@ export default function Leads() {
 
     await supabase.from("lead_activities").insert({
       lead_id: leadId, user_id: realUser.id, action: "assigned",
-      old_value: null, new_value: realUser.id, note: currentStatus === "a_recycler" ? "Réaffectation depuis recyclage" : null,
+      old_value: null, new_value: realUser.id,
+      note: fromRecycled ? "Réaffectation depuis recyclage" : null,
     });
+    if (fromRecycled && currentStatus !== "a_qualifier") {
+      await supabase.from("lead_activities").insert({
+        lead_id: leadId, user_id: realUser.id, action: "status_change",
+        old_value: currentStatus || null, new_value: "a_qualifier",
+        note: "Réinitialisation après auto-affectation depuis recyclage",
+      });
+    }
     toast({ title: "Lead affecté avec succès" });
     fetchLeads();
   };
 
   const handleReassign = async (leadId: string, oldAssignedTo: string | null, newUserId: string, currentStatus?: string | null) => {
     if (!realUser) return;
+    const leadRow = leads.find((l) => l.id === leadId);
+    const fromRecycled = !!leadRow && isRecycled(leadRow);
     const updatePayload: Record<string, unknown> = {
       assigned_to: newUserId,
       assigned_at: new Date().toISOString(),
     };
-    if (currentStatus === "a_recycler") {
+    if (fromRecycled) {
       updatePayload.status = "a_qualifier";
+      updatePayload.recycled_at = null;
     }
     const { error } = await supabase
       .from("leads")
@@ -190,7 +225,15 @@ export default function Leads() {
       await supabase.from("lead_activities").insert({
         lead_id: leadId, user_id: realUser.id, action: "reassigned",
         old_value: oldAssignedTo, new_value: newUserId,
+        note: fromRecycled ? "Réaffectation depuis recyclage" : null,
       });
+      if (fromRecycled && currentStatus !== "a_qualifier") {
+        await supabase.from("lead_activities").insert({
+          lead_id: leadId, user_id: realUser.id, action: "status_change",
+          old_value: currentStatus || null, new_value: "a_qualifier",
+          note: "Réinitialisation après redistribution depuis recyclage",
+        });
+      }
       toast({ title: "Lead réassigné avec succès" });
       fetchLeads();
     }
@@ -241,19 +284,39 @@ export default function Leads() {
   const executeBulkAssign = async (ids: string[], newUserId: string) => {
     if (!realUser) return;
     setBulkAssigning(true);
+
+    // Capture statuses BEFORE update so we can log the transition per lead
+    const leadsBefore = leads.filter((l) => l.id && ids.includes(l.id));
+
     const { error } = await supabase
       .from("leads")
-      .update({ assigned_to: newUserId, assigned_at: new Date().toISOString(), status: "a_qualifier" })
+      .update({
+        assigned_to: newUserId,
+        assigned_at: new Date().toISOString(),
+        status: "a_qualifier",
+        recycled_at: null,
+      })
       .in("id", ids);
 
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
-      const activities = ids.map((id) => ({
-        lead_id: id, user_id: realUser.id, action: "reassigned",
-        old_value: null, new_value: newUserId,
-        note: "Affectation en masse depuis recyclage",
-      }));
+      const activities: any[] = [];
+      for (const l of leadsBefore) {
+        activities.push({
+          lead_id: l.id, user_id: realUser.id, action: "reassigned",
+          old_value: l.assigned_to || null, new_value: newUserId,
+          note: "Affectation en masse depuis recyclage",
+        });
+        // Log the status transition if it actually changes
+        if (l.status && l.status !== "a_qualifier") {
+          activities.push({
+            lead_id: l.id, user_id: realUser.id, action: "status_change",
+            old_value: l.status, new_value: "a_qualifier",
+            note: "Réinitialisation après redistribution depuis recyclage",
+          });
+        }
+      }
       await supabase.from("lead_activities").insert(activities);
       toast({ title: `${ids.length} leads affectés avec succès` });
       setSelectedIds(new Set());
@@ -281,8 +344,12 @@ export default function Leads() {
   const counts = useMemo(() => ({
     total: scopedLeads.length,
     aQualifier: scopedLeads.filter((l) => l.status === "a_qualifier").length,
-    a_affecter: leads.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu", "a_recycler"].includes(l.status || "")).length,
-    a_recycler: leads.filter((l) => l.status === "a_recycler").length,
+    a_affecter: leads.filter((l) =>
+      !l.assigned_to
+      && !l.recycled_at
+      && !["call_booke", "close", "perdu"].includes(l.status || "")
+    ).length,
+    a_recycler: leads.filter((l) => isRecycled(l)).length,
     call_booke: scopedLeads.filter((l) => l.status === "call_booke").length,
     mes_leads: myLeadsCount,
   }), [scopedLeads, leads, myLeadsCount]);
@@ -292,10 +359,15 @@ export default function Leads() {
     let result: LeadEnriched[];
 
     if (tab === "a_affecter") {
-      // Always show ALL unassigned leads for everyone (excluding recycled)
-      result = leads.filter((l) => !l.assigned_to && !["call_booke", "close", "perdu", "a_recycler"].includes(l.status || ""));
+      // Always show ALL unassigned leads for everyone (excluding recycled queue)
+      result = leads.filter((l) =>
+        !l.assigned_to
+        && !l.recycled_at
+        && !["call_booke", "close", "perdu"].includes(l.status || "")
+      );
     } else if (tab === "a_recycler") {
-      result = leads.filter((l) => l.status === "a_recycler");
+      // Logical "À recycler" queue: unassigned leads with recycled_at set
+      result = leads.filter((l) => isRecycled(l));
     } else if (tab === "mes_leads") {
       result = user ? leads.filter((l) => l.assigned_to === user.id) : [];
     } else {
@@ -307,6 +379,16 @@ export default function Leads() {
     if (sourceFilter.length > 0) result = result.filter((l) => l.source && sourceFilter.includes(l.source));
     if (collabFilter !== "all") result = result.filter((l) => l.assigned_to === collabFilter);
     if (apporteurFilter !== "all") result = result.filter((l) => l.apporteur_id === apporteurFilter);
+
+    if (dateRange?.from && dateRange?.to) {
+      const fromKey = dateToYMD(dateRange.from);
+      const toKey = dateToYMD(dateRange.to);
+      result = result.filter((l) => {
+        if (!l.created_at) return false;
+        const leadKey = getDateKey(l.created_at, userTz);
+        return leadKey >= fromKey && leadKey <= toKey;
+      });
+    }
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -321,7 +403,7 @@ export default function Leads() {
     }
 
     return result;
-  }, [leads, scopedLeads, tab, statusFilter, sourceFilter, collabFilter, apporteurFilter, search, user]);
+  }, [leads, scopedLeads, tab, statusFilter, sourceFilter, collabFilter, apporteurFilter, search, dateRange, userTz, user]);
 
   useEffect(() => {
     setPage(0);
@@ -329,9 +411,10 @@ export default function Leads() {
     setSourceFilter(tab === "a_affecter" ? ADS_SOURCES : []);
     setCollabFilter("all");
     setApporteurFilter("all");
+    setDateRange(undefined);
   }, [tab]);
 
-  useEffect(() => { setPage(0); }, [statusFilter, sourceFilter.length, search, collabFilter, apporteurFilter]);
+  useEffect(() => { setPage(0); }, [statusFilter, sourceFilter.length, search, collabFilter, apporteurFilter, dateRange]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
   const paginatedLeads = useMemo(
@@ -367,8 +450,15 @@ export default function Leads() {
 
   const formatShortDate = (dateStr: string | null) => {
     if (!dateStr) return "—";
-    return format(new Date(dateStr), "d MMM", { locale: fr });
+    return new Date(dateStr).toLocaleDateString("fr-FR", {
+      timeZone: userTz,
+      day: "numeric",
+      month: "short",
+    });
   };
+
+  const formatRangeLabel = (d: Date): string =>
+    d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
   return (
     <div className="space-y-4">
@@ -521,6 +611,39 @@ export default function Leads() {
           </PopoverContent>
         </Popover>
 
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-7 text-xs bg-card gap-1.5">
+              <CalendarRange className="h-3.5 w-3.5" />
+              {dateRange?.from && dateRange?.to
+                ? `${formatRangeLabel(dateRange.from)} – ${formatRangeLabel(dateRange.to)}`
+                : "Période"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="range"
+              selected={dateRange}
+              onSelect={setDateRange}
+              numberOfMonths={1}
+              locale={fr}
+              weekStartsOn={1}
+            />
+            {(dateRange?.from || dateRange?.to) && (
+              <div className="border-t border-border p-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-xs"
+                  onClick={() => setDateRange(undefined)}
+                >
+                  Effacer la période
+                </Button>
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
+
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[140px] h-7 text-xs bg-card">
             <SelectValue placeholder="Statut" />
@@ -562,7 +685,7 @@ export default function Leads() {
           </>
         )}
 
-        {(statusFilter !== "all" || collabFilter !== "all" || apporteurFilter !== "all" || sourceFilter.length > 0) && (
+        {(statusFilter !== "all" || collabFilter !== "all" || apporteurFilter !== "all" || sourceFilter.length > 0 || dateRange?.from) && (
           <Button
             variant="ghost"
             size="sm"
@@ -572,6 +695,7 @@ export default function Leads() {
               setCollabFilter("all");
               setApporteurFilter("all");
               setSourceFilter(tab === "a_affecter" ? ADS_SOURCES : []);
+              setDateRange(undefined);
             }}
           >
             Réinitialiser
@@ -744,7 +868,7 @@ export default function Leads() {
                         ) : (
                           <span className="text-xs text-foreground">{lead.assigned_to_name}</span>
                         )
-                      ) : lead.status === "a_recycler" && isCeo ? (
+                      ) : isRecycled(lead) && isCeo ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button size="sm" variant="outline" className="gap-1 text-[11px] h-7 px-2">
@@ -761,7 +885,7 @@ export default function Leads() {
                               ))}
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      ) : !lead.has_active_call && !["call_booke", "close", "perdu", "a_recycler"].includes(lead.status || "") && (isCeo || user?.collaborateur_level === "confirme") ? (
+                      ) : !lead.has_active_call && !lead.recycled_at && !["call_booke", "close", "perdu"].includes(lead.status || "") && (isCeo || user?.collaborateur_level === "confirme") ? (
                         <Button size="sm" variant="outline" onClick={() => handleAssignToMe(lead.id!, lead.status)} className="gap-1 text-[11px] h-7 px-2">
                           <UserPlus className="h-3 w-3" />
                           M'affecter

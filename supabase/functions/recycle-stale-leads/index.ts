@@ -47,29 +47,22 @@ Deno.serve(async (req) => {
     cutoffDate.setDate(cutoffDate.getDate() - 14); // 2 weeks
     const cutoffISO = cutoffDate.toISOString();
 
-    // ── Rule 1: "Pas de réponse" leads older than 2 weeks ──
-    const { data: staleNoResponse, error: err1 } = await supabase
-      .from("leads")
-      .select("id, assigned_to, status, source, apporteur_id, contact_id, created_at")
-      .eq("status", "pas_de_reponse")
-      .lt("created_at", cutoffISO);
-
-    if (err1) throw new Error(`Fetch pas_de_reponse error: ${err1.message}`);
-
-    // ── Rule 2: Organic leads unassigned in non-terminal status, older than 2 weeks ──
+    // ── Rule: Organic leads unassigned in non-terminal status, older than 2 weeks ──
+    // Note: "pas_de_reponse" is now recycled instantly at save time (see ProcessLeadModal),
+    // not via this cron. This job only handles organic leads that were never picked up.
     const { data: staleOrganic, error: err2 } = await supabase
       .from("leads")
-      .select("id, assigned_to, status, source, apporteur_id, contact_id, created_at")
+      .select("id, assigned_to, status, source, apporteur_id, contact_id, created_at, recycled_at")
       .in("status", ["a_qualifier", "inscrit_conference"])
       .is("assigned_to", null)
+      .is("recycled_at", null)
       .in("source", ORGANIC_SOURCES)
       .lt("created_at", cutoffISO);
 
     if (err2) throw new Error(`Fetch organic error: ${err2.message}`);
 
-    // Merge and deduplicate
-    const allLeadsMap = new Map<string, (typeof staleNoResponse)[0]>();
-    for (const lead of [...(staleNoResponse || []), ...(staleOrganic || [])]) {
+    const allLeadsMap = new Map<string, (typeof staleOrganic)[0]>();
+    for (const lead of staleOrganic || []) {
       allLeadsMap.set(lead.id, lead);
     }
 
@@ -126,8 +119,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           message: "No leads to recycle",
-          rule1: 0,
-          rule2: 0,
+          rule_organic_unassigned: 0,
           total: 0,
           skipped_protected: skippedCount,
         }),
@@ -137,14 +129,13 @@ Deno.serve(async (req) => {
 
     const leadIds = allLeads.map((l) => l.id);
 
-    // Update leads: unassign setter, set status to 'a_recycler', KEEP apporteur_id
+    // Mark as recycled — status is PRESERVED, assigned_to is already NULL by query criteria
+    const nowISO = new Date().toISOString();
     const { error: updateError } = await supabase
       .from("leads")
       .update({
-        status: "a_recycler",
-        assigned_to: null,
-        assigned_at: null,
-        updated_at: new Date().toISOString(),
+        recycled_at: nowISO,
+        updated_at: nowISO,
       })
       .in("id", leadIds);
 
@@ -152,36 +143,13 @@ Deno.serve(async (req) => {
       throw new Error(`Update error: ${updateError.message}`);
     }
 
-    // Log activity for each recycled lead
-    const activities = allLeads.flatMap((lead) => {
-      const entries = [
-        {
-          lead_id: lead.id,
-          user_id: systemUserId,
-          action: "status_change",
-          old_value: lead.status,
-          new_value: "a_recycler",
-          note:
-            lead.status === "pas_de_reponse"
-              ? "Recyclage automatique — pas de réponse depuis plus de 2 semaines"
-              : "Recyclage automatique — lead organique non affecté depuis plus de 2 semaines",
-        },
-      ];
-
-      // Only log unassign if there was a setter
-      if (lead.assigned_to) {
-        entries.push({
-          lead_id: lead.id,
-          user_id: systemUserId,
-          action: "unassigned",
-          old_value: lead.assigned_to,
-          new_value: null as any,
-          note: "Désassigné par recyclage automatique",
-        });
-      }
-
-      return entries;
-    });
+    // Log one "recycled" activity per lead — the reason lives in the note
+    const activities = allLeads.map((lead) => ({
+      lead_id: lead.id,
+      user_id: systemUserId,
+      action: "recycled",
+      note: "Recyclage automatique — lead organique non affecté depuis plus de 2 semaines",
+    }));
 
     const { error: actError } = await supabase
       .from("lead_activities")
@@ -190,16 +158,10 @@ Deno.serve(async (req) => {
       console.error("Activity logging error:", actError.message);
     }
 
-    const rule1Count = (staleNoResponse || []).filter(
-      (l) => allLeadsMap.has(l.id)
-    ).length;
-    const rule2Count = allLeads.length - rule1Count;
-
     return new Response(
       JSON.stringify({
         message: `${allLeads.length} leads recycled`,
-        rule1_pas_de_reponse: rule1Count,
-        rule2_organic_unassigned: rule2Count,
+        rule_organic_unassigned: allLeads.length,
         total: allLeads.length,
         skipped_protected: skippedCount,
       }),

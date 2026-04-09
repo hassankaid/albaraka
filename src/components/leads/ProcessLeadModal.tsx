@@ -28,6 +28,9 @@ export { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS };
 
 const STATUS_LIST = LEAD_STATUS_LIST;
 
+// Statuses that trigger instant recycling (unassign + route to CEO's "À recycler" queue)
+const INSTANT_RECYCLE_STATUSES = ["pas_de_reponse", "pas_de_reponse_post_conference"] as const;
+
 
 
 interface Props {
@@ -115,10 +118,23 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
         return;
       }
 
+      const shouldInstantRecycle =
+        statusChanged && (INSTANT_RECYCLE_STATUSES as readonly string[]).includes(status);
+
       if (statusChanged) {
+        const updatePayload: Record<string, any> = {
+          status,
+          updated_at: new Date().toISOString(),
+        };
+        if (shouldInstantRecycle) {
+          updatePayload.assigned_to = null;
+          updatePayload.assigned_at = null;
+          updatePayload.recycled_at = new Date().toISOString();
+        }
+
         await supabase
           .from("leads")
-          .update({ status, updated_at: new Date().toISOString() })
+          .update(updatePayload)
           .eq("id", lead.id);
 
         await supabase.from("lead_activities").insert({
@@ -128,6 +144,32 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
           old_value: oldStatus,
           new_value: status,
         });
+
+        if (shouldInstantRecycle) {
+          const reason =
+            status === "pas_de_reponse_post_conference"
+              ? "pas de réponse après conférence"
+              : "pas de réponse";
+
+          // Log the recycling event
+          await supabase.from("lead_activities").insert({
+            lead_id: lead.id,
+            user_id: user.id,
+            action: "recycled",
+            note: `Recyclage instantané — ${reason}`,
+          });
+
+          // Log the unassignment if there was a setter
+          if (lead.assigned_to) {
+            await supabase.from("lead_activities").insert({
+              lead_id: lead.id,
+              user_id: user.id,
+              action: "unassigned",
+              old_value: lead.assigned_to,
+              note: `Désassigné automatiquement — ${reason}`,
+            });
+          }
+        }
       }
 
       if (hasNote) {
@@ -205,13 +247,14 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-lg bg-card border-border">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col gap-0 p-0 bg-card border-border">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0">
           <DialogTitle className="text-foreground">
             {canEdit ? "Traiter le lead" : "Consulter le lead"}
           </DialogTitle>
         </DialogHeader>
 
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
         {/* Section 1: Lead info */}
         <div className="space-y-2">
           <h4 className="text-sm font-semibold text-foreground">Infos du lead</h4>
@@ -324,18 +367,21 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
             disabled={!canEdit}
           />
         </div>
+        </div>
 
         {/* Save or read-only message */}
-        {canEdit ? (
-          <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
-            <Save className="h-4 w-4" />
-            {saving ? "Enregistrement..." : "Enregistrer"}
-          </Button>
-        ) : (
-          <p className="text-xs text-muted-foreground text-center py-2">
-            Seul {lead.assigned_to_name || "le collaborateur assigné"} ou le CEO peut modifier ce lead
-          </p>
-        )}
+        <div className="px-6 pb-6 pt-4 border-t border-border shrink-0">
+          {canEdit ? (
+            <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
+              <Save className="h-4 w-4" />
+              {saving ? "Enregistrement..." : "Enregistrer"}
+            </Button>
+          ) : (
+            <p className="text-xs text-muted-foreground text-center py-2">
+              Seul {lead.assigned_to_name || "le collaborateur assigné"} ou le CEO peut modifier ce lead
+            </p>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

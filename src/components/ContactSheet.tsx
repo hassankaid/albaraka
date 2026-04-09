@@ -405,6 +405,18 @@ function LeadActivityEvent({ data, userTz }: { data: any; userTz: string }) {
     );
   }
 
+  if (data.action === "recycled") {
+    return (
+      <div className="flex items-start gap-2">
+        <RefreshCw className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm text-foreground">Lead recyclé</p>
+          {data.note && <p className="text-xs text-muted-foreground italic mt-1">{data.note}</p>}
+        </div>
+      </div>
+    );
+  }
+
   return <p className="text-sm text-muted-foreground">Activité lead : {data.action}</p>;
 }
 
