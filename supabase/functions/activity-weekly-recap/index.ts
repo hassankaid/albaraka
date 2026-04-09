@@ -78,7 +78,18 @@ async function generateRecap(
 ): Promise<string | null> {
   const prompt = `Tu es le coach IA d'Ethicarena. Voici le bilan hebdomadaire d'un apporteur d'affaires (${args.userName}).
 
-Semaine du ${args.weekStart} au ${args.weekEnd} :
+CONTEXTE DU MÉTIER (très important) :
+L'apporteur est un setter. Ses 3 actions de fond sont :
+1. PUBLIER des vidéos (Insta, TikTok, YouTube) pour générer du flux entrant
+2. ENVOYER des messages (DM, WhatsApp) pour démarcher en sortant
+3. OBTENIR des rendez-vous (qualifier un prospect et le booker pour le closer)
+
+Les "réponses reçues" et les "ventes" sont des conséquences indirectes de ces 3 actions.
+L'apporteur N'ANIME PAS les RDV, il N'ASSISTE PAS aux RDV, il NE PRÉPARE PAS les RDV : son job s'arrête une fois le RDV booké, c'est le closer qui prend le relais.
+Ne lui dis JAMAIS de "préparer son rendez-vous", "se préparer pour son call", "réviser son pitch de vente", "soigner sa présentation" — ce n'est pas son rôle.
+Ses leviers d'amélioration sont uniquement : publier plus / mieux, envoyer plus de messages, mieux qualifier les prospects, mieux relancer les non-réponses.
+
+DONNÉES — Semaine du ${args.weekStart} au ${args.weekEnd} :
 - Jours saisis : ${args.daysFilled}/7  (manquants : ${args.daysMissed.length > 0 ? args.daysMissed.join(", ") : "aucun"})
 - ${formatTotals(args.totals)}
 
@@ -89,8 +100,8 @@ Rédige un bilan en 4 à 6 phrases :
 1. Un point fort chiffré de la semaine
 2. Progression ou recul vs semaine précédente (chiffré)
 3. Discipline de saisie (${args.daysFilled}/7 jours) — encourager si <7
-4. Un point à améliorer concret
-5. Un objectif réaliste pour la semaine qui commence
+4. Un point à améliorer concret EN LIEN avec les 3 actions du setter (publier, démarcher, qualifier/booker)
+5. Un objectif réaliste pour la semaine qui commence, formulé en nombre de publications, messages ou RDV
 
 Ton bienveillant, factuel, chiffré. Pas de flagornerie, pas d'anglicismes, pas de listes, français naturel.`;
 
