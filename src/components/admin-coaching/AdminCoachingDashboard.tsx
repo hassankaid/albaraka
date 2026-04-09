@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Calendar, TrendingUp, Users, AlertTriangle, Star, Medal, Trophy } from "lucide-react";
-import { format, subDays, startOfMonth, startOfWeek } from "date-fns";
+import { format, subDays, startOfMonth, startOfWeek, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
 
 export default function AdminCoachingDashboard() {
@@ -102,8 +102,9 @@ export default function AdminCoachingDashboard() {
     },
   });
 
-  // Top apporteurs leaderboard
+  // Top apporteurs leaderboard (agrégation depuis activity_daily_kpis)
   const currentMonday = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const currentSunday = format(addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), 6), "yyyy-MM-dd");
   const { data: leaderboard } = useQuery({
     queryKey: ["admin-coaching-leaderboard", currentMonday],
     queryFn: async () => {
@@ -112,15 +113,38 @@ export default function AdminCoachingDashboard() {
       const objMap: Record<string, number> = {};
       objData?.forEach((o: any) => { objMap[o.kpi_key] = o.weekly_target; });
 
-      // Get this week's KPIs
-      const { data: kpis } = await supabase
-        .from("activity_kpis")
-        .select("*, user:profiles!activity_kpis_user_id_fkey(full_name, email, avatar_url)")
-        .eq("week_start", currentMonday);
+      // Get this week's daily KPIs
+      const { data: dailyRows } = await supabase
+        .from("activity_daily_kpis")
+        .select("*, user:profiles!activity_daily_kpis_user_id_fkey(full_name, email, avatar_url)")
+        .gte("entry_date", currentMonday)
+        .lte("entry_date", currentSunday);
 
-      if (!kpis || kpis.length === 0) return [];
+      if (!dailyRows || dailyRows.length === 0) return [];
 
-      return kpis.map((k: any) => {
+      // Aggregate by user_id
+      const byUser = new Map<string, any>();
+      dailyRows.forEach((d: any) => {
+        const existing = byUser.get(d.user_id);
+        if (!existing) {
+          byUser.set(d.user_id, {
+            user: d.user,
+            videos_published: d.videos_published,
+            messages_sent: d.messages_sent,
+            replies_received: d.replies_received,
+            appointments: d.appointments,
+            sales_made: d.sales_made,
+          });
+        } else {
+          existing.videos_published += d.videos_published;
+          existing.messages_sent += d.messages_sent;
+          existing.replies_received += d.replies_received;
+          existing.appointments += d.appointments;
+          existing.sales_made += d.sales_made;
+        }
+      });
+
+      return Array.from(byUser.values()).map((k: any) => {
         const ratios = [
           (objMap.videos || 7) > 0 ? k.videos_published / (objMap.videos || 7) : 0,
           (objMap.messages || 500) > 0 ? k.messages_sent / (objMap.messages || 500) : 0,

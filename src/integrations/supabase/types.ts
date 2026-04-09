@@ -14,7 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
-      activity_kpis: {
+      activity_daily_kpis: {
+        Row: {
+          ai_feedback: string | null
+          appointments: number
+          created_at: string
+          entry_date: string
+          id: string
+          messages_sent: number
+          replies_received: number
+          sales_made: number
+          updated_at: string
+          user_id: string
+          videos_published: number
+        }
+        Insert: {
+          ai_feedback?: string | null
+          appointments?: number
+          created_at?: string
+          entry_date: string
+          id?: string
+          messages_sent?: number
+          replies_received?: number
+          sales_made?: number
+          updated_at?: string
+          user_id: string
+          videos_published?: number
+        }
+        Update: {
+          ai_feedback?: string | null
+          appointments?: number
+          created_at?: string
+          entry_date?: string
+          id?: string
+          messages_sent?: number
+          replies_received?: number
+          sales_made?: number
+          updated_at?: string
+          user_id?: string
+          videos_published?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_daily_kpis_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_kpis_legacy: {
         Row: {
           ai_feedback: string | null
           appointments: number
@@ -67,6 +117,7 @@ export type Database = {
       activity_objectives: {
         Row: {
           created_at: string
+          daily_target: number
           id: string
           kpi_key: string
           updated_at: string
@@ -74,6 +125,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          daily_target?: number
           id?: string
           kpi_key: string
           updated_at?: string
@@ -81,12 +133,51 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          daily_target?: number
           id?: string
           kpi_key?: string
           updated_at?: string
           weekly_target?: number
         }
         Relationships: []
+      }
+      activity_weekly_recaps: {
+        Row: {
+          created_at: string
+          dismissed_at: string | null
+          id: string
+          recap_text: string
+          stats: Json
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          recap_text: string
+          stats?: Json
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          recap_text?: string
+          stats?: Json
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_weekly_recaps_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ads: {
         Row: {
@@ -475,6 +566,7 @@ export type Database = {
           titre: string
           type: string
           url: string
+          video_id: string | null
         }
         Insert: {
           chapitre_id: string
@@ -484,6 +576,7 @@ export type Database = {
           titre: string
           type: string
           url: string
+          video_id?: string | null
         }
         Update: {
           chapitre_id?: string
@@ -493,6 +586,7 @@ export type Database = {
           titre?: string
           type?: string
           url?: string
+          video_id?: string | null
         }
         Relationships: [
           {
@@ -500,6 +594,13 @@ export type Database = {
             columns: ["chapitre_id"]
             isOneToOne: false
             referencedRelation: "formation_chapitres"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chapitre_ressources_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "chapitre_videos"
             referencedColumns: ["id"]
           },
         ]
@@ -510,6 +611,7 @@ export type Database = {
           created_at: string
           duree_secondes: number | null
           id: string
+          notes: string | null
           ordre: number
           titre: string
           updated_at: string
@@ -521,6 +623,7 @@ export type Database = {
           created_at?: string
           duree_secondes?: number | null
           id?: string
+          notes?: string | null
           ordre?: number
           titre: string
           updated_at?: string
@@ -532,6 +635,7 @@ export type Database = {
           created_at?: string
           duree_secondes?: number | null
           id?: string
+          notes?: string | null
           ordre?: number
           titre?: string
           updated_at?: string
@@ -1166,6 +1270,7 @@ export type Database = {
           id: string
           legacy_id: string | null
           module_id: string
+          notes_formateur: string | null
           ordre: number
           status: string
           titre: string
@@ -1178,6 +1283,7 @@ export type Database = {
           id?: string
           legacy_id?: string | null
           module_id: string
+          notes_formateur?: string | null
           ordre?: number
           status?: string
           titre: string
@@ -1190,6 +1296,7 @@ export type Database = {
           id?: string
           legacy_id?: string | null
           module_id?: string
+          notes_formateur?: string | null
           ordre?: number
           status?: string
           titre?: string
@@ -1548,6 +1655,83 @@ export type Database = {
           },
         ]
       }
+      objection_categories: {
+        Row: {
+          created_at: string | null
+          icon: string
+          id: string
+          label: string
+          ordre: number
+          status: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          icon?: string
+          id?: string
+          label: string
+          ordre?: number
+          status?: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          icon?: string
+          id?: string
+          label?: string
+          ordre?: number
+          status?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      objections: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          etapes: Json | null
+          id: string
+          ordre: number
+          reponse: string
+          situation: string
+          updated_at: string | null
+          verbatim: string | null
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          etapes?: Json | null
+          id?: string
+          ordre?: number
+          reponse: string
+          situation: string
+          updated_at?: string | null
+          verbatim?: string | null
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          etapes?: Json | null
+          id?: string
+          ordre?: number
+          reponse?: string
+          situation?: string
+          updated_at?: string | null
+          verbatim?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "objections_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "objection_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -1698,6 +1882,212 @@ export type Database = {
         }
         Relationships: []
       }
+      prospect_profiles: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          emoji: string
+          id: string
+          label: string
+          niveau: string
+          ordre: number
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          emoji?: string
+          id?: string
+          label: string
+          niveau?: string
+          ordre?: number
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          emoji?: string
+          id?: string
+          label?: string
+          niveau?: string
+          ordre?: number
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      prospect_scripts: {
+        Row: {
+          created_at: string | null
+          id: string
+          intro: string | null
+          profile_id: string
+          repliques: Json
+          titre: string
+          type_appel: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          intro?: string | null
+          profile_id: string
+          repliques?: Json
+          titre: string
+          type_appel: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          intro?: string | null
+          profile_id?: string
+          repliques?: Json
+          titre?: string
+          type_appel?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prospect_scripts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "prospect_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_attempts: {
+        Row: {
+          answers: Json
+          completed_at: string | null
+          errors_count: number
+          id: string
+          quiz_id: string
+          total_questions: number
+          user_id: string
+          validated: boolean
+        }
+        Insert: {
+          answers?: Json
+          completed_at?: string | null
+          errors_count?: number
+          id?: string
+          quiz_id: string
+          total_questions?: number
+          user_id: string
+          validated?: boolean
+        }
+        Update: {
+          answers?: Json
+          completed_at?: string | null
+          errors_count?: number
+          id?: string
+          quiz_id?: string
+          total_questions?: number
+          user_id?: string
+          validated?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_questions: {
+        Row: {
+          contexte: string | null
+          correct_index: number
+          created_at: string | null
+          explication: string | null
+          id: string
+          options: Json
+          ordre: number
+          question: string
+          quiz_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          contexte?: string | null
+          correct_index?: number
+          created_at?: string | null
+          explication?: string | null
+          id?: string
+          options?: Json
+          ordre?: number
+          question: string
+          quiz_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          contexte?: string | null
+          correct_index?: number
+          created_at?: string | null
+          explication?: string | null
+          id?: string
+          options?: Json
+          ordre?: number
+          question?: string
+          quiz_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quizzes: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          max_errors: number
+          module_id: string | null
+          status: string
+          titre: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          max_errors?: number
+          module_id?: string | null
+          status?: string
+          titre: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          max_errors?: number
+          module_id?: string | null
+          status?: string
+          titre?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quizzes_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "formation_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salary_periods: {
         Row: {
           amount: number
@@ -1844,6 +2234,128 @@ export type Database = {
           },
         ]
       }
+      script_extras: {
+        Row: {
+          created_at: string | null
+          data: Json
+          id: string
+          key: string
+          label: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data: Json
+          id?: string
+          key: string
+          label: string
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json
+          id?: string
+          key?: string
+          label?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      script_phases: {
+        Row: {
+          cases: Json | null
+          cases2: Json | null
+          created_at: string | null
+          id: string
+          label: string
+          lines: Json
+          lines2: Json | null
+          ordre: number
+          script_id: string
+          updated_at: string | null
+          voix: string
+        }
+        Insert: {
+          cases?: Json | null
+          cases2?: Json | null
+          created_at?: string | null
+          id?: string
+          label: string
+          lines?: Json
+          lines2?: Json | null
+          ordre?: number
+          script_id: string
+          updated_at?: string | null
+          voix?: string
+        }
+        Update: {
+          cases?: Json | null
+          cases2?: Json | null
+          created_at?: string | null
+          id?: string
+          label?: string
+          lines?: Json
+          lines2?: Json | null
+          ordre?: number
+          script_id?: string
+          updated_at?: string | null
+          voix?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "script_phases_script_id_fkey"
+            columns: ["script_id"]
+            isOneToOne: false
+            referencedRelation: "scripts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scripts: {
+        Row: {
+          cat: string
+          couleur: string
+          created_at: string | null
+          description: string
+          icon: string
+          id: string
+          nom: string
+          ordre: number
+          status: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          cat: string
+          couleur?: string
+          created_at?: string | null
+          description?: string
+          icon?: string
+          id?: string
+          nom: string
+          ordre?: number
+          status?: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          cat?: string
+          couleur?: string
+          created_at?: string | null
+          description?: string
+          icon?: string
+          id?: string
+          nom?: string
+          ordre?: number
+          status?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       video_progress: {
         Row: {
           completed: boolean
@@ -1881,6 +2393,27 @@ export type Database = {
       }
     }
     Views: {
+      activity_weekly_totals: {
+        Row: {
+          appointments: number | null
+          days_filled: number | null
+          messages_sent: number | null
+          replies_received: number | null
+          sales_made: number | null
+          user_id: string | null
+          videos_published: number | null
+          week_start: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_daily_kpis_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calls_enriched: {
         Row: {
           assigned_to: string | null
@@ -2104,6 +2637,27 @@ export type Database = {
         Args: { p_formation_id: string; p_module_ids: string[] }
         Returns: undefined
       }
+      reorder_objection_categories: {
+        Args: { p_category_ids: string[] }
+        Returns: undefined
+      }
+      reorder_objections: {
+        Args: { p_category_id: string; p_objection_ids: string[] }
+        Returns: undefined
+      }
+      reorder_prospect_profiles: {
+        Args: { p_profile_ids: string[] }
+        Returns: undefined
+      }
+      reorder_quiz_questions: {
+        Args: { p_question_ids: string[]; p_quiz_id: string }
+        Returns: undefined
+      }
+      reorder_script_phases: {
+        Args: { p_phase_ids: string[]; p_script_id: string }
+        Returns: undefined
+      }
+      reorder_scripts: { Args: { p_script_ids: string[] }; Returns: undefined }
       set_chapter_completion: {
         Args: { p_chapitre_id: string; p_completed: boolean }
         Returns: boolean
