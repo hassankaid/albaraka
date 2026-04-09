@@ -12,6 +12,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { AlertTriangle, Save } from "lucide-react";
 import { formatDateTime } from "@/lib/formatDate";
+import {
+  LEAD_TAGS,
+  LEAD_TAG_CATEGORIES,
+  LEAD_TAG_CATEGORY_CLASSES,
+  getTagsByCategory,
+  type LeadTagDefinition,
+} from "@/lib/leadTags";
 
 type LeadEnriched = Tables<"leads_enriched">;
 
@@ -38,6 +45,10 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [otherLeadsCount, setOtherLeadsCount] = useState(0);
+  const [selectedTagKeys, setSelectedTagKeys] = useState<Set<string>>(new Set());
+  const [originalTagKeys, setOriginalTagKeys] = useState<Set<string>>(new Set());
+
+  const canEdit = !!lead && (lead.assigned_to === user?.id || user?.role === "ceo");
 
   useEffect(() => {
     if (lead && open) {
@@ -52,8 +63,35 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
           .neq("id", lead.id!)
           .then(({ count }) => setOtherLeadsCount(count || 0));
       }
+      // Charge les tags existants du lead
+      if (lead.id) {
+        supabase
+          .from("lead_tags")
+          .select("tag_key")
+          .eq("lead_id", lead.id)
+          .then(({ data }) => {
+            const keys = new Set((data || []).map((r: any) => r.tag_key as string));
+            setSelectedTagKeys(keys);
+            setOriginalTagKeys(new Set(keys));
+          });
+      }
     }
   }, [lead, open]);
+
+  const toggleTag = (def: LeadTagDefinition) => {
+    if (!canEdit) return;
+    setSelectedTagKeys((prev) => {
+      const next = new Set(prev);
+      const isActive = next.has(def.key);
+      if (def.category === "budget" && !isActive) {
+        // Single-select : retire les autres tags budget avant d'ajouter
+        LEAD_TAGS.filter((t) => t.category === "budget").forEach((t) => next.delete(t.key));
+      }
+      if (isActive) next.delete(def.key);
+      else next.add(def.key);
+      return next;
+    });
+  };
 
   if (!lead) return null;
 
@@ -66,7 +104,12 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
       const statusChanged = status !== oldStatus;
       const hasNote = note.trim().length > 0;
 
-      if (!statusChanged && !hasNote) {
+      // Diff tags
+      const tagsToAdd = Array.from(selectedTagKeys).filter((k) => !originalTagKeys.has(k));
+      const tagsToRemove = Array.from(originalTagKeys).filter((k) => !selectedTagKeys.has(k));
+      const tagsChanged = tagsToAdd.length > 0 || tagsToRemove.length > 0;
+
+      if (!statusChanged && !hasNote && !tagsChanged) {
         toast({ title: "Aucune modification" });
         setSaving(false);
         return;
@@ -101,6 +144,55 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
         });
       }
 
+      if (tagsToRemove.length > 0) {
+        await supabase
+          .from("lead_tags")
+          .delete()
+          .eq("lead_id", lead.id)
+          .in("tag_key", tagsToRemove);
+
+        await supabase.from("lead_activities").insert(
+          tagsToRemove.map((tag_key) => ({
+            lead_id: lead.id!,
+            user_id: user.id,
+            action: "tag_removed",
+            new_value: tag_key,
+          }))
+        );
+      }
+
+      if (tagsToAdd.length > 0) {
+        const rows = tagsToAdd
+          .map((tag_key) => {
+            const def = LEAD_TAGS.find((t) => t.key === tag_key);
+            if (!def) return null;
+            return {
+              lead_id: lead.id!,
+              tag_key,
+              tag_category: def.category,
+              created_by: user.id,
+            };
+          })
+          .filter(Boolean) as any[];
+
+        if (rows.length > 0) {
+          await supabase.from("lead_tags").insert(rows);
+
+          await supabase.from("lead_activities").insert(
+            tagsToAdd.map((tag_key) => ({
+              lead_id: lead.id!,
+              user_id: user.id,
+              action: "tag_added",
+              new_value: tag_key,
+            }))
+          );
+        }
+      }
+
+      if (tagsChanged) {
+        setOriginalTagKeys(new Set(selectedTagKeys));
+      }
+
       toast({ title: "Lead mis à jour" });
       onSuccess();
       onClose();
@@ -110,8 +202,6 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
       setSaving(false);
     }
   };
-
-  const canEdit = lead.assigned_to === user?.id || user?.role === "ceo";
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -173,6 +263,47 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        <Separator />
+
+        {/* Section 3 bis: Étiquettes */}
+        <div className="space-y-3">
+          <h4 className="text-sm font-semibold text-foreground">Étiquettes</h4>
+          {LEAD_TAG_CATEGORIES.map((cat) => {
+            const tags = getTagsByCategory(cat.key);
+            const classes = LEAD_TAG_CATEGORY_CLASSES[cat.key];
+            return (
+              <div key={cat.key} className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    {cat.label}
+                  </span>
+                  {cat.hint && (
+                    <span className="text-[10px] text-muted-foreground/70">({cat.hint})</span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {tags.map((def) => {
+                    const active = selectedTagKeys.has(def.key);
+                    return (
+                      <button
+                        key={def.key}
+                        type="button"
+                        disabled={!canEdit}
+                        onClick={() => toggleTag(def)}
+                        className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                          active ? classes.active : classes.inactive
+                        } ${!canEdit ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                      >
+                        {def.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         <Separator />
