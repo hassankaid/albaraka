@@ -45,10 +45,8 @@ const trainingNavItems: NavItem[] = [
   { title: "Scripts", path: "/training/scripts", icon: MessageSquare, roles: ["ceo", "collaborateur"] },
   { title: "Rôle-Play", path: "/training/role-play", icon: Bot, roles: ["ceo", "collaborateur"] },
   { title: "Quiz", path: "/training/quiz", icon: TrendingUp, roles: ["ceo", "collaborateur"] },
-  { title: "Gestion Formations", path: "/admin/training", icon: Settings2, roles: ["ceo"] },
-  { title: "Gestion Scripts", path: "/admin/scripts", icon: Settings2, roles: ["ceo"] },
-  { title: "Gestion Rôle-Play", path: "/admin/role-play", icon: Settings2, roles: ["ceo"] },
-  { title: "Gestion Quiz", path: "/admin/quizzes", icon: Settings2, roles: ["ceo"] },
+  { title: "Suivi Élèves", path: "/admin/training/students", icon: UsersRound, roles: ["ceo"] },
+  { title: "Gestion", path: "/admin/training/manage", icon: Settings2, roles: ["ceo"] },
 ];
 
 const coachingNavItems: NavItem[] = [
@@ -73,6 +71,8 @@ const pageTitles: Record<string, string> = {
   "/training/role-play": "Rôle-Play",
   "/admin/quizzes": "Gestion Quiz",
   "/training/quiz": "Quiz",
+  "/admin/training/manage": "Gestion",
+  "/admin/training/students": "Suivi Élèves",
   "/admin/create": "Création complète",
   "/my-space": "Mon espace",
   "/profile": "Mon profil",
