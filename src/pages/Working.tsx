@@ -1,26 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquare, Phone, Sparkles, Bot } from "lucide-react";
+import { Sparkles, Bot } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const workingModules = [
-  {
-    id: "scripts-setting",
-    title: "Scripts Setting",
-    description: "Scripts pour la prise de RDV et invitations conférence",
-    icon: MessageSquare,
-    color: "text-teal-500",
-    bgColor: "bg-teal-500/10",
-    path: "/training/scripts/setting",
-  },
-  {
-    id: "scripts-closing",
-    title: "Scripts Closing",
-    description: "Scripts pour les appels découverte et closing",
-    icon: Phone,
-    color: "text-gold-400",
-    bgColor: "bg-gold-400/10",
-    path: "/training/scripts/closing",
-  },
   {
     id: "content-generator",
     title: "Générateur de Contenu",
@@ -33,7 +15,7 @@ const workingModules = [
   {
     id: "agent",
     title: "Agent IA",
-    description: "Obtiens des réponses personnalisées pour tes prospects",
+    description: "Aide à formuler des réponses DM pour tes prospects",
     icon: Bot,
     color: "text-blue-500",
     bgColor: "bg-blue-500/10",

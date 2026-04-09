@@ -677,20 +677,68 @@ function VideoExtras({
 
 // ─── Ressource link ───────────────────────────────────────────
 function RessourceLink({ ressource: r }: { ressource: ChapitreRessource }) {
+  const [previewOpen, setPreviewOpen] = useState(false);
   const Icon =
     r.type === "pdf" ? FileText : r.type === "image" ? ImageIcon : LinkIcon;
+
+  // PDF and images get an inline preview toggle
+  const isInlinePreview = r.type === "pdf" || r.type === "image";
+
+  if (!isInlinePreview) {
+    return (
+      <a
+        href={r.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:bg-secondary transition-colors"
+      >
+        <Icon className="h-4 w-4 text-primary shrink-0" />
+        <span className="text-sm text-foreground flex-1 line-clamp-1">
+          {r.titre}
+        </span>
+        <span className="text-xs text-muted-foreground uppercase">{r.type}</span>
+      </a>
+    );
+  }
+
   return (
-    <a
-      href={r.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:bg-secondary transition-colors"
-    >
-      <Icon className="h-4 w-4 text-primary shrink-0" />
-      <span className="text-sm text-foreground flex-1 line-clamp-1">
-        {r.titre}
-      </span>
-      <span className="text-xs text-muted-foreground uppercase">{r.type}</span>
-    </a>
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <button
+        onClick={() => setPreviewOpen((v) => !v)}
+        className="w-full flex items-center gap-3 p-3 hover:bg-secondary transition-colors text-left"
+      >
+        <Icon className="h-4 w-4 text-primary shrink-0" />
+        <span className="text-sm text-foreground flex-1 line-clamp-1">{r.titre}</span>
+        <span className="text-xs text-muted-foreground uppercase">{r.type}</span>
+        <span className="text-xs text-primary">{previewOpen ? "Fermer" : "Aperçu"}</span>
+      </button>
+      {previewOpen && (
+        <div className="border-t border-border bg-muted/30">
+          {r.type === "pdf" ? (
+            <iframe
+              src={r.url}
+              className="w-full h-[600px]"
+              title={r.titre}
+            />
+          ) : (
+            <img
+              src={r.url}
+              alt={r.titre}
+              className="w-full max-h-[600px] object-contain bg-black/5"
+            />
+          )}
+          <div className="p-2 text-right">
+            <a
+              href={r.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-primary hover:underline"
+            >
+              Ouvrir dans un nouvel onglet ↗
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

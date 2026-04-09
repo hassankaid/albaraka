@@ -42,9 +42,13 @@ const adminNavItems: NavItem[] = [
 
 const trainingNavItems: NavItem[] = [
   { title: "Formation", path: "/training", icon: GraduationCap, roles: ["ceo", "collaborateur"] },
-  { title: "Gestion", path: "/admin/training", icon: Settings2, roles: ["ceo"] },
-  { title: "Scripts Setting", path: "/training/scripts/setting", icon: MessageSquare, roles: ["ceo", "collaborateur"] },
-  { title: "Scripts Closing", path: "/training/scripts/closing", icon: Phone, roles: ["ceo", "collaborateur"] },
+  { title: "Scripts", path: "/training/scripts", icon: MessageSquare, roles: ["ceo", "collaborateur"] },
+  { title: "Rôle-Play", path: "/training/role-play", icon: Bot, roles: ["ceo", "collaborateur"] },
+  { title: "Quiz", path: "/training/quiz", icon: TrendingUp, roles: ["ceo", "collaborateur"] },
+  { title: "Gestion Formations", path: "/admin/training", icon: Settings2, roles: ["ceo"] },
+  { title: "Gestion Scripts", path: "/admin/scripts", icon: Settings2, roles: ["ceo"] },
+  { title: "Gestion Rôle-Play", path: "/admin/role-play", icon: Settings2, roles: ["ceo"] },
+  { title: "Gestion Quiz", path: "/admin/quizzes", icon: Settings2, roles: ["ceo"] },
 ];
 
 const coachingNavItems: NavItem[] = [
@@ -64,6 +68,11 @@ const pageTitles: Record<string, string> = {
   "/admin/invoices": "Factures Apporteurs",
   "/admin/commissions": "Commissions",
   "/admin/data": "Gestion des données",
+  "/admin/scripts": "Gestion des scripts",
+  "/admin/role-play": "Gestion Rôle-Play",
+  "/training/role-play": "Rôle-Play",
+  "/admin/quizzes": "Gestion Quiz",
+  "/training/quiz": "Quiz",
   "/admin/create": "Création complète",
   "/my-space": "Mon espace",
   "/profile": "Mon profil",
@@ -74,8 +83,7 @@ const pageTitles: Record<string, string> = {
   "/working/content": "Générateur de Contenu",
   "/working/contents": "Mes Contenus",
   "/working/agent": "Agent IA",
-  "/training/scripts/setting": "Scripts Setting",
-  "/training/scripts/closing": "Scripts Closing",
+  "/training/scripts": "Scripts",
   "/training": "Formation",
   "/admin/training": "Gestion des formations",
 };
@@ -106,8 +114,8 @@ export default function DashboardLayout() {
   const userRole = profile?.role || "apporteur";
   const isCeo = profile?.role === "ceo";
   const isCoachingSpace = location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching") || location.pathname === "/admin/coaching";
-  const isTrainingSpace = location.pathname.startsWith("/training") || location.pathname.startsWith("/admin/training");
-  const isAdminSpace = location.pathname.startsWith("/admin/") && location.pathname !== "/admin/coaching" && !location.pathname.startsWith("/admin/training");
+  const isTrainingSpace = location.pathname.startsWith("/training") || location.pathname.startsWith("/admin/training") || location.pathname.startsWith("/admin/scripts") || location.pathname.startsWith("/admin/role-play") || location.pathname.startsWith("/admin/quizzes");
+  const isAdminSpace = location.pathname.startsWith("/admin/") && location.pathname !== "/admin/coaching" && !location.pathname.startsWith("/admin/training") && !location.pathname.startsWith("/admin/scripts") && !location.pathname.startsWith("/admin/role-play") && !location.pathname.startsWith("/admin/quizzes");
 
   // Dynamic page title: CEO sees "Suivi Activité" instead of "Mon Activité"
   const rawTitle = pageTitles[location.pathname] || "Dashboard";
@@ -280,9 +288,11 @@ export default function DashboardLayout() {
 }
 
 function SidebarNavLink({ item, onClose }: { item: NavItem; onClose: () => void }) {
+  const needsEnd = item.path === "/training" || item.path === "/coaching" || item.path === "/mon-coaching";
   return (
     <NavLink
       to={item.path}
+      end={needsEnd}
       onClick={onClose}
       className={({ isActive }) =>
         `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${

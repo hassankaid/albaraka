@@ -47,6 +47,8 @@ import {
   Save,
   Trash2,
   GripVertical,
+  Upload,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -808,7 +810,71 @@ function RessourceItem({
     onError: () => toast.error("Erreur"),
   });
 
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useState<HTMLInputElement | null>(null)[0];
+
   const Icon = type === "pdf" ? FileText : type === "image" ? ImageIcon : LinkIcon;
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate type
+    const isPdf = file.type === "application/pdf";
+    const isImage = file.type.startsWith("image/");
+    if (!isPdf && !isImage) {
+      toast.error("Format non supporté. Utilise PDF ou image.");
+      return;
+    }
+
+    // Validate size (10 MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Fichier trop volumineux. Maximum 10 MB.");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || (isPdf ? "pdf" : "jpg");
+      const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+      const filePath = `${ressource.id}/${Date.now()}-${safeName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("formation-resources")
+        .upload(filePath, file, { upsert: true, contentType: file.type });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrl } = supabase.storage
+        .from("formation-resources")
+        .getPublicUrl(filePath);
+
+      // Update local state
+      const newType = isPdf ? "pdf" : "image";
+      const newTitre = titre || file.name.replace(/\.[^.]+$/, "");
+      setUrl(publicUrl.publicUrl);
+      setType(newType);
+      if (!titre) setTitre(newTitre);
+
+      // Save to DB immediately
+      const { error: dbError } = await supabase
+        .from("chapitre_ressources")
+        .update({
+          titre: newTitre,
+          type: newType,
+          url: publicUrl.publicUrl,
+        })
+        .eq("id", ressource.id);
+
+      if (dbError) throw dbError;
+      toast.success("Fichier uploadé !");
+      onChanged();
+    } catch (err: any) {
+      toast.error("Erreur upload : " + (err.message || "inconnue"));
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card">
@@ -833,11 +899,29 @@ function RessourceItem({
         <Input
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://..."
+          placeholder="https://... ou upload"
           className="sm:col-span-1"
         />
       </div>
       <div className="flex items-center gap-1 shrink-0 mt-1">
+        <input
+          type="file"
+          accept="application/pdf,image/*"
+          id={`upload-${ressource.id}`}
+          className="hidden"
+          onChange={handleFileUpload}
+          disabled={uploading}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => document.getElementById(`upload-${ressource.id}`)?.click()}
+          disabled={uploading}
+          title="Uploader un fichier (PDF/image, max 10 MB)"
+        >
+          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+        </Button>
         <Button
           variant="ghost"
           size="icon"

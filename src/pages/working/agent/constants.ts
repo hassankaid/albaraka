@@ -1,49 +1,4 @@
-export type AgentContextType =
-  | "setting_rdv"
-  | "setting_conference"
-  | "closing_ads"
-  | "closing_organique"
-  | "closing_bizdev";
-
-export interface AgentContext {
-  id: AgentContextType;
-  label: string;
-  emoji: string;
-  description: string;
-}
-
-export const AGENT_CONTEXTS: AgentContext[] = [
-  {
-    id: "setting_rdv",
-    label: "Setting RDV",
-    emoji: "💬",
-    description: "Prospection individuelle, verrouiller un RDV",
-  },
-  {
-    id: "setting_conference",
-    label: "Setting Conférence",
-    emoji: "📣",
-    description: "Invitation à une conférence gratuite",
-  },
-  {
-    id: "closing_ads",
-    label: "Closing Ads",
-    emoji: "🎯",
-    description: "Closing après lead publicitaire",
-  },
-  {
-    id: "closing_organique",
-    label: "Closing Organique",
-    emoji: "🌱",
-    description: "Closing après lead via contenu",
-  },
-  {
-    id: "closing_bizdev",
-    label: "Closing BizDev",
-    emoji: "🔥",
-    description: "Closing après qualification setter",
-  },
-];
+export type AgentContextType = "setting_dm";
 
 export interface QuickShortcut {
   label: string;
@@ -52,27 +7,11 @@ export interface QuickShortcut {
 
 export const AGENT_SHORTCUTS: QuickShortcut[] = [
   {
-    label: "Gérer 'c'est trop cher'",
-    prompt: "Le prospect vient de dire : \"C'est trop cher pour moi\". Comment répondre ?",
-  },
-  {
-    label: "Objection 'je réfléchis'",
-    prompt: "Le prospect dit qu'il doit y réfléchir après l'annonce du prix. Comment réagir ?",
-  },
-  {
-    label: "Écran de fumée 'jamais à chaud'",
-    prompt: "Le prospect dit : \"Je ne prends jamais de décision à chaud, c'est un principe\". Comment répondre ?",
-  },
-  {
     label: "Silence total prospect",
     prompt: "J'ai envoyé mon vocal d'accroche il y a 48h, le prospect ne répond pas. Comment relancer ?",
   },
   {
-    label: "Budget insuffisant",
-    prompt: "Le prospect est convaincu mais dit : \"Je n'ai pas les fonds disponibles maintenant\". Comment explorer ?",
-  },
-  {
-    label: "Demande le prix direct",
+    label: "'C'est combien ?'",
     prompt: "Le prospect me dit dès le premier message : \"C'est combien votre truc ?\". Comment répondre ?",
   },
   {
@@ -80,8 +19,24 @@ export const AGENT_SHORTCUTS: QuickShortcut[] = [
     prompt: "Le prospect a regardé la vidéo et demande plus d'infos par message. Comment répondre sans dévoiler le métier ?",
   },
   {
-    label: "Les 4 piliers en bref",
-    prompt: "Explique-moi les 4 piliers de l'accompagnement Al Baraka, version courte pour réviser avant un closing.",
+    label: "'Ça ressemble à du MLM'",
+    prompt: "Le prospect me dit : \"Ça ressemble à du MLM votre truc\". Comment désamorcer ?",
+  },
+  {
+    label: "'Pas intéressé'",
+    prompt: "Le prospect répond sèchement qu'il n'est pas intéressé. Comment conclure proprement ?",
+  },
+  {
+    label: "'J'ai pas le temps'",
+    prompt: "Le prospect dit qu'il n'a pas le temps. Comment garder la porte ouverte ?",
+  },
+  {
+    label: "Qualifier le budget",
+    prompt: "Je suis à l'étape budget. Le prospect évite de répondre. Comment qualifier sans être intrusif ?",
+  },
+  {
+    label: "Inviter à la conférence",
+    prompt: "Le prospect est qualifié. Comment l'inviter à la conférence de dimanche de manière convaincante ?",
   },
 ];
 

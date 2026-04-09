@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import type { AgentContextType } from "@/pages/working/agent/constants";
+type AgentContextType = string;
 
 export interface AgentConversation {
   id: string;

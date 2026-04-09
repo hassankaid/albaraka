@@ -8,7 +8,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { GraduationCap, PlayCircle, BookOpen, CheckCircle2, EyeOff } from "lucide-react";
+import { GraduationCap, PlayCircle, BookOpen, CheckCircle2, EyeOff, Trophy } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface FormationCardProps {
   formation: {
@@ -43,9 +44,15 @@ export function FormationCard({
       ? { label: "Reprendre", Icon: BookOpen }
       : { label: "Revoir", Icon: CheckCircle2 };
 
+  const isCompleted = progress >= 100;
+  const isInProgress = progress > 0 && progress < 100;
+
   return (
     <Card
-      className="overflow-hidden flex flex-col cursor-pointer hover:border-primary/40 transition-colors"
+      className={cn(
+        "overflow-hidden flex flex-col cursor-pointer transition-colors",
+        isCompleted ? "border-emerald-500/50 hover:border-emerald-500" : "hover:border-primary/40"
+      )}
       onClick={onOpen}
     >
       <div className="relative h-40 bg-muted">
@@ -68,24 +75,57 @@ export function FormationCard({
             </Badge>
           </div>
         )}
+        {isCompleted && (
+          <div className="absolute top-2 right-2">
+            <Badge className="gap-1 text-xs bg-emerald-600 hover:bg-emerald-600 text-white border-0">
+              <Trophy className="h-3 w-3" />
+              Terminé
+            </Badge>
+          </div>
+        )}
+        {isInProgress && (
+          <div className="absolute top-2 right-2">
+            <Badge variant="outline" className="gap-1 text-xs bg-background/80 backdrop-blur">
+              <BookOpen className="h-3 w-3" />
+              En cours
+            </Badge>
+          </div>
+        )}
       </div>
 
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">{formation.titre}</CardTitle>
+        <CardTitle className="text-base flex items-center gap-2">
+          {isCompleted && <span className="text-lg">🏆</span>}
+          {formation.titre}
+        </CardTitle>
         <CardDescription className="line-clamp-2 text-xs">
           {formation.description}
         </CardDescription>
       </CardHeader>
 
       <CardContent className="mt-auto space-y-3">
-        <Progress value={progress} className="h-2" />
+        <Progress
+          value={progress}
+          className={cn("h-2", isCompleted && "[&>div]:bg-emerald-500")}
+        />
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>
             {nbChapitresDone}/{nbChapitresTotal} chapitres
           </span>
-          <span>{Math.round(progress)}%</span>
+          <span className={cn(isCompleted && "text-emerald-600 font-semibold")}>
+            {Math.round(progress)}%
+          </span>
         </div>
-        <Button variant="outline" size="sm" className="w-full gap-2 bg-transparent text-primary border-primary/30 hover:bg-primary/10">
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            "w-full gap-2",
+            isCompleted
+              ? "bg-transparent text-emerald-600 border-emerald-500/40 hover:bg-emerald-500/10"
+              : "bg-transparent text-primary border-primary/30 hover:bg-primary/10"
+          )}
+        >
           <Icon className="h-4 w-4" />
           {label}
         </Button>

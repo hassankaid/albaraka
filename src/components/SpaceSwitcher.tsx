@@ -39,8 +39,8 @@ const getSpaces = (profile: any): Space[] => {
       icon: BookOpenCheck,
       color: "text-amber-400",
       bgColor: "bg-amber-400/10",
-      path: "/training/scripts/setting",
-      description: "Scripts Setting & Closing",
+      path: "/training",
+      description: "Formation, Scripts & Objections",
     },
     {
       id: "coaching",
@@ -88,7 +88,10 @@ export default function SpaceSwitcher() {
     if (location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching")) {
       return spaces.find((s) => s.id === "coaching") || spaces[0];
     }
-    // Admin routes (except /admin/coaching which is coaching space)
+    // Admin routes (except /admin/coaching and /admin/training which belong to their respective spaces)
+    if (location.pathname.startsWith("/admin/training") || location.pathname.startsWith("/admin/scripts") || location.pathname.startsWith("/admin/role-play") || location.pathname.startsWith("/admin/quizzes")) {
+      return spaces.find((s) => s.id === "training") || spaces[0];
+    }
     if (location.pathname.startsWith("/admin/") && location.pathname !== "/admin/coaching") {
       return spaces.find((s) => s.id === "admin") || spaces[0];
     }
@@ -124,17 +127,14 @@ export default function SpaceSwitcher() {
               key={space.id}
               onClick={() => navigate(space.path)}
               className={cn(
-                "flex items-center gap-3 p-3 cursor-pointer",
+                "flex items-center gap-3 p-2.5 cursor-pointer",
                 isActive && "bg-muted"
               )}
             >
               <div className={cn("p-1.5 rounded-lg", space.bgColor)}>
                 <SpaceIcon className={cn("h-4 w-4", space.color)} />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">{space.label}</p>
-                <p className="text-xs text-muted-foreground">{space.description}</p>
-              </div>
+              <p className="flex-1 text-sm font-semibold">{space.label}</p>
               {isActive && <Check className="h-4 w-4 text-primary" />}
             </DropdownMenuItem>
           );

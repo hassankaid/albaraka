@@ -2,17 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,8 +29,6 @@ import {
   Bot,
   User,
   History,
-  MessageSquare,
-  Flame,
   ChevronDown,
   Pencil,
 } from "lucide-react";
@@ -46,14 +36,10 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
-  AGENT_CONTEXTS,
   AGENT_SHORTCUTS,
   parseAgentResponse,
   extractTitleFromMessage,
-  type AgentContextType,
 } from "./agent/constants";
-import { OBJECTIONS_SETTING, OBJECTIONS_CLOSING } from "./agent/objections";
-import { ObjectionCard } from "./agent/ObjectionCard";
 import {
   useCreateAgentConversation,
   useAppendAgentMessage,
@@ -64,9 +50,7 @@ import {
 } from "@/hooks/useAgentConversation";
 
 export default function AgentIA() {
-  const [mainTab, setMainTab] = useState<"ia" | "setting" | "closing">("ia");
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [contextType, setContextType] = useState<AgentContextType>("setting_rdv");
   const [input, setInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [localMessages, setLocalMessages] = useState<
@@ -91,7 +75,6 @@ export default function AgentIA() {
           content: m.content,
         }))
       );
-      setContextType(conversationData.conversation.context_type);
     }
   }, [conversationData]);
 
@@ -110,7 +93,7 @@ export default function AgentIA() {
       try {
         const newConv = await createConversation.mutateAsync({
           title: extractTitleFromMessage(userMessage),
-          context_type: contextType,
+          context_type: "setting_dm",
         });
         conversationId = newConv.id;
         setActiveConversationId(conversationId);
@@ -136,7 +119,7 @@ export default function AgentIA() {
 
     setIsGenerating(true);
     try {
-      const response = await callAgentProspect(newMessagesState, contextType);
+      const response = await callAgentProspect(newMessagesState, "setting_dm");
       const assistantMessage = { role: "assistant" as const, content: response };
       setLocalMessages([...newMessagesState, assistantMessage]);
 
@@ -195,208 +178,141 @@ export default function AgentIA() {
   const hasHistory = (recentConversations?.length || 0) > 0;
 
   return (
-    <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as any)} className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="ia" className="gap-1.5">
-          <Bot className="h-4 w-4" />
-          Agent IA
-        </TabsTrigger>
-        <TabsTrigger value="setting" className="gap-1.5">
-          <MessageSquare className="h-4 w-4" />
-          Objections Setting ({OBJECTIONS_SETTING.length})
-        </TabsTrigger>
-        <TabsTrigger value="closing" className="gap-1.5">
-          <Flame className="h-4 w-4" />
-          Objections Closing ({OBJECTIONS_CLOSING.length})
-        </TabsTrigger>
-      </TabsList>
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold font-heading">Agent IA Setting</h1>
+        <p className="text-muted-foreground">
+          Colle un message de prospect et l'agent t'aide à formuler la meilleure réponse
+        </p>
+      </div>
 
-      {/* ─── ONGLET 1 : AGENT IA CHAT ─── */}
-      <TabsContent value="ia" className="mt-0">
-        <div className="flex flex-col gap-4 h-[calc(100vh-14rem)]">
-          {/* Header */}
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex-1 min-w-[200px] space-y-1">
-              <Select
-                value={contextType}
-                onValueChange={(v) => setContextType(v as AgentContextType)}
-                disabled={!isFirstMessage}
-              >
-                <SelectTrigger className="w-full max-w-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {AGENT_CONTEXTS.map((ctx) => (
-                    <SelectItem key={ctx.id} value={ctx.id}>
-                      <span className="flex items-center gap-2">
-                        <span>{ctx.emoji}</span>
-                        <span className="font-medium">{ctx.label}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {!isFirstMessage && (
-                <p className="text-xs text-muted-foreground">
-                  Contexte verrouillé pour cette conversation.
-                </p>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {hasHistory && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <History className="h-4 w-4 mr-1" />
-                      Historique
-                      <ChevronDown className="h-3 w-3 ml-1" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-72">
-                    <DropdownMenuLabel>Conversations récentes</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {recentConversations?.map((conv) => {
-                      const ctx = AGENT_CONTEXTS.find((c) => c.id === conv.context_type);
-                      return (
-                        <DropdownMenuItem
-                          key={conv.id}
-                          onClick={() => handleLoadConversation(conv.id)}
-                          className="flex-col items-start gap-0.5 py-2"
-                        >
-                          <div className="flex items-center gap-1.5 text-sm">
-                            {ctx && <span>{ctx.emoji}</span>}
-                            <span className="font-medium truncate max-w-[200px]">
-                              {conv.title || "Sans titre"}
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-muted-foreground">
-                            {formatDistanceToNow(new Date(conv.updated_at), {
-                              addSuffix: true,
-                              locale: fr,
-                            })}
-                          </span>
-                        </DropdownMenuItem>
-                      );
-                    })}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-              {activeConversationId && (
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleOpenRename} title="Renommer">
-                  <Pencil className="h-4 w-4" />
+      <div className="flex flex-col gap-4 h-[calc(100vh-16rem)]">
+        {/* Header */}
+        <div className="flex items-center justify-end gap-2">
+          {hasHistory && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <History className="h-4 w-4 mr-1" />
+                  Historique
+                  <ChevronDown className="h-3 w-3 ml-1" />
                 </Button>
-              )}
-              <Button variant="outline" size="sm" onClick={handleNewConversation}>
-                <Plus className="h-4 w-4 mr-1" />
-                Nouvelle
-              </Button>
-            </div>
-          </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72">
+                <DropdownMenuLabel>Conversations récentes</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {recentConversations?.map((conv) => (
+                  <DropdownMenuItem
+                    key={conv.id}
+                    onClick={() => handleLoadConversation(conv.id)}
+                    className="flex-col items-start gap-0.5 py-2"
+                  >
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <span>💬</span>
+                      <span className="font-medium truncate max-w-[200px]">
+                        {conv.title || "Sans titre"}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      {formatDistanceToNow(new Date(conv.updated_at), {
+                        addSuffix: true,
+                        locale: fr,
+                      })}
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          {activeConversationId && (
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleOpenRename} title="Renommer">
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={handleNewConversation}>
+            <Plus className="h-4 w-4 mr-1" />
+            Nouvelle
+          </Button>
+        </div>
 
-          {/* Messages */}
-          <Card className="flex-1 overflow-hidden">
-            <CardContent className="p-4 h-full overflow-y-auto space-y-4">
-              {isFirstMessage && (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center max-w-md space-y-4">
-                    <Bot className="h-12 w-12 mx-auto text-muted-foreground/50" />
-                    <div>
-                      <h3 className="text-lg font-semibold">Agent IA Al Baraka</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Colle un message de prospect ou pose une question. L'agent t'aide à formuler
-                        la meilleure réponse dans la méthodologie Al Baraka.
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2 justify-center">
-                      {AGENT_SHORTCUTS.slice(0, 6).map((s, i) => (
-                        <button
-                          key={i}
-                          onClick={() => handleShortcut(s.prompt)}
-                          className="text-xs px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
-                        >
-                          {s.label}
-                        </button>
-                      ))}
-                    </div>
+        {/* Messages */}
+        <Card className="flex-1 overflow-hidden">
+          <CardContent className="p-4 h-full overflow-y-auto space-y-4">
+            {isFirstMessage && (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center max-w-md space-y-4">
+                  <Bot className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                  <div>
+                    <h3 className="text-lg font-semibold">Agent IA Al Baraka</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Colle un message de prospect ou pose une question. L'agent t'aide à formuler
+                      la meilleure réponse en se basant sur les scripts et objections Al Baraka.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {AGENT_SHORTCUTS.slice(0, 6).map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleShortcut(s.prompt)}
+                        className="text-xs px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+                      >
+                        {s.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              )}
-
-              {localMessages.map((msg, idx) => (
-                <MessageBubble key={idx} message={msg} onCopyResponse={handleCopyResponse} />
-              ))}
-
-              {isGenerating && (
-                <div className="flex items-center gap-2 text-muted-foreground text-sm px-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  L'agent réfléchit…
-                </div>
-              )}
-
-              <div ref={messagesEndRef} />
-            </CardContent>
-          </Card>
-
-          {/* Input */}
-          <Card>
-            <CardContent className="p-3">
-              <Textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Colle le message du prospect ou pose ta question…"
-                rows={3}
-                className="resize-none border-0 focus-visible:ring-0 shadow-none p-0"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-              />
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-muted-foreground">
-                  Entrée pour envoyer · Maj+Entrée pour aller à la ligne
-                </p>
-                <Button size="sm" onClick={handleSend} disabled={!input.trim() || isGenerating}>
-                  {isGenerating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4 mr-1" />
-                      Envoyer
-                    </>
-                  )}
-                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </TabsContent>
+            )}
 
-      {/* ─── ONGLET 2 : OBJECTIONS SETTING ─── */}
-      <TabsContent value="setting" className="mt-0 space-y-3">
-        <p className="text-sm text-muted-foreground">
-          7 objections classiques en setting avec erreurs fréquentes et bonnes réponses.
-        </p>
-        <div className="space-y-2">
-          {OBJECTIONS_SETTING.map((obj) => (
-            <ObjectionCard key={obj.id} objection={obj} />
-          ))}
-        </div>
-      </TabsContent>
+            {localMessages.map((msg, idx) => (
+              <MessageBubble key={idx} message={msg} onCopyResponse={handleCopyResponse} />
+            ))}
 
-      {/* ─── ONGLET 3 : OBJECTIONS CLOSING ─── */}
-      <TabsContent value="closing" className="mt-0 space-y-3">
-        <p className="text-sm text-muted-foreground">
-          8 objections classiques en closing avec erreurs fréquentes et bonnes réponses.
-        </p>
-        <div className="space-y-2">
-          {OBJECTIONS_CLOSING.map((obj) => (
-            <ObjectionCard key={obj.id} objection={obj} />
-          ))}
-        </div>
-      </TabsContent>
+            {isGenerating && (
+              <div className="flex items-center gap-2 text-muted-foreground text-sm px-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                L'agent réfléchit…
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </CardContent>
+        </Card>
+
+        {/* Input */}
+        <Card>
+          <CardContent className="p-3">
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Colle le message du prospect ou pose ta question…"
+              rows={3}
+              className="resize-none border-0 focus-visible:ring-0 shadow-none p-0"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+            />
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-xs text-muted-foreground">
+                Entrée pour envoyer · Maj+Entrée pour aller à la ligne
+              </p>
+              <Button size="sm" onClick={handleSend} disabled={!input.trim() || isGenerating}>
+                {isGenerating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-1" />
+                    Envoyer
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Dialog de renommage */}
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
@@ -436,11 +352,11 @@ export default function AgentIA() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Tabs>
+    </div>
   );
 }
 
-// ─── MessageBubble ───
+// MessageBubble
 function MessageBubble({
   message,
   onCopyResponse,

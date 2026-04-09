@@ -37,8 +37,7 @@ import ApporteurCommissions from "./pages/apporteur/ApporteurCommissions";
 import ApporteurProfile from "./pages/apporteur/ApporteurProfile";
 import ApporteurOnboarding from "./pages/apporteur/ApporteurOnboarding";
 import Working from "./pages/Working";
-import ScriptsSetting from "./pages/working/ScriptsSetting";
-import ScriptsClosing from "./pages/working/ScriptsClosing";
+import Scripts from "./pages/working/Scripts";
 import ContentGenerator from "./pages/working/ContentGenerator";
 import MyContents from "./pages/working/MyContents";
 import MyActivity from "./pages/working/MyActivity";
@@ -49,6 +48,13 @@ import ChapterViewer from "./pages/training/ChapterViewer";
 import AdminTrainingList from "./pages/training/admin/AdminTrainingList";
 import FormationEditor from "./pages/training/admin/FormationEditor";
 import ChapitreEditor from "./pages/training/admin/ChapitreEditor";
+import AdminScriptList from "./pages/admin/scripts/AdminScriptList";
+import ScriptEditor from "./pages/admin/scripts/ScriptEditor";
+import RolePlay from "./pages/training/RolePlay";
+import RolePlayAdmin from "./pages/admin/role-play/RolePlayAdmin";
+import QuizList from "./pages/training/QuizList";
+import QuizPage from "./pages/training/QuizPage";
+import AdminQuizList from "./pages/admin/quizzes/AdminQuizList";
 
 const queryClient = new QueryClient();
 
@@ -92,11 +98,19 @@ const App = () => (
                   <Route path="/admin/training" element={<AdminTrainingList />} />
                   <Route path="/admin/training/:slug" element={<FormationEditor />} />
                   <Route path="/admin/training/:slug/chapitre/:chapitreId" element={<ChapitreEditor />} />
+                  <Route path="/admin/scripts" element={<AdminScriptList />} />
+                  <Route path="/admin/scripts/:id" element={<ScriptEditor />} />
+                  <Route path="/training/role-play" element={<RolePlay />} />
+                  <Route path="/admin/role-play" element={<RolePlayAdmin />} />
+                  <Route path="/training/quiz" element={<QuizList />} />
+                  <Route path="/training/quiz/:id" element={<QuizPage />} />
+                  <Route path="/admin/quizzes" element={<AdminQuizList />} />
                   <Route path="/training" element={<TrainingList />} />
                   <Route path="/training/:slug" element={<FormationDetail />} />
                   <Route path="/training/:slug/chapitre/:chapitreId" element={<ChapterViewer />} />
-                  <Route path="/training/scripts/setting" element={<ScriptsSetting />} />
-                  <Route path="/training/scripts/closing" element={<ScriptsClosing />} />
+                  <Route path="/training/scripts" element={<Scripts />} />
+                  <Route path="/training/scripts/setting" element={<Navigate to="/training/scripts" replace />} />
+                  <Route path="/training/scripts/closing" element={<Navigate to="/training/scripts" replace />} />
                   <Route path="/working/content" element={<ContentGenerator />} />
                   <Route path="/working/contents" element={<MyContents />} />
                   <Route path="/working/agent" element={<AgentIA />} />
