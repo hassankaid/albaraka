@@ -20,6 +20,7 @@ interface NavItem {
 
 const workingNavItems: NavItem[] = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp },
+  { title: "Mon Organisation", path: "/working/organisation", icon: CalendarDays },
   { title: "Dashboard", path: "/my-space", icon: BarChart3 },
   { title: "Mes Leads", path: "/my-space/leads", icon: Users },
   { title: "Mes Ventes", path: "/my-space/sales", icon: BadgeEuro },
@@ -46,6 +47,7 @@ const pageTitles: Record<string, string> = {
   "/my-space/coaching-calendar": "Mes Coachings",
   "/mon-coaching": "Historique",
   "/working/activity": "Mon Activité",
+  "/working/organisation": "Mon Organisation",
   "/training": "Formation",
   "/training/certificats": "Mes Certificats",
 };

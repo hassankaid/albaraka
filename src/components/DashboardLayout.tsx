@@ -20,6 +20,7 @@ interface NavItem {
 
 const workingNavItems: NavItem[] = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
+  { title: "Mon Organisation", path: "/working/organisation", icon: CalendarDays, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Générateur Contenu", path: "/working/content", icon: Sparkles, roles: ["ceo", "collaborateur"] },
   { title: "Mes Contenus", path: "/working/contents", icon: Library, roles: ["ceo", "collaborateur"] },
   { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur"] },
@@ -86,6 +87,7 @@ const pageTitles: Record<string, string> = {
   "/mon-coaching": "Historique",
   "/admin/coaching": "Administration Coaching",
   "/working/activity": "Mon Activité",
+  "/working/organisation": "Mon Organisation",
   "/working/content": "Générateur de Contenu",
   "/working/contents": "Mes Contenus",
   "/working/agent": "Agent IA",
