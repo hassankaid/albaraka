@@ -95,29 +95,11 @@ export default function TrainingList() {
     },
   });
 
-  // Tri : d'abord les formations du parcours dans l'ordre du parcours,
-  // puis les autres (bonus : ESTIMACTION, COPYWRITING, etc.) par ordre naturel.
-  const sortedFormations = useMemo(() => {
-    if (!formations) return [];
-    if (formationUnlockMap.size === 0) return formations;
-    const parcoursOrder: string[] = [];
-    if (parcours) {
-      for (const phase of parcours.phases) {
-        for (const ch of phase.chapitres) {
-          if (ch.type === "redirect_formation" && ch.formation_id) {
-            parcoursOrder.push(ch.formation_id);
-          }
-        }
-      }
-    }
-    const orderIndex = new Map(parcoursOrder.map((id, i) => [id, i]));
-    return [...formations].sort((a, b) => {
-      const ai = orderIndex.has(a.id) ? orderIndex.get(a.id)! : 999;
-      const bi = orderIndex.has(b.id) ? orderIndex.get(b.id)! : 999;
-      if (ai !== bi) return ai - bi;
-      return (a.ordre ?? 0) - (b.ordre ?? 0);
-    });
-  }, [formations, formationUnlockMap, parcours]);
+  // L'ordre du catalogue user est celui défini par le CEO en admin
+  // (colonne formations.ordre, pilotée par drag-and-drop). Le tri est déjà
+  // appliqué côté fetch. formationUnlockMap ne sert qu'à identifier les
+  // formations du parcours et leur phase de déblocage (cadenas + label).
+  const sortedFormations = formations ?? [];
 
   return (
     <div className="space-y-6">
