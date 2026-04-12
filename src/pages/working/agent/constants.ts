@@ -1,5 +1,3 @@
-export type AgentContextType = "setting_dm";
-
 export interface ParsedAgentResponse {
   isThreeBlocks: boolean;
   blocks: {

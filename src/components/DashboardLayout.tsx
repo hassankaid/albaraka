@@ -38,6 +38,7 @@ const adminNavItems: NavItem[] = [
   { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
   { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"] },
+  { title: "Agent IA (KB)", path: "/admin/agent-knowledge", icon: Bot, roles: ["ceo"] },
 ];
 
 const trainingNavItems: NavItem[] = [
@@ -74,6 +75,7 @@ const pageTitles: Record<string, string> = {
   "/admin/training/manage": "Gestion",
   "/admin/training/students": "Suivi Élèves",
   "/admin/create": "Création complète",
+  "/admin/agent-knowledge": "Base de connaissance Agent IA",
   "/my-space": "Mon espace",
   "/profile": "Mon profil",
   "/coaching": "Évaluations",

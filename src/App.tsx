@@ -49,6 +49,7 @@ import FormationEditor from "./pages/training/admin/FormationEditor";
 import ChapitreEditor from "./pages/training/admin/ChapitreEditor";
 import AdminScriptList from "./pages/admin/scripts/AdminScriptList";
 import ScriptEditor from "./pages/admin/scripts/ScriptEditor";
+import AdminAgentKnowledge from "./pages/admin/agent-knowledge/AdminAgentKnowledge";
 import RolePlay from "./pages/training/RolePlay";
 import RolePlayAdmin from "./pages/admin/role-play/RolePlayAdmin";
 import QuizList from "./pages/training/QuizList";
@@ -105,6 +106,7 @@ const App = () => (
                   <Route path="/admin/training/:slug/chapitre/:chapitreId" element={<ChapitreEditor />} />
                   <Route path="/admin/scripts" element={<AdminScriptList />} />
                   <Route path="/admin/scripts/:id" element={<ScriptEditor />} />
+                  <Route path="/admin/agent-knowledge" element={<AdminAgentKnowledge />} />
                   <Route path="/training/role-play" element={<RolePlay />} />
                   <Route path="/admin/role-play" element={<RolePlayAdmin />} />
                   <Route path="/training/quiz" element={<QuizList />} />

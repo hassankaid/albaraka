@@ -102,7 +102,6 @@ export default function AgentIA() {
       try {
         const newConv = await createConversation.mutateAsync({
           title: extractTitleFromMessage(userMessage),
-          context_type: "setting_dm",
         });
         conversationId = newConv.id;
         setActiveConversationId(conversationId);
@@ -128,7 +127,7 @@ export default function AgentIA() {
 
     setIsGenerating(true);
     try {
-      const response = await callAgentProspect(newMessagesState, "setting_dm");
+      const response = await callAgentProspect(newMessagesState);
       const assistantMessage = { role: "assistant" as const, content: response };
       setLocalMessages([...newMessagesState, assistantMessage]);
 

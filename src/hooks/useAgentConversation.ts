@@ -1,13 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-type AgentContextType = string;
 
 export interface AgentConversation {
   id: string;
   user_id: string;
   title: string | null;
-  context_type: AgentContextType;
   created_at: string;
   updated_at: string;
 }
@@ -78,14 +76,13 @@ export function useCreateAgentConversation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: { title: string; context_type: AgentContextType }) => {
+    mutationFn: async (input: { title: string }) => {
       if (!user?.id) throw new Error("Utilisateur non connecté");
       const { data, error } = await (supabase as any)
         .from("agent_conversations")
         .insert({
           user_id: user.id,
           title: input.title,
-          context_type: input.context_type,
         })
         .select()
         .single();
@@ -166,11 +163,10 @@ export function useRenameAgentConversation() {
 }
 
 export async function callAgentProspect(
-  messages: { role: "user" | "assistant"; content: string }[],
-  contextType: AgentContextType
+  messages: { role: "user" | "assistant"; content: string }[]
 ): Promise<string> {
   const { data, error } = await supabase.functions.invoke("claude-agent-prospect", {
-    body: { messages, context_type: contextType },
+    body: { messages },
   });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
