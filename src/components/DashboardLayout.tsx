@@ -37,8 +37,8 @@ const adminNavItems: NavItem[] = [
   { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"] },
   { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
+  { title: "Agent IA", path: "/admin/agent-knowledge", icon: Bot, roles: ["ceo"] },
   { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"] },
-  { title: "Agent IA (KB)", path: "/admin/agent-knowledge", icon: Bot, roles: ["ceo"] },
 ];
 
 const trainingNavItems: NavItem[] = [
