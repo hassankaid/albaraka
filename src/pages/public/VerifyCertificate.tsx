@@ -36,7 +36,7 @@ export default function VerifyCertificate() {
           <div className="absolute inset-2 border border-amber-500/20 rounded-lg pointer-events-none" />
 
           <div className="flex flex-col items-center text-center space-y-6 relative">
-            <img src={alBarakaLogo} alt="Al Baraka" className="h-16 w-16 object-contain" />
+            <img src={alBarakaLogo} alt="Al Baraka" className="h-20 w-auto object-contain" />
             <div className="text-[11px] tracking-[0.4em] uppercase text-amber-400/80 font-serif">
               Al Baraka Training
             </div>

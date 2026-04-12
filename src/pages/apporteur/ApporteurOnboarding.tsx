@@ -16,7 +16,7 @@ import { RefreshCw, Upload, Building2, Loader2, Check, ChevronsUpDown, Pencil, U
 import { cn } from "@/lib/utils";
 import { PhoneInput } from "react-international-phone";
 import "react-international-phone/style.css";
-import logo from "@/assets/al-baraka-logo.jpeg";
+import logo from "@/assets/al-baraka-logo.png";
 
 interface BankDetails {
   type?: string;

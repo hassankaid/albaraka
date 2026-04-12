@@ -110,7 +110,7 @@ export function FormationCompletionModal({
           <div className="absolute inset-3 border border-amber-500/20 rounded pointer-events-none" />
 
           <div className="relative p-8 flex flex-col items-center text-center space-y-5">
-            <img src={alBarakaLogo} alt="Al Baraka" className="h-14 w-14 object-contain" />
+            <img src={alBarakaLogo} alt="Al Baraka" className="h-16 w-auto object-contain" />
             <div className="text-[10px] tracking-[0.35em] uppercase text-amber-400/80 font-serif">
               Al Baraka Training
             </div>

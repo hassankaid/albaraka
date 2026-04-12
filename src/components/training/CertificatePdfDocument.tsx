@@ -56,14 +56,14 @@ const s = StyleSheet.create({
     alignItems: "center",
   },
   logo: {
-    width: 70,
-    height: 70,
+    width: 180,
+    height: 90,
     objectFit: "contain",
-    marginBottom: 18,
+    marginBottom: 8,
   },
   brandLine: {
     fontFamily: "Cormorant Garamond",
-    fontSize: 10,
+    fontSize: 9,
     letterSpacing: 4,
     color: GOLD_SOFT,
     textTransform: "uppercase",

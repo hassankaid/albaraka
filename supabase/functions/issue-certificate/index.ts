@@ -194,7 +194,8 @@ Deno.serve(async (req) => {
     } else {
       next = Number(seqRes);
     }
-    const certificateNumber = `EBT-${year}-${String(next).padStart(6, "0")}`;
+    const userHex6 = body.user_id.replace(/-/g, "").slice(0, 6).toUpperCase();
+    const certificateNumber = `ABT-${year}-${userHex6}-${String(next).padStart(4, "0")}`;
 
     // Insert
     const { data: cert, error: insErr } = await admin

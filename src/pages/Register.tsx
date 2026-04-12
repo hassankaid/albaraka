@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/al-baraka-logo.jpeg";
+import logo from "@/assets/al-baraka-logo.png";
 import { Eye, EyeOff, Mail, Lock, User, Phone, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
