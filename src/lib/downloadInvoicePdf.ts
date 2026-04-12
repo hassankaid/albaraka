@@ -137,7 +137,7 @@ async function fetchInvoiceData(invoiceId: string): Promise<InvoicePdfData> {
  */
 async function buildPdfBlob(data: InvoicePdfData): Promise<Blob> {
   const doc = createElement(InvoicePdfDocument, { data });
-  return await pdf(doc).toBlob();
+  return await pdf(doc as any).toBlob();
 }
 
 /**
