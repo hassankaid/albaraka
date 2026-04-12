@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, Briefcase, GraduationCap, BookOpenCheck, Check, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isEffectiveApporteur, type ProfileLike } from "@/lib/access-scope";
 
 interface Space {
   id: "working" | "training" | "coaching" | "admin";
@@ -20,11 +21,8 @@ interface Space {
   description: string;
 }
 
-interface ProfileInput {
-  role?: string | null;
+interface ProfileInput extends ProfileLike {
   is_coach?: boolean | null;
-  is_also_apporteur?: boolean | null;
-  is_active?: boolean | null;
 }
 
 /**
@@ -35,8 +33,7 @@ export function getSpaces(profile: ProfileInput | null, hasAnyPass: boolean): Sp
   if (!profile) return [];
 
   const isCeo = profile.role === "ceo";
-  const isApporteurPath = profile.role === "apporteur"
-    || (profile.role === "collaborateur" && profile.is_active === false && profile.is_also_apporteur);
+  const isApporteurPath = isEffectiveApporteur(profile);
 
   const workingPath = isApporteurPath
     ? "/my-space"

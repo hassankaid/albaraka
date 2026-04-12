@@ -1,6 +1,12 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { RefreshCw } from "lucide-react";
+import {
+  isApporteurScopedPath,
+  isEffectiveApporteur,
+  isLockedOut,
+} from "@/lib/access-scope";
+import { DeactivatedAccountScreen } from "@/components/DeactivatedAccountScreen";
 
 export function ProtectedRoute() {
   const { session, profile, isLoading } = useAuth();
@@ -16,7 +22,15 @@ export function ProtectedRoute() {
 
   if (!session) return <Navigate to="/login" replace />;
 
-  // Redirect apporteurs who haven't completed onboarding
+  // Hard lockout: deactivated collaborateur without any apporteur fallback
+  // (is_active=false, is_also_apporteur=false). They cannot navigate the app.
+  if (isLockedOut(profile)) {
+    return <DeactivatedAccountScreen />;
+  }
+
+  // Onboarding gate — only enforced for real apporteurs. Deactivated collabs
+  // with is_also_apporteur keep their previous behaviour (no onboarding
+  // required) to avoid locking existing users out of the app.
   if (
     profile?.role === "apporteur" &&
     !profile?.onboarding_completed &&
@@ -25,13 +39,13 @@ export function ProtectedRoute() {
     return <Navigate to="/onboarding" replace />;
   }
 
-  // Inactive collaborateurs with is_also_apporteur can only access /my-space/*
+  // Effective apporteurs can only navigate apporteur-scoped paths (my-space,
+  // training, mon-coaching, coaching/calendar, working/activity, onboarding).
+  // Anything else sends them back to their dashboard.
   if (
+    isEffectiveApporteur(profile) &&
     profile?.role === "collaborateur" &&
-    profile?.is_active === false &&
-    profile?.is_also_apporteur &&
-    !location.pathname.startsWith("/my-space") &&
-    location.pathname !== "/onboarding"
+    !isApporteurScopedPath(location.pathname)
   ) {
     return <Navigate to="/my-space" replace />;
   }
