@@ -24,7 +24,12 @@ export default function TrainingList() {
   const isCeo = profile?.role === "ceo";
 
   const { hasAnyPass, passLevel } = useUserPass();
-  const parcoursSlug = hasAnyPass ? (passLevel === "liberty" ? "liberty" : "al-baraka") : null;
+  // CEO : AL BARAKA par défaut pour voir la structure ; sinon selon pass
+  const parcoursSlug = hasAnyPass
+    ? (passLevel === "liberty" ? "liberty" : "al-baraka")
+    : isCeo
+      ? "al-baraka"
+      : null;
   const { parcours } = useParcours(parcoursSlug);
   const enrollments = useFormationEnrollments();
 

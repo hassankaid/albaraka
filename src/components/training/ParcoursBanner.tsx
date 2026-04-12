@@ -5,15 +5,24 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useParcours } from "@/hooks/useParcours";
 import { useUserPass } from "@/hooks/useUserPass";
+import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function ParcoursBanner() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const { passLevel, hasAnyPass } = useUserPass();
-  const slug = hasAnyPass ? (passLevel === "liberty" ? "liberty" : "al-baraka") : null;
+  const isCeo = profile?.role === "ceo";
+  // CEO : affiche AL BARAKA par défaut pour visualiser le parcours
+  // User : affiche le parcours correspondant à son pass actif
+  const slug = hasAnyPass
+    ? (passLevel === "liberty" ? "liberty" : "al-baraka")
+    : isCeo
+      ? "al-baraka"
+      : null;
   const { parcours, progress, isLoading } = useParcours(slug);
 
-  if (!hasAnyPass) return null;
+  if (!slug) return null;
 
   if (isLoading) {
     return <Skeleton className="h-32 w-full rounded-2xl" />;
