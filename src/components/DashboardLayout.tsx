@@ -21,8 +21,7 @@ interface NavItem {
 const workingNavItems: NavItem[] = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Mon Organisation", path: "/working/organisation", icon: CalendarDays, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
-  { title: "Mon Personal Brand", path: "/working/personal-brand", icon: Sparkles, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
-  { title: "Générateur Contenu", path: "/working/content", icon: Wand2, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
+  { title: "Générateur de Contenu", path: "/working/content", icon: Wand2, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Mes Contenus", path: "/working/contents", icon: Library, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur"] },
   // After separator
@@ -89,7 +88,6 @@ const pageTitles: Record<string, string> = {
   "/admin/coaching": "Administration Coaching",
   "/working/activity": "Mon Activité",
   "/working/organisation": "Mon Organisation",
-  "/working/personal-brand": "Mon Personal Brand",
   "/working/content": "Générateur de Contenu",
   "/working/contents": "Mes Contenus",
   "/working/agent": "Agent IA",

@@ -2,7 +2,6 @@ import { useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BRAND_SECTIONS, countAnsweredQuestions, totalQuestions, type BrandAnswers } from "../lib/sections";
@@ -39,20 +38,13 @@ export function Questionnaire({
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-4 md:p-6 space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6">
       <div ref={topRef} />
 
-      <div className="text-center space-y-2">
-        <Badge variant="outline" className="text-[11px] tracking-[0.3em] uppercase border-amber-500/40 text-amber-700 dark:text-amber-400">
-          AL BARAKA
-        </Badge>
-        <h1 className="font-heading text-3xl md:text-4xl text-foreground">Personal Branding</h1>
-        <p className="font-heading italic text-muted-foreground">& Stratégie de Contenu</p>
-        <p className="text-sm text-muted-foreground max-w-md mx-auto pt-2">
-          Réponds à chaque question avec honnêteté. À la fin, l'IA te générera des profils
-          Instagram uniques + un prompt pour créer 30 scripts de Reels et 1 an d'idées de stories.
-        </p>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        Réponds à chaque question avec honnêteté. À la fin, tu auras tes profils
+        Instagram uniques + un prompt pour créer 30 scripts de Reels et 1 an d'idées de stories.
+      </p>
 
       <div className="space-y-1.5">
         <div className="flex justify-between text-xs">
@@ -62,21 +54,32 @@ export function Questionnaire({
         <Progress value={(answered / total) * 100} className="h-1.5" />
       </div>
 
-      <div className="flex gap-1.5 overflow-x-auto pb-1">
-        {BRAND_SECTIONS.map((s, i) => (
-          <button
-            key={s.id}
-            onClick={() => { setCurrentSection(i); scrollTop(); }}
-            className={cn(
-              "shrink-0 px-3 py-1.5 rounded-lg text-xs border transition-colors whitespace-nowrap",
-              i === currentSection
-                ? "bg-primary/10 border-primary text-primary font-medium"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {s.icon} {s.title}
-          </button>
-        ))}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+        {BRAND_SECTIONS.map((s, i) => {
+          const active = i === currentSection;
+          const done = s.questions.every((q) => {
+            const v = answers[q.id];
+            if (Array.isArray(v)) return v.length > 0;
+            return typeof v === "string" && v.trim().length > 0;
+          });
+          return (
+            <button
+              key={s.id}
+              onClick={() => { setCurrentSection(i); scrollTop(); }}
+              className={cn(
+                "flex flex-col items-center gap-1 px-2 py-3 rounded-lg border text-center transition-colors",
+                active
+                  ? "bg-primary/10 border-primary text-primary"
+                  : done
+                    ? "border-emerald-500/40 text-foreground hover:border-primary/60"
+                    : "border-border text-muted-foreground hover:border-primary/40"
+              )}
+            >
+              <span className="text-lg leading-none">{s.icon}</span>
+              <span className="text-[11px] font-medium leading-tight">{s.title}</span>
+            </button>
+          );
+        })}
       </div>
 
       <Card>

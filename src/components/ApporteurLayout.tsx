@@ -21,8 +21,7 @@ interface NavItem {
 const workingNavItems: NavItem[] = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp },
   { title: "Mon Organisation", path: "/working/organisation", icon: CalendarDays },
-  { title: "Mon Personal Brand", path: "/working/personal-brand", icon: Sparkles, passRequired: true },
-  { title: "Générateur Contenu", path: "/working/content", icon: Wand2, passRequired: true },
+  { title: "Générateur de Contenu", path: "/working/content", icon: Wand2, passRequired: true },
   { title: "Mes Contenus", path: "/working/contents", icon: Library, passRequired: true },
   { title: "Dashboard", path: "/my-space", icon: BarChart3 },
   { title: "Mes Leads", path: "/my-space/leads", icon: Users },
@@ -51,7 +50,6 @@ const pageTitles: Record<string, string> = {
   "/mon-coaching": "Historique",
   "/working/activity": "Mon Activité",
   "/working/organisation": "Mon Organisation",
-  "/working/personal-brand": "Mon Personal Brand",
   "/working/content": "Générateur de Contenu",
   "/working/contents": "Mes Contenus",
   "/training": "Formation",

@@ -41,13 +41,13 @@ export function BrandRecap({ answers, profiles, onEditSection, onRestart }: Prop
   const promptText = buildContentPrompt(answers);
 
   return (
-    <div className="max-w-3xl mx-auto p-4 md:p-6 space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6">
       <div className="text-center space-y-2">
-        <p className="text-[11px] tracking-[0.3em] uppercase text-primary/70">AL BARAKA</p>
-        <h1 className="font-heading text-3xl md:text-4xl text-foreground">
-          Ta Fiche Personal Brand
-        </h1>
-        <div className="w-16 h-px bg-primary/50 mx-auto my-4" />
+        <p className="text-[11px] tracking-[0.3em] uppercase text-primary/70">Ta fiche</p>
+        <h2 className="font-heading text-2xl md:text-3xl text-foreground">
+          Personal Brand
+        </h2>
+        <div className="w-12 h-px bg-primary/50 mx-auto my-3" />
       </div>
 
       {/* 6 SECTIONS RÉCAP */}
