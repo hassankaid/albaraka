@@ -118,7 +118,7 @@ export default function AdminTeam() {
     `${m.full_name} deviendra collaborateur intermédiaire. Il ne pourra pas s'affecter de leads lui-même.`,
     async () => {
       const { error } = await supabase.from("profiles")
-        .update({ role: "collaborateur", collaborateur_level: "intermediaire" })
+        .update({ role: "collaborateur", collaborateur_level: "intermediaire", is_also_apporteur: true })
         .eq("id", m.id);
       if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" });
       else toast({ title: `${m.full_name} promu collaborateur` });
