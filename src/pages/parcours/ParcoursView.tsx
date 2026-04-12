@@ -218,16 +218,23 @@ function ChapitreRow({
 }
 
 function BaseRow({
-  className, children, accent,
-}: { className?: string; children: React.ReactNode; accent?: "current" | "done" | "locked" | "milestone" }) {
+  className, children, accent, onClick,
+}: {
+  className?: string;
+  children: React.ReactNode;
+  accent?: "current" | "done" | "locked" | "milestone";
+  onClick?: () => void;
+}) {
   return (
     <Card
+      onClick={onClick}
       className={cn(
         "transition-colors",
         accent === "current" && "border-primary/60 bg-primary/5",
         accent === "done" && "border-emerald-500/40 bg-emerald-500/5",
         accent === "locked" && "opacity-60",
         accent === "milestone" && "border-amber-500/50 bg-gradient-to-r from-amber-500/10 to-transparent",
+        onClick && "cursor-pointer hover:border-primary/60",
         className
       )}
     >
@@ -239,11 +246,16 @@ function BaseRow({
 function VideoRow({
   chapitre, isCompleted, isAccessible,
 }: { chapitre: ParcoursChapitre; isCompleted: boolean; isAccessible: boolean }) {
-  const completeMutation = useCompleteChapitre();
+  const navigate = useNavigate();
+  const { slug } = useParams<{ slug: string }>();
   const accent = isCompleted ? "done" : !isAccessible ? "locked" : "current";
+  const openDetail = () => {
+    if (!isAccessible) return;
+    navigate(`/parcours/${slug}/chapitre/${chapitre.id}`);
+  };
 
   return (
-    <BaseRow accent={accent}>
+    <BaseRow accent={accent} onClick={isAccessible ? openDetail : undefined}>
       <div className="shrink-0 mt-1">
         {isCompleted ? (
           <CheckCircle2 className="h-5 w-5 text-emerald-500" />
@@ -262,22 +274,13 @@ function VideoRow({
           )}
         </div>
         {chapitre.description && isAccessible && (
-          <p className="mt-1 text-xs text-muted-foreground whitespace-pre-line line-clamp-3">
+          <p className="mt-1 text-xs text-muted-foreground whitespace-pre-line line-clamp-2">
             {chapitre.description}
           </p>
         )}
-        {isAccessible && !isCompleted && (
-          <div className="mt-3 flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => completeMutation.mutate(chapitre.id)}
-              disabled={completeMutation.isPending}
-              className="gap-2"
-            >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Marquer terminé
-            </Button>
+        {isAccessible && (
+          <div className="mt-2 text-xs text-primary font-medium">
+            {isCompleted ? "Revoir" : "Ouvrir"} →
           </div>
         )}
       </div>
