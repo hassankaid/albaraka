@@ -15,7 +15,7 @@ import { toast } from "@/hooks/use-toast";
 import { FileText, Download, CheckCircle2, Trash2, RefreshCw, Loader2, Eye, Users, Euro, AlertCircle, CalendarDays, Clock, Settings2, CreditCard } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { fetchInvoiceHtml, downloadInvoicePdf, generateInvoicePdfBlob } from "@/lib/downloadInvoicePdf";
+import { buildInvoicePdfBlobUrl, downloadInvoicePdf, generateInvoicePdfBlob } from "@/lib/downloadInvoicePdf";
 import InvoicePreviewModal from "@/components/InvoicePreviewModal";
 import JSZip from "jszip";
 import CommissionDetailModal from "@/components/invoices/CommissionDetailModal";
@@ -386,21 +386,28 @@ export default function AdminInvoices() {
 
   const [downloading, setDownloading] = useState<string | null>(null);
   const [previewInvoice, setPreviewInvoice] = useState<InvoiceRow | null>(null);
-  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewPdfUrl, setPreviewPdfUrl] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const openPreview = async (inv: InvoiceRow) => {
-    if (!inv.pdf_url) return;
     setPreviewInvoice(inv);
     setPreviewLoading(true);
-    setPreviewHtml("");
+    setPreviewPdfUrl("");
     try {
-      const html = await fetchInvoiceHtml(inv.pdf_url);
-      setPreviewHtml(html);
+      const url = await buildInvoicePdfBlobUrl(inv.id);
+      setPreviewPdfUrl(url);
     } catch {
       toast({ title: "Erreur", description: "Impossible de charger la facture", variant: "destructive" });
     } finally {
       setPreviewLoading(false);
+    }
+  };
+
+  const closePreview = () => {
+    setPreviewInvoice(null);
+    if (previewPdfUrl) {
+      URL.revokeObjectURL(previewPdfUrl);
+      setPreviewPdfUrl("");
     }
   };
 
@@ -1065,11 +1072,12 @@ export default function AdminInvoices() {
       {/* ── PREVIEW MODAL ── */}
       <InvoicePreviewModal
         open={!!previewInvoice}
-        onOpenChange={(open) => !open && setPreviewInvoice(null)}
+        onOpenChange={(open) => !open && closePreview()}
         invoiceNumber={previewInvoice?.invoice_number || ""}
-        htmlContent={previewHtml}
+        pdfBlobUrl={previewPdfUrl}
         loading={previewLoading}
         invoiceId={previewInvoice?.id}
+        skipRegeneration
       />
       {/* ── FIXED SALARY MODAL ── */}
       <Dialog open={salaryModalOpen} onOpenChange={setSalaryModalOpen}>

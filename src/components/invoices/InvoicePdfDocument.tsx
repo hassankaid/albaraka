@@ -214,7 +214,7 @@ const InvoicePdfDocument = ({ data }: { data: InvoicePdfData }) => {
         {commissionLines.map((l, i) => (
           <View key={i} style={[s.tableRow, i % 2 === 1 ? s.tableRowAlt : {}]} wrap={false}>
             <View style={s.cellDesc}>
-              <Text style={s.cellText}>Commission de la vente de</Text>
+              <Text style={s.cellText}>Commission apport d'affaires</Text>
               <Text style={s.clientName}>{l.client_name}</Text>
             </View>
             <Text style={[s.cellText, s.cellMens]}>

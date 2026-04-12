@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Euro, FileText, RefreshCw, Download, CheckCircle2, Clock, ArrowRight, Loader2, Eye, Users, Briefcase, TrendingUp } from "lucide-react";
-import { fetchInvoiceHtml, downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
+import { buildInvoicePdfBlobUrl, downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
 import { toast } from "@/hooks/use-toast";
 import InvoicePreviewModal from "@/components/InvoicePreviewModal";
 import CommissionProjection from "@/components/commissions/CommissionProjection";
@@ -73,19 +73,28 @@ const SOURCE_FILTER_LABELS: Record<string, { label: string; class: string; icon:
 function InvoiceActions({ pdfUrl, invoiceNumber, invoiceId }: { pdfUrl: string; invoiceNumber: string; invoiceId: string }) {
   const [downloading, setDownloading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewPdfUrl, setPreviewPdfUrl] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const openPreview = async () => {
     setPreviewOpen(true);
     setPreviewLoading(true);
+    setPreviewPdfUrl("");
     try {
-      const html = await fetchInvoiceHtml(pdfUrl);
-      setPreviewHtml(html);
+      const url = await buildInvoicePdfBlobUrl(invoiceId);
+      setPreviewPdfUrl(url);
     } catch {
       toast({ title: "Erreur", description: "Impossible de charger la facture", variant: "destructive" });
     } finally {
       setPreviewLoading(false);
+    }
+  };
+
+  const handlePreviewOpenChange = (open: boolean) => {
+    setPreviewOpen(open);
+    if (!open && previewPdfUrl) {
+      URL.revokeObjectURL(previewPdfUrl);
+      setPreviewPdfUrl("");
     }
   };
 
@@ -114,9 +123,9 @@ function InvoiceActions({ pdfUrl, invoiceNumber, invoiceId }: { pdfUrl: string; 
       </div>
       <InvoicePreviewModal
         open={previewOpen}
-        onOpenChange={setPreviewOpen}
+        onOpenChange={handlePreviewOpenChange}
         invoiceNumber={invoiceNumber}
-        htmlContent={previewHtml}
+        pdfBlobUrl={previewPdfUrl}
         loading={previewLoading}
         invoiceId={invoiceId}
         skipRegeneration

@@ -169,6 +169,16 @@ export async function downloadInvoicePdf(
 }
 
 /**
+ * Builds a fresh PDF blob URL for preview (iframe src).
+ * Caller is responsible for URL.revokeObjectURL when the preview closes.
+ */
+export async function buildInvoicePdfBlobUrl(invoiceId: string): Promise<string> {
+  const data = await fetchInvoiceData(invoiceId);
+  const blob = await buildPdfBlob(data);
+  return URL.createObjectURL(blob);
+}
+
+/**
  * Returns a fresh PDF as a Blob — used by the bulk download zipper.
  */
 export async function generateInvoicePdfBlob(

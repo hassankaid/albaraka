@@ -9,19 +9,20 @@ interface InvoicePreviewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   invoiceNumber: string;
-  htmlContent: string;
+  pdfBlobUrl: string;
   loading?: boolean;
   invoiceId?: string;
   skipRegeneration?: boolean;
 }
 
-export default function InvoicePreviewModal({ open, onOpenChange, invoiceNumber, htmlContent, loading, invoiceId, skipRegeneration }: InvoicePreviewModalProps) {
+export default function InvoicePreviewModal({ open, onOpenChange, invoiceNumber, pdfBlobUrl, loading, invoiceId, skipRegeneration }: InvoicePreviewModalProps) {
   const [downloading, setDownloading] = useState(false);
 
   const handleDownload = async () => {
+    if (!invoiceId) return;
     setDownloading(true);
     try {
-      await downloadInvoicePdf(invoiceNumber, htmlContent, invoiceId, { skipRegeneration });
+      await downloadInvoicePdf(invoiceNumber, "", invoiceId, { skipRegeneration });
     } catch {
       toast({ title: "Erreur", description: "Impossible de générer le PDF", variant: "destructive" });
     } finally {
@@ -37,13 +38,13 @@ export default function InvoicePreviewModal({ open, onOpenChange, invoiceNumber,
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden bg-muted rounded">
-          {loading ? (
+          {loading || !pdfBlobUrl ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <iframe
-              srcDoc={htmlContent}
+              src={pdfBlobUrl}
               className="w-full h-full border-0 bg-white rounded"
               title="Aperçu facture"
             />
@@ -54,7 +55,7 @@ export default function InvoicePreviewModal({ open, onOpenChange, invoiceNumber,
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Fermer
           </Button>
-          <Button onClick={handleDownload} disabled={downloading || loading || !htmlContent}>
+          <Button onClick={handleDownload} disabled={downloading || loading || !pdfBlobUrl}>
             {downloading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
             Télécharger PDF
           </Button>
