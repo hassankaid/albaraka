@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Award, Download, ExternalLink, GraduationCap } from "lucide-react";
+import { Award, Download, Copy, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import { useMyCertificates, downloadCertificateById } from "@/hooks/useCertificates";
 import { Button } from "@/components/ui/button";
@@ -116,8 +116,8 @@ export default function MyCertificates() {
                     className="gap-2 border-amber-500/40 text-amber-200 bg-transparent hover:bg-amber-500/10"
                     onClick={() => handleCopyVerifyLink(c.certificate_number)}
                   >
-                    <ExternalLink className="h-4 w-4" />
-                    Lien
+                    <Copy className="h-4 w-4" />
+                    Copier le lien
                   </Button>
                 </div>
               </CardContent>

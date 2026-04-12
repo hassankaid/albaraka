@@ -1,12 +1,15 @@
 import { Document, Page, Text, View, Image, StyleSheet, Font } from "@react-pdf/renderer";
 import alBarakaLogo from "@/assets/al-baraka-logo.png";
+import cormorantRegular from "@/assets/fonts/CormorantGaramond-Regular.ttf?url";
+import cormorantItalic from "@/assets/fonts/CormorantGaramond-Italic.ttf?url";
+import cormorantBold from "@/assets/fonts/CormorantGaramond-Bold.ttf?url";
 
 Font.register({
   family: "Cormorant Garamond",
   fonts: [
-    { src: "https://fonts.gstatic.com/s/cormorantgaramond/v16/co3bmX5slCNuHLi8bLeY9MK7whWMhyjornFLsS6V7w.ttf", fontWeight: 400 },
-    { src: "https://fonts.gstatic.com/s/cormorantgaramond/v16/co3YmX5slCNuHLi8bLeY9MK7whWMhyjQAllvuQWJ5hIpDg.ttf", fontWeight: 400, fontStyle: "italic" },
-    { src: "https://fonts.gstatic.com/s/cormorantgaramond/v16/co3bmX5slCNuHLi8bLeY9MK7whWMhyjorvFLsS6V7w.ttf", fontWeight: 700 },
+    { src: cormorantRegular, fontWeight: 400 },
+    { src: cormorantItalic, fontWeight: 400, fontStyle: "italic" },
+    { src: cormorantBold, fontWeight: 700 },
   ],
 });
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Award, Download, ExternalLink, Loader2, Sparkles } from "lucide-react";
+import { Award, Download, Copy, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -142,8 +142,8 @@ export function CertificateBanner({ userId, formationId, isComplete }: Props) {
             className="gap-2 border-amber-500/40 text-amber-200 bg-transparent hover:bg-amber-500/10"
             onClick={handleCopyLink}
           >
-            <ExternalLink className="h-4 w-4" />
-            Lien
+            <Copy className="h-4 w-4" />
+            Copier le lien
           </Button>
         </div>
       </div>

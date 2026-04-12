@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { ChapterSidebar } from "@/components/training/ChapterSidebar";
 import { VideoPlayer } from "@/components/training/VideoPlayer";
 import { ChapterCompletionModal } from "@/components/training/ChapterCompletionModal";
+import { FormationCompletionModal } from "@/components/training/FormationCompletionModal";
 import {
   ArrowLeft,
   ArrowRight,
@@ -25,7 +26,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { isFormationCompleteForUser } from "@/lib/certificateEligibility";
-import { useIssueCertificate } from "@/hooks/useCertificates";
 
 interface ChapitreVideo {
   id: string;
@@ -55,7 +55,7 @@ export default function ChapterViewer() {
   const isCeo = profile?.role === "ceo";
   const [sidebarOpenMobile, setSidebarOpenMobile] = useState(false);
   const [completionModalOpen, setCompletionModalOpen] = useState(false);
-  const issueCertificate = useIssueCertificate();
+  const [formationCompletionOpen, setFormationCompletionOpen] = useState(false);
 
   // ── Load chapitre + videos + ressources ─────────────────────
   const { data: chapterData, isLoading: loadingChapter } = useQuery({
@@ -158,8 +158,7 @@ export default function ChapterViewer() {
     },
     onSuccess: async (completed) => {
       if (completed) {
-        setCompletionModalOpen(true);
-        await maybeIssueCertificate();
+        await handleChapterCompleted();
       }
       refetchCompletion();
       queryClient.invalidateQueries({ queryKey: ["training"] });
@@ -179,9 +178,9 @@ export default function ChapterViewer() {
       if (error) throw error;
       return completed;
     },
-    onSuccess: (completed) => {
+    onSuccess: async (completed) => {
       if (completed) {
-        setCompletionModalOpen(true);
+        await handleChapterCompleted();
       } else {
         toast("Marqué comme non terminé");
       }
@@ -193,24 +192,23 @@ export default function ChapterViewer() {
     },
   });
 
-  // ── Auto-émission du certificat quand la formation atteint 100% ──
-  const maybeIssueCertificate = async () => {
+  // ── Handler : après complétion d'un chapitre, choisir le bon modal ──
+  const handleChapterCompleted = async () => {
     const formationId = chapterData?.formation?.id;
-    if (!formationId || !userId || isCeo) return;
+    if (!formationId || !userId || isCeo) {
+      setCompletionModalOpen(true);
+      return;
+    }
     try {
       const eligible = await isFormationCompleteForUser(userId, formationId);
-      if (!eligible) return;
-      await issueCertificate.mutateAsync({
-        user_id: userId,
-        formation_id: formationId,
-        source: "auto",
-      });
-      toast.success("🏆 Certificat El Baraka débloqué !", {
-        description: "Retrouve-le sur la page de la formation ou dans « Mes certificats ».",
-        duration: 6000,
-      });
-    } catch (err) {
-      console.warn("Auto-émission certificat:", err);
+      if (eligible) {
+        // Formation 100% — ouvrir modal de célébration qui déclenche aussi l'émission
+        setFormationCompletionOpen(true);
+      } else {
+        setCompletionModalOpen(true);
+      }
+    } catch {
+      setCompletionModalOpen(true);
     }
   };
 
@@ -565,6 +563,24 @@ export default function ChapterViewer() {
           navigate(`/training/${formation.slug}`);
         }}
       />
+
+      {/* Modal de fin de formation (100%) — prend le relais quand c'est le dernier chapitre */}
+      {userId && formation?.id && (
+        <FormationCompletionModal
+          open={formationCompletionOpen}
+          onOpenChange={(v) => {
+            setFormationCompletionOpen(v);
+            if (!v) {
+              // Quand on ferme, rediriger vers la page formation pour un bon retour à l'espace
+              navigate(`/training/${formation.slug}`);
+            }
+          }}
+          userId={userId}
+          formationId={formation.id}
+          formationTitle={formation.titre ?? ""}
+          firstName={(profile?.full_name ?? "").split(" ")[0] ?? ""}
+        />
+      )}
     </div>
   );
 }
