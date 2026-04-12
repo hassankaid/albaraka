@@ -220,7 +220,7 @@ export default function FormationDetail() {
         </div>
       </div>
 
-      {/* Certificat El Baraka */}
+      {/* Certificat Al Baraka */}
       {userId && !isCeo && (
         <CertificateBanner
           userId={userId}

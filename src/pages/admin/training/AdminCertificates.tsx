@@ -120,7 +120,7 @@ export default function AdminCertificates() {
               <Award className="h-6 w-6 text-amber-500" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold font-heading">Certificats El Baraka</h1>
+              <h1 className="text-2xl font-bold font-heading">Certificats Al Baraka</h1>
               <p className="text-sm text-muted-foreground">
                 Tous les certificats émis · {certificates?.length ?? 0} au total
               </p>

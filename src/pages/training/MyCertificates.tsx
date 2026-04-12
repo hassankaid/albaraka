@@ -38,7 +38,7 @@ export default function MyCertificates() {
         <div>
           <h2 className="text-xl font-bold text-foreground">Mes certificats</h2>
           <p className="text-sm text-muted-foreground">
-            Les formations que tu as validées avec El Baraka Training
+            Les formations que tu as validées avec Al Baraka Training
           </p>
         </div>
       </div>
@@ -60,7 +60,7 @@ export default function MyCertificates() {
             Aucun certificat pour l'instant
           </h3>
           <p className="text-sm text-muted-foreground max-w-sm mb-4">
-            Termine une formation à 100 % pour obtenir ton certificat El Baraka Training.
+            Termine une formation à 100 % pour obtenir ton certificat Al Baraka Training.
           </p>
           <Button variant="outline" onClick={() => navigate("/training")}>
             Voir mes formations
@@ -80,7 +80,7 @@ export default function MyCertificates() {
                   <div className="flex items-center gap-2">
                     <Award className="h-5 w-5 text-amber-400" />
                     <span className="text-[10px] uppercase tracking-widest text-amber-400/80">
-                      Certificat El Baraka
+                      Certificat Al Baraka
                     </span>
                   </div>
                   <span className="text-[10px] font-mono text-amber-400/70">

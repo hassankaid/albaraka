@@ -189,7 +189,7 @@ const CertificatePdfDocument = ({ data }: { data: CertificatePdfData }) => (
 
       <View style={s.content}>
         <Image src={alBarakaLogo} style={s.logo} />
-        <Text style={s.brandLine}>El Baraka Training</Text>
+        <Text style={s.brandLine}>Al Baraka Training</Text>
 
         <Text style={s.title}>Certificat de Réussite</Text>
         <View style={s.divider} />
@@ -207,7 +207,7 @@ const CertificatePdfDocument = ({ data }: { data: CertificatePdfData }) => (
           <Text style={s.certMeta}>Émis le {fmtDate(data.issuedAt)}</Text>
         </View>
         <View style={s.footerCenter}>
-          <Text style={s.brandFooter}>Ethicarena • El Baraka Training</Text>
+          <Text style={s.brandFooter}>Ethicarena • Al Baraka Training</Text>
         </View>
         <View style={s.footerRight}>
           <View style={s.qrWrap}>

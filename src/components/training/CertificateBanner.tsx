@@ -115,7 +115,7 @@ export function CertificateBanner({ userId, formationId, isComplete }: Props) {
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-[0.25em] text-amber-400/80 font-serif">
-              Certificat El Baraka Training
+              Certificat Al Baraka Training
             </p>
             <p className="text-sm text-amber-100/90 mt-1">
               Félicitations — tu as validé cette formation.

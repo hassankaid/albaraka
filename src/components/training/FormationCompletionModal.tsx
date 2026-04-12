@@ -110,9 +110,9 @@ export function FormationCompletionModal({
           <div className="absolute inset-3 border border-amber-500/20 rounded pointer-events-none" />
 
           <div className="relative p-8 flex flex-col items-center text-center space-y-5">
-            <img src={alBarakaLogo} alt="El Baraka" className="h-14 w-14 object-contain" />
+            <img src={alBarakaLogo} alt="Al Baraka" className="h-14 w-14 object-contain" />
             <div className="text-[10px] tracking-[0.35em] uppercase text-amber-400/80 font-serif">
-              El Baraka Training
+              Al Baraka Training
             </div>
             <div className="h-px w-20 bg-amber-500/60" />
 
@@ -136,7 +136,7 @@ export function FormationCompletionModal({
                 </div>
                 <div className="flex items-center gap-2 text-xs text-amber-400/70 pt-2">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Ton certificat El Baraka est en cours de préparation…
+                  Ton certificat Al Baraka est en cours de préparation…
                 </div>
               </>
             )}

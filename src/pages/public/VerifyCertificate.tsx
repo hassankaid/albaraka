@@ -36,9 +36,9 @@ export default function VerifyCertificate() {
           <div className="absolute inset-2 border border-amber-500/20 rounded-lg pointer-events-none" />
 
           <div className="flex flex-col items-center text-center space-y-6 relative">
-            <img src={alBarakaLogo} alt="El Baraka" className="h-16 w-16 object-contain" />
+            <img src={alBarakaLogo} alt="Al Baraka" className="h-16 w-16 object-contain" />
             <div className="text-[11px] tracking-[0.4em] uppercase text-amber-400/80 font-serif">
-              El Baraka Training
+              Al Baraka Training
             </div>
             <div className="h-px w-20 bg-amber-500/60" />
 
@@ -88,7 +88,7 @@ export default function VerifyCertificate() {
                   <span className="text-sm tracking-wide uppercase">Certificat révoqué</span>
                 </div>
                 <p className="text-sm text-amber-100/70 max-w-sm">
-                  Ce certificat a été révoqué par El Baraka Training le{" "}
+                  Ce certificat a été révoqué par Al Baraka Training le{" "}
                   {new Date(data.revoked_at!).toLocaleDateString("fr-FR")}. Il n'est plus valide.
                 </p>
                 <div className="text-xs font-mono text-amber-100/50">
@@ -112,7 +112,7 @@ export default function VerifyCertificate() {
             )}
 
             <div className="pt-6 text-[10px] tracking-widest uppercase text-amber-500/50 font-serif">
-              ethicarena.com · El Baraka Training
+              ethicarena.com · Al Baraka Training
             </div>
           </div>
         </div>

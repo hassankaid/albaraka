@@ -53,7 +53,7 @@ const adminModules = [
   {
     id: "certificates",
     title: "Certificats",
-    description: "Certificats El Baraka émis, export et révocation",
+    description: "Certificats Al Baraka émis, export et révocation",
     icon: Award,
     color: "text-amber-500",
     bgColor: "bg-amber-500/10",
