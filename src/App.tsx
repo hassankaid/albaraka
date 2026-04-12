@@ -63,6 +63,7 @@ import AdminCertificates from "./pages/admin/training/AdminCertificates";
 import VerifyCertificate from "./pages/public/VerifyCertificate";
 import CoachingCalendar from "./pages/coaching/CoachingCalendar";
 import { PassGuard } from "./components/PassGuard";
+import SharedLayout from "./components/SharedLayout";
 
 const queryClient = new QueryClient();
 
@@ -99,10 +100,7 @@ const App = () => (
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/coaching" element={<Coaching />} />
                   <Route path="/coaching/session/:sessionId" element={<CoachingSession />} />
-                  <Route path="/mon-coaching" element={<MonCoaching />} />
-                  <Route path="/mon-coaching/session/:sessionId" element={<SessionDetail />} />
                   <Route path="/admin/coaching" element={<AdminCoaching />} />
-                  <Route path="/coaching/calendar" element={<PassGuard><CoachingCalendar /></PassGuard>} />
                   <Route path="/working" element={<Navigate to="/working/activity" replace />} />
                   <Route path="/admin/training" element={<AdminTrainingList />} />
                   <Route path="/admin/training/:slug" element={<FormationEditor />} />
@@ -119,19 +117,14 @@ const App = () => (
                   <Route path="/admin/training/students" element={<AdminStudentTracking />} />
                   <Route path="/admin/training/students/:userId" element={<StudentDetailPage />} />
                   <Route path="/admin/training/certificates" element={<AdminCertificates />} />
-                  <Route path="/training" element={<TrainingList />} />
-                  <Route path="/training/certificats" element={<MyCertificates />} />
-                  <Route path="/training/:slug" element={<FormationDetail />} />
-                  <Route path="/training/:slug/chapitre/:chapitreId" element={<ChapterViewer />} />
                   <Route path="/training/scripts" element={<Scripts />} />
                   <Route path="/training/scripts/setting" element={<Navigate to="/training/scripts" replace />} />
                   <Route path="/training/scripts/closing" element={<Navigate to="/training/scripts" replace />} />
                   <Route path="/working/content" element={<ContentGenerator />} />
                   <Route path="/working/contents" element={<MyContents />} />
                   <Route path="/working/agent" element={<AgentIA />} />
-                  <Route path="/working/activity" element={<MyActivity />} />
                 </Route>
-                {/* Apporteur layout */}
+                {/* Apporteur layout (only /my-space/* lives here exclusively) */}
                 <Route element={<ApporteurLayout />}>
                   <Route path="/my-space" element={<ApporteurDashboard />} />
                   <Route path="/my-space/leads" element={<ApporteurLeads />} />
@@ -139,11 +132,17 @@ const App = () => (
                   <Route path="/my-space/commissions" element={<ApporteurCommissions />} />
                   <Route path="/my-space/profile" element={<ApporteurProfile />} />
                   <Route path="/my-space/coaching-calendar" element={<PassGuard allowStaff={false}><CoachingCalendar /></PassGuard>} />
-                  <Route path="/working/activity" element={<MyActivity />} />
+                </Route>
+                {/* Shared routes: layout chosen by role at runtime (pure apporteur → ApporteurLayout, else DashboardLayout) */}
+                <Route element={<SharedLayout />}>
                   <Route path="/training" element={<TrainingList />} />
                   <Route path="/training/certificats" element={<MyCertificates />} />
                   <Route path="/training/:slug" element={<FormationDetail />} />
                   <Route path="/training/:slug/chapitre/:chapitreId" element={<ChapterViewer />} />
+                  <Route path="/mon-coaching" element={<MonCoaching />} />
+                  <Route path="/mon-coaching/session/:sessionId" element={<SessionDetail />} />
+                  <Route path="/coaching/calendar" element={<PassGuard><CoachingCalendar /></PassGuard>} />
+                  <Route path="/working/activity" element={<MyActivity />} />
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />

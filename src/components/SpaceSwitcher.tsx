@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserPass } from "@/hooks/useUserPass";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +11,7 @@ import { ChevronDown, Briefcase, GraduationCap, BookOpenCheck, Check, Settings2 
 import { cn } from "@/lib/utils";
 
 interface Space {
-  id: string;
+  id: "working" | "training" | "coaching" | "admin";
   label: string;
   icon: React.ElementType;
   color: string;
@@ -19,9 +20,35 @@ interface Space {
   description: string;
 }
 
-const getSpaces = (profile: any): Space[] => {
-  const isApporteur = profile?.role === "apporteur";
-  const isCeo = profile?.role === "ceo";
+interface ProfileInput {
+  role?: string | null;
+  is_coach?: boolean | null;
+  is_also_apporteur?: boolean | null;
+  is_active?: boolean | null;
+}
+
+/**
+ * Compute the set of spaces for a given profile and pass level.
+ * Exposed for unit tests.
+ */
+export function getSpaces(profile: ProfileInput | null, hasAnyPass: boolean): Space[] {
+  if (!profile) return [];
+
+  const isCeo = profile.role === "ceo";
+  const isApporteurPath = profile.role === "apporteur"
+    || (profile.role === "collaborateur" && profile.is_active === false && profile.is_also_apporteur);
+
+  const workingPath = isApporteurPath
+    ? "/my-space"
+    : isCeo
+      ? "/dashboard"
+      : "/working/activity";
+
+  const coachingPath = (profile.is_coach || isCeo)
+    ? "/coaching"
+    : hasAnyPass
+      ? (isApporteurPath ? "/my-space/coaching-calendar" : "/coaching/calendar")
+      : "/mon-coaching";
 
   const spaces: Space[] = [
     {
@@ -30,7 +57,7 @@ const getSpaces = (profile: any): Space[] => {
       icon: Briefcase,
       color: "text-gold-400",
       bgColor: "bg-gold-400/10",
-      path: isCeo ? "/dashboard" : "/working/activity",
+      path: workingPath,
       description: "Suivi commercial & Outils",
     },
     {
@@ -40,7 +67,7 @@ const getSpaces = (profile: any): Space[] => {
       color: "text-amber-400",
       bgColor: "bg-amber-400/10",
       path: "/training",
-      description: "Formation, Scripts & Objections",
+      description: "Formation & Ressources",
     },
     {
       id: "coaching",
@@ -48,12 +75,11 @@ const getSpaces = (profile: any): Space[] => {
       icon: GraduationCap,
       color: "text-teal-400",
       bgColor: "bg-teal-400/10",
-      path: profile?.is_coach || isCeo ? "/coaching" : "/mon-coaching",
-      description: "Évaluations & Historique",
+      path: coachingPath,
+      description: "Calendrier & Historique",
     },
   ];
 
-  // Admin space — CEO only
   if (isCeo) {
     spaces.push({
       id: "admin",
@@ -66,39 +92,42 @@ const getSpaces = (profile: any): Space[] => {
     });
   }
 
-  // Apporteurs purs n'ont pas accès au training
-  if (isApporteur && !profile?.is_also_apporteur) {
-    return spaces.filter((s) => s.id !== "training");
-  }
-
   return spaces;
-};
+}
+
+/**
+ * Identify the current space id from the pathname.
+ * Exposed for unit tests.
+ */
+export function detectCurrentSpaceId(pathname: string): Space["id"] {
+  if (pathname.startsWith("/training")) return "training";
+  if (
+    pathname.startsWith("/coaching") ||
+    pathname.startsWith("/mon-coaching") ||
+    pathname === "/my-space/coaching-calendar"
+  ) {
+    return "coaching";
+  }
+  if (pathname.startsWith("/admin/training") || pathname.startsWith("/admin/scripts") ||
+      pathname.startsWith("/admin/role-play") || pathname.startsWith("/admin/quizzes")) {
+    return "training";
+  }
+  if (pathname === "/admin/coaching") return "coaching";
+  if (pathname.startsWith("/admin/")) return "admin";
+  return "working";
+}
 
 export default function SpaceSwitcher() {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { hasAnyPass } = useUserPass();
 
-  const spaces = getSpaces(profile);
+  const spaces = getSpaces(profile, hasAnyPass);
+  if (spaces.length === 0) return null;
 
-  const getCurrentSpace = (): Space => {
-    if (location.pathname.startsWith("/training")) {
-      return spaces.find((s) => s.id === "training") || spaces[0];
-    }
-    if (location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching")) {
-      return spaces.find((s) => s.id === "coaching") || spaces[0];
-    }
-    // Admin routes (except /admin/coaching and /admin/training which belong to their respective spaces)
-    if (location.pathname.startsWith("/admin/training") || location.pathname.startsWith("/admin/scripts") || location.pathname.startsWith("/admin/role-play") || location.pathname.startsWith("/admin/quizzes")) {
-      return spaces.find((s) => s.id === "training") || spaces[0];
-    }
-    if (location.pathname.startsWith("/admin/") && location.pathname !== "/admin/coaching") {
-      return spaces.find((s) => s.id === "admin") || spaces[0];
-    }
-    return spaces[0]; // WORKING is default
-  };
-
-  const currentSpace = getCurrentSpace();
+  const currentId = detectCurrentSpaceId(location.pathname);
+  const currentSpace = spaces.find((s) => s.id === currentId) ?? spaces[0];
   const Icon = currentSpace.icon;
 
   return (

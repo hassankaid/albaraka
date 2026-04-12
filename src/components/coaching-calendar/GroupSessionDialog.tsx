@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useCancelGroupSession, type GroupSession } from "@/hooks/useGroupCoaching";
 import { toast } from "@/hooks/use-toast";
+import { computeJoinPhase, windowOpensAt, JOIN_EARLY_MINUTES, JOIN_GRACE_MINUTES } from "@/lib/coaching-window";
 
 interface Props {
   session: GroupSession | null;
@@ -36,13 +37,9 @@ export function GroupSessionDialog({ session, open, onOpenChange }: Props) {
   if (!session) return null;
 
   const start = new Date(session.scheduled_at);
-  const end = new Date(start.getTime() + session.duration_minutes * 60_000);
-  const now = new Date();
-  const joinable =
-    !!session.meeting_url &&
-    session.status !== "cancelled" &&
-    now.getTime() >= start.getTime() - 10 * 60_000 &&
-    now.getTime() <= end.getTime() + 15 * 60_000;
+  const phase = computeJoinPhase(session);
+  const joinable = phase === "open";
+  const opensAt = windowOpensAt(session);
 
   const handleCancel = async () => {
     try {
@@ -92,22 +89,36 @@ export function GroupSessionDialog({ session, open, onOpenChange }: Props) {
           <Separator />
 
           <div className="flex flex-col gap-2">
-            {session.meeting_url ? (
-              joinable ? (
-                <Button asChild>
-                  <a href={session.meeting_url} target="_blank" rel="noreferrer">
-                    <Video className="h-4 w-4 mr-2" />
-                    Rejoindre la visio
-                  </a>
-                </Button>
-              ) : (
-                <Button disabled variant="outline">
-                  <Video className="h-4 w-4 mr-2" />
-                  Disponible {format(start, "'le' d MMM 'à' HH:mm", { locale: fr })}
-                </Button>
-              )
-            ) : (
+            {phase === "no_link" && (
               <p className="text-xs text-muted-foreground text-center">Aucun lien de visio fourni.</p>
+            )}
+            {phase === "cancelled" && (
+              <p className="text-xs text-muted-foreground text-center">Session annulée.</p>
+            )}
+            {phase === "open" && (
+              <Button asChild>
+                <a href={session.meeting_url!} target="_blank" rel="noreferrer">
+                  <Video className="h-4 w-4 mr-2" />
+                  Rejoindre la visio
+                </a>
+              </Button>
+            )}
+            {phase === "too_early" && (
+              <Button disabled variant="outline">
+                <Video className="h-4 w-4 mr-2" />
+                Disponible à partir du {format(opensAt, "d MMM 'à' HH:mm", { locale: fr })}
+              </Button>
+            )}
+            {phase === "ended" && (
+              <Button disabled variant="outline">
+                <Video className="h-4 w-4 mr-2" />
+                Lien expiré
+              </Button>
+            )}
+            {session.meeting_url && phase !== "cancelled" && (
+              <p className="text-[11px] text-muted-foreground text-center">
+                Accès ouvert {JOIN_EARLY_MINUTES} min avant le début et jusqu'à {JOIN_GRACE_MINUTES} min après la fin.
+              </p>
             )}
           </div>
 

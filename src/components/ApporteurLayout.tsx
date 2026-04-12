@@ -1,6 +1,10 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X, ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp, GraduationCap, CalendarDays } from "lucide-react";
+import {
+  BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X,
+  ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp, GraduationCap,
+  CalendarDays, Award,
+} from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -11,27 +15,27 @@ interface NavItem {
   title: string;
   path: string;
   icon: React.ElementType;
+  passRequired?: boolean;
 }
 
-const mainNavItems: NavItem[] = [
+const workingNavItems: NavItem[] = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp },
   { title: "Dashboard", path: "/my-space", icon: BarChart3 },
   { title: "Mes Leads", path: "/my-space/leads", icon: Users },
   { title: "Mes Ventes", path: "/my-space/sales", icon: BadgeEuro },
   { title: "Commissions & Factures", path: "/my-space/commissions", icon: Receipt },
   { title: "Mon Profil", path: "/my-space/profile", icon: Settings },
+];
+
+const trainingNavItems: NavItem[] = [
   { title: "Formation", path: "/training", icon: GraduationCap },
+  { title: "Mes Certificats", path: "/training/certificats", icon: Award },
 ];
 
 const coachingNavItems: NavItem[] = [
+  { title: "Mes Coachings", path: "/my-space/coaching-calendar", icon: CalendarDays, passRequired: true },
   { title: "Historique", path: "/mon-coaching", icon: BookOpen },
 ];
-
-const passCoachingNavItem: NavItem = {
-  title: "Mes Coachings",
-  path: "/my-space/coaching-calendar",
-  icon: CalendarDays,
-};
 
 const pageTitles: Record<string, string> = {
   "/my-space": "Dashboard",
@@ -39,11 +43,22 @@ const pageTitles: Record<string, string> = {
   "/my-space/sales": "Mes Ventes",
   "/my-space/commissions": "Commissions & Factures",
   "/my-space/profile": "Mon Profil",
+  "/my-space/coaching-calendar": "Mes Coachings",
   "/mon-coaching": "Historique",
   "/working/activity": "Mon Activité",
   "/training": "Formation",
-  "/my-space/coaching-calendar": "Mes Coachings",
+  "/training/certificats": "Mes Certificats",
 };
+
+type Space = "working" | "training" | "coaching";
+
+function detectSpace(pathname: string): Space {
+  if (pathname.startsWith("/training")) return "training";
+  if (pathname.startsWith("/mon-coaching") || pathname === "/my-space/coaching-calendar") {
+    return "coaching";
+  }
+  return "working";
+}
 
 export default function ApporteurLayout() {
   const { theme, toggleTheme } = useTheme();
@@ -53,40 +68,26 @@ export default function ApporteurLayout() {
   const { profile, signOut } = useAuth();
   const { hasAnyPass } = useUserPass();
 
-  const navItems = hasAnyPass
-    ? [...mainNavItems.slice(0, 6), passCoachingNavItem, mainNavItems[6]]
-    : mainNavItems;
-
-  const isCoachingSpace = location.pathname.startsWith("/mon-coaching");
+  const currentSpace = detectSpace(location.pathname);
   const pageTitle = pageTitles[location.pathname] || "Mon espace";
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
-  const renderNavItems = () => {
-    if (isCoachingSpace) {
-      return coachingNavItems.map((item) => (
-        <NavLink
-          key={item.path}
-          to={item.path}
-          onClick={() => setSidebarOpen(false)}
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              isActive ? "gradient-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-            }`
-          }
-        >
-          <item.icon className="h-4 w-4" />
-          {item.title}
-        </NavLink>
-      ));
+  const activeItems: NavItem[] = (() => {
+    if (currentSpace === "training") return trainingNavItems;
+    if (currentSpace === "coaching") {
+      return coachingNavItems.filter((item) => !item.passRequired || hasAnyPass);
     }
+    return workingNavItems;
+  })();
 
-    return navItems.map((item) => (
+  const renderNavItems = () =>
+    activeItems.map((item) => (
       <NavLink
         key={item.path}
         to={item.path}
-        end={item.path === "/my-space"}
+        end={item.path === "/my-space" || item.path === "/training"}
         onClick={() => setSidebarOpen(false)}
         className={({ isActive }) =>
           `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
@@ -98,7 +99,6 @@ export default function ApporteurLayout() {
         {item.title}
       </NavLink>
     ));
-  };
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -207,3 +207,6 @@ export default function ApporteurLayout() {
     </div>
   );
 }
+
+// Exposed for unit testing
+export { detectSpace };
