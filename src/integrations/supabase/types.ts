@@ -643,6 +643,94 @@ export type Database = {
           },
         ]
       }
+      closing_daily_logs: {
+        Row: {
+          created_at: string
+          emotions: string[]
+          entry_date: string
+          feeling: string | null
+          id: string
+          learning: string | null
+          plan_id: string
+          rp_c: number
+          rp_d: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          emotions?: string[]
+          entry_date: string
+          feeling?: string | null
+          id?: string
+          learning?: string | null
+          plan_id: string
+          rp_c?: number
+          rp_d?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          emotions?: string[]
+          entry_date?: string
+          feeling?: string | null
+          id?: string
+          learning?: string | null
+          plan_id?: string
+          rp_c?: number
+          rp_d?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closing_daily_logs_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "closing_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      closing_plans: {
+        Row: {
+          created_at: string
+          id: string
+          pass_type: Database["public"]["Enums"]["pass_type"]
+          started_at: string
+          status: string
+          targets: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pass_type: Database["public"]["Enums"]["pass_type"]
+          started_at?: string
+          status?: string
+          targets?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pass_type?: Database["public"]["Enums"]["pass_type"]
+          started_at?: string
+          status?: string
+          targets?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closing_plans_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coach_criteria: {
         Row: {
           created_at: string | null
