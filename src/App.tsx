@@ -68,6 +68,7 @@ import SharedLayout from "./components/SharedLayout";
 import ParcoursView from "./pages/parcours/ParcoursView";
 import ParcoursChapitreDetail from "./pages/parcours/ParcoursChapitreDetail";
 import OrganisationPage from "./pages/working/organisation/OrganisationPage";
+import PersonalBrandPage from "./pages/working/personal-brand/PersonalBrandPage";
 
 const queryClient = new QueryClient();
 
@@ -124,8 +125,6 @@ const App = () => (
                   <Route path="/training/scripts" element={<Scripts />} />
                   <Route path="/training/scripts/setting" element={<Navigate to="/training/scripts" replace />} />
                   <Route path="/training/scripts/closing" element={<Navigate to="/training/scripts" replace />} />
-                  <Route path="/working/content" element={<ContentGenerator />} />
-                  <Route path="/working/contents" element={<MyContents />} />
                   <Route path="/working/agent" element={<AgentIA />} />
                 </Route>
                 {/* Apporteur layout (only /my-space/* lives here exclusively) */}
@@ -150,6 +149,9 @@ const App = () => (
                   <Route path="/parcours/:slug/chapitre/:chapitreId" element={<PassGuard><ParcoursChapitreDetail /></PassGuard>} />
                   <Route path="/working/activity" element={<FeatureGate feature="working_activity"><MyActivity /></FeatureGate>} />
                   <Route path="/working/organisation" element={<FeatureGate feature="quiz_organisation"><OrganisationPage /></FeatureGate>} />
+                  <Route path="/working/personal-brand" element={<PassGuard><PersonalBrandPage /></PassGuard>} />
+                  <Route path="/working/content" element={<PassGuard><ContentGenerator /></PassGuard>} />
+                  <Route path="/working/contents" element={<PassGuard><MyContents /></PassGuard>} />
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />

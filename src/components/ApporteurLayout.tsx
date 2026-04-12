@@ -3,7 +3,7 @@ import SpaceSwitcher from "./SpaceSwitcher";
 import {
   BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X,
   ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp, GraduationCap,
-  CalendarDays, Award,
+  CalendarDays, Award, Sparkles, Wand2, Library,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
@@ -21,6 +21,9 @@ interface NavItem {
 const workingNavItems: NavItem[] = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp },
   { title: "Mon Organisation", path: "/working/organisation", icon: CalendarDays },
+  { title: "Mon Personal Brand", path: "/working/personal-brand", icon: Sparkles, passRequired: true },
+  { title: "Générateur Contenu", path: "/working/content", icon: Wand2, passRequired: true },
+  { title: "Mes Contenus", path: "/working/contents", icon: Library, passRequired: true },
   { title: "Dashboard", path: "/my-space", icon: BarChart3 },
   { title: "Mes Leads", path: "/my-space/leads", icon: Users },
   { title: "Mes Ventes", path: "/my-space/sales", icon: BadgeEuro },
@@ -48,6 +51,9 @@ const pageTitles: Record<string, string> = {
   "/mon-coaching": "Historique",
   "/working/activity": "Mon Activité",
   "/working/organisation": "Mon Organisation",
+  "/working/personal-brand": "Mon Personal Brand",
+  "/working/content": "Générateur de Contenu",
+  "/working/contents": "Mes Contenus",
   "/training": "Formation",
   "/training/certificats": "Mes Certificats",
 };

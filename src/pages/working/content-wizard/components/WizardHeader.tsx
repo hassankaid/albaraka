@@ -61,7 +61,7 @@ export function WizardHeader() {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-bold">🎬 Générateur de Contenu</h1>
+        <h1 className="text-2xl font-bold">🎬 Générer du contenu universel par idée</h1>
         <div className="flex items-center gap-3 mt-1">
           <p className="text-muted-foreground">
             De l'idée à la publication en 5 étapes guidées

@@ -25,6 +25,9 @@ export function isApporteurScopedPath(pathname: string): boolean {
   if (pathname === "/coaching/calendar") return true;
   if (pathname === "/working/activity") return true;
   if (pathname === "/working/organisation") return true;
+  if (pathname === "/working/personal-brand") return true;
+  if (pathname === "/working/content") return true;
+  if (pathname === "/working/contents") return true;
   if (pathname.startsWith("/parcours/")) return true;
   return false;
 }
