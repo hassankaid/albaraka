@@ -85,7 +85,11 @@ export default function ApporteurLayout() {
   })();
 
   const renderNavItems = () =>
-    activeItems.map((item) => (
+    activeItems.map((item) => {
+      // /parcours/* doit garder l'item "Formation" actif dans la sidebar
+      const extraActive =
+        item.path === "/training" && location.pathname.startsWith("/parcours/");
+      return (
       <NavLink
         key={item.path}
         to={item.path}
@@ -93,14 +97,15 @@ export default function ApporteurLayout() {
         onClick={() => setSidebarOpen(false)}
         className={({ isActive }) =>
           `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-            isActive ? "gradient-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+            (isActive || extraActive) ? "gradient-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
           }`
         }
       >
         <item.icon className="h-4 w-4" />
         {item.title}
       </NavLink>
-    ));
+      );
+    });
 
   return (
     <div className="min-h-screen flex bg-background">

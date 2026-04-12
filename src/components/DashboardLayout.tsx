@@ -298,7 +298,11 @@ export default function DashboardLayout() {
 }
 
 function SidebarNavLink({ item, onClose }: { item: NavItem; onClose: () => void }) {
+  const location = useLocation();
   const needsEnd = item.path === "/training" || item.path === "/coaching" || item.path === "/mon-coaching";
+  // /parcours/* doit garder l'item "Formation" actif dans la sidebar
+  const extraActive =
+    item.path === "/training" && location.pathname.startsWith("/parcours/");
   return (
     <NavLink
       to={item.path}
@@ -306,7 +310,7 @@ function SidebarNavLink({ item, onClose }: { item: NavItem; onClose: () => void 
       onClick={onClose}
       className={({ isActive }) =>
         `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-          isActive
+          (isActive || extraActive)
             ? "gradient-primary text-primary-foreground"
             : "text-muted-foreground hover:text-foreground hover:bg-secondary"
         }`
