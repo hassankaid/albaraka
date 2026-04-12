@@ -37,9 +37,6 @@ export default function VerifyCertificate() {
 
           <div className="flex flex-col items-center text-center space-y-6 relative">
             <img src={alBarakaLogo} alt="Al Baraka" className="h-20 w-auto object-contain" />
-            <div className="text-[11px] tracking-[0.4em] uppercase text-amber-400/80 font-serif">
-              Al Baraka Training
-            </div>
             <div className="h-px w-20 bg-amber-500/60" />
 
             {status === "loading" && (
@@ -112,7 +109,7 @@ export default function VerifyCertificate() {
             )}
 
             <div className="pt-6 text-[10px] tracking-widest uppercase text-amber-500/50 font-serif">
-              ethicarena.com · Al Baraka Training
+              Al Baraka Training
             </div>
           </div>
         </div>
