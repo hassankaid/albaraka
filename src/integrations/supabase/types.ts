@@ -1209,6 +1209,73 @@ export type Database = {
         }
         Relationships: []
       }
+      formation_certificates: {
+        Row: {
+          certificate_number: string
+          created_at: string
+          formation_id: string
+          id: string
+          issue_source: string
+          issued_at: string
+          issued_by: string | null
+          pdf_storage_path: string | null
+          revoked_at: string | null
+          revoked_reason: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          certificate_number: string
+          created_at?: string
+          formation_id: string
+          id?: string
+          issue_source: string
+          issued_at?: string
+          issued_by?: string | null
+          pdf_storage_path?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          certificate_number?: string
+          created_at?: string
+          formation_id?: string
+          id?: string
+          issue_source?: string
+          issued_at?: string
+          issued_by?: string | null
+          pdf_storage_path?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formation_certificates_formation_id_fkey"
+            columns: ["formation_id"]
+            isOneToOne: false
+            referencedRelation: "formations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "formation_certificates_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "formation_certificates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       formation_chapitres: {
         Row: {
           created_at: string
@@ -2571,6 +2638,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      public_certificates_view: {
+        Row: {
+          certificate_number: string | null
+          formation_titre: string | null
+          is_revoked: boolean | null
+          issued_at: string | null
+          revoked_at: string | null
+          user_full_name: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {

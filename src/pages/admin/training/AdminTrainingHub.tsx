@@ -2,7 +2,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, MessageSquare, Bot, TrendingUp, ArrowRight } from "lucide-react";
+import { GraduationCap, MessageSquare, Bot, TrendingUp, ArrowRight, Users, Award } from "lucide-react";
 
 const adminModules = [
   {
@@ -40,6 +40,24 @@ const adminModules = [
     color: "text-blue-500",
     bgColor: "bg-blue-500/10",
     path: "/admin/quizzes",
+  },
+  {
+    id: "students",
+    title: "Suivi élèves",
+    description: "Progression, quiz, enrôlements par élève",
+    icon: Users,
+    color: "text-emerald-500",
+    bgColor: "bg-emerald-500/10",
+    path: "/admin/training/students",
+  },
+  {
+    id: "certificates",
+    title: "Certificats",
+    description: "Certificats El Baraka émis, export et révocation",
+    icon: Award,
+    color: "text-amber-500",
+    bgColor: "bg-amber-500/10",
+    path: "/admin/training/certificates",
   },
 ];
 

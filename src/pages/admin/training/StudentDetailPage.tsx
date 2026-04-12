@@ -57,6 +57,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { AdminCertificateActions } from "@/components/training/admin/AdminCertificateActions";
 
 export default function StudentDetailPage() {
   const { profile } = useAuth();
@@ -274,6 +275,15 @@ export default function StudentDetailPage() {
                       <span className="font-medium">{f.progress_pct}%</span>
                     </div>
                   </div>
+                  {userId && (
+                    <div className="pt-2 border-t border-border/60">
+                      <AdminCertificateActions
+                        userId={userId}
+                        formationId={f.id}
+                        isComplete={f.progress_pct >= 100}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

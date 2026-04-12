@@ -4,13 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { FormationCard } from "@/components/training/FormationCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { GraduationCap, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { GraduationCap, Lock, Award } from "lucide-react";
+import { useMyCertificates } from "@/hooks/useCertificates";
 
 export default function TrainingList() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const userId = profile?.id;
   const isCeo = profile?.role === "ceo";
+
+  const { data: certificates } = useMyCertificates();
+  const certifiedFormationIds = new Set((certificates ?? []).map((c) => c.formation_id));
 
   const { data: formations, isLoading } = useQuery({
     queryKey: ["training", "formations", userId],
@@ -64,16 +69,29 @@ export default function TrainingList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <GraduationCap className="h-6 w-6 text-primary" />
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <GraduationCap className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Al Baraka Training</h2>
+            <p className="text-sm text-muted-foreground">
+              Tes formations et ton parcours d'apprentissage
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Al Baraka Training</h2>
-          <p className="text-sm text-muted-foreground">
-            Tes formations et ton parcours d'apprentissage
-          </p>
-        </div>
+        {(certificates?.length ?? 0) > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 border-amber-500/40 text-amber-600 hover:bg-amber-500/10"
+            onClick={() => navigate("/training/certificats")}
+          >
+            <Award className="h-4 w-4" />
+            Mes certificats ({certificates!.length})
+          </Button>
+        )}
       </div>
 
       {isLoading && (
@@ -119,6 +137,7 @@ export default function TrainingList() {
               nbChapitresDone={f.nbChapitresDone}
               nbChapitresTotal={f.nbChapitresTotal}
               isCeoView={isCeo}
+              hasCertificate={certifiedFormationIds.has(f.id)}
               onOpen={() => navigate(`/training/${f.slug}`)}
             />
           ))}

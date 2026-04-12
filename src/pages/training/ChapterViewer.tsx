@@ -24,6 +24,8 @@ import {
   EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
+import { isFormationCompleteForUser } from "@/lib/certificateEligibility";
+import { useIssueCertificate } from "@/hooks/useCertificates";
 
 interface ChapitreVideo {
   id: string;
@@ -53,6 +55,7 @@ export default function ChapterViewer() {
   const isCeo = profile?.role === "ceo";
   const [sidebarOpenMobile, setSidebarOpenMobile] = useState(false);
   const [completionModalOpen, setCompletionModalOpen] = useState(false);
+  const issueCertificate = useIssueCertificate();
 
   // ── Load chapitre + videos + ressources ─────────────────────
   const { data: chapterData, isLoading: loadingChapter } = useQuery({
@@ -153,9 +156,10 @@ export default function ChapterViewer() {
       if (error) throw error;
       return completed;
     },
-    onSuccess: (completed) => {
+    onSuccess: async (completed) => {
       if (completed) {
         setCompletionModalOpen(true);
+        await maybeIssueCertificate();
       }
       refetchCompletion();
       queryClient.invalidateQueries({ queryKey: ["training"] });
@@ -188,6 +192,27 @@ export default function ChapterViewer() {
       toast.error("Impossible de mettre à jour la progression.");
     },
   });
+
+  // ── Auto-émission du certificat quand la formation atteint 100% ──
+  const maybeIssueCertificate = async () => {
+    const formationId = chapterData?.formation?.id;
+    if (!formationId || !userId || isCeo) return;
+    try {
+      const eligible = await isFormationCompleteForUser(userId, formationId);
+      if (!eligible) return;
+      await issueCertificate.mutateAsync({
+        user_id: userId,
+        formation_id: formationId,
+        source: "auto",
+      });
+      toast.success("🏆 Certificat El Baraka débloqué !", {
+        description: "Retrouve-le sur la page de la formation ou dans « Mes certificats ».",
+        duration: 6000,
+      });
+    } catch (err) {
+      console.warn("Auto-émission certificat:", err);
+    }
+  };
 
   // ── Recalcul état chapitre basé sur les vidéos ─────────────
   const recheckChapterFromVideos = async () => {

@@ -58,6 +58,9 @@ import AdminQuizList from "./pages/admin/quizzes/AdminQuizList";
 import AdminTrainingHub from "./pages/admin/training/AdminTrainingHub";
 import AdminStudentTracking from "./pages/admin/training/AdminStudentTracking";
 import StudentDetailPage from "./pages/admin/training/StudentDetailPage";
+import MyCertificates from "./pages/training/MyCertificates";
+import AdminCertificates from "./pages/admin/training/AdminCertificates";
+import VerifyCertificate from "./pages/public/VerifyCertificate";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +77,7 @@ const App = () => (
               <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
               <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/verify/:number" element={<VerifyCertificate />} />
               <Route element={<ProtectedRoute />}>
                 {/* Onboarding (no layout) */}
                 <Route path="/onboarding" element={<ApporteurOnboarding />} />
@@ -111,7 +115,9 @@ const App = () => (
                   <Route path="/admin/training/manage" element={<AdminTrainingHub />} />
                   <Route path="/admin/training/students" element={<AdminStudentTracking />} />
                   <Route path="/admin/training/students/:userId" element={<StudentDetailPage />} />
+                  <Route path="/admin/training/certificates" element={<AdminCertificates />} />
                   <Route path="/training" element={<TrainingList />} />
+                  <Route path="/training/certificats" element={<MyCertificates />} />
                   <Route path="/training/:slug" element={<FormationDetail />} />
                   <Route path="/training/:slug/chapitre/:chapitreId" element={<ChapterViewer />} />
                   <Route path="/training/scripts" element={<Scripts />} />
@@ -131,6 +137,7 @@ const App = () => (
                   <Route path="/my-space/profile" element={<ApporteurProfile />} />
                   <Route path="/working/activity" element={<MyActivity />} />
                   <Route path="/training" element={<TrainingList />} />
+                  <Route path="/training/certificats" element={<MyCertificates />} />
                   <Route path="/training/:slug" element={<FormationDetail />} />
                   <Route path="/training/:slug/chapitre/:chapitreId" element={<ChapterViewer />} />
                 </Route>

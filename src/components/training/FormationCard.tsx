@@ -8,7 +8,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { GraduationCap, PlayCircle, BookOpen, CheckCircle2, EyeOff, Trophy } from "lucide-react";
+import { GraduationCap, PlayCircle, BookOpen, CheckCircle2, EyeOff, Trophy, Award } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FormationCardProps {
@@ -24,6 +24,7 @@ interface FormationCardProps {
   nbChapitresDone: number;
   nbChapitresTotal: number;
   isCeoView: boolean;
+  hasCertificate?: boolean;
   onOpen: () => void;
 }
 
@@ -33,6 +34,7 @@ export function FormationCard({
   nbChapitresDone,
   nbChapitresTotal,
   isCeoView,
+  hasCertificate = false,
   onOpen,
 }: FormationCardProps) {
   const isDraft = formation.status === "draft";
@@ -75,11 +77,19 @@ export function FormationCard({
             </Badge>
           </div>
         )}
-        {isCompleted && (
+        {isCompleted && !hasCertificate && (
           <div className="absolute top-2 right-2">
             <Badge className="gap-1 text-xs bg-emerald-600 hover:bg-emerald-600 text-white border-0">
               <Trophy className="h-3 w-3" />
               Terminé
+            </Badge>
+          </div>
+        )}
+        {hasCertificate && (
+          <div className="absolute top-2 right-2">
+            <Badge className="gap-1 text-xs bg-amber-500 hover:bg-amber-500 text-neutral-950 border-0">
+              <Award className="h-3 w-3" />
+              Certifié
             </Badge>
           </div>
         )}

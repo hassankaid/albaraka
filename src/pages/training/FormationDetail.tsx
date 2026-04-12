@@ -21,6 +21,7 @@ import {
   EyeOff,
   Lock,
 } from "lucide-react";
+import { CertificateBanner } from "@/components/training/CertificateBanner";
 
 interface Chapitre {
   id: string;
@@ -218,6 +219,15 @@ export default function FormationDetail() {
           </div>
         </div>
       </div>
+
+      {/* Certificat El Baraka */}
+      {userId && !isCeo && (
+        <CertificateBanner
+          userId={userId}
+          formationId={formation.id}
+          isComplete={progressPct >= 100}
+        />
+      )}
 
       {/* Liste modules + chapitres */}
       {modules.length === 0 ? (
