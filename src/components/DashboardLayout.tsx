@@ -123,7 +123,7 @@ export default function DashboardLayout() {
   const userRole = profile?.role || "apporteur";
   const isCeo = profile?.role === "ceo";
   const isCoachingSpace = location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching") || location.pathname === "/admin/coaching";
-  const isTrainingSpace = location.pathname.startsWith("/training") || location.pathname.startsWith("/admin/training") || location.pathname.startsWith("/admin/scripts") || location.pathname.startsWith("/admin/role-play") || location.pathname.startsWith("/admin/quizzes");
+  const isTrainingSpace = location.pathname.startsWith("/training") || location.pathname.startsWith("/parcours/") || location.pathname.startsWith("/admin/training") || location.pathname.startsWith("/admin/scripts") || location.pathname.startsWith("/admin/role-play") || location.pathname.startsWith("/admin/quizzes");
   const isAdminSpace = location.pathname.startsWith("/admin/") && location.pathname !== "/admin/coaching" && !location.pathname.startsWith("/admin/training") && !location.pathname.startsWith("/admin/scripts") && !location.pathname.startsWith("/admin/role-play") && !location.pathname.startsWith("/admin/quizzes");
 
   // Dynamic page title: CEO sees "Suivi Activité" instead of "Mon Activité"

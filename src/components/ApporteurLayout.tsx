@@ -55,7 +55,7 @@ const pageTitles: Record<string, string> = {
 type Space = "working" | "training" | "coaching";
 
 function detectSpace(pathname: string): Space {
-  if (pathname.startsWith("/training")) return "training";
+  if (pathname.startsWith("/training") || pathname.startsWith("/parcours/")) return "training";
   if (pathname.startsWith("/mon-coaching") || pathname === "/my-space/coaching-calendar") {
     return "coaching";
   }
