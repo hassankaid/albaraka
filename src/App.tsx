@@ -7,7 +7,6 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute, PublicOnlyRoute } from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
 import DashboardLayout from "./components/DashboardLayout";
 import ApporteurLayout from "./components/ApporteurLayout";
@@ -75,7 +74,6 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
-              <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify/:number" element={<VerifyCertificate />} />
               <Route element={<ProtectedRoute />}>

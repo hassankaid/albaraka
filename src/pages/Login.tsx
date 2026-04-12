@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/al-baraka-logo.png";
 import { Eye, EyeOff, Mail, Lock, RefreshCw, ArrowLeft } from "lucide-react";
@@ -191,13 +191,6 @@ const Login = () => {
             Se connecter
           </button>
         </form>
-
-        <p className="text-center text-sm text-muted-foreground">
-          Vous &ecirc;tes apporteur d'affaires ?{" "}
-          <Link to="/register" className="text-primary hover:underline font-medium">
-            Cr&eacute;er votre compte
-          </Link>
-        </p>
       </div>
     </div>
   );
