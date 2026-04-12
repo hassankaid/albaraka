@@ -1,10 +1,11 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, Library } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, Library, CalendarDays } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserPass } from "@/hooks/useUserPass";
 
 interface NavItem {
   title: string;
@@ -14,6 +15,7 @@ interface NavItem {
   adminSection?: boolean;
   coachOnly?: boolean;
   apporteurOnly?: boolean;
+  passOrStaff?: boolean;
 }
 
 const workingNavItems: NavItem[] = [
@@ -51,6 +53,7 @@ const trainingNavItems: NavItem[] = [
 ];
 
 const coachingNavItems: NavItem[] = [
+  { title: "Calendrier", path: "/coaching/calendar", icon: CalendarDays, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true },
   { title: "Évaluations", path: "/coaching", icon: GraduationCap, roles: ["ceo", "collaborateur"], coachOnly: true },
   { title: "Historique", path: "/mon-coaching", icon: BookOpen, roles: ["ceo", "collaborateur", "apporteur"] },
   { title: "Administration", path: "/admin/coaching", icon: Settings2, roles: ["ceo"] },
@@ -79,6 +82,7 @@ const pageTitles: Record<string, string> = {
   "/my-space": "Mon espace",
   "/profile": "Mon profil",
   "/coaching": "Évaluations",
+  "/coaching/calendar": "Calendrier des coachings",
   "/mon-coaching": "Historique",
   "/admin/coaching": "Administration Coaching",
   "/working/activity": "Mon Activité",
@@ -96,6 +100,7 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { profile, signOut } = useAuth();
+  const { hasAnyPass } = useUserPass();
 
   // Redirect pure apporteurs to their dedicated space (except coaching routes)
   const isCoachingRoute = location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching");
@@ -130,6 +135,7 @@ export default function DashboardLayout() {
       if (!item.roles.includes(userRole)) return false;
       if (item.coachOnly) return profile?.is_coach || isCeo;
       if (item.apporteurOnly) return isApporteurLike || isCeo;
+      if (item.passOrStaff) return hasAnyPass || profile?.is_coach || isCeo;
       return true;
     });
 

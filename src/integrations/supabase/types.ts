@@ -170,7 +170,6 @@ export type Database = {
       }
       agent_conversations: {
         Row: {
-          context_type: string
           created_at: string
           id: string
           title: string | null
@@ -178,7 +177,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          context_type?: string
           created_at?: string
           id?: string
           title?: string | null
@@ -186,7 +184,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          context_type?: string
           created_at?: string
           id?: string
           title?: string | null
@@ -197,6 +194,50 @@ export type Database = {
           {
             foreignKeyName: "agent_conversations_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_knowledge_base: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          id: string
+          slug: string
+          sort_order: number
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string
+          id?: string
+          slug: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          slug?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_knowledge_base_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1453,6 +1494,139 @@ export type Database = {
         }
         Relationships: []
       }
+      group_coaching_recurrences: {
+        Row: {
+          coach_user_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          duration_minutes: number
+          end_at: string | null
+          frequency: Database["public"]["Enums"]["recurrence_frequency"]
+          id: string
+          meeting_provider: Database["public"]["Enums"]["meeting_provider"]
+          meeting_url: string | null
+          start_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          coach_user_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_minutes?: number
+          end_at?: string | null
+          frequency: Database["public"]["Enums"]["recurrence_frequency"]
+          id?: string
+          meeting_provider?: Database["public"]["Enums"]["meeting_provider"]
+          meeting_url?: string | null
+          start_at: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          coach_user_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_minutes?: number
+          end_at?: string | null
+          frequency?: Database["public"]["Enums"]["recurrence_frequency"]
+          id?: string
+          meeting_provider?: Database["public"]["Enums"]["meeting_provider"]
+          meeting_url?: string | null
+          start_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_coaching_recurrences_coach_user_id_fkey"
+            columns: ["coach_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_coaching_recurrences_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_coaching_sessions: {
+        Row: {
+          coach_user_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          duration_minutes: number
+          id: string
+          meeting_provider: Database["public"]["Enums"]["meeting_provider"]
+          meeting_url: string | null
+          recurrence_id: string | null
+          scheduled_at: string
+          status: Database["public"]["Enums"]["group_session_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          coach_user_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          meeting_provider?: Database["public"]["Enums"]["meeting_provider"]
+          meeting_url?: string | null
+          recurrence_id?: string | null
+          scheduled_at: string
+          status?: Database["public"]["Enums"]["group_session_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          coach_user_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          meeting_provider?: Database["public"]["Enums"]["meeting_provider"]
+          meeting_url?: string | null
+          recurrence_id?: string | null
+          scheduled_at?: string
+          status?: Database["public"]["Enums"]["group_session_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_coaching_sessions_coach_user_id_fkey"
+            columns: ["coach_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_coaching_sessions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_coaching_sessions_recurrence_id_fkey"
+            columns: ["recurrence_id"]
+            isOneToOne: false
+            referencedRelation: "group_coaching_recurrences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_lines: {
         Row: {
           client_name: string
@@ -2422,6 +2596,67 @@ export type Database = {
         }
         Relationships: []
       }
+      user_passes: {
+        Row: {
+          created_at: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+          notes: string | null
+          pass_type: Database["public"]["Enums"]["pass_type"]
+          revoked_at: string | null
+          revoked_by: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          pass_type: Database["public"]["Enums"]["pass_type"]
+          revoked_at?: string | null
+          revoked_by?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          pass_type?: Database["public"]["Enums"]["pass_type"]
+          revoked_at?: string | null
+          revoked_by?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_passes_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_passes_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_passes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_progress: {
         Row: {
           completed: boolean
@@ -2665,6 +2900,10 @@ export type Database = {
         Args: { p_email: string; p_full_name?: string; p_phone: string }
         Returns: string
       }
+      generate_recurrence_occurrences: {
+        Args: { p_recurrence_id: string; p_until: string }
+        Returns: number
+      }
       get_chapter_navigation: {
         Args: { p_chapitre_id: string }
         Returns: {
@@ -2741,9 +2980,13 @@ export type Database = {
         Args: { p_chapitre_id: string; p_completed: boolean }
         Returns: boolean
       }
+      user_active_pass_level: { Args: { p_user_id: string }; Returns: string }
     }
     Enums: {
-      [_ in never]: never
+      group_session_status: "scheduled" | "live" | "completed" | "cancelled"
+      meeting_provider: "zoom" | "meet" | "teams" | "other"
+      pass_type: "al_baraka" | "liberty"
+      recurrence_frequency: "none" | "weekly" | "biweekly" | "monthly"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2870,6 +3113,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      group_session_status: ["scheduled", "live", "completed", "cancelled"],
+      meeting_provider: ["zoom", "meet", "teams", "other"],
+      pass_type: ["al_baraka", "liberty"],
+      recurrence_frequency: ["none", "weekly", "biweekly", "monthly"],
+    },
   },
 } as const

@@ -1,10 +1,11 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X, ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp, GraduationCap } from "lucide-react";
+import { BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X, ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp, GraduationCap, CalendarDays } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserPass } from "@/hooks/useUserPass";
 
 interface NavItem {
   title: string;
@@ -26,6 +27,12 @@ const coachingNavItems: NavItem[] = [
   { title: "Historique", path: "/mon-coaching", icon: BookOpen },
 ];
 
+const passCoachingNavItem: NavItem = {
+  title: "Mes Coachings",
+  path: "/my-space/coaching-calendar",
+  icon: CalendarDays,
+};
+
 const pageTitles: Record<string, string> = {
   "/my-space": "Dashboard",
   "/my-space/leads": "Mes Leads",
@@ -35,6 +42,7 @@ const pageTitles: Record<string, string> = {
   "/mon-coaching": "Historique",
   "/working/activity": "Mon Activité",
   "/training": "Formation",
+  "/my-space/coaching-calendar": "Mes Coachings",
 };
 
 export default function ApporteurLayout() {
@@ -43,6 +51,11 @@ export default function ApporteurLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { profile, signOut } = useAuth();
+  const { hasAnyPass } = useUserPass();
+
+  const navItems = hasAnyPass
+    ? [...mainNavItems.slice(0, 6), passCoachingNavItem, mainNavItems[6]]
+    : mainNavItems;
 
   const isCoachingSpace = location.pathname.startsWith("/mon-coaching");
   const pageTitle = pageTitles[location.pathname] || "Mon espace";
@@ -69,7 +82,7 @@ export default function ApporteurLayout() {
       ));
     }
 
-    return mainNavItems.map((item) => (
+    return navItems.map((item) => (
       <NavLink
         key={item.path}
         to={item.path}

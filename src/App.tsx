@@ -61,6 +61,8 @@ import StudentDetailPage from "./pages/admin/training/StudentDetailPage";
 import MyCertificates from "./pages/training/MyCertificates";
 import AdminCertificates from "./pages/admin/training/AdminCertificates";
 import VerifyCertificate from "./pages/public/VerifyCertificate";
+import CoachingCalendar from "./pages/coaching/CoachingCalendar";
+import { PassGuard } from "./components/PassGuard";
 
 const queryClient = new QueryClient();
 
@@ -100,6 +102,7 @@ const App = () => (
                   <Route path="/mon-coaching" element={<MonCoaching />} />
                   <Route path="/mon-coaching/session/:sessionId" element={<SessionDetail />} />
                   <Route path="/admin/coaching" element={<AdminCoaching />} />
+                  <Route path="/coaching/calendar" element={<PassGuard><CoachingCalendar /></PassGuard>} />
                   <Route path="/working" element={<Navigate to="/working/activity" replace />} />
                   <Route path="/admin/training" element={<AdminTrainingList />} />
                   <Route path="/admin/training/:slug" element={<FormationEditor />} />
@@ -135,6 +138,7 @@ const App = () => (
                   <Route path="/my-space/sales" element={<ApporteurSales />} />
                   <Route path="/my-space/commissions" element={<ApporteurCommissions />} />
                   <Route path="/my-space/profile" element={<ApporteurProfile />} />
+                  <Route path="/my-space/coaching-calendar" element={<PassGuard allowStaff={false}><CoachingCalendar /></PassGuard>} />
                   <Route path="/working/activity" element={<MyActivity />} />
                   <Route path="/training" element={<TrainingList />} />
                   <Route path="/training/certificats" element={<MyCertificates />} />
