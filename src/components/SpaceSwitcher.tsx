@@ -97,7 +97,7 @@ export function getSpaces(profile: ProfileInput | null, hasAnyPass: boolean): Sp
  * Exposed for unit tests.
  */
 export function detectCurrentSpaceId(pathname: string): Space["id"] {
-  if (pathname.startsWith("/training")) return "training";
+  if (pathname.startsWith("/training") || pathname.startsWith("/parcours/")) return "training";
   if (
     pathname.startsWith("/coaching") ||
     pathname.startsWith("/mon-coaching") ||
