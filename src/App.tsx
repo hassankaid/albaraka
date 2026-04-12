@@ -63,7 +63,9 @@ import AdminCertificates from "./pages/admin/training/AdminCertificates";
 import VerifyCertificate from "./pages/public/VerifyCertificate";
 import CoachingCalendar from "./pages/coaching/CoachingCalendar";
 import { PassGuard } from "./components/PassGuard";
+import { FeatureGate } from "./components/FeatureGate";
 import SharedLayout from "./components/SharedLayout";
+import ParcoursView from "./pages/parcours/ParcoursView";
 
 const queryClient = new QueryClient();
 
@@ -142,7 +144,8 @@ const App = () => (
                   <Route path="/mon-coaching" element={<MonCoaching />} />
                   <Route path="/mon-coaching/session/:sessionId" element={<SessionDetail />} />
                   <Route path="/coaching/calendar" element={<PassGuard><CoachingCalendar /></PassGuard>} />
-                  <Route path="/working/activity" element={<MyActivity />} />
+                  <Route path="/parcours/:slug" element={<PassGuard><ParcoursView /></PassGuard>} />
+                  <Route path="/working/activity" element={<FeatureGate feature="working_activity"><MyActivity /></FeatureGate>} />
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />
