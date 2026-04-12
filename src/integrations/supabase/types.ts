@@ -2696,6 +2696,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      nextval_certificate_seq: { Args: never; Returns: number }
       normalize_phone_e164: { Args: { phone: string }; Returns: string }
       rebalance_commission_group: {
         Args: {

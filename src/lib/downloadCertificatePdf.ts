@@ -39,7 +39,7 @@ export async function buildCertificateBlob(input: {
     qrDataUrl,
   };
   const doc = createElement(CertificatePdfDocument, { data });
-  return await pdf(doc).toBlob();
+  return await pdf(doc as any).toBlob();
 }
 
 export function storagePathFor(userId: string, certificateId: string): string {
