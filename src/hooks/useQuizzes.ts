@@ -106,11 +106,12 @@ export function useFormationsWithModules() {
 /**
  * Liste UNIQUEMENT les quiz d'entraînement libre (module_id IS NULL AND formation_id IS NULL).
  * Destiné à la page /training/quiz — exclut les quiz par module et les quiz de validation finale.
+ * Enrichit chaque quiz avec le nombre de questions (question_count).
  */
 export function useTrainingQuizzes() {
   return useQuery({
     queryKey: ["quizzes", "training"],
-    queryFn: async (): Promise<Quiz[]> => {
+    queryFn: async (): Promise<(Quiz & { question_count: number })[]> => {
       const { data, error } = await (supabase as any)
         .from("quizzes")
         .select("*")
@@ -119,7 +120,18 @@ export function useTrainingQuizzes() {
         .eq("status", "published")
         .order("titre", { ascending: true });
       if (error) throw error;
-      return data || [];
+      const quizzes = data || [];
+      if (quizzes.length === 0) return [];
+      const ids = quizzes.map((q: any) => q.id);
+      const { data: counts } = await (supabase as any)
+        .from("quiz_questions")
+        .select("quiz_id")
+        .in("quiz_id", ids);
+      const byQuiz = new Map<string, number>();
+      for (const r of counts || []) {
+        byQuiz.set(r.quiz_id, (byQuiz.get(r.quiz_id) ?? 0) + 1);
+      }
+      return quizzes.map((q: any) => ({ ...q, question_count: byQuiz.get(q.id) ?? 0 }));
     },
   });
 }

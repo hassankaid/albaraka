@@ -3,7 +3,7 @@ import { useTrainingQuizzes, useLatestQuizAttempt } from "@/hooks/useQuizzes";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Trophy, PlayCircle, RotateCcw } from "lucide-react";
+import { Loader2, Trophy, PlayCircle, RotateCcw, ListChecks, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function QuizCard({ quiz }: { quiz: any }) {
@@ -29,7 +29,14 @@ function QuizCard({ quiz }: { quiz: any }) {
           {validated && <span className="text-2xl">🏆</span>}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="outline" className="text-xs">
+          {typeof (quiz as any).question_count === "number" && (quiz as any).question_count > 0 && (
+            <Badge variant="secondary" className="text-xs gap-1">
+              <ListChecks className="h-3 w-3" />
+              {(quiz as any).question_count} questions
+            </Badge>
+          )}
+          <Badge variant="outline" className="text-xs gap-1">
+            <AlertCircle className="h-3 w-3" />
             Max {quiz.max_errors} erreur{quiz.max_errors !== 1 ? "s" : ""}
           </Badge>
           {hasAttempted && (
