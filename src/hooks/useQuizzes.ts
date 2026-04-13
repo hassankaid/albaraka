@@ -16,12 +16,18 @@ export interface QuizQuestion {
 export interface Quiz {
   id: string;
   module_id: string | null;
+  formation_id: string | null;
   titre: string;
   description: string;
   max_errors: number;
   status: string;
   questions?: QuizQuestion[];
 }
+
+export type QuizAttachment =
+  | { kind: "training" }
+  | { kind: "module"; module_id: string }
+  | { kind: "formation_final"; formation_id: string };
 
 export interface QuizAttempt {
   id: string;
@@ -36,6 +42,10 @@ export interface QuizAttempt {
 
 // ─── READ HOOKS ───
 
+/**
+ * Liste TOUS les quiz (usage admin).
+ * Pour la page utilisateur /training/quiz, utilise useTrainingQuizzes().
+ */
 export function useQuizzes() {
   return useQuery({
     queryKey: ["quizzes"],
@@ -44,6 +54,27 @@ export function useQuizzes() {
         .from("quizzes")
         .select("*")
         .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
+
+/**
+ * Liste UNIQUEMENT les quiz d'entraînement libre (module_id IS NULL AND formation_id IS NULL).
+ * Destiné à la page /training/quiz — exclut les quiz par module et les quiz de validation finale.
+ */
+export function useTrainingQuizzes() {
+  return useQuery({
+    queryKey: ["quizzes", "training"],
+    queryFn: async (): Promise<Quiz[]> => {
+      const { data, error } = await (supabase as any)
+        .from("quizzes")
+        .select("*")
+        .is("module_id", null)
+        .is("formation_id", null)
+        .eq("status", "published")
+        .order("titre", { ascending: true });
       if (error) throw error;
       return data || [];
     },
@@ -72,6 +103,35 @@ export function useQuizByModule(moduleId: string | null) {
       return { ...data, questions: questions || [] };
     },
     enabled: !!moduleId,
+  });
+}
+
+/**
+ * Récupère le quiz de validation finale d'une formation (formation_id set, module_id NULL).
+ */
+export function useQuizByFormation(formationId: string | null) {
+  return useQuery({
+    queryKey: ["quiz", "by-formation", formationId],
+    queryFn: async (): Promise<Quiz | null> => {
+      if (!formationId) return null;
+      const { data, error } = await (supabase as any)
+        .from("quizzes")
+        .select("*")
+        .eq("formation_id", formationId)
+        .is("module_id", null)
+        .eq("status", "published")
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      const { data: questions, error: qErr } = await (supabase as any)
+        .from("quiz_questions")
+        .select("*")
+        .eq("quiz_id", data.id)
+        .order("ordre");
+      if (qErr) throw qErr;
+      return { ...data, questions: questions || [] };
+    },
+    enabled: !!formationId,
   });
 }
 
@@ -150,11 +210,24 @@ export function useCreateQuizAttempt() {
 export function useCreateQuiz() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { module_id?: string | null; titre: string; description?: string; max_errors?: number }) => {
+    mutationFn: async (input: {
+      module_id?: string | null;
+      formation_id?: string | null;
+      titre: string;
+      description?: string;
+      max_errors?: number;
+    }) => {
+      // CHECK constraint : module_id OU formation_id, pas les deux
+      const moduleId = input.module_id || null;
+      const formationId = input.formation_id || null;
+      if (moduleId && formationId) {
+        throw new Error("Un quiz ne peut pas être attaché à la fois à un module et à une formation");
+      }
       const { data, error } = await (supabase as any)
         .from("quizzes")
         .insert({
-          module_id: input.module_id || null,
+          module_id: moduleId,
+          formation_id: formationId,
           titre: input.titre,
           description: input.description || "",
           max_errors: input.max_errors ?? 3,

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useQuizzes, useLatestQuizAttempt } from "@/hooks/useQuizzes";
+import { useTrainingQuizzes, useLatestQuizAttempt } from "@/hooks/useQuizzes";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,16 +51,17 @@ function QuizCard({ quiz }: { quiz: any }) {
 }
 
 export default function QuizList() {
-  const { data: quizzes, isLoading } = useQuizzes();
+  const { data: quizzes, isLoading } = useTrainingQuizzes();
 
-  const publishedQuizzes = (quizzes || []).filter((q) => q.status === "published");
+  const publishedQuizzes = quizzes || [];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold font-heading">🎯 Quiz</h1>
+        <h1 className="text-2xl font-bold font-heading">🎯 Quiz d'entraînement</h1>
         <p className="text-muted-foreground">
-          Teste tes connaissances avec ces quiz. Validé si tu fais au plus 3 erreurs.
+          Teste tes connaissances à ton rythme. Les quiz de validation des formations
+          se trouvent directement dans chaque formation.
         </p>
       </div>
 
