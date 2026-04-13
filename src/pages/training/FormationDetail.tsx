@@ -22,6 +22,7 @@ import {
   Lock,
 } from "lucide-react";
 import { CertificateBanner } from "@/components/training/CertificateBanner";
+import { ModuleQuizCard, FormationFinalQuizCard } from "@/components/training/QuizInFormation";
 
 interface Chapitre {
   id: string;
@@ -330,12 +331,22 @@ export default function FormationDetail() {
                         })}
                       </div>
                     )}
+                    <ModuleQuizCard
+                      moduleId={module.id}
+                      moduleComplete={modTotal > 0 && modChapitresDone >= modTotal}
+                    />
                   </AccordionContent>
                 </AccordionItem>
               );
             })}
           </Accordion>
       )}
+
+      {/* Quiz de validation finale de la formation */}
+      <FormationFinalQuizCard
+        formationId={formation.id}
+        canAccess={progressPct >= 100}
+      />
     </div>
   );
 }

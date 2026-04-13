@@ -61,6 +61,49 @@ export function useQuizzes() {
 }
 
 /**
+ * Liste des formations avec leurs modules — pour le sélecteur de rattachement admin.
+ */
+export interface FormationWithModules {
+  id: string;
+  titre: string;
+  slug: string;
+  ordre: number;
+  modules: { id: string; titre: string; ordre: number }[];
+}
+
+export function useFormationsWithModules() {
+  return useQuery({
+    queryKey: ["formations-with-modules"],
+    queryFn: async (): Promise<FormationWithModules[]> => {
+      const { data: formations, error: fErr } = await (supabase as any)
+        .from("formations")
+        .select("id, titre, slug, ordre")
+        .neq("status", "archived")
+        .order("ordre", { ascending: true });
+      if (fErr) throw fErr;
+      const ids = (formations || []).map((f: any) => f.id);
+      if (ids.length === 0) return [];
+      const { data: modules, error: mErr } = await (supabase as any)
+        .from("formation_modules")
+        .select("id, titre, ordre, formation_id")
+        .in("formation_id", ids)
+        .neq("status", "archived")
+        .order("ordre", { ascending: true });
+      if (mErr) throw mErr;
+      const byFormation = new Map<string, any[]>();
+      for (const m of modules || []) {
+        if (!byFormation.has(m.formation_id)) byFormation.set(m.formation_id, []);
+        byFormation.get(m.formation_id)!.push({ id: m.id, titre: m.titre, ordre: m.ordre });
+      }
+      return (formations || []).map((f: any) => ({
+        ...f,
+        modules: byFormation.get(f.id) ?? [],
+      }));
+    },
+  });
+}
+
+/**
  * Liste UNIQUEMENT les quiz d'entraînement libre (module_id IS NULL AND formation_id IS NULL).
  * Destiné à la page /training/quiz — exclut les quiz par module et les quiz de validation finale.
  */
@@ -246,6 +289,13 @@ export function useUpdateQuiz() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string; [key: string]: any }) => {
+      // CHECK constraint : module_id OU formation_id, pas les deux.
+      // Si les 2 sont fournis, on favorise module_id et on force formation_id à null.
+      if ("module_id" in updates && "formation_id" in updates) {
+        if (updates.module_id && updates.formation_id) {
+          updates.formation_id = null;
+        }
+      }
       const { data, error } = await (supabase as any)
         .from("quizzes")
         .update({ ...updates, updated_at: new Date().toISOString() })

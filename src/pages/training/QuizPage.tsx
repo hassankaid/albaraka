@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuizWithQuestions, useCreateQuizAttempt } from "@/hooks/useQuizzes";
+import { autoCompleteParcoursFormationChapter } from "@/lib/parcoursAutoComplete";
+import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +19,8 @@ export default function QuizPage() {
   const navigate = useNavigate();
   const { data: quiz, isLoading } = useQuizWithQuestions(id ?? null);
   const createAttempt = useCreateQuizAttempt();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
@@ -78,6 +83,22 @@ export default function QuizPage() {
           answers: finalAnswers,
           validated,
         });
+
+        // Si quiz de validation finale validé → débloquer le chapitre parcours correspondant
+        if (validated && (quiz as any).formation_id && user?.id) {
+          try {
+            const res = await autoCompleteParcoursFormationChapter(
+              user.id,
+              (quiz as any).formation_id
+            );
+            if (res.completed > 0) {
+              queryClient.invalidateQueries({ queryKey: ["parcours-progress"] });
+              toast.success("Étape du parcours débloquée 🎉");
+            }
+          } catch {
+            // silencieux : l'utilisateur a validé son quiz, c'est le principal
+          }
+        }
       } catch (err: any) {
         toast.error("Erreur : " + (err.message || "sauvegarde impossible"));
       }

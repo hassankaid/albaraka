@@ -10,6 +10,8 @@ import {
   useCreateQuestion,
   useUpdateQuestion,
   useDeleteQuestion,
+  useFormationsWithModules,
+  type FormationWithModules,
 } from "@/hooks/useQuizzes";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,7 +36,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, X, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Loader2, ArrowLeft, CheckCircle2, Dumbbell, Layers, Trophy } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +74,8 @@ function AutoTextarea({ value, onChange, placeholder, className }: {
 
 // ─── Quiz Dialog ───
 
+type AttachmentKind = "training" | "module" | "formation_final";
+
 function QuizDialog({ open, onOpenChange, initial }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -78,31 +83,70 @@ function QuizDialog({ open, onOpenChange, initial }: {
 }) {
   const create = useCreateQuiz();
   const update = useUpdateQuiz();
+  const { data: formations } = useFormationsWithModules();
 
   const [titre, setTitre] = useState("");
   const [description, setDescription] = useState("");
   const [maxErrors, setMaxErrors] = useState(3);
+  const [attachmentKind, setAttachmentKind] = useState<AttachmentKind>("training");
+  const [formationId, setFormationId] = useState<string>("");
+  const [moduleId, setModuleId] = useState<string>("");
 
   useEffect(() => {
     if (!open) return;
     setTitre(initial?.titre ?? "");
     setDescription(initial?.description ?? "");
     setMaxErrors(initial?.max_errors ?? 3);
-  }, [open, initial]);
+    // Détermine le type de rattachement initial
+    if (initial?.module_id) {
+      setAttachmentKind("module");
+      setModuleId(initial.module_id);
+      // Retrouve la formation du module sélectionné
+      const f = (formations ?? []).find((fm) =>
+        fm.modules.some((m) => m.id === initial.module_id)
+      );
+      setFormationId(f?.id ?? "");
+    } else if (initial?.formation_id) {
+      setAttachmentKind("formation_final");
+      setFormationId(initial.formation_id);
+      setModuleId("");
+    } else {
+      setAttachmentKind("training");
+      setFormationId("");
+      setModuleId("");
+    }
+  }, [open, initial, formations]);
 
   const saving = create.isPending || update.isPending;
+
+  const selectedFormation = (formations ?? []).find((f) => f.id === formationId);
 
   const handleSave = async () => {
     if (!titre.trim()) {
       toast.error("Le titre est requis.");
       return;
     }
+    if (attachmentKind === "module" && !moduleId) {
+      toast.error("Choisis un module pour ce quiz.");
+      return;
+    }
+    if (attachmentKind === "formation_final" && !formationId) {
+      toast.error("Choisis une formation pour ce quiz de validation finale.");
+      return;
+    }
+    const payload: any = {
+      titre: titre.trim(),
+      description: description.trim(),
+      max_errors: maxErrors,
+      module_id: attachmentKind === "module" ? moduleId : null,
+      formation_id: attachmentKind === "formation_final" ? formationId : null,
+    };
     try {
       if (initial) {
-        await update.mutateAsync({ id: initial.id, titre: titre.trim(), description: description.trim(), max_errors: maxErrors });
+        await update.mutateAsync({ id: initial.id, ...payload });
         toast.success("Quiz mis à jour.");
       } else {
-        await create.mutateAsync({ titre: titre.trim(), description: description.trim(), max_errors: maxErrors });
+        await create.mutateAsync(payload);
         toast.success("Quiz créé.");
       }
       onOpenChange(false);
@@ -113,7 +157,7 @@ function QuizDialog({ open, onOpenChange, initial }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-heading">
             {initial ? "Modifier le quiz" : "Nouveau quiz"}
@@ -122,7 +166,7 @@ function QuizDialog({ open, onOpenChange, initial }: {
             Un quiz contient une série de questions. L'élève valide le quiz s'il fait au maximum {maxErrors} erreur{maxErrors !== 1 ? "s" : ""}.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-2">
+        <div className="space-y-5 py-2">
           <div className="space-y-1.5">
             <Label>Titre</Label>
             <Input value={titre} onChange={(e) => setTitre(e.target.value)} placeholder="Quiz Setting DM" />
@@ -131,6 +175,84 @@ function QuizDialog({ open, onOpenChange, initial }: {
             <Label>Description (optionnel)</Label>
             <AutoTextarea value={description} onChange={setDescription} placeholder="Objectif et contenu du quiz..." />
           </div>
+
+          <div className="space-y-3">
+            <Label>Rattachement du quiz</Label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              {([
+                { kind: "training" as const, icon: Dumbbell, label: "Entraînement", hint: "Page /training/quiz" },
+                { kind: "module" as const, icon: Layers, label: "Quiz de module", hint: "Dans une formation" },
+                { kind: "formation_final" as const, icon: Trophy, label: "Validation finale", hint: "Fin de formation" },
+              ]).map((opt) => {
+                const Icon = opt.icon;
+                const active = attachmentKind === opt.kind;
+                return (
+                  <button
+                    key={opt.kind}
+                    type="button"
+                    onClick={() => {
+                      setAttachmentKind(opt.kind);
+                      if (opt.kind === "training") { setFormationId(""); setModuleId(""); }
+                      if (opt.kind === "formation_final") { setModuleId(""); }
+                    }}
+                    className={cn(
+                      "flex flex-col items-start gap-1 p-3 rounded-lg border text-left transition-colors",
+                      active
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/40"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Icon className={cn("h-4 w-4", active ? "text-primary" : "text-muted-foreground")} />
+                      <span className={cn("text-sm font-medium", active ? "text-primary" : "text-foreground")}>
+                        {opt.label}
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground">{opt.hint}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {(attachmentKind === "module" || attachmentKind === "formation_final") && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Formation</Label>
+                <Select
+                  value={formationId}
+                  onValueChange={(v) => { setFormationId(v); setModuleId(""); }}
+                >
+                  <SelectTrigger><SelectValue placeholder="Choisis une formation…" /></SelectTrigger>
+                  <SelectContent>
+                    {(formations ?? []).map((f) => (
+                      <SelectItem key={f.id} value={f.id}>{f.titre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {attachmentKind === "module" && selectedFormation && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Module</Label>
+                <Select value={moduleId} onValueChange={setModuleId}>
+                  <SelectTrigger><SelectValue placeholder="Choisis un module…" /></SelectTrigger>
+                  <SelectContent>
+                    {selectedFormation.modules.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        M{m.ordre + 1} — {m.titre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedFormation.modules.length === 0 && (
+                  <p className="text-[11px] text-rose-500">
+                    Cette formation n'a pas encore de modules.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="space-y-1.5">
             <Label>Max erreurs pour valider</Label>
             <Input type="number" min="0" max="100" value={maxErrors} onChange={(e) => setMaxErrors(parseInt(e.target.value) || 0)} />
@@ -302,10 +424,36 @@ function QuestionDialog({ open, onOpenChange, quizId, initial }: {
 
 // ─── Main Component ───
 
+function attachmentBadge(q: any, formations: FormationWithModules[] | undefined) {
+  if (q.module_id) {
+    const formation = (formations ?? []).find((f) => f.modules.some((m) => m.id === q.module_id));
+    const mod = formation?.modules.find((m) => m.id === q.module_id);
+    return {
+      label: `Module · ${formation?.titre ?? "?"}${mod ? " / " + mod.titre : ""}`,
+      variant: "default" as const,
+      className: "bg-sky-600 hover:bg-sky-600 text-white border-0",
+    };
+  }
+  if (q.formation_id) {
+    const formation = (formations ?? []).find((f) => f.id === q.formation_id);
+    return {
+      label: `Validation finale · ${formation?.titre ?? "?"}`,
+      variant: "default" as const,
+      className: "bg-amber-600 hover:bg-amber-600 text-white border-0",
+    };
+  }
+  return {
+    label: "Entraînement",
+    variant: "outline" as const,
+    className: "",
+  };
+}
+
 export default function AdminQuizList() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { data: quizzes, isLoading } = useQuizzes();
+  const { data: formations } = useFormationsWithModules();
 
   const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
   const [quizDialogOpen, setQuizDialogOpen] = useState(false);
@@ -388,9 +536,16 @@ export default function AdminQuizList() {
                   <div className="flex items-start gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm text-foreground truncate">{q.titre}</p>
-                      <div className="flex items-center gap-1.5 mt-1">
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        {(() => {
+                          const b = attachmentBadge(q, formations);
+                          return (
+                            <Badge variant={b.variant} className={cn("text-[10px] truncate max-w-[220px]", b.className)}>
+                              {b.label}
+                            </Badge>
+                          );
+                        })()}
                         <Badge variant="outline" className="text-[10px]">Max {q.max_errors} err</Badge>
-                        <Badge variant="secondary" className="text-[10px]">{q.status}</Badge>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

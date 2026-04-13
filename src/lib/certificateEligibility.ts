@@ -34,13 +34,26 @@ export async function isFormationCompleteForUser(
   const moduleIds = (modules || []).map((m: any) => m.id);
   if (moduleIds.length === 0) return true;
 
-  const { data: quizzes } = await supabase
+  // 1. Quiz de module (module_id IS NOT NULL) — tous doivent être validés
+  const { data: moduleQuizzes } = await supabase
     .from("quizzes")
     .select("id, status")
     .in("module_id", moduleIds)
     .eq("status", "published");
 
-  const quizIds = (quizzes || []).map((q: any) => q.id);
+  // 2. Quiz de validation finale de la formation (formation_id = ...)
+  const { data: finalQuiz } = await supabase
+    .from("quizzes")
+    .select("id, status")
+    .eq("formation_id", formationId)
+    .is("module_id", null)
+    .eq("status", "published")
+    .maybeSingle();
+
+  const quizIds = [
+    ...((moduleQuizzes || []).map((q: any) => q.id) as string[]),
+    ...(finalQuiz ? [finalQuiz.id] : []),
+  ];
   if (quizIds.length === 0) return true;
 
   const { data: attempts } = await supabase

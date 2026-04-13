@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { isFormationCompleteForUser } from "@/lib/certificateEligibility";
+import { autoCompleteParcoursFormationChapter } from "@/lib/parcoursAutoComplete";
 
 interface ChapitreVideo {
   id: string;
@@ -202,7 +203,15 @@ export default function ChapterViewer() {
     try {
       const eligible = await isFormationCompleteForUser(userId, formationId);
       if (eligible) {
-        // Formation 100% — ouvrir modal de célébration qui déclenche aussi l'émission
+        // Formation 100% — débloquer le chapitre parcours puis modal célébration
+        try {
+          const res = await autoCompleteParcoursFormationChapter(userId, formationId);
+          if (res.completed > 0) {
+            queryClient.invalidateQueries({ queryKey: ["parcours-progress"] });
+          }
+        } catch {
+          // silencieux
+        }
         setFormationCompletionOpen(true);
       } else {
         setCompletionModalOpen(true);
