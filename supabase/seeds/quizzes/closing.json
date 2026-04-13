@@ -1,0 +1,3452 @@
+[
+  {
+    "titre": "Quiz Closing — M1 Introduction & Mindset",
+    "description": "Quiz de validation du module 1 de la formation Closing.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "dcf781d5-804b-454c-9d53-a7b7bb45b01c",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Que signifie le D dans le framework DRASTE ?",
+        "contexte": "",
+        "options": [
+          "Diagnostiquer",
+          "Dédiaboliser",
+          "Décider",
+          "Dominer"
+        ],
+        "correct_index": 1,
+        "explication": "Dédiaboliser la vente : ce n'est pas de la manipulation, c'est un service."
+      },
+      {
+        "question": "Que signifie le R dans DRASTE ?",
+        "contexte": "",
+        "options": [
+          "Réaliser (prendre conscience de l'impact)",
+          "Rationaliser",
+          "Relancer",
+          "Réfuter"
+        ],
+        "correct_index": 0,
+        "explication": "Faire réaliser au prospect l'impact réel de son problème."
+      },
+      {
+        "question": "Que signifie le A dans DRASTE ?",
+        "contexte": "",
+        "options": [
+          "Analyser le profil",
+          "Appuyer sur la douleur",
+          "Argumenter le prix",
+          "Accélérer le close"
+        ],
+        "correct_index": 1,
+        "explication": "Amplifier la douleur pour créer l'urgence d'agir."
+      },
+      {
+        "question": "Que signifie le S dans DRASTE ?",
+        "contexte": "",
+        "options": [
+          "Structurer l'offre",
+          "Surmonter les objections",
+          "Séduire le prospect",
+          "Simplifier le prix"
+        ],
+        "correct_index": 1,
+        "explication": "Aider le prospect à dépasser ses peurs et objections."
+      },
+      {
+        "question": "Que signifie le T dans DRASTE ?",
+        "contexte": "",
+        "options": [
+          "Transformer l'offre",
+          "Tester le prospect",
+          "Tuer les hésitations",
+          "Transférer la décision"
+        ],
+        "correct_index": 2,
+        "explication": "Éliminer les dernières hésitations et closer avec conviction."
+      },
+      {
+        "question": "Quelles sont les deux émotions tueuses de vente ?",
+        "contexte": "",
+        "options": [
+          "Colère et tristesse",
+          "Peur et excitation",
+          "Stress et fatigue",
+          "Impatience et déception"
+        ],
+        "correct_index": 1,
+        "explication": "La peur paralyse et l'excitation fait pitcher trop vite."
+      },
+      {
+        "question": "Pourquoi l'excitation est une émotion tueuse en vente ?",
+        "contexte": "",
+        "options": [
+          "Elle fait baisser la voix",
+          "Elle fait pitcher trop vite sans écouter",
+          "Elle crée de la méfiance",
+          "Elle allonge l'appel"
+        ],
+        "correct_index": 1,
+        "explication": "L'excitation pousse à vendre au lieu d'écouter."
+      },
+      {
+        "question": "Pourquoi la peur est une émotion tueuse en vente ?",
+        "contexte": "",
+        "options": [
+          "Elle fait parler trop fort",
+          "Elle rend agressif",
+          "Elle paralyse et empêche de closer",
+          "Elle raccourcit l'appel"
+        ],
+        "correct_index": 2,
+        "explication": "La peur de déranger ou de demander la décision bloque le closer."
+      },
+      {
+        "question": "Quel réflexe vocal le closer doit développer ?",
+        "contexte": "",
+        "options": [
+          "Parler vite pour montrer son expertise",
+          "Varier le débit, moduler la voix, faire des pauses",
+          "Garder un ton monotone pour rester neutre",
+          "Toujours parler fort pour montrer sa conviction"
+        ],
+        "correct_index": 1,
+        "explication": "La variation vocale maintient l'attention et crée l'impact."
+      },
+      {
+        "question": "Combien d'issues possibles y a-t-il lors d'un appel selon la boussole du closer ?",
+        "contexte": "",
+        "options": [
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "correct_index": 2,
+        "explication": "Achat, refus, auto-sabotage, objection."
+      },
+      {
+        "question": "L'auto-sabotage du closer, c'est quand...",
+        "contexte": "",
+        "options": [
+          "Le prospect ment",
+          "Le closer fait une erreur qui tue la vente",
+          "Le setter n'a pas qualifié",
+          "L'offre est trop chère"
+        ],
+        "correct_index": 1,
+        "explication": "Parler trop, mal écouter, pitcher trop tôt, paniquer sur le prix."
+      },
+      {
+        "question": "Une objection du prospect signifie...",
+        "contexte": "",
+        "options": [
+          "Un refus définitif",
+          "Un manque d'intérêt",
+          "Une demande d'information à traiter",
+          "Un problème de prix"
+        ],
+        "correct_index": 2,
+        "explication": "Une objection n'est pas un refus mais une demande d'information."
+      },
+      {
+        "question": "Le closing éthique consiste à...",
+        "contexte": "",
+        "options": [
+          "Vendre à tout prix",
+          "Guider le prospect vers la bonne décision",
+          "Manipuler les émotions",
+          "Offrir des réductions"
+        ],
+        "correct_index": 1,
+        "explication": "Guider, pas forcer. Disqualifier si le fit n'est pas là."
+      },
+      {
+        "question": "Quand faut-il disqualifier un prospect ?",
+        "contexte": "",
+        "options": [
+          "Quand il hésite",
+          "Quand il pose trop de questions",
+          "Quand le fit n'est pas là",
+          "Quand il négocie le prix"
+        ],
+        "correct_index": 2,
+        "explication": "Un closer éthique sait dire non quand l'offre ne convient pas."
+      },
+      {
+        "question": "Quelle est la règle de répartition de la parole en closing ?",
+        "contexte": "",
+        "options": [
+          "50/50",
+          "60/40",
+          "70/30 (prospect/closer)",
+          "80/20"
+        ],
+        "correct_index": 2,
+        "explication": "Le prospect parle 70% du temps, le closer 30%."
+      },
+      {
+        "question": "Parmi ces qualités, laquelle n'est PAS une qualité du closer d'excellence ?",
+        "contexte": "",
+        "options": [
+          "Écoute active",
+          "Empathie",
+          "Agressivité commerciale",
+          "Résilience"
+        ],
+        "correct_index": 2,
+        "explication": "L'agressivité n'a pas sa place dans le closing éthique."
+      },
+      {
+        "question": "Que signifie la conviction chez un closer ?",
+        "contexte": "",
+        "options": [
+          "Être sûr de soi face au prospect",
+          "Croire profondément que ta solution aide",
+          "Forcer la décision",
+          "Ne jamais accepter un non"
+        ],
+        "correct_index": 1,
+        "explication": "Sans conviction personnelle, le prospect ne sera pas convaincu."
+      },
+      {
+        "question": "Face à un refus, le closer doit...",
+        "contexte": "",
+        "options": [
+          "Insister davantage",
+          "Le prendre personnellement et s'améliorer",
+          "Considérer chaque non comme une information",
+          "Abandonner le prospect"
+        ],
+        "correct_index": 2,
+        "explication": "Chaque non est une information, pas un rejet."
+      },
+      {
+        "question": "L'objectif fondamental d'un appel de closing est...",
+        "contexte": "",
+        "options": [
+          "Vendre à tout prix",
+          "Atteindre son quota",
+          "Découvrir si tu peux aider le prospect",
+          "Pitcher l'offre rapidement"
+        ],
+        "correct_index": 2,
+        "explication": "L'objectif n'est pas de vendre mais de voir si tu peux aider."
+      },
+      {
+        "question": "Un closer qui parle plus de 30% du temps...",
+        "contexte": "",
+        "options": [
+          "Est très efficace",
+          "Montre son expertise",
+          "Ferme mal ses appels",
+          "Impressionne le prospect"
+        ],
+        "correct_index": 2,
+        "explication": "Règle 70/30 : le closer qui parle trop ferme mal."
+      },
+      {
+        "question": "Que doit faire le closer AVANT chaque appel concernant ses émotions ?",
+        "contexte": "",
+        "options": [
+          "Les amplifier pour être motivé",
+          "Les libérer et repartir à zéro",
+          "Les utiliser comme carburant",
+          "Les ignorer complètement"
+        ],
+        "correct_index": 1,
+        "explication": "Chaque appel est un nouveau départ. Les émotions de la journée ne doivent pas interférer."
+      },
+      {
+        "question": "Le closing traditionnel repose sur...",
+        "contexte": "",
+        "options": [
+          "La manipulation et la pression",
+          "L'écoute et le diagnostic",
+          "L'éthique et la confiance",
+          "Le silence et la reformulation"
+        ],
+        "correct_index": 0,
+        "explication": "Le closing éthique est l'opposé : guider, pas forcer."
+      },
+      {
+        "question": "Pourquoi le closer doit-il varier le débit de sa voix ?",
+        "contexte": "",
+        "options": [
+          "Pour montrer sa nervosité",
+          "Pour maintenir l'attention et créer l'impact",
+          "Pour parler plus vite que le prospect",
+          "Pour cacher son manque de préparation"
+        ],
+        "correct_index": 1,
+        "explication": "La variation crée le contraste et maintient l'attention."
+      },
+      {
+        "question": "Le framework DRASTE est utilisé pour...",
+        "contexte": "",
+        "options": [
+          "Structurer l'offre",
+          "Analyser les KPIs",
+          "Aborder chaque appel avec le bon état d'esprit",
+          "Gérer les objections"
+        ],
+        "correct_index": 2,
+        "explication": "DRASTE est un framework mental pour chaque appel."
+      },
+      {
+        "question": "Quel est le rôle des pauses dans la communication du closer ?",
+        "contexte": "",
+        "options": [
+          "Gagner du temps",
+          "Créer de l'inconfort chez le prospect",
+          "Donner du poids aux mots et laisser le prospect réfléchir",
+          "Montrer son hésitation"
+        ],
+        "correct_index": 2,
+        "explication": "Les pauses stratégiques donnent du poids aux mots."
+      },
+      {
+        "question": "Un prospect qui objecte est...",
+        "contexte": "",
+        "options": [
+          "Un prospect perdu",
+          "Un prospect intéressé qui a besoin d'être rassuré",
+          "Un prospect qui fait perdre du temps",
+          "Un prospect à disqualifier"
+        ],
+        "correct_index": 1,
+        "explication": "L'objection est un signe d'intérêt, pas de rejet."
+      },
+      {
+        "question": "La boussole du closer sert à...",
+        "contexte": "",
+        "options": [
+          "Naviguer sur le CRM",
+          "Savoir que seules 4 choses peuvent arriver",
+          "Choisir la bonne technique de closing",
+          "Planifier ses appels"
+        ],
+        "correct_index": 1,
+        "explication": "Connaître les 4 issues possibles permet de tout anticiper."
+      },
+      {
+        "question": "Quand le closer est en auto-sabotage, la solution est de...",
+        "contexte": "",
+        "options": [
+          "Blâmer le prospect",
+          "Identifier l'erreur et la corriger pour le prochain appel",
+          "Changer d'offre",
+          "Baisser le prix"
+        ],
+        "correct_index": 1,
+        "explication": "L'auto-sabotage vient du closer, pas du prospect."
+      },
+      {
+        "question": "La résilience chez un closer signifie...",
+        "contexte": "",
+        "options": [
+          "Ne jamais abandonner un prospect",
+          "Encaisser les refus et rebondir",
+          "Être insensible",
+          "Toujours closer"
+        ],
+        "correct_index": 1,
+        "explication": "Rebondir après les refus sans les prendre personnellement."
+      },
+      {
+        "question": "Le DRASTE doit être appliqué...",
+        "contexte": "",
+        "options": [
+          "Seulement pour les gros tickets",
+          "Avant chaque appel comme cadre mental",
+          "Uniquement avec les prospects difficiles",
+          "En fin d'appel seulement"
+        ],
+        "correct_index": 1,
+        "explication": "C'est un framework systématique, pas occasionnel."
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Closing — M2 Psychologie de la Décision",
+    "description": "Quiz de validation du module 2 de la formation Closing.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "d8453037-1638-40ea-b8f0-13ecdd9e74d8",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Les décisions d'achat sont prises...",
+        "contexte": "",
+        "options": [
+          "Majoritairement de façon rationnelle",
+          "Majoritairement de façon émotionnelle",
+          "50% rationnel, 50% émotionnel",
+          "Uniquement par la logique"
+        ],
+        "correct_index": 1,
+        "explication": "Le système émotionnel est le moteur principal de la décision."
+      },
+      {
+        "question": "Quels sont les 2 facteurs principaux d'action chez un prospect ?",
+        "contexte": "",
+        "options": [
+          "Le prix et la qualité",
+          "La douleur et la confiance",
+          "L'urgence et la peur",
+          "Le besoin et l'envie"
+        ],
+        "correct_index": 1,
+        "explication": "Douleur + confiance = les 2 leviers de passage à l'action."
+      },
+      {
+        "question": "La douleur du prospect...",
+        "contexte": "",
+        "options": [
+          "Se crée de toutes pièces",
+          "S'amplifie, elle existe déjà",
+          "Est toujours liée au prix",
+          "N'a pas d'impact sur la décision"
+        ],
+        "correct_index": 1,
+        "explication": "La douleur ne se crée pas, elle s'amplifie."
+      },
+      {
+        "question": "Comment amplifier la douleur du prospect ?",
+        "contexte": "",
+        "options": [
+          "En l'insultant",
+          "En posant des questions orientées conséquences",
+          "En comparant avec la concurrence",
+          "En baissant le prix"
+        ],
+        "correct_index": 1,
+        "explication": "Questions orientées douleur + exploration des problèmes + conséquences futures."
+      },
+      {
+        "question": "« C'est quoi le risque si rien ne change ? » est une question qui vise à...",
+        "contexte": "",
+        "options": [
+          "Effrayer le prospect",
+          "Amplifier la prise de conscience de la douleur",
+          "Négocier le prix",
+          "Créer de l'urgence artificielle"
+        ],
+        "correct_index": 1,
+        "explication": "Faire réaliser les conséquences futures de l'inaction."
+      },
+      {
+        "question": "Quand le closer pose des questions sur la douleur avec une intention bonne, c'est...",
+        "contexte": "",
+        "options": [
+          "De la manipulation",
+          "Éthique et nécessaire",
+          "Interdit par la loi",
+          "Risqué"
+        ],
+        "correct_index": 1,
+        "explication": "Tout part de l'intention. Si l'intention est d'aider, vas-y."
+      },
+      {
+        "question": "Pour que le prospect achète, il doit être convaincu...",
+        "contexte": "",
+        "options": [
+          "Que le prix est bas",
+          "Que ta solution fonctionnera sur LUI",
+          "Que tu es sympathique",
+          "Que ton entreprise est grande"
+        ],
+        "correct_index": 1,
+        "explication": "Conviction que les résultats seront atteints pour lui personnellement."
+      },
+      {
+        "question": "Quels sont les 3 leviers de confiance ?",
+        "contexte": "",
+        "options": [
+          "Prix, qualité, service",
+          "Offre (garantie), clients (témoignages), conviction (énergie)",
+          "Réputation, expérience, prix",
+          "Garantie, réduction, bonus"
+        ],
+        "correct_index": 1,
+        "explication": "3 leviers : confiance par l'offre, par les clients, par la conviction."
+      },
+      {
+        "question": "La confiance par l'offre repose principalement sur...",
+        "contexte": "",
+        "options": [
+          "Le prix bas",
+          "La garantie qui annule le risque",
+          "Le nombre de modules",
+          "La durée du programme"
+        ],
+        "correct_index": 1,
+        "explication": "Plus la garantie est solide, plus le prospect est confiant."
+      },
+      {
+        "question": "La confiance par les clients repose sur...",
+        "contexte": "",
+        "options": [
+          "Les avis Google",
+          "Les témoignages et résultats de clients similaires",
+          "Le nombre d'abonnés Instagram",
+          "Les partenariats"
+        ],
+        "correct_index": 1,
+        "explication": "Les gens croient ce qu'ils voient chez d'autres comme eux."
+      },
+      {
+        "question": "La confiance par la conviction repose sur...",
+        "contexte": "",
+        "options": [
+          "Des arguments logiques",
+          "L'énergie, la voix et la certitude du closer",
+          "Des réductions",
+          "Des promesses exagérées"
+        ],
+        "correct_index": 1,
+        "explication": "Ton enthousiasme et ta certitude se font ressentir."
+      },
+      {
+        "question": "Quand utiliser les témoignages clients ?",
+        "contexte": "",
+        "options": [
+          "Jamais, c'est manipulateur",
+          "Surtout après l'annonce du prix pour rassurer",
+          "Uniquement en début d'appel",
+          "Seulement si le prospect demande"
+        ],
+        "correct_index": 1,
+        "explication": "Après le prix + lors d'objections de confiance."
+      },
+      {
+        "question": "Le storytelling en vente sert à...",
+        "contexte": "",
+        "options": [
+          "Divertir le prospect",
+          "Créer l'identification : le prospect se voit dans l'histoire",
+          "Remplir le temps de l'appel",
+          "Impressionner"
+        ],
+        "correct_index": 1,
+        "explication": "Le prospect doit SE VOIR dans l'histoire de transformation."
+      },
+      {
+        "question": "L'inversion du risque consiste à...",
+        "contexte": "",
+        "options": [
+          "Baisser le prix",
+          "Montrer que le vrai risque est de ne rien faire",
+          "Garantir un résultat",
+          "Annuler la garantie"
+        ],
+        "correct_index": 1,
+        "explication": "Le vrai risque c'est l'inaction, pas l'investissement."
+      },
+      {
+        "question": "Combien y a-t-il de déclencheurs psychologiques enseignés ?",
+        "contexte": "",
+        "options": [
+          "3",
+          "5",
+          "7",
+          "10"
+        ],
+        "correct_index": 2,
+        "explication": "Les 7 déclencheurs psychologiques de la décision."
+      },
+      {
+        "question": "La réciprocité en vente signifie...",
+        "contexte": "",
+        "options": [
+          "Échanger des cadeaux",
+          "Donner de la valeur dans l'appel crée un sentiment de redevabilité",
+          "Rendre la pareille au prospect",
+          "Offrir une réduction"
+        ],
+        "correct_index": 1,
+        "explication": "Quand tu donnes de la valeur, la personne se sent positivement redevable."
+      },
+      {
+        "question": "La preuve sociale fonctionne parce que...",
+        "contexte": "",
+        "options": [
+          "Les gens aiment copier",
+          "Le prospect se voit dans les succès d'autrui",
+          "C'est une obligation légale",
+          "Ça fait baisser le prix"
+        ],
+        "correct_index": 1,
+        "explication": "Histoires de clients similaires = identification et projection."
+      },
+      {
+        "question": "L'autorité en vente s'appuie sur...",
+        "contexte": "",
+        "options": [
+          "Le titre sur la carte de visite",
+          "L'expertise, les résultats et la certitude",
+          "L'âge du closer",
+          "Le nom de l'entreprise"
+        ],
+        "correct_index": 1,
+        "explication": "Ton expertise et tes résultats créent la confiance."
+      },
+      {
+        "question": "La rareté crée...",
+        "contexte": "",
+        "options": [
+          "De la frustration",
+          "Un sentiment d'urgence et de valeur",
+          "De la méfiance",
+          "Un effet de mode"
+        ],
+        "correct_index": 1,
+        "explication": "Ce qui est rare est perçu comme plus précieux."
+      },
+      {
+        "question": "Quand appuyer sur l'autorité + la preuve sociale ?",
+        "contexte": "",
+        "options": [
+          "Jamais en même temps",
+          "En début d'appel pour poser le cadre",
+          "Uniquement après le prix",
+          "En fin d'appel seulement"
+        ],
+        "correct_index": 1,
+        "explication": "Début d'appel = poser le cadre de crédibilité."
+      },
+      {
+        "question": "Les boutons de confiance sont...",
+        "contexte": "",
+        "options": [
+          "Des techniques de manipulation",
+          "Des leviers concrets sur lesquels appuyer selon le moment de l'appel",
+          "Des réductions à offrir",
+          "Des arguments de vente"
+        ],
+        "correct_index": 1,
+        "explication": "Témoignages, storytelling, inversion du risque, preuve sociale, autorité."
+      },
+      {
+        "question": "Quand le prospect dit « Je ne suis pas sûr que ça marche pour moi », quel bouton appuyer ?",
+        "contexte": "",
+        "options": [
+          "Baisser le prix",
+          "Témoignage d'un client dans une situation similaire",
+          "Expliquer les fonctionnalités",
+          "Proposer un essai gratuit"
+        ],
+        "correct_index": 1,
+        "explication": "Le témoignage crée l'identification : « quelqu'un comme toi a réussi »."
+      },
+      {
+        "question": "Le concept « Rendre la transformation simple » signifie...",
+        "contexte": "",
+        "options": [
+          "Simplifier le prix",
+          "Présenter l'offre comme un pont facile entre la situation actuelle et le résultat",
+          "Réduire le nombre de modules",
+          "Raccourcir l'appel"
+        ],
+        "correct_index": 1,
+        "explication": "Comme Amazon, Netflix, Uber : rendre le chemin aussi simple que possible."
+      },
+      {
+        "question": "Quelle est la différence entre un prospect qui n'a pas confiance en LUI et un prospect qui n'a pas confiance en TOI ?",
+        "contexte": "",
+        "options": [
+          "Aucune, c'est la même chose",
+          "L'un doute de sa capacité, l'autre doute de ta solution",
+          "L'un est plus difficile que l'autre",
+          "Le premier est un refus, le second une objection"
+        ],
+        "correct_index": 1,
+        "explication": "Identifier la source du manque de confiance change la réponse."
+      },
+      {
+        "question": "En fin d'appel, face à une objection de confiance, il faut appuyer sur...",
+        "contexte": "",
+        "options": [
+          "Le prix",
+          "La conviction + la garantie",
+          "La rareté",
+          "L'autorité"
+        ],
+        "correct_index": 1,
+        "explication": "Conviction + Garantie = fermer le doute."
+      },
+      {
+        "question": "Les émotions du prospect changent le cours de l'appel parce que...",
+        "contexte": "",
+        "options": [
+          "Les prospects sont irrationnels",
+          "Les décisions sont majoritairement émotionnelles",
+          "Les prospects mentent souvent",
+          "Les émotions n'ont pas d'importance"
+        ],
+        "correct_index": 1,
+        "explication": "Le système émotionnel pilote les décisions d'achat."
+      },
+      {
+        "question": "L'engagement et la cohérence signifient que...",
+        "contexte": "",
+        "options": [
+          "Le prospect doit signer un contrat",
+          "Une fois engagé verbalement, le prospect veut rester cohérent",
+          "Le closer doit être cohérent dans son discours",
+          "Le prix doit être fixe"
+        ],
+        "correct_index": 1,
+        "explication": "Quand quelqu'un s'engage, il veut rester cohérent avec son engagement."
+      },
+      {
+        "question": "La sympathie en vente signifie...",
+        "contexte": "",
+        "options": [
+          "Être drôle",
+          "On achète à ceux qu'on aime — la connexion authentique est un levier",
+          "Flatter le prospect",
+          "Offrir des cadeaux"
+        ],
+        "correct_index": 1,
+        "explication": "La connexion authentique crée la confiance naturellement."
+      },
+      {
+        "question": "Quand le prospect chiffre lui-même sa douleur...",
+        "contexte": "",
+        "options": [
+          "Il exagère souvent",
+          "Le prix de l'offre semble justifié par comparaison",
+          "Ça n'a aucun impact",
+          "Il faut corriger ses calculs"
+        ],
+        "correct_index": 1,
+        "explication": "Un prospect qui chiffre sa douleur à 3000€/mois ne négocie plus un prix de 2500€."
+      },
+      {
+        "question": "Le but des questions orientées douleur est de...",
+        "contexte": "",
+        "options": [
+          "Rendre le prospect triste",
+          "Obtenir que le prospect dise LUI-MÊME que sa situation est critique",
+          "Créer de la peur",
+          "Montrer ton expertise"
+        ],
+        "correct_index": 1,
+        "explication": "Le prospect qui verbalise sa douleur dans ses propres mots est prêt à agir."
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Closing — M3 Préparer son Appel",
+    "description": "Quiz de validation du module 3 de la formation Closing.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "ff8226d2-3a38-40a5-8100-f11228ae567e",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "The GAP représente...",
+        "contexte": "",
+        "options": [
+          "L'écart de prix",
+          "Le pont entre la situation actuelle et la situation souhaitée",
+          "Un outil CRM",
+          "Le temps de l'appel"
+        ],
+        "correct_index": 1,
+        "explication": "Situation actuelle → ton offre (le pont) → situation souhaitée."
+      },
+      {
+        "question": "Ton offre dans le concept du GAP, c'est...",
+        "contexte": "",
+        "options": [
+          "Un prix à payer",
+          "Le pont entre les deux situations",
+          "Un produit à vendre",
+          "Un avantage concurrentiel"
+        ],
+        "correct_index": 1,
+        "explication": "L'offre est le pont qui fait passer de la situation actuelle à la situation désirée."
+      },
+      {
+        "question": "Les grands vendeurs ne vendent pas...",
+        "contexte": "",
+        "options": [
+          "Des services",
+          "Des produits — ils vendent des résultats, du désir et de l'espoir",
+          "Du rêve",
+          "Des émotions"
+        ],
+        "correct_index": 1,
+        "explication": "Résultats, désir et espoir — jamais un produit."
+      },
+      {
+        "question": "Lors d'un appel, les 3 priorités sont...",
+        "contexte": "",
+        "options": [
+          "Pitcher, négocier, closer",
+          "Comprendre la situation actuelle, la situation souhaitée, positionner l'offre comme pont",
+          "Écouter, parler, convaincre",
+          "Diagnostiquer, presenter, relancer"
+        ],
+        "correct_index": 1,
+        "explication": "Les 3 priorités du GAP."
+      },
+      {
+        "question": "Avant chaque appel, la checklist comprend 5 éléments. Lequel n'en fait PAS partie ?",
+        "contexte": "",
+        "options": [
+          "Recherche sur le prospect",
+          "Formulaire relu",
+          "Appeler le concurrent du prospect",
+          "Mindset au point"
+        ],
+        "correct_index": 2,
+        "explication": "Recherche, formulaire, setter, mindset, environnement."
+      },
+      {
+        "question": "Pourquoi relire le formulaire du prospect avant l'appel ?",
+        "contexte": "",
+        "options": [
+          "Pour gagner du temps",
+          "Pour identifier les signaux forts et zones de risque",
+          "Par obligation légale",
+          "Pour remplir le CRM"
+        ],
+        "correct_index": 1,
+        "explication": "Les signaux forts et zones de risque sont dans le formulaire."
+      },
+      {
+        "question": "Que signifie « libérer les émotions de la journée » avant un appel ?",
+        "contexte": "",
+        "options": [
+          "Être de mauvaise humeur",
+          "Chaque appel est un nouveau départ, l'appel précédent est oublié",
+          "Pleurer avant l'appel",
+          "Ignorer ses émotions"
+        ],
+        "correct_index": 1,
+        "explication": "L'appel précédent ne doit pas contaminer le suivant."
+      },
+      {
+        "question": "L'objectif du closer en début d'appel est...",
+        "contexte": "",
+        "options": [
+          "Vendre le plus vite possible",
+          "Voir s'il peut aider, pas vendre",
+          "Impressionner le prospect",
+          "Pitcher l'offre"
+        ],
+        "correct_index": 1,
+        "explication": "L'objectif n'est pas de vendre mais de voir si tu peux aider."
+      },
+      {
+        "question": "Que doit vérifier le closer auprès du setter ?",
+        "contexte": "",
+        "options": [
+          "Le chiffre d'affaires du prospect",
+          "Le score de qualification, les infos du pré-appel, les points clés",
+          "La couleur préférée du prospect",
+          "Le budget exact"
+        ],
+        "correct_index": 1,
+        "explication": "Score de qualification + infos du pré-appel + points clés."
+      },
+      {
+        "question": "L'environnement idéal pour un appel de closing comprend...",
+        "contexte": "",
+        "options": [
+          "Un café animé",
+          "Salle calme, zéro distraction, eau, script visible, CRM ouvert",
+          "Un openspace",
+          "Sa voiture"
+        ],
+        "correct_index": 1,
+        "explication": "L'environnement influence la concentration et la qualité de l'appel."
+      },
+      {
+        "question": "Les citations à relire avant chaque appel servent à...",
+        "contexte": "",
+        "options": [
+          "Impressionner le prospect",
+          "Recadrer le mindset du closer avant l'appel",
+          "Remplir le temps",
+          "Décorer le bureau"
+        ],
+        "correct_index": 1,
+        "explication": "Recalibrer l'intention et le mindset."
+      },
+      {
+        "question": "La phrase d'ouverture idéale est...",
+        "contexte": "",
+        "options": [
+          "« Je vais te présenter notre offre »",
+          "« Mon objectif c'est que tu aies une vision claire — avec nous ou pas »",
+          "« Combien tu es prêt à investir ? »",
+          "« Laisse-moi te pitcher notre programme »"
+        ],
+        "correct_index": 1,
+        "explication": "Cadrer l'appel : pas de pression, vision claire."
+      },
+      {
+        "question": "Pourquoi les premières secondes de l'appel sont-elles importantes ?",
+        "contexte": "",
+        "options": [
+          "Le prospect décide du prix",
+          "Elles déterminent la tonalité de tout l'appel",
+          "Le prospect peut raccrocher",
+          "C'est le moment de closer"
+        ],
+        "correct_index": 1,
+        "explication": "La préparation fait la différence entre un appel confus et un appel qui convertit."
+      },
+      {
+        "question": "Si le closer ne prépare pas son appel...",
+        "contexte": "",
+        "options": [
+          "Il sera plus naturel et spontané",
+          "Il risque de perdre la confiance du prospect dès les premières minutes",
+          "Ça n'a pas d'impact",
+          "Le prospect ne s'en rendra pas compte"
+        ],
+        "correct_index": 1,
+        "explication": "Le scénario Ahmed montre les conséquences d'un manque de préparation."
+      },
+      {
+        "question": "La préparation fait la différence entre...",
+        "contexte": "",
+        "options": [
+          "Un bon et un mauvais produit",
+          "Un appel confus et un appel qui convertit",
+          "Un prospect riche et un prospect pauvre",
+          "Un setter et un closer"
+        ],
+        "correct_index": 1,
+        "explication": "5 minutes de préparation = 20 minutes gagnées."
+      },
+      {
+        "question": "Un signal fort dans un formulaire, c'est...",
+        "contexte": "",
+        "options": [
+          "Une faute d'orthographe",
+          "Un indice que le prospect est prêt ou motivé",
+          "Un numéro de téléphone",
+          "La date de remplissage"
+        ],
+        "correct_index": 1,
+        "explication": "Les signaux forts indiquent la motivation ou la douleur du prospect."
+      },
+      {
+        "question": "Une zone de risque dans un formulaire, c'est...",
+        "contexte": "",
+        "options": [
+          "Une question sans réponse",
+          "Un indice de blocage potentiel (budget, timing, décision partagée)",
+          "Un email suspect",
+          "Un formulaire trop court"
+        ],
+        "correct_index": 1,
+        "explication": "Anticiper les objections possibles avant l'appel."
+      },
+      {
+        "question": "Pourquoi noter 2-3 éléments personnalisés avant l'appel ?",
+        "contexte": "",
+        "options": [
+          "Pour espionner le prospect",
+          "Pour créer une connexion authentique dès le début",
+          "Par curiosité",
+          "Pour le CRM"
+        ],
+        "correct_index": 1,
+        "explication": "La personnalisation montre que tu t'es préparé et crée la connexion."
+      },
+      {
+        "question": "Avoir le script et les fiches visibles pendant l'appel, c'est...",
+        "contexte": "",
+        "options": [
+          "Tricher",
+          "Un signe de professionnalisme et de préparation",
+          "Interdit",
+          "Inutile pour un bon closer"
+        ],
+        "correct_index": 1,
+        "explication": "Même les meilleurs closers gardent leurs outils à portée de main."
+      },
+      {
+        "question": "Que se passe-t-il si Ahmed avait lu le formulaire avant son appel ?",
+        "contexte": "",
+        "options": [
+          "Rien de différent",
+          "Il aurait su que le prospect avait déjà investi 4000€ dans une formation ratée",
+          "Le prospect aurait acheté automatiquement",
+          "L'appel aurait été plus court"
+        ],
+        "correct_index": 1,
+        "explication": "L'info était dans le formulaire du setter — 5 min de lecture auraient tout changé."
+      },
+      {
+        "question": "Le mindset « nouveau départ » avant chaque appel signifie...",
+        "contexte": "",
+        "options": [
+          "Oublier toutes les techniques",
+          "L'appel précédent (réussi ou raté) ne doit pas influencer le suivant",
+          "Changer de script à chaque appel",
+          "Ne pas se souvenir du prospect"
+        ],
+        "correct_index": 1,
+        "explication": "Chaque prospect mérite un closer frais et concentré."
+      },
+      {
+        "question": "L'eau à portée de main pendant un appel sert à...",
+        "contexte": "",
+        "options": [
+          "Boire pour rester hydraté et garder une voix claire",
+          "Gagner du temps",
+          "Faire une pause",
+          "Impressionner le prospect"
+        ],
+        "correct_index": 0,
+        "explication": "La voix est l'outil principal du closer."
+      },
+      {
+        "question": "Le score de qualification du setter indique...",
+        "contexte": "",
+        "options": [
+          "Le prix que le prospect peut payer",
+          "Le niveau de préparation et de motivation du prospect",
+          "L'âge du prospect",
+          "Le nombre d'appels précédents"
+        ],
+        "correct_index": 1,
+        "explication": "Le score aide à anticiper la qualité du lead."
+      },
+      {
+        "question": "La checklist pré-appel contient une section « Setter ». Pourquoi ?",
+        "contexte": "",
+        "options": [
+          "Pour blâmer le setter si ça échoue",
+          "Pour récupérer les infos du pré-appel et les points clés",
+          "Par politesse",
+          "Pour le CRM"
+        ],
+        "correct_index": 1,
+        "explication": "Les infos du setter complètent la préparation."
+      },
+      {
+        "question": "Que signifie « zéro distraction » pendant un appel ?",
+        "contexte": "",
+        "options": [
+          "Couper son téléphone",
+          "Salle calme, pas de notifications, concentration totale sur le prospect",
+          "Fermer les yeux",
+          "Ne pas parler"
+        ],
+        "correct_index": 1,
+        "explication": "Le prospect sent quand le closer n'est pas pleinement présent."
+      },
+      {
+        "question": "La phrase « Découvrez ce que les gens veulent et aidez-les à l'obtenir » résume...",
+        "contexte": "",
+        "options": [
+          "La stratégie de prix",
+          "La philosophie du closing éthique",
+          "La technique de prospection",
+          "Le marketing digital"
+        ],
+        "correct_index": 1,
+        "explication": "Comprendre le besoin et y répondre — pas vendre un produit."
+      },
+      {
+        "question": "Un prospect dont la douleur est chiffrée à 3000€/mois...",
+        "contexte": "",
+        "options": [
+          "A toujours un budget",
+          "Trouvera 2500€ d'investissement logique",
+          "Est forcément un bon client",
+          "Exagère probablement"
+        ],
+        "correct_index": 1,
+        "explication": "Quand la perte > l'investissement, le prix n'est plus un obstacle."
+      },
+      {
+        "question": "Pourquoi 3 citations à relire et pas 10 ?",
+        "contexte": "",
+        "options": [
+          "Par manque de place",
+          "3 suffisent pour recalibrer le mindset sans surcharger",
+          "Les autres ne sont pas pertinentes",
+          "Le closer n'a pas le temps de lire"
+        ],
+        "correct_index": 1,
+        "explication": "L'objectif est le recadrage rapide, pas la lecture."
+      },
+      {
+        "question": "Le GAP est enseigné dans le Module 3 parce que...",
+        "contexte": "",
+        "options": [
+          "C'est un outil de prospection",
+          "C'est le cadre mental pour préparer chaque appel",
+          "C'est une technique de closing",
+          "C'est un KPI"
+        ],
+        "correct_index": 1,
+        "explication": "Comprendre le GAP AVANT l'appel oriente toute la préparation."
+      },
+      {
+        "question": "Si le closer ne connaît pas la situation souhaitée du prospect avant l'appel...",
+        "contexte": "",
+        "options": [
+          "C'est normal, il le découvrira",
+          "Il ne pourra pas positionner l'offre comme un pont pertinent",
+          "Ça n'a pas d'importance",
+          "Le setter lui donnera pendant l'appel"
+        ],
+        "correct_index": 1,
+        "explication": "Sans vision claire des 2 extrémités, pas de pont possible."
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Closing — M4 Structure de l'Appel — Le Script Complet",
+    "description": "Quiz de validation du module 4 de la formation Closing.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "15a79f5d-755b-4da5-a273-4e82cdad9699",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Que signifie DECODE ?",
+        "contexte": "",
+        "options": [
+          "Un logiciel de vente",
+          "Les 6 phases de la structure d'appel",
+          "Un type d'objection",
+          "Un KPI"
+        ],
+        "correct_index": 1,
+        "explication": "DECODE = 6 phases structurées de l'appel de closing."
+      },
+      {
+        "question": "Combien de niveaux compte le diagnostic ?",
+        "contexte": "",
+        "options": [
+          "3",
+          "4",
+          "5",
+          "7"
+        ],
+        "correct_index": 2,
+        "explication": "Situation, Douleur, Impact, Vision, Obstacles."
+      },
+      {
+        "question": "Quel est le niveau le plus important du diagnostic ?",
+        "contexte": "",
+        "options": [
+          "Situation",
+          "Douleur",
+          "Impact (chiffré)",
+          "Vision"
+        ],
+        "correct_index": 2,
+        "explication": "Sans impact chiffré, le prix semble arbitraire."
+      },
+      {
+        "question": "La question « Si tu chiffrais ce que ça te coûte par mois ? » vise à...",
+        "contexte": "",
+        "options": [
+          "Connaître le budget du prospect",
+          "Obtenir l'impact chiffré de la douleur",
+          "Fixer le prix de l'offre",
+          "Négocier"
+        ],
+        "correct_index": 1,
+        "explication": "L'impact chiffré rend le prix de l'offre relatif."
+      },
+      {
+        "question": "Quelle est la durée idéale de la phase de diagnostic ?",
+        "contexte": "",
+        "options": [
+          "2-3 minutes",
+          "5-10 minutes",
+          "20-30 minutes",
+          "45 minutes"
+        ],
+        "correct_index": 2,
+        "explication": "C'est la phase la plus importante et la plus longue."
+      },
+      {
+        "question": "Après le diagnostic, que fait le closer avant de passer à l'offre ?",
+        "contexte": "",
+        "options": [
+          "Il pitcher immédiatement",
+          "Il fait une confirmation miroir de tout ce qui a été dit",
+          "Il annonce le prix",
+          "Il pose d'autres questions"
+        ],
+        "correct_index": 1,
+        "explication": "Ne JAMAIS passer à l'offre sans confirmation des 5 niveaux."
+      },
+      {
+        "question": "La confirmation miroir consiste à...",
+        "contexte": "",
+        "options": [
+          "Répéter le prix",
+          "Résumer la situation, la douleur, l'impact, l'objectif et demander validation",
+          "Copier la gestuelle du prospect",
+          "Confirmer l'heure de l'appel"
+        ],
+        "correct_index": 1,
+        "explication": "« Tu es dans [situation], le problème c'est [douleur], ça te coûte [impact]... C'est bien ça ? »"
+      },
+      {
+        "question": "Le silence est considéré comme...",
+        "contexte": "",
+        "options": [
+          "Un ennemi du closer",
+          "L'arme n°1 du closer",
+          "Un signe de faiblesse",
+          "Une erreur"
+        ],
+        "correct_index": 1,
+        "explication": "Le silence est ton arme n°1, pas ton ennemi."
+      },
+      {
+        "question": "Après avoir annoncé le prix, le closer doit...",
+        "contexte": "",
+        "options": [
+          "Expliquer les fonctionnalités",
+          "Se taire et compter mentalement jusqu'à 10",
+          "Proposer une réduction",
+          "Demander si c'est trop cher"
+        ],
+        "correct_index": 1,
+        "explication": "SILENCE TOTAL. Le premier qui parle, perd."
+      },
+      {
+        "question": "Combien de secondes de silence après l'annonce du prix ?",
+        "contexte": "",
+        "options": [
+          "3 secondes",
+          "5 secondes",
+          "Compter jusqu'à 10",
+          "1 minute"
+        ],
+        "correct_index": 2,
+        "explication": "Silence total, compter mentalement jusqu'à 10."
+      },
+      {
+        "question": "La prise de conscience consiste à...",
+        "contexte": "",
+        "options": [
+          "Aider le prospect à mesurer l'ampleur de sa situation",
+          "Donner des conseils gratuits",
+          "Pitcher l'offre",
+          "Critiquer le prospect"
+        ],
+        "correct_index": 0,
+        "explication": "Poser des questions profondes pour que le prospect réalise sa situation."
+      },
+      {
+        "question": "Que ne faut-il PAS faire pendant la phase de diagnostic ?",
+        "contexte": "",
+        "options": [
+          "Poser des questions ouvertes",
+          "Résoudre les problèmes du prospect (coaching gratuit)",
+          "Écouter activement",
+          "Prendre des notes"
+        ],
+        "correct_index": 1,
+        "explication": "Ne commence pas à résoudre ses problèmes. Reste dans le diagnostic."
+      },
+      {
+        "question": "Les 7 étapes d'un appel dans l'ordre sont...",
+        "contexte": "",
+        "options": [
+          "Diagnostic, prix, close",
+          "Connexion, diagnostic, confirmation, offre, prix+silence, objections, close",
+          "Introduction, pitch, prix, négociation",
+          "Préparation, appel, suivi"
+        ],
+        "correct_index": 1,
+        "explication": "Les 7 étapes structurées du DECODE."
+      },
+      {
+        "question": "La durée totale idéale d'un appel est de...",
+        "contexte": "",
+        "options": [
+          "15-20 minutes",
+          "30-45 minutes",
+          "45-90 minutes",
+          "2 heures"
+        ],
+        "correct_index": 2,
+        "explication": "45 à 90 minutes selon la complexité."
+      },
+      {
+        "question": "Lors de la phase Connexion, que doit dire le closer ?",
+        "contexte": "",
+        "options": [
+          "« Je vais te vendre mon programme »",
+          "« Mon objectif c'est que tu aies une vision claire — avec nous ou pas »",
+          "« Combien tu es prêt à investir ? »",
+          "« T'as 30 minutes ? »"
+        ],
+        "correct_index": 1,
+        "explication": "Cadrer l'appel sans pression."
+      },
+      {
+        "question": "La phase Offre consiste à...",
+        "contexte": "",
+        "options": [
+          "Lister toutes les fonctionnalités",
+          "Présenter l'offre comme un pont entre la situation actuelle et le résultat",
+          "Annoncer le prix",
+          "Négocier"
+        ],
+        "correct_index": 1,
+        "explication": "Pont entre situation actuelle → ta solution → situation désirée."
+      },
+      {
+        "question": "Règle n°1 de la présentation de l'offre :",
+        "contexte": "",
+        "options": [
+          "Parler de toutes les fonctionnalités",
+          "Connecter chaque élément à un point de douleur exprimé",
+          "Comparer avec la concurrence",
+          "Donner le prix d'abord"
+        ],
+        "correct_index": 1,
+        "explication": "Chaque élément de l'offre doit répondre à une douleur identifiée."
+      },
+      {
+        "question": "Règle n°2 de la présentation de l'offre :",
+        "contexte": "",
+        "options": [
+          "Utiliser un jargon technique",
+          "Utiliser le vocabulaire exact du prospect",
+          "Parler en anglais",
+          "Utiliser des superlatifs"
+        ],
+        "correct_index": 1,
+        "explication": "Reprendre ses mots crée l'identification."
+      },
+      {
+        "question": "Règle n°3 de la présentation de l'offre :",
+        "contexte": "",
+        "options": [
+          "Parler en fonctionnalités",
+          "Parler en transformation, jamais en fonctionnalités",
+          "Donner le maximum de détails",
+          "Comparer avec d'autres offres"
+        ],
+        "correct_index": 1,
+        "explication": "Le prospect achète une transformation, pas des modules."
+      },
+      {
+        "question": "Le No-Show doit être relancé...",
+        "contexte": "",
+        "options": [
+          "Immédiatement par email",
+          "Dans l'heure qui suit l'appel manqué",
+          "Jamais",
+          "Le lendemain matin"
+        ],
+        "correct_index": 1,
+        "explication": "« On avait notre appel. Tout va bien ? On peut replanifier. »"
+      },
+      {
+        "question": "Combien de relances maximum après un refus clair ?",
+        "contexte": "",
+        "options": [
+          "1",
+          "2",
+          "5",
+          "Autant que nécessaire"
+        ],
+        "correct_index": 1,
+        "explication": "2 relances maximum après un refus clair."
+      },
+      {
+        "question": "La relance J+5 est...",
+        "contexte": "",
+        "options": [
+          "Agressive et insistante",
+          "La dernière relance avec un résultat récent",
+          "Un email automatique",
+          "Un message vocal"
+        ],
+        "correct_index": 1,
+        "explication": "« Je te laisse un dernier message. On vient d'avoir [résultat récent]. »"
+      },
+      {
+        "question": "Pourquoi le diagnostic doit-il durer 20-30 minutes ?",
+        "contexte": "",
+        "options": [
+          "Pour faire durer l'appel",
+          "C'est la phase qui construit toute la vente — sans diagnostic, pas de close",
+          "Par obligation",
+          "Pour montrer son expertise"
+        ],
+        "correct_index": 1,
+        "explication": "80% du close est joué avant même d'annoncer le prix."
+      },
+      {
+        "question": "La construction d'un script millimétré implique de...",
+        "contexte": "",
+        "options": [
+          "Copier un script générique",
+          "Adapter la méthodologie à son secteur, son offre et son style",
+          "Réciter mot pour mot",
+          "Improviser à chaque appel"
+        ],
+        "correct_index": 1,
+        "explication": "Le script doit être personnalisé, pas copié."
+      },
+      {
+        "question": "Les mots qui changent la conversion sont...",
+        "contexte": "",
+        "options": [
+          "Les mots techniques",
+          "Les mots du prospect repris dans l'offre + les formulations qui transforment la perception",
+          "Les mots anglais",
+          "Les mots compliqués"
+        ],
+        "correct_index": 1,
+        "explication": "Le vocabulaire exact du prospect dans ta bouche = identification."
+      },
+      {
+        "question": "La formule ACE pour les objections signifie...",
+        "contexte": "",
+        "options": [
+          "Attaquer, Convaincre, Enchaîner",
+          "Accuser réception, Clarifier, Explorer",
+          "Analyser, Compter, Évaluer",
+          "Anticiper, Cadrer, Expliquer"
+        ],
+        "correct_index": 1,
+        "explication": "ACE = Accuser réception → Clarifier → Explorer."
+      },
+      {
+        "question": "Que se passe-t-il si tu pitches avant le diagnostic ?",
+        "contexte": "",
+        "options": [
+          "Tu gagnes du temps",
+          "Le prospect se sent « vendu » et perd confiance",
+          "C'est plus efficace",
+          "Le prospect est impressionné"
+        ],
+        "correct_index": 1,
+        "explication": "Erreur fatale n°1 : pitcher avant d'avoir diagnostiqué."
+      },
+      {
+        "question": "Le silence après une question puissante doit durer...",
+        "contexte": "",
+        "options": [
+          "0 secondes, enchaîne",
+          "3 à 5 secondes minimum",
+          "30 secondes",
+          "1 minute"
+        ],
+        "correct_index": 1,
+        "explication": "Le silence laisse le prospect réfléchir et répondre en profondeur."
+      },
+      {
+        "question": "Le script de relance J+2 est...",
+        "contexte": "",
+        "options": [
+          "Agressif",
+          "Doux et interrogatif : « Tu avais encore des questions ? »",
+          "Un rappel du prix",
+          "Un email de promotion"
+        ],
+        "correct_index": 1,
+        "explication": "Relance douce, pas de pression."
+      },
+      {
+        "question": "Adapter le script au secteur signifie...",
+        "contexte": "",
+        "options": [
+          "Utiliser le même script partout",
+          "Personnaliser les exemples, le vocabulaire et les résultats selon l'industrie du prospect",
+          "Changer de script chaque jour",
+          "Copier le script d'un concurrent"
+        ],
+        "correct_index": 1,
+        "explication": "Un script e-commerce ≠ un script coaching ≠ un script SaaS."
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Closing — M5 L'Offre & Le Prix",
+    "description": "Quiz de validation du module 5 de la formation Closing.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "6de15d26-5361-41b1-a58e-3b3b0b0f5bb1",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "La confirmation miroir sert à...",
+        "contexte": "",
+        "options": [
+          "Impressionner le prospect",
+          "Résumer tout le diagnostic pour obtenir un « oui » avant l'offre",
+          "Copier ses gestes",
+          "Annoncer le prix"
+        ],
+        "correct_index": 1,
+        "explication": "Le prospect valide que tu as bien compris avant de passer à l'offre."
+      },
+      {
+        "question": "L'ancrage du prix consiste à...",
+        "contexte": "",
+        "options": [
+          "Donner le prix le plus bas",
+          "Placer un point de référence plus élevé avant d'annoncer le vrai prix",
+          "Cacher le prix",
+          "Négocier dès le début"
+        ],
+        "correct_index": 1,
+        "explication": "« Un consultant facturerait 12 000€ » → ton prix de 2 500€ semble raisonnable."
+      },
+      {
+        "question": "Le langage du closer sur le prix utilise le mot...",
+        "contexte": "",
+        "options": [
+          "Coût",
+          "Investissement",
+          "Dépense",
+          "Charge"
+        ],
+        "correct_index": 1,
+        "explication": "« Investissement » pas « coût » — les mots changent la perception."
+      },
+      {
+        "question": "La tonalité est qualifiée de...",
+        "contexte": "",
+        "options": [
+          "Détail mineur",
+          "Facteur décisif",
+          "Sans importance",
+          "Optionnelle"
+        ],
+        "correct_index": 1,
+        "explication": "La tonalité est le facteur décisif en closing."
+      },
+      {
+        "question": "Un ton descendant communique...",
+        "contexte": "",
+        "options": [
+          "L'hésitation",
+          "La certitude et l'autorité",
+          "La question",
+          "Le doute"
+        ],
+        "correct_index": 1,
+        "explication": "Ton qui descend = affirmation. Ton qui monte = question."
+      },
+      {
+        "question": "Le mirroring vocal consiste à...",
+        "contexte": "",
+        "options": [
+          "Imiter la voix du prospect",
+          "Adapter son rythme et son énergie au profil du prospect",
+          "Parler plus fort que le prospect",
+          "Utiliser un accent"
+        ],
+        "correct_index": 1,
+        "explication": "Analytique = calme et posé. Émotif = dynamique et engagé."
+      },
+      {
+        "question": "Après l'annonce du prix, le closer doit parler...",
+        "contexte": "",
+        "options": [
+          "Immédiatement pour justifier",
+          "Pas du tout — silence total",
+          "Pour proposer une réduction",
+          "Pour lister les bonus"
+        ],
+        "correct_index": 1,
+        "explication": "SILENCE TOTAL. Compter jusqu'à 10 mentalement."
+      },
+      {
+        "question": "Si le prospect soupire après le prix, le closer doit...",
+        "contexte": "",
+        "options": [
+          "Baisser le prix",
+          "Respecter le silence et attendre qu'il parle",
+          "S'excuser",
+          "Proposer un paiement en plusieurs fois"
+        ],
+        "correct_index": 1,
+        "explication": "Le silence fait son travail. Le prospect finira par parler."
+      },
+      {
+        "question": "Le ton à adopter pour annoncer le prix est...",
+        "contexte": "",
+        "options": [
+          "Excité et enthousiaste",
+          "Neutre et descendant, comme si tu annonçais l'heure",
+          "Hésitant pour tester",
+          "Rapide pour passer vite"
+        ],
+        "correct_index": 1,
+        "explication": "Pas d'hésitation, pas d'excitation. Neutre et descendant."
+      },
+      {
+        "question": "Face à un prospect émotif, la voix du closer doit...",
+        "contexte": "",
+        "options": [
+          "Rester rapide et dynamique",
+          "Baisser le rythme de 50%, pauses longues",
+          "S'accélérer pour le motiver",
+          "Devenir très forte"
+        ],
+        "correct_index": 1,
+        "explication": "Baisser le rythme, pauses longues, laisser l'émotion s'exprimer."
+      },
+      {
+        "question": "Le silence du prospect après le prix signifie souvent...",
+        "contexte": "",
+        "options": [
+          "Qu'il a raccroché",
+          "Qu'il réfléchit — c'est bon signe",
+          "Qu'il n'est pas intéressé",
+          "Qu'il attend une réduction"
+        ],
+        "correct_index": 1,
+        "explication": "Le silence est le signe que le prospect traite l'information."
+      },
+      {
+        "question": "« Tu es encore là ? Qu'est-ce qui se passe pour toi ? » est utilisé quand...",
+        "contexte": "",
+        "options": [
+          "Le prospect parle trop",
+          "Le prospect est silencieux depuis longtemps",
+          "Le prospect dit non",
+          "Le closer veut raccrocher"
+        ],
+        "correct_index": 1,
+        "explication": "Voix douce après un long silence du prospect."
+      },
+      {
+        "question": "Le close final doit être dit avec...",
+        "contexte": "",
+        "options": [
+          "Hésitation",
+          "Ton descendant + conviction + silence",
+          "Volume maximum",
+          "Rapidité"
+        ],
+        "correct_index": 1,
+        "explication": "« Qu'est-ce que tu décides ? » puis silence total."
+      },
+      {
+        "question": "Les pauses stratégiques après une question puissante durent...",
+        "contexte": "",
+        "options": [
+          "0 secondes",
+          "3-5 secondes",
+          "30 secondes",
+          "2 minutes"
+        ],
+        "correct_index": 1,
+        "explication": "3-5 secondes = le prospect réfléchit en profondeur."
+      },
+      {
+        "question": "L'exercice quotidien recommandé pour la tonalité est...",
+        "contexte": "",
+        "options": [
+          "Lire à voix haute",
+          "S'enregistrer sur 3 appels et réécouter en se concentrant sur la voix",
+          "Chanter",
+          "Parler devant un miroir"
+        ],
+        "correct_index": 1,
+        "explication": "Réécouter sa propre voix est le meilleur exercice."
+      },
+      {
+        "question": "Baisser le volume de la voix crée...",
+        "contexte": "",
+        "options": [
+          "De la confusion",
+          "De l'intimité et de la confiance",
+          "De la distance",
+          "De l'ennui"
+        ],
+        "correct_index": 1,
+        "explication": "Le prospect se rapproche quand la voix baisse."
+      },
+      {
+        "question": "Le rythme variable sert à...",
+        "contexte": "",
+        "options": [
+          "Parler plus vite",
+          "Accélérer sur les détails secondaires, ralentir sur les points clés",
+          "Garder un débit constant",
+          "Impressionner"
+        ],
+        "correct_index": 1,
+        "explication": "Le contraste crée l'attention."
+      },
+      {
+        "question": "La voix sur les moments de douleur du prospect doit être...",
+        "contexte": "",
+        "options": [
+          "Forte et dynamique",
+          "Plus basse, plus lente, empathique",
+          "Rapide et efficace",
+          "Neutre et froide"
+        ],
+        "correct_index": 1,
+        "explication": "Jamais de ton commercial quand le prospect parle de sa souffrance."
+      },
+      {
+        "question": "L'ancrage fonctionne parce que...",
+        "contexte": "",
+        "options": [
+          "Les gens aiment les gros chiffres",
+          "Le premier prix entendu sert de référence pour juger les suivants",
+          "C'est de la manipulation",
+          "Le prospect ne calcule pas"
+        ],
+        "correct_index": 1,
+        "explication": "Le point de référence élevé fait paraître le vrai prix raisonnable."
+      },
+      {
+        "question": "« L'investissement c'est 2 500€ » est meilleur que « Ça coûte 2 500€ » parce que...",
+        "contexte": "",
+        "options": [
+          "C'est plus poli",
+          "« Investissement » sous-entend un retour, « coût » sous-entend une perte",
+          "C'est plus court",
+          "C'est la même chose"
+        ],
+        "correct_index": 1,
+        "explication": "Les mots changent la perception du prix."
+      },
+      {
+        "question": "Quand le prospect dit « C'est beaucoup... mais concrètement comment ça se passe ? » après un silence...",
+        "contexte": "",
+        "options": [
+          "Le silence a échoué",
+          "Le silence a fonctionné — le prospect passe de la résistance à la curiosité",
+          "Il faut baisser le prix",
+          "Il faut raccrocher"
+        ],
+        "correct_index": 1,
+        "explication": "Le silence transforme la résistance en question — c'est positif."
+      },
+      {
+        "question": "Le confirmation miroir se termine par...",
+        "contexte": "",
+        "options": [
+          "Le prix",
+          "« C'est bien ça ? » pour obtenir la validation du prospect",
+          "Un silence",
+          "Une relance"
+        ],
+        "correct_index": 1,
+        "explication": "Le « oui » du prospect valide tout le diagnostic avant l'offre."
+      },
+      {
+        "question": "Présenter l'offre en transformation signifie...",
+        "contexte": "",
+        "options": [
+          "Lister les modules",
+          "Montrer le résultat final, pas les fonctionnalités",
+          "Exagérer les résultats",
+          "Donner des garanties"
+        ],
+        "correct_index": 1,
+        "explication": "« Tu passeras de 2K à 8K/mois » pas « Tu auras 12 modules »."
+      },
+      {
+        "question": "Quelle est la durée de la phase Prix + Silence ?",
+        "contexte": "",
+        "options": [
+          "10-15 minutes",
+          "Environ 1 minute",
+          "30 secondes",
+          "5 minutes"
+        ],
+        "correct_index": 1,
+        "explication": "Annonce + silence = environ 1 minute."
+      },
+      {
+        "question": "Le mirroring vocal avec un profil analytique implique...",
+        "contexte": "",
+        "options": [
+          "Être très dynamique",
+          "Être calme, posé, factuel",
+          "Parler très fort",
+          "Être émotionnel"
+        ],
+        "correct_index": 1,
+        "explication": "Analytique = calme et posé. Données et logique."
+      },
+      {
+        "question": "Le mirroring vocal avec un profil émotif implique...",
+        "contexte": "",
+        "options": [
+          "Être monotone",
+          "Être dynamique, engagé, enthousiaste",
+          "Être très lent",
+          "Être froid"
+        ],
+        "correct_index": 1,
+        "explication": "Émotif = dynamique, enthousiaste, connecté aux émotions."
+      },
+      {
+        "question": "Qu'est-ce qui différencie le cas Kofi du cas Ibrahim ?",
+        "contexte": "",
+        "options": [
+          "Rien, c'est le même",
+          "Kofi illustre le silence après le prix + l'échelle 1-10, Ibrahim illustre le calcul ROI",
+          "Le prix de l'offre",
+          "Le secteur"
+        ],
+        "correct_index": 1,
+        "explication": "Deux techniques différentes pour deux situations différentes."
+      },
+      {
+        "question": "Quand un prospect est convaincu à 9/10 mais hésite...",
+        "contexte": "",
+        "options": [
+          "Utiliser le Takeaway Close",
+          "Une simple question directe suffit",
+          "Baisser le prix",
+          "Prolonger le diagnostic"
+        ],
+        "correct_index": 1,
+        "explication": "À 9/10, pas besoin de technique lourde."
+      },
+      {
+        "question": "Le langage du closer doit être...",
+        "contexte": "",
+        "options": [
+          "Technique et complexe",
+          "Le vocabulaire exact du prospect repris dans l'offre",
+          "Standardisé et identique pour tous",
+          "Le plus commercial possible"
+        ],
+        "correct_index": 1,
+        "explication": "Reprendre les mots du prospect crée la connexion."
+      },
+      {
+        "question": "La tonalité est le facteur décisif parce que...",
+        "contexte": "",
+        "options": [
+          "Le prospect ne comprend pas les mots",
+          "C'est le ton qui communique la conviction, pas les mots seuls",
+          "C'est une tradition",
+          "Les mots n'ont pas d'importance"
+        ],
+        "correct_index": 1,
+        "explication": "La même phrase dite avec deux tons différents produit deux résultats différents."
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Closing — M6 Gestion des Objections — 12 Scripts",
+    "description": "Quiz de validation du module 6 de la formation Closing.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "2d00870b-652a-4948-9f47-83bc3a444561",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Une objection est...",
+        "contexte": "",
+        "options": [
+          "Un refus définitif",
+          "Une manière pour le prospect de se protéger",
+          "Une tentative de négociation",
+          "Un signe de désintérêt"
+        ],
+        "correct_index": 1,
+        "explication": "Une objection est un mécanisme de protection instinctif."
+      },
+      {
+        "question": "Quand un prospect objecte, le cerveau instinctif se met en mode...",
+        "contexte": "",
+        "options": [
+          "Achat",
+          "Combat ou fuite",
+          "Réflexion",
+          "Négociation"
+        ],
+        "correct_index": 1,
+        "explication": "Le cerveau instinctif perçoit une menace et se protège."
+      },
+      {
+        "question": "La formule ACE signifie...",
+        "contexte": "",
+        "options": [
+          "Attaquer, Convaincre, Enchaîner",
+          "Accuser réception, Clarifier, Explorer",
+          "Analyser, Calculer, Évaluer",
+          "Anticiper, Cadrer, Exposer"
+        ],
+        "correct_index": 1,
+        "explication": "ACE = Accuser réception → Clarifier → Explorer."
+      },
+      {
+        "question": "La règle absolue face à une objection est de...",
+        "contexte": "",
+        "options": [
+          "Argumenter immédiatement",
+          "Ne jamais combattre — toujours explorer",
+          "Baisser le prix",
+          "Raccrocher"
+        ],
+        "correct_index": 1,
+        "explication": "Ne jamais combattre une objection. Toujours explorer."
+      },
+      {
+        "question": "Quelles sont les 3 catégories d'objections ?",
+        "contexte": "",
+        "options": [
+          "Temps, argent, besoin",
+          "Incertitude, prix, support",
+          "Peur, doute, refus",
+          "Budget, timing, intérêt"
+        ],
+        "correct_index": 1,
+        "explication": "Incertitude (la plus complexe), prix, support (conjoint/associé)."
+      },
+      {
+        "question": "Quelle est l'objection la plus compliquée à traiter ?",
+        "contexte": "",
+        "options": [
+          "Le prix",
+          "L'incertitude (le prospect ne croit pas au produit)",
+          "Le support (en parler au conjoint)",
+          "Le timing"
+        ],
+        "correct_index": 1,
+        "explication": "L'incertitude est la plus complexe car elle touche à la confiance."
+      },
+      {
+        "question": "« Par rapport à quoi c'est trop cher ? » est la réponse à l'objection...",
+        "contexte": "",
+        "options": [
+          "De timing",
+          "De prix",
+          "D'incertitude",
+          "De support"
+        ],
+        "correct_index": 1,
+        "explication": "Recadrer le prix en demandant un point de comparaison."
+      },
+      {
+        "question": "« Sur quoi tu hésites exactement ? » est la réponse à...",
+        "contexte": "",
+        "options": [
+          "« C'est trop cher »",
+          "« Laisse-moi y réfléchir »",
+          "« En parler au conjoint »",
+          "« Pas le bon moment »"
+        ],
+        "correct_index": 1,
+        "explication": "Identifier la vraie raison derrière « y réfléchir »."
+      },
+      {
+        "question": "L'échelle de 1 à 10 sert à...",
+        "contexte": "",
+        "options": [
+          "Noter le closer",
+          "Mesurer la certitude du prospect et identifier ce qui manque",
+          "Évaluer l'offre",
+          "Calculer le ROI"
+        ],
+        "correct_index": 1,
+        "explication": "« À quel point es-tu sûr(e) ? » + « Qu'est-ce qui te manque pour être à 9 ou 10 ? »"
+      },
+      {
+        "question": "Si le prospect est à 9 ou 10/10 sur l'échelle...",
+        "contexte": "",
+        "options": [
+          "Il faut continuer à argumenter",
+          "Passer directement au close",
+          "Recommencer le diagnostic",
+          "Proposer une réduction"
+        ],
+        "correct_index": 1,
+        "explication": "À 9-10/10, closer immédiatement."
+      },
+      {
+        "question": "Si le prospect est à 6/10 sur l'échelle, la question est...",
+        "contexte": "",
+        "options": [
+          "« Pourquoi pas 10 ? »",
+          "« Qu'est-ce qui t'empêche d'être à 9 ou 10 ? »",
+          "« Tu veux qu'on baisse le prix ? »",
+          "« On rappelle demain ? »"
+        ],
+        "correct_index": 1,
+        "explication": "Identifier ce qui manque pour monter à 9-10."
+      },
+      {
+        "question": "Les 3 leviers pour augmenter la certitude sont...",
+        "contexte": "",
+        "options": [
+          "Prix, bonus, garantie",
+          "Conviction/énergie, témoignages, logique/démonstration",
+          "Pression, urgence, rareté",
+          "Réduction, facilités, cadeau"
+        ],
+        "correct_index": 1,
+        "explication": "Conviction + témoignages clients + logique rationnelle."
+      },
+      {
+        "question": "Après avoir traité une objection, il faut...",
+        "contexte": "",
+        "options": [
+          "Passer au prix",
+          "Reposer l'échelle : « Tu te situes à combien maintenant ? »",
+          "Changer de sujet",
+          "Raccrocher"
+        ],
+        "correct_index": 1,
+        "explication": "Vérifier si la certitude a augmenté."
+      },
+      {
+        "question": "La structure complète de contre-objection comporte...",
+        "contexte": "",
+        "options": [
+          "2 étapes",
+          "3 étapes",
+          "4 étapes (annonce du prix → échelle → clarifier → closer)",
+          "5 étapes"
+        ],
+        "correct_index": 2,
+        "explication": "Prix → Échelle → Clarifier/traiter → Closer."
+      },
+      {
+        "question": "Face à « Je dois en parler à mon conjoint », la réponse est...",
+        "contexte": "",
+        "options": [
+          "« D'accord, rappelle-moi »",
+          "« On peut faire l'appel ensemble ? Si il/elle dit oui, tu es prêt(e) ? »",
+          "« Ton conjoint ne comprendra pas »",
+          "« C'est une excuse »"
+        ],
+        "correct_index": 1,
+        "explication": "Proposer d'inclure le décisionnaire."
+      },
+      {
+        "question": "Face à « J'ai déjà essayé et ça n'a pas marché »...",
+        "contexte": "",
+        "options": [
+          "« Cette fois ce sera différent »",
+          "« Qu'est-ce qui n'a pas fonctionné précisément ? »",
+          "« On est meilleurs que les autres »",
+          "« Oublie le passé »"
+        ],
+        "correct_index": 1,
+        "explication": "Identifier ce qui n'a pas marché pour se différencier."
+      },
+      {
+        "question": "Face à « Ce n'est pas le bon moment »...",
+        "contexte": "",
+        "options": [
+          "« D'accord, rappelle quand tu veux »",
+          "« Quel serait le bon moment ? Comment tu sauras ? »",
+          "« C'est maintenant ou jamais »",
+          "« Je comprends »"
+        ],
+        "correct_index": 1,
+        "explication": "Faire réaliser qu'il n'y a jamais de « bon moment » parfait."
+      },
+      {
+        "question": "Toutes les objections se ramènent à une seule chose :",
+        "contexte": "",
+        "options": [
+          "Le prix",
+          "L'incertitude",
+          "Le timing",
+          "Le besoin"
+        ],
+        "correct_index": 1,
+        "explication": "Toutes les objections se ramènent à l'incertitude. Maîtrise-la."
+      },
+      {
+        "question": "80% du close est joué...",
+        "contexte": "",
+        "options": [
+          "Au moment du prix",
+          "Avant même d'avoir annoncé le prix",
+          "Pendant les objections",
+          "À la fin de l'appel"
+        ],
+        "correct_index": 1,
+        "explication": "Le diagnostic et la confiance construits avant le prix font tout."
+      },
+      {
+        "question": "Le prospect qui dit « laisse-moi y réfléchir » est généralement...",
+        "contexte": "",
+        "options": [
+          "Sincère",
+          "En train de chercher une sortie polie",
+          "Intéressé mais veut comparer",
+          "En train de calculer"
+        ],
+        "correct_index": 1,
+        "explication": "« Y réfléchir » cache toujours autre chose."
+      },
+      {
+        "question": "La garantie est un levier de...",
+        "contexte": "",
+        "options": [
+          "Prix",
+          "Certitude — elle annule le risque perçu",
+          "Support",
+          "Timing"
+        ],
+        "correct_index": 1,
+        "explication": "La garantie augmente la certitude en réduisant le risque."
+      },
+      {
+        "question": "Face à un prospect silencieux après une objection traitée...",
+        "contexte": "",
+        "options": [
+          "Raccrocher",
+          "Voix douce : « Tu es encore là ? Qu'est-ce qui se passe pour toi ? »",
+          "Parler plus fort",
+          "Changer de sujet"
+        ],
+        "correct_index": 1,
+        "explication": "Le silence après le traitement d'objection est normal — patience."
+      },
+      {
+        "question": "L'étape 2C (clarifier la vraie objection) consiste à...",
+        "contexte": "",
+        "options": [
+          "Deviner ce que pense le prospect",
+          "Isoler la vraie objection puis traiter avec les 3 leviers",
+          "Abandonner si c'est trop compliqué",
+          "Proposer une réduction"
+        ],
+        "correct_index": 1,
+        "explication": "Isoler → Traiter → Reposer l'échelle."
+      },
+      {
+        "question": "Si après le traitement l'échelle est toujours sous 9/10...",
+        "contexte": "",
+        "options": [
+          "Abandonner",
+          "Recommencer le cycle ou présenter la garantie",
+          "Baisser le prix",
+          "Prolonger l'appel de 2h"
+        ],
+        "correct_index": 1,
+        "explication": "Le cycle peut être recommencé ou renforcé par la garantie."
+      },
+      {
+        "question": "Les résultats promis dans le script doivent être...",
+        "contexte": "",
+        "options": [
+          "Vagues et généraux",
+          "Spécifiques : « 7 kilos en 90 jours » pas « les résultats »",
+          "Exagérés pour impressionner",
+          "Sous-estimés pour être prudent"
+        ],
+        "correct_index": 1,
+        "explication": "La spécificité crée la crédibilité."
+      },
+      {
+        "question": "Face à « Si ça ne marche pas ? »...",
+        "contexte": "",
+        "options": [
+          "« Ça marchera forcément »",
+          "« Qu'est-ce qui ferait que ça ne marcherait pas ? C'est pour ça qu'on a la garantie. »",
+          "« On te rembourse »",
+          "« Tu n'as qu'à essayer »"
+        ],
+        "correct_index": 1,
+        "explication": "Explorer la peur puis rassurer avec la garantie."
+      },
+      {
+        "question": "L'objection de support (conjoint/associé) cache souvent...",
+        "contexte": "",
+        "options": [
+          "Un vrai besoin de consulter",
+          "Un manque de confiance ou une peur de décider seul",
+          "Un problème juridique",
+          "Un budget insuffisant"
+        ],
+        "correct_index": 1,
+        "explication": "Souvent c'est une excuse pour ne pas décider sur le moment."
+      },
+      {
+        "question": "Face à « Pas convaincu(e) »...",
+        "contexte": "",
+        "options": [
+          "« Pourtant c'est bien »",
+          "« Qu'est-ce qui te ferait passer à 10/10 ? »",
+          "« Tant pis »",
+          "« Je te renvoie la présentation »"
+        ],
+        "correct_index": 1,
+        "explication": "Identifier précisément ce qui manque pour convaincre."
+      },
+      {
+        "question": "Combien de scripts d'objection sont enseignés dans la formation ?",
+        "contexte": "",
+        "options": [
+          "5",
+          "8",
+          "12",
+          "21"
+        ],
+        "correct_index": 2,
+        "explication": "12 scripts de base + la version étendue en ressource."
+      },
+      {
+        "question": "Le scénario Lina illustre...",
+        "contexte": "",
+        "options": [
+          "Le prix comme objection",
+          "Le Futur Pacing + Histoire Miroir contre la peur de l'échec",
+          "L'abandon d'un prospect",
+          "La négociation"
+        ],
+        "correct_index": 1,
+        "explication": "Lina utilise l'émotion pour traiter une objection de confiance."
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Closing — M7 Techniques de Closing",
+    "description": "Quiz de validation du module 7 de la formation Closing.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "7c484bf5-c86b-4738-9ccb-b066b2cf48a5",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Combien de techniques de closing sont enseignées ?",
+        "contexte": "",
+        "options": [
+          "3",
+          "4",
+          "6",
+          "10"
+        ],
+        "correct_index": 2,
+        "explication": "Question directe, Summary, Alternative, Futur Pacing, Histoire Miroir, Takeaway."
+      },
+      {
+        "question": "La question directe consiste à...",
+        "contexte": "",
+        "options": [
+          "Poser 10 questions d'affilée",
+          "Demander simplement « Qu'est-ce que tu décides ? » puis silence",
+          "Questionner le budget",
+          "Demander une note sur 10"
+        ],
+        "correct_index": 1,
+        "explication": "Simple, direct, efficace. Pour les profils analytiques."
+      },
+      {
+        "question": "Le Summary Close consiste à...",
+        "contexte": "",
+        "options": [
+          "Résumer le prix",
+          "Résumer la situation + la douleur + la solution et demander validation",
+          "Résumer les bonus",
+          "Résumer les objections"
+        ],
+        "correct_index": 1,
+        "explication": "« Vu tout ça, est-ce que c'est la bonne décision ? »"
+      },
+      {
+        "question": "L'Alternative Close consiste à...",
+        "contexte": "",
+        "options": [
+          "Donner le choix entre acheter ou pas",
+          "Donner le choix entre deux options (pas entre oui et non)",
+          "Proposer deux prix",
+          "Alterner les techniques"
+        ],
+        "correct_index": 1,
+        "explication": "« Tu préfères le paiement en 3 ou en 6 fois ? »"
+      },
+      {
+        "question": "Le Futur Pacing consiste à...",
+        "contexte": "",
+        "options": [
+          "Parler du passé du prospect",
+          "Créer une image mentale du succès futur",
+          "Pacer son discours",
+          "Accélérer le closing"
+        ],
+        "correct_index": 1,
+        "explication": "« Imagine dans 90 jours. Comment tu te sens ? »"
+      },
+      {
+        "question": "L'Histoire Miroir consiste à...",
+        "contexte": "",
+        "options": [
+          "Raconter sa propre vie",
+          "Raconter l'histoire d'un client dans une situation similaire",
+          "Copier les gestes du prospect",
+          "Lire des témoignages"
+        ],
+        "correct_index": 1,
+        "explication": "Le prospect se reconnaît et projette le même résultat."
+      },
+      {
+        "question": "Le Takeaway Close consiste à...",
+        "contexte": "",
+        "options": [
+          "Donner des cadeaux",
+          "Retirer l'offre pour créer un sursaut",
+          "Emporter le contrat",
+          "Raccrocher"
+        ],
+        "correct_index": 1,
+        "explication": "« Je ne suis pas sûr que ce soit pour toi » → le prospect se bat pour rester."
+      },
+      {
+        "question": "Le Takeaway Close doit être utilisé...",
+        "contexte": "",
+        "options": [
+          "À chaque appel",
+          "Uniquement quand rien d'autre ne fonctionne et que l'intérêt est réel",
+          "En début d'appel",
+          "Avec tous les prospects"
+        ],
+        "correct_index": 1,
+        "explication": "Dernier recours quand l'intérêt est bloqué."
+      },
+      {
+        "question": "Pour un profil analytique, les techniques recommandées sont...",
+        "contexte": "",
+        "options": [
+          "Futur Pacing + Histoire Miroir",
+          "Question directe + Summary Close",
+          "Takeaway + Alternative",
+          "Toutes en même temps"
+        ],
+        "correct_index": 1,
+        "explication": "L'analytique a besoin de logique et de clarté."
+      },
+      {
+        "question": "Pour un profil émotif, les techniques recommandées sont...",
+        "contexte": "",
+        "options": [
+          "Question directe + Summary",
+          "Futur Pacing + Histoire Miroir",
+          "Takeaway + Alternative",
+          "Aucune technique spécifique"
+        ],
+        "correct_index": 1,
+        "explication": "L'émotif a besoin de ressentir le résultat."
+      },
+      {
+        "question": "Seules 3 choses devraient sortir de la bouche d'un closer :",
+        "contexte": "",
+        "options": [
+          "Prix, garantie, bonus",
+          "Questions, reformulations, histoires",
+          "Arguments, preuves, données",
+          "Compliments, promesses, urgence"
+        ],
+        "correct_index": 1,
+        "explication": "Si ce n'est ni une question, ni une reformulation, ni une histoire — ne le dis pas."
+      },
+      {
+        "question": "Le pacing en communication consiste à...",
+        "contexte": "",
+        "options": [
+          "Parler vite",
+          "Se synchroniser avec le rythme et l'état émotionnel du prospect",
+          "Marcher en parlant",
+          "Dicter le rythme"
+        ],
+        "correct_index": 1,
+        "explication": "Pacing = se synchroniser d'abord."
+      },
+      {
+        "question": "Le leading en communication consiste à...",
+        "contexte": "",
+        "options": [
+          "Diriger la conversation de force",
+          "Guider progressivement le prospect vers la décision après le pacing",
+          "Parler avant le prospect",
+          "Imposer son point de vue"
+        ],
+        "correct_index": 1,
+        "explication": "Pacing puis leading = synchroniser puis guider."
+      },
+      {
+        "question": "La visio est prioritaire sur le téléphone parce que...",
+        "contexte": "",
+        "options": [
+          "C'est plus rapide",
+          "Le langage corporel et les expressions faciales renforcent la confiance",
+          "C'est à la mode",
+          "Le prospect préfère"
+        ],
+        "correct_index": 1,
+        "explication": "La visio ajoute le non-verbal qui renforce la connexion."
+      },
+      {
+        "question": "Le scénario Samir illustre...",
+        "contexte": "",
+        "options": [
+          "Le Takeaway Close",
+          "La sélection de technique selon le profil du prospect",
+          "L'abandon d'un prospect",
+          "Le prix"
+        ],
+        "correct_index": 1,
+        "explication": "Samir choisit le Futur Pacing parce que le profil de Fatima est émotif."
+      },
+      {
+        "question": "Le scénario Mehdi illustre...",
+        "contexte": "",
+        "options": [
+          "Le Summary Close",
+          "Le Takeaway Close quand rien ne fonctionne",
+          "Le Futur Pacing",
+          "La question directe"
+        ],
+        "correct_index": 1,
+        "explication": "Mehdi retire l'offre — le prospect se bat pour rester."
+      },
+      {
+        "question": "Si le prospect est convaincu à 9/10, la technique la plus adaptée est...",
+        "contexte": "",
+        "options": [
+          "Le Takeaway Close",
+          "La question directe (simple et efficace)",
+          "Le Summary Close détaillé",
+          "L'Alternative Close"
+        ],
+        "correct_index": 1,
+        "explication": "À 9/10, pas besoin de technique lourde."
+      },
+      {
+        "question": "La reformulation sert à...",
+        "contexte": "",
+        "options": [
+          "Gagner du temps",
+          "Montrer que tu écoutes et valider ta compréhension",
+          "Changer le sujet",
+          "Impressionner le prospect"
+        ],
+        "correct_index": 1,
+        "explication": "La reformulation est un outil de connexion et de validation."
+      },
+      {
+        "question": "Les histoires en closing servent à...",
+        "contexte": "",
+        "options": [
+          "Divertir",
+          "Illustrer, rassurer et créer l'identification",
+          "Remplir les silences",
+          "Montrer son expérience"
+        ],
+        "correct_index": 1,
+        "explication": "Le prospect se projette dans l'histoire d'un autre client."
+      },
+      {
+        "question": "Le pacing/leading fonctionne parce que...",
+        "contexte": "",
+        "options": [
+          "Le prospect obéit",
+          "Le prospect suit naturellement quelqu'un qui l'a d'abord compris",
+          "C'est de la manipulation",
+          "Le prospect est fatigué"
+        ],
+        "correct_index": 1,
+        "explication": "Se synchroniser d'abord crée la confiance, puis guider devient naturel."
+      },
+      {
+        "question": "En visio, le closer doit...",
+        "contexte": "",
+        "options": [
+          "Regarder son écran",
+          "Regarder la caméra pour maintenir le contact visuel",
+          "Couper sa caméra",
+          "Lire son script à voix haute"
+        ],
+        "correct_index": 1,
+        "explication": "Le contact visuel en visio = regarder la caméra."
+      },
+      {
+        "question": "L'Alternative Close est efficace avec les profils hésitants parce que...",
+        "contexte": "",
+        "options": [
+          "Elle force la décision",
+          "Elle remplace le oui/non par un choix entre deux options positives",
+          "Elle baisse le prix",
+          "Elle crée de l'urgence"
+        ],
+        "correct_index": 1,
+        "explication": "Le choix guidé élimine le « non » comme option."
+      },
+      {
+        "question": "Le Futur Pacing est efficace parce que...",
+        "contexte": "",
+        "options": [
+          "Il crée de la pression",
+          "Le prospect ressent émotionnellement le succès futur",
+          "Il est rapide",
+          "Il impressionne"
+        ],
+        "correct_index": 1,
+        "explication": "L'image mentale du succès active le désir."
+      },
+      {
+        "question": "Quand Mehdi dit « Je ne suis pas sûr que ce soit pour toi »...",
+        "contexte": "",
+        "options": [
+          "Il abandonne le prospect",
+          "Il inverse la dynamique — le prospect se bat pour rester",
+          "Il est honnête",
+          "Il manque de conviction"
+        ],
+        "correct_index": 1,
+        "explication": "Le Takeaway crée le sursaut : c'est le prospect qui convainc le closer."
+      },
+      {
+        "question": "Les questions en closing servent à...",
+        "contexte": "",
+        "options": [
+          "Vendre",
+          "Comprendre, diagnostiquer et explorer les objections",
+          "Impressionner",
+          "Gagner du temps"
+        ],
+        "correct_index": 1,
+        "explication": "Poser des questions = comprendre, pas vendre."
+      },
+      {
+        "question": "L'erreur la plus courante en closing est de...",
+        "contexte": "",
+        "options": [
+          "Poser trop de questions",
+          "Ne pas demander la décision",
+          "Être trop silencieux",
+          "Écouter trop"
+        ],
+        "correct_index": 1,
+        "explication": "Si tu ne demandes pas, tu n'obtiendras pas."
+      },
+      {
+        "question": "Le combo Futur Pacing + Question directe est utilisé quand...",
+        "contexte": "",
+        "options": [
+          "Le prospect est analytique",
+          "Le prospect est émotif et presque convaincu",
+          "Le prospect refuse",
+          "Le closer est pressé"
+        ],
+        "correct_index": 1,
+        "explication": "Émotion (Futur Pacing) + closure (Question directe) = combo efficace."
+      },
+      {
+        "question": "Rendre la transformation simple signifie...",
+        "contexte": "",
+        "options": [
+          "Baisser le prix",
+          "Montrer que le chemin est facile et accessible, comme Amazon/Netflix",
+          "Simplifier l'offre",
+          "Réduire la durée"
+        ],
+        "correct_index": 1,
+        "explication": "Plus la transformation perçue est simple, plus le prospect avance."
+      },
+      {
+        "question": "La garantie dans le closing sert à...",
+        "contexte": "",
+        "options": [
+          "Donner une impression de qualité",
+          "Annuler le risque perçu et augmenter la certitude",
+          "Respecter la loi",
+          "Concurrencer les autres"
+        ],
+        "correct_index": 1,
+        "explication": "La garantie est un accélérateur de décision."
+      },
+      {
+        "question": "Le pacing/leading est une technique de...",
+        "contexte": "",
+        "options": [
+          "Manipulation",
+          "Communication authentique qui crée la confiance avant de guider",
+          "Vente agressive",
+          "Marketing"
+        ],
+        "correct_index": 1,
+        "explication": "Se synchroniser = confiance. Guider = naturel."
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Closing — M8 KPIs, Éthique & Progression",
+    "description": "Quiz de validation du module 8 de la formation Closing.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "860abbef-9a48-4d2d-bc4e-1f068eb25bb0",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Quel est le taux de closing visé pour un débutant (mois 1-2) ?",
+        "contexte": "",
+        "options": [
+          "5-10%",
+          "10-15%",
+          "25-35%",
+          "50%"
+        ],
+        "correct_index": 1,
+        "explication": "Taux visé débutant : 10-15%."
+      },
+      {
+        "question": "Quel est le taux de closing visé en phase intermédiaire (mois 3-4) ?",
+        "contexte": "",
+        "options": [
+          "10-15%",
+          "15-25%",
+          "25-35%",
+          "35-50%"
+        ],
+        "correct_index": 2,
+        "explication": "Taux visé intermédiaire : 25-35%."
+      },
+      {
+        "question": "Quel est le taux de closing visé en phase avancée (mois 5+) ?",
+        "contexte": "",
+        "options": [
+          "25-35%",
+          "30-40%",
+          "35-50%",
+          "50-70%"
+        ],
+        "correct_index": 2,
+        "explication": "Taux visé avancé : 35-50%."
+      },
+      {
+        "question": "Le plateau normal arrive vers...",
+        "contexte": "",
+        "options": [
+          "Semaine 1-2",
+          "Semaine 3-4",
+          "Semaine 5-6",
+          "Mois 3"
+        ],
+        "correct_index": 2,
+        "explication": "Plateau semaine 5-6 : ton taux peut stagner, c'est normal."
+      },
+      {
+        "question": "Quand le taux stagne, c'est le signe que...",
+        "contexte": "",
+        "options": [
+          "Tu régresses",
+          "Tu développes ton style personnel",
+          "Tu dois tout changer",
+          "Tu dois arrêter"
+        ],
+        "correct_index": 1,
+        "explication": "Le plateau est le signe que tu développes ton style."
+      },
+      {
+        "question": "L'erreur fatale n°1 est...",
+        "contexte": "",
+        "options": [
+          "Parler trop",
+          "Pitcher avant d'avoir diagnostiqué",
+          "Ne pas closer",
+          "Remplir les silences"
+        ],
+        "correct_index": 1,
+        "explication": "Tu ne sais pas encore ce que le prospect veut."
+      },
+      {
+        "question": "L'erreur fatale n°2 est...",
+        "contexte": "",
+        "options": [
+          "Pitcher trop tôt",
+          "Parler plus de 30% du temps",
+          "Ne pas enregistrer",
+          "Céder sur le prix"
+        ],
+        "correct_index": 1,
+        "explication": "Un closer qui parle trop ferme mal. Règle 70/30."
+      },
+      {
+        "question": "L'erreur fatale n°3 est...",
+        "contexte": "",
+        "options": [
+          "Parler trop",
+          "Pitcher trop tôt",
+          "Remplir les silences",
+          "Prendre les refus personnellement"
+        ],
+        "correct_index": 2,
+        "explication": "Le silence est ton arme n°1, pas ton ennemi."
+      },
+      {
+        "question": "Combien d'erreurs fatales sont enseignées ?",
+        "contexte": "",
+        "options": [
+          "5",
+          "7",
+          "10",
+          "15"
+        ],
+        "correct_index": 2,
+        "explication": "Les 10 erreurs fatales du closer."
+      },
+      {
+        "question": "Enregistrer ses appels est important parce que...",
+        "contexte": "",
+        "options": [
+          "C'est obligatoire légalement",
+          "Impossible de progresser sans feedback objectif",
+          "Le prospect le demande",
+          "C'est à la mode"
+        ],
+        "correct_index": 1,
+        "explication": "Sans réécoute, pas de progression mesurable."
+      },
+      {
+        "question": "Le plan de progression sur 90 jours se divise en...",
+        "contexte": "",
+        "options": [
+          "2 phases",
+          "3 phases",
+          "4 phases",
+          "5 phases"
+        ],
+        "correct_index": 1,
+        "explication": "Mois 1-2 (bases), mois 3-4 (consolidation), mois 5-6 (maîtrise)."
+      },
+      {
+        "question": "En mois 1-2, l'objectif principal est de...",
+        "contexte": "",
+        "options": [
+          "Closer à 50%",
+          "Apprendre les scripts + 5 role plays/jour + enregistrer chaque appel",
+          "Former d'autres closers",
+          "Créer son propre script"
+        ],
+        "correct_index": 1,
+        "explication": "Phase d'apprentissage : scripts, pratique, enregistrement."
+      },
+      {
+        "question": "En mois 3-4, l'objectif est de...",
+        "contexte": "",
+        "options": [
+          "Continuer les scripts de base",
+          "Maîtriser 12 objections sans script + analyser 3 zones/semaine",
+          "Former une équipe",
+          "Changer d'offre"
+        ],
+        "correct_index": 1,
+        "explication": "Phase de consolidation : sans filet + auto-analyse."
+      },
+      {
+        "question": "En mois 5+, le closer doit...",
+        "contexte": "",
+        "options": [
+          "Revenir aux bases",
+          "Adapter le script à son style + pré-anticiper les objections + former d'autres closers",
+          "Arrêter de s'enregistrer",
+          "Tout automatiser"
+        ],
+        "correct_index": 1,
+        "explication": "Phase de maîtrise : style personnel + mentorat."
+      },
+      {
+        "question": "La grille d'analyse d'un appel doit être remplie...",
+        "contexte": "",
+        "options": [
+          "Une fois par semaine",
+          "Après chaque appel pendant 30 jours",
+          "Une fois par mois",
+          "Jamais, c'est optionnel"
+        ],
+        "correct_index": 1,
+        "explication": "La progression est mesurable dès la semaine 2."
+      },
+      {
+        "question": "Le ratio de parole à surveiller est...",
+        "contexte": "",
+        "options": [
+          "50/50",
+          "70/30 (prospect/closer)",
+          "80/20",
+          "60/40"
+        ],
+        "correct_index": 1,
+        "explication": "Si le closer parle plus de 30%, il parle trop."
+      },
+      {
+        "question": "Que réécouter en priorité ?",
+        "contexte": "",
+        "options": [
+          "Ses meilleurs appels",
+          "Ses 3 pires appels de la semaine",
+          "Les appels des collègues",
+          "Les podcasts de vente"
+        ],
+        "correct_index": 1,
+        "explication": "Les erreurs sont visibles dans les pires appels, pas les meilleurs."
+      },
+      {
+        "question": "Le coaching entre closers consiste à...",
+        "contexte": "",
+        "options": [
+          "Se critiquer mutuellement",
+          "Chacun réécoute un appel de l'autre par semaine et donne du feedback",
+          "Comparer les KPIs",
+          "Se disputer les leads"
+        ],
+        "correct_index": 1,
+        "explication": "Le feedback entre pairs accélère la progression."
+      },
+      {
+        "question": "L'organisation quotidienne recommandée est...",
+        "contexte": "",
+        "options": [
+          "Appels toute la journée sans pause",
+          "Blocs d'appels + analyse + relances + reporting KPIs",
+          "Freestyle sans planning",
+          "Uniquement des appels le matin"
+        ],
+        "correct_index": 1,
+        "explication": "08h-09h revue, 09h-12h bloc 1, 13h-14h analyse, 14h-17h bloc 2, 17h30 reporting."
+      },
+      {
+        "question": "Les outils recommandés sont...",
+        "contexte": "",
+        "options": [
+          "Un carnet et un stylo",
+          "CRM (HubSpot/GHL), Calendly, Zoom/Meet, Gong.io/Otter.ai",
+          "Uniquement WhatsApp",
+          "Excel"
+        ],
+        "correct_index": 1,
+        "explication": "CRM + calendrier + visio + outil d'analyse d'appel."
+      },
+      {
+        "question": "Le scénario Inaya montre...",
+        "contexte": "",
+        "options": [
+          "Un échec total",
+          "Un parcours de 6 mois avec un moment de doute au mois 3 et un rebond",
+          "Une vente rapide",
+          "Un abandon"
+        ],
+        "correct_index": 1,
+        "explication": "12% → doute mois 3 → mentor → 34% → 41%."
+      },
+      {
+        "question": "Le moment de doute d'Inaya arrive à...",
+        "contexte": "",
+        "options": [
+          "Mois 1",
+          "Mois 3 (3 refus consécutifs)",
+          "Mois 5",
+          "Jamais"
+        ],
+        "correct_index": 1,
+        "explication": "3 refus consécutifs. Doute. Hésite à continuer."
+      },
+      {
+        "question": "Ce qui fait rebondir Inaya est...",
+        "contexte": "",
+        "options": [
+          "Une prime",
+          "Son mentor qui la recadre",
+          "Un gros close",
+          "Un changement d'offre"
+        ],
+        "correct_index": 1,
+        "explication": "Le mentor la recadre. Elle se force au silence. Taux remonte."
+      },
+      {
+        "question": "Le scénario Nadia illustre...",
+        "contexte": "",
+        "options": [
+          "Le close parfait",
+          "La disqualification éthique quand le fit n'est pas là",
+          "L'abandon d'un prospect",
+          "Un refus du closer"
+        ],
+        "correct_index": 1,
+        "explication": "Le closer éthique sait dire non quand le budget est insuffisant."
+      },
+      {
+        "question": "Disqualifier un prospect est...",
+        "contexte": "",
+        "options": [
+          "Un échec",
+          "Un acte éthique et professionnel",
+          "Interdit",
+          "Une perte de temps"
+        ],
+        "correct_index": 1,
+        "explication": "Pas de vente. Nadia revient 3 mois plus tard avec le budget."
+      },
+      {
+        "question": "Vendre à des prospects non qualifiés est une erreur parce que...",
+        "contexte": "",
+        "options": [
+          "C'est illégal",
+          "Tu perds du temps et de l'énergie précieuse",
+          "Le prospect se plaindra",
+          "C'est une mauvaise pub"
+        ],
+        "correct_index": 1,
+        "explication": "Erreur fatale n°9 : prospects non qualifiés = temps perdu."
+      },
+      {
+        "question": "Manquer de conviction dans l'offre signifie...",
+        "contexte": "",
+        "options": [
+          "Être modeste",
+          "Si tu n'y crois pas, personne n'y croira",
+          "Être réaliste",
+          "Être prudent"
+        ],
+        "correct_index": 1,
+        "explication": "Erreur fatale n°10 : la conviction est contagieuse — dans les deux sens."
+      },
+      {
+        "question": "Céder sur le prix sans raison est une erreur parce que...",
+        "contexte": "",
+        "options": [
+          "Le prospect sera insatisfait",
+          "Tu brises la valeur perçue de l'offre",
+          "C'est illégal",
+          "Tu perds de l'argent"
+        ],
+        "correct_index": 1,
+        "explication": "Baisser le prix = communiquer que l'offre ne vaut pas ce prix."
+      },
+      {
+        "question": "Le meilleur closer n'est pas celui qui parle le mieux, c'est...",
+        "contexte": "",
+        "options": [
+          "Celui qui a le plus d'expérience",
+          "Celui qui écoute le mieux",
+          "Celui qui connaît le plus de techniques",
+          "Celui qui parle le plus vite"
+        ],
+        "correct_index": 1,
+        "explication": "L'écoute est la compétence n°1 du closer."
+      },
+      {
+        "question": "Le template de débrief après un appel doit inclure...",
+        "contexte": "",
+        "options": [
+          "Uniquement le résultat (close ou non)",
+          "Ratio parole, diagnostic complet ?, silence respecté ?, objection principale, technique utilisée, note globale, 3 axes d'amélioration",
+          "Juste une note sur 10",
+          "Rien, c'est optionnel"
+        ],
+        "correct_index": 1,
+        "explication": "Un débrief complet identifie les axes d'amélioration concrets."
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Closing — Validation Finale",
+    "description": "Quiz de validation finale de la formation Closing — requis pour valider l'étape du parcours AL BARAKA.",
+    "max_errors": 5,
+    "status": "published",
+    "module_id": null,
+    "formation_id": "7e533baa-7b5e-42cf-8473-6a9fd19c318f",
+    "questions": [
+      {
+        "question": "Que signifie le D dans le framework DRASTE ?",
+        "contexte": "",
+        "options": [
+          "Diagnostiquer",
+          "Dédiaboliser",
+          "Décider",
+          "Dominer"
+        ],
+        "correct_index": 1,
+        "explication": "Dédiaboliser la vente : ce n'est pas de la manipulation, c'est un service."
+      },
+      {
+        "question": "Quelles sont les deux émotions tueuses de vente ?",
+        "contexte": "",
+        "options": [
+          "Colère et tristesse",
+          "Peur et excitation",
+          "Stress et fatigue",
+          "Impatience et déception"
+        ],
+        "correct_index": 1,
+        "explication": "La peur paralyse et l'excitation fait pitcher trop vite."
+      },
+      {
+        "question": "L'auto-sabotage du closer, c'est quand...",
+        "contexte": "",
+        "options": [
+          "Le prospect ment",
+          "Le closer fait une erreur qui tue la vente",
+          "Le setter n'a pas qualifié",
+          "L'offre est trop chère"
+        ],
+        "correct_index": 1,
+        "explication": "Parler trop, mal écouter, pitcher trop tôt, paniquer sur le prix."
+      },
+      {
+        "question": "Parmi ces qualités, laquelle n'est PAS une qualité du closer d'excellence ?",
+        "contexte": "",
+        "options": [
+          "Écoute active",
+          "Empathie",
+          "Agressivité commerciale",
+          "Résilience"
+        ],
+        "correct_index": 2,
+        "explication": "L'agressivité n'a pas sa place dans le closing éthique."
+      },
+      {
+        "question": "Que doit faire le closer AVANT chaque appel concernant ses émotions ?",
+        "contexte": "",
+        "options": [
+          "Les amplifier pour être motivé",
+          "Les libérer et repartir à zéro",
+          "Les utiliser comme carburant",
+          "Les ignorer complètement"
+        ],
+        "correct_index": 1,
+        "explication": "Chaque appel est un nouveau départ. Les émotions de la journée ne doivent pas interférer."
+      },
+      {
+        "question": "Les décisions d'achat sont prises...",
+        "contexte": "",
+        "options": [
+          "Majoritairement de façon rationnelle",
+          "Majoritairement de façon émotionnelle",
+          "50% rationnel, 50% émotionnel",
+          "Uniquement par la logique"
+        ],
+        "correct_index": 1,
+        "explication": "Le système émotionnel est le moteur principal de la décision."
+      },
+      {
+        "question": "Quand le closer pose des questions sur la douleur avec une intention bonne, c'est...",
+        "contexte": "",
+        "options": [
+          "De la manipulation",
+          "Éthique et nécessaire",
+          "Interdit par la loi",
+          "Risqué"
+        ],
+        "correct_index": 1,
+        "explication": "Tout part de l'intention. Si l'intention est d'aider, vas-y."
+      },
+      {
+        "question": "La confiance par la conviction repose sur...",
+        "contexte": "",
+        "options": [
+          "Des arguments logiques",
+          "L'énergie, la voix et la certitude du closer",
+          "Des réductions",
+          "Des promesses exagérées"
+        ],
+        "correct_index": 1,
+        "explication": "Ton enthousiasme et ta certitude se font ressentir."
+      },
+      {
+        "question": "La réciprocité en vente signifie...",
+        "contexte": "",
+        "options": [
+          "Échanger des cadeaux",
+          "Donner de la valeur dans l'appel crée un sentiment de redevabilité",
+          "Rendre la pareille au prospect",
+          "Offrir une réduction"
+        ],
+        "correct_index": 1,
+        "explication": "Quand tu donnes de la valeur, la personne se sent positivement redevable."
+      },
+      {
+        "question": "Les boutons de confiance sont...",
+        "contexte": "",
+        "options": [
+          "Des techniques de manipulation",
+          "Des leviers concrets sur lesquels appuyer selon le moment de l'appel",
+          "Des réductions à offrir",
+          "Des arguments de vente"
+        ],
+        "correct_index": 1,
+        "explication": "Témoignages, storytelling, inversion du risque, preuve sociale, autorité."
+      },
+      {
+        "question": "The GAP représente...",
+        "contexte": "",
+        "options": [
+          "L'écart de prix",
+          "Le pont entre la situation actuelle et la situation souhaitée",
+          "Un outil CRM",
+          "Le temps de l'appel"
+        ],
+        "correct_index": 1,
+        "explication": "Situation actuelle → ton offre (le pont) → situation souhaitée."
+      },
+      {
+        "question": "Pourquoi relire le formulaire du prospect avant l'appel ?",
+        "contexte": "",
+        "options": [
+          "Pour gagner du temps",
+          "Pour identifier les signaux forts et zones de risque",
+          "Par obligation légale",
+          "Pour remplir le CRM"
+        ],
+        "correct_index": 1,
+        "explication": "Les signaux forts et zones de risque sont dans le formulaire."
+      },
+      {
+        "question": "Les citations à relire avant chaque appel servent à...",
+        "contexte": "",
+        "options": [
+          "Impressionner le prospect",
+          "Recadrer le mindset du closer avant l'appel",
+          "Remplir le temps",
+          "Décorer le bureau"
+        ],
+        "correct_index": 1,
+        "explication": "Recalibrer l'intention et le mindset."
+      },
+      {
+        "question": "Un signal fort dans un formulaire, c'est...",
+        "contexte": "",
+        "options": [
+          "Une faute d'orthographe",
+          "Un indice que le prospect est prêt ou motivé",
+          "Un numéro de téléphone",
+          "La date de remplissage"
+        ],
+        "correct_index": 1,
+        "explication": "Les signaux forts indiquent la motivation ou la douleur du prospect."
+      },
+      {
+        "question": "Le mindset « nouveau départ » avant chaque appel signifie...",
+        "contexte": "",
+        "options": [
+          "Oublier toutes les techniques",
+          "L'appel précédent (réussi ou raté) ne doit pas influencer le suivant",
+          "Changer de script à chaque appel",
+          "Ne pas se souvenir du prospect"
+        ],
+        "correct_index": 1,
+        "explication": "Chaque prospect mérite un closer frais et concentré."
+      },
+      {
+        "question": "Que signifie DECODE ?",
+        "contexte": "",
+        "options": [
+          "Un logiciel de vente",
+          "Les 6 phases de la structure d'appel",
+          "Un type d'objection",
+          "Un KPI"
+        ],
+        "correct_index": 1,
+        "explication": "DECODE = 6 phases structurées de l'appel de closing."
+      },
+      {
+        "question": "Après le diagnostic, que fait le closer avant de passer à l'offre ?",
+        "contexte": "",
+        "options": [
+          "Il pitcher immédiatement",
+          "Il fait une confirmation miroir de tout ce qui a été dit",
+          "Il annonce le prix",
+          "Il pose d'autres questions"
+        ],
+        "correct_index": 1,
+        "explication": "Ne JAMAIS passer à l'offre sans confirmation des 5 niveaux."
+      },
+      {
+        "question": "La prise de conscience consiste à...",
+        "contexte": "",
+        "options": [
+          "Aider le prospect à mesurer l'ampleur de sa situation",
+          "Donner des conseils gratuits",
+          "Pitcher l'offre",
+          "Critiquer le prospect"
+        ],
+        "correct_index": 0,
+        "explication": "Poser des questions profondes pour que le prospect réalise sa situation."
+      },
+      {
+        "question": "La phase Offre consiste à...",
+        "contexte": "",
+        "options": [
+          "Lister toutes les fonctionnalités",
+          "Présenter l'offre comme un pont entre la situation actuelle et le résultat",
+          "Annoncer le prix",
+          "Négocier"
+        ],
+        "correct_index": 1,
+        "explication": "Pont entre situation actuelle → ta solution → situation désirée."
+      },
+      {
+        "question": "Combien de relances maximum après un refus clair ?",
+        "contexte": "",
+        "options": [
+          "1",
+          "2",
+          "5",
+          "Autant que nécessaire"
+        ],
+        "correct_index": 1,
+        "explication": "2 relances maximum après un refus clair."
+      },
+      {
+        "question": "La confirmation miroir sert à...",
+        "contexte": "",
+        "options": [
+          "Impressionner le prospect",
+          "Résumer tout le diagnostic pour obtenir un « oui » avant l'offre",
+          "Copier ses gestes",
+          "Annoncer le prix"
+        ],
+        "correct_index": 1,
+        "explication": "Le prospect valide que tu as bien compris avant de passer à l'offre."
+      },
+      {
+        "question": "Le mirroring vocal consiste à...",
+        "contexte": "",
+        "options": [
+          "Imiter la voix du prospect",
+          "Adapter son rythme et son énergie au profil du prospect",
+          "Parler plus fort que le prospect",
+          "Utiliser un accent"
+        ],
+        "correct_index": 1,
+        "explication": "Analytique = calme et posé. Émotif = dynamique et engagé."
+      },
+      {
+        "question": "Le silence du prospect après le prix signifie souvent...",
+        "contexte": "",
+        "options": [
+          "Qu'il a raccroché",
+          "Qu'il réfléchit — c'est bon signe",
+          "Qu'il n'est pas intéressé",
+          "Qu'il attend une réduction"
+        ],
+        "correct_index": 1,
+        "explication": "Le silence est le signe que le prospect traite l'information."
+      },
+      {
+        "question": "Baisser le volume de la voix crée...",
+        "contexte": "",
+        "options": [
+          "De la confusion",
+          "De l'intimité et de la confiance",
+          "De la distance",
+          "De l'ennui"
+        ],
+        "correct_index": 1,
+        "explication": "Le prospect se rapproche quand la voix baisse."
+      },
+      {
+        "question": "Quand le prospect dit « C'est beaucoup... mais concrètement comment ça se passe ? » après un silence...",
+        "contexte": "",
+        "options": [
+          "Le silence a échoué",
+          "Le silence a fonctionné — le prospect passe de la résistance à la curiosité",
+          "Il faut baisser le prix",
+          "Il faut raccrocher"
+        ],
+        "correct_index": 1,
+        "explication": "Le silence transforme la résistance en question — c'est positif."
+      },
+      {
+        "question": "Une objection est...",
+        "contexte": "",
+        "options": [
+          "Un refus définitif",
+          "Une manière pour le prospect de se protéger",
+          "Une tentative de négociation",
+          "Un signe de désintérêt"
+        ],
+        "correct_index": 1,
+        "explication": "Une objection est un mécanisme de protection instinctif."
+      },
+      {
+        "question": "Quelle est l'objection la plus compliquée à traiter ?",
+        "contexte": "",
+        "options": [
+          "Le prix",
+          "L'incertitude (le prospect ne croit pas au produit)",
+          "Le support (en parler au conjoint)",
+          "Le timing"
+        ],
+        "correct_index": 1,
+        "explication": "L'incertitude est la plus complexe car elle touche à la confiance."
+      },
+      {
+        "question": "Si le prospect est à 6/10 sur l'échelle, la question est...",
+        "contexte": "",
+        "options": [
+          "« Pourquoi pas 10 ? »",
+          "« Qu'est-ce qui t'empêche d'être à 9 ou 10 ? »",
+          "« Tu veux qu'on baisse le prix ? »",
+          "« On rappelle demain ? »"
+        ],
+        "correct_index": 1,
+        "explication": "Identifier ce qui manque pour monter à 9-10."
+      },
+      {
+        "question": "Face à « J'ai déjà essayé et ça n'a pas marché »...",
+        "contexte": "",
+        "options": [
+          "« Cette fois ce sera différent »",
+          "« Qu'est-ce qui n'a pas fonctionné précisément ? »",
+          "« On est meilleurs que les autres »",
+          "« Oublie le passé »"
+        ],
+        "correct_index": 1,
+        "explication": "Identifier ce qui n'a pas marché pour se différencier."
+      },
+      {
+        "question": "La garantie est un levier de...",
+        "contexte": "",
+        "options": [
+          "Prix",
+          "Certitude — elle annule le risque perçu",
+          "Support",
+          "Timing"
+        ],
+        "correct_index": 1,
+        "explication": "La garantie augmente la certitude en réduisant le risque."
+      },
+      {
+        "question": "Combien de techniques de closing sont enseignées ?",
+        "contexte": "",
+        "options": [
+          "3",
+          "4",
+          "6",
+          "10"
+        ],
+        "correct_index": 2,
+        "explication": "Question directe, Summary, Alternative, Futur Pacing, Histoire Miroir, Takeaway."
+      },
+      {
+        "question": "L'Histoire Miroir consiste à...",
+        "contexte": "",
+        "options": [
+          "Raconter sa propre vie",
+          "Raconter l'histoire d'un client dans une situation similaire",
+          "Copier les gestes du prospect",
+          "Lire des témoignages"
+        ],
+        "correct_index": 1,
+        "explication": "Le prospect se reconnaît et projette le même résultat."
+      },
+      {
+        "question": "Seules 3 choses devraient sortir de la bouche d'un closer :",
+        "contexte": "",
+        "options": [
+          "Prix, garantie, bonus",
+          "Questions, reformulations, histoires",
+          "Arguments, preuves, données",
+          "Compliments, promesses, urgence"
+        ],
+        "correct_index": 1,
+        "explication": "Si ce n'est ni une question, ni une reformulation, ni une histoire — ne le dis pas."
+      },
+      {
+        "question": "Le scénario Mehdi illustre...",
+        "contexte": "",
+        "options": [
+          "Le Summary Close",
+          "Le Takeaway Close quand rien ne fonctionne",
+          "Le Futur Pacing",
+          "La question directe"
+        ],
+        "correct_index": 1,
+        "explication": "Mehdi retire l'offre — le prospect se bat pour rester."
+      },
+      {
+        "question": "En visio, le closer doit...",
+        "contexte": "",
+        "options": [
+          "Regarder son écran",
+          "Regarder la caméra pour maintenir le contact visuel",
+          "Couper sa caméra",
+          "Lire son script à voix haute"
+        ],
+        "correct_index": 1,
+        "explication": "Le contact visuel en visio = regarder la caméra."
+      },
+      {
+        "question": "Quel est le taux de closing visé pour un débutant (mois 1-2) ?",
+        "contexte": "",
+        "options": [
+          "5-10%",
+          "10-15%",
+          "25-35%",
+          "50%"
+        ],
+        "correct_index": 1,
+        "explication": "Taux visé débutant : 10-15%."
+      },
+      {
+        "question": "L'erreur fatale n°1 est...",
+        "contexte": "",
+        "options": [
+          "Parler trop",
+          "Pitcher avant d'avoir diagnostiqué",
+          "Ne pas closer",
+          "Remplir les silences"
+        ],
+        "correct_index": 1,
+        "explication": "Tu ne sais pas encore ce que le prospect veut."
+      },
+      {
+        "question": "Le plan de progression sur 90 jours se divise en...",
+        "contexte": "",
+        "options": [
+          "2 phases",
+          "3 phases",
+          "4 phases",
+          "5 phases"
+        ],
+        "correct_index": 1,
+        "explication": "Mois 1-2 (bases), mois 3-4 (consolidation), mois 5-6 (maîtrise)."
+      },
+      {
+        "question": "Le ratio de parole à surveiller est...",
+        "contexte": "",
+        "options": [
+          "50/50",
+          "70/30 (prospect/closer)",
+          "80/20",
+          "60/40"
+        ],
+        "correct_index": 1,
+        "explication": "Si le closer parle plus de 30%, il parle trop."
+      },
+      {
+        "question": "Le scénario Inaya montre...",
+        "contexte": "",
+        "options": [
+          "Un échec total",
+          "Un parcours de 6 mois avec un moment de doute au mois 3 et un rebond",
+          "Une vente rapide",
+          "Un abandon"
+        ],
+        "correct_index": 1,
+        "explication": "12% → doute mois 3 → mentor → 34% → 41%."
+      }
+    ]
+  }
+]

@@ -1,0 +1,6582 @@
+[
+  {
+    "titre": "Quiz Community Management — M1 Le Métier de Community Manager",
+    "description": "Quiz de validation du module 1.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "40724900-deff-40cb-91c7-7515f2f8b304",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Quel est le rôle principal d'un Community Manager ?",
+        "options": [
+          "Créer des sites web",
+          "Gérer la présence en ligne d'une marque",
+          "Faire de la publicité télévisée",
+          "Gérer la comptabilité"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quelle est la différence fondamentale entre gérer son propre compte et celui d'un client ?",
+        "options": [
+          "Il n'y a aucune différence",
+          "Vous incarnez SA marque, pas la vôtre",
+          "Vous publiez moins souvent",
+          "Vous n'avez pas besoin de stratégie"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Parmi ces compétences, laquelle N'EST PAS une compétence technique du CM ?",
+        "options": [
+          "Montage vidéo",
+          "Rédaction de légendes",
+          "Développement web",
+          "Création de visuels sur Canva"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel outil gratuit est recommandé pour le montage de Réels ?",
+        "options": [
+          "Adobe Premiere Pro",
+          "Final Cut Pro",
+          "VN Video Editor",
+          "DaVinci Resolve"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien d'heures par jour travaille un CM freelance avec 3 clients en moyenne ?",
+        "options": [
+          "2-3h",
+          "4-5h",
+          "~6h",
+          "10h+"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel est le premier outil à maîtriser pour créer des visuels ?",
+        "options": [
+          "Photoshop",
+          "Canva",
+          "Illustrator",
+          "Figma"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel type de client est le plus accessible pour un CM débutant ?",
+        "options": [
+          "Multinationales",
+          "Startups tech",
+          "Commerces locaux et artisans",
+          "Agences gouvernementales"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'empathie audience signifie :",
+        "options": [
+          "Avoir pitié des abonnés",
+          "Comprendre l'audience du client comme si c'était la vôtre",
+          "Toujours être d'accord avec les commentaires",
+          "Ignorer les messages négatifs"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel outil est recommandé pour le calendrier éditorial partagé ?",
+        "options": [
+          "Excel sur clé USB",
+          "Google Sheets",
+          "Un carnet papier",
+          "WhatsApp"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le CM est décrit comme un métier complet. Quels sont ses 4 rôles ?",
+        "options": [
+          "Stratège, créateur, analyste, communicant",
+          "Designer, codeur, rédacteur, comptable",
+          "Photographe, vidéaste, graphiste, animateur",
+          "Manager, directeur, consultant, formateur"
+        ],
+        "correct_index": 0,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quand vous gérez le compte d'un client, qui valide le contenu ?",
+        "options": [
+          "Vous seul",
+          "Le client",
+          "Vos abonnés",
+          "L'algorithme Instagram"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quelle compétence relationnelle est essentielle pour gérer plusieurs clients ?",
+        "options": [
+          "Le perfectionnisme",
+          "La gestion du temps",
+          "La créativité artistique",
+          "La maîtrise de Photoshop"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Claude/ChatGPT est recommandé pour :",
+        "options": [
+          "Remplacer le CM à 100%",
+          "Générer des idées, légendes, hooks et scripts",
+          "Gérer les paiements clients",
+          "Publier automatiquement les posts"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un CM qui gère un coach fitness doit surtout produire :",
+        "options": [
+          "Du contenu juridique",
+          "Du contenu éducatif et de la preuve sociale",
+          "Des memes humoristiques uniquement",
+          "Du contenu politique"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que signifie 'setting en DM' dans la journée type du CM ?",
+        "options": [
+          "Configurer les paramètres Instagram",
+          "Engager la conversation avec les viewers de stories",
+          "Supprimer les spams",
+          "Bloquer les trolls"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pour un CM débutant, quelle est la meilleure approche pour trouver ses premiers clients ?",
+        "options": [
+          "Attendre qu'ils viennent",
+          "Prospecter activement dans sa niche",
+          "Poster des annonces sur LeBonCoin",
+          "Créer un site web professionnel d'abord"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un artisan bijoutier a besoin surtout de :",
+        "options": [
+          "Contenu tech/innovation",
+          "Storytelling et visuels lifestyle",
+          "Contenu B2B professionnel",
+          "Publicité télévisée"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quelle est l'erreur la plus courante quand on débute comme CM ?",
+        "options": [
+          "Avoir trop de clients",
+          "Penser que c'est juste poster sur Instagram",
+          "Facturer trop cher",
+          "Utiliser trop d'outils"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Caption est un outil qui sert à :",
+        "options": [
+          "Créer des visuels",
+          "Générer des sous-titres automatiques pour les Réels",
+          "Planifier les publications",
+          "Analyser les statistiques"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Objectif principal quand vous gérez le compte d'un client :",
+        "options": [
+          "Vos propres ventes",
+          "SES résultats et SES KPIs",
+          "Votre notoriété personnelle",
+          "Le nombre de followers que VOUS gagnez"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Qu'est-ce qui différencie un CM professionnel d'un amateur ?",
+        "options": [
+          "Le nombre de followers personnels",
+          "La stratégie, le reporting et le professionnalisme",
+          "L'utilisation de Photoshop",
+          "Le nombre d'heures travaillées"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quand un CM gère le compte d'un client, une erreur engage :",
+        "options": [
+          "Sa propre réputation uniquement",
+          "La réputation du client",
+          "Personne",
+          "La plateforme Instagram"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Parmi ces outils, lequel est payant ?",
+        "options": [
+          "Canva (version de base)",
+          "Google Sheets",
+          "VN Video Editor",
+          "Caption"
+        ],
+        "correct_index": 3,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un prestataire de services (avocat, thérapeute) a besoin de :",
+        "options": [
+          "Contenu humoristique viral",
+          "Crédibilité et pédagogie",
+          "Promotions agressives",
+          "Contenu polémique"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le créneau 14h-15h dans la journée type est dédié à :",
+        "options": [
+          "La création de contenu",
+          "Le reporting mensuel pour un client",
+          "La prospection de nouveaux clients",
+          "La pause déjeuner"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de clients un CM peut-il gérer raisonnablement au début ?",
+        "options": [
+          "1 seul maximum",
+          "2-3 clients",
+          "10-15 clients",
+          "Autant que possible"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La veille concurrentielle consiste à :",
+        "options": [
+          "Espionner les concurrents pour les copier",
+          "Rechercher les tendances et analyser ce qui marche dans la niche",
+          "Bloquer les comptes concurrents",
+          "Signaler les contenus des concurrents"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quelle est la posture correcte du CM envers son client ?",
+        "options": [
+          "Employé soumis",
+          "Prestataire professionnel et partenaire",
+          "Supérieur hiérarchique",
+          "Ami personnel"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le CM doit savoir dire non avec :",
+        "options": [
+          "Agressivité",
+          "Indifférence",
+          "Diplomatie",
+          "Silence"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi le CM est-il décrit comme 'le pont entre la marque et son audience' ?",
+        "options": [
+          "Parce qu'il construit des sites web",
+          "Parce que chaque interaction qu'il crée engage la relation marque-audience",
+          "Parce qu'il fait de la publicité payante",
+          "Parce qu'il gère la logistique"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Community Management — M2 Extraire l'Identité de Marque d'un Client",
+    "description": "Quiz de validation du module 2.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "bdad9589-b361-442d-ac73-67edd1b677e2",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Quelle est la première étape avant de créer du contenu pour un client ?",
+        "options": [
+          "Choisir les hashtags",
+          "Créer le calendrier éditorial",
+          "Faire le brief client",
+          "Publier un premier post test"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le questionnaire identité de marque est divisé en combien de parties ?",
+        "options": [
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La partie 1 du questionnaire porte sur :",
+        "options": [
+          "L'audience",
+          "Les objectifs chiffrés",
+          "La marque (mission, histoire, valeurs, différenciation)",
+          "Les interdits"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi le brief protège-t-il votre relation avec le client ?",
+        "options": [
+          "Il impressionne le client",
+          "En cas de désaccord, vous avez un document de référence",
+          "Il empêche le client de vous contacter",
+          "Il garantit le paiement"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de piliers de contenu maximum sont recommandés ?",
+        "options": [
+          "2",
+          "3",
+          "4",
+          "6"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Qu'est-ce qu'un persona client ?",
+        "options": [
+          "Le compte Instagram du client",
+          "La description détaillée du client idéal de votre client",
+          "Votre propre profil",
+          "Un concurrent"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La question 'Qu'est-ce qui vous rend unique vs vos concurrents ?' sert à définir :",
+        "options": [
+          "Le prix",
+          "La différenciation",
+          "Le calendrier",
+          "Les hashtags"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La charte éditoriale doit être un document de :",
+        "options": [
+          "10-15 pages détaillées",
+          "2-3 pages maximum",
+          "1 seule slide PowerPoint",
+          "Un message WhatsApp"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quels éléments contient la charte éditoriale ?",
+        "options": [
+          "Uniquement les couleurs",
+          "Ton, piliers, visuels, fréquence, hashtags, émojis",
+          "Le contrat de prestation",
+          "Les factures"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les piliers de contenu d'une boutique bijoux seraient :",
+        "options": [
+          "Tech, innovation, data, code",
+          "Créations, fabrication, clientes, lifestyle",
+          "Politique, économie, sport, culture",
+          "Recettes, fitness, voyage, mode"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La charte éditoriale doit être mise à jour :",
+        "options": [
+          "Jamais, elle est définitive",
+          "Tous les jours",
+          "Tous les 3-6 mois si nécessaire",
+          "Toutes les semaines"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que signifie 'ton de voix' dans la charte éditoriale ?",
+        "options": [
+          "Le volume sonore des vidéos",
+          "3-5 adjectifs qui décrivent la personnalité de communication",
+          "La langue utilisée",
+          "Le type de musique dans les réels"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi ne jamais commencer à créer du contenu avant le brief ?",
+        "options": [
+          "Parce que c'est illégal",
+          "Parce que vous créez à l'aveugle sans direction claire",
+          "Parce que le client ne paiera pas",
+          "Parce qu'Instagram le bloque"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La question 'Tutoiement ou vouvoiement ?' appartient à quelle partie ?",
+        "options": [
+          "Partie 1 — La marque",
+          "Partie 2 — L'audience",
+          "Partie 3 — Objectifs & interdits",
+          "Aucune partie"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Chaque post doit appartenir à :",
+        "options": [
+          "Tous les piliers en même temps",
+          "1 seul pilier",
+          "Au moins 3 piliers",
+          "Aucun pilier"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que doit faire un CM avant CHAQUE décision de contenu ?",
+        "options": [
+          "Consulter la charte éditoriale",
+          "Appeler le client",
+          "Regarder les concurrents",
+          "Publier et voir ce qui se passe"
+        ],
+        "correct_index": 0,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les 'interdits' dans le questionnaire couvrent :",
+        "options": [
+          "Les jours fériés",
+          "Les sujets, mots, visuels et concurrents à ne jamais mentionner",
+          "Les types de réels",
+          "Les horaires de publication"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un brief bien fait prend environ :",
+        "options": [
+          "5 minutes",
+          "45-60 minutes de call structuré",
+          "Une demi-journée",
+          "Une semaine"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi demander 'Quels comptes Instagram admirez-vous ?' au client ?",
+        "options": [
+          "Pour les copier",
+          "Pour comprendre le goût esthétique du client",
+          "Pour les signaler",
+          "Pour les contacter"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La rotation régulière des piliers signifie :",
+        "options": [
+          "Changer de piliers chaque mois",
+          "Alterner entre les piliers d'une publication à l'autre",
+          "Publier toujours le même pilier",
+          "Supprimer un pilier par semaine"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de hashtags validés la charte doit-elle contenir ?",
+        "options": [
+          "3-5",
+          "15-20",
+          "50-100",
+          "Aucun"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le résultat d'un bon brief, c'est que :",
+        "options": [
+          "Le client n'a plus besoin de vous",
+          "Le client se reconnaît dans chaque post",
+          "Le client vous laisse carte blanche sans jamais vérifier",
+          "Le client change de CM"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les 'douleurs' dans le questionnaire audience désignent :",
+        "options": [
+          "Les problèmes physiques du client",
+          "Les 3 problèmes principaux des clients de votre client",
+          "Les défauts du compte Instagram",
+          "Les bugs de l'application"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel est le piège principal quand on gère plusieurs clients ?",
+        "options": [
+          "Utiliser trop d'outils",
+          "Copier-coller le même contenu entre clients",
+          "Travailler trop vite",
+          "Publier trop souvent"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La section 'Identité visuelle' de la charte inclut :",
+        "options": [
+          "Uniquement le logo",
+          "Couleurs, polices, style photo",
+          "Le contrat signé",
+          "Les KPIs"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien d'émojis peut-on utiliser dans les posts ?",
+        "options": [
+          "Autant que possible",
+          "Uniquement ceux validés dans la charte",
+          "Aucun, jamais",
+          "Tous les émojis existants"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le brief évite les allers-retours car :",
+        "options": [
+          "Le client n'a plus le droit de donner son avis",
+          "Le client valide une direction générale, pas chaque post",
+          "Le CM publie sans demander",
+          "Le brief est un contrat légal"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pour un consultant business, les piliers seraient :",
+        "options": [
+          "Cuisine, sport, voyage, mode",
+          "Conseils, cas clients, outils, parcours personnel",
+          "Memes, blagues, tendances, challenges",
+          "Produits, promotions, réductions, soldes"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Qu'est-ce qu'un CM qui commence sans brief inspire chez le client ?",
+        "options": [
+          "De la confiance",
+          "De l'admiration",
+          "Un manque de professionnalisme",
+          "De la gratitude"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La 'différenciation' d'une marque, c'est :",
+        "options": [
+          "Son prix le plus bas",
+          "Ce qui la rend unique par rapport aux concurrents",
+          "Son nombre d'abonnés",
+          "Sa date de création"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Community Management — M3 Calendrier Éditorial Professionnel",
+    "description": "Quiz de validation du module 3.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "517a8dd7-dde2-469d-a427-c1801b72e84a",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Le calendrier éditorial est décrit comme :",
+        "options": [
+          "Un outil optionnel",
+          "Votre outil de travail n°1",
+          "Un document interne que le client ne voit pas",
+          "Une obligation légale"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quelle est la conséquence de ne pas avoir de calendrier ?",
+        "options": [
+          "Plus de créativité",
+          "Improvisation, oublis, perte de confiance du client",
+          "Meilleure spontanéité",
+          "Plus de liberté"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La vue mensuelle du calendrier contient :",
+        "options": [
+          "Le détail de chaque post",
+          "Les thèmes du mois et objectifs principaux",
+          "Les factures",
+          "Les contrats"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de colonnes essentielles votre Google Sheet doit-il avoir ?",
+        "options": [
+          "3",
+          "5",
+          "8",
+          "12"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel est le statut final d'un post dans le calendrier ?",
+        "options": [
+          "Brouillon",
+          "En attente validation",
+          "Validé",
+          "Publié"
+        ],
+        "correct_index": 3,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La production en lot consiste à :",
+        "options": [
+          "Publier 10 posts d'un coup",
+          "Créer tout le contenu en 1-2 sessions, pas au jour le jour",
+          "Copier le contenu d'autres comptes",
+          "Automatiser la publication"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de jours faut-il pour préparer un mois de contenu ?",
+        "options": [
+          "1 jour",
+          "2-3 jours",
+          "2 semaines",
+          "1 mois entier"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Jour 1 de production est consacré à :",
+        "options": [
+          "Rédiger les légendes",
+          "Créer TOUS les visuels + tourner TOUS les réels",
+          "Envoyer les factures",
+          "Faire le reporting"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le client dispose de combien de temps pour valider le calendrier ?",
+        "options": [
+          "24h",
+          "48h",
+          "1 semaine",
+          "1 mois"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel est l'avantage principal de la production en lot ?",
+        "options": [
+          "Moins de qualité mais plus de quantité",
+          "Tout le mois est prêt en 3 jours, le reste = modération + stories",
+          "Le client n'a pas besoin de valider",
+          "On peut utiliser moins d'outils"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La colonne 'Pilier de contenu' dans le Google Sheet sert à :",
+        "options": [
+          "Décorer le tableau",
+          "Savoir à quel pilier de la charte le post appartient",
+          "Compter les posts",
+          "Calculer le prix"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que faire si le client ne répond pas dans les 48h de validation ?",
+        "options": [
+          "Annuler le mois",
+          "Ne rien publier",
+          "Considérer le contenu comme validé (à définir dans le contrat)",
+          "Appeler la police"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le calendrier est aussi votre preuve de travail en cas de :",
+        "options": [
+          "Contrôle fiscal",
+          "Litige avec le client",
+          "Audit Instagram",
+          "Mise à jour de l'algorithme"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de contenu d'avance faut-il toujours avoir ?",
+        "options": [
+          "Aucun, on publie au jour le jour",
+          "1 semaine minimum",
+          "1 mois complet",
+          "3 mois"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La colonne 'Visuels' contient :",
+        "options": [
+          "La description textuelle du visuel",
+          "Le lien vers le fichier Canva ou Google Drive",
+          "Le prix du visuel",
+          "Rien, elle est optionnelle"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel jour du mois le calendrier doit-il être envoyé au client ?",
+        "options": [
+          "Le 1er du mois en cours",
+          "Le 25 du mois précédent",
+          "Le 15 du mois précédent",
+          "Quand on a le temps"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pour 1 client, le temps total de production + organisation est environ :",
+        "options": [
+          "2-3h",
+          "12h",
+          "30h",
+          "50h"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de stories quotidiennes sont prévues dans l'exemple de Salma ?",
+        "options": [
+          "1",
+          "3",
+          "5",
+          "10"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le mix de contenu recommandé inclut :",
+        "options": [
+          "Uniquement des réels",
+          "Uniquement des carrousels",
+          "Réels + carrousels + stories",
+          "Uniquement des posts image"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La vue hebdomadaire du calendrier contient :",
+        "options": [
+          "Les thèmes généraux",
+          "Le détail jour par jour : format, sujet, heure, légendes, hashtags",
+          "Les factures",
+          "Le contrat"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi les hashtags doivent être préparés à l'avance ?",
+        "options": [
+          "Pour impressionner le client",
+          "Pour ne pas improviser et rester cohérent avec la stratégie",
+          "Parce qu'Instagram l'exige",
+          "Pour avoir plus de 30 hashtags"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La colonne 'Statut' peut avoir les valeurs :",
+        "options": [
+          "Bon / Mauvais / Moyen",
+          "Brouillon / En attente validation / Validé / Publié",
+          "Oui / Non",
+          "1 / 2 / 3 / 4"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Après la production en lot, le reste du mois est consacré à :",
+        "options": [
+          "Créer du nouveau contenu",
+          "Modération + stories",
+          "Chercher de nouveaux clients",
+          "Prendre des vacances"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le calendrier permet d'anticiper :",
+        "options": [
+          "Les bugs Instagram",
+          "Les fêtes, lancements et promotions",
+          "Les changements d'algorithme",
+          "Les prix des concurrents"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le budget boost doit apparaître dans quelle vue ?",
+        "options": [
+          "Vue hebdomadaire",
+          "Vue mensuelle",
+          "Ni l'une ni l'autre",
+          "Dans le contrat uniquement"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de réels par semaine dans l'exemple de Salma ?",
+        "options": [
+          "1",
+          "2-3",
+          "5",
+          "7"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La date de livraison au client fait partie de quelle vue ?",
+        "options": [
+          "Vue mensuelle",
+          "Vue hebdomadaire",
+          "Aucune",
+          "Vue trimestrielle"
+        ],
+        "correct_index": 0,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel format est utilisé pour les hashtags dans le calendrier ?",
+        "options": [
+          "Liste de 50+ hashtags",
+          "Liste de 5-10 hashtags par post",
+          "Un seul hashtag unique",
+          "Pas de hashtags"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi le calendrier est-il partagé avec le client ?",
+        "options": [
+          "Pour qu'il crée du contenu lui-même",
+          "Pour la transparence totale sur ce qui sera publié",
+          "Parce que c'est une obligation légale",
+          "Pour qu'il modifie les posts"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Jour 2 de production est consacré à :",
+        "options": [
+          "Tourner les réels",
+          "Rédiger TOUTES les légendes + préparer les hashtags",
+          "Faire le reporting",
+          "Envoyer les factures"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Community Management — M4 Modération & Gestion de Crise",
+    "description": "Quiz de validation du module 4.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "186faf74-03f9-49c8-9fb0-78cb1459be64",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "En combien de temps maximum faut-il répondre aux commentaires ?",
+        "options": [
+          "24h",
+          "2-4h pendant vos heures de travail",
+          "1 semaine",
+          "Pas de délai, quand on peut"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Face à un commentaire négatif, la première réaction doit être :",
+        "options": [
+          "Supprimer immédiatement",
+          "Répondre sous l'émotion",
+          "Lire 2 fois, respirer, ne jamais répondre à chaud",
+          "Bloquer l'utilisateur"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de niveaux de problème sont définis ?",
+        "options": [
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un commentaire négatif isolé correspond à quel niveau ?",
+        "options": [
+          "Niveau 1 — Mineur",
+          "Niveau 2 — Sérieux",
+          "Niveau 3 — Crise",
+          "Hors classification"
+        ],
+        "correct_index": 0,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que faire face à un troll/hater ?",
+        "options": [
+          "Répondre agressivement",
+          "L'insulter en retour",
+          "Ne pas répondre, masquer si nécessaire",
+          "Publier son message en story"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'étape 2 du protocole de crise est :",
+        "options": [
+          "Supprimer le commentaire",
+          "NE PAS SUPPRIMER",
+          "Répondre publiquement",
+          "Prévenir le client"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi ne pas supprimer un commentaire négatif ?",
+        "options": [
+          "Parce que c'est illégal",
+          "Parce que screenshot + 'ils censurent' = crise amplifiée",
+          "Parce qu'Instagram sanctionne les suppressions",
+          "Parce que le client n'est pas d'accord"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "À quel niveau faut-il prévenir le client IMMÉDIATEMENT ?",
+        "options": [
+          "Niveau 1",
+          "Niveau 2",
+          "Niveau 3 — Crise",
+          "Tous les niveaux"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'IA peut aider la modération en :",
+        "options": [
+          "Publiant les réponses automatiquement sans relecture",
+          "Générant des réponses types à adapter au contexte",
+          "Supprimant les commentaires négatifs",
+          "Bloquant les trolls automatiquement"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que signifie 'qualifier les prospects' dans les DMs ?",
+        "options": [
+          "Leur donner une note sur 10",
+          "Distinguer les intéressés des curieux et du spam",
+          "Leur vendre immédiatement",
+          "Les bloquer s'ils ne sont pas intéressés"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quand une erreur est repérée dans un post déjà partagé, il faut :",
+        "options": [
+          "Ignorer, personne ne remarquera",
+          "Publier une correction transparente",
+          "Supprimer le compte",
+          "Blâmer le client"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'IA est décrite comme :",
+        "options": [
+          "Un remplaçant du CM",
+          "Un assistant, pas un remplaçant",
+          "Un outil inutile",
+          "Un danger pour le métier"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le copier-coller des réponses IA sans relecture est :",
+        "options": [
+          "Recommandé pour gagner du temps",
+          "Interdit — il faut toujours adapter au contexte",
+          "Acceptable pour les commentaires positifs",
+          "Obligatoire"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Comment répondre à un commentaire positif ?",
+        "options": [
+          "Un simple emoji suffit",
+          "Remercier avec le prénom et un message personnalisé",
+          "Ignorer, ce n'est pas urgent",
+          "Liker le commentaire sans répondre"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un client mécontent public (niveau 2) nécessite :",
+        "options": [
+          "Aucune action, ça passera",
+          "De prévenir le client + proposer une réponse",
+          "De supprimer le commentaire",
+          "De bloquer l'utilisateur"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que demander à l'IA pour anticiper les crises ?",
+        "options": [
+          "De supprimer les commentaires automatiquement",
+          "De lister les 10 commentaires négatifs les plus probables + réponses idéales",
+          "De publier à votre place",
+          "De gérer le compte du client"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'étape 4 du protocole de crise consiste à :",
+        "options": [
+          "Publier un communiqué de presse",
+          "Documenter l'incident dans le reporting",
+          "Supprimer le compte",
+          "Ignorer le problème"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Face à un spam ou publicité en commentaire :",
+        "options": [
+          "Répondre poliment",
+          "Supprimer immédiatement et bloquer si récidive",
+          "Liker le commentaire",
+          "Demander au client"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le guide de modération est un document de :",
+        "options": [
+          "10 pages",
+          "2 pages avec réponses types par catégorie",
+          "1 mot : 'ignore'",
+          "50 pages détaillées"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que faire si un DM dépasse votre rôle de CM ?",
+        "options": [
+          "Répondre quand même",
+          "Transférer au client",
+          "Ignorer",
+          "Bloquer l'utilisateur"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Documenter chaque incident de modération sert à :",
+        "options": [
+          "Rien, c'est une perte de temps",
+          "Alimenter le reporting mensuel et apprendre",
+          "Poursuivre les trolls en justice",
+          "Impressionner le client"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La réponse type à un avis négatif légitime commence par :",
+        "options": [
+          "'Vous avez tort'",
+          "'Nous sommes navrés de votre expérience'",
+          "'Ce n'est pas notre faute'",
+          "'Merci pour la publicité gratuite'"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le setting dans les DMs consiste à :",
+        "options": [
+          "Configurer les paramètres du compte",
+          "Engager la conversation avec les viewers de stories",
+          "Supprimer les messages indésirables",
+          "Automatiser les réponses"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Après avoir répondu publiquement à un avis négatif, il faut :",
+        "options": [
+          "Attendre que ça passe",
+          "Résoudre en privé (DM)",
+          "Publier le nom du client mécontent",
+          "Supprimer le post concerné"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un bad buzz correspond à quel niveau ?",
+        "options": [
+          "Niveau 1",
+          "Niveau 2",
+          "Niveau 3 — Crise",
+          "Aucun niveau, ce n'est pas grave"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que ne faut-il JAMAIS faire en modération ?",
+        "options": [
+          "Répondre aux commentaires positifs",
+          "Répondre sous l'émotion, supprimer sans accord, ignorer",
+          "Prévenir le client d'un problème",
+          "Documenter les incidents"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le guide de modération doit être validé par :",
+        "options": [
+          "Vous seul",
+          "Le client",
+          "Instagram",
+          "Un avocat"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La modération quotidienne inclut la gestion de :",
+        "options": [
+          "Uniquement les commentaires",
+          "Commentaires ET DMs",
+          "Uniquement les DMs",
+          "Les emails du client"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "On supprime un commentaire uniquement quand c'est :",
+        "options": [
+          "Un avis négatif",
+          "Du spam ou des insultes",
+          "Un commentaire d'un concurrent",
+          "Une question sur le prix"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le protocole de crise a combien d'étapes ?",
+        "options": [
+          "2",
+          "3",
+          "4",
+          "6"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Community Management — M5 Reporting Client & Résultats",
+    "description": "Quiz de validation du module 5.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "fa26cd8a-cebb-4e42-8c3d-5ad06bec17cb",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Le reporting sert principalement à :",
+        "options": [
+          "Impressionner le client avec des chiffres",
+          "Justifier votre valeur et fidéliser le client",
+          "Remplir une obligation légale",
+          "Comparer avec les concurrents"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel est le format recommandé pour le reporting ?",
+        "options": [
+          "Tableau Excel brut",
+          "PDF visuel de 5-8 pages",
+          "Message WhatsApp",
+          "Email avec les chiffres"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le reporting doit être envoyé :",
+        "options": [
+          "Quand le client le demande",
+          "Entre le 1er et le 5 du mois suivant",
+          "En fin d'année",
+          "Tous les jours"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel KPI mesure le nombre de personnes uniques touchées ?",
+        "options": [
+          "Engagement",
+          "Portée",
+          "Croissance",
+          "Conversions"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le taux d'engagement se calcule comment ?",
+        "options": [
+          "Nombre de posts × 100",
+          "Interactions / portée × 100",
+          "Abonnés / posts × 100",
+          "Likes - commentaires"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi inclure le 'Flop du mois' dans le reporting ?",
+        "options": [
+          "Pour montrer que rien ne marche",
+          "Par transparence et pour apprendre",
+          "Parce que le client l'exige",
+          "Pour baisser vos prix"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La Page 1 du reporting contient :",
+        "options": [
+          "Tous les KPIs détaillés",
+          "Le résumé exécutif — 3 chiffres clés + tendance",
+          "Le calendrier du mois suivant",
+          "Les factures"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le reporting est décrit comme le meilleur outil de :",
+        "options": [
+          "Prospection",
+          "Vente pour l'upsell",
+          "Modération",
+          "Création de contenu"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les 'Top contenus' dans le reporting analysent :",
+        "options": [
+          "Les 3 meilleurs posts du mois et pourquoi ils ont marché",
+          "Tous les posts sans distinction",
+          "Uniquement les réels",
+          "Les posts des concurrents"
+        ],
+        "correct_index": 0,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La Page 6 du reporting contient :",
+        "options": [
+          "Les factures",
+          "Les recommandations — ce qu'on garde, change, teste",
+          "Les contrats",
+          "Les hashtags"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Sans reporting, le CM risque de :",
+        "options": [
+          "Créer de meilleur contenu",
+          "Répéter les mêmes actions sans savoir si elles marchent",
+          "Avoir plus de temps libre",
+          "Mieux gérer ses clients"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le KPI 'Conversions' inclut :",
+        "options": [
+          "Uniquement les ventes",
+          "DMs reçus, clics lien bio, leads générés, ventes",
+          "Uniquement les likes",
+          "Le nombre de posts publiés"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La Page 7 du reporting contient :",
+        "options": [
+          "Les signatures",
+          "Le calendrier prévisionnel du mois suivant",
+          "Le contrat",
+          "Les factures impayées"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel outil est recommandé pour créer le reporting ?",
+        "options": [
+          "Excel",
+          "Canva",
+          "PowerPoint",
+          "Word"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le comparatif M-1 signifie :",
+        "options": [
+          "Comparer avec le meilleur mois",
+          "Comparer avec le mois précédent",
+          "Comparer avec les concurrents",
+          "Comparer avec l'objectif annuel"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un bon reporting donne envie au client de :",
+        "options": [
+          "Changer de CM",
+          "Continuer la collaboration",
+          "Réduire son budget",
+          "Arrêter les réseaux sociaux"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La croissance nette des abonnés se calcule :",
+        "options": [
+          "Abonnés totaux",
+          "Gains - pertes",
+          "Likes totaux",
+          "Posts publiés"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le reporting montre au client ce qu'il ne voit pas, à savoir :",
+        "options": [
+          "Vos loisirs personnels",
+          "Vos heures de travail et les résultats obtenus",
+          "Les comptes des concurrents",
+          "Vos autres clients"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La tendance dans le résumé exécutif s'affiche avec :",
+        "options": [
+          "Des mots uniquement",
+          "Des flèches ↑ ↓ →",
+          "Des couleurs rouge/vert",
+          "Des pourcentages uniquement"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le reporting comme outil de fidélisation fonctionne car :",
+        "options": [
+          "Il oblige le client à rester",
+          "Le client voit la progression et comprend la valeur du travail",
+          "Il cache les mauvais résultats",
+          "Il est joli visuellement"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les KPIs doivent être comparés :",
+        "options": [
+          "Avec les concurrents uniquement",
+          "Mois vs mois précédent",
+          "Avec les moyennes mondiales",
+          "Jamais, chaque mois est unique"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un reporting 'transparent' inclut :",
+        "options": [
+          "Uniquement les bons résultats",
+          "Les bons ET les mauvais résultats",
+          "Uniquement les mauvais résultats",
+          "Aucun chiffre, seulement du texte"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La recommandation 'Ce qu'on teste' sert à :",
+        "options": [
+          "Expérimenter de nouvelles idées basées sur les données",
+          "Copier les concurrents",
+          "Changer toute la stratégie chaque mois",
+          "Justifier un échec"
+        ],
+        "correct_index": 0,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le reporting permet l'upsell car :",
+        "options": [
+          "Il montre que le client a besoin de plus de services",
+          "Il prouve la valeur avec des données concrètes",
+          "Il fait peur au client",
+          "Il est obligatoire dans le contrat"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un reporting de 5-8 pages prend environ combien de temps à préparer ?",
+        "options": [
+          "10 minutes",
+          "2-3 heures",
+          "1 journée entière",
+          "1 semaine"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi le reporting ne doit PAS être un simple tableau Excel ?",
+        "options": [
+          "Parce qu'Excel est payant",
+          "Parce qu'un PDF visuel est plus professionnel et lisible pour le client",
+          "Parce que le client ne sait pas lire Excel",
+          "Parce que c'est interdit"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'analyse du 'Pourquoi ça a marché' pour les top posts sert à :",
+        "options": [
+          "Impressionner le client",
+          "Identifier les patterns à reproduire le mois suivant",
+          "Comparer avec les concurrents",
+          "Rien de particulier"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le reporting doit être envoyé au minimum :",
+        "options": [
+          "Quotidiennement",
+          "Hebdomadairement",
+          "Mensuellement",
+          "Trimestriellement"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les données du reporting guident :",
+        "options": [
+          "Le prix de vos services",
+          "La stratégie du mois suivant",
+          "Le nombre de clients à prendre",
+          "Vos vacances"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel est l'objectif principal de la Page 4 (Top 3 posts) ?",
+        "options": [
+          "Montrer les plus belles images",
+          "Analyser pourquoi ces posts ont surperformé",
+          "Compter les likes",
+          "Impressionner le client"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Community Management — M6 TikTok & LinkedIn",
+    "description": "Quiz de validation du module 6.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "52b00128-1428-49c8-896b-dc7815e16a72",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "TikTok est idéal pour quel type de clients ?",
+        "options": [
+          "B2B, professionnels",
+          "B2C, audience jeune (16-35 ans)",
+          "Administration publique",
+          "Industrie lourde"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "LinkedIn est idéal pour :",
+        "options": [
+          "Les adolescents",
+          "Les consultants, formateurs et B2B",
+          "Les restaurants locaux",
+          "Les influenceurs mode"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'algorithme TikTok valorise principalement :",
+        "options": [
+          "Le nombre d'abonnés",
+          "Le taux de complétion et les rewatches",
+          "Les hashtags",
+          "L'ancienneté du compte"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'algorithme LinkedIn valorise :",
+        "options": [
+          "La viralité",
+          "L'engagement dans les 60 premières minutes",
+          "Le nombre de connexions",
+          "Les vidéos longues"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Avant de proposer TikTok ou LinkedIn à un client, il faut :",
+        "options": [
+          "Le faire immédiatement",
+          "Attendre minimum 3 mois de résultats solides sur Instagram",
+          "Demander à Instagram",
+          "Créer un site web d'abord"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Comment adapter un Réel IG pour TikTok ?",
+        "options": [
+          "Le poster exactement pareil",
+          "Retirer le watermark IG et adapter le hook",
+          "Le publier en story",
+          "Ne pas l'adapter, TikTok n'accepte pas les réels"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pour LinkedIn, un Réel IG peut devenir :",
+        "options": [
+          "Un autre réel identique",
+          "Un post texte long extrait des idées clés",
+          "Une publicité payante",
+          "Un email"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de hashtags maximum sur LinkedIn ?",
+        "options": [
+          "20-30",
+          "10-15",
+          "3-5 nichés",
+          "Aucun"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le hook sur TikTok doit apparaître dans les :",
+        "options": [
+          "10 premières secondes",
+          "2 premières secondes",
+          "30 premières secondes",
+          "Dernières secondes"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quelle est l'erreur fatale sur TikTok ?",
+        "options": [
+          "Utiliser des tendances",
+          "Poster le même contenu qu'IG sans adapter le hook",
+          "Poster des vidéos courtes",
+          "Utiliser des sous-titres"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La durée idéale d'un TikTok pour débuter est :",
+        "options": [
+          "3-5 secondes",
+          "15-30 secondes",
+          "5-10 minutes",
+          "Plus de 10 minutes"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel format fonctionne le mieux sur LinkedIn ?",
+        "options": [
+          "Réels courts de 15 secondes",
+          "Posts texte longs (800-1200 caractères) avec accroches fortes",
+          "Stories éphémères",
+          "Photos de vacances"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'erreur fatale sur LinkedIn est de :",
+        "options": [
+          "Publier des posts texte",
+          "Copier le ton Instagram (trop décontracté)",
+          "Utiliser des carrousels",
+          "Poster en semaine"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les heures actives TikTok recommandées sont :",
+        "options": [
+          "6h-8h du matin",
+          "10h-12h",
+          "18h-22h",
+          "2h-5h du matin"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Poster le week-end sur LinkedIn donne :",
+        "options": [
+          "Un excellent engagement",
+          "Un engagement très faible",
+          "Aucune différence",
+          "Un meilleur algorithme"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La déclinaison de contenu fait combien du travail pour un 2ème canal ?",
+        "options": [
+          "20%",
+          "50%",
+          "80%",
+          "100%"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Facturer un 2ème canal en extra coûte :",
+        "options": [
+          "Rien, c'est inclus",
+          "10-50€/mois",
+          "100-200€/mois",
+          "500€+/mois"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Si un client veut 3 plateformes en même temps, il faut :",
+        "options": [
+          "Accepter sans hésiter",
+          "Lui expliquer pourquoi c'est contre-productif",
+          "Tripler le prix",
+          "Refuser le client"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un carrousel IG peut devenir sur LinkedIn :",
+        "options": [
+          "Un réel",
+          "Un carrousel PDF",
+          "Une publicité",
+          "Une newsletter"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La structure d'un post LinkedIn efficace commence par :",
+        "options": [
+          "Une citation inspirante",
+          "Une accroche choc (visible avant 'voir plus')",
+          "Le CTA",
+          "Les hashtags"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Sur TikTok, les abonnés comptent :",
+        "options": [
+          "Énormément",
+          "Peu — chaque vidéo a sa chance",
+          "Autant que sur Instagram",
+          "Plus que le contenu"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les sous-titres sur TikTok sont :",
+        "options": [
+          "Optionnels",
+          "Obligatoires",
+          "Interdits",
+          "Inutiles"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Sur LinkedIn, la régularité recommandée est :",
+        "options": [
+          "1 post/mois",
+          "3-5 posts/semaine",
+          "1 post/jour",
+          "10 posts/jour"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Une story IG peut devenir sur LinkedIn :",
+        "options": [
+          "Une autre story",
+          "Une anecdote en post LinkedIn",
+          "Un réel",
+          "Rien, ce n'est pas compatible"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les commentaires longs sur LinkedIn comptent :",
+        "options": [
+          "Moins que les likes",
+          "Plus que les likes",
+          "Autant que les likes",
+          "Pas du tout"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le temps ajouté pour gérer TikTok en plus d'IG est environ :",
+        "options": [
+          "+10h/mois",
+          "+1-2h/mois",
+          "+20h/mois",
+          "+5h/jour"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le ton sur LinkedIn doit être :",
+        "options": [
+          "Décontracté et plein d'émojis",
+          "Expert, crédible, inspirant",
+          "Agressif et commercial",
+          "Identique à Instagram"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Proposer un 2ème canal est une opportunité de :",
+        "options": [
+          "Baisser ses prix",
+          "Facturation supplémentaire (upsell)",
+          "Perdre le client",
+          "Travailler gratuitement"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les formats qui marchent sur TikTok incluent :",
+        "options": [
+          "Documents PDF",
+          "Coulisses, avant/après, tendances adaptées, face caméra",
+          "Posts texte longs",
+          "Infographies statiques"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un post LinkedIn doit se terminer par :",
+        "options": [
+          "Rien",
+          "Une question ouverte pour générer des commentaires",
+          "Un lien externe",
+          "30 hashtags"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Community Management — M7 Offres, Prix & Packs CM",
+    "description": "Quiz de validation du module 7.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "67afcbe6-60ff-4654-9997-4b3543bd2034",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Combien de packs CM sont recommandés ?",
+        "options": [
+          "1",
+          "2",
+          "3",
+          "5"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Pack Essentiel coûte entre :",
+        "options": [
+          "100-200€/mois",
+          "300-500€/mois",
+          "600-1000€/mois",
+          "1200-2000€/mois"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Pack Premium inclut :",
+        "options": [
+          "Uniquement les posts",
+          "Posts + stories + réels + modération + setting DM + stratégie",
+          "Uniquement le reporting",
+          "La création d'un site web"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le taux horaire d'un CM débutant est environ :",
+        "options": [
+          "5-10€/h",
+          "20-25€/h",
+          "50-75€/h",
+          "100€+/h"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Comment fixer le prix d'un pack ?",
+        "options": [
+          "Au feeling",
+          "Temps estimé × taux horaire souhaité",
+          "En copiant les concurrents",
+          "Le plus cher possible"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Ne JAMAIS facturer :",
+        "options": [
+          "Au forfait mensuel",
+          "Au post",
+          "Au trimestre",
+          "À l'année"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le client paie un :",
+        "options": [
+          "Nombre d'heures",
+          "Résultat",
+          "Nombre de posts",
+          "Nombre d'outils utilisés"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel pack proposer en premier à un prospect ?",
+        "options": [
+          "Le moins cher (Essentiel)",
+          "Le plus cher (Premium)",
+          "Le milieu (Croissance)",
+          "Aucun, attendre qu'il choisisse"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'engagement minimum recommandé est de :",
+        "options": [
+          "1 mois",
+          "3 mois",
+          "6 mois",
+          "1 an"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le document de présentation des packs doit faire :",
+        "options": [
+          "1 page",
+          "3 pages (approche, packs, conditions)",
+          "10 pages",
+          "20 pages"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Pack Essentiel prend environ combien de temps par mois ?",
+        "options": [
+          "2-3h",
+          "6-8h",
+          "15-20h",
+          "30h+"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de clients Essentiel peut-on gérer en parallèle ?",
+        "options": [
+          "1",
+          "2-3",
+          "4-5",
+          "10+"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Pack Croissance inclut contrairement à l'Essentiel :",
+        "options": [
+          "Rien de plus",
+          "Stories + modération DMs + call stratégique",
+          "Réels filmés par vous",
+          "Création de site web"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Pack Premium est limité à combien de clients simultanés ?",
+        "options": [
+          "1",
+          "2 maximum",
+          "5",
+          "Illimité"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Si le prospect trouve le Croissance trop cher, il faut :",
+        "options": [
+          "Baisser le prix sans rien changer",
+          "Descendre sur le Pack Essentiel",
+          "Insister jusqu'à ce qu'il accepte",
+          "Abandonner le prospect"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les extras facturables incluent :",
+        "options": [
+          "Les posts standards",
+          "Les réels filmés en plus, le boost, les newsletters",
+          "Le reporting mensuel inclus dans le pack",
+          "Les calls prévus dans le pack"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La Page 1 du document de packs présente :",
+        "options": [
+          "Les prix directement",
+          "Votre approche et votre méthode",
+          "Les conditions de résiliation",
+          "Les factures"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La formule de calcul du prix est :",
+        "options": [
+          "Nombre de posts × 10€",
+          "Prix du concurrent - 20%",
+          "Temps estimé × taux horaire",
+          "Nombre d'abonnés × 0.01€"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "15h/mois × 30€/h donne un prix minimum de :",
+        "options": [
+          "300€",
+          "350€",
+          "450€",
+          "600€"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le reporting dans le Pack Essentiel est :",
+        "options": [
+          "Complet (5-8 pages)",
+          "Simple (3 pages : KPIs + top posts + recommandations)",
+          "Inexistant",
+          "Quotidien"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le setting DM est inclus dans quel(s) pack(s) ?",
+        "options": [
+          "Tous les packs",
+          "Essentiel uniquement",
+          "Croissance et Premium",
+          "Premium uniquement"
+        ],
+        "correct_index": 3,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le call hebdomadaire est prévu dans quel pack ?",
+        "options": [
+          "Essentiel",
+          "Croissance",
+          "Premium",
+          "Aucun"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'engagement minimum 3 mois est formalisé dans :",
+        "options": [
+          "Un message WhatsApp",
+          "Un contrat (voir module administratif)",
+          "Un post Instagram",
+          "Rien, c'est verbal"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Pack Croissance coûte entre :",
+        "options": [
+          "100-300€",
+          "300-500€",
+          "600-1000€",
+          "2000-3000€"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le boost Instagram est inclus dans quel pack ?",
+        "options": [
+          "Essentiel",
+          "Croissance",
+          "Premium (gestion + optimisation budget)",
+          "Tous les packs"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Si le prospect accepte le Croissance facilement, il faut :",
+        "options": [
+          "S'arrêter là",
+          "Proposer le Premium",
+          "Baisser le prix",
+          "Ajouter des extras gratuits"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Pack Premium prend environ combien de temps par mois ?",
+        "options": [
+          "6-8h",
+          "12-15h",
+          "20-25h",
+          "40h+"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le CM intermédiaire facture environ :",
+        "options": [
+          "10-15€/h",
+          "20-25€/h",
+          "30-40€/h",
+          "100€+/h"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La Page 3 du document de packs contient :",
+        "options": [
+          "Les visuels du portfolio",
+          "Engagement, conditions, prochaines étapes",
+          "Les hashtags",
+          "Le calendrier éditorial"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un client du Pack Croissance veut des réels filmés. Que faire ?",
+        "options": [
+          "Les inclure gratuitement",
+          "Proposer un extra facturé ou le passage au Premium",
+          "Refuser",
+          "Ignorer la demande"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Community Management — M8 Trouver ses Premiers Clients",
+    "description": "Quiz de validation du module 8.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "ba14724d-5152-48fe-9f74-5170741b4230",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Avant de prospecter, votre profil IG doit :",
+        "options": [
+          "Être privé",
+          "Montrer vos compétences de CM (bio, contenu, preuves)",
+          "Avoir 10 000 abonnés minimum",
+          "Être vide pour repartir de zéro"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'audit gratuit a un taux de conversion de :",
+        "options": [
+          "1-5%",
+          "10-15%",
+          "20-30%",
+          "50-70%"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le premier message de prospection DM doit contenir :",
+        "options": [
+          "Une offre de vente directe",
+          "Une proposition de valeur gratuite (audit)",
+          "Vos tarifs",
+          "Votre CV"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de canaux de prospection sont présentés ?",
+        "options": [
+          "3",
+          "4",
+          "5",
+          "7"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le canal n°1 à long terme est :",
+        "options": [
+          "Instagram DM",
+          "Les plateformes freelance",
+          "Le bouche-à-oreille",
+          "La publicité payante"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le premier client devrait être facturé :",
+        "options": [
+          "Gratuitement",
+          "Au prix normal",
+          "À prix réduit (-30 à -50%) en échange d'un témoignage",
+          "Au double du prix normal"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de clients faut-il viser en 3 mois ?",
+        "options": [
+          "1",
+          "3",
+          "10",
+          "20"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Après le 3ème client, il faut :",
+        "options": [
+          "Baisser les prix",
+          "Augmenter les prix de 20-30%",
+          "Arrêter de prospecter",
+          "Changer de métier"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un audit gratuit analyse :",
+        "options": [
+          "Les finances du prospect",
+          "3 points forts + 3 améliorations + 3 actions concrètes",
+          "Le contrat de travail du prospect",
+          "Les comptes bancaires"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La bio d'un CM freelance doit contenir :",
+        "options": [
+          "Votre âge et lieu de naissance",
+          "'Community Manager | J'aide les [niche] à [résultat] via Instagram'",
+          "Votre numéro de téléphone",
+          "Rien, restez mystérieux"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les stories à la une d'un CM doivent montrer :",
+        "options": [
+          "Vos vacances",
+          "Témoignages, avant/après, méthode de travail",
+          "Vos repas",
+          "Vos animaux de compagnie"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le premier message DM ne doit JAMAIS contenir :",
+        "options": [
+          "Une offre de valeur",
+          "Votre prénom",
+          "Une proposition de vente directe",
+          "Le nom du prospect"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La relance après un DM sans réponse se fait à :",
+        "options": [
+          "J+1",
+          "J+3",
+          "J+7",
+          "J+30"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Après combien de relances faut-il passer au prospect suivant ?",
+        "options": [
+          "0, on ne relance jamais",
+          "1 maximum",
+          "5",
+          "10"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les plateformes freelance recommandées sont :",
+        "options": [
+          "Facebook Marketplace",
+          "Malt, Fiverr, ComeUp",
+          "Amazon, eBay",
+          "LinkedIn Jobs"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le profil IG du CM est décrit comme :",
+        "options": [
+          "Un simple réseau social",
+          "Son portfolio vivant et sa vitrine",
+          "Un espace personnel privé",
+          "Un outil de divertissement"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Sur les groupes Facebook, il faut d'abord :",
+        "options": [
+          "Poster votre offre immédiatement",
+          "Apporter de la valeur avant de proposer",
+          "Spammer votre lien",
+          "Critiquer les autres membres"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pour repérer un compte mal géré, on cherche :",
+        "options": [
+          "Un compte avec trop d'abonnés",
+          "Bio vague, pas de stories, posts irréguliers",
+          "Un compte avec un beau design",
+          "Un compte certifié"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'appel découverte dure :",
+        "options": [
+          "5 minutes",
+          "15 minutes",
+          "1 heure",
+          "3 heures"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Documenter ses résultats (avant/après, stats) sert à :",
+        "options": [
+          "Rien",
+          "Construire son portfolio et sa crédibilité",
+          "Impressionner ses amis",
+          "Publier sur son blog"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Se spécialiser dans une niche est recommandé car :",
+        "options": [
+          "C'est obligatoire légalement",
+          "Expert > généraliste pour la crédibilité",
+          "C'est plus facile de ne rien apprendre",
+          "Les clients préfèrent les généralistes"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le message 2 de prospection DM contient :",
+        "options": [
+          "Vos tarifs et conditions",
+          "L'audit : 3 points forts + 3 améliorations + 3 actions + proposition d'appel",
+          "Un lien vers votre site web",
+          "Rien, on attend la réponse"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le premier client vient souvent de :",
+        "options": [
+          "La publicité payante",
+          "Votre réseau personnel (proches, commerçants du quartier)",
+          "Les plateformes internationales",
+          "Les agences de recrutement"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Une étude de cas complète contient :",
+        "options": [
+          "Juste les chiffres",
+          "Contexte → actions → résultats → témoignage",
+          "Uniquement le témoignage",
+          "Uniquement les captures d'écran"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi le premier client est décrit comme 'le plus dur' ?",
+        "options": [
+          "Parce qu'il paie mal",
+          "Parce qu'on n'a pas encore de preuve ni de portfolio",
+          "Parce qu'il est exigeant",
+          "Parce qu'on ne sait pas utiliser les outils"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Après avoir signé un client, il faut immédiatement :",
+        "options": [
+          "Chercher d'autres clients",
+          "Documenter tout pour le portfolio",
+          "Prendre des vacances",
+          "Augmenter ses prix"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le taux de conversion du DM classique est :",
+        "options": [
+          "Bien supérieur à l'audit gratuit",
+          "Bien inférieur à l'audit gratuit",
+          "Identique à l'audit gratuit",
+          "100%"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Votre propre contenu en tant que CM doit être :",
+        "options": [
+          "Absent, seuls les clients comptent",
+          "Des conseils marketing, analyses de comptes, tips Instagram",
+          "Des photos de votre vie privée",
+          "Des memes humoristiques"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Si votre propre compte IG est mal géré :",
+        "options": [
+          "Aucune conséquence",
+          "Personne ne vous fera confiance comme CM",
+          "Les clients s'en fichent",
+          "C'est un avantage, ça montre l'authenticité"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien d'audits gratuits sont recommandés en semaine 3 du plan de prospection ?",
+        "options": [
+          "1",
+          "3",
+          "10",
+          "20"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Community Management — M9 Gérer la Relation Client",
+    "description": "Quiz de validation du module 9.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "9c898fb5-5d84-46a7-92a6-4f3e941e795b",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "L'onboarding d'un nouveau client dure :",
+        "options": [
+          "1 jour",
+          "7 jours",
+          "1 mois",
+          "3 mois"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que faire AVANT de commencer tout travail ?",
+        "options": [
+          "Publier un premier post test",
+          "Contrat signé + acompte 30% reçu",
+          "Créer le calendrier",
+          "Faire le reporting"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le délai maximum de réponse aux messages du client est :",
+        "options": [
+          "1h",
+          "24h",
+          "48h",
+          "1 semaine"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Face à une demande hors périmètre, la réponse est :",
+        "options": [
+          "Non, ce n'est pas dans le contrat",
+          "Oui gratuitement par peur de perdre le client",
+          "Oui, voici le tarif",
+          "On verra plus tard"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de rounds de validation maximum par contenu ?",
+        "options": [
+          "1",
+          "2",
+          "5",
+          "Illimité"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quand augmenter ses prix ?",
+        "options": [
+          "Après 1 semaine",
+          "Après 3-6 mois de résultats prouvés",
+          "Jamais",
+          "Chaque mois"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Comment prévenir le client d'une augmentation de prix ?",
+        "options": [
+          "Par surprise le jour même",
+          "1 mois à l'avance par écrit",
+          "Par un post Instagram",
+          "On ne prévient pas"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "En fin de collaboration, il faut :",
+        "options": [
+          "Disparaître sans prévenir",
+          "Prévenir 1 mois à l'avance, transmettre tous les accès et documents",
+          "Supprimer le compte Instagram du client",
+          "Publier un message négatif"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le premier réflexe à toujours avoir en fin de collaboration :",
+        "options": [
+          "Bloquer le client",
+          "Demander un témoignage écrit ou vidéo",
+          "Baisser ses prix pour le garder",
+          "Critiquer le client en public"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le call avec le client doit être :",
+        "options": [
+          "Quotidien de 2h",
+          "Hebdo ou bimensuel de 15-30 min",
+          "Mensuel de 4h",
+          "Inexistant"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les DMs interminables avec le client doivent être remplacés par :",
+        "options": [
+          "Des emails",
+          "Un call court qui règle tout",
+          "Des messages vocaux de 10 min",
+          "Des lettres postales"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La posture du CM envers le client est celle d'un :",
+        "options": [
+          "Employé",
+          "Ami",
+          "Prestataire professionnel",
+          "Supérieur"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Chaque demande hors périmètre est décrite comme :",
+        "options": [
+          "Un problème",
+          "Une corvée",
+          "Une opportunité d'upsell",
+          "Un motif de résiliation"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Définir ses horaires de disponibilité sert à :",
+        "options": [
+          "Travailler moins",
+          "Poser des limites professionnelles dès le départ",
+          "Impressionner le client",
+          "Remplir le contrat"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pas de messages du client à 23h le dimanche sauf :",
+        "options": [
+          "Crise réelle",
+          "Quand le client est VIP",
+          "Quand le post est viral",
+          "Jamais d'exception"
+        ],
+        "correct_index": 0,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Si le client refuse l'augmentation de prix, il faut :",
+        "options": [
+          "Insister jusqu'à ce qu'il accepte",
+          "Respecter sa décision. Il reste à l'ancien prix ou il part",
+          "Baisser le prix en dessous de l'ancien",
+          "Menacer de supprimer son compte"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La justification d'une hausse de prix repose sur :",
+        "options": [
+          "L'inflation générale",
+          "La valeur créée : abonnés gagnés, clients générés",
+          "Le fait que les concurrents sont plus chers",
+          "Votre ancienneté"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Day 1 de l'onboarding inclut :",
+        "options": [
+          "La première publication",
+          "Contrat + acompte",
+          "Le reporting",
+          "La veille concurrentielle"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Day 7 de l'onboarding marque :",
+        "options": [
+          "La fin du contrat",
+          "La première publication — le client voit du travail concret",
+          "L'envoi du reporting",
+          "L'augmentation des prix"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Partager les mauvais résultats avec le client :",
+        "options": [
+          "Est interdit, il faut cacher les échecs",
+          "Est essentiel — transparence = confiance",
+          "Est inutile",
+          "Est risqué pour la relation"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le contrat définit le périmètre. Tout ce qui est hors contrat est :",
+        "options": [
+          "Gratuit",
+          "En plus (facturable)",
+          "Interdit",
+          "Optionnel sans tarif"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Ne pas accepter 15 allers-retours de validation, maximum :",
+        "options": [
+          "1",
+          "2",
+          "5",
+          "Illimité"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le devis pour un extra doit être envoyé :",
+        "options": [
+          "Après avoir fait le travail",
+          "Avant de commencer le travail supplémentaire",
+          "Jamais, c'est verbal",
+          "En fin de mois avec la facture"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Si le client demande un logo, la bonne réponse est :",
+        "options": [
+          "Le créer gratuitement",
+          "Dire non sèchement",
+          "Ce n'est pas mon domaine, je peux vous recommander un graphiste",
+          "Ignorer la demande"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un client qui demande régulièrement des extras devrait :",
+        "options": [
+          "Être abandonné",
+          "Se voir proposer le pack supérieur",
+          "Recevoir tout gratuitement",
+          "Être facturé à chaque fois sans proposition de pack"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le call de brief en onboarding dure :",
+        "options": [
+          "10 minutes",
+          "45-60 minutes",
+          "3 heures",
+          "5 minutes"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'accès aux comptes IG + Facebook doit être obtenu à :",
+        "options": [
+          "Jour 1",
+          "Jour 2-3",
+          "Jour 7",
+          "Jamais, le client publie lui-même"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La charte éditoriale est validée par le client à :",
+        "options": [
+          "Jour 1",
+          "Jour 3-5",
+          "Jour 7",
+          "Jamais"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Toujours finir une collaboration :",
+        "options": [
+          "En ghostant le client",
+          "Proprement + en demandant un témoignage",
+          "En baissant la qualité progressivement",
+          "En publiant du contenu négatif"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le témoignage client est décrit comme :",
+        "options": [
+          "Inutile",
+          "Votre meilleur outil de prospection",
+          "Une obligation légale",
+          "Un bonus optionnel"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Community Management — Validation Finale",
+    "description": "Quiz de validation finale de la formation Community Management.",
+    "max_errors": 10,
+    "status": "published",
+    "module_id": null,
+    "formation_id": "9eb4a903-ec69-4d4e-be8b-1da855a411f4",
+    "questions": [
+      {
+        "question": "Le questionnaire identité de marque est divisé en combien de parties ?",
+        "options": [
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le reporting comme outil de fidélisation fonctionne car :",
+        "options": [
+          "Il oblige le client à rester",
+          "Le client voit la progression et comprend la valeur du travail",
+          "Il cache les mauvais résultats",
+          "Il est joli visuellement"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un bon reporting donne envie au client de :",
+        "options": [
+          "Changer de CM",
+          "Continuer la collaboration",
+          "Réduire son budget",
+          "Arrêter les réseaux sociaux"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La posture du CM envers le client est celle d'un :",
+        "options": [
+          "Employé",
+          "Ami",
+          "Prestataire professionnel",
+          "Supérieur"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'étape 4 du protocole de crise consiste à :",
+        "options": [
+          "Publier un communiqué de presse",
+          "Documenter l'incident dans le reporting",
+          "Supprimer le compte",
+          "Ignorer le problème"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les données du reporting guident :",
+        "options": [
+          "Le prix de vos services",
+          "La stratégie du mois suivant",
+          "Le nombre de clients à prendre",
+          "Vos vacances"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'onboarding d'un nouveau client dure :",
+        "options": [
+          "1 jour",
+          "7 jours",
+          "1 mois",
+          "3 mois"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'étape 2 du protocole de crise est :",
+        "options": [
+          "Supprimer le commentaire",
+          "NE PAS SUPPRIMER",
+          "Répondre publiquement",
+          "Prévenir le client"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un commentaire négatif isolé correspond à quel niveau ?",
+        "options": [
+          "Niveau 1 — Mineur",
+          "Niveau 2 — Sérieux",
+          "Niveau 3 — Crise",
+          "Hors classification"
+        ],
+        "correct_index": 0,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La question 'Tutoiement ou vouvoiement ?' appartient à quelle partie ?",
+        "options": [
+          "Partie 1 — La marque",
+          "Partie 2 — L'audience",
+          "Partie 3 — Objectifs & interdits",
+          "Aucune partie"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le contrat définit le périmètre. Tout ce qui est hors contrat est :",
+        "options": [
+          "Gratuit",
+          "En plus (facturable)",
+          "Interdit",
+          "Optionnel sans tarif"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de rounds de validation maximum par contenu ?",
+        "options": [
+          "1",
+          "2",
+          "5",
+          "Illimité"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Pack Premium inclut :",
+        "options": [
+          "Uniquement les posts",
+          "Posts + stories + réels + modération + setting DM + stratégie",
+          "Uniquement le reporting",
+          "La création d'un site web"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel type de client est le plus accessible pour un CM débutant ?",
+        "options": [
+          "Multinationales",
+          "Startups tech",
+          "Commerces locaux et artisans",
+          "Agences gouvernementales"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'empathie audience signifie :",
+        "options": [
+          "Avoir pitié des abonnés",
+          "Comprendre l'audience du client comme si c'était la vôtre",
+          "Toujours être d'accord avec les commentaires",
+          "Ignorer les messages négatifs"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un client qui demande régulièrement des extras devrait :",
+        "options": [
+          "Être abandonné",
+          "Se voir proposer le pack supérieur",
+          "Recevoir tout gratuitement",
+          "Être facturé à chaque fois sans proposition de pack"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un reporting 'transparent' inclut :",
+        "options": [
+          "Uniquement les bons résultats",
+          "Les bons ET les mauvais résultats",
+          "Uniquement les mauvais résultats",
+          "Aucun chiffre, seulement du texte"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Si votre propre compte IG est mal géré :",
+        "options": [
+          "Aucune conséquence",
+          "Personne ne vous fera confiance comme CM",
+          "Les clients s'en fichent",
+          "C'est un avantage, ça montre l'authenticité"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi le brief protège-t-il votre relation avec le client ?",
+        "options": [
+          "Il impressionne le client",
+          "En cas de désaccord, vous avez un document de référence",
+          "Il empêche le client de vous contacter",
+          "Il garantit le paiement"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pour un consultant business, les piliers seraient :",
+        "options": [
+          "Cuisine, sport, voyage, mode",
+          "Conseils, cas clients, outils, parcours personnel",
+          "Memes, blagues, tendances, challenges",
+          "Produits, promotions, réductions, soldes"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi le CM est-il décrit comme 'le pont entre la marque et son audience' ?",
+        "options": [
+          "Parce qu'il construit des sites web",
+          "Parce que chaque interaction qu'il crée engage la relation marque-audience",
+          "Parce qu'il fait de la publicité payante",
+          "Parce qu'il gère la logistique"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'engagement minimum recommandé est de :",
+        "options": [
+          "1 mois",
+          "3 mois",
+          "6 mois",
+          "1 an"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le client paie un :",
+        "options": [
+          "Nombre d'heures",
+          "Résultat",
+          "Nombre de posts",
+          "Nombre d'outils utilisés"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le reporting permet l'upsell car :",
+        "options": [
+          "Il montre que le client a besoin de plus de services",
+          "Il prouve la valeur avec des données concrètes",
+          "Il fait peur au client",
+          "Il est obligatoire dans le contrat"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Parmi ces compétences, laquelle N'EST PAS une compétence technique du CM ?",
+        "options": [
+          "Montage vidéo",
+          "Rédaction de légendes",
+          "Développement web",
+          "Création de visuels sur Canva"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "TikTok est idéal pour quel type de clients ?",
+        "options": [
+          "B2B, professionnels",
+          "B2C, audience jeune (16-35 ans)",
+          "Administration publique",
+          "Industrie lourde"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi ne jamais commencer à créer du contenu avant le brief ?",
+        "options": [
+          "Parce que c'est illégal",
+          "Parce que vous créez à l'aveugle sans direction claire",
+          "Parce que le client ne paiera pas",
+          "Parce qu'Instagram le bloque"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que faire si le client ne répond pas dans les 48h de validation ?",
+        "options": [
+          "Annuler le mois",
+          "Ne rien publier",
+          "Considérer le contenu comme validé (à définir dans le contrat)",
+          "Appeler la police"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Claude/ChatGPT est recommandé pour :",
+        "options": [
+          "Remplacer le CM à 100%",
+          "Générer des idées, légendes, hooks et scripts",
+          "Gérer les paiements clients",
+          "Publier automatiquement les posts"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de packs CM sont recommandés ?",
+        "options": [
+          "1",
+          "2",
+          "3",
+          "5"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le résultat d'un bon brief, c'est que :",
+        "options": [
+          "Le client n'a plus besoin de vous",
+          "Le client se reconnaît dans chaque post",
+          "Le client vous laisse carte blanche sans jamais vérifier",
+          "Le client change de CM"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un carrousel IG peut devenir sur LinkedIn :",
+        "options": [
+          "Un réel",
+          "Un carrousel PDF",
+          "Une publicité",
+          "Une newsletter"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'IA est décrite comme :",
+        "options": [
+          "Un remplaçant du CM",
+          "Un assistant, pas un remplaçant",
+          "Un outil inutile",
+          "Un danger pour le métier"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les formats qui marchent sur TikTok incluent :",
+        "options": [
+          "Documents PDF",
+          "Coulisses, avant/après, tendances adaptées, face caméra",
+          "Posts texte longs",
+          "Infographies statiques"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Face à un commentaire négatif, la première réaction doit être :",
+        "options": [
+          "Supprimer immédiatement",
+          "Répondre sous l'émotion",
+          "Lire 2 fois, respirer, ne jamais répondre à chaud",
+          "Bloquer l'utilisateur"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La vue hebdomadaire du calendrier contient :",
+        "options": [
+          "Les thèmes généraux",
+          "Le détail jour par jour : format, sujet, heure, légendes, hashtags",
+          "Les factures",
+          "Le contrat"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le ton sur LinkedIn doit être :",
+        "options": [
+          "Décontracté et plein d'émojis",
+          "Expert, crédible, inspirant",
+          "Agressif et commercial",
+          "Identique à Instagram"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel format est utilisé pour les hashtags dans le calendrier ?",
+        "options": [
+          "Liste de 50+ hashtags",
+          "Liste de 5-10 hashtags par post",
+          "Un seul hashtag unique",
+          "Pas de hashtags"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Objectif principal quand vous gérez le compte d'un client :",
+        "options": [
+          "Vos propres ventes",
+          "SES résultats et SES KPIs",
+          "Votre notoriété personnelle",
+          "Le nombre de followers que VOUS gagnez"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quand une erreur est repérée dans un post déjà partagé, il faut :",
+        "options": [
+          "Ignorer, personne ne remarquera",
+          "Publier une correction transparente",
+          "Supprimer le compte",
+          "Blâmer le client"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La déclinaison de contenu fait combien du travail pour un 2ème canal ?",
+        "options": [
+          "20%",
+          "50%",
+          "80%",
+          "100%"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un CM qui gère un coach fitness doit surtout produire :",
+        "options": [
+          "Du contenu juridique",
+          "Du contenu éducatif et de la preuve sociale",
+          "Des memes humoristiques uniquement",
+          "Du contenu politique"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "LinkedIn est idéal pour :",
+        "options": [
+          "Les adolescents",
+          "Les consultants, formateurs et B2B",
+          "Les restaurants locaux",
+          "Les influenceurs mode"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le guide de modération doit être validé par :",
+        "options": [
+          "Vous seul",
+          "Le client",
+          "Instagram",
+          "Un avocat"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Poster le week-end sur LinkedIn donne :",
+        "options": [
+          "Un excellent engagement",
+          "Un engagement très faible",
+          "Aucune différence",
+          "Un meilleur algorithme"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Proposer un 2ème canal est une opportunité de :",
+        "options": [
+          "Baisser ses prix",
+          "Facturation supplémentaire (upsell)",
+          "Perdre le client",
+          "Travailler gratuitement"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel est le rôle principal d'un Community Manager ?",
+        "options": [
+          "Créer des sites web",
+          "Gérer la présence en ligne d'une marque",
+          "Faire de la publicité télévisée",
+          "Gérer la comptabilité"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de hashtags validés la charte doit-elle contenir ?",
+        "options": [
+          "3-5",
+          "15-20",
+          "50-100",
+          "Aucun"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "En combien de temps maximum faut-il répondre aux commentaires ?",
+        "options": [
+          "24h",
+          "2-4h pendant vos heures de travail",
+          "1 semaine",
+          "Pas de délai, quand on peut"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le premier réflexe à toujours avoir en fin de collaboration :",
+        "options": [
+          "Bloquer le client",
+          "Demander un témoignage écrit ou vidéo",
+          "Baisser ses prix pour le garder",
+          "Critiquer le client en public"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de clients un CM peut-il gérer raisonnablement au début ?",
+        "options": [
+          "1 seul maximum",
+          "2-3 clients",
+          "10-15 clients",
+          "Autant que possible"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le premier message de prospection DM doit contenir :",
+        "options": [
+          "Une offre de vente directe",
+          "Une proposition de valeur gratuite (audit)",
+          "Vos tarifs",
+          "Votre CV"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le budget boost doit apparaître dans quelle vue ?",
+        "options": [
+          "Vue hebdomadaire",
+          "Vue mensuelle",
+          "Ni l'une ni l'autre",
+          "Dans le contrat uniquement"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La Page 7 du reporting contient :",
+        "options": [
+          "Les signatures",
+          "Le calendrier prévisionnel du mois suivant",
+          "Le contrat",
+          "Les factures impayées"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La 'différenciation' d'une marque, c'est :",
+        "options": [
+          "Son prix le plus bas",
+          "Ce qui la rend unique par rapport aux concurrents",
+          "Son nombre d'abonnés",
+          "Sa date de création"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Documenter ses résultats (avant/après, stats) sert à :",
+        "options": [
+          "Rien",
+          "Construire son portfolio et sa crédibilité",
+          "Impressionner ses amis",
+          "Publier sur son blog"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les plateformes freelance recommandées sont :",
+        "options": [
+          "Facebook Marketplace",
+          "Malt, Fiverr, ComeUp",
+          "Amazon, eBay",
+          "LinkedIn Jobs"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La Page 1 du document de packs présente :",
+        "options": [
+          "Les prix directement",
+          "Votre approche et votre méthode",
+          "Les conditions de résiliation",
+          "Les factures"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Avant de prospecter, votre profil IG doit :",
+        "options": [
+          "Être privé",
+          "Montrer vos compétences de CM (bio, contenu, preuves)",
+          "Avoir 10 000 abonnés minimum",
+          "Être vide pour repartir de zéro"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le reporting montre au client ce qu'il ne voit pas, à savoir :",
+        "options": [
+          "Vos loisirs personnels",
+          "Vos heures de travail et les résultats obtenus",
+          "Les comptes des concurrents",
+          "Vos autres clients"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le premier client vient souvent de :",
+        "options": [
+          "La publicité payante",
+          "Votre réseau personnel (proches, commerçants du quartier)",
+          "Les plateformes internationales",
+          "Les agences de recrutement"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le call hebdomadaire est prévu dans quel pack ?",
+        "options": [
+          "Essentiel",
+          "Croissance",
+          "Premium",
+          "Aucun"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La modération quotidienne inclut la gestion de :",
+        "options": [
+          "Uniquement les commentaires",
+          "Commentaires ET DMs",
+          "Uniquement les DMs",
+          "Les emails du client"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Pack Essentiel prend environ combien de temps par mois ?",
+        "options": [
+          "2-3h",
+          "6-8h",
+          "15-20h",
+          "30h+"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La bio d'un CM freelance doit contenir :",
+        "options": [
+          "Votre âge et lieu de naissance",
+          "'Community Manager | J'aide les [niche] à [résultat] via Instagram'",
+          "Votre numéro de téléphone",
+          "Rien, restez mystérieux"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les heures actives TikTok recommandées sont :",
+        "options": [
+          "6h-8h du matin",
+          "10h-12h",
+          "18h-22h",
+          "2h-5h du matin"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quelle est l'erreur la plus courante quand on débute comme CM ?",
+        "options": [
+          "Avoir trop de clients",
+          "Penser que c'est juste poster sur Instagram",
+          "Facturer trop cher",
+          "Utiliser trop d'outils"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les 'Top contenus' dans le reporting analysent :",
+        "options": [
+          "Les 3 meilleurs posts du mois et pourquoi ils ont marché",
+          "Tous les posts sans distinction",
+          "Uniquement les réels",
+          "Les posts des concurrents"
+        ],
+        "correct_index": 0,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La section 'Identité visuelle' de la charte inclut :",
+        "options": [
+          "Uniquement le logo",
+          "Couleurs, polices, style photo",
+          "Le contrat signé",
+          "Les KPIs"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le premier message DM ne doit JAMAIS contenir :",
+        "options": [
+          "Une offre de valeur",
+          "Votre prénom",
+          "Une proposition de vente directe",
+          "Le nom du prospect"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les 'douleurs' dans le questionnaire audience désignent :",
+        "options": [
+          "Les problèmes physiques du client",
+          "Les 3 problèmes principaux des clients de votre client",
+          "Les défauts du compte Instagram",
+          "Les bugs de l'application"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien d'heures par jour travaille un CM freelance avec 3 clients en moyenne ?",
+        "options": [
+          "2-3h",
+          "4-5h",
+          "~6h",
+          "10h+"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Jour 1 de production est consacré à :",
+        "options": [
+          "Rédiger les légendes",
+          "Créer TOUS les visuels + tourner TOUS les réels",
+          "Envoyer les factures",
+          "Faire le reporting"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La formule de calcul du prix est :",
+        "options": [
+          "Nombre de posts × 10€",
+          "Prix du concurrent - 20%",
+          "Temps estimé × taux horaire",
+          "Nombre d'abonnés × 0.01€"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le comparatif M-1 signifie :",
+        "options": [
+          "Comparer avec le meilleur mois",
+          "Comparer avec le mois précédent",
+          "Comparer avec les concurrents",
+          "Comparer avec l'objectif annuel"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "À quel niveau faut-il prévenir le client IMMÉDIATEMENT ?",
+        "options": [
+          "Niveau 1",
+          "Niveau 2",
+          "Niveau 3 — Crise",
+          "Tous les niveaux"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Votre propre contenu en tant que CM doit être :",
+        "options": [
+          "Absent, seuls les clients comptent",
+          "Des conseils marketing, analyses de comptes, tips Instagram",
+          "Des photos de votre vie privée",
+          "Des memes humoristiques"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel est le statut final d'un post dans le calendrier ?",
+        "options": [
+          "Brouillon",
+          "En attente validation",
+          "Validé",
+          "Publié"
+        ],
+        "correct_index": 3,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les 'interdits' dans le questionnaire couvrent :",
+        "options": [
+          "Les jours fériés",
+          "Les sujets, mots, visuels et concurrents à ne jamais mentionner",
+          "Les types de réels",
+          "Les horaires de publication"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'audit gratuit a un taux de conversion de :",
+        "options": [
+          "1-5%",
+          "10-15%",
+          "20-30%",
+          "50-70%"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien d'audits gratuits sont recommandés en semaine 3 du plan de prospection ?",
+        "options": [
+          "1",
+          "3",
+          "10",
+          "20"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le setting DM est inclus dans quel(s) pack(s) ?",
+        "options": [
+          "Tous les packs",
+          "Essentiel uniquement",
+          "Croissance et Premium",
+          "Premium uniquement"
+        ],
+        "correct_index": 3,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le reporting doit être envoyé au minimum :",
+        "options": [
+          "Quotidiennement",
+          "Hebdomadairement",
+          "Mensuellement",
+          "Trimestriellement"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "On supprime un commentaire uniquement quand c'est :",
+        "options": [
+          "Un avis négatif",
+          "Du spam ou des insultes",
+          "Un commentaire d'un concurrent",
+          "Une question sur le prix"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pour repérer un compte mal géré, on cherche :",
+        "options": [
+          "Un compte avec trop d'abonnés",
+          "Bio vague, pas de stories, posts irréguliers",
+          "Un compte avec un beau design",
+          "Un compte certifié"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un reporting de 5-8 pages prend environ combien de temps à préparer ?",
+        "options": [
+          "10 minutes",
+          "2-3 heures",
+          "1 journée entière",
+          "1 semaine"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Avant de proposer TikTok ou LinkedIn à un client, il faut :",
+        "options": [
+          "Le faire immédiatement",
+          "Attendre minimum 3 mois de résultats solides sur Instagram",
+          "Demander à Instagram",
+          "Créer un site web d'abord"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un artisan bijoutier a besoin surtout de :",
+        "options": [
+          "Contenu tech/innovation",
+          "Storytelling et visuels lifestyle",
+          "Contenu B2B professionnel",
+          "Publicité télévisée"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les KPIs doivent être comparés :",
+        "options": [
+          "Avec les concurrents uniquement",
+          "Mois vs mois précédent",
+          "Avec les moyennes mondiales",
+          "Jamais, chaque mois est unique"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La veille concurrentielle consiste à :",
+        "options": [
+          "Espionner les concurrents pour les copier",
+          "Rechercher les tendances et analyser ce qui marche dans la niche",
+          "Bloquer les comptes concurrents",
+          "Signaler les contenus des concurrents"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La croissance nette des abonnés se calcule :",
+        "options": [
+          "Abonnés totaux",
+          "Gains - pertes",
+          "Likes totaux",
+          "Posts publiés"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le premier client devrait être facturé :",
+        "options": [
+          "Gratuitement",
+          "Au prix normal",
+          "À prix réduit (-30 à -50%) en échange d'un témoignage",
+          "Au double du prix normal"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le client dispose de combien de temps pour valider le calendrier ?",
+        "options": [
+          "24h",
+          "48h",
+          "1 semaine",
+          "1 mois"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel est l'avantage principal de la production en lot ?",
+        "options": [
+          "Moins de qualité mais plus de quantité",
+          "Tout le mois est prêt en 3 jours, le reste = modération + stories",
+          "Le client n'a pas besoin de valider",
+          "On peut utiliser moins d'outils"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un brief bien fait prend environ :",
+        "options": [
+          "5 minutes",
+          "45-60 minutes de call structuré",
+          "Une demi-journée",
+          "Une semaine"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que faire AVANT de commencer tout travail ?",
+        "options": [
+          "Publier un premier post test",
+          "Contrat signé + acompte 30% reçu",
+          "Créer le calendrier",
+          "Faire le reporting"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel outil est recommandé pour créer le reporting ?",
+        "options": [
+          "Excel",
+          "Canva",
+          "PowerPoint",
+          "Word"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les piliers de contenu d'une boutique bijoux seraient :",
+        "options": [
+          "Tech, innovation, data, code",
+          "Créations, fabrication, clientes, lifestyle",
+          "Politique, économie, sport, culture",
+          "Recettes, fitness, voyage, mode"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel KPI mesure le nombre de personnes uniques touchées ?",
+        "options": [
+          "Engagement",
+          "Portée",
+          "Croissance",
+          "Conversions"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Après avoir répondu publiquement à un avis négatif, il faut :",
+        "options": [
+          "Attendre que ça passe",
+          "Résoudre en privé (DM)",
+          "Publier le nom du client mécontent",
+          "Supprimer le post concerné"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quels éléments contient la charte éditoriale ?",
+        "options": [
+          "Uniquement les couleurs",
+          "Ton, piliers, visuels, fréquence, hashtags, émojis",
+          "Le contrat de prestation",
+          "Les factures"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Comment prévenir le client d'une augmentation de prix ?",
+        "options": [
+          "Par surprise le jour même",
+          "1 mois à l'avance par écrit",
+          "Par un post Instagram",
+          "On ne prévient pas"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de stories quotidiennes sont prévues dans l'exemple de Salma ?",
+        "options": [
+          "1",
+          "3",
+          "5",
+          "10"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le créneau 14h-15h dans la journée type est dédié à :",
+        "options": [
+          "La création de contenu",
+          "Le reporting mensuel pour un client",
+          "La prospection de nouveaux clients",
+          "La pause déjeuner"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que ne faut-il JAMAIS faire en modération ?",
+        "options": [
+          "Répondre aux commentaires positifs",
+          "Répondre sous l'émotion, supprimer sans accord, ignorer",
+          "Prévenir le client d'un problème",
+          "Documenter les incidents"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La justification d'une hausse de prix repose sur :",
+        "options": [
+          "L'inflation générale",
+          "La valeur créée : abonnés gagnés, clients générés",
+          "Le fait que les concurrents sont plus chers",
+          "Votre ancienneté"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel est le premier outil à maîtriser pour créer des visuels ?",
+        "options": [
+          "Photoshop",
+          "Canva",
+          "Illustrator",
+          "Figma"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le devis pour un extra doit être envoyé :",
+        "options": [
+          "Après avoir fait le travail",
+          "Avant de commencer le travail supplémentaire",
+          "Jamais, c'est verbal",
+          "En fin de mois avec la facture"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi ne pas supprimer un commentaire négatif ?",
+        "options": [
+          "Parce que c'est illégal",
+          "Parce que screenshot + 'ils censurent' = crise amplifiée",
+          "Parce qu'Instagram sanctionne les suppressions",
+          "Parce que le client n'est pas d'accord"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Face à un spam ou publicité en commentaire :",
+        "options": [
+          "Répondre poliment",
+          "Supprimer immédiatement et bloquer si récidive",
+          "Liker le commentaire",
+          "Demander au client"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le brief évite les allers-retours car :",
+        "options": [
+          "Le client n'a plus le droit de donner son avis",
+          "Le client valide une direction générale, pas chaque post",
+          "Le CM publie sans demander",
+          "Le brief est un contrat légal"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel format fonctionne le mieux sur LinkedIn ?",
+        "options": [
+          "Réels courts de 15 secondes",
+          "Posts texte longs (800-1200 caractères) avec accroches fortes",
+          "Stories éphémères",
+          "Photos de vacances"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un client mécontent public (niveau 2) nécessite :",
+        "options": [
+          "Aucune action, ça passera",
+          "De prévenir le client + proposer une réponse",
+          "De supprimer le commentaire",
+          "De bloquer l'utilisateur"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les extras facturables incluent :",
+        "options": [
+          "Les posts standards",
+          "Les réels filmés en plus, le boost, les newsletters",
+          "Le reporting mensuel inclus dans le pack",
+          "Les calls prévus dans le pack"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel pack proposer en premier à un prospect ?",
+        "options": [
+          "Le moins cher (Essentiel)",
+          "Le plus cher (Premium)",
+          "Le milieu (Croissance)",
+          "Aucun, attendre qu'il choisisse"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Ne JAMAIS facturer :",
+        "options": [
+          "Au forfait mensuel",
+          "Au post",
+          "Au trimestre",
+          "À l'année"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que faire si un DM dépasse votre rôle de CM ?",
+        "options": [
+          "Répondre quand même",
+          "Transférer au client",
+          "Ignorer",
+          "Bloquer l'utilisateur"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'algorithme LinkedIn valorise :",
+        "options": [
+          "La viralité",
+          "L'engagement dans les 60 premières minutes",
+          "Le nombre de connexions",
+          "Les vidéos longues"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Si un client veut 3 plateformes en même temps, il faut :",
+        "options": [
+          "Accepter sans hésiter",
+          "Lui expliquer pourquoi c'est contre-productif",
+          "Tripler le prix",
+          "Refuser le client"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Sans reporting, le CM risque de :",
+        "options": [
+          "Créer de meilleur contenu",
+          "Répéter les mêmes actions sans savoir si elles marchent",
+          "Avoir plus de temps libre",
+          "Mieux gérer ses clients"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de réels par semaine dans l'exemple de Salma ?",
+        "options": [
+          "1",
+          "2-3",
+          "5",
+          "7"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le canal n°1 à long terme est :",
+        "options": [
+          "Instagram DM",
+          "Les plateformes freelance",
+          "Le bouche-à-oreille",
+          "La publicité payante"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La date de livraison au client fait partie de quelle vue ?",
+        "options": [
+          "Vue mensuelle",
+          "Vue hebdomadaire",
+          "Aucune",
+          "Vue trimestrielle"
+        ],
+        "correct_index": 0,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Une étude de cas complète contient :",
+        "options": [
+          "Juste les chiffres",
+          "Contexte → actions → résultats → témoignage",
+          "Uniquement le témoignage",
+          "Uniquement les captures d'écran"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Jour 2 de production est consacré à :",
+        "options": [
+          "Tourner les réels",
+          "Rédiger TOUTES les légendes + préparer les hashtags",
+          "Faire le reporting",
+          "Envoyer les factures"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'analyse du 'Pourquoi ça a marché' pour les top posts sert à :",
+        "options": [
+          "Impressionner le client",
+          "Identifier les patterns à reproduire le mois suivant",
+          "Comparer avec les concurrents",
+          "Rien de particulier"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le taux horaire d'un CM débutant est environ :",
+        "options": [
+          "5-10€/h",
+          "20-25€/h",
+          "50-75€/h",
+          "100€+/h"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le guide de modération est un document de :",
+        "options": [
+          "10 pages",
+          "2 pages avec réponses types par catégorie",
+          "1 mot : 'ignore'",
+          "50 pages détaillées"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Day 1 de l'onboarding inclut :",
+        "options": [
+          "La première publication",
+          "Contrat + acompte",
+          "Le reporting",
+          "La veille concurrentielle"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'IA peut aider la modération en :",
+        "options": [
+          "Publiant les réponses automatiquement sans relecture",
+          "Générant des réponses types à adapter au contexte",
+          "Supprimant les commentaires négatifs",
+          "Bloquant les trolls automatiquement"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Face à une demande hors périmètre, la réponse est :",
+        "options": [
+          "Non, ce n'est pas dans le contrat",
+          "Oui gratuitement par peur de perdre le client",
+          "Oui, voici le tarif",
+          "On verra plus tard"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le KPI 'Conversions' inclut :",
+        "options": [
+          "Uniquement les ventes",
+          "DMs reçus, clics lien bio, leads générés, ventes",
+          "Uniquement les likes",
+          "Le nombre de posts publiés"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Après le 3ème client, il faut :",
+        "options": [
+          "Baisser les prix",
+          "Augmenter les prix de 20-30%",
+          "Arrêter de prospecter",
+          "Changer de métier"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'erreur fatale sur LinkedIn est de :",
+        "options": [
+          "Publier des posts texte",
+          "Copier le ton Instagram (trop décontracté)",
+          "Utiliser des carrousels",
+          "Poster en semaine"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Sur LinkedIn, la régularité recommandée est :",
+        "options": [
+          "1 post/mois",
+          "3-5 posts/semaine",
+          "1 post/jour",
+          "10 posts/jour"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un post LinkedIn doit se terminer par :",
+        "options": [
+          "Rien",
+          "Une question ouverte pour générer des commentaires",
+          "Un lien externe",
+          "30 hashtags"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le boost Instagram est inclus dans quel pack ?",
+        "options": [
+          "Essentiel",
+          "Croissance",
+          "Premium (gestion + optimisation budget)",
+          "Tous les packs"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de canaux de prospection sont présentés ?",
+        "options": [
+          "3",
+          "4",
+          "5",
+          "7"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Comment adapter un Réel IG pour TikTok ?",
+        "options": [
+          "Le poster exactement pareil",
+          "Retirer le watermark IG et adapter le hook",
+          "Le publier en story",
+          "Ne pas l'adapter, TikTok n'accepte pas les réels"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Une story IG peut devenir sur LinkedIn :",
+        "options": [
+          "Une autre story",
+          "Une anecdote en post LinkedIn",
+          "Un réel",
+          "Rien, ce n'est pas compatible"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La question 'Qu'est-ce qui vous rend unique vs vos concurrents ?' sert à définir :",
+        "options": [
+          "Le prix",
+          "La différenciation",
+          "Le calendrier",
+          "Les hashtags"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les DMs interminables avec le client doivent être remplacés par :",
+        "options": [
+          "Des emails",
+          "Un call court qui règle tout",
+          "Des messages vocaux de 10 min",
+          "Des lettres postales"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel est le piège principal quand on gère plusieurs clients ?",
+        "options": [
+          "Utiliser trop d'outils",
+          "Copier-coller le même contenu entre clients",
+          "Travailler trop vite",
+          "Publier trop souvent"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pour 1 client, le temps total de production + organisation est environ :",
+        "options": [
+          "2-3h",
+          "12h",
+          "30h",
+          "50h"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La colonne 'Visuels' contient :",
+        "options": [
+          "La description textuelle du visuel",
+          "Le lien vers le fichier Canva ou Google Drive",
+          "Le prix du visuel",
+          "Rien, elle est optionnelle"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Après combien de relances faut-il passer au prospect suivant ?",
+        "options": [
+          "0, on ne relance jamais",
+          "1 maximum",
+          "5",
+          "10"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "15h/mois × 30€/h donne un prix minimum de :",
+        "options": [
+          "300€",
+          "350€",
+          "450€",
+          "600€"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le calendrier permet d'anticiper :",
+        "options": [
+          "Les bugs Instagram",
+          "Les fêtes, lancements et promotions",
+          "Les changements d'algorithme",
+          "Les prix des concurrents"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel outil est recommandé pour le calendrier éditorial partagé ?",
+        "options": [
+          "Excel sur clé USB",
+          "Google Sheets",
+          "Un carnet papier",
+          "WhatsApp"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Documenter chaque incident de modération sert à :",
+        "options": [
+          "Rien, c'est une perte de temps",
+          "Alimenter le reporting mensuel et apprendre",
+          "Poursuivre les trolls en justice",
+          "Impressionner le client"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel est le format recommandé pour le reporting ?",
+        "options": [
+          "Tableau Excel brut",
+          "PDF visuel de 5-8 pages",
+          "Message WhatsApp",
+          "Email avec les chiffres"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le CM intermédiaire facture environ :",
+        "options": [
+          "10-15€/h",
+          "20-25€/h",
+          "30-40€/h",
+          "100€+/h"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel est l'objectif principal de la Page 4 (Top 3 posts) ?",
+        "options": [
+          "Montrer les plus belles images",
+          "Analyser pourquoi ces posts ont surperformé",
+          "Compter les likes",
+          "Impressionner le client"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quand un CM gère le compte d'un client, une erreur engage :",
+        "options": [
+          "Sa propre réputation uniquement",
+          "La réputation du client",
+          "Personne",
+          "La plateforme Instagram"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Chaque post doit appartenir à :",
+        "options": [
+          "Tous les piliers en même temps",
+          "1 seul pilier",
+          "Au moins 3 piliers",
+          "Aucun pilier"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le taux d'engagement se calcule comment ?",
+        "options": [
+          "Nombre de posts × 100",
+          "Interactions / portée × 100",
+          "Abonnés / posts × 100",
+          "Likes - commentaires"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La rotation régulière des piliers signifie :",
+        "options": [
+          "Changer de piliers chaque mois",
+          "Alterner entre les piliers d'une publication à l'autre",
+          "Publier toujours le même pilier",
+          "Supprimer un pilier par semaine"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La partie 1 du questionnaire porte sur :",
+        "options": [
+          "L'audience",
+          "Les objectifs chiffrés",
+          "La marque (mission, histoire, valeurs, différenciation)",
+          "Les interdits"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le taux de conversion du DM classique est :",
+        "options": [
+          "Bien supérieur à l'audit gratuit",
+          "Bien inférieur à l'audit gratuit",
+          "Identique à l'audit gratuit",
+          "100%"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La charte éditoriale doit être un document de :",
+        "options": [
+          "10-15 pages détaillées",
+          "2-3 pages maximum",
+          "1 seule slide PowerPoint",
+          "Un message WhatsApp"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quelle est l'erreur fatale sur TikTok ?",
+        "options": [
+          "Utiliser des tendances",
+          "Poster le même contenu qu'IG sans adapter le hook",
+          "Poster des vidéos courtes",
+          "Utiliser des sous-titres"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La recommandation 'Ce qu'on teste' sert à :",
+        "options": [
+          "Expérimenter de nouvelles idées basées sur les données",
+          "Copier les concurrents",
+          "Changer toute la stratégie chaque mois",
+          "Justifier un échec"
+        ],
+        "correct_index": 0,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Caption est un outil qui sert à :",
+        "options": [
+          "Créer des visuels",
+          "Générer des sous-titres automatiques pour les Réels",
+          "Planifier les publications",
+          "Analyser les statistiques"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quelle est la conséquence de ne pas avoir de calendrier ?",
+        "options": [
+          "Plus de créativité",
+          "Improvisation, oublis, perte de confiance du client",
+          "Meilleure spontanéité",
+          "Plus de liberté"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le reporting est décrit comme le meilleur outil de :",
+        "options": [
+          "Prospection",
+          "Vente pour l'upsell",
+          "Modération",
+          "Création de contenu"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Day 7 de l'onboarding marque :",
+        "options": [
+          "La fin du contrat",
+          "La première publication — le client voit du travail concret",
+          "L'envoi du reporting",
+          "L'augmentation des prix"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Qu'est-ce qu'un persona client ?",
+        "options": [
+          "Le compte Instagram du client",
+          "La description détaillée du client idéal de votre client",
+          "Votre propre profil",
+          "Un concurrent"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien d'émojis peut-on utiliser dans les posts ?",
+        "options": [
+          "Autant que possible",
+          "Uniquement ceux validés dans la charte",
+          "Aucun, jamais",
+          "Tous les émojis existants"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pour un CM débutant, quelle est la meilleure approche pour trouver ses premiers clients ?",
+        "options": [
+          "Attendre qu'ils viennent",
+          "Prospecter activement dans sa niche",
+          "Poster des annonces sur LeBonCoin",
+          "Créer un site web professionnel d'abord"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les commentaires longs sur LinkedIn comptent :",
+        "options": [
+          "Moins que les likes",
+          "Plus que les likes",
+          "Autant que les likes",
+          "Pas du tout"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le calendrier éditorial est décrit comme :",
+        "options": [
+          "Un outil optionnel",
+          "Votre outil de travail n°1",
+          "Un document interne que le client ne voit pas",
+          "Une obligation légale"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "En fin de collaboration, il faut :",
+        "options": [
+          "Disparaître sans prévenir",
+          "Prévenir 1 mois à l'avance, transmettre tous les accès et documents",
+          "Supprimer le compte Instagram du client",
+          "Publier un message négatif"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le CM est décrit comme un métier complet. Quels sont ses 4 rôles ?",
+        "options": [
+          "Stratège, créateur, analyste, communicant",
+          "Designer, codeur, rédacteur, comptable",
+          "Photographe, vidéaste, graphiste, animateur",
+          "Manager, directeur, consultant, formateur"
+        ],
+        "correct_index": 0,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'algorithme TikTok valorise principalement :",
+        "options": [
+          "Le nombre d'abonnés",
+          "Le taux de complétion et les rewatches",
+          "Les hashtags",
+          "L'ancienneté du compte"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le document de présentation des packs doit faire :",
+        "options": [
+          "1 page",
+          "3 pages (approche, packs, conditions)",
+          "10 pages",
+          "20 pages"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Définir ses horaires de disponibilité sert à :",
+        "options": [
+          "Travailler moins",
+          "Poser des limites professionnelles dès le départ",
+          "Impressionner le client",
+          "Remplir le contrat"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi inclure le 'Flop du mois' dans le reporting ?",
+        "options": [
+          "Pour montrer que rien ne marche",
+          "Par transparence et pour apprendre",
+          "Parce que le client l'exige",
+          "Pour baisser vos prix"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de contenu d'avance faut-il toujours avoir ?",
+        "options": [
+          "Aucun, on publie au jour le jour",
+          "1 semaine minimum",
+          "1 mois complet",
+          "3 mois"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quelle compétence relationnelle est essentielle pour gérer plusieurs clients ?",
+        "options": [
+          "Le perfectionnisme",
+          "La gestion du temps",
+          "La créativité artistique",
+          "La maîtrise de Photoshop"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Après avoir signé un client, il faut immédiatement :",
+        "options": [
+          "Chercher d'autres clients",
+          "Documenter tout pour le portfolio",
+          "Prendre des vacances",
+          "Augmenter ses prix"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La Page 6 du reporting contient :",
+        "options": [
+          "Les factures",
+          "Les recommandations — ce qu'on garde, change, teste",
+          "Les contrats",
+          "Les hashtags"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quand vous gérez le compte d'un client, qui valide le contenu ?",
+        "options": [
+          "Vous seul",
+          "Le client",
+          "Vos abonnés",
+          "L'algorithme Instagram"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Sur TikTok, les abonnés comptent :",
+        "options": [
+          "Énormément",
+          "Peu — chaque vidéo a sa chance",
+          "Autant que sur Instagram",
+          "Plus que le contenu"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'accès aux comptes IG + Facebook doit être obtenu à :",
+        "options": [
+          "Jour 1",
+          "Jour 2-3",
+          "Jour 7",
+          "Jamais, le client publie lui-même"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que signifie 'setting en DM' dans la journée type du CM ?",
+        "options": [
+          "Configurer les paramètres Instagram",
+          "Engager la conversation avec les viewers de stories",
+          "Supprimer les spams",
+          "Bloquer les trolls"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La vue mensuelle du calendrier contient :",
+        "options": [
+          "Le détail de chaque post",
+          "Les thèmes du mois et objectifs principaux",
+          "Les factures",
+          "Les contrats"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi le premier client est décrit comme 'le plus dur' ?",
+        "options": [
+          "Parce qu'il paie mal",
+          "Parce qu'on n'a pas encore de preuve ni de portfolio",
+          "Parce qu'il est exigeant",
+          "Parce qu'on ne sait pas utiliser les outils"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Partager les mauvais résultats avec le client :",
+        "options": [
+          "Est interdit, il faut cacher les échecs",
+          "Est essentiel — transparence = confiance",
+          "Est inutile",
+          "Est risqué pour la relation"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le copier-coller des réponses IA sans relecture est :",
+        "options": [
+          "Recommandé pour gagner du temps",
+          "Interdit — il faut toujours adapter au contexte",
+          "Acceptable pour les commentaires positifs",
+          "Obligatoire"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que doit faire un CM avant CHAQUE décision de contenu ?",
+        "options": [
+          "Consulter la charte éditoriale",
+          "Appeler le client",
+          "Regarder les concurrents",
+          "Publier et voir ce qui se passe"
+        ],
+        "correct_index": 0,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel jour du mois le calendrier doit-il être envoyé au client ?",
+        "options": [
+          "Le 1er du mois en cours",
+          "Le 25 du mois précédent",
+          "Le 15 du mois précédent",
+          "Quand on a le temps"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de clients Essentiel peut-on gérer en parallèle ?",
+        "options": [
+          "1",
+          "2-3",
+          "4-5",
+          "10+"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le call de brief en onboarding dure :",
+        "options": [
+          "10 minutes",
+          "45-60 minutes",
+          "3 heures",
+          "5 minutes"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La charte éditoriale doit être mise à jour :",
+        "options": [
+          "Jamais, elle est définitive",
+          "Tous les jours",
+          "Tous les 3-6 mois si nécessaire",
+          "Toutes les semaines"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le temps ajouté pour gérer TikTok en plus d'IG est environ :",
+        "options": [
+          "+10h/mois",
+          "+1-2h/mois",
+          "+20h/mois",
+          "+5h/jour"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi demander 'Quels comptes Instagram admirez-vous ?' au client ?",
+        "options": [
+          "Pour les copier",
+          "Pour comprendre le goût esthétique du client",
+          "Pour les signaler",
+          "Pour les contacter"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que signifie 'ton de voix' dans la charte éditoriale ?",
+        "options": [
+          "Le volume sonore des vidéos",
+          "3-5 adjectifs qui décrivent la personnalité de communication",
+          "La langue utilisée",
+          "Le type de musique dans les réels"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Comment fixer le prix d'un pack ?",
+        "options": [
+          "Au feeling",
+          "Temps estimé × taux horaire souhaité",
+          "En copiant les concurrents",
+          "Le plus cher possible"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de niveaux de problème sont définis ?",
+        "options": [
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Qu'est-ce qui différencie un CM professionnel d'un amateur ?",
+        "options": [
+          "Le nombre de followers personnels",
+          "La stratégie, le reporting et le professionnalisme",
+          "L'utilisation de Photoshop",
+          "Le nombre d'heures travaillées"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le calendrier est aussi votre preuve de travail en cas de :",
+        "options": [
+          "Contrôle fiscal",
+          "Litige avec le client",
+          "Audit Instagram",
+          "Mise à jour de l'algorithme"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La production en lot consiste à :",
+        "options": [
+          "Publier 10 posts d'un coup",
+          "Créer tout le contenu en 1-2 sessions, pas au jour le jour",
+          "Copier le contenu d'autres comptes",
+          "Automatiser la publication"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La tendance dans le résumé exécutif s'affiche avec :",
+        "options": [
+          "Des mots uniquement",
+          "Des flèches ↑ ↓ →",
+          "Des couleurs rouge/vert",
+          "Des pourcentages uniquement"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un client du Pack Croissance veut des réels filmés. Que faire ?",
+        "options": [
+          "Les inclure gratuitement",
+          "Proposer un extra facturé ou le passage au Premium",
+          "Refuser",
+          "Ignorer la demande"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le mix de contenu recommandé inclut :",
+        "options": [
+          "Uniquement des réels",
+          "Uniquement des carrousels",
+          "Réels + carrousels + stories",
+          "Uniquement des posts image"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Si le prospect accepte le Croissance facilement, il faut :",
+        "options": [
+          "S'arrêter là",
+          "Proposer le Premium",
+          "Baisser le prix",
+          "Ajouter des extras gratuits"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pour LinkedIn, un Réel IG peut devenir :",
+        "options": [
+          "Un autre réel identique",
+          "Un post texte long extrait des idées clés",
+          "Une publicité payante",
+          "Un email"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que demander à l'IA pour anticiper les crises ?",
+        "options": [
+          "De supprimer les commentaires automatiquement",
+          "De lister les 10 commentaires négatifs les plus probables + réponses idéales",
+          "De publier à votre place",
+          "De gérer le compte du client"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi le reporting ne doit PAS être un simple tableau Excel ?",
+        "options": [
+          "Parce qu'Excel est payant",
+          "Parce qu'un PDF visuel est plus professionnel et lisible pour le client",
+          "Parce que le client ne sait pas lire Excel",
+          "Parce que c'est interdit"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le délai maximum de réponse aux messages du client est :",
+        "options": [
+          "1h",
+          "24h",
+          "48h",
+          "1 semaine"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La durée idéale d'un TikTok pour débuter est :",
+        "options": [
+          "3-5 secondes",
+          "15-30 secondes",
+          "5-10 minutes",
+          "Plus de 10 minutes"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le protocole de crise a combien d'étapes ?",
+        "options": [
+          "2",
+          "3",
+          "4",
+          "6"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Si le client demande un logo, la bonne réponse est :",
+        "options": [
+          "Le créer gratuitement",
+          "Dire non sèchement",
+          "Ce n'est pas mon domaine, je peux vous recommander un graphiste",
+          "Ignorer la demande"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Parmi ces outils, lequel est payant ?",
+        "options": [
+          "Canva (version de base)",
+          "Google Sheets",
+          "VN Video Editor",
+          "Caption"
+        ],
+        "correct_index": 3,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Ne pas accepter 15 allers-retours de validation, maximum :",
+        "options": [
+          "1",
+          "2",
+          "5",
+          "Illimité"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La réponse type à un avis négatif légitime commence par :",
+        "options": [
+          "'Vous avez tort'",
+          "'Nous sommes navrés de votre expérience'",
+          "'Ce n'est pas notre faute'",
+          "'Merci pour la publicité gratuite'"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Pack Premium prend environ combien de temps par mois ?",
+        "options": [
+          "6-8h",
+          "12-15h",
+          "20-25h",
+          "40h+"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Toujours finir une collaboration :",
+        "options": [
+          "En ghostant le client",
+          "Proprement + en demandant un témoignage",
+          "En baissant la qualité progressivement",
+          "En publiant du contenu négatif"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La relance après un DM sans réponse se fait à :",
+        "options": [
+          "J+1",
+          "J+3",
+          "J+7",
+          "J+30"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que signifie 'qualifier les prospects' dans les DMs ?",
+        "options": [
+          "Leur donner une note sur 10",
+          "Distinguer les intéressés des curieux et du spam",
+          "Leur vendre immédiatement",
+          "Les bloquer s'ils ne sont pas intéressés"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le reporting sert principalement à :",
+        "options": [
+          "Impressionner le client avec des chiffres",
+          "Justifier votre valeur et fidéliser le client",
+          "Remplir une obligation légale",
+          "Comparer avec les concurrents"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quelle est la différence fondamentale entre gérer son propre compte et celui d'un client ?",
+        "options": [
+          "Il n'y a aucune différence",
+          "Vous incarnez SA marque, pas la vôtre",
+          "Vous publiez moins souvent",
+          "Vous n'avez pas besoin de stratégie"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le message 2 de prospection DM contient :",
+        "options": [
+          "Vos tarifs et conditions",
+          "L'audit : 3 points forts + 3 améliorations + 3 actions + proposition d'appel",
+          "Un lien vers votre site web",
+          "Rien, on attend la réponse"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quel outil gratuit est recommandé pour le montage de Réels ?",
+        "options": [
+          "Adobe Premiere Pro",
+          "Final Cut Pro",
+          "VN Video Editor",
+          "DaVinci Resolve"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le reporting doit être envoyé :",
+        "options": [
+          "Quand le client le demande",
+          "Entre le 1er et le 5 du mois suivant",
+          "En fin d'année",
+          "Tous les jours"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Comment répondre à un commentaire positif ?",
+        "options": [
+          "Un simple emoji suffit",
+          "Remercier avec le prénom et un message personnalisé",
+          "Ignorer, ce n'est pas urgent",
+          "Liker le commentaire sans répondre"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le hook sur TikTok doit apparaître dans les :",
+        "options": [
+          "10 premières secondes",
+          "2 premières secondes",
+          "30 premières secondes",
+          "Dernières secondes"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La colonne 'Statut' peut avoir les valeurs :",
+        "options": [
+          "Bon / Mauvais / Moyen",
+          "Brouillon / En attente validation / Validé / Publié",
+          "Oui / Non",
+          "1 / 2 / 3 / 4"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Pack Essentiel coûte entre :",
+        "options": [
+          "100-200€/mois",
+          "300-500€/mois",
+          "600-1000€/mois",
+          "1200-2000€/mois"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les sous-titres sur TikTok sont :",
+        "options": [
+          "Optionnels",
+          "Obligatoires",
+          "Interdits",
+          "Inutiles"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Se spécialiser dans une niche est recommandé car :",
+        "options": [
+          "C'est obligatoire légalement",
+          "Expert > généraliste pour la crédibilité",
+          "C'est plus facile de ne rien apprendre",
+          "Les clients préfèrent les généralistes"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Facturer un 2ème canal en extra coûte :",
+        "options": [
+          "Rien, c'est inclus",
+          "10-50€/mois",
+          "100-200€/mois",
+          "500€+/mois"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quand augmenter ses prix ?",
+        "options": [
+          "Après 1 semaine",
+          "Après 3-6 mois de résultats prouvés",
+          "Jamais",
+          "Chaque mois"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de jours faut-il pour préparer un mois de contenu ?",
+        "options": [
+          "1 jour",
+          "2-3 jours",
+          "2 semaines",
+          "1 mois entier"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de hashtags maximum sur LinkedIn ?",
+        "options": [
+          "20-30",
+          "10-15",
+          "3-5 nichés",
+          "Aucun"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de colonnes essentielles votre Google Sheet doit-il avoir ?",
+        "options": [
+          "3",
+          "5",
+          "8",
+          "12"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pas de messages du client à 23h le dimanche sauf :",
+        "options": [
+          "Crise réelle",
+          "Quand le client est VIP",
+          "Quand le post est viral",
+          "Jamais d'exception"
+        ],
+        "correct_index": 0,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Les stories à la une d'un CM doivent montrer :",
+        "options": [
+          "Vos vacances",
+          "Témoignages, avant/après, méthode de travail",
+          "Vos repas",
+          "Vos animaux de compagnie"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Pack Croissance coûte entre :",
+        "options": [
+          "100-300€",
+          "300-500€",
+          "600-1000€",
+          "2000-3000€"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Si le prospect trouve le Croissance trop cher, il faut :",
+        "options": [
+          "Baisser le prix sans rien changer",
+          "Descendre sur le Pack Essentiel",
+          "Insister jusqu'à ce qu'il accepte",
+          "Abandonner le prospect"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Qu'est-ce qu'un CM qui commence sans brief inspire chez le client ?",
+        "options": [
+          "De la confiance",
+          "De l'admiration",
+          "Un manque de professionnalisme",
+          "De la gratitude"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Pack Croissance inclut contrairement à l'Essentiel :",
+        "options": [
+          "Rien de plus",
+          "Stories + modération DMs + call stratégique",
+          "Réels filmés par vous",
+          "Création de site web"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'engagement minimum 3 mois est formalisé dans :",
+        "options": [
+          "Un message WhatsApp",
+          "Un contrat (voir module administratif)",
+          "Un post Instagram",
+          "Rien, c'est verbal"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Si le client refuse l'augmentation de prix, il faut :",
+        "options": [
+          "Insister jusqu'à ce qu'il accepte",
+          "Respecter sa décision. Il reste à l'ancien prix ou il part",
+          "Baisser le prix en dessous de l'ancien",
+          "Menacer de supprimer son compte"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Chaque demande hors périmètre est décrite comme :",
+        "options": [
+          "Un problème",
+          "Une corvée",
+          "Une opportunité d'upsell",
+          "Un motif de résiliation"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le profil IG du CM est décrit comme :",
+        "options": [
+          "Un simple réseau social",
+          "Son portfolio vivant et sa vitrine",
+          "Un espace personnel privé",
+          "Un outil de divertissement"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Après la production en lot, le reste du mois est consacré à :",
+        "options": [
+          "Créer du nouveau contenu",
+          "Modération + stories",
+          "Chercher de nouveaux clients",
+          "Prendre des vacances"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le CM doit savoir dire non avec :",
+        "options": [
+          "Agressivité",
+          "Indifférence",
+          "Diplomatie",
+          "Silence"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La Page 3 du document de packs contient :",
+        "options": [
+          "Les visuels du portfolio",
+          "Engagement, conditions, prochaines étapes",
+          "Les hashtags",
+          "Le calendrier éditorial"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un audit gratuit analyse :",
+        "options": [
+          "Les finances du prospect",
+          "3 points forts + 3 améliorations + 3 actions concrètes",
+          "Le contrat de travail du prospect",
+          "Les comptes bancaires"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi le calendrier est-il partagé avec le client ?",
+        "options": [
+          "Pour qu'il crée du contenu lui-même",
+          "Pour la transparence totale sur ce qui sera publié",
+          "Parce que c'est une obligation légale",
+          "Pour qu'il modifie les posts"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "L'appel découverte dure :",
+        "options": [
+          "5 minutes",
+          "15 minutes",
+          "1 heure",
+          "3 heures"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Sur les groupes Facebook, il faut d'abord :",
+        "options": [
+          "Poster votre offre immédiatement",
+          "Apporter de la valeur avant de proposer",
+          "Spammer votre lien",
+          "Critiquer les autres membres"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un bad buzz correspond à quel niveau ?",
+        "options": [
+          "Niveau 1",
+          "Niveau 2",
+          "Niveau 3 — Crise",
+          "Aucun niveau, ce n'est pas grave"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La structure d'un post LinkedIn efficace commence par :",
+        "options": [
+          "Une citation inspirante",
+          "Une accroche choc (visible avant 'voir plus')",
+          "Le CTA",
+          "Les hashtags"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quelle est la première étape avant de créer du contenu pour un client ?",
+        "options": [
+          "Choisir les hashtags",
+          "Créer le calendrier éditorial",
+          "Faire le brief client",
+          "Publier un premier post test"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le reporting dans le Pack Essentiel est :",
+        "options": [
+          "Complet (5-8 pages)",
+          "Simple (3 pages : KPIs + top posts + recommandations)",
+          "Inexistant",
+          "Quotidien"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le setting dans les DMs consiste à :",
+        "options": [
+          "Configurer les paramètres du compte",
+          "Engager la conversation avec les viewers de stories",
+          "Supprimer les messages indésirables",
+          "Automatiser les réponses"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le Pack Premium est limité à combien de clients simultanés ?",
+        "options": [
+          "1",
+          "2 maximum",
+          "5",
+          "Illimité"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Quelle est la posture correcte du CM envers son client ?",
+        "options": [
+          "Employé soumis",
+          "Prestataire professionnel et partenaire",
+          "Supérieur hiérarchique",
+          "Ami personnel"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La charte éditoriale est validée par le client à :",
+        "options": [
+          "Jour 1",
+          "Jour 3-5",
+          "Jour 7",
+          "Jamais"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Que faire face à un troll/hater ?",
+        "options": [
+          "Répondre agressivement",
+          "L'insulter en retour",
+          "Ne pas répondre, masquer si nécessaire",
+          "Publier son message en story"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Un prestataire de services (avocat, thérapeute) a besoin de :",
+        "options": [
+          "Contenu humoristique viral",
+          "Crédibilité et pédagogie",
+          "Promotions agressives",
+          "Contenu polémique"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le call avec le client doit être :",
+        "options": [
+          "Quotidien de 2h",
+          "Hebdo ou bimensuel de 15-30 min",
+          "Mensuel de 4h",
+          "Inexistant"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de clients faut-il viser en 3 mois ?",
+        "options": [
+          "1",
+          "3",
+          "10",
+          "20"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Combien de piliers de contenu maximum sont recommandés ?",
+        "options": [
+          "2",
+          "3",
+          "4",
+          "6"
+        ],
+        "correct_index": 2,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Pourquoi les hashtags doivent être préparés à l'avance ?",
+        "options": [
+          "Pour impressionner le client",
+          "Pour ne pas improviser et rester cohérent avec la stratégie",
+          "Parce qu'Instagram l'exige",
+          "Pour avoir plus de 30 hashtags"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "Le témoignage client est décrit comme :",
+        "options": [
+          "Inutile",
+          "Votre meilleur outil de prospection",
+          "Une obligation légale",
+          "Un bonus optionnel"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La colonne 'Pilier de contenu' dans le Google Sheet sert à :",
+        "options": [
+          "Décorer le tableau",
+          "Savoir à quel pilier de la charte le post appartient",
+          "Compter les posts",
+          "Calculer le prix"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      },
+      {
+        "question": "La Page 1 du reporting contient :",
+        "options": [
+          "Tous les KPIs détaillés",
+          "Le résumé exécutif — 3 chiffres clés + tendance",
+          "Le calendrier du mois suivant",
+          "Les factures"
+        ],
+        "correct_index": 1,
+        "contexte": "",
+        "explication": ""
+      }
+    ]
+  }
+]

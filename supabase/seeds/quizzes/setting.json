@@ -1,0 +1,3704 @@
+[
+  {
+    "titre": "Quiz Setting — M1 LES FONDEMENTS DU SETTING",
+    "description": "Quiz de validation du module 1.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "1d537fcb-8984-40a5-82af-3a0d33915953",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Quelle est la dÃ©finition du setting ?",
+        "contexte": "",
+        "options": [
+          "L'art de vendre un produit directement au client",
+          "L'art de qualifier des prospects pour les amener Ã  un RDV commercial",
+          "L'art de crÃ©er du contenu pour attirer des clients",
+          "L'art de closer une vente par tÃ©lÃ©phone"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Quel est le rÃ´le principal du setter ?",
+        "contexte": "",
+        "options": [
+          "PrÃ©senter l'offre et conclure la vente",
+          "CrÃ©er du contenu marketing",
+          "Qualifier le prospect, identifier la douleur, rÃ©server le RDV",
+          "GÃ©rer le service aprÃ¨s-vente"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Quel est le rÃ´le du closer ?",
+        "contexte": "",
+        "options": [
+          "Qualifier les prospects par message",
+          "PrÃ©senter l'offre, lever les objections, conclure la vente",
+          "Envoyer des DMs de prospection",
+          "CrÃ©er les scripts de vente"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Un RDV non qualifiÃ© a quelle valeur ?",
+        "contexte": "",
+        "options": [
+          "50% de chance de conversion",
+          "Valeur rÃ©duite mais existante",
+          "ZÃ©ro valeur pour tout le monde",
+          "DÃ©pend du closer"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Quel canal de setting a le taux de conversion le plus Ã©levÃ© ?",
+        "contexte": "",
+        "options": [
+          "DM Instagram",
+          "DM LinkedIn",
+          "TÃ©lÃ©phone (15-25%)",
+          "Email marketing"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le DM Instagram est idÃ©al pour quel type de business ?",
+        "contexte": "",
+        "options": [
+          "B2B uniquement",
+          "Coaches B2C",
+          "E-commerce",
+          "Grandes entreprises"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le DM LinkedIn est idÃ©al pour :",
+        "contexte": "",
+        "options": [
+          "Les coaches B2C",
+          "La crÃ©dibilitÃ© professionnelle et les dÃ©cideurs B2B",
+          "Les ventes de produits physiques",
+          "Le marketing d'affiliation"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Combien y a-t-il d'Ã©tapes dans le parcours de setting ?",
+        "contexte": "",
+        "options": [
+          "3 Ã©tapes",
+          "4 Ã©tapes",
+          "5 Ã©tapes",
+          "7 Ã©tapes"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Quelle est la premiÃ¨re Ã©tape du parcours ?",
+        "contexte": "",
+        "options": [
+          "Prise de contact",
+          "Qualification",
+          "Identification (dÃ©finir son ICP)",
+          "CrÃ©ation du dÃ©sir"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Quelle est la derniÃ¨re Ã©tape du parcours de setting ?",
+        "contexte": "",
+        "options": [
+          "Qualification",
+          "CrÃ©ation du dÃ©sir",
+          "Prise de RDV",
+          "Closing"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "L'Ã©tape de qualification consiste Ã  identifier :",
+        "contexte": "",
+        "options": [
+          "Uniquement le budget du prospect",
+          "Douleur, dÃ©sir, budget, autoritÃ©, timing",
+          "Le nombre de followers du prospect",
+          "L'Ã¢ge et la localisation"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le setter et le closer sont-ils interchangeables ?",
+        "contexte": "",
+        "options": [
+          "Oui, c'est le mÃªme mÃ©tier",
+          "Non, ces deux rÃ´les ne se confondent pas",
+          "Oui, selon la taille de l'entreprise",
+          "Seulement en B2C"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le taux de conversion moyen en DM est de :",
+        "contexte": "",
+        "options": [
+          "15-25%",
+          "2-5%",
+          "30-50%",
+          "50-70%"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le setting peut s'exercer sur :",
+        "contexte": "",
+        "options": [
+          "Instagram uniquement",
+          "Toutes les plateformes permettant d'Ã©changer par message",
+          "LinkedIn et tÃ©lÃ©phone uniquement",
+          "Email uniquement"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'objectif unique du setter est de :",
+        "contexte": "",
+        "options": [
+          "Vendre le produit",
+          "RÃ©server un maximum d'appels qualifiÃ©s",
+          "CrÃ©er du contenu",
+          "GÃ©rer les remboursements"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Un bon RDV qualifiÃ© coÃ»te :",
+        "contexte": "",
+        "options": [
+          "Plus cher qu'un prospect non contactÃ©",
+          "Moins cher qu'un prospect non contactÃ©",
+          "Le mÃªme prix",
+          "Rien du tout"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le setter est comparÃ© Ã  quel mÃ©tier ?",
+        "contexte": "",
+        "options": [
+          "Un vendeur",
+          "Un marketeur",
+          "Un dÃ©tective",
+          "Un coach"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Quel canal offre la plus grande proximitÃ© avec le prospect ?",
+        "contexte": "",
+        "options": [
+          "Email",
+          "DM Instagram",
+          "Courrier postal",
+          "PublicitÃ© Facebook"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le setting est utile pour :",
+        "contexte": "",
+        "options": [
+          "Uniquement les formations en ligne",
+          "Tout business qui vend des services ou accompagnements",
+          "Uniquement l'e-commerce",
+          "Les restaurants"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Quelle Ã©tape vient juste avant la prise de RDV ?",
+        "contexte": "",
+        "options": [
+          "Identification",
+          "Prise de contact",
+          "Qualification",
+          "CrÃ©ation du dÃ©sir"
+        ],
+        "correct_index": 3,
+        "explication": ""
+      },
+      {
+        "question": "Quel est le principe fondamental du setting ?",
+        "contexte": "",
+        "options": [
+          "Automatiser un maximum de messages",
+          "ReconnaÃ®tre qu'on s'adresse Ã  un humain",
+          "Envoyer le plus de DMs possible",
+          "Utiliser des scripts mot pour mot"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "DerriÃ¨re chaque Ã©cran, il y a :",
+        "contexte": "",
+        "options": [
+          "Un numÃ©ro dans une base de donnÃ©es",
+          "Une personne avec une histoire, des rÃªves et des doutes",
+          "Un potentiel acheteur Ã  convertir",
+          "Un algorithme"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le travail du setter consiste Ã  :",
+        "contexte": "",
+        "options": [
+          "Vendre son produit Ã  tout prix",
+          "Transformer la vie des personnes grÃ¢ce Ã  ce qu'il offre",
+          "Automatiser ses messages",
+          "Copier-coller des templates"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Qu'est-ce qui est plus solide qu'une simple transaction ?",
+        "contexte": "",
+        "options": [
+          "Un bon script",
+          "Une connexion vÃ©ritablement humaine",
+          "Un prix bas",
+          "Une offre promotionnelle"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'approche centrÃ©e sur l'humain donne :",
+        "contexte": "",
+        "options": [
+          "Moins de rÃ©sultats mais plus d'authenticitÃ©",
+          "Les meilleurs rÃ©sultats possibles",
+          "Des rÃ©sultats identiques Ã  l'automatisation",
+          "Uniquement des rÃ©sultats en B2C"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le setting vise Ã  :",
+        "contexte": "",
+        "options": [
+          "Automatiser des messages froids",
+          "Humaniser les Ã©changes et bÃ¢tir des connexions",
+          "Remplacer le closer",
+          "Envoyer des pitchs dans le premier message"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "DerriÃ¨re chaque conversation engagÃ©e, il y a :",
+        "contexte": "",
+        "options": [
+          "Juste un Ã©change de politesse",
+          "Une vente potentielle Ã  plusieurs milliers d'euros",
+          "Peu de chances de conversion",
+          "Un risque de perte de temps"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le setter doit remettre quoi au centre du business ?",
+        "contexte": "",
+        "options": [
+          "La technologie",
+          "Les KPIs",
+          "L'humain",
+          "Le produit"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Humaniser un message signifie :",
+        "contexte": "",
+        "options": [
+          "Utiliser des emojis",
+          "Personnaliser et crÃ©er un lien Ã©motionnel",
+          "Ãcrire des messages plus longs",
+          "Utiliser le prÃ©nom du prospect uniquement"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "C'est quoi qui dÃ©cide de vous faire confiance ?",
+        "contexte": "",
+        "options": [
+          "Le prix de l'offre",
+          "La qualitÃ© du produit",
+          "L'humain derriÃ¨re l'Ã©cran",
+          "La publicitÃ©"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le chapitre setting s'applique Ã  :",
+        "contexte": "",
+        "options": [
+          "Instagram uniquement",
+          "Toutes les plateformes avec messagerie privÃ©e",
+          "Le tÃ©lÃ©phone uniquement",
+          "Les emails"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'objectif unique du setting est de :",
+        "contexte": "",
+        "options": [
+          "Vendre en DM",
+          "RÃ©server un maximum de calls",
+          "Qualifier puis disqualifier",
+          "CrÃ©er du contenu"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Un bon setter ne se limite pas Ã  :",
+        "contexte": "",
+        "options": [
+          "Qualifier des prospects",
+          "Vendre son produit ou service",
+          "Envoyer des messages",
+          "Utiliser des scripts"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Ãa va bien au-delÃ  de :",
+        "contexte": "",
+        "options": [
+          "Faire du volume",
+          "Envoyer des simples messages",
+          "Utiliser LinkedIn",
+          "Avoir un bon profil"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Comment le setter est-il rÃ©munÃ©rÃ© ?",
+        "contexte": "",
+        "options": [
+          "Il ne l'est pas",
+          "En transformant la vie des personnes grÃ¢ce Ã  ce qu'il offre",
+          "Uniquement au rÃ©sultat",
+          "Au nombre de messages envoyÃ©s"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le mindset du setter prioritise :",
+        "contexte": "",
+        "options": [
+          "La quantitÃ© de messages",
+          "La qualitÃ© des relations crÃ©Ã©es",
+          "La vitesse d'exÃ©cution",
+          "Le nombre de closings"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Un message impersonnel est :",
+        "contexte": "",
+        "options": [
+          "Efficace si bien ciblÃ©",
+          "Contraire au principe du setting",
+          "Acceptable en cold outreach",
+          "La norme en B2B"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Les meilleurs rÃ©sultats viennent de :",
+        "contexte": "",
+        "options": [
+          "L'automatisation des messages",
+          "L'approche centrÃ©e sur l'humain",
+          "Le volume pur",
+          "Les publicitÃ©s payantes"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Qu'est-ce que le prospect retient le plus ?",
+        "contexte": "",
+        "options": [
+          "Le contenu de votre message",
+          "Votre offre et son prix",
+          "La maniÃ¨re dont vous l'avez fait se sentir",
+          "Votre nombre de followers"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Qui a dit cette citation sur le ressenti du prospect ?",
+        "contexte": "",
+        "options": [
+          "Seth Godin",
+          "Gary Vaynerchuk",
+          "David Ogilvy",
+          "Grant Cardone"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Setting — M2 CIBLAGE & SOURCING",
+    "description": "Quiz de validation du module 2.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "d884839b-bc53-4d1e-82ab-6d8df9e57dba",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Que signifie ICP ?",
+        "contexte": "",
+        "options": [
+          "Internal Communication Protocol",
+          "Ideal Customer Profile (Profil Client IdÃ©al)",
+          "Internet Connection Point",
+          "Instant Conversion Process"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Combien de dimensions composent l'ICP ?",
+        "contexte": "",
+        "options": [
+          "3",
+          "5",
+          "7",
+          "10"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "La premiÃ¨re dimension de l'ICP est :",
+        "contexte": "",
+        "options": [
+          "Professionnelle",
+          "DÃ©mographique",
+          "Comportement digital",
+          "Douleurs"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La dimension 'CapacitÃ©' dans l'ICP Ã©value :",
+        "contexte": "",
+        "options": [
+          "La capacitÃ© Ã  suivre une formation",
+          "Les moyens financiers pour passer Ã  l'action",
+          "La capacitÃ© de travail du prospect",
+          "Sa disponibilitÃ© horaire"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La dimension 'Timing' Ã©value :",
+        "contexte": "",
+        "options": [
+          "Depuis combien de temps le prospect est actif",
+          "S'il est en phase de recherche active de solution",
+          "Son Ã¢ge",
+          "Son planning hebdomadaire"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le 'Comportement Digital' analyse :",
+        "contexte": "",
+        "options": [
+          "Le nombre de followers",
+          "Quels contenus il consomme et oÃ¹ il est actif",
+          "Son budget publicitaire",
+          "Ses compÃ©tences techniques"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Dans le cas de Sophie, son taux de rÃ©ponse est passÃ© de :",
+        "contexte": "",
+        "options": [
+          "5% Ã  20%",
+          "8% Ã  34%",
+          "15% Ã  45%",
+          "20% Ã  60%"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Qu'est-ce qui a changÃ© chez Sophie ?",
+        "contexte": "",
+        "options": [
+          "Son offre",
+          "Son prix",
+          "Uniquement son ciblage (ICP)",
+          "Sa plateforme"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Un ICP flou donne :",
+        "contexte": "",
+        "options": [
+          "Des rÃ©sultats corrects",
+          "Des rÃ©sultats flous",
+          "De bons rÃ©sultats si le volume est lÃ ",
+          "Les mÃªmes rÃ©sultats qu'un ICP prÃ©cis"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'exercice demandÃ© est de rÃ©diger son ICP en :",
+        "contexte": "",
+        "options": [
+          "10 pages",
+          "1 paragraphe",
+          "3 mots",
+          "Un tableau Excel"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'ICP de Sophie inclut un budget de :",
+        "contexte": "",
+        "options": [
+          "500â¬+",
+          "1 000â¬+",
+          "1 500â¬+",
+          "3 000â¬+"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "La dimension 'Douleurs' dans l'ICP identifie :",
+        "contexte": "",
+        "options": [
+          "Les maladies du prospect",
+          "Ses problÃ¨mes, frustrations et obstacles",
+          "Ses compÃ©tences manquantes",
+          "Ses concurrents"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La dimension 'DÃ©sirs' identifie :",
+        "contexte": "",
+        "options": [
+          "Ce qu'il veut acheter",
+          "RÃ©sultats voulus, transformation idÃ©ale, objectifs",
+          "Ses rÃªves irrÃ©alistes",
+          "Son budget maximum"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Plus l'ICP est prÃ©cis, plus :",
+        "contexte": "",
+        "options": [
+          "Le travail est difficile",
+          "Le ciblage est bon et le taux de rÃ©ponse Ã©levÃ©",
+          "On exclut trop de prospects",
+          "Le volume baisse sans compensation"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'ICP doit Ãªtre rÃ©digÃ© :",
+        "contexte": "",
+        "options": [
+          "AprÃ¨s avoir commencÃ© Ã  prospecter",
+          "Avant d'envoyer le premier DM",
+          "Ã la fin de la formation",
+          "Seulement pour le B2B"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La tranche d'Ã¢ge dans l'ICP de Sophie est :",
+        "contexte": "",
+        "options": [
+          "18-25 ans",
+          "25-35 ans",
+          "32-45 ans",
+          "45-60 ans"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Un bon ICP mentionne la plateforme :",
+        "contexte": "",
+        "options": [
+          "Jamais, c'est inutile",
+          "Oui, via le comportement digital",
+          "Uniquement pour LinkedIn",
+          "Seulement si c'est Instagram"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La dimension professionnelle inclut :",
+        "contexte": "",
+        "options": [
+          "MÃ©tier, secteur, expÃ©rience, revenus, statut",
+          "Uniquement le mÃ©tier",
+          "Le CV complet",
+          "Les diplÃ´mes"
+        ],
+        "correct_index": 0,
+        "explication": ""
+      },
+      {
+        "question": "Un RDV mal qualifiÃ© coÃ»te :",
+        "contexte": "",
+        "options": [
+          "Rien",
+          "Plus cher qu'un prospect non contactÃ©",
+          "Moins cher qu'une publicitÃ©",
+          "Le prix du call"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Quel est le lien entre ICP et taux de rÃ©ponse ?",
+        "contexte": "",
+        "options": [
+          "Aucun lien",
+          "Plus l'ICP est prÃ©cis, meilleur est le taux de rÃ©ponse",
+          "L'ICP n'affecte que le closing",
+          "L'ICP n'est utile qu'en B2B"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le sourcing est :",
+        "contexte": "",
+        "options": [
+          "L'envoi de messages aux prospects",
+          "La recherche et identification de mines d'or (comptes Ã  cibler)",
+          "La crÃ©ation de contenu",
+          "La qualification des leads"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La premiÃ¨re mÃ©thode de sourcing est :",
+        "contexte": "",
+        "options": [
+          "L'achat de bases de donnÃ©es",
+          "La recherche par mots clÃ©s",
+          "La publicitÃ© payante",
+          "Le bouche Ã  oreille"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La deuxiÃ¨me mÃ©thode de sourcing est :",
+        "contexte": "",
+        "options": [
+          "L'emailing",
+          "Sourcer les abonnements en chaÃ®ne",
+          "Les webinaires",
+          "Les salons professionnels"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Sourcer les abonnements en chaÃ®ne signifie :",
+        "contexte": "",
+        "options": [
+          "Acheter des followers",
+          "Aller dans les abonnements d'un bon compte, puis les abonnements de ces abonnements",
+          "Envoyer des messages en masse",
+          "Automatiser le sourcing"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Un bon compte Ã  sourcer doit avoir :",
+        "contexte": "",
+        "options": [
+          "Au moins 10 000 abonnÃ©s",
+          "Au minimum 1 000 abonnÃ©s actifs",
+          "Plus de 100 000 abonnÃ©s",
+          "Peu importe le nombre"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le sourcing est la fondation car :",
+        "contexte": "",
+        "options": [
+          "Il coÃ»te cher",
+          "Un bon ciblage = de meilleurs rÃ©sultats en setting",
+          "Il prend beaucoup de temps",
+          "C'est la partie la plus technique"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Avant de commencer le setting, il faut :",
+        "contexte": "",
+        "options": [
+          "Acheter un CRM",
+          "Valider sa liste de comptes sourcÃ©s",
+          "Avoir 10 000 followers",
+          "CrÃ©er un site web"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le sourcing doit correspondre Ã  :",
+        "contexte": "",
+        "options": [
+          "N'importe quel compte populaire",
+          "Votre ICP dÃ©fini au module prÃ©cÃ©dent",
+          "Les comptes de vos concurrents",
+          "Les comptes avec le plus de likes"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'effet boule de neige du sourcing fonctionne car :",
+        "contexte": "",
+        "options": [
+          "Les algorithmes vous aident",
+          "Les entrepreneurs d'une niche se suivent entre eux",
+          "Les abonnÃ©s achÃ¨tent automatiquement",
+          "Instagram recommande des comptes similaires"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le travail de sourcing est :",
+        "contexte": "",
+        "options": [
+          "Un travail individuel uniquement",
+          "Clairement un travail d'Ã©quipe",
+          "RÃ©servÃ© au manager",
+          "Automatisable Ã  100%"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Les mots clÃ©s Ã  utiliser doivent Ãªtre :",
+        "contexte": "",
+        "options": [
+          "GÃ©nÃ©riques comme 'business'",
+          "LiÃ©s Ã  votre niche spÃ©cifique",
+          "En anglais uniquement",
+          "Le nom de vos concurrents"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Un compte Ã  sourcer doit proposer :",
+        "contexte": "",
+        "options": [
+          "Uniquement du contenu gratuit",
+          "Un service, une formation ou un accompagnement",
+          "Des produits physiques",
+          "N'importe quoi"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le contenu du compte sourcÃ© doit s'adresser :",
+        "contexte": "",
+        "options": [
+          "Ã tout le monde",
+          "Au mÃªme type de personnes que votre offre cible",
+          "Uniquement aux professionnels",
+          "Aux adolescents"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'engagement rÃ©el d'un compte se mesure par :",
+        "contexte": "",
+        "options": [
+          "Le nombre de followers",
+          "Des commentaires et questions de vraies personnes",
+          "Le nombre de posts",
+          "La frÃ©quence de publication"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Combien de comptes faut-il sourcer au minimum ?",
+        "contexte": "",
+        "options": [
+          "3",
+          "5",
+          "10",
+          "50"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "AprÃ¨s le sourcing, l'Ã©tape suivante est :",
+        "contexte": "",
+        "options": [
+          "Envoyer des DMs immÃ©diatement",
+          "Faire valider la liste par son Ã©quipe/manager",
+          "CrÃ©er du contenu",
+          "Acheter de la publicitÃ©"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le sourcing sur Facebook se fait via :",
+        "contexte": "",
+        "options": [
+          "Les pages uniquement",
+          "Les groupes thÃ©matiques",
+          "La publicitÃ©",
+          "Les Ã©vÃ©nements"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Sur LinkedIn, le sourcing cible :",
+        "contexte": "",
+        "options": [
+          "Les influenceurs",
+          "Les formateurs, consultants et coaches B2B",
+          "Les recruteurs",
+          "Les Ã©tudiants"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Un compte avec beaucoup de likes mais zÃ©ro commentaire :",
+        "contexte": "",
+        "options": [
+          "Est un bon compte Ã  sourcer",
+          "Peut avoir un engagement artificiel (bots)",
+          "Est parfait pour le cold outreach",
+          "Doit Ãªtre sourcÃ© en prioritÃ©"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le sourcing est une Ã©tape :",
+        "contexte": "",
+        "options": [
+          "Optionnelle",
+          "Fondamentale qui conditionne tous les rÃ©sultats",
+          "Uniquement pour les dÃ©butants",
+          "Ã faire une seule fois"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Setting — M3 PSYCHOLOGIE & POSITIONNEMENT",
+    "description": "Quiz de validation du module 3.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "b3e7cc63-0fe5-43b8-8e2a-69170185edb9",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Combien de leviers psychologiques de Cialdini sont utilisÃ©s en setting ?",
+        "contexte": "",
+        "options": [
+          "3",
+          "4",
+          "6",
+          "8"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le premier levier est la RÃ©ciprocitÃ©. Cela signifie :",
+        "contexte": "",
+        "options": [
+          "Demander avant de donner",
+          "Donner de la valeur AVANT de demander",
+          "Copier ce que fait le prospect",
+          "RÃ©pondre message pour message"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'Attachement Progressif repose sur :",
+        "contexte": "",
+        "options": [
+          "Un gros engagement dÃ¨s le dÃ©part",
+          "Chaque petit 'oui' qui porte le suivant",
+          "L'utilisation de contrats",
+          "La peur de perdre"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La Preuve Sociale consiste Ã  :",
+        "contexte": "",
+        "options": [
+          "Montrer son nombre de followers",
+          "Mentionner des rÃ©sultats de personnes similaires au prospect",
+          "Afficher son chiffre d'affaires",
+          "Partager des avis Google"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La RaretÃ© et l'Urgence doivent Ãªtre :",
+        "contexte": "",
+        "options": [
+          "Fausses pour presser le prospect",
+          "LÃ©gitimes, jamais de fausse raretÃ©",
+          "UtilisÃ©es dans chaque message",
+          "RÃ©servÃ©es au closer"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'Aversion Ã  la Perte est combien de fois plus motivante que le gain ?",
+        "contexte": "",
+        "options": [
+          "1,5 fois",
+          "2 fois",
+          "3 fois",
+          "5 fois"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'Effet de Contraste compare :",
+        "contexte": "",
+        "options": [
+          "Votre offre vs celle du concurrent",
+          "La situation actuelle (douloureuse) vs la situation dÃ©sirÃ©e",
+          "Le prix vs la valeur",
+          "Avant/aprÃ¨s physique"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Quel mot faut-il BANNIR ?",
+        "contexte": "",
+        "options": [
+          "Investissement",
+          "CoÃ»te",
+          "Imaginez",
+          "ConcrÃ¨tement"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Â« Vous devriez... Â» doit Ãªtre remplacÃ© par :",
+        "contexte": "",
+        "options": [
+          "Â« Vous devez... Â»",
+          "Â« Est-ce que ce serait utile pour vous si... Â»",
+          "Â« Il faut que... Â»",
+          "Â« Je vous conseille de... Â»"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le mot 'investissement' remplace :",
+        "contexte": "",
+        "options": [
+          "'Programme'",
+          "Le mot 'coÃ»te'",
+          "'Service'",
+          "'Accompagnement'"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La technique du MIRRORING consiste Ã  :",
+        "contexte": "",
+        "options": [
+          "Copier le profil du prospect",
+          "RÃ©pÃ©ter les 2-3 derniers mots en question",
+          "Envoyer le mÃªme message",
+          "Utiliser les mÃªmes emojis"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le LABEL TACTIQUE consiste Ã  :",
+        "contexte": "",
+        "options": [
+          "Mettre une Ã©tiquette sur le prospect",
+          "Nommer l'Ã©motion du prospect",
+          "Classer le prospect par catÃ©gorie",
+          "Utiliser un surnom"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "AprÃ¨s une question profonde, il faut :",
+        "contexte": "",
+        "options": [
+          "EnchaÃ®ner avec une autre question",
+          "Attendre en silence sans remplir",
+          "Proposer le RDV",
+          "Changer de sujet"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La rÃ¨gle des 70/30 signifie :",
+        "contexte": "",
+        "options": [
+          "70% de messages envoyÃ©s, 30% de rÃ©ponses",
+          "Le prospect parle 70%, vous parlez 30%",
+          "70% de closing, 30% de refus",
+          "70 DMs par jour minimum"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Un setter qui parle trop :",
+        "contexte": "",
+        "options": [
+          "Qualifie bien car il maÃ®trise le script",
+          "Qualifie mal",
+          "N'a pas d'impact sur la qualification",
+          "Est plus efficace en tÃ©lÃ©phone"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le ratio moyen est de :",
+        "contexte": "",
+        "options": [
+          "1 conversation pour 1 RDV",
+          "5 conversations pour 1 RDV",
+          "10 conversations pour 1 RDV qualifiÃ©",
+          "20 conversations pour 1 RDV"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Un refus est :",
+        "contexte": "",
+        "options": [
+          "Un Ã©chec personnel",
+          "Jamais personnel â c'est du feedback",
+          "La preuve que le script est mauvais",
+          "Une raison d'arrÃªter"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La REFORMULATION commence par :",
+        "contexte": "",
+        "options": [
+          "Â« Je pense que... Â»",
+          "Â« Si je comprends bien, tu dis que... Â»",
+          "Â« Tu as tort quand... Â»",
+          "Â« En fait, ce que tu veux dire c'est... Â»"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La QUESTION DE SUIVI est :",
+        "contexte": "",
+        "options": [
+          "Â« Tu veux rÃ©server un appel ? Â»",
+          "Â« Et qu'est-ce que tu veux dire par lÃ  ? Â»",
+          "Â« Tu as un budget ? Â»",
+          "Â« C'est urgent ? Â»"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Les mots qui OUVRENT incluent :",
+        "contexte": "",
+        "options": [
+          "CoÃ»te, devriez, besoin",
+          "Investissement, imagine, concrÃ¨tement, selon toi",
+          "Obligation, contrat, engagement",
+          "Rapidement, maintenant, tout de suite"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Dans le cas pratique du mirroring, que dit le prospect aprÃ¨s le silence ?",
+        "contexte": "",
+        "options": [
+          "'Je ne sais pas'",
+          "Il raccroche",
+          "'J'ai l'impression que je sais pas oÃ¹ aller, j'ai des idÃ©es mais je les finalise jamais'",
+          "'C'est trop cher'"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Sans le mirroring + silence, le setter aurait :",
+        "contexte": "",
+        "options": [
+          "Obtenu les mÃªmes informations",
+          "Jamais obtenu cette information clÃ©",
+          "QualifiÃ© plus vite",
+          "ProposÃ© le RDV plus tÃ´t"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'aversion Ã  la perte se formule par :",
+        "contexte": "",
+        "options": [
+          "'Tu vas gagner beaucoup'",
+          "'Qu'est-ce qui se passe si tu ne rÃ¨gles pas Ã§a ?'",
+          "'C'est une offre limitÃ©e'",
+          "'Tu vas rater ta chance'"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Donner un conseil pertinent crÃ©e :",
+        "contexte": "",
+        "options": [
+          "De la mÃ©fiance",
+          "Une dette psychologique positive (rÃ©ciprocitÃ©)",
+          "Un engagement contractuel",
+          "Une obligation d'achat"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Chaque Ã©chec doit Ãªtre :",
+        "contexte": "",
+        "options": [
+          "OubliÃ© rapidement",
+          "AnalysÃ© : qu'auriez-vous pu faire diffÃ©remment ?",
+          "PartagÃ© publiquement",
+          "CachÃ© au manager"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Combien de messages publicitaires les prospects reÃ§oivent-ils par jour ?",
+        "contexte": "",
+        "options": [
+          "500",
+          "2 000",
+          "6 000+",
+          "10 000"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le marchÃ© est :",
+        "contexte": "",
+        "options": [
+          "SaturÃ© â plus aucune place",
+          "SophistiquÃ© â les attentes sont plus Ã©levÃ©es",
+          "Vierge â tout reste Ã  faire",
+          "En dÃ©clin"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La diffÃ©rence entre saturÃ© et sophistiquÃ© est :",
+        "contexte": "",
+        "options": [
+          "Aucune, c'est la mÃªme chose",
+          "SaturÃ© = plus de place. SophistiquÃ© = attentes plus Ã©levÃ©es mais encore de la place pour innover",
+          "SophistiquÃ© = plus de place",
+          "SaturÃ© = mieux pour les dÃ©butants"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Dans l'analogie de l'ocÃ©an, les poissons de l'ocÃ©an rouge :",
+        "contexte": "",
+        "options": [
+          "Mordent Ã  tous les hameÃ§ons",
+          "Ne regardent mÃªme pas les hameÃ§ons car ils y sont habituÃ©s",
+          "Sont plus faciles Ã  attraper",
+          "N'existent pas"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'ocÃ©an bleu reprÃ©sente :",
+        "contexte": "",
+        "options": [
+          "Un marchÃ© oÃ¹ personne ne prospecte",
+          "Un espace oÃ¹ votre approche est nouvelle et diffÃ©rente",
+          "Un marchÃ© sans concurrence",
+          "Les rÃ©seaux sociaux Ã©mergents"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Les messages classiques comme 'Hey j'ai une question' :",
+        "contexte": "",
+        "options": [
+          "Fonctionnent toujours bien",
+          "Ne marchent plus dans un marchÃ© sophistiquÃ©",
+          "Sont les meilleurs en cold outreach",
+          "Sont recommandÃ©s pour LinkedIn"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La perception que l'on recherche est d'Ãªtre :",
+        "contexte": "",
+        "options": [
+          "Moins cher que les concurrents",
+          "Nouveau, unique, supÃ©rieur et diffÃ©rent",
+          "Plus agressif dans la vente",
+          "Plus prÃ©sent sur les rÃ©seaux"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La partie du cerveau qu'on veut atteindre en premier est :",
+        "contexte": "",
+        "options": [
+          "Le cortex prÃ©frontal",
+          "Le cerveau reptilien",
+          "L'hippocampe",
+          "Le cervelet"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Que signifie H-O-C ?",
+        "contexte": "",
+        "options": [
+          "High Output Conversion",
+          "Humain â Offre â CTA",
+          "How to Overcome Competition",
+          "Help Others Convert"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le 'H' dans H-O-C sert Ã  :",
+        "contexte": "",
+        "options": [
+          "Closer la vente",
+          "CrÃ©er un lien Ã©motionnel et de personnalisation",
+          "PrÃ©senter le prix",
+          "Envoyer une vidÃ©o"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le 'O' dans H-O-C sert Ã  :",
+        "contexte": "",
+        "options": [
+          "Ouvrir la conversation",
+          "CrÃ©er de la valeur autour de vous et votre produit",
+          "Organiser le planning",
+          "Offrir un rabais"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le 'C' dans H-O-C sert Ã  :",
+        "contexte": "",
+        "options": [
+          "Closer la vente",
+          "CrÃ©er du contenu",
+          "Inciter une action claire, simple et facile",
+          "Contacter le manager"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le biais de sympathie s'applique au :",
+        "contexte": "",
+        "options": [
+          "O de H-O-C",
+          "H de H-O-C",
+          "C de H-O-C",
+          "Aucun des trois"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La Sympathie = :",
+        "contexte": "",
+        "options": [
+          "Prix bas + Urgence",
+          "Compliment + Points Communs",
+          "Preuve sociale + TÃ©moignages",
+          "RaretÃ© + ExclusivitÃ©"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le biais de preuve sociale s'applique au :",
+        "contexte": "",
+        "options": [
+          "H de H-O-C",
+          "O de H-O-C (l'Offre)",
+          "C de H-O-C",
+          "Aucun"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le biais de raretÃ© s'applique au :",
+        "contexte": "",
+        "options": [
+          "H de H-O-C",
+          "O de H-O-C",
+          "C de H-O-C (le CTA)",
+          "Tous les trois"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le CTA doit Ãªtre :",
+        "contexte": "",
+        "options": [
+          "Complexe et dÃ©taillÃ©",
+          "Simple et direct â les gens font ce qu'on leur dit",
+          "Toujours le mÃªme",
+          "Absent du premier message"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La diffÃ©rence avec les concurrents se joue sur :",
+        "contexte": "",
+        "options": [
+          "Le produit",
+          "Le prix",
+          "Le marketing â la maniÃ¨re d'approcher",
+          "Le nombre de followers"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Les mÃ©thodes et principes sont les mÃªmes depuis :",
+        "contexte": "",
+        "options": [
+          "5 ans",
+          "10 ans",
+          "Des dizaines d'annÃ©es car basÃ©s sur des principes",
+          "1 an"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le but de la mÃ©thode H-O-C est d'Ãªtre :",
+        "contexte": "",
+        "options": [
+          "Moins cher",
+          "Innovant pour faire la diffÃ©rence",
+          "Plus rapide",
+          "Plus technique"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Un message 'nouveau et supÃ©rieur' se distingue par :",
+        "contexte": "",
+        "options": [
+          "Sa longueur",
+          "Son approche personnalisÃ©e et innovante vs un copier-coller",
+          "Son utilisation d'emojis",
+          "Son ton formel"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Setting — M4 SETTING PAR DM",
+    "description": "Quiz de validation du module 4.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "dd823832-1829-4bbc-90f0-04a1b5784a74",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "RÃ¨gle nÂ°1 du DM setting :",
+        "contexte": "",
+        "options": [
+          "Toujours pitcher dans le premier message",
+          "JAMAIS de pitch dans le premier message",
+          "Envoyer une offre promotionnelle",
+          "Poser 3 questions d'un coup"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Chaque message doit se terminer par :",
+        "contexte": "",
+        "options": [
+          "Un emoji",
+          "Une question ou un micro-CTA",
+          "Votre nom",
+          "Un lien vers votre offre"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Combien de lignes maximum par message ?",
+        "contexte": "",
+        "options": [
+          "1-2 lignes",
+          "3-4 lignes (mobile first)",
+          "10-15 lignes",
+          "Pas de limite"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La personnalisation est :",
+        "contexte": "",
+        "options": [
+          "Optionnelle si le volume est bon",
+          "Non nÃ©gociable â jamais de copier-coller gÃ©nÃ©rique",
+          "Utile seulement en B2B",
+          "RÃ©servÃ©e aux prospects chauds"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le registre sur Instagram doit Ãªtre :",
+        "contexte": "",
+        "options": [
+          "TrÃ¨s formel",
+          "DÃ©contractÃ©",
+          "AcadÃ©mique",
+          "Identique Ã  LinkedIn"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le plafond de sÃ©curitÃ© sur Instagram est de :",
+        "contexte": "",
+        "options": [
+          "10 DMs/jour",
+          "25 DMs/jour",
+          "50 DMs/jour",
+          "100 DMs/jour"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le plafond sur LinkedIn est de :",
+        "contexte": "",
+        "options": [
+          "10 DMs/jour",
+          "25 DMs/jour",
+          "50 DMs/jour",
+          "IllimitÃ©"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le Warm Outreach cible :",
+        "contexte": "",
+        "options": [
+          "Des inconnus qui correspondent Ã  l'ICP",
+          "Des personnes qui interagissent dÃ©jÃ  avec votre contenu",
+          "Des prospects rÃ©fÃ©rÃ©s",
+          "Des leads inbound"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le Cold Outreach cible :",
+        "contexte": "",
+        "options": [
+          "Des personnes qui vous connaissent dÃ©jÃ ",
+          "Des personnes qui ne vous connaissent pas mais correspondent Ã  l'ICP",
+          "Des clients existants",
+          "Des partenaires"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le Community Outreach utilise :",
+        "contexte": "",
+        "options": [
+          "La publicitÃ© payante",
+          "Une rÃ©fÃ©rence Ã  un groupe ou Ã©vÃ©nement commun",
+          "Des emails froids",
+          "L'automatisation"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Combien de messages dans la sÃ©quence de qualification ?",
+        "contexte": "",
+        "options": [
+          "3",
+          "5",
+          "7",
+          "10"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le message M1 sert Ã  :",
+        "contexte": "",
+        "options": [
+          "Pitcher l'offre",
+          "Briser la glace avec une observation personnalisÃ©e",
+          "Qualifier le budget",
+          "Proposer le RDV"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le message M3 identifie :",
+        "contexte": "",
+        "options": [
+          "Le budget",
+          "La douleur principale",
+          "Le timing",
+          "L'autoritÃ©"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le message M4 sert Ã  :",
+        "contexte": "",
+        "options": [
+          "Proposer le RDV",
+          "Amplifier la douleur â depuis combien de temps ?",
+          "Qualifier le budget",
+          "Envoyer un tÃ©moignage"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le RDV (M7) ne doit Ãªtre proposÃ© QUE quand :",
+        "contexte": "",
+        "options": [
+          "Le prospect a rÃ©pondu Ã  M1",
+          "La douleur ET le dÃ©sir sont identifiÃ©s",
+          "Le budget est confirmÃ©",
+          "3 messages ont Ã©tÃ© Ã©changÃ©s"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Sur LinkedIn, combien de jours d'interactions avant le premier DM ?",
+        "contexte": "",
+        "options": [
+          "0 â on DM directement",
+          "2 jours",
+          "5 jours",
+          "10 jours"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "La note de connexion LinkedIn est limitÃ©e Ã  :",
+        "contexte": "",
+        "options": [
+          "100 caractÃ¨res",
+          "300 caractÃ¨res",
+          "500 caractÃ¨res",
+          "IllimitÃ©"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le premier DM LinkedIn se fait combien de temps aprÃ¨s la connexion ?",
+        "contexte": "",
+        "options": [
+          "ImmÃ©diatement",
+          "24h aprÃ¨s",
+          "48h aprÃ¨s",
+          "1 semaine aprÃ¨s"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Dans le cas de Yasmine, combien de messages avant le RDV ?",
+        "contexte": "",
+        "options": [
+          "2",
+          "4",
+          "7",
+          "10"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La douleur de Yasmine Ã©tait :",
+        "contexte": "",
+        "options": [
+          "Pas assez de followers",
+          "Pas de clients rÃ©guliers depuis 6 mois",
+          "Un prix trop Ã©levÃ©",
+          "Manque de motivation"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Son objectif Ã©tait :",
+        "contexte": "",
+        "options": [
+          "1 000â¬/mois",
+          "2 000â¬/mois",
+          "3 000â¬/mois stables",
+          "5 000â¬/mois"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le taux de rÃ©ponse sur Instagram est de :",
+        "contexte": "",
+        "options": [
+          "5-10%",
+          "10-20%",
+          "30-50%",
+          "70-80%"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le taux de rÃ©ponse sur LinkedIn est de :",
+        "contexte": "",
+        "options": [
+          "5-10%",
+          "10-20%",
+          "30-50%",
+          "70-80%"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Un message Cold Outreach doit parler de :",
+        "contexte": "",
+        "options": [
+          "Votre offre et vos rÃ©sultats",
+          "LEUR contenu ou profil (pas de vous)",
+          "Votre parcours",
+          "Vos certifications"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le registre sur LinkedIn doit Ãªtre :",
+        "contexte": "",
+        "options": [
+          "DÃ©contractÃ© comme Instagram",
+          "Professionnel",
+          "Familier avec des emojis",
+          "TrÃ¨s technique"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Setting — M5 SETTING TÉLÉPHONIQUE",
+    "description": "Quiz de validation du module 5.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "6f036c0b-c85f-429a-93d5-652d8e9b823c",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Le taux de conversion tÃ©lÃ©phone vs DM :",
+        "contexte": "",
+        "options": [
+          "Identique",
+          "TÃ©lÃ©phone 15-25% vs DM 2-5%",
+          "DM supÃ©rieur au tÃ©lÃ©phone",
+          "DÃ©pend du secteur"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Un appel de setting dure :",
+        "contexte": "",
+        "options": [
+          "5 minutes",
+          "10-20 minutes",
+          "45 minutes",
+          "1 heure"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Combien de phases dans un appel de setting ?",
+        "contexte": "",
+        "options": [
+          "2",
+          "3",
+          "4",
+          "6"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "La Phase 1 (Ouverture) dure :",
+        "contexte": "",
+        "options": [
+          "0-2 minutes",
+          "5-10 minutes",
+          "15 minutes",
+          "30 secondes"
+        ],
+        "correct_index": 0,
+        "explication": ""
+      },
+      {
+        "question": "La Phase 2 (Diagnostic) explore :",
+        "contexte": "",
+        "options": [
+          "Uniquement le budget",
+          "Situation â Douleur â Impact â Tentatives â DÃ©sir â Urgence",
+          "Le CV du prospect",
+          "L'offre du setter"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Que faire AVANT de proposer le RDV ?",
+        "contexte": "",
+        "options": [
+          "Envoyer un email de confirmation",
+          "Reformuler ce qu'on a compris",
+          "Donner le prix de l'offre",
+          "Demander le budget"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La reformulation montre que :",
+        "contexte": "",
+        "options": [
+          "Vous Ãªtes un bon vendeur",
+          "Vous avez vraiment Ã©coutÃ©",
+          "Vous connaissez votre script",
+          "Vous Ãªtes pressÃ©"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'anti no-show rÃ©duit les absences de :",
+        "contexte": "",
+        "options": [
+          "20%",
+          "40%",
+          "60%",
+          "80%"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Combien de canaux de confirmation pour l'anti no-show ?",
+        "contexte": "",
+        "options": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le rappel 24h avant est :",
+        "contexte": "",
+        "options": [
+          "Optionnel",
+          "Obligatoire pour rÃ©duire les no-show",
+          "Trop intrusif",
+          "RÃ©servÃ© aux prospects froids"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La pre-vente consiste Ã  demander au prospect de :",
+        "contexte": "",
+        "options": [
+          "Payer un acompte",
+          "PrÃ©parer 2 rÃ©ponses clÃ©s avant l'appel",
+          "Lire un document",
+          "Regarder une vidÃ©o de 2h"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "En cold calling, les 7 premiÃ¨res secondes = :",
+        "contexte": "",
+        "options": [
+          "20% du rÃ©sultat",
+          "50% du rÃ©sultat",
+          "80% du rÃ©sultat",
+          "100% du rÃ©sultat"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Pendant un cold call, il faut :",
+        "contexte": "",
+        "options": [
+          "Rester assis et concentrÃ©",
+          "Se lever ou marcher (le sourire s'entend)",
+          "Parler trÃ¨s vite",
+          "Lire son script mot pour mot"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La premiÃ¨re chose Ã  demander en cold call est :",
+        "contexte": "",
+        "options": [
+          "Le budget",
+          "La permission d'avancer",
+          "Un RDV",
+          "Le nom du dÃ©cideur"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Les meilleurs crÃ©neaux pour appeler sont :",
+        "contexte": "",
+        "options": [
+          "Lundi 8h-10h",
+          "Mardi-jeudi 10h-12h et 14h-16h",
+          "Vendredi aprÃ¨s-midi",
+          "Week-end"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La voix transporte quel pourcentage de l'Ã©motion ?",
+        "contexte": "",
+        "options": [
+          "7%",
+          "38%",
+          "55%",
+          "93%"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Les silences sont :",
+        "contexte": "",
+        "options": [
+          "Ã Ã©viter absolument",
+          "Des outils de vente â ne pas les remplir",
+          "Le signe d'un mauvais script",
+          "Acceptables seulement en fin d'appel"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Dans le cas d'Anas, le score envoyÃ© au closer Ã©tait :",
+        "contexte": "",
+        "options": [
+          "60/100",
+          "75/100",
+          "85/100",
+          "95/100"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le format du RDV proposÃ© aprÃ¨s le setting est :",
+        "contexte": "",
+        "options": [
+          "Un appel de 15 min",
+          "Un appel de 45 min avec un expert",
+          "Un email dÃ©taillÃ©",
+          "Un webinaire"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'objectif unique d'un call de setting est de :",
+        "contexte": "",
+        "options": [
+          "Vendre l'offre",
+          "Qualifier et poser le RDV de closing",
+          "Donner un maximum d'informations",
+          "CrÃ©er de la sympathie"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Setting — M6 QUALIFICATION & OBJECTIONS",
+    "description": "Quiz de validation du module 6.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "a2708192-a74f-448e-9d3e-eaa0e9dc2b7a",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "Combien de profils DISC existent ?",
+        "contexte": "",
+        "options": [
+          "2",
+          "3",
+          "4",
+          "6"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le profil Rouge (Dominant) est :",
+        "contexte": "",
+        "options": [
+          "Empathique et hÃ©sitant",
+          "Ãnergique, direct, focalisÃ© rÃ©sultats",
+          "Convivial et bavard",
+          "Rationnel et perfectionniste"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Comment s'adresser Ã  un profil Dominant ?",
+        "contexte": "",
+        "options": [
+          "Prendre son temps et rassurer",
+          "Aller droit au but, orientÃ© rÃ©sultats",
+          "Valoriser ses idÃ©es",
+          "Donner un maximum de dÃ©tails"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le profil Jaune (Influent) est motivÃ© par :",
+        "contexte": "",
+        "options": [
+          "Les donnÃ©es factuelles",
+          "La reconnaissance sociale",
+          "La sÃ©curitÃ©",
+          "Les rÃ©sultats financiers"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le profil Vert (Stable) est :",
+        "contexte": "",
+        "options": [
+          "Direct et autoritaire",
+          "Empathique, hÃ©sitant, rÃ©sistant au changement",
+          "Enthousiaste et bavard",
+          "Rationnel et technique"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Comment s'adresser Ã  un profil Stable ?",
+        "contexte": "",
+        "options": [
+          "Aller droit au but",
+          "Le rassurer, expliquer, respecter son rythme",
+          "L'amuser avec de l'humour",
+          "Lui donner des chiffres prÃ©cis"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le profil Bleu (Consciencieux) veut :",
+        "contexte": "",
+        "options": [
+          "De la convivialitÃ©",
+          "Un maximum de donnÃ©es et de dÃ©tails",
+          "De la rapiditÃ©",
+          "De l'humour"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Que signifie BANT+ ?",
+        "contexte": "",
+        "options": [
+          "Business And Network Tracking",
+          "Budget, AutoritÃ©, Besoin (Need), Timing + Fit",
+          "Best Approach for New Targets",
+          "Buy And Negotiate Terms"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le Budget pÃ¨se combien de points ?",
+        "contexte": "",
+        "options": [
+          "10",
+          "15",
+          "25",
+          "30"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "L'AutoritÃ© pÃ¨se combien de points ?",
+        "contexte": "",
+        "options": [
+          "10",
+          "15",
+          "20",
+          "25"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le Besoin (Need) pÃ¨se :",
+        "contexte": "",
+        "options": [
+          "10 pts",
+          "15 pts",
+          "25 pts",
+          "30 pts"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le Timing pÃ¨se :",
+        "contexte": "",
+        "options": [
+          "10 pts",
+          "15 pts",
+          "25 pts",
+          "30 pts"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le Fit pÃ¨se :",
+        "contexte": "",
+        "options": [
+          "5 pts",
+          "10 pts",
+          "15 pts",
+          "25 pts"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Un score de 80-100 est classÃ© :",
+        "contexte": "",
+        "options": [
+          "COLD",
+          "WARM",
+          "HOT",
+          "DISQUALIFIÃ"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Un score HOT signifie :",
+        "contexte": "",
+        "options": [
+          "Nurturing nÃ©cessaire",
+          "Proposer le RDV immÃ©diatement",
+          "Relancer dans 1 mois",
+          "Disqualifier"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Un score de 50-79 est classÃ© :",
+        "contexte": "",
+        "options": [
+          "HOT",
+          "WARM â qualifier encore 24-48h",
+          "COLD",
+          "DISQUALIFIÃ"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Un score COLD (30-49) implique :",
+        "contexte": "",
+        "options": [
+          "RDV immÃ©diat",
+          "Disqualification",
+          "SÃ©quence de nurturing, partager du contenu",
+          "Relance agressive"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Un score 0-29 est :",
+        "contexte": "",
+        "options": [
+          "WARM",
+          "COLD",
+          "DISQUALIFIÃ â passer au suivant",
+          "Ã recontacter plus tard"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Disqualifier activement c'est :",
+        "contexte": "",
+        "options": [
+          "Un Ã©chec",
+          "Rendre service aux deux parties et gagner du temps",
+          "Perdre un prospect",
+          "Ãtre trop exigeant"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Dans le cas d'Omar, son score total Ã©tait de :",
+        "contexte": "",
+        "options": [
+          "60/100",
+          "75/100",
+          "85/100",
+          "90/100"
+        ],
+        "correct_index": 3,
+        "explication": ""
+      },
+      {
+        "question": "Omar avait 25pts en Besoin car :",
+        "contexte": "",
+        "options": [
+          "Il avait un gros budget",
+          "Il ne pouvait pas sortir du mode freelance â douleur urgente et prÃ©cise",
+          "Il dÃ©cidait seul",
+          "Il avait du temps"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La question pour le Budget est :",
+        "contexte": "",
+        "options": [
+          "'Tu as de l'argent ?'",
+          "'En termes d'investissement, tu as une idÃ©e de ce que tu es prÃªt Ã  mettre ?'",
+          "'Quel est ton salaire ?'",
+          "'Tu peux payer combien ?'"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La question pour le Fit est :",
+        "contexte": "",
+        "options": [
+          "'Tu es en forme ?'",
+          "'Est-ce que c'est le bon moment dans ta vie pour faire ce travail ?'",
+          "'Tu as un ordinateur ?'",
+          "'Tu parles franÃ§ais ?'"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Combien de questions poser par message ?",
+        "contexte": "",
+        "options": [
+          "1 seule â jamais 2 dans le mÃªme message",
+          "2-3 pour aller plus vite",
+          "Autant que nÃ©cessaire",
+          "DÃ©pend du profil DISC"
+        ],
+        "correct_index": 0,
+        "explication": ""
+      },
+      {
+        "question": "Un prospect qualifiÃ© rÃ©pond aux critÃ¨res de :",
+        "contexte": "",
+        "options": [
+          "L'algorithme Instagram",
+          "Notre niche et notre offre",
+          "Notre budget publicitaire",
+          "Notre nombre de followers"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Une objection est presque jamais :",
+        "contexte": "",
+        "options": [
+          "Importante",
+          "La vraie raison du refus",
+          "SincÃ¨re",
+          "ExprimÃ©e clairement"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Que signifie C.A.R.E. ?",
+        "contexte": "",
+        "options": [
+          "Customer Acquisition & Retention Excellence",
+          "Clarifier, Accuser rÃ©ception, Recadrer, Engager",
+          "Call, Ask, Respond, Execute",
+          "Communicate And Resolve Everything"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le 'C' de C.A.R.E. signifie :",
+        "contexte": "",
+        "options": [
+          "Closer",
+          "Clarifier â 'Qu'est-ce que tu veux dire exactement ?'",
+          "Comparer",
+          "Confirmer"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Face Ã  'C'est trop cher', il faut :",
+        "contexte": "",
+        "options": [
+          "Baisser le prix",
+          "Demander 'Par rapport Ã  quoi ?' et raisonner en ROI",
+          "Insister que Ã§a vaut le prix",
+          "Proposer un paiement en plusieurs fois"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Face Ã  'Je vais y rÃ©flÃ©chir', il faut :",
+        "contexte": "",
+        "options": [
+          "Dire 'ok, prends ton temps'",
+          "Demander 'Sur quoi exactement tu veux rÃ©flÃ©chir ?'",
+          "Envoyer un email de relance",
+          "Proposer un rabais"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Face Ã  'Envoie-moi des infos par email', il faut :",
+        "contexte": "",
+        "options": [
+          "Envoyer un PDF dÃ©taillÃ©",
+          "Expliquer que l'accompagnement est personnalisÃ© â 20 min en appel > 2h de lecture",
+          "Refuser",
+          "Envoyer un lien vers le site"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Face Ã  'J'ai dÃ©jÃ  quelqu'un', il faut demander :",
+        "contexte": "",
+        "options": [
+          "Qui est cette personne",
+          "'Tu obtiens les rÃ©sultats que tu veux ?'",
+          "Son contrat avec l'autre",
+          "De changer immÃ©diatement"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Face Ã  'Rappelle-moi dans 3 mois', la rÃ©ponse est :",
+        "contexte": "",
+        "options": [
+          "Ok, je te rappelle",
+          "'Si je te rappelle dans 3 mois, le problÃ¨me sera rÃ©glÃ© tout seul ?'",
+          "Insister pour un appel maintenant",
+          "Abandonner"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "AprÃ¨s un REFUS FERME, combien de relances maximum ?",
+        "contexte": "",
+        "options": [
+          "0",
+          "2",
+          "5",
+          "IllimitÃ©"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Face au SILENCE, la relance J+2 est :",
+        "contexte": "",
+        "options": [
+          "'Pourquoi tu ne rÃ©ponds pas ?'",
+          "'J'espÃ¨re que tu vas bien. Tu avais des questions ?'",
+          "'Dernier message avant que je passe Ã  autre chose'",
+          "'Tu as 24h pour rÃ©pondre'"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Face Ã  'Je ne suis pas prÃªt(e)', il faut :",
+        "contexte": "",
+        "options": [
+          "Passer au suivant",
+          "Demander 'C'est quoi qui te manque pour Ãªtre prÃªt(e) ?'",
+          "CrÃ©er de l'urgence artificielle",
+          "Baisser le prix"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Face Ã  'Je dois en parler Ã  mon conjoint' :",
+        "contexte": "",
+        "options": [
+          "Dire que c'est une excuse",
+          "Proposer un appel avec les deux",
+          "Envoyer une brochure",
+          "Attendre indÃ©finiment"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Ne jamais dÃ©fendre le prix signifie :",
+        "contexte": "",
+        "options": [
+          "Ne pas parler de prix",
+          "Raisonner en ROI au lieu de justifier le montant",
+          "Baisser systÃ©matiquement",
+          "Ãviter la question"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Combien d'objections maÃ®trisÃ©es couvrent 80% des situations ?",
+        "contexte": "",
+        "options": [
+          "5",
+          "8",
+          "12",
+          "20"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Dans le cas de Kofi, son score Ã©tait de :",
+        "contexte": "",
+        "options": [
+          "50/100",
+          "65/100",
+          "78/100",
+          "90/100"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "L'objection de Kofi Ã©tait :",
+        "contexte": "",
+        "options": [
+          "Pas de temps",
+          "Le prix (2 500â¬)",
+          "Il doit rÃ©flÃ©chir",
+          "Il a dÃ©jÃ  quelqu'un"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La rÃ©ponse clÃ© au prix de Kofi Ã©tait :",
+        "contexte": "",
+        "options": [
+          "Proposer un rabais",
+          "Si on te fait gÃ©nÃ©rer 2 000â¬ de plus en 60 jours, 2 500â¬ c'est encore beaucoup ?",
+          "Le laisser rÃ©flÃ©chir",
+          "Comparer avec d'autres offres"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le 'A' de C.A.R.E. signifie :",
+        "contexte": "",
+        "options": [
+          "Argumenter",
+          "Accuser rÃ©ception â 'Je comprends, c'est lÃ©gitime'",
+          "Abandonner",
+          "Analyser"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le 'R' de C.A.R.E. signifie :",
+        "contexte": "",
+        "options": [
+          "Refuser",
+          "Recadrer â repositionner sous un nouvel angle",
+          "RÃ©pÃ©ter",
+          "Rassurer uniquement"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le 'E' de C.A.R.E. signifie :",
+        "contexte": "",
+        "options": [
+          "Escalader",
+          "Engager â demander si la rÃ©ponse satisfait + relancer vers RDV",
+          "Ãliminer",
+          "Ãcouter seulement"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Setting — M7 SCRIPTS AVANCÉS & STRATÉGIES",
+    "description": "Quiz de validation du module 7.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "e560fb47-e73e-4992-9e1e-e0c46fdcd18d",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "La reformulation avant le RDV est :",
+        "contexte": "",
+        "options": [
+          "Optionnelle",
+          "L'Ã©tape clÃ© la plus oubliÃ©e",
+          "RÃ©servÃ©e au tÃ©lÃ©phone",
+          "Inutile en DM"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La relance J+2 est :",
+        "contexte": "",
+        "options": [
+          "Agressive",
+          "Douce â 'J'espÃ¨re que tu vas bien'",
+          "Un dernier message",
+          "Un appel direct"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La relance J+5 est :",
+        "contexte": "",
+        "options": [
+          "Le dÃ©but de la conversation",
+          "La derniÃ¨re tentative",
+          "Identique Ã  J+2",
+          "Un message vocal"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "En cas de no-show, la relance se fait :",
+        "contexte": "",
+        "options": [
+          "Le lendemain",
+          "Dans l'heure qui suit",
+          "AprÃ¨s 1 semaine",
+          "Jamais â le prospect n'est pas sÃ©rieux"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le message no-show est :",
+        "contexte": "",
+        "options": [
+          "Agressif â 'Tu n'es pas venu'",
+          "Bienveillant â 'Tout va bien ? Si imprÃ©vu, on trouve un autre crÃ©neau'",
+          "Un ultimatum",
+          "Un email formel"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le cas LinkedIn B2B de Yacine a donnÃ© :",
+        "contexte": "",
+        "options": [
+          "0 rÃ©sultat",
+          "1 RDV en 2 mois",
+          "4 RDVs qualifiÃ©s en 3 semaines avec 0â¬ de pub",
+          "10 RDVs en 1 semaine"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "La premiÃ¨re Ã©tape de Yacine Ã©tait :",
+        "contexte": "",
+        "options": [
+          "Envoyer 100 DMs",
+          "Identifier 20 DRH et interagir (like + commentaires)",
+          "Acheter LinkedIn Premium",
+          "Publier 10 posts"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le setting webinaire est basÃ© sur :",
+        "contexte": "",
+        "options": [
+          "L'agressivitÃ© commerciale",
+          "La transparence et la franchise",
+          "La peur et l'urgence",
+          "L'automatisation"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le setting rendez-vous est basÃ© sur :",
+        "contexte": "",
+        "options": [
+          "La lenteur",
+          "La rapiditÃ© de connexion",
+          "Le nurturing long",
+          "L'emailing"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Adaptez TOUJOURS le script Ã  :",
+        "contexte": "",
+        "options": [
+          "Votre humeur du jour",
+          "La vraie conversation â ne jamais lire mot pour mot",
+          "Le nombre de followers du prospect",
+          "L'heure de la journÃ©e"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Pour le setting webinaire, vous aurez besoin de :",
+        "contexte": "",
+        "options": [
+          "Un script, une vidÃ©o, des tÃ©moignages, un groupe WhatsApp",
+          "Uniquement un script",
+          "Un site web complet",
+          "Une publicitÃ© payante"
+        ],
+        "correct_index": 0,
+        "explication": ""
+      },
+      {
+        "question": "Le setting rendez-vous renvoie vers :",
+        "contexte": "",
+        "options": [
+          "Un email",
+          "Un court appel de dÃ©couverte ou le groupe WhatsApp",
+          "Un formulaire en ligne",
+          "Une page de vente"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La stratÃ©gie LinkedIn B2B commence par :",
+        "contexte": "",
+        "options": [
+          "Envoyer des DMs immÃ©diatement",
+          "5 jours d'interactions avant le premier contact",
+          "Acheter des publicitÃ©s",
+          "Publier des offres d'emploi"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le premier DM LinkedIn aprÃ¨s connexion se fait :",
+        "contexte": "",
+        "options": [
+          "ImmÃ©diatement",
+          "2 jours aprÃ¨s l'acceptation",
+          "1 semaine aprÃ¨s",
+          "1 mois aprÃ¨s"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "AprÃ¨s un refus clair, il faut :",
+        "contexte": "",
+        "options": [
+          "Insister encore",
+          "Respecter, 2 relances max, remercier, laisser la porte ouverte",
+          "Supprimer le contact",
+          "Envoyer un message passif-agressif"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le script d'appel inbound commence par :",
+        "contexte": "",
+        "options": [
+          "Le prix de l'offre",
+          "Une demande de permission â 'T'as 15 min ?'",
+          "Un pitch de 5 minutes",
+          "L'historique de l'entreprise"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le rappel RDV se fait :",
+        "contexte": "",
+        "options": [
+          "1h avant",
+          "24h avant",
+          "1 semaine avant",
+          "Le jour mÃªme uniquement"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le setting webinaire intÃ¨gre le prospect dans :",
+        "contexte": "",
+        "options": [
+          "Une liste email",
+          "Un groupe WhatsApp dÃ©diÃ© Ã  la confÃ©rence",
+          "Un cours en ligne",
+          "Un groupe Facebook"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La note de connexion LinkedIn doit Ãªtre :",
+        "contexte": "",
+        "options": [
+          "Longue et dÃ©taillÃ©e",
+          "Courte (300 car. max) avec une observation spÃ©cifique",
+          "Un copier-coller gÃ©nÃ©rique",
+          "Absente â juste cliquer connecter"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le lien des tÃ©moignages doit Ãªtre :",
+        "contexte": "",
+        "options": [
+          "EnvoyÃ© Ã  tout le monde",
+          "CopiÃ© et gardÃ© dans un mÃ©mo sur le tÃ©lÃ©phone",
+          "PubliÃ© sur Instagram",
+          "CachÃ© aux prospects"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Setting — M8 OPTIMISATION & PASSAGE À L'ACTION",
+    "description": "Quiz de validation du module 8.",
+    "max_errors": 3,
+    "status": "published",
+    "module_id": "acfc0ca0-a71e-42ea-a27b-01d7baf7b054",
+    "formation_id": null,
+    "questions": [
+      {
+        "question": "L'envoi de messages privÃ©s est :",
+        "contexte": "",
+        "options": [
+          "Un talent naturel",
+          "Un systÃ¨me qui s'amÃ©liore avec le temps",
+          "Quelque chose d'instinctif",
+          "RÃ©servÃ© aux extravertis"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Les composantes du systÃ¨me sont :",
+        "contexte": "",
+        "options": [
+          "Message â RÃ©ponse â Vente",
+          "Inputs â Processus â Outputs â Feedbacks",
+          "Envoi â Attente â Relance",
+          "Contact â Qualification â Closing"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Les Inputs sont :",
+        "contexte": "",
+        "options": [
+          "Les rÃ©sultats obtenus",
+          "L'envoi du premier message (MP)",
+          "Les retours du marchÃ©",
+          "Le nombre de followers"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Les Outputs sont :",
+        "contexte": "",
+        "options": [
+          "Les premiers messages",
+          "Les appels rÃ©servÃ©s : Oui ou Non",
+          "Les feedbacks",
+          "Les scripts utilisÃ©s"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'objectif est d'amÃ©liorer les _____ pour de meilleurs _____.",
+        "contexte": "",
+        "options": [
+          "Outputs / Inputs",
+          "Inputs / Outputs",
+          "Scripts / Messages",
+          "PublicitÃ©s / Ventes"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Volume OU QualitÃ© ?",
+        "contexte": "",
+        "options": [
+          "Volume uniquement",
+          "QualitÃ© uniquement",
+          "Volume ET QualitÃ© â pas binaire",
+          "DÃ©pend du moment"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le minimum de prospects Ã  engager par jour est :",
+        "contexte": "",
+        "options": [
+          "5",
+          "10",
+          "30",
+          "100"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le taux de rÃ©ponse cible est :",
+        "contexte": "",
+        "options": [
+          "10-15%",
+          "20-25%",
+          "30-50%",
+          "70-80%"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Un taux de rÃ©ponse sous 20% indique :",
+        "contexte": "",
+        "options": [
+          "Un bon ciblage",
+          "Un problÃ¨me de ciblage",
+          "Un problÃ¨me de plateforme",
+          "Un script parfait"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le taux de RDV qualifiÃ©s / contacts pour un dÃ©butant est :",
+        "contexte": "",
+        "options": [
+          "0,5%",
+          "5%",
+          "10%",
+          "20%"
+        ],
+        "correct_index": 0,
+        "explication": ""
+      },
+      {
+        "question": "Le taux de prÃ©sence aux RDVs doit Ãªtre :",
+        "contexte": "",
+        "options": [
+          "> 50%",
+          "> 70%",
+          "> 90%",
+          "100%"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le taux de closing post-setting cible est :",
+        "contexte": "",
+        "options": [
+          "> 10%",
+          "> 20%",
+          "> 30%",
+          "> 50%"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "La durÃ©e moyenne d'appel idÃ©ale est :",
+        "contexte": "",
+        "options": [
+          "2-5 min",
+          "8-18 min",
+          "30-45 min",
+          "1h+"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Un appel trop court signifie :",
+        "contexte": "",
+        "options": [
+          "EfficacitÃ©",
+          "Pas assez qualifiÃ©",
+          "Un bon closer",
+          "Un prospect pressÃ©"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le tracker de setting a combien de colonnes ?",
+        "contexte": "",
+        "options": [
+          "5",
+          "7",
+          "10",
+          "15"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Pour Instagram/TikTok, la rÃ¨gle est :",
+        "contexte": "",
+        "options": [
+          "1 compte pour toutes les pages",
+          "1 compte = 1 page pour isoler les rÃ©sultats",
+          "Pas de rÃ¨gle",
+          "3 comptes minimum"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'Ã©thique du setter impose :",
+        "contexte": "",
+        "options": [
+          "Vendre Ã  tout prix",
+          "2 relances max, jamais de fausse urgence, toujours transparent",
+          "Disqualifier personne",
+          "Cacher les prix"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le plan 90 jours commence par :",
+        "contexte": "",
+        "options": [
+          "100 DMs/jour",
+          "Fondations : apprendre les scripts, 20â60 DMs/jour",
+          "5 RDVs/semaine immÃ©diatement",
+          "Trouver 3 clients"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Mois 3 (Traction) vise :",
+        "contexte": "",
+        "options": [
+          "20 DMs/jour",
+          "80 DMs/jour, 2-3 RDVs/semaine",
+          "100 DMs/jour",
+          "0 DM â uniquement du closing"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Mois 5-6 d'Inaya :",
+        "contexte": "",
+        "options": [
+          "Elle abandonne",
+          "10+ RDVs/semaine, taux closing 35%, 2 800â¬/mois",
+          "Elle passe au closing uniquement",
+          "Elle change de mÃ©tier"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Les 3 clÃ©s d'Inaya sont :",
+        "contexte": "",
+        "options": [
+          "Talent, chance, timing",
+          "Scripts appris par cÅur + analyse enregistrements + consistance",
+          "Budget pub + followers + contenu",
+          "RÃ©seau + recommandations + prix bas"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le CRM recommandÃ© gratuit est :",
+        "contexte": "",
+        "options": [
+          "Salesforce",
+          "HubSpot",
+          "Pipedrive",
+          "Monday"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Calendly rÃ©duit les no-show de :",
+        "contexte": "",
+        "options": [
+          "20%",
+          "40%",
+          "60%",
+          "80%"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le setting est :",
+        "contexte": "",
+        "options": [
+          "Un sprint",
+          "Un marathon, pas un sprint",
+          "Facile aprÃ¨s 1 semaine",
+          "Uniquement pour les jeunes"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le setter ne vend pas. Il :",
+        "contexte": "",
+        "options": [
+          "Automatise",
+          "Ãcoute, comprend et invite",
+          "Manipule",
+          "Convainc par la force"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      }
+    ]
+  },
+  {
+    "titre": "Quiz Setting — Validation Finale",
+    "description": "Quiz de validation finale de la formation Setting — requis pour valider l'étape du parcours AL BARAKA.",
+    "max_errors": 5,
+    "status": "published",
+    "module_id": null,
+    "formation_id": "e9b91eb6-2612-45eb-b28d-947bfdaad974",
+    "questions": [
+      {
+        "question": "Le setting est l'art de :",
+        "contexte": "",
+        "options": [
+          "Vendre directement",
+          "Qualifier des prospects pour les amener Ã  un RDV",
+          "CrÃ©er du contenu",
+          "GÃ©rer les clients"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le mindset du setter repose sur :",
+        "contexte": "",
+        "options": [
+          "L'automatisation",
+          "L'humain au centre de chaque Ã©change",
+          "Le volume maximum",
+          "Le script parfait"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Combien de dimensions dans un ICP ?",
+        "contexte": "",
+        "options": [
+          "5",
+          "7",
+          "9",
+          "12"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La mÃ©thode H-O-C signifie :",
+        "contexte": "",
+        "options": [
+          "Help Others Convert",
+          "Humain, Offre, CTA",
+          "High Output Closing",
+          "How to Open Conversations"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le marchÃ© actuel est :",
+        "contexte": "",
+        "options": [
+          "SaturÃ©",
+          "SophistiquÃ© â attentes plus Ã©levÃ©es",
+          "Vierge",
+          "En dÃ©clin"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Combien de leviers psychologiques de Cialdini ?",
+        "contexte": "",
+        "options": [
+          "4",
+          "6",
+          "8",
+          "10"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La rÃ¨gle des 70/30 signifie :",
+        "contexte": "",
+        "options": [
+          "70 DMs par jour",
+          "Le prospect parle 70%, vous 30%",
+          "70% de closing",
+          "70% de warm outreach"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "JAMAIS de pitch dans :",
+        "contexte": "",
+        "options": [
+          "Le dernier message",
+          "Le premier message",
+          "L'appel de closing",
+          "L'email de suivi"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le plafond Instagram est de :",
+        "contexte": "",
+        "options": [
+          "25 DMs/jour",
+          "50 DMs/jour",
+          "100 DMs/jour",
+          "IllimitÃ©"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Combien de messages dans la sÃ©quence de qualification DM ?",
+        "contexte": "",
+        "options": [
+          "3",
+          "5",
+          "7",
+          "10"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le taux de conversion tÃ©lÃ©phone est de :",
+        "contexte": "",
+        "options": [
+          "2-5%",
+          "10-15%",
+          "15-25%",
+          "30-50%"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Un appel de setting a combien de phases ?",
+        "contexte": "",
+        "options": [
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "BANT+ signifie :",
+        "contexte": "",
+        "options": [
+          "Budget, AutoritÃ©, Need, Timing + Fit",
+          "Business And New Targets",
+          "Best Approach for Network",
+          "Buy And Negotiate Terms"
+        ],
+        "correct_index": 0,
+        "explication": ""
+      },
+      {
+        "question": "Un score HOT est de :",
+        "contexte": "",
+        "options": [
+          "50-79",
+          "60-89",
+          "80-100",
+          "90-100"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "C.A.R.E. signifie :",
+        "contexte": "",
+        "options": [
+          "Clarifier, Accuser rÃ©ception, Recadrer, Engager",
+          "Call And Respond Efficiently",
+          "Customer Acquisition RE",
+          "Close And Retain Everyone"
+        ],
+        "correct_index": 0,
+        "explication": ""
+      },
+      {
+        "question": "Face Ã  'C'est trop cher', on raisonne en :",
+        "contexte": "",
+        "options": [
+          "Rabais",
+          "ROI",
+          "Comparaison",
+          "Pression"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Combien de relances max aprÃ¨s un refus ferme ?",
+        "contexte": "",
+        "options": [
+          "0",
+          "2",
+          "5",
+          "IllimitÃ©"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le mirroring consiste Ã  :",
+        "contexte": "",
+        "options": [
+          "Copier le profil",
+          "RÃ©pÃ©ter les 2-3 derniers mots en question",
+          "Envoyer le mÃªme message",
+          "Imiter le ton"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'anti no-show rÃ©duit les absences de :",
+        "contexte": "",
+        "options": [
+          "20%",
+          "40%",
+          "60%",
+          "80%"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le Dominant (Rouge) veut :",
+        "contexte": "",
+        "options": [
+          "Des dÃ©tails",
+          "Aller droit au but et des rÃ©sultats",
+          "Prendre son temps",
+          "De la convivialitÃ©"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'Influent (Jaune) apprÃ©cie :",
+        "contexte": "",
+        "options": [
+          "Les donnÃ©es factuelles",
+          "L'humour et la reconnaissance",
+          "Le silence",
+          "La prÃ©cision technique"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le Stable (Vert) a besoin de :",
+        "contexte": "",
+        "options": [
+          "Pression pour dÃ©cider",
+          "Ãtre rassurÃ© et avoir du temps",
+          "Aller trÃ¨s vite",
+          "Des chiffres prÃ©cis"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le Consciencieux (Bleu) exige :",
+        "contexte": "",
+        "options": [
+          "De la convivialitÃ©",
+          "De la prÃ©cision et des donnÃ©es factuelles",
+          "De l'humour",
+          "De la rapiditÃ©"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Sur LinkedIn, combien de jours d'interactions avant le DM ?",
+        "contexte": "",
+        "options": [
+          "0",
+          "2",
+          "5",
+          "10"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le systÃ¨me d'itÃ©ration est : Inputs â Processus â Outputs â :",
+        "contexte": "",
+        "options": [
+          "Ventes",
+          "Feedbacks",
+          "Profits",
+          "Emails"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Volume ET QualitÃ©, pas :",
+        "contexte": "",
+        "options": [
+          "Volume OU QualitÃ©",
+          "Volume uniquement",
+          "QualitÃ© uniquement",
+          "Ni l'un ni l'autre"
+        ],
+        "correct_index": 0,
+        "explication": ""
+      },
+      {
+        "question": "Le minimum de prospects/jour est :",
+        "contexte": "",
+        "options": [
+          "5",
+          "10",
+          "30",
+          "100"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le taux de closing cible post-setting est :",
+        "contexte": "",
+        "options": [
+          "> 10%",
+          "> 20%",
+          "> 30%",
+          "> 50%"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "La durÃ©e moyenne d'appel idÃ©ale :",
+        "contexte": "",
+        "options": [
+          "2-5 min",
+          "8-18 min",
+          "30-45 min",
+          "1h+"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "1 compte = 1 page sur :",
+        "contexte": "",
+        "options": [
+          "LinkedIn",
+          "Instagram et TikTok",
+          "Facebook",
+          "WhatsApp"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le plan 90 jours commence par :",
+        "contexte": "",
+        "options": [
+          "100 DMs/jour",
+          "Fondations : 20â60 DMs/jour",
+          "Closing immÃ©diat",
+          "CrÃ©ation de contenu"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le setter ne vend pas, il :",
+        "contexte": "",
+        "options": [
+          "Automatise",
+          "Ãcoute, comprend et invite",
+          "Convainc",
+          "Manipule"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La Sympathie dans H-O-C = :",
+        "contexte": "",
+        "options": [
+          "Prix bas",
+          "Compliment + Points Communs",
+          "Urgence + RaretÃ©",
+          "TÃ©moignages + RÃ©sultats"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Le 'Fit' dans BANT+ Ã©value :",
+        "contexte": "",
+        "options": [
+          "La forme physique",
+          "Si c'est le bon moment dans sa vie",
+          "La compatibilitÃ© technique",
+          "Le fit culturel"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "La reformulation commence par :",
+        "contexte": "",
+        "options": [
+          "'Je pense que...'",
+          "'Si j'ai bien compris...'",
+          "'Tu as tort...'",
+          "'En rÃ©sumÃ©...'"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Face au silence, le label tactique dit :",
+        "contexte": "",
+        "options": [
+          "'Pourquoi tu ne parles pas ?'",
+          "'On dirait que c'est important pour toi'",
+          "'Tu es toujours lÃ  ?'",
+          "'Je continue ?'"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "L'Ã©thique du setter impose :",
+        "contexte": "",
+        "options": [
+          "Fausse urgence acceptable",
+          "Transparence, 2 relances max, disqualifier honnÃªtement",
+          "Vendre Ã  tout prix",
+          "Ignorer les refus"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Les 3 clÃ©s de rÃ©ussite d'Inaya :",
+        "contexte": "",
+        "options": [
+          "Budget, rÃ©seau, chance",
+          "Scripts par cÅur, analyse enregistrements, consistance",
+          "PublicitÃ©, contenu, followers",
+          "Talent naturel uniquement"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      },
+      {
+        "question": "Calendly rÃ©duit les no-show de :",
+        "contexte": "",
+        "options": [
+          "20%",
+          "40%",
+          "60%",
+          "80%"
+        ],
+        "correct_index": 2,
+        "explication": ""
+      },
+      {
+        "question": "Le setting est un marathon, pas :",
+        "contexte": "",
+        "options": [
+          "Un job",
+          "Un sprint",
+          "Un hobby",
+          "Une passion"
+        ],
+        "correct_index": 1,
+        "explication": ""
+      }
+    ]
+  }
+]
