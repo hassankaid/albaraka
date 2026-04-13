@@ -38,7 +38,7 @@ export function Questionnaire({
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div ref={topRef} />
 
       <p className="text-sm text-muted-foreground">

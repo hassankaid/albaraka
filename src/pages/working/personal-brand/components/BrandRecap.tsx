@@ -41,7 +41,7 @@ export function BrandRecap({ answers, profiles, onEditSection, onRestart }: Prop
   const promptText = buildContentPrompt(answers);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div className="text-center space-y-2">
         <p className="text-[11px] tracking-[0.3em] uppercase text-primary/70">Ta fiche</p>
         <h2 className="font-heading text-2xl md:text-3xl text-foreground">
