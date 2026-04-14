@@ -118,7 +118,7 @@ export function Questionnaire({
         >
           {isLast ? <Sparkles className="h-4 w-4" /> : null}
           {isLast
-            ? (finishing ? "L'IA écrit tes profils..." : "Générer mes 10 profils IA")
+            ? (finishing ? "L'IA écrit tes profils..." : "Générer ma fiche Personal Brand")
             : "Suivant"}
           {!isLast && <ArrowRight className="h-4 w-4" />}
         </Button>
@@ -134,7 +134,7 @@ export function Questionnaire({
             className="gap-2 text-primary hover:text-primary"
           >
             <Sparkles className="h-4 w-4" />
-            {finishing ? "L'IA écrit tes profils..." : "Générer maintenant avec mes réponses"}
+            {finishing ? "L'IA écrit tes profils..." : "Générer ma fiche maintenant"}
           </Button>
           <p className="text-[11px] text-muted-foreground italic">
             Pas besoin de tout remplir — plus tu donnes de contexte, plus les profils sont précis.
