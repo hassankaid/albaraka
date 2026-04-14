@@ -5,12 +5,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Clock, User } from "lucide-react";
-import { COACHING_SLOTS, ZOOM_COACHING } from "@/config/coachingSlots";
+import { COACHING_SLOTS, ZOOM_COACHING, type CoachingSlot } from "@/config/coachingSlots";
 import { sortSlotsByNextOccurrence } from "@/lib/coaching-slots";
 import { computeJoinPhase } from "@/lib/coaching-window";
+import { useLogAttendance } from "@/hooks/useCoachingTracking";
+import { ReplaysSection } from "@/components/coaching-calendar/ReplaysSection";
+import { MyCoachingStatsCard } from "@/components/coaching-calendar/MyCoachingStatsCard";
 
 export default function CoachingCalendar() {
   const [now, setNow] = useState(() => new Date());
+  const logAttendance = useLogAttendance();
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30_000);
@@ -18,6 +22,10 @@ export default function CoachingCalendar() {
   }, []);
 
   const sessions = sortSlotsByNextOccurrence(COACHING_SLOTS, now);
+
+  function handleConnect(slot: CoachingSlot, startedAt: Date) {
+    logAttendance.mutate({ slot, startedAt });
+  }
   const weekStart = startOfWeek(now, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
 
@@ -30,6 +38,8 @@ export default function CoachingCalendar() {
           {format(weekEnd, "d MMMM yyyy", { locale: fr })}
         </p>
       </div>
+
+      <MyCoachingStatsCard />
 
       <div className="grid gap-4">
         {sessions.map(({ slot, nextStart }) => {
@@ -94,6 +104,7 @@ export default function CoachingCalendar() {
                         href={ZOOM_COACHING.url}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() => handleConnect(slot, nextStart)}
                       >
                         Se connecter
                         <ExternalLink className="ml-2 h-4 w-4" />
@@ -113,6 +124,8 @@ export default function CoachingCalendar() {
           );
         })}
       </div>
+
+      <ReplaysSection />
 
       <Card className="bg-muted/30">
         <CardContent className="p-4 text-sm text-muted-foreground space-y-1">

@@ -1031,6 +1031,120 @@ export type Database = {
           },
         ]
       }
+      coaching_attendance: {
+        Row: {
+          id: string
+          joined_at: string
+          occurrence_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          occurrence_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          occurrence_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coaching_attendance_occurrence_id_fkey"
+            columns: ["occurrence_id"]
+            isOneToOne: false
+            referencedRelation: "coaching_occurrences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coaching_attendance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coaching_occurrences: {
+        Row: {
+          created_at: string
+          duration_minutes: number
+          id: string
+          occurrence_date: string
+          replay_added_at: string | null
+          replay_available_until: string | null
+          replay_password: string | null
+          replay_url: string | null
+          slot_id: string
+          started_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          occurrence_date: string
+          replay_added_at?: string | null
+          replay_available_until?: string | null
+          replay_password?: string | null
+          replay_url?: string | null
+          slot_id: string
+          started_at: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          occurrence_date?: string
+          replay_added_at?: string | null
+          replay_available_until?: string | null
+          replay_password?: string | null
+          replay_url?: string | null
+          slot_id?: string
+          started_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      coaching_replay_views: {
+        Row: {
+          id: string
+          occurrence_id: string
+          user_id: string
+          viewed_at: string
+        }
+        Insert: {
+          id?: string
+          occurrence_id: string
+          user_id: string
+          viewed_at?: string
+        }
+        Update: {
+          id?: string
+          occurrence_id?: string
+          user_id?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coaching_replay_views_occurrence_id_fkey"
+            columns: ["occurrence_id"]
+            isOneToOne: false
+            referencedRelation: "coaching_occurrences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coaching_replay_views_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coaching_scores: {
         Row: {
           created_at: string | null
@@ -3253,6 +3367,15 @@ export type Database = {
       }
       duplicate_formation: { Args: { p_formation_id: string }; Returns: string }
       enqueue_activity_reminders: { Args: never; Returns: number }
+      ensure_coaching_occurrence: {
+        Args: {
+          p_duration_minutes?: number
+          p_occurrence_date: string
+          p_slot_id: string
+          p_started_at: string
+        }
+        Returns: string
+      }
       find_or_create_contact: {
         Args: { p_email: string; p_full_name?: string; p_phone: string }
         Returns: string
