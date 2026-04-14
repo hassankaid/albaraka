@@ -87,3 +87,50 @@ export function sortSlotsByNextOccurrence(
     .map((slot) => ({ slot, nextStart: nextOccurrenceParis(slot, now) }))
     .sort((a, b) => a.nextStart.getTime() - b.nextStart.getTime());
 }
+
+/**
+ * Retourne les occurrences des 4 créneaux pour la semaine en cours
+ * (lundi → dimanche, TZ Paris). Si tous les créneaux de cette semaine
+ * sont terminés, bascule sur la semaine suivante.
+ */
+export function currentWeekOccurrences(
+  slots: CoachingSlot[],
+  now: Date = new Date(),
+): Array<{ slot: CoachingSlot; nextStart: Date }> {
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Paris",
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = fmt.formatToParts(now).reduce<Record<string, string>>((acc, p) => {
+    if (p.type !== "literal") acc[p.type] = p.value;
+    return acc;
+  }, {});
+  const y = Number(parts.year);
+  const mo = Number(parts.month) - 1;
+  const d = Number(parts.day);
+
+  const todayDow = new Date(Date.UTC(y, mo, d)).getUTCDay();
+  const mondayOffset = todayDow === 0 ? -6 : 1 - todayDow;
+
+  function computeWeek(shift: number) {
+    return slots
+      .map((slot) => {
+        const targetDow = DAYS_ORDER.indexOf(slot.day);
+        const mondayTargetDow = 1;
+        const dayShift =
+          mondayOffset + shift + ((targetDow - mondayTargetDow + 7) % 7);
+        const start = parisWallClockToUtc(y, mo, d + dayShift, slot.hour, slot.minute);
+        return { slot, nextStart: start };
+      })
+      .sort((a, b) => a.nextStart.getTime() - b.nextStart.getTime());
+  }
+
+  const current = computeWeek(0);
+  const allEnded = current.every(
+    ({ slot, nextStart }) => nextStart.getTime() + slot.durationMinutes * 60_000 <= now.getTime(),
+  );
+  return allEnded ? computeWeek(7) : current;
+}

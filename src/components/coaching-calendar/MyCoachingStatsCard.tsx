@@ -2,11 +2,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, PlayCircle, TrendingUp } from "lucide-react";
 import { useMyCoachingStats } from "@/hooks/useCoachingTracking";
+import { useUserPass } from "@/hooks/useUserPass";
+import { useAuth } from "@/hooks/useAuth";
 
 export function MyCoachingStatsCard() {
+  const { profile } = useAuth();
+  const { hasAnyPass } = useUserPass();
   const { data: stats30 } = useMyCoachingStats(30);
   const { data: stats90 } = useMyCoachingStats(90);
 
+  if (profile?.role === "ceo") return null;
+  if (!hasAnyPass) return null;
   if (!stats30) return null;
 
   return (

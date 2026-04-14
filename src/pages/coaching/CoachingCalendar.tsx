@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Clock, User } from "lucide-react";
 import { COACHING_SLOTS, ZOOM_COACHING, type CoachingSlot } from "@/config/coachingSlots";
-import { sortSlotsByNextOccurrence } from "@/lib/coaching-slots";
+import { currentWeekOccurrences } from "@/lib/coaching-slots";
 import { computeJoinPhase } from "@/lib/coaching-window";
 import { useLogAttendance } from "@/hooks/useCoachingTracking";
 import { ReplaysSection } from "@/components/coaching-calendar/ReplaysSection";
@@ -21,13 +21,14 @@ export default function CoachingCalendar() {
     return () => clearInterval(id);
   }, []);
 
-  const sessions = sortSlotsByNextOccurrence(COACHING_SLOTS, now);
+  const sessions = currentWeekOccurrences(COACHING_SLOTS, now);
 
   function handleConnect(slot: CoachingSlot, startedAt: Date) {
     logAttendance.mutate({ slot, startedAt });
   }
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+  const baseForWeek = sessions[0]?.nextStart ?? now;
+  const weekStart = startOfWeek(baseForWeek, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(baseForWeek, { weekStartsOn: 1 });
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-4xl mx-auto">
