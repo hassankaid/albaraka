@@ -102,6 +102,18 @@ export default function PersonalBrandPage() {
     );
   }
 
+  const hasExistingFiche = !!(
+    brandQuery.data?.generated_profiles &&
+    (brandQuery.data.generated_profiles as any[]).length > 0
+  );
+
+  const handleBackToRecap = () => {
+    // Restaurer les réponses sauvegardées en DB (annule les édits locaux)
+    setAnswers((brandQuery.data?.answers as BrandAnswers) ?? {});
+    setStep("recap");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <>
       <Questionnaire
@@ -110,6 +122,7 @@ export default function PersonalBrandPage() {
         currentSection={currentSection}
         setCurrentSection={setCurrentSection}
         onFinish={handleFinish}
+        onBackToRecap={hasExistingFiche ? handleBackToRecap : undefined}
         finishing={saveMutation.isPending || generateMutation.isPending}
       />
       {generateMutation.isPending && <GeneratingOverlay />}

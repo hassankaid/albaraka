@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BRAND_SECTIONS, countAnsweredQuestions, totalQuestions, type BrandAnswers } from "../lib/sections";
 import { QuestionBlock } from "./QuestionBlock";
@@ -13,11 +13,12 @@ interface Props {
   currentSection: number;
   setCurrentSection: (n: number) => void;
   onFinish: () => void;
+  onBackToRecap?: () => void;
   finishing?: boolean;
 }
 
 export function Questionnaire({
-  answers, onChange, currentSection, setCurrentSection, onFinish, finishing,
+  answers, onChange, currentSection, setCurrentSection, onFinish, onBackToRecap, finishing,
 }: Props) {
   const topRef = useRef<HTMLDivElement>(null);
   const section = BRAND_SECTIONS[currentSection];
@@ -40,6 +41,20 @@ export function Questionnaire({
   return (
     <div className="space-y-6">
       <div ref={topRef} />
+
+      {onBackToRecap && (
+        <div className="flex justify-start">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBackToRecap}
+            className="gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+            Annuler et revenir à ma fiche
+          </Button>
+        </div>
+      )}
 
       <p className="text-sm text-muted-foreground">
         Réponds à chaque question avec honnêteté. À la fin, tu auras tes profils
