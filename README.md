@@ -1,73 +1,56 @@
-# Welcome to your Lovable project
+# Plateforme Al Baraka
 
-## Project info
+Plateforme de gestion interne de l'écosystème Ethicarena : CRM, finance, coaching, formation, outils IA.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Stack
 
-## How can I edit this code?
+- **Frontend** : React 18 + TypeScript + Vite + Tailwind CSS + shadcn/ui
+- **Backend** : Supabase (Auth, Postgres, Storage, Edge Functions Deno)
+- **Hébergement** : Vercel (frontend) — `albarakaecosysteme.com`
 
-There are several ways of editing your application.
+## Développement local
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+Prérequis : Node.js 20+ et npm.
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+git clone <GIT_URL>
+cd albaraka
+npm install
+npm run dev        # http://localhost:8080
 ```
 
-**Edit a file directly in GitHub**
+Commandes utiles :
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```sh
+npm run build        # Build production
+npm run preview      # Prévisualise le build
+npm run lint         # ESLint
+npm run test         # Vitest
+```
 
-**Use GitHub Codespaces**
+## Déploiement
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Le frontend est déployé automatiquement sur **Vercel** à chaque push sur `main`.
 
-## What technologies are used for this project?
+- **Production** : https://albarakaecosysteme.com
+- **SPA rewrites** : configurés dans `vercel.json` pour React Router.
+- **Variables d'environnement** : voir `.env.example`. Les clés Supabase publiques sont actuellement codées en dur dans `src/integrations/supabase/client.ts`.
 
-This project is built with:
+Les **Edge Functions** restent hébergées sur Supabase (projet `ktvszjzryabjgxyobtyc`) et se déploient via `supabase functions deploy`.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Structure
 
-## How can I deploy this project?
+```
+src/
+├── pages/           # Pages (une par route)
+├── components/      # Composants réutilisables
+│   └── ui/          # shadcn/ui
+├── hooks/           # Custom hooks
+├── lib/             # Utilitaires
+└── integrations/
+    └── supabase/    # Client Supabase + types auto-générés
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+supabase/
+├── functions/       # Edge Functions (Deno)
+└── migrations/      # Migrations SQL
+```

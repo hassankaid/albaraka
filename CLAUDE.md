@@ -9,7 +9,7 @@ Plateforme de gestion interne Ethicarena : CRM, finance, coaching, formation, ou
 - **State**: TanStack React Query v5
 - **Forms**: react-hook-form + zod
 - **Routing**: React Router v6 (nested routes)
-- **Deploy**: Push sur `main` = deploy automatique Lovable
+- **Deploy**: Push sur `main` = deploy automatique Vercel (domaine `albarakaecosysteme.com`)
 
 ## Commandes
 
@@ -66,5 +66,5 @@ supabase/
 ## Git
 
 - Branche principale: `main`
-- Chaque push sur main declenche un deploy Lovable
+- Chaque push sur main declenche un deploy Vercel
 - Toujours verifier `npm run build` avant de push
