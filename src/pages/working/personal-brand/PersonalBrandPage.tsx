@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Questionnaire } from "./components/Questionnaire";
 import { BrandRecap } from "./components/BrandRecap";
@@ -17,6 +17,7 @@ export default function PersonalBrandPage() {
   const [step, setStep] = useState<Step>("loading");
   const [answers, setAnswers] = useState<BrandAnswers>({});
   const [currentSection, setCurrentSection] = useState(0);
+  const welcomeShownRef = useRef(false);
 
   // Init depuis BDD
   useEffect(() => {
@@ -25,6 +26,10 @@ export default function PersonalBrandPage() {
     if (row?.generated_profiles && (row.generated_profiles as any[]).length > 0) {
       setAnswers((row.answers as BrandAnswers) ?? {});
       setStep("recap");
+      if (!welcomeShownRef.current) {
+        welcomeShownRef.current = true;
+        toast.info("Ta fiche Personal Brand est prête. Bon retour ✦", { duration: 2500 });
+      }
     } else if (row) {
       setAnswers((row.answers as BrandAnswers) ?? {});
       setStep("questionnaire");
@@ -62,6 +67,12 @@ export default function PersonalBrandPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleEditAll = () => {
+    setCurrentSection(0);
+    setStep("questionnaire");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleRestart = () => {
     setAnswers({});
     setCurrentSection(0);
@@ -83,7 +94,9 @@ export default function PersonalBrandPage() {
       <BrandRecap
         answers={answers}
         profiles={(brandQuery.data?.generated_profiles as any) ?? []}
+        profilesGeneratedAt={brandQuery.data?.profiles_generated_at ?? null}
         onEditSection={handleEditSection}
+        onEditAll={handleEditAll}
         onRestart={handleRestart}
       />
     );

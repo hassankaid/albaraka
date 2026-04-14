@@ -21,7 +21,8 @@ interface NavItem {
 const workingNavItems: NavItem[] = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Mon Organisation", path: "/working/organisation", icon: CalendarDays, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
-  { title: "Générateur de Contenu", path: "/working/content", icon: Wand2, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
+  { title: "Mon Personal Brand", path: "/working/content?tab=personal-brand", icon: Sparkles, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
+  { title: "Générateur de Contenu", path: "/working/content?tab=universal", icon: Wand2, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Mes Contenus", path: "/working/contents", icon: Library, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur"] },
   // After separator
@@ -303,18 +304,33 @@ function SidebarNavLink({ item, onClose }: { item: NavItem; onClose: () => void 
   // /parcours/* doit garder l'item "Formation" actif dans la sidebar
   const extraActive =
     item.path === "/training" && location.pathname.startsWith("/parcours/");
+
+  // Pour les entrées avec query string (ex: /working/content?tab=personal-brand),
+  // l'active se détermine en comparant pathname + search, pas pathname seul.
+  const [itemPathname, itemSearch] = item.path.split("?");
+  const hasQuery = !!itemSearch;
+  const currentTab = new URLSearchParams(location.search).get("tab");
+  const itemTab = hasQuery ? new URLSearchParams(itemSearch).get("tab") : null;
+  const queryActive =
+    hasQuery &&
+    location.pathname === itemPathname &&
+    (currentTab === itemTab || (itemTab === "personal-brand" && !currentTab));
+
   return (
     <NavLink
       to={item.path}
       end={needsEnd}
       onClick={onClose}
-      className={({ isActive }) =>
-        `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-          (isActive || extraActive)
+      className={({ isActive }) => {
+        // Quand l'item a une query string, ignorer le isActive natif de NavLink
+        // (il matche sur pathname seul et ferait clignoter les deux entrées).
+        const active = hasQuery ? queryActive : isActive || extraActive;
+        return `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+          active
             ? "gradient-primary text-primary-foreground"
             : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-        }`
-      }
+        }`;
+      }}
     >
       <item.icon className="h-4 w-4" />
       {item.title}

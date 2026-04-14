@@ -2,7 +2,20 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Pencil, RefreshCw, Sparkles, AlertCircle } from "lucide-react";
+import { Pencil, RefreshCw, Sparkles, AlertCircle, CheckCircle2, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
 import { BRAND_SECTIONS, type BrandAnswers } from "../lib/sections";
 import { buildContentPrompt } from "../lib/buildPrompts";
 import { useGenerateProfiles, type GeneratedProfile } from "../hooks/usePersonalBrand";
@@ -14,13 +27,24 @@ import { toast } from "sonner";
 interface Props {
   answers: BrandAnswers;
   profiles: GeneratedProfile[] | null;
+  profilesGeneratedAt: string | null;
   onEditSection: (index: number) => void;
+  onEditAll: () => void;
   onRestart: () => void;
 }
 
-export function BrandRecap({ answers, profiles, onEditSection, onRestart }: Props) {
+export function BrandRecap({
+  answers,
+  profiles,
+  profilesGeneratedAt,
+  onEditSection,
+  onEditAll,
+  onRestart,
+}: Props) {
   const [error, setError] = useState<string | null>(null);
   const generateMutation = useGenerateProfiles();
+
+  const hasProfiles = !!(profiles && profiles.length > 0);
 
   const handleGenerate = async () => {
     setError(null);
@@ -41,6 +65,10 @@ export function BrandRecap({ answers, profiles, onEditSection, onRestart }: Prop
   const freq = ((answers.frequence as string) || "").split("(")[0].trim() || "—";
   const promptText = buildContentPrompt(answers);
 
+  const generatedLabel = profilesGeneratedAt
+    ? formatDistanceToNow(new Date(profilesGeneratedAt), { locale: fr, addSuffix: true })
+    : null;
+
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
@@ -49,6 +77,57 @@ export function BrandRecap({ answers, profiles, onEditSection, onRestart }: Prop
           Personal Brand
         </h2>
         <div className="w-12 h-px bg-primary/50 mx-auto my-3" />
+        <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+          <span>
+            Sauvegardée automatiquement
+            {generatedLabel && <> · Générée {generatedLabel}</>}
+          </span>
+        </div>
+      </div>
+
+      {/* BARRE D'ACTIONS */}
+      <div className="flex flex-wrap gap-2 justify-center">
+        <Button variant="outline" size="sm" onClick={onEditAll} className="gap-2">
+          <Pencil className="h-4 w-4" />
+          Modifier mes réponses
+        </Button>
+        {hasProfiles && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleGenerate}
+            disabled={generateMutation.isPending}
+            className="gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Régénérer les profils
+          </Button>
+        )}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
+              <Trash2 className="h-4 w-4" />
+              Recommencer à zéro
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Recommencer à zéro ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Cette action efface toutes tes réponses et tes 10 profils générés.
+                Tu devras repartir du questionnaire vide. Tes réponses actuelles
+                seront remplacées dès que tu sauvegarderas la nouvelle version.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction onClick={onRestart}>
+                Oui, recommencer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       {/* 6 SECTIONS RÉCAP */}
@@ -103,13 +182,13 @@ export function BrandRecap({ answers, profiles, onEditSection, onRestart }: Prop
             📱 Tes Profils Personnalisés
           </h2>
           <p className="text-xs text-muted-foreground max-w-md mx-auto">
-            {profiles && profiles.length > 0
+            {hasProfiles
               ? "10 profils uniques écrits par l'IA à partir de TON histoire."
               : "Clique pour générer 10 profils Instagram écrits sur mesure."}
           </p>
         </div>
 
-        {!profiles || profiles.length === 0 ? (
+        {!hasProfiles ? (
           <div className="flex justify-center">
             <Button
               onClick={handleGenerate}
@@ -123,21 +202,9 @@ export function BrandRecap({ answers, profiles, onEditSection, onRestart }: Prop
           </div>
         ) : (
           <>
-            {profiles.map((p, i) => (
+            {profiles!.map((p, i) => (
               <ProfileCard key={i} profile={p} index={i} />
             ))}
-            <div className="flex justify-center">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleGenerate}
-                disabled={generateMutation.isPending}
-                className="gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Régénérer 10 nouveaux profils
-              </Button>
-            </div>
           </>
         )}
 
@@ -151,13 +218,6 @@ export function BrandRecap({ answers, profiles, onEditSection, onRestart }: Prop
 
       {/* PROMPT PERSONNALISÉ */}
       <PromptExportCard promptText={promptText} />
-
-      <div className="text-center pt-4">
-        <Button variant="ghost" size="sm" onClick={onRestart} className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Refaire le questionnaire
-        </Button>
-      </div>
 
       {generateMutation.isPending && <GeneratingOverlay />}
 
