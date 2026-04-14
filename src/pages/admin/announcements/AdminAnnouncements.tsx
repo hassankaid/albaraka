@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Megaphone, Plus, Send, Trash2, Users } from "lucide-react";
+import {
+  Megaphone,
+  Plus,
+  Send,
+  Trash2,
+  Users,
+  ChevronDown,
+  Check,
+  X,
+} from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +22,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -44,6 +57,19 @@ interface AnnouncementRow {
   updated_at: string;
 }
 
+interface ReadStat {
+  announcement_id: string;
+  total: number;
+  read: number;
+}
+
+interface RecipientRow {
+  user_id: string;
+  full_name: string | null;
+  role: string | null;
+  read_at: string | null;
+}
+
 type RoleKey = "ceo" | "collaborateur" | "apporteur";
 
 const ROLE_LABELS: Record<RoleKey, string> = {
@@ -64,8 +90,9 @@ export default function AdminAnnouncements() {
     collaborateur: true,
     apporteur: true,
   });
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-  const query = useQuery({
+  const announcementsQuery = useQuery({
     queryKey: ["announcements", "all"],
     queryFn: async (): Promise<AnnouncementRow[]> => {
       const { data, error } = await supabase
@@ -74,6 +101,27 @@ export default function AdminAnnouncements() {
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data as unknown as AnnouncementRow[]) ?? [];
+    },
+  });
+
+  // Stats de lecture par annonce (une requête agrégée côté client).
+  const statsQuery = useQuery({
+    queryKey: ["announcements", "read-stats"],
+    queryFn: async (): Promise<Record<string, ReadStat>> => {
+      const { data, error } = await supabase
+        .from("notifications" as any)
+        .select("metadata, read_at")
+        .eq("type", "announcement");
+      if (error) throw error;
+      const stats: Record<string, ReadStat> = {};
+      for (const row of (data as any[]) ?? []) {
+        const aid = row.metadata?.announcement_id as string | undefined;
+        if (!aid) continue;
+        if (!stats[aid]) stats[aid] = { announcement_id: aid, total: 0, read: 0 };
+        stats[aid].total += 1;
+        if (row.read_at) stats[aid].read += 1;
+      }
+      return stats;
     },
   });
 
@@ -124,7 +172,11 @@ export default function AdminAnnouncements() {
     );
   }
 
-  const announcements = query.data ?? [];
+  const announcements = announcementsQuery.data ?? [];
+  const stats = statsQuery.data ?? {};
+
+  const toggleExpand = (id: string) =>
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
 
   return (
     <div className="space-y-6">
@@ -152,58 +204,102 @@ export default function AdminAnnouncements() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {announcements.map((a) => (
-            <Card key={a.id}>
-              <CardContent className="p-5 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-foreground">{a.title}</h3>
-                      {a.published_at ? (
-                        <Badge variant="secondary" className="text-[10px]">
-                          Publiée {formatDistanceToNow(new Date(a.published_at), { locale: fr, addSuffix: true })}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px]">Brouillon</Badge>
-                      )}
+          {announcements.map((a) => {
+            const stat = stats[a.id];
+            const isExpanded = !!expanded[a.id];
+            return (
+              <Card key={a.id}>
+                <CardContent className="p-5 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold text-foreground">{a.title}</h3>
+                        {a.published_at ? (
+                          <Badge variant="secondary" className="text-[10px]">
+                            Publiée {formatDistanceToNow(new Date(a.published_at), { locale: fr, addSuffix: true })}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px]">Brouillon</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap line-clamp-3">
+                        {a.body}
+                      </p>
+                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground flex-wrap">
+                        <Users className="h-3.5 w-3.5" />
+                        <span>
+                          Cible : {a.target_roles.map((r) => ROLE_LABELS[r as RoleKey] ?? r).join(", ")}
+                        </span>
+                        <span>·</span>
+                        <span>{format(new Date(a.created_at), "d MMM yyyy HH:mm", { locale: fr })}</span>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap line-clamp-3">
-                      {a.body}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                      <Users className="h-3.5 w-3.5" />
-                      <span>
-                        Cible : {a.target_roles.map((r) => ROLE_LABELS[r as RoleKey] ?? r).join(", ")}
-                      </span>
-                      <span>·</span>
-                      <span>{format(new Date(a.created_at), "d MMM yyyy HH:mm", { locale: fr })}</span>
-                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm" className="text-muted-foreground">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Supprimer cette annonce ?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Les notifications envoyées aux utilisateurs seront aussi supprimées.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteMutation.mutate(a.id)}>
+                            Supprimer
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="text-muted-foreground">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Supprimer cette annonce ?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Les notifications déjà envoyées seront conservées mais ne pourront plus être ouvertes.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteMutation.mutate(a.id)}>
-                          Supprimer
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+
+                  {/* COMPTEUR + TOGGLE EXPAND */}
+                  {stat && stat.total > 0 && (
+                    <>
+                      <Separator />
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(a.id)}
+                        className="w-full flex items-center gap-3 text-left hover:bg-secondary/40 -mx-2 px-2 py-1.5 rounded-md transition-colors"
+                      >
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">
+                              <span className="font-semibold text-foreground">{stat.read}</span>
+                              {" / "}
+                              {stat.total} lues
+                              <span className="ml-2 text-muted-foreground">
+                                ({Math.round((stat.read / stat.total) * 100)}%)
+                              </span>
+                            </span>
+                            <span className="flex items-center gap-1 text-muted-foreground">
+                              {isExpanded ? "Masquer" : "Voir les destinataires"}
+                              <ChevronDown
+                                className={cn(
+                                  "h-3.5 w-3.5 transition-transform",
+                                  isExpanded && "rotate-180"
+                                )}
+                              />
+                            </span>
+                          </div>
+                          <Progress
+                            value={(stat.read / stat.total) * 100}
+                            className="h-1.5"
+                          />
+                        </div>
+                      </button>
+
+                      {isExpanded && <RecipientsList announcementId={a.id} />}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -266,6 +362,94 @@ export default function AdminAnnouncements() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function RecipientsList({ announcementId }: { announcementId: string }) {
+  const query = useQuery({
+    queryKey: ["announcement-recipients", announcementId],
+    queryFn: async (): Promise<RecipientRow[]> => {
+      const { data, error } = await supabase
+        .from("notifications" as any)
+        .select("user_id, read_at, profile:profiles!notifications_user_id_fkey(full_name, role)")
+        .eq("type", "announcement")
+        .eq("metadata->>announcement_id", announcementId);
+      if (error) throw error;
+      const rows = ((data as any[]) ?? []).map((r) => ({
+        user_id: r.user_id as string,
+        read_at: r.read_at as string | null,
+        full_name: r.profile?.full_name ?? null,
+        role: r.profile?.role ?? null,
+      })) as RecipientRow[];
+      rows.sort((a, b) =>
+        (a.full_name ?? "").localeCompare(b.full_name ?? "", "fr", { sensitivity: "base" })
+      );
+      return rows;
+    },
+  });
+
+  if (query.isLoading) {
+    return (
+      <div className="space-y-2 pt-2">
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+      </div>
+    );
+  }
+
+  const recipients = query.data ?? [];
+  if (recipients.length === 0) {
+    return (
+      <p className="text-xs text-muted-foreground italic pt-2">
+        Aucun destinataire.
+      </p>
+    );
+  }
+
+  return (
+    <div className="pt-2 border rounded-md overflow-hidden">
+      <table className="w-full text-sm">
+        <thead className="bg-muted/40">
+          <tr>
+            <th className="text-left font-medium text-xs text-muted-foreground px-3 py-2">Nom</th>
+            <th className="text-left font-medium text-xs text-muted-foreground px-3 py-2 hidden sm:table-cell">Rôle</th>
+            <th className="text-left font-medium text-xs text-muted-foreground px-3 py-2">Statut</th>
+            <th className="text-left font-medium text-xs text-muted-foreground px-3 py-2 hidden sm:table-cell">Lu le</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {recipients.map((r) => (
+            <tr key={r.user_id}>
+              <td className="px-3 py-2 font-medium text-foreground">
+                {r.full_name ?? <span className="text-muted-foreground italic">sans nom</span>}
+              </td>
+              <td className="px-3 py-2 text-muted-foreground hidden sm:table-cell">
+                {r.role ? ROLE_LABELS[r.role as RoleKey] ?? r.role : "—"}
+              </td>
+              <td className="px-3 py-2">
+                {r.read_at ? (
+                  <span className="inline-flex items-center gap-1.5 text-emerald-600">
+                    <Check className="h-4 w-4" />
+                    <span className="text-xs">Lue</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                    <X className="h-4 w-4" />
+                    <span className="text-xs">Non lue</span>
+                  </span>
+                )}
+              </td>
+              <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">
+                {r.read_at
+                  ? format(new Date(r.read_at), "d MMM HH:mm", { locale: fr })
+                  : "—"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
