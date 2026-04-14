@@ -72,6 +72,7 @@ import OrganisationPage from "./pages/working/organisation/OrganisationPage";
 import ContentStudio from "./pages/working/ContentStudio";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import AdminAnnouncements from "./pages/admin/announcements/AdminAnnouncements";
+import AdminInvitations from "./pages/admin/invitations/AdminInvitations";
 import AnnouncementDetail from "./pages/announcements/AnnouncementDetail";
 
 const queryClient = new QueryClient();
@@ -106,6 +107,7 @@ const App = () => (
                   <Route path="/admin/commissions" element={<AdminCommissions />} />
                   <Route path="/admin/team" element={<AdminTeam />} />
                   <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+                  <Route path="/admin/invitations" element={<AdminInvitations />} />
                   <Route path="/admin/data" element={<AdminData />} />
                   <Route path="/admin/create" element={<AdminCreateWizard />} />
                   <Route path="/profile" element={<Profile />} />

@@ -39,7 +39,7 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       toast({
@@ -51,6 +51,26 @@ const Login = () => {
       });
       setLoading(false);
       return;
+    }
+
+    // Gate: apporteur sans accès ouvert → refuser
+    if (authData.user) {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("role, access_opened_at")
+        .eq("id", authData.user.id)
+        .single();
+      if (prof?.role === "apporteur" && !prof.access_opened_at) {
+        await supabase.auth.signOut();
+        toast({
+          title: "Accès non activé",
+          description:
+            "Ton accès n'a pas encore été ouvert. Contacte le CEO pour recevoir un email d'activation.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
     }
 
     navigate("/dashboard");

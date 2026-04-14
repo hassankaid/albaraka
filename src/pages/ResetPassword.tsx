@@ -85,8 +85,10 @@ const ResetPassword = () => {
         <div className="flex flex-col items-center space-y-3">
           <img src={logo} alt="Al Baraka" className="w-48 h-auto object-contain rounded-lg" />
           <div className="w-16 h-px bg-gradient-to-r from-transparent via-gold-500/40 to-transparent mt-2" />
-          <h1 className="text-2xl font-heading font-semibold text-foreground mt-4">Nouveau mot de passe</h1>
-          <p className="text-muted-foreground text-sm">Choisissez votre nouveau mot de passe</p>
+          <h1 className="text-2xl font-heading font-semibold text-foreground mt-4">Définis ton mot de passe</h1>
+          <p className="text-muted-foreground text-sm text-center">
+            Choisis un mot de passe sécurisé pour accéder à ton espace AL BARAKA
+          </p>
         </div>
 
         {success ? (
@@ -120,7 +122,7 @@ const ResetPassword = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Confirmer</label>
+              <label className="text-sm font-medium text-foreground">Confirmer le mot de passe</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
@@ -129,9 +131,22 @@ const ResetPassword = () => {
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   required
-                  className="w-full pl-10 pr-4 py-2.5 bg-transparent border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                  className="w-full pl-10 pr-10 py-2.5 bg-transparent border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
+              {confirm.length > 0 && password !== confirm && (
+                <p className="text-xs text-destructive">Les mots de passe ne correspondent pas</p>
+              )}
+              {confirm.length > 0 && password === confirm && password.length >= 6 && (
+                <p className="text-xs text-emerald-500">Les mots de passe correspondent</p>
+              )}
             </div>
 
             <button
@@ -140,7 +155,7 @@ const ResetPassword = () => {
               className="w-full py-2.5 rounded-full gradient-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading && <RefreshCw className="h-4 w-4 animate-spin" />}
-              Mettre à jour
+              Activer mon accès
             </button>
           </form>
         )}

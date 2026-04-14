@@ -2395,6 +2395,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          access_opened_at: string | null
+          access_sent_count: number
           address: string | null
           avatar_url: string | null
           bank_country: string | null
@@ -2414,6 +2416,7 @@ export type Database = {
           is_active: boolean
           is_also_apporteur: boolean | null
           is_coach: boolean | null
+          last_access_sent_at: string | null
           onboarding_completed: boolean
           phone: string | null
           postal_code: string | null
@@ -2423,6 +2426,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          access_opened_at?: string | null
+          access_sent_count?: number
           address?: string | null
           avatar_url?: string | null
           bank_country?: string | null
@@ -2442,6 +2447,7 @@ export type Database = {
           is_active?: boolean
           is_also_apporteur?: boolean | null
           is_coach?: boolean | null
+          last_access_sent_at?: string | null
           onboarding_completed?: boolean
           phone?: string | null
           postal_code?: string | null
@@ -2451,6 +2457,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          access_opened_at?: string | null
+          access_sent_count?: number
           address?: string | null
           avatar_url?: string | null
           bank_country?: string | null
@@ -2470,6 +2478,7 @@ export type Database = {
           is_active?: boolean
           is_also_apporteur?: boolean | null
           is_coach?: boolean | null
+          last_access_sent_at?: string | null
           onboarding_completed?: boolean
           phone?: string | null
           postal_code?: string | null
@@ -3464,6 +3473,10 @@ export type Database = {
       set_chapter_completion: {
         Args: { p_chapitre_id: string; p_completed: boolean }
         Returns: boolean
+      }
+      unlock_formation_from_parcours: {
+        Args: { p_formation_id: string }
+        Returns: string
       }
       user_active_pass_level: { Args: { p_user_id: string }; Returns: string }
     }
