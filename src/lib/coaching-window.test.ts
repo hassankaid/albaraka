@@ -29,12 +29,12 @@ describe("computeJoinPhase", () => {
     expect(computeJoinPhase(session({ status: "cancelled" }), START)).toBe("cancelled");
   });
 
-  it("returns 'too_early' when more than 10min before the start", () => {
+  it("returns 'too_early' when more than 15min before the start", () => {
     const now = new Date(START.getTime() - (JOIN_EARLY_MINUTES + 1) * 60_000);
     expect(computeJoinPhase(session(), now)).toBe("too_early");
   });
 
-  it("returns 'open' exactly at T - 10min", () => {
+  it("returns 'open' exactly at T - 15min", () => {
     const now = new Date(START.getTime() - JOIN_EARLY_MINUTES * 60_000);
     expect(computeJoinPhase(session(), now)).toBe("open");
   });
@@ -44,19 +44,19 @@ describe("computeJoinPhase", () => {
     expect(computeJoinPhase(session(), now)).toBe("open");
   });
 
-  it("returns 'open' exactly at end + 15min", () => {
+  it("returns 'open' exactly at end", () => {
     const now = new Date(END.getTime() + JOIN_GRACE_MINUTES * 60_000);
     expect(computeJoinPhase(session(), now)).toBe("open");
   });
 
-  it("returns 'ended' after end + 15min", () => {
+  it("returns 'ended' right after end", () => {
     const now = new Date(END.getTime() + (JOIN_GRACE_MINUTES + 1) * 60_000);
     expect(computeJoinPhase(session(), now)).toBe("ended");
   });
 });
 
 describe("windowOpensAt", () => {
-  it("returns start minus 10min", () => {
+  it("returns start minus 15min", () => {
     const opens = windowOpensAt({ scheduled_at: START.toISOString() });
     expect(opens.getTime()).toBe(START.getTime() - JOIN_EARLY_MINUTES * 60_000);
   });

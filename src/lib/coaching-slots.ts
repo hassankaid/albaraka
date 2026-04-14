@@ -1,0 +1,89 @@
+import type { CoachingSlot, DayName } from "@/config/coachingSlots";
+
+const DAYS_ORDER: DayName[] = [
+  "Dimanche",
+  "Lundi",
+  "Mardi",
+  "Mercredi",
+  "Jeudi",
+  "Vendredi",
+  "Samedi",
+];
+
+function parisOffsetMinutes(utcDate: Date): number {
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Paris",
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const parts = fmt.formatToParts(utcDate).reduce<Record<string, string>>((acc, p) => {
+    if (p.type !== "literal") acc[p.type] = p.value;
+    return acc;
+  }, {});
+  const asIfUtc = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour),
+    Number(parts.minute),
+    Number(parts.second),
+  );
+  return Math.round((asIfUtc - utcDate.getTime()) / 60000);
+}
+
+function parisWallClockToUtc(
+  year: number,
+  monthIndex: number,
+  day: number,
+  hour: number,
+  minute: number,
+): Date {
+  const guess = new Date(Date.UTC(year, monthIndex, day, hour, minute));
+  const offset = parisOffsetMinutes(guess);
+  return new Date(guess.getTime() - offset * 60000);
+}
+
+export function nextOccurrenceParis(slot: CoachingSlot, now: Date = new Date()): Date {
+  const targetDow = DAYS_ORDER.indexOf(slot.day);
+
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Paris",
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = fmt.formatToParts(now).reduce<Record<string, string>>((acc, p) => {
+    if (p.type !== "literal") acc[p.type] = p.value;
+    return acc;
+  }, {});
+  const y = Number(parts.year);
+  const mo = Number(parts.month) - 1;
+  const d = Number(parts.day);
+
+  const todayParisAsUtc = new Date(Date.UTC(y, mo, d));
+  const currentDow = todayParisAsUtc.getUTCDay();
+  const daysAhead = (targetDow - currentDow + 7) % 7;
+
+  const candidate = parisWallClockToUtc(y, mo, d + daysAhead, slot.hour, slot.minute);
+  const endMs = candidate.getTime() + slot.durationMinutes * 60000;
+
+  if (endMs <= now.getTime()) {
+    return parisWallClockToUtc(y, mo, d + daysAhead + 7, slot.hour, slot.minute);
+  }
+  return candidate;
+}
+
+export function sortSlotsByNextOccurrence(
+  slots: CoachingSlot[],
+  now: Date = new Date(),
+): Array<{ slot: CoachingSlot; nextStart: Date }> {
+  return slots
+    .map((slot) => ({ slot, nextStart: nextOccurrenceParis(slot, now) }))
+    .sort((a, b) => a.nextStart.getTime() - b.nextStart.getTime());
+}

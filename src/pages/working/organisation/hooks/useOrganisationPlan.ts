@@ -3,44 +3,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPass } from "@/hooks/useUserPass";
 import type { WeekPlan, Answers, CoachingSlot } from "../lib/generatePlanning";
-import type { DayName } from "../lib/predefinedTasks";
-
-// Map BDD group_coaching_recurrences → CoachingSlot (pour le moteur)
-function dayFromIso(iso: string): DayName {
-  // Convertit l'ISO (timestamptz) en nom de jour en Europe/Paris
-  const d = new Date(iso);
-  // toLocaleDateString en fr-FR retourne "lundi 13 avril 2026" ; on mappe.
-  const days: DayName[] = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-  // Approximation simple : on suppose que la TZ du user est proche de Paris (on n'a pas mieux)
-  return days[d.getDay()];
-}
-function hmFromIso(iso: string): { h: number; m: number } {
-  const d = new Date(iso);
-  return { h: d.getHours(), m: d.getMinutes() };
-}
+import { COACHING_SLOTS } from "@/config/coachingSlots";
 
 export function useCoachingSlots() {
   return useQuery({
     queryKey: ["organisation", "coaching-slots"],
-    queryFn: async (): Promise<CoachingSlot[]> => {
-      const { data, error } = await supabase
-        .from("group_coaching_recurrences")
-        .select("id, title, description, start_at, duration_minutes")
-        .order("start_at", { ascending: true });
-      if (error) throw error;
-      return (data ?? []).map((r) => {
-        const { h, m } = hmFromIso(r.start_at);
-        return {
-          id: r.id,
-          day: dayFromIso(r.start_at),
-          h,
-          m,
-          dur: r.duration_minutes,
-          label: `🎓 ${r.title}`,
-          desc: r.description ?? undefined,
-        };
-      });
-    },
+    queryFn: async (): Promise<CoachingSlot[]> =>
+      COACHING_SLOTS.map((s) => ({
+        id: s.id,
+        day: s.day,
+        h: s.hour,
+        m: s.minute,
+        dur: s.durationMinutes,
+        label: `🎓 ${s.title}`,
+        desc: `Coach : ${s.coach}`,
+      })),
   });
 }
 

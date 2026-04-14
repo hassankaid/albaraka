@@ -1,13 +1,10 @@
 /**
  * Fenêtre d'accès au lien visio :
- *   - Ouvre 10 minutes AVANT le début programmé
- *   - Reste ouverte jusqu'à 15 minutes APRÈS la fin prévue
- *     (scheduled_at + duration_minutes)
- *
- * Exposé comme constantes pour pouvoir les afficher dans l'UI et les tester.
+ *   - Ouvre 15 minutes AVANT le début programmé
+ *   - Se ferme à la fin exacte (scheduled_at + duration_minutes)
  */
-export const JOIN_EARLY_MINUTES = 10;
-export const JOIN_GRACE_MINUTES = 15;
+export const JOIN_EARLY_MINUTES = 15;
+export const JOIN_GRACE_MINUTES = 0;
 
 export interface SessionWindowInput {
   scheduled_at: string | Date;
