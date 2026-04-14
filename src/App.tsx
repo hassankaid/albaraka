@@ -70,6 +70,8 @@ import ParcoursChapitreDetail from "./pages/parcours/ParcoursChapitreDetail";
 import OrganisationPage from "./pages/working/organisation/OrganisationPage";
 import ContentStudio from "./pages/working/ContentStudio";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
+import AdminAnnouncements from "./pages/admin/announcements/AdminAnnouncements";
+import AnnouncementDetail from "./pages/announcements/AnnouncementDetail";
 
 const queryClient = new QueryClient();
 
@@ -102,6 +104,7 @@ const App = () => (
                   <Route path="/admin/invoices" element={<AdminInvoices />} />
                   <Route path="/admin/commissions" element={<AdminCommissions />} />
                   <Route path="/admin/team" element={<AdminTeam />} />
+                  <Route path="/admin/announcements" element={<AdminAnnouncements />} />
                   <Route path="/admin/data" element={<AdminData />} />
                   <Route path="/admin/create" element={<AdminCreateWizard />} />
                   <Route path="/profile" element={<Profile />} />
@@ -140,6 +143,7 @@ const App = () => (
                 </Route>
                 {/* Shared routes: layout chosen by role at runtime (pure apporteur → ApporteurLayout, else DashboardLayout) */}
                 <Route element={<SharedLayout />}>
+                  <Route path="/announcements/:id" element={<AnnouncementDetail />} />
                   <Route path="/training" element={<TrainingList />} />
                   <Route path="/training/certificats" element={<MyCertificates />} />
                   <Route path="/training/:slug" element={<FormationDetail />} />

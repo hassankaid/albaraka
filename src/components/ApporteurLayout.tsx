@@ -10,6 +10,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPass } from "@/hooks/useUserPass";
+import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 
 interface NavItem {
   title: string;
@@ -165,6 +166,8 @@ export default function ApporteurLayout() {
           </div>
 
           <div className="flex items-center gap-3">
+            <NotificationsBell />
+
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
