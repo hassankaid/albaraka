@@ -46,7 +46,7 @@ export default function AdminCoaching() {
           </TabsTrigger>
           <TabsTrigger value="replays" className="flex items-center gap-2">
             <PlayCircle className="h-4 w-4" />
-            Replays & Assiduité
+            Replays
           </TabsTrigger>
         </TabsList>
 

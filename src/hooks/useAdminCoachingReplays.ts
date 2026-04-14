@@ -72,12 +72,17 @@ export interface ExpectedOccurrence {
   replayViewsCount: number;
 }
 
-export function useRecentOccurrences(weeksBack: number = 12) {
+// Point de départ du suivi : semaine du 13 avril 2026 (lundi). On ne liste
+// aucune occurrence antérieure à cette date.
+const TRACKING_START = new Date("2026-04-13T00:00:00+02:00");
+
+export function useRecentOccurrences(weeksBack: number = 52) {
   return useQuery({
     queryKey: ["admin-coaching-occurrences", weeksBack],
     queryFn: async (): Promise<ExpectedOccurrence[]> => {
       const now = new Date();
-      const since = new Date(now.getTime() - weeksBack * 7 * 86_400_000);
+      const earliest = new Date(now.getTime() - weeksBack * 7 * 86_400_000);
+      const since = earliest.getTime() < TRACKING_START.getTime() ? TRACKING_START : earliest;
 
       const [
         { data: occurrences, error: occErr },

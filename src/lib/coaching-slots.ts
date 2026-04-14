@@ -129,6 +129,13 @@ export function formatParisDayMonthYear(date: Date): string {
   return `${Number(p.day)} ${FR_MONTHS[Number(p.month) - 1]} ${p.year}`;
 }
 
+/** "lundi 13 avril 2026" en Europe/Paris */
+export function formatParisWeekdayDate(date: Date): string {
+  const p = parisParts(date);
+  const dow = new Date(Date.UTC(+p.year, +p.month - 1, +p.day)).getUTCDay();
+  return `${FR_DAYS[dow]} ${Number(p.day)} ${FR_MONTHS[Number(p.month) - 1]} ${p.year}`;
+}
+
 export function sortSlotsByNextOccurrence(
   slots: CoachingSlot[],
   now: Date = new Date(),

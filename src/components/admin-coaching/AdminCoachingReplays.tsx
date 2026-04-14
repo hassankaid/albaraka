@@ -12,9 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Save, Users, PlayCircle, TrendingDown } from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { formatParisWeekdayDate } from "@/lib/coaching-slots";
 import {
   useRecentOccurrences,
   useUpsertOccurrenceReplay,
@@ -187,8 +186,8 @@ function OccurrenceRow({ occ }: { occ: ExpectedOccurrence }) {
 
   return (
     <TableRow>
-      <TableCell className="whitespace-nowrap">
-        {format(occ.startedAt, "EEE d MMM", { locale: fr })}
+      <TableCell className="whitespace-nowrap capitalize">
+        {formatParisWeekdayDate(occ.startedAt)}
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-1.5">
