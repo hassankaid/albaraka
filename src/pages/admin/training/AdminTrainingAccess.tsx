@@ -124,7 +124,7 @@ export default function AdminTrainingAccess() {
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <Ticket className="h-6 w-6 text-primary" />
-          Accès & Passes
+          Accès & Pass
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Gère les Pass AL BARAKA / Liberty et les formations attribuées à la carte

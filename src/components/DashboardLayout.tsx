@@ -52,7 +52,7 @@ const trainingNavItems: NavItem[] = [
   { title: "Rôle-Play", path: "/training/role-play", icon: Bot, roles: ["ceo", "collaborateur"] },
   { title: "Quiz", path: "/training/quiz", icon: TrendingUp, roles: ["ceo", "collaborateur"] },
   { title: "Suivi Élèves", path: "/admin/training/students", icon: UsersRound, roles: ["ceo"] },
-  { title: "Accès & Passes", path: "/admin/training/access", icon: Ticket, roles: ["ceo"] },
+  { title: "Accès & Pass", path: "/admin/training/access", icon: Ticket, roles: ["ceo"] },
   { title: "Gestion", path: "/admin/training/manage", icon: Settings2, roles: ["ceo"] },
 ];
 
@@ -82,7 +82,7 @@ const pageTitles: Record<string, string> = {
   "/training/quiz": "Quiz",
   "/admin/training/manage": "Gestion",
   "/admin/training/students": "Suivi Élèves",
-  "/admin/training/access": "Accès & Passes",
+  "/admin/training/access": "Accès & Pass",
   "/admin/create": "Création complète",
   "/admin/agent-knowledge": "Base de connaissance Agent IA",
   "/my-space": "Mon espace",
