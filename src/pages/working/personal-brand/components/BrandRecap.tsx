@@ -8,6 +8,7 @@ import { buildContentPrompt } from "../lib/buildPrompts";
 import { useGenerateProfiles, type GeneratedProfile } from "../hooks/usePersonalBrand";
 import { ProfileCard } from "./ProfileCard";
 import { PromptExportCard } from "./PromptExportCard";
+import { GeneratingOverlay } from "./GeneratingOverlay";
 import { toast } from "sonner";
 
 interface Props {
@@ -96,7 +97,7 @@ export function BrandRecap({ answers, profiles, onEditSection, onRestart }: Prop
       ))}
 
       {/* PROFILS */}
-      <div className="space-y-5">
+      <div id="profiles" className="space-y-5 scroll-mt-20">
         <div className="text-center space-y-1">
           <h2 className="font-heading text-2xl text-foreground">
             📱 Tes Profils Personnalisés
@@ -157,6 +158,8 @@ export function BrandRecap({ answers, profiles, onEditSection, onRestart }: Prop
           Refaire le questionnaire
         </Button>
       </div>
+
+      {generateMutation.isPending && <GeneratingOverlay />}
 
       <div className="text-center pt-8 pb-4 space-y-1">
         <div className="w-12 h-px bg-primary/30 mx-auto mb-3" />

@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Questionnaire } from "./components/Questionnaire";
 import { BrandRecap } from "./components/BrandRecap";
-import { usePersonalBrand, useSaveBrand } from "./hooks/usePersonalBrand";
+import { GeneratingOverlay } from "./components/GeneratingOverlay";
+import { usePersonalBrand, useSaveBrand, useGenerateProfiles } from "./hooks/usePersonalBrand";
 import type { BrandAnswers } from "./lib/sections";
 import { toast } from "sonner";
 
@@ -11,6 +12,7 @@ type Step = "loading" | "questionnaire" | "recap";
 export default function PersonalBrandPage() {
   const brandQuery = usePersonalBrand();
   const saveMutation = useSaveBrand();
+  const generateMutation = useGenerateProfiles();
 
   const [step, setStep] = useState<Step>("loading");
   const [answers, setAnswers] = useState<BrandAnswers>({});
@@ -38,12 +40,20 @@ export default function PersonalBrandPage() {
   const handleFinish = async () => {
     try {
       await saveMutation.mutateAsync(answers);
-      toast.success("Ta fiche Personal Brand est prête ✦");
-      setStep("recap");
-      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e: any) {
       toast.error(e?.message ?? "Erreur de sauvegarde");
+      return;
     }
+    try {
+      await generateMutation.mutateAsync(answers);
+      toast.success("Tes 10 profils sont prêts ✦");
+    } catch (e: any) {
+      toast.error("La génération IA a échoué. Tu peux réessayer depuis la récap.");
+    }
+    setStep("recap");
+    setTimeout(() => {
+      document.getElementById("profiles")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 200);
   };
 
   const handleEditSection = (index: number) => {
@@ -80,13 +90,16 @@ export default function PersonalBrandPage() {
   }
 
   return (
-    <Questionnaire
-      answers={answers}
-      onChange={handleChange}
-      currentSection={currentSection}
-      setCurrentSection={setCurrentSection}
-      onFinish={handleFinish}
-      finishing={saveMutation.isPending}
-    />
+    <>
+      <Questionnaire
+        answers={answers}
+        onChange={handleChange}
+        currentSection={currentSection}
+        setCurrentSection={setCurrentSection}
+        onFinish={handleFinish}
+        finishing={saveMutation.isPending || generateMutation.isPending}
+      />
+      {generateMutation.isPending && <GeneratingOverlay />}
+    </>
   );
 }

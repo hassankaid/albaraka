@@ -113,16 +113,34 @@ export function Questionnaire({
         </Button>
         <Button
           onClick={goNext}
-          disabled={finishing}
+          disabled={finishing || (isLast && answered === 0)}
           className="gap-2 flex-[2]"
         >
           {isLast ? <Sparkles className="h-4 w-4" /> : null}
           {isLast
-            ? (finishing ? "Génération..." : "Générer ma fiche Personal Brand")
+            ? (finishing ? "L'IA écrit tes profils..." : "Générer mes 10 profils IA")
             : "Suivant"}
           {!isLast && <ArrowRight className="h-4 w-4" />}
         </Button>
       </div>
+
+      {!isLast && (
+        <div className="flex flex-col items-center gap-1 pt-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onFinish}
+            disabled={finishing || answered === 0}
+            className="gap-2 text-primary hover:text-primary"
+          >
+            <Sparkles className="h-4 w-4" />
+            {finishing ? "L'IA écrit tes profils..." : "Générer maintenant avec mes réponses"}
+          </Button>
+          <p className="text-[11px] text-muted-foreground italic">
+            Pas besoin de tout remplir — plus tu donnes de contexte, plus les profils sont précis.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
