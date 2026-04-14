@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { anyPhoneMatches } from "@/lib/phoneSearch";
 import { Tables } from "@/integrations/supabase/types";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -397,8 +398,7 @@ export default function Leads() {
         l.contact_full_name?.toLowerCase().includes(q) ||
         l.raw_email?.toLowerCase().includes(q) ||
         l.contact_email?.toLowerCase().includes(q) ||
-        l.raw_phone?.toLowerCase().includes(q) ||
-        l.contact_phone?.toLowerCase().includes(q)
+        anyPhoneMatches([l.raw_phone, l.contact_phone], search)
       );
     }
 

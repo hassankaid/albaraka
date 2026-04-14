@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { phoneMatches } from "@/lib/phoneSearch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,7 +90,7 @@ export default function Contacts() {
       (c) =>
         c.full_name?.toLowerCase().includes(q) ||
         c.email?.toLowerCase().includes(q) ||
-        c.phone_normalized?.toLowerCase().includes(q)
+        phoneMatches(c.phone_normalized, search)
     );
   }, [contacts, search]);
 

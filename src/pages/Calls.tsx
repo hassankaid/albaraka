@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Tables } from "@/integrations/supabase/types";
+import { phoneMatches } from "@/lib/phoneSearch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -152,7 +153,7 @@ export default function Calls() {
       result = result.filter((c) =>
         c.contact_full_name?.toLowerCase().includes(q) ||
         c.contact_email?.toLowerCase().includes(q) ||
-        c.contact_phone?.toLowerCase().includes(q)
+        phoneMatches(c.contact_phone, search)
       );
     }
 
