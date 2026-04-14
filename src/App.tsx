@@ -57,6 +57,7 @@ import QuizPage from "./pages/training/QuizPage";
 import AdminQuizList from "./pages/admin/quizzes/AdminQuizList";
 import AdminTrainingHub from "./pages/admin/training/AdminTrainingHub";
 import AdminStudentTracking from "./pages/admin/training/AdminStudentTracking";
+import AdminTrainingAccess from "./pages/admin/training/AdminTrainingAccess";
 import StudentDetailPage from "./pages/admin/training/StudentDetailPage";
 import MyCertificates from "./pages/training/MyCertificates";
 import AdminCertificates from "./pages/admin/training/AdminCertificates";
@@ -125,6 +126,7 @@ const App = () => (
                   <Route path="/admin/quizzes" element={<AdminQuizList />} />
                   <Route path="/admin/training/manage" element={<AdminTrainingHub />} />
                   <Route path="/admin/training/students" element={<AdminStudentTracking />} />
+                  <Route path="/admin/training/access" element={<AdminTrainingAccess />} />
                   <Route path="/admin/training/students/:userId" element={<StudentDetailPage />} />
                   <Route path="/admin/training/certificates" element={<AdminCertificates />} />
                   <Route path="/training/scripts" element={<Scripts />} />

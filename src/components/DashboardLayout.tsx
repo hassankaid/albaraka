@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, Library, CalendarDays, Wand2, Megaphone } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, Library, CalendarDays, Wand2, Megaphone, Ticket } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -52,6 +52,7 @@ const trainingNavItems: NavItem[] = [
   { title: "Rôle-Play", path: "/training/role-play", icon: Bot, roles: ["ceo", "collaborateur"] },
   { title: "Quiz", path: "/training/quiz", icon: TrendingUp, roles: ["ceo", "collaborateur"] },
   { title: "Suivi Élèves", path: "/admin/training/students", icon: UsersRound, roles: ["ceo"] },
+  { title: "Accès & Passes", path: "/admin/training/access", icon: Ticket, roles: ["ceo"] },
   { title: "Gestion", path: "/admin/training/manage", icon: Settings2, roles: ["ceo"] },
 ];
 
@@ -81,6 +82,7 @@ const pageTitles: Record<string, string> = {
   "/training/quiz": "Quiz",
   "/admin/training/manage": "Gestion",
   "/admin/training/students": "Suivi Élèves",
+  "/admin/training/access": "Accès & Passes",
   "/admin/create": "Création complète",
   "/admin/agent-knowledge": "Base de connaissance Agent IA",
   "/my-space": "Mon espace",

@@ -1,12 +1,11 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, Users, Wrench, Calendar, Ticket } from "lucide-react";
+import { LayoutDashboard, Users, Wrench, Calendar } from "lucide-react";
 import AdminCoachingDashboard from "@/components/admin-coaching/AdminCoachingDashboard";
 import AdminCoachingCoachs from "@/components/admin-coaching/AdminCoachingCoachs";
 import AdminCoachingBuilder from "@/components/admin-coaching/AdminCoachingBuilder";
 import AdminCoachingSessions from "@/components/admin-coaching/AdminCoachingSessions";
-import AdminCoachingPasses from "@/components/admin-coaching/AdminCoachingPasses";
 
 export default function AdminCoaching() {
   const { profile } = useAuth();
@@ -27,7 +26,7 @@ export default function AdminCoaching() {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <LayoutDashboard className="h-4 w-4" />
             Dashboard
@@ -43,10 +42,6 @@ export default function AdminCoaching() {
           <TabsTrigger value="sessions" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Sessions
-          </TabsTrigger>
-          <TabsTrigger value="passes" className="flex items-center gap-2">
-            <Ticket className="h-4 w-4" />
-            Pass
           </TabsTrigger>
         </TabsList>
 
@@ -64,10 +59,6 @@ export default function AdminCoaching() {
 
         <TabsContent value="sessions">
           <AdminCoachingSessions />
-        </TabsContent>
-
-        <TabsContent value="passes">
-          <AdminCoachingPasses />
         </TabsContent>
       </Tabs>
     </div>
