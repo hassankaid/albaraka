@@ -200,27 +200,11 @@ export function useUnlockFormation() {
   return useMutation({
     mutationFn: async (formationId: string) => {
       if (!user) throw new Error("Not authenticated");
-      const { data: existing } = await supabase
-        .from("formation_enrollments")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("formation_id", formationId)
-        .is("revoked_at", null)
-        .maybeSingle();
-      if (existing) return existing;
-
-      const { data, error } = await supabase
-        .from("formation_enrollments")
-        .insert({
-          user_id: user.id,
-          formation_id: formationId,
-          source: "parcours",
-          granted_by: user.id,
-        })
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc("unlock_formation_from_parcours", {
+        p_formation_id: formationId,
+      });
       if (error) throw error;
-      return data;
+      return { id: data };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["training", "formations"] });
