@@ -63,8 +63,8 @@ interface ManageCommissionsModalProps {
 
 const ROLE_SUGGESTED_PCT: Record<string, number> = {
   apporteur: 25,
-  setter: 10,
-  closer: 15,
+  setter: 5,
+  closer: 10,
   agence_marketing: 20,
 };
 
