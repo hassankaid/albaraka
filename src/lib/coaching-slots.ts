@@ -79,6 +79,56 @@ export function nextOccurrenceParis(slot: CoachingSlot, now: Date = new Date()):
   return candidate;
 }
 
+const FR_DAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+const FR_MONTHS = [
+  "janvier", "février", "mars", "avril", "mai", "juin",
+  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+];
+
+function parisParts(date: Date) {
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Paris",
+    hourCycle: "h23",
+    weekday: "short",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return fmt.formatToParts(date).reduce<Record<string, string>>((acc, p) => {
+    if (p.type !== "literal") acc[p.type] = p.value;
+    return acc;
+  }, {});
+}
+
+/** "lundi 13 avril — 20h30" en Europe/Paris, quel que soit le fuseau du client */
+export function formatParisFull(date: Date): string {
+  const p = parisParts(date);
+  const dow = new Date(Date.UTC(+p.year, +p.month - 1, +p.day)).getUTCDay();
+  const day = Number(p.day);
+  const month = FR_MONTHS[Number(p.month) - 1];
+  return `${FR_DAYS[dow]} ${day} ${month} — ${p.hour}h${p.minute}`;
+}
+
+/** "20h30" en Europe/Paris */
+export function formatParisTime(date: Date): string {
+  const p = parisParts(date);
+  return `${p.hour}h${p.minute}`;
+}
+
+/** "13 avril" en Europe/Paris */
+export function formatParisDayMonth(date: Date): string {
+  const p = parisParts(date);
+  return `${Number(p.day)} ${FR_MONTHS[Number(p.month) - 1]}`;
+}
+
+/** "13 avril 2026" en Europe/Paris */
+export function formatParisDayMonthYear(date: Date): string {
+  const p = parisParts(date);
+  return `${Number(p.day)} ${FR_MONTHS[Number(p.month) - 1]} ${p.year}`;
+}
+
 export function sortSlotsByNextOccurrence(
   slots: CoachingSlot[],
   now: Date = new Date(),

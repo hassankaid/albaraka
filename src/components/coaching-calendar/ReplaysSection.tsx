@@ -1,10 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Copy, PlayCircle, ExternalLink } from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useAvailableReplays, useLogReplayView } from "@/hooks/useCoachingTracking";
+import { formatParisDayMonth } from "@/lib/coaching-slots";
 
 export function ReplaysSection() {
   const { data: replays, isLoading } = useAvailableReplays();
@@ -45,9 +44,9 @@ export function ReplaysSection() {
                 <div className="flex-1 min-w-0">
                   <div className="font-medium">{title}</div>
                   <div className="text-sm text-muted-foreground">
-                    Séance du {format(startDate, "EEEE d MMMM", { locale: fr })}
+                    Séance du {formatParisDayMonth(startDate)}
                     {availableUntil && (
-                      <> — disponible jusqu'au {format(availableUntil, "d MMMM", { locale: fr })}</>
+                      <> — disponible jusqu'au {formatParisDayMonth(availableUntil)}</>
                     )}
                   </div>
                 </div>

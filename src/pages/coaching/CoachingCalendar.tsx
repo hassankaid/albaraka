@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
-import { format, formatDistanceToNow, startOfWeek, endOfWeek } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Clock, User } from "lucide-react";
 import { COACHING_SLOTS, ZOOM_COACHING, type CoachingSlot } from "@/config/coachingSlots";
-import { currentWeekOccurrences } from "@/lib/coaching-slots";
+import {
+  currentWeekOccurrences,
+  formatParisFull,
+  formatParisTime,
+  formatParisDayMonth,
+  formatParisDayMonthYear,
+} from "@/lib/coaching-slots";
 import { computeJoinPhase } from "@/lib/coaching-window";
 import { useLogAttendance } from "@/hooks/useCoachingTracking";
 import { ReplaysSection } from "@/components/coaching-calendar/ReplaysSection";
@@ -27,16 +33,22 @@ export default function CoachingCalendar() {
     logAttendance.mutate({ slot, startedAt });
   }
   const baseForWeek = sessions[0]?.nextStart ?? now;
-  const weekStart = startOfWeek(baseForWeek, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(baseForWeek, { weekStartsOn: 1 });
+  // Début de semaine = lundi du même numéro de semaine que baseForWeek (en Paris)
+  const weekStart = new Date(baseForWeek.getTime() - ((((baseForWeek.getUTCDay() + 6) % 7)) * 86_400_000));
+  const weekEnd = new Date(weekStart.getTime() + 6 * 86_400_000);
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-2xl font-semibold">Tes coachings de la semaine</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-semibold">Tes coachings de la semaine</h1>
+          <Badge variant="outline" className="gap-1.5 border-primary/40 bg-primary/5 text-primary font-medium">
+            🇫🇷 Horaires heure de France (Paris)
+          </Badge>
+        </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Semaine du {format(weekStart, "d MMMM", { locale: fr })} au{" "}
-          {format(weekEnd, "d MMMM yyyy", { locale: fr })}
+          Semaine du {formatParisDayMonth(weekStart)} au{" "}
+          {formatParisDayMonthYear(weekEnd)}
         </p>
       </div>
 
@@ -88,7 +100,7 @@ export default function CoachingCalendar() {
                     </span>
                     <span className="flex items-center gap-1.5">
                       <Clock className="h-3.5 w-3.5" />
-                      {format(nextStart, "EEEE d MMMM — HH'h'mm", { locale: fr })}
+                      {formatParisFull(nextStart)}
                     </span>
                   </div>
                 </div>
@@ -116,7 +128,7 @@ export default function CoachingCalendar() {
                   </Button>
                   {isOpen && (
                     <p className="text-xs text-muted-foreground">
-                      Jusqu'à {format(endsAt, "HH'h'mm", { locale: fr })}
+                      Jusqu'à {formatParisTime(endsAt)}
                     </p>
                   )}
                 </div>
