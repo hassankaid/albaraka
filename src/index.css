@@ -5,6 +5,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
 
+/* Impersonation banner: pousse tout le contenu sous le bandeau (40px) */
+body.impersonation-active {
+  padding-top: 40px;
+}
+body.impersonation-active aside.fixed.inset-y-0 {
+  top: 40px;
+}
+body.impersonation-active header.sticky {
+  top: 40px;
+}
+
 @layer base {
   :root {
     --background: 40 20% 97%;

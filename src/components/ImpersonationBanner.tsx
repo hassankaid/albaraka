@@ -1,15 +1,24 @@
+import { useEffect } from "react";
 import { Eye, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { isRunningInImpersonation } from "@/lib/impersonation";
 import { supabase } from "@/integrations/supabase/client";
 
+export const IMPERSONATION_BANNER_HEIGHT_PX = 40;
+
 export function ImpersonationBanner() {
   const { profile, user } = useAuth();
+  const active = isRunningInImpersonation() && !!user;
 
-  if (!isRunningInImpersonation()) return null;
-  if (!user) return null;
+  useEffect(() => {
+    if (!active) return;
+    document.body.classList.add("impersonation-active");
+    return () => document.body.classList.remove("impersonation-active");
+  }, [active]);
 
-  const displayName = profile?.full_name || profile?.email || user.email || "utilisateur";
+  if (!active) return null;
+
+  const displayName = profile?.full_name || profile?.email || user!.email || "utilisateur";
 
   const handleExit = async () => {
     try {
@@ -20,7 +29,9 @@ export function ImpersonationBanner() {
   };
 
   return (
-    <div className="sticky top-0 z-[60] flex items-center justify-between gap-3 bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950 shadow-md">
+    <div
+      className="fixed left-0 right-0 top-0 z-[100] flex h-10 items-center justify-between gap-3 bg-amber-500 px-4 text-sm font-medium text-amber-950 shadow-md"
+    >
       <div className="flex items-center gap-2">
         <Eye className="h-4 w-4" />
         <span>

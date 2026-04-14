@@ -330,7 +330,6 @@ export default function AdminTeam() {
                     </DropdownMenuTrigger>
                      <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuItem onClick={async () => {
-                        toast({ title: "Connexion en cours…", description: `Ouverture du compte de ${member.full_name} dans un nouvel onglet` });
                         try {
                           const { data, error } = await supabase.functions.invoke("impersonate-user", {
                             body: { target_user_id: member.id },
