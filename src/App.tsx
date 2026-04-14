@@ -69,6 +69,7 @@ import ParcoursView from "./pages/parcours/ParcoursView";
 import ParcoursChapitreDetail from "./pages/parcours/ParcoursChapitreDetail";
 import OrganisationPage from "./pages/working/organisation/OrganisationPage";
 import ContentStudio from "./pages/working/ContentStudio";
+import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 
 const queryClient = new QueryClient();
 
@@ -80,6 +81,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <ImpersonationBanner />
             <Routes>
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />

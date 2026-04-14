@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     }
 
     // Get target user ID
-    const { target_user_id, redirect_to } = await req.json();
+    const { target_user_id } = await req.json();
     if (!target_user_id) {
       return new Response(
         JSON.stringify({ error: "target_user_id is required" }),
@@ -88,8 +88,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate a magic link for the target user
-    const finalRedirect = redirect_to || req.headers.get("origin") || supabaseUrl;
+    // Generate a magic link for the target user.
+    // Always redirect to the dedicated impersonation subdomain so the session
+    // is isolated from the admin's main-domain session (different origin =
+    // different localStorage).
+    const impersonationOrigin =
+      Deno.env.get("IMPERSONATION_ORIGIN") || "https://view.albarakaecosysteme.com";
+    const finalRedirect = `${impersonationOrigin}/dashboard`;
 
     const { data: linkData, error: linkError } =
       await adminClient.auth.admin.generateLink({
