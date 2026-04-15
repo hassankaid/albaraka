@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from "react";
-import { PlayCircle, CheckCircle2 } from "lucide-react";
+import { PlayCircle, CheckCircle2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface VideoPlayerProps {
@@ -118,6 +118,7 @@ function VimeoEmbed({
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
   const fired95Ref = useRef(false);
+  const [showOverlay, setShowOverlay] = useState(true);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -174,6 +175,10 @@ function VimeoEmbed({
           onNearEnd();
         }
       });
+
+      player.on("play", () => setShowOverlay(false));
+      player.on("pause", () => setShowOverlay(true));
+      player.on("ended", () => setShowOverlay(true));
     };
 
     init();
@@ -186,9 +191,26 @@ function VimeoEmbed({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vimeoId]);
 
+  const handlePlayClick = () => {
+    setShowOverlay(false);
+    playerRef.current?.play().catch(() => setShowOverlay(true));
+  };
+
   return (
     <div className="aspect-video bg-black overflow-hidden relative">
       <div ref={containerRef} className="absolute inset-0 w-full h-full" />
+      {showOverlay && (
+        <button
+          type="button"
+          onClick={handlePlayClick}
+          aria-label="Lancer la lecture"
+          className="absolute inset-0 flex items-center justify-center bg-black/25 hover:bg-black/35 transition-colors cursor-pointer group z-10"
+        >
+          <span className="flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#D4AF37] shadow-[0_0_40px_rgba(212,175,55,0.5)] transition-transform group-hover:scale-110">
+            <Play className="h-10 w-10 sm:h-12 sm:w-12 text-black ml-1" fill="currentColor" />
+          </span>
+        </button>
+      )}
     </div>
   );
 }
