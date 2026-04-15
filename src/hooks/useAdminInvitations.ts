@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 
 export interface InvitationRow {
   id: string;
@@ -39,14 +39,25 @@ export function useSendAccessEmail() {
       userIds: string[];
       testMode: boolean;
     }): Promise<SendAccessResult> => {
-      const { data, error } = await supabase.functions.invoke(
-        "send-apporteur-access-email",
-        {
-          body: { user_ids: params.userIds, test_mode: params.testMode },
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Session expirée, reconnecte-toi.");
+
+      const url = `${SUPABASE_URL}/functions/v1/send-apporteur-access-email`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          apikey: SUPABASE_PUBLISHABLE_KEY,
+          "Content-Type": "application/json",
         },
-      );
-      if (error) throw error;
-      return data as SendAccessResult;
+        body: JSON.stringify({ user_ids: params.userIds, test_mode: params.testMode }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${text}`);
+      }
+      return JSON.parse(text) as SendAccessResult;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-invitations"] });

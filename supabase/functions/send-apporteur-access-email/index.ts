@@ -128,15 +128,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    const callerClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user: caller } } = await callerClient.auth.getUser();
-    if (!caller) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Extract bearer token
+    const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const callerClient = createClient(supabaseUrl, anonKey);
+    const { data: userData, error: userErr } = await callerClient.auth.getUser(bearer);
+    const caller = userData?.user;
+    if (userErr || !caller) {
+      console.error("[send-access] getUser error:", userErr);
+      return new Response(
+        JSON.stringify({
+          error: "Invalid token",
+          detail: userErr?.message ?? "no user",
+        }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
@@ -197,10 +205,9 @@ Deno.serve(async (req) => {
 
         const html = buildHtml(profile.full_name || "", actionLink);
         const toEmail = testMode ? BRAND.testEmail : profile.email;
-        const subject = testMode
-          ? `[TEST → ${profile.email}] Bienvenue dans l'écosystème AL BARAKA`
-          : "Bienvenue dans l'écosystème AL BARAKA";
+        const subject = "Bienvenue dans l'écosystème AL BARAKA";
 
+        console.log(`[send-access] to=${toEmail} (real=${profile.email}) testMode=${testMode}`);
         await sendResend(toEmail, subject, html, resendKey);
 
         await adminClient
