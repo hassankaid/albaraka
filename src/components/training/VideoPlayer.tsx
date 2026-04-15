@@ -130,25 +130,36 @@ function VimeoEmbed({
       if (playerRef.current) {
         try { playerRef.current.destroy(); } catch {}
       }
+      // vider le container des anciens iframes au cas où
+      containerRef.current.innerHTML = "";
       fired95Ref.current = false;
 
-      const player = new Player(containerRef.current!, {
-        // Pour une vidéo Unlisted Vimeo, on doit passer l'URL complète (avec hash) ;
-        // pour une vidéo Public ou domain-whitelisted, l'id seul suffit.
-        ...(vimeoHash
-          ? { url: `https://vimeo.com/${vimeoId}/${vimeoHash}` }
-          : { id: parseInt(vimeoId, 10) }),
-        responsive: true,
-        dnt: true,
-        // UI épurée brandée AL BARAKA
-        color: "D4AF37",   // couleur d'accent (or) → gros bouton play central + trackbar
-        title: false,       // cache le titre en haut
-        byline: false,      // cache l'auteur
-        portrait: false,    // cache l'avatar
-        // @ts-ignore — paramètres avancés acceptés par l'embed URL
-        badge: false,       // cache le badge Vimeo
-        playsinline: true,
-      } as any);
+      // Construction manuelle de l'URL embed avec TOUS les flags (le SDK ne
+      // supporte pas sidedock / badge / pip qui cachent Like/Share/Vimeo logo).
+      const params = new URLSearchParams({
+        title: "0",
+        byline: "0",
+        portrait: "0",
+        badge: "0",     // cache le watermark Vimeo (plan Plus+ requis pour vraiment partir)
+        sidedock: "0",  // cache Like + Share + Watch Later (top-right)
+        pip: "0",       // cache picture-in-picture
+        color: "D4AF37",
+        dnt: "1",
+        playsinline: "1",
+      });
+      const src = vimeoHash
+        ? `https://player.vimeo.com/video/${vimeoId}?h=${vimeoHash}&${params.toString()}`
+        : `https://player.vimeo.com/video/${vimeoId}?${params.toString()}`;
+
+      const iframe = document.createElement("iframe");
+      iframe.src = src;
+      iframe.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;border:0;";
+      iframe.setAttribute("allow", "autoplay; fullscreen; picture-in-picture; clipboard-write");
+      iframe.setAttribute("allowfullscreen", "");
+      iframe.setAttribute("frameborder", "0");
+      containerRef.current.appendChild(iframe);
+
+      const player = new Player(iframe);
       playerRef.current = player;
 
       if (initialWatchedSeconds > 0) {
@@ -176,8 +187,8 @@ function VimeoEmbed({
   }, [vimeoId]);
 
   return (
-    <div className="aspect-video bg-black rounded-lg overflow-hidden">
-      <div ref={containerRef} className="w-full h-full" />
+    <div className="aspect-video bg-black overflow-hidden relative">
+      <div ref={containerRef} className="absolute inset-0 w-full h-full" />
     </div>
   );
 }
