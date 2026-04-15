@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, AlertCircle, Info } from "lucide-react";
+import { CheckCircle2, AlertCircle, Info, ShieldCheck } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function extractVimeoId(raw: string): string | null {
@@ -45,7 +45,7 @@ export function VimeoLinkInput({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [local, vimeoId]);
 
-  // Preview via oembed
+  // Preview via oembed (peut échouer si vidéo privée avec domaine whitelisté)
   useEffect(() => {
     if (!vimeoId) {
       setTitle(null);
@@ -57,9 +57,9 @@ export function VimeoLinkInput({
     fetch(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(`https://vimeo.com/${vimeoId}`)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (cancelled || !data) return;
-        setTitle(data.title ?? null);
-        setThumbnail(data.thumbnail_url ?? null);
+        if (cancelled) return;
+        setTitle(data?.title ?? null);
+        setThumbnail(data?.thumbnail_url ?? null);
       })
       .catch(() => {})
       .finally(() => !cancelled && setChecking(false));
@@ -75,7 +75,7 @@ export function VimeoLinkInput({
       ? "valid"
       : checking
       ? "checking"
-      : "id_only"
+      : "id_only_private"
     : "invalid";
 
   return (
@@ -90,8 +90,16 @@ export function VimeoLinkInput({
             <TooltipTrigger asChild>
               <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
             </TooltipTrigger>
-            <TooltipContent className="max-w-xs text-xs">
-              Sur Vimeo : clique sur la vidéo → bouton <strong>Share</strong> → copie le <strong>Video Link</strong> (<code>https://vimeo.com/...</code>). Assure-toi que la privacy est <em>"Anyone with the link"</em> ou autorise l'embed pour le domaine <code>plateforme.albarakaecosysteme.com</code>.
+            <TooltipContent className="max-w-sm text-xs space-y-2">
+              <p><strong>Étape 1 — Récupérer le lien</strong></p>
+              <p>Dans Vimeo, clique sur ta vidéo → bouton <strong>Share</strong> → copie le <strong>Video Link</strong> (<code>https://vimeo.com/...</code>).</p>
+              <p><strong>Étape 2 — Privacy recommandée</strong></p>
+              <p>Pour protéger ton contenu tout en le rendant lisible sur la plateforme, sur Vimeo : <strong>Settings → Privacy</strong> :</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li><em>Who can watch?</em> → <strong>Hide this video from Vimeo.com</strong></li>
+                <li><em>Where can this video be embedded?</em> → <strong>Specific domains</strong> → ajouter <code className="break-all">plateforme.albarakaecosysteme.com</code></li>
+              </ul>
+              <p>Ainsi la vidéo n'est <strong>pas</strong> accessible sur vimeo.com ni ailleurs, mais joue parfaitement sur la plateforme.</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -111,11 +119,32 @@ export function VimeoLinkInput({
       {status === "checking" && (
         <p className="text-xs text-muted-foreground">Vérification…</p>
       )}
-      {status === "id_only" && (
-        <p className="text-xs text-amber-500 flex items-center gap-1.5">
-          <AlertCircle className="h-3.5 w-3.5" />
-          ID détecté mais la vidéo n'est pas accessible publiquement. Vérifie la privacy sur Vimeo.
-        </p>
+      {status === "id_only_private" && (
+        <div className="space-y-2 p-3 rounded-md bg-amber-500/5 border border-amber-500/30">
+          <p className="text-xs text-amber-500 flex items-center gap-1.5 font-medium">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Vidéo détectée (ID : {vimeoId}) — privée, c'est normal
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            L'aperçu ne peut pas s'afficher ici car la vidéo est protégée sur Vimeo. C'est <strong>exactement ce qu'on veut</strong> pour une formation payante.
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Pense à autoriser le domaine <code className="text-foreground">plateforme.albarakaecosysteme.com</code> dans les paramètres Vimeo (<em>Privacy → Where can this video be embedded? → Specific domains</em>) pour que les élèves puissent la lire sur la plateforme.
+          </p>
+          <details className="text-xs">
+            <summary className="cursor-pointer text-muted-foreground hover:text-foreground">Prévisualiser dans cet onglet (admin uniquement)</summary>
+            <div className="mt-2 aspect-video w-full rounded overflow-hidden border border-border/40">
+              <iframe
+                src={`https://player.vimeo.com/video/${vimeoId}?h=auto&byline=0&portrait=0`}
+                className="w-full h-full"
+                frameBorder={0}
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+                title="Aperçu Vimeo"
+              />
+            </div>
+          </details>
+        </div>
       )}
       {status === "valid" && (
         <div className="flex items-center gap-3 p-2 rounded-md bg-emerald-500/5 border border-emerald-500/20">
