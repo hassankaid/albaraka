@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/al-baraka-logo.png";
+import logo from "@/assets/al-baraka-logo-v2.png";
 import { Lock, Eye, EyeOff, RefreshCw, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 

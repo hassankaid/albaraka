@@ -9,10 +9,13 @@ const corsHeaders = {
 const BRAND = {
   name: "AL BARAKA",
   gold: "#D4AF37",
+  goldSoft: "rgba(212,175,55,0.25)",
   black: "#0A0A0A",
-  cream: "#F5F1E8",
-  domain: "https://hub.albarakaecosysteme.com",
-  domainLabel: "hub.albarakaecosysteme.com",
+  cardBg: "#141414",
+  textMain: "#EDEDED",
+  textSecondary: "#9A9A9A",
+  domain: "https://plateforme.albarakaecosysteme.com",
+  domainLabel: "plateforme.albarakaecosysteme.com",
   redirectPath: "/reset-password",
   testEmail: "contact@hassankaid.com",
   fromEmail: Deno.env.get("RESEND_FROM_EMAIL") || "AL BARAKA <noreply@albarakaecosysteme.com>",
@@ -25,53 +28,45 @@ function buildHtml(fullName: string, actionLink: string): string {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="dark only" />
+<meta name="supported-color-schemes" content="dark only" />
 <title>Bienvenue dans l'écosystème AL BARAKA</title>
 </head>
-<body style="margin:0;padding:0;background-color:${BRAND.cream};font-family:Georgia, 'Times New Roman', serif;color:${BRAND.black};">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${BRAND.cream};padding:32px 16px;">
+<body style="margin:0;padding:0;background-color:${BRAND.black};font-family:Georgia,'Times New Roman',serif;color:${BRAND.textMain};">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${BRAND.black};padding:40px 16px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background-color:#ffffff;border:1px solid rgba(212,175,55,0.3);border-radius:8px;overflow:hidden;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background-color:${BRAND.cardBg};border:1px solid ${BRAND.goldSoft};border-radius:12px;overflow:hidden;">
           <tr>
-            <td style="background-color:${BRAND.black};padding:40px 32px;text-align:center;">
-              <h1 style="margin:0;font-family:Georgia, 'Times New Roman', serif;font-size:28px;color:${BRAND.gold};letter-spacing:4px;font-weight:normal;">AL BARAKA</h1>
-              <p style="margin:8px 0 0 0;color:rgba(245,241,232,0.7);font-size:13px;letter-spacing:2px;text-transform:uppercase;">L'écosystème</p>
+            <td style="padding:48px 32px 16px;text-align:center;">
+              <h1 style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:32px;color:${BRAND.gold};letter-spacing:6px;font-weight:normal;">AL BARAKA</h1>
+              <p style="margin:10px 0 0 0;color:${BRAND.textSecondary};font-size:11px;letter-spacing:3px;text-transform:uppercase;">L'écosystème</p>
+              <div style="width:60px;height:1px;background-color:${BRAND.gold};margin:24px auto 0 auto;"></div>
             </td>
           </tr>
           <tr>
-            <td style="padding:40px 32px 24px;">
-              <h2 style="margin:0 0 16px 0;font-size:24px;color:${BRAND.black};font-weight:normal;">
+            <td style="padding:32px 40px 8px;">
+              <h2 style="margin:0 0 20px 0;font-size:22px;color:${BRAND.textMain};font-weight:normal;">
                 Bienvenue${firstName ? ` ${firstName}` : ""},
               </h2>
-              <p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;color:#333333;">
-                Félicitations d'avoir intégré <strong style="color:${BRAND.black};">l'écosystème AL BARAKA</strong> !
+              <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
+                Félicitations d'avoir intégré <strong style="color:${BRAND.gold};font-weight:normal;">l'écosystème AL BARAKA</strong>.
               </p>
-              <p style="margin:0 0 24px 0;font-size:16px;line-height:1.6;color:#333333;">
-                Ton compte est désormais prêt. Clique sur le bouton ci-dessous pour <strong>activer ton accès au Hub</strong> et définir ton mot de passe.
+              <p style="margin:0 0 28px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
+                Ton compte est désormais prêt. Clique sur le bouton ci-dessous pour activer ton accès à la plateforme et définir ton mot de passe.
               </p>
             </td>
           </tr>
           <tr>
-            <td align="center" style="padding:0 32px 32px;">
-              <a href="${actionLink}" style="display:inline-block;background-color:${BRAND.black};color:${BRAND.gold};text-decoration:none;padding:16px 40px;border-radius:4px;font-size:15px;letter-spacing:2px;text-transform:uppercase;font-family:Georgia, 'Times New Roman', serif;border:1px solid ${BRAND.gold};">
-                Activer mon accès
+            <td align="center" style="padding:12px 32px 48px;">
+              <a href="${actionLink}" style="display:inline-block;background-color:${BRAND.gold};color:${BRAND.black};text-decoration:none;padding:16px 36px;border-radius:4px;font-size:14px;letter-spacing:2.5px;text-transform:uppercase;font-family:Georgia,'Times New Roman',serif;font-weight:bold;">
+                Activer mon accès à la plateforme
               </a>
             </td>
           </tr>
           <tr>
-            <td style="padding:0 32px 24px;">
-              <p style="margin:0;font-size:13px;line-height:1.6;color:#666666;">
-                Ce lien est valable pendant 7 jours. Si le bouton ne fonctionne pas, copie-colle cette URL dans ton navigateur&nbsp;:
-              </p>
-              <p style="margin:8px 0 0 0;font-size:12px;word-break:break-all;color:${BRAND.gold};">
-                <a href="${actionLink}" style="color:${BRAND.gold};text-decoration:underline;">${actionLink}</a>
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:24px 32px;border-top:1px solid rgba(212,175,55,0.2);background-color:${BRAND.cream};">
-              <p style="margin:0;font-size:12px;color:#888888;text-align:center;line-height:1.5;">
-                Si tu n'attendais pas cet email, ignore-le simplement.<br/>
+            <td style="padding:20px 32px;border-top:1px solid ${BRAND.goldSoft};text-align:center;">
+              <p style="margin:0;font-size:11px;color:${BRAND.textSecondary};letter-spacing:0.5px;">
                 © AL BARAKA — <a href="${BRAND.domain}" style="color:${BRAND.gold};text-decoration:none;">${BRAND.domainLabel}</a>
               </p>
             </td>
@@ -129,7 +124,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Extract bearer token
     const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
     const callerClient = createClient(supabaseUrl, anonKey);
     const { data: userData, error: userErr } = await callerClient.auth.getUser(bearer);
@@ -137,14 +131,8 @@ Deno.serve(async (req) => {
     if (userErr || !caller) {
       console.error("[send-access] getUser error:", userErr);
       return new Response(
-        JSON.stringify({
-          error: "Invalid token",
-          detail: userErr?.message ?? "no user",
-        }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+        JSON.stringify({ error: "Invalid token", detail: userErr?.message ?? "no user" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 

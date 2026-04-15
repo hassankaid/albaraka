@@ -12,11 +12,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { RefreshCw, Upload, Building2, Loader2, Check, ChevronsUpDown, Pencil, UserCheck } from "lucide-react";
+import { RefreshCw, Upload, Building2, Loader2, Check, ChevronsUpDown, Pencil, UserCheck, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PhoneInput } from "react-international-phone";
 import "react-international-phone/style.css";
-import logo from "@/assets/al-baraka-logo.png";
+import logo from "@/assets/al-baraka-logo-v2.png";
+import { COUNTRIES, findCountryByName, normalizeForSearch } from "@/lib/countries";
+import * as Flags from "country-flag-icons/string/3x2";
+
+function CountryFlag({ code, className }: { code: string; className?: string }) {
+  const svg = (Flags as Record<string, string>)[code.toUpperCase()];
+  if (!svg) return null;
+  return (
+    <span
+      className={className}
+      style={{ display: "inline-flex", alignItems: "center" }}
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  );
+}
 
 interface BankDetails {
   type?: string;
@@ -29,73 +43,6 @@ interface BankDetails {
   account_number?: string;
   rib_key?: string;
   additional_info?: string;
-}
-
-// Full list of countries with ISO codes for flag rendering
-const COUNTRIES = [
-  { code: "AF", name: "Afghanistan" }, { code: "ZA", name: "Afrique du Sud" }, { code: "AL", name: "Albanie" },
-  { code: "DZ", name: "Algérie" }, { code: "DE", name: "Allemagne" }, { code: "AD", name: "Andorre" },
-  { code: "AO", name: "Angola" }, { code: "SA", name: "Arabie saoudite" }, { code: "AR", name: "Argentine" },
-  { code: "AM", name: "Arménie" }, { code: "AU", name: "Australie" }, { code: "AT", name: "Autriche" },
-  { code: "AZ", name: "Azerbaïdjan" }, { code: "BH", name: "Bahreïn" }, { code: "BD", name: "Bangladesh" },
-  { code: "BE", name: "Belgique" }, { code: "BJ", name: "Bénin" }, { code: "BY", name: "Biélorussie" },
-  { code: "BO", name: "Bolivie" }, { code: "BA", name: "Bosnie-Herzégovine" }, { code: "BW", name: "Botswana" },
-  { code: "BR", name: "Brésil" }, { code: "BN", name: "Brunei" }, { code: "BG", name: "Bulgarie" },
-  { code: "BF", name: "Burkina Faso" }, { code: "BI", name: "Burundi" }, { code: "KH", name: "Cambodge" },
-  { code: "CM", name: "Cameroun" }, { code: "CA", name: "Canada" }, { code: "CV", name: "Cap-Vert" },
-  { code: "CF", name: "Centrafrique" }, { code: "CL", name: "Chili" }, { code: "CN", name: "Chine" },
-  { code: "CY", name: "Chypre" }, { code: "CO", name: "Colombie" }, { code: "KM", name: "Comores" },
-  { code: "CG", name: "Congo" }, { code: "CD", name: "Congo (RDC)" }, { code: "KR", name: "Corée du Sud" },
-  { code: "CR", name: "Costa Rica" }, { code: "CI", name: "Côte d'Ivoire" }, { code: "HR", name: "Croatie" },
-  { code: "CU", name: "Cuba" }, { code: "DK", name: "Danemark" }, { code: "DJ", name: "Djibouti" },
-  { code: "EG", name: "Égypte" }, { code: "AE", name: "Émirats arabes unis" }, { code: "EC", name: "Équateur" },
-  { code: "ES", name: "Espagne" }, { code: "EE", name: "Estonie" }, { code: "US", name: "États-Unis" },
-  { code: "ET", name: "Éthiopie" }, { code: "FI", name: "Finlande" }, { code: "FR", name: "France" },
-  { code: "GA", name: "Gabon" }, { code: "GM", name: "Gambie" }, { code: "GE", name: "Géorgie" },
-  { code: "GH", name: "Ghana" }, { code: "GR", name: "Grèce" }, { code: "GT", name: "Guatemala" },
-  { code: "GN", name: "Guinée" }, { code: "GQ", name: "Guinée équatoriale" }, { code: "GW", name: "Guinée-Bissau" },
-  { code: "HT", name: "Haïti" }, { code: "HN", name: "Honduras" }, { code: "HK", name: "Hong Kong" },
-  { code: "HU", name: "Hongrie" }, { code: "IN", name: "Inde" }, { code: "ID", name: "Indonésie" },
-  { code: "IQ", name: "Irak" }, { code: "IR", name: "Iran" }, { code: "IE", name: "Irlande" },
-  { code: "IS", name: "Islande" }, { code: "IL", name: "Israël" }, { code: "IT", name: "Italie" },
-  { code: "JM", name: "Jamaïque" }, { code: "JP", name: "Japon" }, { code: "JO", name: "Jordanie" },
-  { code: "KZ", name: "Kazakhstan" }, { code: "KE", name: "Kenya" }, { code: "KW", name: "Koweït" },
-  { code: "LA", name: "Laos" }, { code: "LV", name: "Lettonie" }, { code: "LB", name: "Liban" },
-  { code: "LR", name: "Liberia" }, { code: "LY", name: "Libye" }, { code: "LI", name: "Liechtenstein" },
-  { code: "LT", name: "Lituanie" }, { code: "LU", name: "Luxembourg" }, { code: "MK", name: "Macédoine du Nord" },
-  { code: "MG", name: "Madagascar" }, { code: "MY", name: "Malaisie" }, { code: "MW", name: "Malawi" },
-  { code: "MV", name: "Maldives" }, { code: "ML", name: "Mali" }, { code: "MT", name: "Malte" },
-  { code: "MA", name: "Maroc" }, { code: "MU", name: "Maurice" }, { code: "MR", name: "Mauritanie" },
-  { code: "YT", name: "Mayotte" }, { code: "MX", name: "Mexique" }, { code: "MD", name: "Moldavie" },
-  { code: "MC", name: "Monaco" }, { code: "MN", name: "Mongolie" }, { code: "ME", name: "Monténégro" },
-  { code: "MZ", name: "Mozambique" }, { code: "MM", name: "Myanmar" }, { code: "NA", name: "Namibie" },
-  { code: "NP", name: "Népal" }, { code: "NI", name: "Nicaragua" }, { code: "NE", name: "Niger" },
-  { code: "NG", name: "Nigeria" }, { code: "NO", name: "Norvège" }, { code: "NZ", name: "Nouvelle-Zélande" },
-  { code: "OM", name: "Oman" }, { code: "UG", name: "Ouganda" }, { code: "UZ", name: "Ouzbékistan" },
-  { code: "PK", name: "Pakistan" }, { code: "PA", name: "Panama" }, { code: "PY", name: "Paraguay" },
-  { code: "NL", name: "Pays-Bas" }, { code: "PE", name: "Pérou" }, { code: "PH", name: "Philippines" },
-  { code: "PL", name: "Pologne" }, { code: "PT", name: "Portugal" }, { code: "QA", name: "Qatar" },
-  { code: "RE", name: "Réunion" }, { code: "RO", name: "Roumanie" }, { code: "GB", name: "Royaume-Uni" },
-  { code: "RU", name: "Russie" }, { code: "RW", name: "Rwanda" }, { code: "SN", name: "Sénégal" },
-  { code: "RS", name: "Serbie" }, { code: "SL", name: "Sierra Leone" }, { code: "SG", name: "Singapour" },
-  { code: "SK", name: "Slovaquie" }, { code: "SI", name: "Slovénie" }, { code: "SO", name: "Somalie" },
-  { code: "SD", name: "Soudan" }, { code: "LK", name: "Sri Lanka" }, { code: "SE", name: "Suède" },
-  { code: "CH", name: "Suisse" }, { code: "SR", name: "Suriname" }, { code: "SY", name: "Syrie" },
-  { code: "TW", name: "Taïwan" }, { code: "TZ", name: "Tanzanie" }, { code: "TD", name: "Tchad" },
-  { code: "CZ", name: "Tchéquie" }, { code: "TH", name: "Thaïlande" }, { code: "TG", name: "Togo" },
-  { code: "TN", name: "Tunisie" }, { code: "TR", name: "Turquie" }, { code: "UA", name: "Ukraine" },
-  { code: "UY", name: "Uruguay" }, { code: "VE", name: "Venezuela" }, { code: "VN", name: "Vietnam" },
-  { code: "YE", name: "Yémen" }, { code: "ZM", name: "Zambie" }, { code: "ZW", name: "Zimbabwe" },
-];
-
-// Get Twemoji flag URL for a country code
-function getFlagUrl(countryCode: string) {
-  const codePoints = countryCode
-    .toUpperCase()
-    .split("")
-    .map((c) => (0x1f1e6 + c.charCodeAt(0) - 65).toString(16))
-    .join("-");
-  return `https://cdn.jsdelivr.net/gh/nicedoc/flags/twemoji/${codePoints}.svg`;
 }
 
 const formatIbanInput = (iban: string) => {
@@ -138,7 +85,7 @@ export default function ApporteurOnboarding() {
 
   const hasBankData = !!(bankDetails?.iban || bankDetails?.account_holder || bankDetails?.account_number);
 
-  const selectedCountry = COUNTRIES.find((c) => c.name === country);
+  const selectedCountry = findCountryByName(country);
 
   const canSubmit = useMemo(() => {
     return !!(
@@ -149,10 +96,9 @@ export default function ApporteurOnboarding() {
       address.trim() &&
       postalCode.trim() &&
       city.trim() &&
-      country.trim() &&
-      (bankRibUrl || hasBankData)
+      country.trim()
     );
-  }, [firstName, lastName, email, phone, address, postalCode, city, country, bankRibUrl, hasBankData]);
+  }, [firstName, lastName, email, phone, address, postalCode, city, country]);
 
   const handleRibUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -347,7 +293,7 @@ export default function ApporteurOnboarding() {
                   <Button variant="outline" role="combobox" aria-expanded={countryOpen} className="w-full justify-between bg-background font-normal">
                     {selectedCountry ? (
                       <span className="flex items-center gap-2">
-                        <img src={getFlagUrl(selectedCountry.code)} alt="" className="h-4 w-5 object-contain" />
+                        <CountryFlag code={selectedCountry.code} className="h-4 w-6 rounded-sm overflow-hidden border border-border/30" />
                         {selectedCountry.name}
                       </span>
                     ) : "Sélectionner un pays"}
@@ -355,7 +301,13 @@ export default function ApporteurOnboarding() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                  <Command>
+                  <Command
+                    filter={(value, search) => {
+                      const n = normalizeForSearch(value);
+                      const s = normalizeForSearch(search);
+                      return n.includes(s) ? 1 : 0;
+                    }}
+                  >
                     <CommandInput placeholder="Rechercher un pays..." />
                     <CommandList>
                       <CommandEmpty>Aucun pays trouvé.</CommandEmpty>
@@ -363,7 +315,7 @@ export default function ApporteurOnboarding() {
                         {COUNTRIES.map((c) => (
                           <CommandItem key={c.code} value={c.name} onSelect={() => { setCountry(c.name); setCountryOpen(false); }}>
                             <Check className={cn("mr-2 h-4 w-4", country === c.name ? "opacity-100" : "opacity-0")} />
-                            <img src={getFlagUrl(c.code)} alt="" className="h-4 w-5 object-contain mr-2" />
+                            <CountryFlag code={c.code} className="h-4 w-6 rounded-sm overflow-hidden border border-border/30 mr-2" />
                             {c.name}
                           </CommandItem>
                         ))}
@@ -382,7 +334,7 @@ export default function ApporteurOnboarding() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-foreground flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-muted-foreground" />
-                Informations bancaires
+                Informations bancaires <span className="text-xs font-normal text-muted-foreground">(facultatif)</span>
               </CardTitle>
               {hasBankData && (
                 <Button variant="ghost" size="sm" onClick={openEditBank} className="text-muted-foreground">
@@ -392,6 +344,12 @@ export default function ApporteurOnboarding() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <p className="text-sm text-foreground/80 leading-relaxed">
+                Tu peux ignorer cette section pour l'instant. En revanche, dès que tu commenceras à travailler dans l'écosystème AL BARAKA, tu devras renseigner ton RIB depuis ton profil pour pouvoir recevoir tes commissions.
+              </p>
+            </div>
             {extractingRib ? (
               <div className="text-center py-8 space-y-4">
                 <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
