@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { useParcours, useCompleteChapitre } from "@/hooks/useParcours";
 import { useParcoursChapitreContent } from "@/hooks/useParcoursChapitreContent";
 import { VideoPlayer } from "@/components/training/VideoPlayer";
-import { ExternalLink, FileText as FileTextIcon, Image as ImageIcon, Link as LinkIcon } from "lucide-react";
+import { ExternalLink, FileText as FileTextIcon, Image as ImageIcon, Link as LinkIcon, Download } from "lucide-react";
 
 export default function ParcoursChapitreDetail() {
   const { slug, chapitreId } = useParams<{ slug: string; chapitreId: string }>();
@@ -239,8 +239,9 @@ function ChapitreContent({
         const videoRessources = ressources.filter((r) => r.video_id === v.id);
         return (
           <div key={v.id} className="space-y-3">
-            <Card>
-              <CardContent className="p-0">
+            <div className="relative rounded-2xl overflow-hidden border border-gold-500/30 shadow-[0_8px_40px_-12px_rgba(212,175,55,0.25)] ring-1 ring-gold-500/10 bg-[#141414]">
+              <div className="absolute inset-0 pointer-events-none rounded-2xl bg-gradient-to-br from-gold-500/5 via-transparent to-gold-500/5" />
+              <div className="relative">
                 <VideoPlayer
                   video={{
                     id: v.id,
@@ -251,8 +252,8 @@ function ChapitreContent({
                   }}
                   onNearEnd={() => {}}
                 />
-              </CardContent>
-            </Card>
+              </div>
+            </div>
             {effectiveVideos.length > 1 && v.titre && (
               <h3 className="text-base font-semibold text-foreground">{v.titre}</h3>
             )}
@@ -286,17 +287,23 @@ function RessourcesList({
     <div className="grid sm:grid-cols-2 gap-2">
       {ressources.map((r) => {
         const Icon = r.type === "pdf" ? FileTextIcon : r.type === "image" ? ImageIcon : LinkIcon;
+        const downloadable = r.type === "pdf" || r.type === "image";
+        const ActionIcon = downloadable ? Download : ExternalLink;
+        const filename = r.titre
+          ? `${r.titre.replace(/[\\/:*?"<>|]/g, "_")}${r.type === "pdf" ? ".pdf" : r.type === "image" ? "" : ""}`
+          : undefined;
         return (
           <a
             key={r.id}
             href={r.url}
-            target="_blank"
+            target={downloadable ? undefined : "_blank"}
             rel="noopener noreferrer"
+            download={downloadable ? filename : undefined}
             className="flex items-center gap-2 p-3 rounded-lg border border-border/40 hover:border-primary/40 hover:bg-accent/30 transition-colors text-sm"
           >
             <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <span className="flex-1 truncate">{r.titre}</span>
-            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+            <ActionIcon className="h-3.5 w-3.5 text-muted-foreground" />
           </a>
         );
       })}
