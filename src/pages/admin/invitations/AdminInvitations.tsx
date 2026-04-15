@@ -42,7 +42,7 @@ export default function AdminInvitations() {
   const { toast } = useToast();
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [testMode, setTestMode] = useState(true);
+  const [testMode, setTestMode] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [confirmOpen, setConfirmOpen] = useState(false);
