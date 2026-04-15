@@ -91,12 +91,13 @@ export function useAvailableReplays() {
   return useQuery({
     queryKey: ["coaching-replays-available"],
     queryFn: async (): Promise<AvailableReplay[]> => {
-      const nowIso = new Date().toISOString();
+      const now = new Date();
+      const thirtyDaysAgoIso = new Date(now.getTime() - 30 * 86_400_000).toISOString();
       const { data, error } = await supabase
         .from("coaching_occurrences")
         .select("*")
         .not("replay_url", "is", null)
-        .gt("replay_available_until", nowIso)
+        .gte("started_at", thirtyDaysAgoIso)
         .order("started_at", { ascending: false });
       if (error) throw error;
       return ((data ?? []) as CoachingOccurrenceRow[]).map((row) => ({
