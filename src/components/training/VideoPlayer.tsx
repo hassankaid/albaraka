@@ -66,29 +66,39 @@ function detectSource(video: VideoPlayerProps["video"]): { source: VideoSource; 
 
 // ── Main component ─────────────────────────────────────────────
 
+function Frame({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl overflow-hidden border-2 border-[#D4AF37]/40 shadow-[0_0_40px_-8px_rgba(212,175,55,0.35)] bg-black">
+      {children}
+    </div>
+  );
+}
+
 export function VideoPlayer({ video, onNearEnd, initialWatchedSeconds = 0 }: VideoPlayerProps) {
   const { source, id, hash } = detectSource(video);
 
   if (source === "none" || !id) {
     return (
-      <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-        <div className="text-center text-muted-foreground">
-          <PlayCircle className="h-12 w-12 mx-auto mb-2 opacity-40" />
-          <p className="text-sm">Vidéo non disponible</p>
+      <Frame>
+        <div className="aspect-video bg-black flex items-center justify-center">
+          <div className="text-center text-muted-foreground">
+            <PlayCircle className="h-12 w-12 mx-auto mb-2 opacity-40" />
+            <p className="text-sm">Vidéo non disponible</p>
+          </div>
         </div>
-      </div>
+      </Frame>
     );
   }
 
   switch (source) {
     case "vimeo":
-      return <VimeoEmbed vimeoId={id} vimeoHash={hash} onNearEnd={onNearEnd ?? (() => {})} initialWatchedSeconds={initialWatchedSeconds} />;
+      return <Frame><VimeoEmbed vimeoId={id} vimeoHash={hash} onNearEnd={onNearEnd ?? (() => {})} initialWatchedSeconds={initialWatchedSeconds} /></Frame>;
     case "youtube":
-      return <YoutubeEmbed youtubeId={id} onNearEnd={onNearEnd} />;
+      return <Frame><YoutubeEmbed youtubeId={id} onNearEnd={onNearEnd} /></Frame>;
     case "html5":
-      return <Html5Player url={id} onNearEnd={onNearEnd} initialWatchedSeconds={initialWatchedSeconds} />;
+      return <Frame><Html5Player url={id} onNearEnd={onNearEnd} initialWatchedSeconds={initialWatchedSeconds} /></Frame>;
     case "iframe":
-      return <GenericIframe url={id} onNearEnd={onNearEnd} />;
+      return <Frame><GenericIframe url={id} onNearEnd={onNearEnd} /></Frame>;
   }
 }
 

@@ -239,18 +239,16 @@ function ChapitreContent({
         const videoRessources = ressources.filter((r) => r.video_id === v.id);
         return (
           <div key={v.id} className="space-y-3">
-            <div className="rounded-2xl overflow-hidden border-2 border-gold-500/40 shadow-[0_0_40px_-8px_rgba(212,175,55,0.35)] bg-black">
-              <VideoPlayer
-                video={{
-                  id: v.id,
-                  titre: v.titre,
-                  url: v.url,
-                  vimeo_id: v.vimeo_id,
-                  duree_secondes: v.duree_secondes,
-                }}
-                onNearEnd={() => {}}
-              />
-            </div>
+            <VideoPlayer
+              video={{
+                id: v.id,
+                titre: v.titre,
+                url: v.url,
+                vimeo_id: v.vimeo_id,
+                duree_secondes: v.duree_secondes,
+              }}
+              onNearEnd={() => {}}
+            />
             {effectiveVideos.length > 1 && v.titre && (
               <h3 className="text-base font-semibold text-foreground">{v.titre}</h3>
             )}
