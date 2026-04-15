@@ -47,35 +47,39 @@ export function getSpaces(profile: ProfileInput | null, hasAnyPass: boolean): Sp
       ? (isApporteurPath ? "/my-space/coaching-calendar" : "/coaching/calendar")
       : "/mon-coaching";
 
-  const spaces: Space[] = [
-    {
-      id: "working",
-      label: "WORKING",
-      icon: Briefcase,
-      color: "text-gold-400",
-      bgColor: "bg-gold-400/10",
-      path: workingPath,
-      description: "Suivi commercial & Outils",
-    },
-    {
-      id: "training",
-      label: "TRAINING",
-      icon: BookOpenCheck,
-      color: "text-amber-400",
-      bgColor: "bg-amber-400/10",
-      path: "/training",
-      description: "Formation & Ressources",
-    },
-    {
-      id: "coaching",
-      label: "COACHING",
-      icon: GraduationCap,
-      color: "text-teal-400",
-      bgColor: "bg-teal-400/10",
-      path: coachingPath,
-      description: "Calendrier & Historique",
-    },
-  ];
+  const trainingSpace: Space = {
+    id: "training",
+    label: "TRAINING",
+    icon: BookOpenCheck,
+    color: "text-amber-400",
+    bgColor: "bg-amber-400/10",
+    path: "/training",
+    description: "Formation & Ressources",
+  };
+  const workingSpace: Space = {
+    id: "working",
+    label: "WORKING",
+    icon: Briefcase,
+    color: "text-gold-400",
+    bgColor: "bg-gold-400/10",
+    path: workingPath,
+    description: "Suivi commercial & Outils",
+  };
+  const coachingSpace: Space = {
+    id: "coaching",
+    label: "COACHING",
+    icon: GraduationCap,
+    color: "text-teal-400",
+    bgColor: "bg-teal-400/10",
+    path: coachingPath,
+    description: "Calendrier & Historique",
+  };
+
+  // Apprenants (apporteurs) : Training → Working → Coaching
+  // Autres rôles : Working → Training → Coaching
+  const spaces: Space[] = isApporteurPath
+    ? [trainingSpace, workingSpace, coachingSpace]
+    : [workingSpace, trainingSpace, coachingSpace];
 
   if (isCeo) {
     spaces.push({
