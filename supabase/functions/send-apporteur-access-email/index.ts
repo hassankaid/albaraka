@@ -24,28 +24,37 @@ const BRAND = {
 function buildHtml(fullName: string, actionLink: string): string {
   const firstName = (fullName || "").split(" ")[0] || "";
   return `<!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" style="background-color:${BRAND.black};">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="color-scheme" content="dark only" />
 <meta name="supported-color-schemes" content="dark only" />
 <title>Bienvenue dans l'écosystème AL BARAKA</title>
+<style type="text/css">
+  html, body { margin:0 !important; padding:0 !important; width:100% !important; background-color:${BRAND.black} !important; }
+  body { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+  table { border-collapse:collapse; }
+  @media (prefers-color-scheme: light) {
+    html, body, .bg-wrap { background-color:${BRAND.black} !important; }
+  }
+</style>
 </head>
-<body style="margin:0;padding:0;background-color:${BRAND.black};font-family:Georgia,'Times New Roman',serif;color:${BRAND.textMain};">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${BRAND.black};padding:40px 16px;">
+<body bgcolor="${BRAND.black}" style="margin:0;padding:0;background-color:${BRAND.black};font-family:Georgia,'Times New Roman',serif;color:${BRAND.textMain};">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.black}" class="bg-wrap" style="background-color:${BRAND.black};width:100%;">
     <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background-color:${BRAND.cardBg};border:1px solid ${BRAND.goldSoft};border-radius:12px;overflow:hidden;">
+      <td bgcolor="${BRAND.black}" align="center" style="background-color:${BRAND.black};padding:40px 16px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.cardBg}" style="max-width:600px;background-color:${BRAND.cardBg};border:1px solid ${BRAND.goldSoft};border-radius:12px;overflow:hidden;">
           <tr>
-            <td style="padding:48px 32px 16px;text-align:center;">
+            <td bgcolor="${BRAND.cardBg}" style="padding:48px 32px 16px;text-align:center;background-color:${BRAND.cardBg};">
               <h1 style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:32px;color:${BRAND.gold};letter-spacing:6px;font-weight:normal;">AL BARAKA</h1>
               <p style="margin:10px 0 0 0;color:${BRAND.textSecondary};font-size:11px;letter-spacing:3px;text-transform:uppercase;">L'écosystème</p>
-              <div style="width:60px;height:1px;background-color:${BRAND.gold};margin:24px auto 0 auto;"></div>
+              <div style="width:60px;height:1px;background-color:${BRAND.gold};margin:24px auto 0 auto;line-height:1px;font-size:1px;">&nbsp;</div>
             </td>
           </tr>
           <tr>
-            <td style="padding:32px 40px 8px;">
+            <td bgcolor="${BRAND.cardBg}" style="padding:32px 40px 8px;background-color:${BRAND.cardBg};">
               <h2 style="margin:0 0 20px 0;font-size:22px;color:${BRAND.textMain};font-weight:normal;">
                 Bienvenue${firstName ? ` ${firstName}` : ""},
               </h2>
@@ -58,14 +67,14 @@ function buildHtml(fullName: string, actionLink: string): string {
             </td>
           </tr>
           <tr>
-            <td align="center" style="padding:12px 32px 48px;">
+            <td bgcolor="${BRAND.cardBg}" align="center" style="padding:12px 32px 48px;background-color:${BRAND.cardBg};">
               <a href="${actionLink}" style="display:inline-block;background-color:${BRAND.gold};color:${BRAND.black};text-decoration:none;padding:16px 36px;border-radius:4px;font-size:14px;letter-spacing:2.5px;text-transform:uppercase;font-family:Georgia,'Times New Roman',serif;font-weight:bold;">
                 Activer mon accès à la plateforme
               </a>
             </td>
           </tr>
           <tr>
-            <td style="padding:20px 32px;border-top:1px solid ${BRAND.goldSoft};text-align:center;">
+            <td bgcolor="${BRAND.cardBg}" style="padding:20px 32px;border-top:1px solid ${BRAND.goldSoft};text-align:center;background-color:${BRAND.cardBg};">
               <p style="margin:0;font-size:11px;color:${BRAND.textSecondary};letter-spacing:0.5px;">
                 © AL BARAKA — <a href="${BRAND.domain}" style="color:${BRAND.gold};text-decoration:none;">${BRAND.domainLabel}</a>
               </p>
