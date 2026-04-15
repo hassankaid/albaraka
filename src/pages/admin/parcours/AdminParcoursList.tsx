@@ -40,7 +40,7 @@ export default function AdminParcoursList() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-lg">{p.titre}</h3>
                     <Badge variant="outline" className="uppercase text-xs">
-                      {p.pack.replace("_", " ")}
+                      {p.pass_type.replace("_", " ")}
                     </Badge>
                     <Badge
                       variant={p.status === "published" ? "default" : "secondary"}
@@ -49,9 +49,9 @@ export default function AdminParcoursList() {
                       {p.status}
                     </Badge>
                   </div>
-                  {p.description && (
+                  {p.subtitle && (
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                      {p.description}
+                      {p.subtitle}
                     </p>
                   )}
                 </div>

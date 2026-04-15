@@ -207,10 +207,20 @@ export function ChapitreRow({ chapitre, moduleId, formationSlug, isFirst, isLast
             <ArrowDown className="h-3.5 w-3.5" />
           </Button>
           <Button
+            variant="default"
+            size="sm"
+            className="h-7 gap-1.5"
+            onClick={() => navigate(`/admin/training/${formationSlug}/chapitre/${chapitre.id}`)}
+          >
+            <Film className="h-3.5 w-3.5" />
+            Éditer
+          </Button>
+          <Button
             variant="ghost"
             size="icon"
             className="h-7 w-7"
             onClick={() => setEditOpen(true)}
+            title="Modifier rapidement le titre et la description"
           >
             <Pencil className="h-3.5 w-3.5" />
           </Button>

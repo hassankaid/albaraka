@@ -42,8 +42,8 @@ export default function ParcoursEditor() {
         <h1 className="text-2xl font-bold font-heading text-foreground">
           {parcours.titre}
         </h1>
-        {parcours.description && (
-          <p className="text-muted-foreground mt-1">{parcours.description}</p>
+        {parcours.subtitle && (
+          <p className="text-muted-foreground mt-1">{parcours.subtitle}</p>
         )}
       </div>
 

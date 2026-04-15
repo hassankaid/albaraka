@@ -5,9 +5,10 @@ export interface ParcoursRow {
   id: string;
   slug: string;
   titre: string;
-  pack: string;
-  description: string | null;
+  pass_type: string;
+  subtitle: string | null;
   status: string;
+  ordre: number;
   created_at: string;
 }
 
@@ -65,7 +66,7 @@ export function useAllParcours() {
       const { data, error } = await (supabase as any)
         .from("parcours")
         .select("*")
-        .order("pack", { ascending: true });
+        .order("ordre", { ascending: true });
       if (error) throw error;
       return (data ?? []) as ParcoursRow[];
     },
