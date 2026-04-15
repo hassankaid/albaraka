@@ -122,53 +122,36 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
         statusChanged && (INSTANT_RECYCLE_STATUSES as readonly string[]).includes(status);
 
       if (statusChanged) {
-        const updatePayload: Record<string, any> = {
-          status,
-          updated_at: new Date().toISOString(),
-        };
         if (shouldInstantRecycle) {
-          updatePayload.assigned_to = null;
-          updatePayload.assigned_at = null;
-          updatePayload.recycled_at = new Date().toISOString();
-        }
-
-        await supabase
-          .from("leads")
-          .update(updatePayload)
-          .eq("id", lead.id);
-
-        await supabase.from("lead_activities").insert({
-          lead_id: lead.id,
-          user_id: user.id,
-          action: "status_change",
-          old_value: oldStatus,
-          new_value: status,
-        });
-
-        if (shouldInstantRecycle) {
+          // Recyclage atomique via RPC SECURITY DEFINER
+          // (contourne un edge case RLS qui bloquait l'UPDATE direct quand
+          // la NEW row après recyclage n'est plus visible par le collab)
           const reason =
             status === "pas_de_reponse_post_conference"
               ? "pas de réponse après conférence"
               : "pas de réponse";
+          const { error: rpcErr } = await (supabase as any).rpc("recycle_lead_by_setter", {
+            p_lead_id: lead.id,
+            p_new_status: status,
+            p_reason: reason,
+          });
+          if (rpcErr) throw new Error(rpcErr.message || "Erreur recyclage");
+        } else {
+          // Changement de statut simple (pas de recyclage)
+          const { error: updErr } = await supabase
+            .from("leads")
+            .update({ status, updated_at: new Date().toISOString() })
+            .eq("id", lead.id);
+          if (updErr) throw new Error(updErr.message || "Erreur mise à jour du statut");
 
-          // Log the recycling event
-          await supabase.from("lead_activities").insert({
+          const { error: actErr } = await supabase.from("lead_activities").insert({
             lead_id: lead.id,
             user_id: user.id,
-            action: "recycled",
-            note: `Recyclage instantané — ${reason}`,
+            action: "status_change",
+            old_value: oldStatus,
+            new_value: status,
           });
-
-          // Log the unassignment if there was a setter
-          if (lead.assigned_to) {
-            await supabase.from("lead_activities").insert({
-              lead_id: lead.id,
-              user_id: user.id,
-              action: "unassigned",
-              old_value: lead.assigned_to,
-              note: `Désassigné automatiquement — ${reason}`,
-            });
-          }
+          if (actErr) console.warn("lead_activities insert failed:", actErr);
         }
       }
 
@@ -238,8 +221,13 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
       toast({ title: "Lead mis à jour" });
       onSuccess();
       onClose();
-    } catch {
-      toast({ title: "Erreur", variant: "destructive" });
+    } catch (e: any) {
+      console.error("[ProcessLeadModal] save error:", e);
+      toast({
+        title: "Erreur",
+        description: e?.message ?? "Impossible de sauvegarder.",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
