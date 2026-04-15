@@ -383,7 +383,7 @@ export default function ChapterViewer() {
 
           {/* Title */}
           <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground">
                 {chapitre.titre}
               </h1>
@@ -391,6 +391,28 @@ export default function ChapterViewer() {
                 <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">
                   {chapitre.description}
                 </p>
+              )}
+              {hasVideos && (
+                <div className="mt-3 space-y-1.5">
+                  <p className="text-xs text-muted-foreground">
+                    Ce chapitre contient{" "}
+                    <span className="font-medium text-foreground">
+                      {videos.length} vidéo{videos.length > 1 ? "s" : ""}
+                    </span>{" "}
+                    ·{" "}
+                    <span className={videosCompleted === videos.length ? "font-medium text-primary" : "font-medium text-foreground"}>
+                      {videosCompleted}/{videos.length} vue{videos.length > 1 ? "s" : ""}
+                    </span>
+                  </p>
+                  <div className="h-1.5 w-full max-w-xs rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-300"
+                      style={{
+                        width: `${videos.length > 0 ? (videosCompleted / videos.length) * 100 : 0}%`,
+                      }}
+                    />
+                  </div>
+                </div>
               )}
             </div>
             {chapitre.status === "draft" && isCeo && (
@@ -418,10 +440,32 @@ export default function ChapterViewer() {
                       videoProgressMap?.get(videos[0].id)?.watched_seconds ?? 0
                     }
                   />
-                  <VideoToggle
-                    completed={!!videoProgressMap?.get(videos[0].id)?.completed}
-                    onToggle={(val) => handleToggleVideo(videos[0].id, val)}
-                  />
+                  <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border bg-muted/30 px-3 py-2">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                      <span>💡</span>
+                      <span>La vidéo se marque automatiquement comme vue à la fin.</span>
+                    </p>
+                    <button
+                      onClick={() => handleToggleVideo(videos[0].id, !videoProgressMap?.get(videos[0].id)?.completed)}
+                      className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
+                        videoProgressMap?.get(videos[0].id)?.completed
+                          ? "bg-primary/10 text-primary hover:bg-primary/15"
+                          : "bg-background border border-border text-foreground hover:bg-secondary"
+                      }`}
+                    >
+                      {videoProgressMap?.get(videos[0].id)?.completed ? (
+                        <>
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Vidéo vue
+                        </>
+                      ) : (
+                        <>
+                          <Circle className="h-3.5 w-3.5" />
+                          Marquer comme vue
+                        </>
+                      )}
+                    </button>
+                  </div>
                   <VideoExtras
                     notes={videos[0].notes}
                     ressources={getVideoRessources(videos[0].id)}
@@ -469,16 +513,7 @@ export default function ChapterViewer() {
             </Button>
 
             {hasVideos ? (
-              <div className="flex items-center gap-2 text-sm">
-                {isCompleted ? (
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                ) : (
-                  <Circle className="h-4 w-4 text-muted-foreground" />
-                )}
-                <span className={isCompleted ? "text-primary font-medium" : "text-muted-foreground"}>
-                  {videosCompleted}/{videos.length} vidéo{videos.length > 1 ? "s" : ""} vue{videos.length > 1 ? "s" : ""}
-                </span>
-              </div>
+              <div />
             ) : (
               <Button
                 variant={isCompleted ? "default" : "outline"}
@@ -610,9 +645,29 @@ function MultiVideoPlayer({
 }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const active = videos[activeIdx];
+  const activeDone = !!videoProgressMap?.get(active.id)?.completed;
+  const activeNum = String(activeIdx + 1).padStart(2, "0");
+  const total = videos.length;
+  const hasNext = activeIdx < videos.length - 1;
+
+  function switchTo(i: number) {
+    if (i === activeIdx) return;
+    setActiveIdx(i);
+    const num = String(i + 1).padStart(2, "0");
+    toast(`▶ Vidéo ${num} · ${videos[i].titre}`);
+  }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Header vidéo active */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span className="font-mono font-semibold text-primary">{activeNum}</span>
+        <span>/</span>
+        <span className="font-mono">{String(total).padStart(2, "0")}</span>
+        <span className="mx-1">·</span>
+        <span className="font-medium text-foreground line-clamp-1">{active.titre}</span>
+      </div>
+
       <VideoPlayer
         key={active.id}
         video={active}
@@ -623,49 +678,138 @@ function MultiVideoPlayer({
           videoProgressMap?.get(active.id)?.watched_seconds ?? 0
         }
       />
+
+      {/* Barre d'actions sous le player */}
+      <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border bg-muted/30 px-3 py-2">
+        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+          <span>💡</span>
+          <span>La vidéo se marque automatiquement comme vue à la fin.</span>
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onToggleVideo(active.id, !activeDone)}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
+              activeDone
+                ? "bg-primary/10 text-primary hover:bg-primary/15"
+                : "bg-background border border-border text-foreground hover:bg-secondary"
+            }`}
+          >
+            {activeDone ? (
+              <>
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Vidéo vue
+              </>
+            ) : (
+              <>
+                <Circle className="h-3.5 w-3.5" />
+                Marquer comme vue
+              </>
+            )}
+          </button>
+          {activeDone && hasNext && (
+            <Button
+              size="sm"
+              onClick={() => switchTo(activeIdx + 1)}
+              className="gap-1.5 h-8"
+            >
+              Vidéo suivante
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+      </div>
+
       <VideoExtras
         notes={active.notes}
         ressources={getVideoRessources(active.id)}
       />
-      <div className="space-y-1">
-        <p className="text-xs font-medium text-muted-foreground">
-          Vidéos du chapitre ({videos.length})
-        </p>
-        {videos.map((v, i) => {
-          const done = videoProgressMap?.get(v.id)?.completed;
-          const isActive = i === activeIdx;
-          return (
-            <div
-              key={v.id}
-              className={`flex items-center gap-3 p-3 rounded-lg text-sm transition-colors ${
-                isActive
-                  ? "bg-primary/10 text-primary"
-                  : "hover:bg-secondary text-foreground"
-              }`}
-            >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleVideo(v.id, !done);
-                }}
-                className="shrink-0 hover:scale-110 transition-transform"
-                title={done ? "Marquer comme non vue" : "Marquer comme vue"}
+
+      {/* Playlist du chapitre */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Vidéos du chapitre
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Clique sur une vidéo pour la lire
+          </p>
+        </div>
+        <div className="rounded-lg border border-border overflow-hidden divide-y divide-border">
+          {videos.map((v, i) => {
+            const done = !!videoProgressMap?.get(v.id)?.completed;
+            const isActive = i === activeIdx;
+            const num = String(i + 1).padStart(2, "0");
+            return (
+              <div
+                key={v.id}
+                className={`group flex items-stretch transition-colors ${
+                  isActive
+                    ? "bg-primary/5"
+                    : "bg-card hover:bg-secondary/50"
+                }`}
               >
-                {done ? (
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                ) : (
-                  <Circle className="h-4 w-4 text-muted-foreground" />
-                )}
-              </button>
-              <button
-                onClick={() => setActiveIdx(i)}
-                className="flex-1 text-left"
-              >
-                {v.titre}
-              </button>
-            </div>
-          );
-        })}
+                {/* Zone principale : cliquer pour lire */}
+                <button
+                  onClick={() => switchTo(i)}
+                  className="flex-1 flex items-center gap-3 p-3 text-left min-w-0"
+                  title="Lire cette vidéo"
+                >
+                  <span
+                    className={`font-mono text-xs shrink-0 w-6 ${
+                      isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                    }`}
+                  >
+                    {num}
+                  </span>
+                  <span className="flex items-center justify-center h-7 w-7 rounded-full shrink-0 bg-background border border-border group-hover:border-primary/40 transition-colors">
+                    {isActive ? (
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                    ) : (
+                      <PlayCircle className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    )}
+                  </span>
+                  <span
+                    className={`text-sm truncate ${
+                      isActive ? "text-primary font-medium" : "text-foreground"
+                    }`}
+                  >
+                    {v.titre}
+                  </span>
+                  {isActive && (
+                    <Badge variant="outline" className="border-primary/40 text-primary text-[10px] h-5 shrink-0">
+                      En lecture
+                    </Badge>
+                  )}
+                </button>
+
+                {/* Zone toggle statut — séparée visuellement */}
+                <div className="border-l border-border flex items-stretch">
+                  <button
+                    onClick={() => onToggleVideo(v.id, !done)}
+                    className={`px-3 flex items-center gap-1.5 text-xs transition-colors ${
+                      done
+                        ? "text-primary hover:bg-primary/10"
+                        : "text-muted-foreground hover:bg-secondary"
+                    }`}
+                    title={done ? "Marquer comme non vue" : "Marquer comme vue"}
+                  >
+                    {done ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span className="hidden sm:inline">Vue</span>
+                      </>
+                    ) : (
+                      <>
+                        <Circle className="h-4 w-4" />
+                        <span className="hidden sm:inline">À voir</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
