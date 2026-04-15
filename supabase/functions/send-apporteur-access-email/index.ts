@@ -23,38 +23,66 @@ const BRAND = {
 
 function buildHtml(fullName: string, actionLink: string): string {
   const firstName = (fullName || "").split(" ")[0] || "";
-  return `<!DOCTYPE html>
-<html lang="fr" style="background-color:${BRAND.black};">
+  // Structure validée mobile : double wrapper table + bgcolor partout.
+  // Basé sur les conventions MJML/Litmus pour forcer un fond noir sur
+  // Gmail iOS/Android + Apple Mail + Outlook mobile, même en mode clair.
+  return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="https://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="fr">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="color-scheme" content="dark only" />
 <meta name="supported-color-schemes" content="dark only" />
 <title>Bienvenue dans l'écosystème AL BARAKA</title>
+<!--[if mso]>
+<xml>
+  <o:OfficeDocumentSettings>
+    <o:AllowPNG/>
+    <o:PixelsPerInch>96</o:PixelsPerInch>
+  </o:OfficeDocumentSettings>
+</xml>
+<![endif]-->
 <style type="text/css">
-  html, body { margin:0 !important; padding:0 !important; width:100% !important; background-color:${BRAND.black} !important; }
-  body { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
-  table { border-collapse:collapse; }
+  :root { color-scheme: dark only; supported-color-schemes: dark only; }
+  html, body { margin:0 !important; padding:0 !important; width:100% !important; height:100% !important; background-color:${BRAND.black} !important; }
+  body, table, td, div, p, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+  table, td { mso-table-lspace:0pt; mso-table-rspace:0pt; border-collapse:collapse !important; }
+  img { border:0; line-height:100%; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; }
+  .bg-black { background-color:${BRAND.black} !important; }
+  .bg-card { background-color:${BRAND.cardBg} !important; }
   @media (prefers-color-scheme: light) {
-    html, body, .bg-wrap { background-color:${BRAND.black} !important; }
+    html, body, .bg-black, [data-bg="black"] { background-color:${BRAND.black} !important; }
+    .bg-card, [data-bg="card"] { background-color:${BRAND.cardBg} !important; }
+  }
+  @media screen and (max-width: 600px) {
+    .container { width:100% !important; max-width:100% !important; }
+    .px-mobile { padding-left:24px !important; padding-right:24px !important; }
   }
 </style>
 </head>
-<body bgcolor="${BRAND.black}" style="margin:0;padding:0;background-color:${BRAND.black};font-family:Georgia,'Times New Roman',serif;color:${BRAND.textMain};">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.black}" class="bg-wrap" style="background-color:${BRAND.black};width:100%;">
+<body class="bg-black" bgcolor="${BRAND.black}" style="margin:0;padding:0;width:100%;height:100%;background-color:${BRAND.black};font-family:Georgia,'Times New Roman',serif;color:${BRAND.textMain};">
+  <!-- Hidden preheader -->
+  <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:${BRAND.black};opacity:0;">
+    Ton compte est prêt. Active ton accès à la plateforme AL BARAKA.
+  </div>
+  <!-- 100% width background wrapper -->
+  <table role="presentation" class="bg-black" data-bg="black" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.black}" style="background-color:${BRAND.black};width:100%;border-collapse:collapse;">
     <tr>
-      <td bgcolor="${BRAND.black}" align="center" style="background-color:${BRAND.black};padding:40px 16px;">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.cardBg}" style="max-width:600px;background-color:${BRAND.cardBg};border:1px solid ${BRAND.goldSoft};border-radius:12px;overflow:hidden;">
+      <td class="bg-black" data-bg="black" bgcolor="${BRAND.black}" align="center" valign="top" style="background-color:${BRAND.black};padding:40px 16px;">
+        <!--[if mso | IE]>
+        <table role="presentation" width="600" align="center" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.cardBg}"><tr><td>
+        <![endif]-->
+        <table role="presentation" class="container bg-card" data-bg="card" width="600" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.cardBg}" style="width:600px;max-width:600px;background-color:${BRAND.cardBg};border:1px solid ${BRAND.goldSoft};border-radius:12px;">
           <tr>
-            <td bgcolor="${BRAND.cardBg}" style="padding:48px 32px 16px;text-align:center;background-color:${BRAND.cardBg};">
+            <td class="bg-card px-mobile" data-bg="card" bgcolor="${BRAND.cardBg}" align="center" style="background-color:${BRAND.cardBg};padding:48px 32px 16px;">
               <h1 style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:32px;color:${BRAND.gold};letter-spacing:6px;font-weight:normal;">AL BARAKA</h1>
               <p style="margin:10px 0 0 0;color:${BRAND.textSecondary};font-size:11px;letter-spacing:3px;text-transform:uppercase;">L'écosystème</p>
               <div style="width:60px;height:1px;background-color:${BRAND.gold};margin:24px auto 0 auto;line-height:1px;font-size:1px;">&nbsp;</div>
             </td>
           </tr>
           <tr>
-            <td bgcolor="${BRAND.cardBg}" style="padding:32px 40px 8px;background-color:${BRAND.cardBg};">
+            <td class="bg-card px-mobile" data-bg="card" bgcolor="${BRAND.cardBg}" style="background-color:${BRAND.cardBg};padding:32px 40px 8px;">
               <h2 style="margin:0 0 20px 0;font-size:22px;color:${BRAND.textMain};font-weight:normal;">
                 Bienvenue${firstName ? ` ${firstName}` : ""},
               </h2>
@@ -67,20 +95,31 @@ function buildHtml(fullName: string, actionLink: string): string {
             </td>
           </tr>
           <tr>
-            <td bgcolor="${BRAND.cardBg}" align="center" style="padding:12px 32px 48px;background-color:${BRAND.cardBg};">
-              <a href="${actionLink}" style="display:inline-block;background-color:${BRAND.gold};color:${BRAND.black};text-decoration:none;padding:16px 36px;border-radius:4px;font-size:14px;letter-spacing:2.5px;text-transform:uppercase;font-family:Georgia,'Times New Roman',serif;font-weight:bold;">
+            <td class="bg-card px-mobile" data-bg="card" bgcolor="${BRAND.cardBg}" align="center" style="background-color:${BRAND.cardBg};padding:12px 32px 48px;">
+              <!--[if mso]>
+              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${actionLink}" style="height:52px;v-text-anchor:middle;width:320px;" arcsize="8%" stroke="f" fillcolor="${BRAND.gold}">
+                <w:anchorlock/>
+                <center style="color:${BRAND.black};font-family:Georgia,serif;font-size:14px;font-weight:bold;letter-spacing:2.5px;">Activer mon accès à la plateforme</center>
+              </v:roundrect>
+              <![endif]-->
+              <!--[if !mso]><!-- -->
+              <a href="${actionLink}" target="_blank" style="display:inline-block;background-color:${BRAND.gold};color:${BRAND.black};text-decoration:none;padding:16px 36px;border-radius:4px;font-size:14px;letter-spacing:2.5px;text-transform:uppercase;font-family:Georgia,'Times New Roman',serif;font-weight:bold;mso-hide:all;">
                 Activer mon accès à la plateforme
               </a>
+              <!--<![endif]-->
             </td>
           </tr>
           <tr>
-            <td bgcolor="${BRAND.cardBg}" style="padding:20px 32px;border-top:1px solid ${BRAND.goldSoft};text-align:center;background-color:${BRAND.cardBg};">
+            <td class="bg-card" data-bg="card" bgcolor="${BRAND.cardBg}" align="center" style="background-color:${BRAND.cardBg};padding:20px 32px;border-top:1px solid ${BRAND.goldSoft};">
               <p style="margin:0;font-size:11px;color:${BRAND.textSecondary};letter-spacing:0.5px;">
                 © AL BARAKA — <a href="${BRAND.domain}" style="color:${BRAND.gold};text-decoration:none;">${BRAND.domainLabel}</a>
               </p>
             </td>
           </tr>
         </table>
+        <!--[if mso | IE]>
+        </td></tr></table>
+        <![endif]-->
       </td>
     </tr>
   </table>
