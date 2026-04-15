@@ -11,7 +11,8 @@ const BRAND = {
   gold: "#D4AF37",
   black: "#0A0A0A",
   cream: "#F5F1E8",
-  domain: "https://albarakaecosysteme.com",
+  domain: "https://hub.albarakaecosysteme.com",
+  domainLabel: "hub.albarakaecosysteme.com",
   redirectPath: "/reset-password",
   testEmail: "contact@hassankaid.com",
   fromEmail: Deno.env.get("RESEND_FROM_EMAIL") || "AL BARAKA <noreply@albarakaecosysteme.com>",
@@ -60,7 +61,7 @@ function buildHtml(fullName: string, actionLink: string): string {
           <tr>
             <td style="padding:0 32px 24px;">
               <p style="margin:0;font-size:13px;line-height:1.6;color:#666666;">
-                Ce lien est valable pendant 1 heure. Si le bouton ne fonctionne pas, copie-colle cette URL dans ton navigateur&nbsp;:
+                Ce lien est valable pendant 7 jours. Si le bouton ne fonctionne pas, copie-colle cette URL dans ton navigateur&nbsp;:
               </p>
               <p style="margin:8px 0 0 0;font-size:12px;word-break:break-all;color:${BRAND.gold};">
                 <a href="${actionLink}" style="color:${BRAND.gold};text-decoration:underline;">${actionLink}</a>
@@ -71,7 +72,7 @@ function buildHtml(fullName: string, actionLink: string): string {
             <td style="padding:24px 32px;border-top:1px solid rgba(212,175,55,0.2);background-color:${BRAND.cream};">
               <p style="margin:0;font-size:12px;color:#888888;text-align:center;line-height:1.5;">
                 Si tu n'attendais pas cet email, ignore-le simplement.<br/>
-                © AL BARAKA — <a href="${BRAND.domain}" style="color:${BRAND.gold};text-decoration:none;">albarakaecosysteme.com</a>
+                © AL BARAKA — <a href="${BRAND.domain}" style="color:${BRAND.gold};text-decoration:none;">${BRAND.domainLabel}</a>
               </p>
             </td>
           </tr>
