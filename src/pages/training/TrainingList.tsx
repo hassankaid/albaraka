@@ -134,43 +134,55 @@ export default function TrainingList() {
 
       {/* Bandeau "Formations bientôt" pour les early access */}
       {showComingSoon && (
-        <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-6 sm:p-8">
-          <div className="flex items-start gap-4">
-            <div className="p-3 rounded-xl bg-amber-500/15 shrink-0">
-              <Rocket className="h-6 w-6 text-amber-500" />
+        <div className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-6 sm:p-10">
+          {/* Halo décoratif */}
+          <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-amber-500/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-amber-500/5 blur-3xl" />
+
+          <div className="relative flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left gap-5 sm:gap-6">
+            {/* Fusée : grosse et centrée sur mobile, à gauche sur desktop */}
+            <div className="p-4 sm:p-3 rounded-2xl bg-gradient-to-br from-amber-500/25 to-amber-500/10 border border-amber-500/20 shrink-0">
+              <Rocket className="h-8 w-8 sm:h-6 sm:w-6 text-amber-500" />
             </div>
-            <div className="flex-1 min-w-0 space-y-4">
-              <div>
-                <h3 className="text-lg sm:text-xl font-bold text-foreground">
-                  🚀 Bienvenue ! Ton accès est ouvert.
-                </h3>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Les formations seront disponibles très bientôt — <strong className="text-foreground">cette semaine ou la semaine prochaine</strong>.
-                </p>
-              </div>
 
+            <div className="flex-1 min-w-0 space-y-5 sm:space-y-4 w-full">
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-foreground">
-                  En attendant, tu peux déjà explorer :
+                <h3 className="text-xl sm:text-2xl font-heading font-bold text-foreground leading-tight">
+                  Bienvenue ! 🚀
+                </h3>
+                <p className="text-base text-foreground/80 font-medium">
+                  Ton accès est ouvert.
                 </p>
-                <ul className="space-y-1.5 text-sm text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <span className="text-amber-500 shrink-0">→</span>
-                    <span>
-                      <strong className="text-foreground">Espace Working</strong> : Mon organisation, Mon activité et l'Agent IA
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-amber-500 shrink-0">→</span>
-                    <span>
-                      <strong className="text-foreground">Espace Coaching</strong> : les coachings hebdomadaires en live
-                    </span>
-                  </li>
-                </ul>
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-xl mx-auto sm:mx-0">
+                  Les formations seront disponibles très bientôt —<br className="sm:hidden" />{" "}
+                  <strong className="text-foreground">cette semaine ou la semaine prochaine</strong>.
+                </p>
               </div>
 
-              <p className="text-xs text-muted-foreground pt-1 border-t border-amber-500/10">
-                Tu seras notifié·e dès que les formations seront en ligne.
+              <div className="space-y-3 pt-1">
+                <p className="text-xs sm:text-sm font-semibold text-foreground uppercase tracking-wider">
+                  En attendant, explore :
+                </p>
+                <div className="grid gap-2.5 sm:gap-2 text-left max-w-md mx-auto sm:mx-0 sm:max-w-none">
+                  <div className="flex items-center gap-3 rounded-lg border border-amber-500/15 bg-background/40 px-3.5 py-2.5">
+                    <span className="text-amber-500 text-lg leading-none">→</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">Espace Working</p>
+                      <p className="text-xs text-muted-foreground">Mon organisation, Mon activité, Agent IA</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-lg border border-amber-500/15 bg-background/40 px-3.5 py-2.5">
+                    <span className="text-amber-500 text-lg leading-none">→</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">Espace Coaching</p>
+                      <p className="text-xs text-muted-foreground">Coachings hebdomadaires en live</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground/80 pt-3 border-t border-amber-500/15">
+                ✨ Tu seras notifié·e dès que les formations seront en ligne.
               </p>
             </div>
           </div>
