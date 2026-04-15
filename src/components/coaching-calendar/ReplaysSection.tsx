@@ -11,7 +11,6 @@ export function ReplaysSection() {
   const { toast } = useToast();
 
   if (isLoading) return null;
-  if (!replays || replays.length === 0) return null;
 
   async function copyPassword(pwd: string) {
     try {
@@ -32,7 +31,15 @@ export function ReplaysSection() {
       <div className="flex items-center gap-2">
         <PlayCircle className="h-5 w-5 text-primary" />
         <h2 className="text-lg font-semibold">Replays disponibles</h2>
+        <span className="text-xs text-muted-foreground">(30 derniers jours)</span>
       </div>
+      {!replays || replays.length === 0 ? (
+        <Card className="border-dashed bg-muted/20">
+          <CardContent className="p-6 text-center text-sm text-muted-foreground">
+            Aucun replay disponible pour le moment. Les replays des 30 derniers jours apparaîtront ici.
+          </CardContent>
+        </Card>
+      ) : (
       <div className="grid gap-3">
         {replays.map((r) => {
           const title = r.slot ? `${r.slot.emoji ?? ""} ${r.slot.title}`.trim() : r.slot_id;
@@ -74,6 +81,7 @@ export function ReplaysSection() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }
