@@ -140,6 +140,14 @@ function VimeoEmbed({
           : { id: parseInt(vimeoId, 10) }),
         responsive: true,
         dnt: true,
+        // UI épurée brandée AL BARAKA
+        color: "D4AF37",   // couleur d'accent (or) → gros bouton play central + trackbar
+        title: false,       // cache le titre en haut
+        byline: false,      // cache l'auteur
+        portrait: false,    // cache l'avatar
+        // @ts-ignore — paramètres avancés acceptés par l'embed URL
+        badge: false,       // cache le badge Vimeo
+        playsinline: true,
       } as any);
       playerRef.current = player;
 
