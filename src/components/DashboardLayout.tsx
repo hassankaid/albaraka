@@ -116,12 +116,12 @@ export default function DashboardLayout() {
   // Redirect pure apporteurs to their dedicated space (except coaching routes)
   const isCoachingRoute = location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching");
   if (profile?.role === "apporteur" && !profile?.is_also_apporteur && !isCoachingRoute) {
-    return <Navigate to="/my-space" replace />;
+    return <Navigate to="/training" replace />;
   }
 
   // Inactive collaborateurs who are also apporteurs go to apporteur space
   if (profile?.role === "collaborateur" && profile?.is_active === false && profile?.is_also_apporteur) {
-    return <Navigate to="/my-space" replace />;
+    return <Navigate to="/training" replace />;
   }
 
   // Redirect agence to profile if they land on dashboard

@@ -47,7 +47,7 @@ export function ProtectedRoute() {
     profile?.role === "collaborateur" &&
     !isApporteurScopedPath(location.pathname)
   ) {
-    return <Navigate to="/my-space" replace />;
+    return <Navigate to="/training" replace />;
   }
 
   return <Outlet />;
@@ -66,7 +66,7 @@ export function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
 
   if (session) {
     // Redirect apporteurs to their dedicated space
-    if (profile?.role === "apporteur") return <Navigate to="/my-space" replace />;
+    if (profile?.role === "apporteur") return <Navigate to="/training" replace />;
     // Redirect agence to their profile
     if (profile?.role === "agence") return <Navigate to="/profile" replace />;
     return <Navigate to="/dashboard" replace />;

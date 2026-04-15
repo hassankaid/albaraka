@@ -31,6 +31,9 @@ export function FeatureGate({
   // Le CEO a tout débloqué par défaut (pour tester / admin)
   if (profile?.role === "ceo") return <>{children}</>;
 
+  // Apprenants en accès anticipé : bypass des gates de formation
+  if (profile?.early_access) return <>{children}</>;
+
   if (isLoading) {
     return (
       <div className="space-y-4 p-6">
