@@ -3,7 +3,7 @@ import SpaceSwitcher from "./SpaceSwitcher";
 import {
   BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X,
   ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp, GraduationCap,
-  CalendarDays, Award, Sparkles, Wand2, Library,
+  CalendarDays, Award, Sparkles, Wand2, Library, Bot,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
@@ -24,6 +24,7 @@ const workingNavItems: NavItem[] = [
   { title: "Mon Organisation", path: "/working/organisation", icon: CalendarDays },
   { title: "Générateur de Contenu", path: "/working/content", icon: Wand2, passRequired: true },
   { title: "Mes Contenus", path: "/working/contents", icon: Library, passRequired: true },
+  { title: "Agent IA", path: "/working/agent", icon: Bot, passRequired: true },
   { title: "Dashboard", path: "/my-space", icon: BarChart3 },
   { title: "Mes Leads", path: "/my-space/leads", icon: Users },
   { title: "Mes Ventes", path: "/my-space/sales", icon: BadgeEuro },
@@ -53,6 +54,7 @@ const pageTitles: Record<string, string> = {
   "/working/organisation": "Mon Organisation",
   "/working/content": "Générateur de Contenu",
   "/working/contents": "Mes Contenus",
+  "/working/agent": "Agent IA",
   "/training": "Formation",
   "/training/certificats": "Mes Certificats",
 };
