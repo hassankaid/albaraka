@@ -24,11 +24,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Mail, Send, Search, FlaskConical, Loader2 } from "lucide-react";
+import { Mail, Send, Search, FlaskConical, Loader2, RotateCcw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import { useInvitationsList, useSendAccessEmail } from "@/hooks/useAdminInvitations";
+import { useInvitationsList, useSendAccessEmail, useRevokeInvitation } from "@/hooks/useAdminInvitations";
 
 type Filter = "all" | "not_sent" | "invited" | "activated";
 
@@ -38,6 +38,7 @@ export default function AdminInvitations() {
 
   const { data: rows, isLoading } = useInvitationsList();
   const sendMutation = useSendAccessEmail();
+  const revokeMutation = useRevokeInvitation();
   const { toast } = useToast();
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -53,10 +54,10 @@ export default function AdminInvitations() {
       if (q && !r.full_name.toLowerCase().includes(q) && !r.email.toLowerCase().includes(q)) {
         return false;
       }
-      const isInvited = !!r.last_access_sent_at;
-      const isActivated = !!r.access_opened_at && r.access_sent_count > 0;
-      if (filter === "not_sent") return !isInvited;
-      if (filter === "invited") return isInvited && !r.access_opened_at;
+      const isSent = !!r.last_access_sent_at;
+      const isActivated = r.onboarding_completed === true;
+      if (filter === "not_sent") return !isSent;
+      if (filter === "invited") return isSent && !isActivated;
       if (filter === "activated") return isActivated;
       return true;
     });
@@ -259,23 +260,27 @@ function InvitationRowView({
   checked,
   onToggle,
   onSend,
+  onRevoke,
   disabled,
+  testMode,
 }: {
   row: ReturnType<typeof useInvitationsList>["data"] extends Array<infer T> | undefined ? T : never;
   checked: boolean;
   onToggle: () => void;
   onSend: () => void;
+  onRevoke: () => void;
   disabled: boolean;
+  testMode: boolean;
 }) {
-  const isInvited = !!row.last_access_sent_at;
-  const isActivated = !!row.access_opened_at && row.access_sent_count > 0;
+  const isSent = !!row.last_access_sent_at;
+  const isActivated = row.onboarding_completed === true;
   let statusLabel = "Non envoyé";
   let statusVariant: "default" | "secondary" | "destructive" | "outline" = "outline";
   if (isActivated) {
     statusLabel = "Accès ouvert";
     statusVariant = "default";
-  } else if (isInvited) {
-    statusLabel = "Invité";
+  } else if (isSent) {
+    statusLabel = "Invitation envoyée";
     statusVariant = "secondary";
   }
 
@@ -291,9 +296,6 @@ function InvitationRowView({
       </TableCell>
       <TableCell>
         <Badge variant={statusVariant}>{statusLabel}</Badge>
-        {row.access_sent_count > 0 && (
-          <span className="text-xs text-muted-foreground ml-2">×{row.access_sent_count}</span>
-        )}
       </TableCell>
       <TableCell className="text-sm text-muted-foreground">
         {row.last_access_sent_at
@@ -304,10 +306,23 @@ function InvitationRowView({
           : "—"}
       </TableCell>
       <TableCell>
-        <Button size="sm" variant="outline" onClick={onSend} disabled={disabled}>
-          <Send className="h-3.5 w-3.5 mr-1.5" />
-          {isInvited ? "Renvoyer" : "Envoyer"}
-        </Button>
+        <div className="flex items-center gap-2 justify-end">
+          <Button size="sm" variant="outline" onClick={onSend} disabled={disabled}>
+            <Send className="h-3.5 w-3.5 mr-1.5" />
+            {isSent ? "Renvoyer" : "Envoyer"}
+          </Button>
+          {testMode && isSent && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onRevoke}
+              disabled={disabled}
+              title="Réinitialiser l'invitation (mode test uniquement)"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
       </TableCell>
     </TableRow>
   );

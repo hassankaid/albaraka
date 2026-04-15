@@ -7,6 +7,7 @@ export interface InvitationRow {
   email: string;
   role: string;
   is_active: boolean;
+  onboarding_completed: boolean | null;
   access_opened_at: string | null;
   last_access_sent_at: string | null;
   access_sent_count: number;
@@ -18,11 +19,31 @@ export function useInvitationsList() {
     queryFn: async (): Promise<InvitationRow[]> => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, email, role, is_active, access_opened_at, last_access_sent_at, access_sent_count")
+        .select("id, full_name, email, role, is_active, onboarding_completed, access_opened_at, last_access_sent_at, access_sent_count")
         .in("role", ["apporteur", "collaborateur"])
         .order("full_name", { ascending: true });
       if (error) throw error;
       return (data ?? []) as InvitationRow[];
+    },
+  });
+}
+
+export function useRevokeInvitation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          access_opened_at: null,
+          last_access_sent_at: null,
+          access_sent_count: 0,
+        })
+        .eq("id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-invitations"] });
     },
   });
 }
