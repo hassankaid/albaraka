@@ -51,6 +51,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { VimeoLinkInput } from "@/components/training/VimeoLinkInput";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -527,20 +528,13 @@ function VideoItem({
             <Label>Titre de la vidéo *</Label>
             <Input value={titre} onChange={(e) => setTitre(e.target.value)} />
           </div>
-          <div className="space-y-2">
-            <Label>URL de la vidéo</Label>
-            <Input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://vimeo.com/..., youtube.com/..., fichier.mp4..."
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>ID Vimeo (optionnel)</Label>
-            <Input
-              value={vimeoId}
-              onChange={(e) => setVimeoId(e.target.value)}
-              placeholder="123456789"
+          <div className="sm:col-span-2">
+            <VimeoLinkInput
+              value={url || (vimeoId ? `https://vimeo.com/${vimeoId}` : "")}
+              onChange={({ vimeoId: vid, url: nextUrl }) => {
+                setVimeoId(vid ?? "");
+                setUrl(nextUrl ?? "");
+              }}
             />
           </div>
           <div className="space-y-2">

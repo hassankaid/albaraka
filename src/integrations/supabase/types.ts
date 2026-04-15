@@ -2188,6 +2188,101 @@ export type Database = {
           },
         ]
       }
+      parcours_chapitre_ressources: {
+        Row: {
+          chapitre_id: string
+          created_at: string
+          id: string
+          ordre: number
+          titre: string
+          type: string
+          url: string
+          video_id: string | null
+        }
+        Insert: {
+          chapitre_id: string
+          created_at?: string
+          id?: string
+          ordre?: number
+          titre: string
+          type: string
+          url: string
+          video_id?: string | null
+        }
+        Update: {
+          chapitre_id?: string
+          created_at?: string
+          id?: string
+          ordre?: number
+          titre?: string
+          type?: string
+          url?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcours_chapitre_ressources_chapitre_id_fkey"
+            columns: ["chapitre_id"]
+            isOneToOne: false
+            referencedRelation: "parcours_chapitres"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcours_chapitre_ressources_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "parcours_chapitre_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parcours_chapitre_videos: {
+        Row: {
+          chapitre_id: string
+          created_at: string
+          duree_secondes: number | null
+          id: string
+          notes: string | null
+          ordre: number
+          titre: string
+          updated_at: string
+          url: string | null
+          vimeo_id: string | null
+        }
+        Insert: {
+          chapitre_id: string
+          created_at?: string
+          duree_secondes?: number | null
+          id?: string
+          notes?: string | null
+          ordre?: number
+          titre?: string
+          updated_at?: string
+          url?: string | null
+          vimeo_id?: string | null
+        }
+        Update: {
+          chapitre_id?: string
+          created_at?: string
+          duree_secondes?: number | null
+          id?: string
+          notes?: string | null
+          ordre?: number
+          titre?: string
+          updated_at?: string
+          url?: string | null
+          vimeo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcours_chapitre_videos_chapitre_id_fkey"
+            columns: ["chapitre_id"]
+            isOneToOne: false
+            referencedRelation: "parcours_chapitres"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parcours_chapitres: {
         Row: {
           created_at: string

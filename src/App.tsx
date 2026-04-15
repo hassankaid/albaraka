@@ -73,6 +73,9 @@ import ContentStudio from "./pages/working/ContentStudio";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import AdminAnnouncements from "./pages/admin/announcements/AdminAnnouncements";
 import AdminInvitations from "./pages/admin/invitations/AdminInvitations";
+import AdminParcoursList from "./pages/admin/parcours/AdminParcoursList";
+import ParcoursEditor from "./pages/admin/parcours/ParcoursEditor";
+import ParcoursChapitreEditor from "./pages/admin/parcours/ParcoursChapitreEditor";
 import AnnouncementDetail from "./pages/announcements/AnnouncementDetail";
 
 const queryClient = new QueryClient();
@@ -108,6 +111,9 @@ const App = () => (
                   <Route path="/admin/team" element={<AdminTeam />} />
                   <Route path="/admin/announcements" element={<AdminAnnouncements />} />
                   <Route path="/admin/invitations" element={<AdminInvitations />} />
+                  <Route path="/admin/parcours" element={<AdminParcoursList />} />
+                  <Route path="/admin/parcours/:slug" element={<ParcoursEditor />} />
+                  <Route path="/admin/parcours/:slug/chapitre/:chapitreId" element={<ParcoursChapitreEditor />} />
                   <Route path="/admin/data" element={<AdminData />} />
                   <Route path="/admin/create" element={<AdminCreateWizard />} />
                   <Route path="/profile" element={<Profile />} />

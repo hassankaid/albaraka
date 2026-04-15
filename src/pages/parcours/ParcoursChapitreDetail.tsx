@@ -9,6 +9,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useParcours, useCompleteChapitre } from "@/hooks/useParcours";
+import { useParcoursChapitreContent } from "@/hooks/useParcoursChapitreContent";
+import { VideoPlayer } from "@/components/training/VideoPlayer";
+import { ExternalLink, FileText as FileTextIcon, Image as ImageIcon, Link as LinkIcon } from "lucide-react";
 
 export default function ParcoursChapitreDetail() {
   const { slug, chapitreId } = useParams<{ slug: string; chapitreId: string }>();
@@ -112,28 +115,9 @@ export default function ParcoursChapitreDetail() {
         )}
       </div>
 
-      {/* Placeholder vidéo */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="aspect-video bg-muted flex items-center justify-center flex-col gap-3 text-muted-foreground">
-            {chapitre.vimeo_id || chapitre.video_url ? (
-              // TODO : brancher le lecteur Vimeo quand les vidéos seront uploadées.
-              <>
-                <PlayCircle className="h-16 w-16" />
-                <div className="text-sm">Lecteur vidéo à brancher</div>
-              </>
-            ) : (
-              <>
-                <Video className="h-16 w-16 opacity-40" />
-                <div className="text-sm">Vidéo à venir</div>
-                <div className="text-xs opacity-70">
-                  Les vidéos du parcours sont en tournage.
-                </div>
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <ChapitreContent chapitreId={chapitre.id} legacyVimeoId={chapitre.vimeo_id} legacyUrl={chapitre.video_url} />
+
+      {/* Description */}
 
       {/* Description */}
       {chapitre.description && (
@@ -188,6 +172,125 @@ export default function ParcoursChapitreDetail() {
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
+    </div>
+  );
+}
+
+function ChapitreContent({
+  chapitreId,
+  legacyVimeoId,
+  legacyUrl,
+}: {
+  chapitreId: string;
+  legacyVimeoId: string | null;
+  legacyUrl: string | null;
+}) {
+  const { data, isLoading } = useParcoursChapitreContent(chapitreId);
+  const videos = data?.videos ?? [];
+  const ressources = data?.ressources ?? [];
+
+  const effectiveVideos =
+    videos.length > 0
+      ? videos
+      : legacyVimeoId || legacyUrl
+      ? [
+          {
+            id: "legacy",
+            chapitre_id: chapitreId,
+            titre: "Vidéo",
+            url: legacyUrl,
+            vimeo_id: legacyVimeoId,
+            notes: null,
+            duree_secondes: null,
+            ordre: 0,
+          },
+        ]
+      : [];
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-0">
+          <Skeleton className="aspect-video w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (effectiveVideos.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-0">
+          <div className="aspect-video bg-muted flex items-center justify-center flex-col gap-3 text-muted-foreground">
+            <Video className="h-16 w-16 opacity-40" />
+            <div className="text-sm">Vidéo à venir</div>
+            <div className="text-xs opacity-70">Les vidéos du parcours sont en tournage.</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const chapterLevelRessources = ressources.filter((r) => !r.video_id);
+
+  return (
+    <div className="space-y-5">
+      {effectiveVideos.map((v) => {
+        const videoRessources = ressources.filter((r) => r.video_id === v.id);
+        return (
+          <div key={v.id} className="space-y-3">
+            <Card>
+              <CardContent className="p-0">
+                <VideoPlayer vimeoId={v.vimeo_id} url={v.url} title={v.titre} />
+              </CardContent>
+            </Card>
+            {effectiveVideos.length > 1 && v.titre && (
+              <h3 className="text-base font-semibold text-foreground">{v.titre}</h3>
+            )}
+            {v.notes && (
+              <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
+                {v.notes}
+              </p>
+            )}
+            {videoRessources.length > 0 && <RessourcesList ressources={videoRessources} />}
+          </div>
+        );
+      })}
+      {chapterLevelRessources.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Ressources du chapitre
+          </h3>
+          <RessourcesList ressources={chapterLevelRessources} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RessourcesList({
+  ressources,
+}: {
+  ressources: Array<{ id: string; titre: string; type: string; url: string }>;
+}) {
+  return (
+    <div className="grid sm:grid-cols-2 gap-2">
+      {ressources.map((r) => {
+        const Icon = r.type === "pdf" ? FileTextIcon : r.type === "image" ? ImageIcon : LinkIcon;
+        return (
+          <a
+            key={r.id}
+            href={r.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 p-3 rounded-lg border border-border/40 hover:border-primary/40 hover:bg-accent/30 transition-colors text-sm"
+          >
+            <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <span className="flex-1 truncate">{r.titre}</span>
+            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+          </a>
+        );
+      })}
     </div>
   );
 }
