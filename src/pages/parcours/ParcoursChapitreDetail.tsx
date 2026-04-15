@@ -241,7 +241,16 @@ function ChapitreContent({
           <div key={v.id} className="space-y-3">
             <Card>
               <CardContent className="p-0">
-                <VideoPlayer vimeoId={v.vimeo_id} url={v.url} title={v.titre} />
+                <VideoPlayer
+                  video={{
+                    id: v.id,
+                    titre: v.titre,
+                    url: v.url,
+                    vimeo_id: v.vimeo_id,
+                    duree_secondes: v.duree_secondes,
+                  }}
+                  onNearEnd={() => {}}
+                />
               </CardContent>
             </Card>
             {effectiveVideos.length > 1 && v.titre && (

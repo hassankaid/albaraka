@@ -24,6 +24,12 @@ function extractVimeoId(url: string | null): string | null {
   return match ? match[1] : null;
 }
 
+function extractVimeoHash(url: string | null): string | null {
+  if (!url) return null;
+  const match = url.match(/vimeo\.com\/(?:video\/)?\d+\/([a-zA-Z0-9]+)/);
+  return match ? match[1] : null;
+}
+
 function extractYoutubeId(url: string | null): string | null {
   if (!url) return null;
   const patterns = [
@@ -44,21 +50,24 @@ function isDirectVideoUrl(url: string | null): boolean {
   return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
 }
 
-function detectSource(video: VideoPlayerProps["video"]): { source: VideoSource; id: string | null } {
-  if (video.vimeo_id) return { source: "vimeo", id: video.vimeo_id };
+function detectSource(video: VideoPlayerProps["video"]): { source: VideoSource; id: string | null; hash: string | null } {
+  if (video.vimeo_id) {
+    const hash = extractVimeoHash(video.url);
+    return { source: "vimeo", id: video.vimeo_id, hash };
+  }
   const vimeoId = extractVimeoId(video.url);
-  if (vimeoId) return { source: "vimeo", id: vimeoId };
+  if (vimeoId) return { source: "vimeo", id: vimeoId, hash: extractVimeoHash(video.url) };
   const ytId = extractYoutubeId(video.url);
-  if (ytId) return { source: "youtube", id: ytId };
-  if (isDirectVideoUrl(video.url)) return { source: "html5", id: video.url };
-  if (video.url) return { source: "iframe", id: video.url };
-  return { source: "none", id: null };
+  if (ytId) return { source: "youtube", id: ytId, hash: null };
+  if (isDirectVideoUrl(video.url)) return { source: "html5", id: video.url, hash: null };
+  if (video.url) return { source: "iframe", id: video.url, hash: null };
+  return { source: "none", id: null, hash: null };
 }
 
 // ── Main component ─────────────────────────────────────────────
 
 export function VideoPlayer({ video, onNearEnd, initialWatchedSeconds = 0 }: VideoPlayerProps) {
-  const { source, id } = detectSource(video);
+  const { source, id, hash } = detectSource(video);
 
   if (source === "none" || !id) {
     return (
@@ -73,7 +82,7 @@ export function VideoPlayer({ video, onNearEnd, initialWatchedSeconds = 0 }: Vid
 
   switch (source) {
     case "vimeo":
-      return <VimeoEmbed vimeoId={id} onNearEnd={onNearEnd} initialWatchedSeconds={initialWatchedSeconds} />;
+      return <VimeoEmbed vimeoId={id} vimeoHash={hash} onNearEnd={onNearEnd ?? (() => {})} initialWatchedSeconds={initialWatchedSeconds} />;
     case "youtube":
       return <YoutubeEmbed youtubeId={id} onNearEnd={onNearEnd} />;
     case "html5":
@@ -87,10 +96,12 @@ export function VideoPlayer({ video, onNearEnd, initialWatchedSeconds = 0 }: Vid
 
 function VimeoEmbed({
   vimeoId,
+  vimeoHash,
   onNearEnd,
   initialWatchedSeconds,
 }: {
   vimeoId: string;
+  vimeoHash?: string | null;
   onNearEnd: () => void;
   initialWatchedSeconds: number;
 }) {
@@ -112,10 +123,14 @@ function VimeoEmbed({
       fired95Ref.current = false;
 
       const player = new Player(containerRef.current!, {
-        id: parseInt(vimeoId, 10),
+        // Pour une vidéo Unlisted Vimeo, on doit passer l'URL complète (avec hash) ;
+        // pour une vidéo Public ou domain-whitelisted, l'id seul suffit.
+        ...(vimeoHash
+          ? { url: `https://vimeo.com/${vimeoId}/${vimeoHash}` }
+          : { id: parseInt(vimeoId, 10) }),
         responsive: true,
         dnt: true,
-      });
+      } as any);
       playerRef.current = player;
 
       if (initialWatchedSeconds > 0) {

@@ -12,6 +12,19 @@ export function extractVimeoId(raw: string): string | null {
   return m ? m[1] : null;
 }
 
+/** Extrait le hash d'une URL Vimeo unlisted : https://vimeo.com/123456789/abc123def → "abc123def" */
+export function extractVimeoHash(raw: string): string | null {
+  if (!raw) return null;
+  const m = raw.trim().match(/vimeo\.com\/(?:video\/)?\d+\/([a-zA-Z0-9]+)/i);
+  return m ? m[1] : null;
+}
+
+/** Construit l'URL du player Vimeo embed, en gérant hash (vidéos unlisted) */
+export function buildVimeoPlayerUrl(vimeoId: string, hash: string | null): string {
+  const base = `https://player.vimeo.com/video/${vimeoId}`;
+  return hash ? `${base}?h=${hash}` : base;
+}
+
 export interface VimeoLinkInputProps {
   label?: string;
   value: string;
@@ -37,7 +50,12 @@ export function VimeoLinkInput({
   }, [value]);
 
   const vimeoId = useMemo(() => extractVimeoId(local), [local]);
-  const normalizedUrl = vimeoId ? `https://vimeo.com/${vimeoId}` : null;
+  const vimeoHash = useMemo(() => extractVimeoHash(local), [local]);
+  const normalizedUrl = vimeoId
+    ? vimeoHash
+      ? `https://vimeo.com/${vimeoId}/${vimeoHash}`
+      : `https://vimeo.com/${vimeoId}`
+    : null;
 
   // Emit change to parent
   useEffect(() => {
@@ -135,7 +153,7 @@ export function VimeoLinkInput({
             <summary className="cursor-pointer text-muted-foreground hover:text-foreground">Prévisualiser dans cet onglet (admin uniquement)</summary>
             <div className="mt-2 aspect-video w-full rounded overflow-hidden border border-border/40">
               <iframe
-                src={`https://player.vimeo.com/video/${vimeoId}?h=auto&byline=0&portrait=0`}
+                src={buildVimeoPlayerUrl(vimeoId!, vimeoHash)}
                 className="w-full h-full"
                 frameBorder={0}
                 allow="autoplay; fullscreen; picture-in-picture"
@@ -143,6 +161,11 @@ export function VimeoLinkInput({
                 title="Aperçu Vimeo"
               />
             </div>
+            {!vimeoHash && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Astuce : pour une vidéo <em>Unlisted</em>, l'URL Vimeo contient un hash (ex. <code>vimeo.com/123456789/abc123</code>). Colle l'URL complète, pas seulement l'ID, pour que le player fonctionne.
+              </p>
+            )}
           </details>
         </div>
       )}
