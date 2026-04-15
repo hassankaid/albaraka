@@ -73,6 +73,7 @@ import ContentStudio from "./pages/working/ContentStudio";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import AdminAnnouncements from "./pages/admin/announcements/AdminAnnouncements";
 import AdminInvitations from "./pages/admin/invitations/AdminInvitations";
+import CampaignTracking from "./pages/admin/invitations/CampaignTracking";
 import AdminParcoursList from "./pages/admin/parcours/AdminParcoursList";
 import ParcoursEditor from "./pages/admin/parcours/ParcoursEditor";
 import ParcoursChapitreEditor from "./pages/admin/parcours/ParcoursChapitreEditor";
@@ -111,6 +112,7 @@ const App = () => (
                   <Route path="/admin/team" element={<AdminTeam />} />
                   <Route path="/admin/announcements" element={<AdminAnnouncements />} />
                   <Route path="/admin/invitations" element={<AdminInvitations />} />
+                  <Route path="/admin/invitations/campaign" element={<CampaignTracking />} />
                   <Route path="/admin/parcours" element={<AdminParcoursList />} />
                   <Route path="/admin/parcours/:slug" element={<ParcoursEditor />} />
                   <Route path="/admin/parcours/:slug/chapitre/:chapitreId" element={<ParcoursChapitreEditor />} />

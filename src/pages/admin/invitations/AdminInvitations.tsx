@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
+import { BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -139,11 +140,19 @@ export default function AdminInvitations() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold font-heading text-foreground">Invitations & Accès</h1>
-        <p className="text-muted-foreground mt-1">
-          Ouvre l'accès à la plateforme aux apporteurs et collaborateurs, ou renvoie un lien en cas de perte de mot de passe.
-        </p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold font-heading text-foreground">Invitations & Accès</h1>
+          <p className="text-muted-foreground mt-1">
+            Ouvre l'accès à la plateforme aux apporteurs et collaborateurs, ou renvoie un lien en cas de perte de mot de passe.
+          </p>
+        </div>
+        <Button asChild variant="outline" className="gap-2">
+          <Link to="/admin/invitations/campaign">
+            <BarChart3 className="h-4 w-4" />
+            Suivi de campagne early access
+          </Link>
+        </Button>
       </div>
 
       <Card className="border-primary/30 bg-primary/5">
