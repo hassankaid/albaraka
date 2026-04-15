@@ -139,17 +139,37 @@ export default function TrainingList() {
             <div className="p-3 rounded-xl bg-amber-500/15 shrink-0">
               <Rocket className="h-6 w-6 text-amber-500" />
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg sm:text-xl font-bold text-foreground">
-                Bienvenue ! 🚀 Ton accès est ouvert.
-              </h3>
-              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                Les formations seront disponibles très bientôt — cette semaine ou la semaine prochaine.
-                En attendant, tu peux déjà explorer <strong className="text-foreground">Mon organisation</strong>,
-                <strong className="text-foreground"> Mon activité</strong> et <strong className="text-foreground">l'Agent IA</strong> dans l'espace Working,
-                et découvrir les <strong className="text-foreground">coachings hebdomadaires</strong> dans l'espace Coaching.
-              </p>
-              <p className="text-xs text-muted-foreground mt-3">
+            <div className="flex-1 min-w-0 space-y-4">
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-foreground">
+                  🚀 Bienvenue ! Ton accès est ouvert.
+                </h3>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Les formations seront disponibles très bientôt — <strong className="text-foreground">cette semaine ou la semaine prochaine</strong>.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-foreground">
+                  En attendant, tu peux déjà explorer :
+                </p>
+                <ul className="space-y-1.5 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-500 shrink-0">→</span>
+                    <span>
+                      <strong className="text-foreground">Espace Working</strong> : Mon organisation, Mon activité et l'Agent IA
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-500 shrink-0">→</span>
+                    <span>
+                      <strong className="text-foreground">Espace Coaching</strong> : les coachings hebdomadaires en live
+                    </span>
+                  </li>
+                </ul>
+              </div>
+
+              <p className="text-xs text-muted-foreground pt-1 border-t border-amber-500/10">
                 Tu seras notifié·e dès que les formations seront en ligne.
               </p>
             </div>

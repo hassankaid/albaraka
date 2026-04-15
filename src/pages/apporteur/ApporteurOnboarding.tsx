@@ -208,7 +208,7 @@ export default function ApporteurOnboarding() {
 
     toast({ title: "Bienvenue chez Al Baraka !" });
     // Force profile refresh
-    window.location.href = "/my-space";
+    window.location.href = "/training";
   };
 
   return (
