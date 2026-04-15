@@ -54,6 +54,7 @@ const Login = () => {
     }
 
     // Gate: apporteur sans accès ouvert → refuser
+    let userRole: string | null = null;
     if (authData.user) {
       const { data: prof } = await supabase
         .from("profiles")
@@ -71,9 +72,15 @@ const Login = () => {
         setLoading(false);
         return;
       }
+      userRole = prof?.role ?? null;
     }
 
-    navigate("/dashboard");
+    // Apprenants (apporteurs) → redirection vers Training
+    if (userRole === "apporteur") {
+      navigate("/training");
+    } else {
+      navigate("/dashboard");
+    }
   };
 
   if (forgotMode) {
