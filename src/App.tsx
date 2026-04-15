@@ -121,10 +121,7 @@ const App = () => (
                   <Route path="/admin/scripts" element={<AdminScriptList />} />
                   <Route path="/admin/scripts/:id" element={<ScriptEditor />} />
                   <Route path="/admin/agent-knowledge" element={<AdminAgentKnowledge />} />
-                  <Route path="/training/role-play" element={<RolePlay />} />
                   <Route path="/admin/role-play" element={<RolePlayAdmin />} />
-                  <Route path="/training/quiz" element={<QuizList />} />
-                  <Route path="/training/quiz/:id" element={<QuizPage />} />
                   <Route path="/admin/quizzes" element={<AdminQuizList />} />
                   <Route path="/admin/training/manage" element={<AdminTrainingHub />} />
                   <Route path="/admin/training/students" element={<AdminStudentTracking />} />
@@ -150,6 +147,9 @@ const App = () => (
                   <Route path="/announcements/:id" element={<AnnouncementDetail />} />
                   <Route path="/training" element={<TrainingList />} />
                   <Route path="/training/certificats" element={<MyCertificates />} />
+                  <Route path="/training/role-play" element={<RolePlay />} />
+                  <Route path="/training/quiz" element={<QuizList />} />
+                  <Route path="/training/quiz/:id" element={<QuizPage />} />
                   <Route path="/training/:slug" element={<FormationDetail />} />
                   <Route path="/training/:slug/chapitre/:chapitreId" element={<ChapterViewer />} />
                   <Route path="/mon-coaching" element={<MonCoaching />} />
