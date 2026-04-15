@@ -54,8 +54,8 @@ export default function AdminInvitations() {
       if (q && !r.full_name.toLowerCase().includes(q) && !r.email.toLowerCase().includes(q)) {
         return false;
       }
-      const isSent = !!r.last_access_sent_at;
-      const isActivated = r.onboarding_completed === true;
+      const isSent = !!r.access_opened_at;
+      const isActivated = !!r.access_opened_at && r.onboarding_completed === true;
       if (filter === "not_sent") return !isSent;
       if (filter === "invited") return isSent && !isActivated;
       if (filter === "activated") return isActivated;
@@ -272,8 +272,9 @@ function InvitationRowView({
   disabled: boolean;
   testMode: boolean;
 }) {
-  const isSent = !!row.last_access_sent_at;
-  const isActivated = row.onboarding_completed === true;
+  const isSent = !!row.access_opened_at;
+  const isActivated = !!row.access_opened_at && row.onboarding_completed === true;
+  const hasAnyTrace = isSent || !!row.last_access_sent_at || row.access_sent_count > 0;
   let statusLabel = "Non envoyé";
   let statusVariant: "default" | "secondary" | "destructive" | "outline" = "outline";
   if (isActivated) {
@@ -311,7 +312,7 @@ function InvitationRowView({
             <Send className="h-3.5 w-3.5 mr-1.5" />
             {isSent ? "Renvoyer" : "Envoyer"}
           </Button>
-          {testMode && isSent && (
+          {testMode && hasAnyTrace && (
             <Button
               size="sm"
               variant="ghost"
