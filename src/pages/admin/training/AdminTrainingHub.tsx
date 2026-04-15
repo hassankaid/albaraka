@@ -2,7 +2,11 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, MessageSquare, Bot, TrendingUp, ArrowRight, Users, Award } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { GraduationCap, MessageSquare, Bot, TrendingUp, ArrowRight, Users, Award, Rocket, Loader2 } from "lucide-react";
+import { useAppSetting, useSetAppSetting } from "@/hooks/useAppSettings";
+import { useToast } from "@/hooks/use-toast";
 
 const adminModules = [
   {
@@ -64,9 +68,31 @@ const adminModules = [
 export default function AdminTrainingHub() {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const { data: comingSoonEnabled, isLoading: loadingSetting } =
+    useAppSetting<boolean>("training_coming_soon_enabled");
+  const setSetting = useSetAppSetting();
+  const { toast } = useToast();
 
   if (profile?.role !== "ceo") {
     return <Navigate to="/training" replace />;
+  }
+
+  async function toggleComingSoon(checked: boolean) {
+    try {
+      await setSetting.mutateAsync({ key: "training_coming_soon_enabled", value: checked });
+      toast({
+        title: checked ? "Bannière activée" : "Bannière désactivée",
+        description: checked
+          ? "Les apprenants early access voient le message 'Formations bientôt'."
+          : "Les apprenants early access voient les formations normalement.",
+      });
+    } catch (e: any) {
+      toast({
+        title: "Erreur",
+        description: e.message ?? String(e),
+        variant: "destructive",
+      });
+    }
   }
 
   return (
@@ -77,6 +103,37 @@ export default function AdminTrainingHub() {
           Outils d'administration des contenus de formation
         </p>
       </div>
+
+      {/* Réglage global : bannière "Formations bientôt" pour les early access */}
+      <Card className="border-amber-500/30 bg-amber-500/5">
+        <CardContent className="p-4 flex items-center gap-4">
+          <div className="p-2 rounded-lg bg-amber-500/15 shrink-0">
+            <Rocket className="h-5 w-5 text-amber-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-medium flex items-center gap-2 flex-wrap">
+              Bannière « Formations bientôt » (accès anticipé)
+              {loadingSetting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              ) : (
+                <Badge variant={comingSoonEnabled ? "default" : "outline"}>
+                  {comingSoonEnabled ? "ACTIVÉE" : "DÉSACTIVÉE"}
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {comingSoonEnabled
+                ? "Les apprenants invités en accès anticipé voient un message « Formations bientôt ». Décoche pour leur afficher les formations normalement."
+                : "Les apprenants early access voient les formations comme les autres. Activé = message d'attente affiché."}
+            </p>
+          </div>
+          <Switch
+            checked={!!comingSoonEnabled}
+            onCheckedChange={toggleComingSoon}
+            disabled={loadingSetting || setSetting.isPending}
+          />
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {adminModules.map((mod) => {

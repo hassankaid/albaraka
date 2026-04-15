@@ -24,11 +24,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Mail, Send, Search, FlaskConical, Loader2, RotateCcw } from "lucide-react";
+import { Mail, Send, Search, FlaskConical, Loader2, RotateCcw, Rocket } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useInvitationsList, useSendAccessEmail, useRevokeInvitation } from "@/hooks/useAdminInvitations";
+import { supabase } from "@/integrations/supabase/client";
 
 type Filter = "all" | "not_sent" | "invited" | "activated";
 
@@ -43,6 +44,7 @@ export default function AdminInvitations() {
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [testMode, setTestMode] = useState(false);
+  const [earlyAccess, setEarlyAccess] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -81,9 +83,37 @@ export default function AdminInvitations() {
     setConfirmOpen(true);
   }
 
+  async function applyEarlyAccess(userIds: string[]) {
+    // 1. Marque les profils early_access = true
+    const { error: updErr } = await supabase
+      .from("profiles")
+      .update({ early_access: true })
+      .in("id", userIds);
+    if (updErr) throw updErr;
+
+    // 2. Grant pass al_baraka (skip ceux qui l'ont déjà et non révoqué)
+    const { data: existing } = await supabase
+      .from("user_passes")
+      .select("user_id, pass_type, revoked_at")
+      .in("user_id", userIds)
+      .eq("pass_type", "al_baraka")
+      .is("revoked_at", null);
+    const alreadyGranted = new Set((existing ?? []).map((r: any) => r.user_id));
+    const toGrant = userIds
+      .filter((id) => !alreadyGranted.has(id))
+      .map((user_id) => ({ user_id, pass_type: "al_baraka" as const, notes: "early_access invitation" }));
+    if (toGrant.length > 0) {
+      const { error: passErr } = await supabase.from("user_passes").insert(toGrant);
+      if (passErr) throw passErr;
+    }
+  }
+
   async function doSend() {
     setConfirmOpen(false);
     try {
+      if (earlyAccess) {
+        await applyEarlyAccess(pendingIds);
+      }
       const result = await sendMutation.mutateAsync({ userIds: pendingIds, testMode });
       const okCount = result.sent.length;
       const failCount = result.failed.length;
@@ -133,6 +163,26 @@ export default function AdminInvitations() {
             </p>
           </div>
           <Switch checked={testMode} onCheckedChange={setTestMode} />
+        </CardContent>
+      </Card>
+
+      <Card className="border-amber-500/30 bg-amber-500/5">
+        <CardContent className="p-4 flex items-center gap-4">
+          <Rocket className="h-5 w-5 text-amber-500" />
+          <div className="flex-1">
+            <div className="font-medium flex items-center gap-2">
+              Accès anticipé
+              <Badge variant={earlyAccess ? "default" : "outline"}>
+                {earlyAccess ? "ACTIF" : "OFF"}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {earlyAccess
+                ? "Les utilisateurs invités obtiennent le pass Al Baraka et voient le message \"Formations bientôt\" tant que le toggle global est activé côté admin Training."
+                : "Invitation standard : les formations doivent être complétées pour débloquer les outils Working."}
+            </p>
+          </div>
+          <Switch checked={earlyAccess} onCheckedChange={setEarlyAccess} />
         </CardContent>
       </Card>
 
@@ -240,6 +290,11 @@ export default function AdminInvitations() {
                 <> Tous les envois iront vers <strong>contact@hassankaid.com</strong> (mode test).</>
               ) : (
                 <> Les emails iront aux vrais destinataires.</>
+              )}
+              {earlyAccess && (
+                <div className="mt-3 text-sm rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5 text-foreground">
+                  <strong>🚀 Accès anticipé :</strong> pass Al Baraka octroyé + <code className="text-xs">early_access</code> marqué sur le profil.
+                </div>
               )}
             </DialogDescription>
           </DialogHeader>

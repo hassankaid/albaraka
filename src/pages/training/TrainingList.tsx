@@ -16,6 +16,8 @@ import { useMyCertificates } from "@/hooks/useCertificates";
 import { useFormationEnrollments } from "@/hooks/useFormationEnrollments";
 import { useParcours } from "@/hooks/useParcours";
 import { useUserPass } from "@/hooks/useUserPass";
+import { useAppSetting } from "@/hooks/useAppSettings";
+import { Rocket } from "lucide-react";
 
 export default function TrainingList() {
   const { profile } = useAuth();
@@ -24,6 +26,8 @@ export default function TrainingList() {
   const isCeo = profile?.role === "ceo";
 
   const { hasAnyPass, passLevel } = useUserPass();
+  const { data: comingSoonEnabled } = useAppSetting<boolean>("training_coming_soon_enabled");
+  const showComingSoon = !!profile?.early_access && !isCeo && comingSoonEnabled === true;
   // CEO : AL BARAKA par défaut pour voir la structure ; sinon selon pass
   const parcoursSlug = hasAnyPass
     ? (passLevel === "liberty" ? "liberty" : "al-baraka")
@@ -128,10 +132,36 @@ export default function TrainingList() {
         )}
       </div>
 
-      {/* Bandeau Pass */}
-      <ParcoursBanner />
+      {/* Bandeau "Formations bientôt" pour les early access */}
+      {showComingSoon && (
+        <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-6 sm:p-8">
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-xl bg-amber-500/15 shrink-0">
+              <Rocket className="h-6 w-6 text-amber-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg sm:text-xl font-bold text-foreground">
+                Bienvenue ! 🚀 Ton accès est ouvert.
+              </h3>
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                Les formations seront disponibles très bientôt — cette semaine ou la semaine prochaine.
+                En attendant, tu peux déjà explorer <strong className="text-foreground">Mon organisation</strong>,
+                <strong className="text-foreground"> Mon activité</strong> et <strong className="text-foreground">l'Agent IA</strong> dans l'espace Working,
+                et découvrir les <strong className="text-foreground">coachings hebdomadaires</strong> dans l'espace Coaching.
+              </p>
+              <p className="text-xs text-muted-foreground mt-3">
+                Tu seras notifié·e dès que les formations seront en ligne.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Catalogue formations */}
+      {/* Bandeau Pass */}
+      {!showComingSoon && <ParcoursBanner />}
+
+      {/* Catalogue formations — masqué tant que les early access sont en "coming soon" */}
+      {!showComingSoon && (
       <div>
         <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-3">
           Mes formations
@@ -202,6 +232,7 @@ export default function TrainingList() {
           </div>
         )}
       </div>
+      )}
 
       <Dialog open={!!lockedModal} onOpenChange={(v) => !v && setLockedModal(null)}>
         <DialogContent>
