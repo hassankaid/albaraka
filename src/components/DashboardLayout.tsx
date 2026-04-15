@@ -24,7 +24,7 @@ const workingNavItems: NavItem[] = [
   { title: "Mon Organisation", path: "/working/organisation", icon: CalendarDays, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Générateur de Contenu", path: "/working/content", icon: Wand2, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Mes Contenus", path: "/working/contents", icon: Library, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
-  { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur"] },
+  { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true },
   // After separator
   { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur"], adminSection: true },
   { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"], adminSection: true },

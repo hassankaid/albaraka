@@ -137,7 +137,6 @@ const App = () => (
                   <Route path="/training/scripts" element={<Scripts />} />
                   <Route path="/training/scripts/setting" element={<Navigate to="/training/scripts" replace />} />
                   <Route path="/training/scripts/closing" element={<Navigate to="/training/scripts" replace />} />
-                  <Route path="/working/agent" element={<AgentIA />} />
                 </Route>
                 {/* Apporteur layout (only /my-space/* lives here exclusively) */}
                 <Route element={<ApporteurLayout />}>
@@ -168,6 +167,7 @@ const App = () => (
                   <Route path="/working/personal-brand" element={<Navigate to="/working/content?tab=personal-brand" replace />} />
                   <Route path="/working/content" element={<PassGuard><ContentStudio /></PassGuard>} />
                   <Route path="/working/contents" element={<PassGuard><MyContents /></PassGuard>} />
+                  <Route path="/working/agent" element={<PassGuard><AgentIA /></PassGuard>} />
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />
