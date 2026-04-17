@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, Library, CalendarDays, Wand2, Megaphone, Ticket, Mail, Map } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, Library, CalendarDays, Wand2, Megaphone, Ticket, Map } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -39,7 +39,6 @@ const workingNavItems: NavItem[] = [
 const adminNavItems: NavItem[] = [
   { title: "Équipe", path: "/admin/team", icon: UsersRound, roles: ["ceo"] },
   { title: "Annonces", path: "/admin/announcements", icon: Megaphone, roles: ["ceo"] },
-  { title: "Invitations", path: "/admin/invitations", icon: Mail, roles: ["ceo"] },
   { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"] },
   { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },

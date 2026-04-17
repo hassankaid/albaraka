@@ -18,6 +18,11 @@ export interface UserAccessRow {
   email: string;
   role: "ceo" | "collaborateur" | "apporteur" | string;
   is_active: boolean;
+  early_access: boolean;
+  onboarding_completed: boolean | null;
+  access_opened_at: string | null;
+  last_access_sent_at: string | null;
+  access_sent_count: number;
   passes: UserPass[];
   manual_enrollments: ManualEnrollment[];
 }
@@ -31,9 +36,9 @@ export function useAdminTrainingAccess(includeRevoked = false) {
         { data: passes, error: passErr },
         { data: enrollments, error: enrErr },
       ] = await Promise.all([
-        supabase
+        (supabase as any)
           .from("profiles")
-          .select("id, email, full_name, role, is_active")
+          .select("id, email, full_name, role, is_active, early_access, onboarding_completed, access_opened_at, last_access_sent_at, access_sent_count")
           .in("role", ["apporteur", "collaborateur", "ceo"])
           .order("full_name", { ascending: true }),
         supabase.from("user_passes").select("*"),
@@ -71,12 +76,17 @@ export function useAdminTrainingAccess(includeRevoked = false) {
         enrollmentsByUser.set(e.user_id, arr);
       }
 
-      return (profiles ?? []).map((pr: any) => ({
+      return ((profiles ?? []) as any[]).map((pr: any) => ({
         id: pr.id,
         full_name: pr.full_name ?? "",
         email: pr.email ?? "",
         role: pr.role,
         is_active: !!pr.is_active,
+        early_access: !!pr.early_access,
+        onboarding_completed: pr.onboarding_completed ?? null,
+        access_opened_at: pr.access_opened_at ?? null,
+        last_access_sent_at: pr.last_access_sent_at ?? null,
+        access_sent_count: pr.access_sent_count ?? 0,
         passes: passesByUser.get(pr.id) ?? [],
         manual_enrollments: (enrollmentsByUser.get(pr.id) ?? []).sort((a, b) =>
           a.formation_title.localeCompare(b.formation_title, "fr", { sensitivity: "base" })
