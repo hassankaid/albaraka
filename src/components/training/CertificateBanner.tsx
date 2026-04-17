@@ -9,6 +9,7 @@ import {
 } from "@/hooks/useCertificates";
 import { getVerifyUrl } from "@/lib/downloadCertificatePdf";
 import { isFormationCompleteForUser } from "@/lib/certificateEligibility";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   userId: string;
@@ -17,6 +18,8 @@ interface Props {
 }
 
 export function CertificateBanner({ userId, formationId, isComplete }: Props) {
+  const { profile } = useAuth();
+  const isCeo = profile?.role === "ceo";
   const { data: cert, isLoading, refetch } = useCertificateForFormation(formationId);
   const issueMutation = useIssueCertificate();
   const [autoChecked, setAutoChecked] = useState(false);
@@ -25,6 +28,11 @@ export function CertificateBanner({ userId, formationId, isComplete }: Props) {
   useEffect(() => {
     if (autoChecked) return;
     if (isLoading) return;
+    if (isCeo) {
+      // Le CEO ne reçoit pas de certificat — pas d'auto-émission
+      setAutoChecked(true);
+      return;
+    }
     if (cert) {
       setAutoChecked(true);
       return;
@@ -34,36 +42,52 @@ export function CertificateBanner({ userId, formationId, isComplete }: Props) {
       return;
     }
     let cancelled = false;
-    (async () => {
+
+    const tryIssue = async (attempt: number): Promise<void> => {
       try {
         const eligible = await isFormationCompleteForUser(userId, formationId);
         if (cancelled) return;
-        if (eligible) {
-          await issueMutation.mutateAsync({
-            user_id: userId,
-            formation_id: formationId,
-            source: "auto",
+        if (!eligible) return;
+        await issueMutation.mutateAsync({
+          user_id: userId,
+          formation_id: formationId,
+          source: "auto",
+        });
+        if (!cancelled) {
+          toast.success("Ton certificat est prêt !", {
+            description: "Tu peux le télécharger depuis cette formation.",
           });
-          if (!cancelled) {
-            toast.success("Ton certificat est prêt !", {
-              description: "Tu peux le télécharger depuis cette formation.",
-            });
-            await refetch();
-          }
+          await refetch();
         }
       } catch (err: any) {
-        if (!cancelled) {
-          console.warn("Auto-émission certificat:", err?.message ?? err);
+        if (cancelled) return;
+        console.warn(`Auto-émission certificat (tentative ${attempt}):`, err?.message ?? err);
+        // Retry unique après 3s si c'est la 1re tentative
+        if (attempt < 2) {
+          await new Promise((r) => setTimeout(r, 3000));
+          if (!cancelled) await tryIssue(attempt + 1);
+        } else {
+          // Échec définitif → afficher à l'utilisateur
+          toast.error("Génération du certificat en échec", {
+            description: "Essaie de recharger la page, ou contacte l'équipe si le problème persiste.",
+          });
         }
-      } finally {
-        if (!cancelled) setAutoChecked(true);
       }
+    };
+
+    (async () => {
+      await tryIssue(1);
+      if (!cancelled) setAutoChecked(true);
     })();
+
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cert, isLoading, isComplete, userId, formationId]);
+  }, [cert, isLoading, isComplete, userId, formationId, isCeo]);
+
+  // CEO : ne rien afficher (pas de bannière de certificat)
+  if (isCeo) return null;
 
   if (isLoading) return null;
 

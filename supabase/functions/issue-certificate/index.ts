@@ -137,6 +137,19 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Le CEO ne reçoit jamais de certificat (pas d'intérêt métier, défense en profondeur)
+    const { data: targetProfile } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", body.user_id)
+      .single();
+    if (targetProfile?.role === "ceo") {
+      return new Response(
+        JSON.stringify({ error: "Les certificats ne sont pas émis pour le CEO" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // Check enrollment (defense in depth)
     const { data: enrollment } = await admin
       .from("formation_enrollments")
