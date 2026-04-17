@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuizWithQuestions, useCreateQuizAttempt } from "@/hooks/useQuizzes";
 import { autoCompleteParcoursFormationChapter } from "@/lib/parcoursAutoComplete";
@@ -27,6 +27,28 @@ export default function QuizPage() {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
   const [finished, setFinished] = useState(false);
+  // Incrémenté à chaque tentative → force un nouveau shuffle
+  const [attemptSeed, setAttemptSeed] = useState(0);
+
+  // Permutation des options par question. shuffledOrders[q.id][displayPos] = realOptionIdx.
+  // Regénéré à chaque nouvelle tentative (attemptSeed change sur "Recommencer").
+  const shuffledOrders = useMemo(() => {
+    const map: Record<string, number[]> = {};
+    const qs = (quiz as any)?.questions as Array<{ id: string; options: string[] }> | undefined;
+    if (!qs) return map;
+    for (const q of qs) {
+      const n = q.options?.length ?? 0;
+      const order = Array.from({ length: n }, (_, i) => i);
+      // Fisher-Yates
+      for (let i = n - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+      }
+      map[q.id] = order;
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quiz?.id, attemptSeed]);
 
   if (isLoading) {
     return (
@@ -112,6 +134,7 @@ export default function QuizPage() {
     setSelectedOption(null);
     setShowExplanation(false);
     setFinished(false);
+    setAttemptSeed((s) => s + 1); // reshuffle
   };
 
   // ─── Finished screen ───
@@ -193,37 +216,40 @@ export default function QuizPage() {
           <h2 className="text-lg font-semibold leading-relaxed">{currentQuestion.question}</h2>
 
           <div className="space-y-2">
-            {currentQuestion.options.map((opt, idx) => {
-              const isSelected = selectedOption === idx;
-              const isCorrect = idx === currentQuestion.correct_index;
-              const showCorrectness = showExplanation;
+            {(shuffledOrders[currentQuestion.id] ?? currentQuestion.options.map((_, i) => i)).map(
+              (realIdx, displayPos) => {
+                const opt = currentQuestion.options[realIdx];
+                const isSelected = selectedOption === realIdx;
+                const isCorrect = realIdx === currentQuestion.correct_index;
+                const showCorrectness = showExplanation;
 
-              return (
-                <button
-                  key={idx}
-                  onClick={() => handleSelect(idx)}
-                  disabled={showExplanation}
-                  className={cn(
-                    "w-full text-left p-4 rounded-lg border-2 transition-all",
-                    !showCorrectness && isSelected && "border-primary bg-primary/5",
-                    !showCorrectness && !isSelected && "border-border hover:border-primary/50 hover:bg-muted/50",
-                    showCorrectness && isCorrect && "border-emerald-500 bg-emerald-500/10",
-                    showCorrectness && isSelected && !isCorrect && "border-red-500 bg-red-500/10",
-                    showCorrectness && !isSelected && !isCorrect && "border-border opacity-50",
-                    !showCorrectness && "cursor-pointer"
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="font-mono text-sm font-semibold shrink-0 w-6">
-                      {String.fromCharCode(65 + idx)}.
-                    </span>
-                    <span className="flex-1 text-sm">{opt}</span>
-                    {showCorrectness && isCorrect && <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />}
-                    {showCorrectness && isSelected && !isCorrect && <XCircle className="h-5 w-5 text-red-600 shrink-0" />}
-                  </div>
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={realIdx}
+                    onClick={() => handleSelect(realIdx)}
+                    disabled={showExplanation}
+                    className={cn(
+                      "w-full text-left p-4 rounded-lg border-2 transition-all",
+                      !showCorrectness && isSelected && "border-primary bg-primary/5",
+                      !showCorrectness && !isSelected && "border-border hover:border-primary/50 hover:bg-muted/50",
+                      showCorrectness && isCorrect && "border-emerald-500 bg-emerald-500/10",
+                      showCorrectness && isSelected && !isCorrect && "border-red-500 bg-red-500/10",
+                      showCorrectness && !isSelected && !isCorrect && "border-border opacity-50",
+                      !showCorrectness && "cursor-pointer"
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="font-mono text-sm font-semibold shrink-0 w-6">
+                        {String.fromCharCode(65 + displayPos)}.
+                      </span>
+                      <span className="flex-1 text-sm">{opt}</span>
+                      {showCorrectness && isCorrect && <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />}
+                      {showCorrectness && isSelected && !isCorrect && <XCircle className="h-5 w-5 text-red-600 shrink-0" />}
+                    </div>
+                  </button>
+                );
+              }
+            )}
           </div>
 
           {showExplanation && currentQuestion.explication && (
