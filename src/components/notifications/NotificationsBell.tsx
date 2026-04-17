@@ -5,7 +5,6 @@ import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -88,7 +87,7 @@ export function NotificationsBell() {
             </p>
           </div>
         ) : (
-          <ScrollArea className="max-h-[420px]">
+          <div className="max-h-[60vh] overflow-y-auto overscroll-contain">
             <ul className="divide-y">
               {notifications.map((n) => {
                 const Icon = typeIcon(n.type);
@@ -142,7 +141,7 @@ export function NotificationsBell() {
                 );
               })}
             </ul>
-          </ScrollArea>
+          </div>
         )}
       </PopoverContent>
     </Popover>
