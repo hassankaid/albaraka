@@ -21,8 +21,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   Users, UserPlus, RefreshCw, Search, Phone, Inbox, ChevronDown, Instagram, Pencil, Eye, Info, Copy,
-  ChevronLeft, ChevronRight, PartyPopper, CheckSquare, UserMinus, CalendarRange,
+  ChevronLeft, ChevronRight, PartyPopper, CheckSquare, UserMinus, CalendarRange, Recycle,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { AlertDialogAction } from "@/components/ui/alert-dialog";
 import { getDateKey } from "@/lib/formatDate";
 import { fr } from "date-fns/locale";
 import LeadInstagramForm from "@/components/LeadInstagramForm";
@@ -101,6 +103,10 @@ export default function Leads() {
     allIds: string[];
     alreadyAssigned: { id: string; assignedToName: string | null }[];
   } | null>(null);
+  // Recyclage manuel (CEO)
+  const [recycleDialog, setRecycleDialog] = useState<{ ids: string[] } | null>(null);
+  const [recycleReason, setRecycleReason] = useState("");
+  const [recyclingBulk, setRecyclingBulk] = useState(false);
   const PAGE_SIZE = 50;
 
   const fetchLeads = useCallback(async () => {
@@ -325,6 +331,29 @@ export default function Leads() {
     }
     setBulkAssigning(false);
     setBulkConfirm(null);
+  };
+
+  // Recyclage manuel (CEO uniquement) — système indépendant du cron et du recyclage instantané "pas_de_reponse"
+  const handleManualRecycle = async (ids: string[], reason: string) => {
+    if (!realUser || ids.length === 0) return;
+    setRecyclingBulk(true);
+    try {
+      const { data, error } = await (supabase as any).rpc("manual_recycle_leads", {
+        p_lead_ids: ids,
+        p_reason: reason.trim() || null,
+      });
+      if (error) throw new Error(error.message);
+      const recycledCount = (data as any)?.recycled_count ?? ids.length;
+      toast({ title: `${recycledCount} lead${recycledCount > 1 ? "s" : ""} envoyé${recycledCount > 1 ? "s" : ""} dans À recycler` });
+      setSelectedIds(new Set());
+      setRecycleDialog(null);
+      setRecycleReason("");
+      fetchLeads();
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err?.message || "Recyclage impossible", variant: "destructive" });
+    } finally {
+      setRecyclingBulk(false);
+    }
   };
 
   const isCeo = user?.role === "ceo";
@@ -713,26 +742,38 @@ export default function Leads() {
       ) : (
         <>
           {/* Bulk action bar */}
-          {tab === "a_recycler" && isCeo && selectedIds.size > 0 && (
+          {isCeo && selectedIds.size > 0 && (
             <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20">
               <CheckSquare className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-foreground">{selectedIds.size} lead{selectedIds.size > 1 ? "s" : ""} sélectionné{selectedIds.size > 1 ? "s" : ""}</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="sm" className="gap-1.5 text-xs" disabled={bulkAssigning}>
-                    <UserPlus className="h-3.5 w-3.5" />
-                    Affecter en masse
-                    <ChevronDown className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  {collaborateurs.map((c) => (
+              {tab === "a_recycler" ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" className="gap-1.5 text-xs" disabled={bulkAssigning}>
+                      <UserPlus className="h-3.5 w-3.5" />
+                      Affecter en masse
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    {collaborateurs.map((c) => (
                       <DropdownMenuItem key={c.id} onClick={() => handleBulkAssign(c.id)}>
                         {c.full_name}
                       </DropdownMenuItem>
                     ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button
+                  size="sm"
+                  className="gap-1.5 text-xs bg-amber-500 hover:bg-amber-600 text-white border-0"
+                  onClick={() => setRecycleDialog({ ids: Array.from(selectedIds) })}
+                  disabled={recyclingBulk}
+                >
+                  <Recycle className="h-3.5 w-3.5" />
+                  Envoyer dans À recycler
+                </Button>
+              )}
               <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => setSelectedIds(new Set())}>
                 Désélectionner
               </Button>
@@ -743,7 +784,7 @@ export default function Leads() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
-                  {tab === "a_recycler" && isCeo && (
+                  {isCeo && (
                     <TableHead className="w-[40px]">
                       <input
                         type="checkbox"
@@ -772,7 +813,7 @@ export default function Leads() {
               <TableBody>
                 {paginatedLeads.map((lead) => (
                   <TableRow key={lead.id} className={`border-border hover:bg-secondary/50 transition-colors ${selectedIds.has(lead.id!) ? "bg-primary/5" : ""}`}>
-                    {tab === "a_recycler" && isCeo && (
+                    {isCeo && (
                       <TableCell>
                         <input
                           type="checkbox"
@@ -927,6 +968,17 @@ export default function Leads() {
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
                         )}
+                        {isCeo && !isRecycled(lead) && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
+                            onClick={() => setRecycleDialog({ ids: [lead.id!] })}
+                            title="Envoyer dans À recycler"
+                          >
+                            <Recycle className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -1012,6 +1064,47 @@ export default function Leads() {
                 Tout réaffecter ({bulkConfirm.allIds.length})
               </Button>
             )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmation dialog for manual recycling (CEO only) */}
+      <AlertDialog open={!!recycleDialog} onOpenChange={(open) => { if (!open) { setRecycleDialog(null); setRecycleReason(""); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Recycle className="h-5 w-5 text-amber-500" />
+              Envoyer dans À recycler
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {recycleDialog && (
+                <>
+                  <strong>{recycleDialog.ids.length}</strong> lead{recycleDialog.ids.length > 1 ? "s" : ""} {recycleDialog.ids.length > 1 ? "seront désaffectés et envoyés" : "sera désaffecté et envoyé"} dans la section À recycler. Le statut actuel est préservé.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 pt-2">
+            <label className="text-xs font-medium text-muted-foreground">Raison (optionnel)</label>
+            <Textarea
+              value={recycleReason}
+              onChange={(e) => setRecycleReason(e.target.value)}
+              placeholder="Ex : Sabrina en arrêt maladie, réattribution des leads…"
+              rows={2}
+              className="resize-none"
+            />
+            <p className="text-[11px] text-muted-foreground">Consigné dans l'historique de chaque lead recyclé.</p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={recyclingBulk}>Annuler</AlertDialogCancel>
+            <Button
+              className="gap-1.5 bg-amber-500 hover:bg-amber-600 text-white border-0"
+              onClick={() => recycleDialog && handleManualRecycle(recycleDialog.ids, recycleReason)}
+              disabled={recyclingBulk}
+            >
+              <Recycle className="h-4 w-4" />
+              {recyclingBulk ? "Recyclage…" : `Recycler ${recycleDialog?.ids.length ?? 0} lead${(recycleDialog?.ids.length ?? 0) > 1 ? "s" : ""}`}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
