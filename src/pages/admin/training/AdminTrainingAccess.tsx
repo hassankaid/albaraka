@@ -53,10 +53,23 @@ const ROLE_LABELS: Record<string, string> = {
 type StatusFilter = "all" | "not_sent" | "invited" | "activated";
 type RoleFilter = "all" | "apporteur" | "collaborateur" | "ceo";
 
-function getInvitationStatus(u: UserAccessRow): { label: string; variant: "default" | "secondary" | "outline" } {
-  if (u.onboarding_completed) return { label: "Accès ouvert", variant: "default" };
-  if (u.access_opened_at) return { label: "Invitation envoyée", variant: "secondary" };
-  return { label: "Non envoyé", variant: "outline" };
+function getInvitationStatus(u: UserAccessRow): { label: string; className: string } {
+  if (u.onboarding_completed) {
+    return {
+      label: "Accès ouvert",
+      className: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/20",
+    };
+  }
+  if (u.access_opened_at) {
+    return {
+      label: "Invitation envoyée",
+      className: "bg-primary/15 text-primary border-primary/40 hover:bg-primary/20",
+    };
+  }
+  return {
+    label: "Non envoyé",
+    className: "bg-red-500/10 text-red-500 border-red-500/40 hover:bg-red-500/15",
+  };
 }
 
 export default function AdminTrainingAccess() {
@@ -341,7 +354,7 @@ export default function AdminTrainingAccess() {
                         </TableCell>
                         <TableCell>
                           <div className="space-y-0.5">
-                            <Badge variant={status.variant}>{status.label}</Badge>
+                            <Badge variant="outline" className={status.className}>{status.label}</Badge>
                             {u.last_access_sent_at && (
                               <p className="text-[10px] text-muted-foreground">
                                 {formatDistanceToNow(new Date(u.last_access_sent_at), { locale: fr, addSuffix: true })}
