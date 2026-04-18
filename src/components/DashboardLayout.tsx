@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, Library, CalendarDays, Wand2, Megaphone, Ticket, Map } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, Library, CalendarDays, Wand2, Megaphone, Ticket, Map, Webhook } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -44,6 +44,7 @@ const adminNavItems: NavItem[] = [
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
   { title: "Agent IA", path: "/admin/agent-knowledge", icon: Bot, roles: ["ceo"] },
   { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"] },
+  { title: "Webhooks Calendly", path: "/admin/webhooks/calendly", icon: Webhook, roles: ["ceo"] },
 ];
 
 const trainingNavItems: NavItem[] = [
@@ -74,6 +75,7 @@ const pageTitles: Record<string, string> = {
   "/admin/team": "Équipe",
   "/admin/announcements": "Annonces",
   "/admin/invitations": "Invitations & Accès",
+  "/admin/webhooks/calendly": "Webhooks Calendly",
   "/admin/parcours": "Parcours",
   "/admin/invoices": "Factures Apporteurs",
   "/admin/commissions": "Commissions",

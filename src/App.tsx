@@ -72,6 +72,7 @@ import OrganisationPage from "./pages/working/organisation/OrganisationPage";
 import ContentStudio from "./pages/working/ContentStudio";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import AdminAnnouncements from "./pages/admin/announcements/AdminAnnouncements";
+import AdminCalendlyWebhooks from "./pages/admin/webhooks/AdminCalendlyWebhooks";
 import CampaignTracking from "./pages/admin/invitations/CampaignTracking";
 import AdminParcoursList from "./pages/admin/parcours/AdminParcoursList";
 import ParcoursEditor from "./pages/admin/parcours/ParcoursEditor";
@@ -112,6 +113,7 @@ const App = () => (
                   <Route path="/admin/announcements" element={<AdminAnnouncements />} />
                   <Route path="/admin/invitations" element={<Navigate to="/admin/training/access" replace />} />
                   <Route path="/admin/invitations/campaign" element={<CampaignTracking />} />
+                  <Route path="/admin/webhooks/calendly" element={<AdminCalendlyWebhooks />} />
                   <Route path="/admin/parcours" element={<AdminParcoursList />} />
                   <Route path="/admin/parcours/:slug" element={<ParcoursEditor />} />
                   <Route path="/admin/parcours/:slug/chapitre/:chapitreId" element={<ParcoursChapitreEditor />} />
