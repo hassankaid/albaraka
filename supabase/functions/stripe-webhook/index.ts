@@ -192,23 +192,24 @@ async function ensureBonCommandeOrder(
   }
 
   // Upsert contact
-  const { data: contact, error: contactErr } = await supabase
-    .from("contacts")
-    .upsert(
-      {
-        email,
-        full_name: fullName || null,
-        phone_original: metadata.customer_phone || null,
-      },
-      { onConflict: "email" },
-    )
-    .select("id")
-    .single();
+  // contacts has a UNIQUE index on lower(email), not on email directly,
+  // so upsert with onConflict:"email" fails. Use the existing RPC which
+  // handles email/phone deduplication correctly.
+  const { data: contactId, error: contactErr } = await supabase.rpc(
+    "find_or_create_contact",
+    {
+      p_email: email,
+      p_phone: metadata.customer_phone || "",
+      p_full_name: fullName || null,
+    },
+  );
 
-  if (contactErr || !contact) {
-    console.error("[bon_commande] contact upsert failed:", contactErr);
-    throw contactErr ?? new Error("contact upsert failed");
+  if (contactErr || !contactId) {
+    console.error("[bon_commande] find_or_create_contact failed:", contactErr);
+    throw contactErr ?? new Error("find_or_create_contact returned null");
   }
+
+  const contact = { id: contactId as string };
 
   // Sale
   const totalGross = 2500;
