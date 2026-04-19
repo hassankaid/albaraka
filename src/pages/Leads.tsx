@@ -60,8 +60,12 @@ const dateToYMD = (d: Date): string => {
 const isRecycled = (l: Pick<LeadEnriched, "assigned_to" | "recycled_at">): boolean =>
   !l.assigned_to && !!l.recycled_at;
 
-const COLLAB_TABS = [
+const COLLAB_CONFIRME_TABS = [
   { value: "a_affecter", label: "À affecter" },
+  { value: "mes_leads", label: "Mes leads" },
+] as const;
+
+const COLLAB_INTERMEDIAIRE_TABS = [
   { value: "mes_leads", label: "Mes leads" },
 ] as const;
 
@@ -80,7 +84,12 @@ export default function Leads() {
   const [leads, setLeads] = useState<LeadEnriched[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [tab, setTab] = useState<string>("a_affecter");
+  // Les collaborateurs intermédiaires n'ont pas l'onglet "À affecter" (ils ne
+  // doivent jamais voir les coordonnées des leads qu'ils n'ont pas affectés pour
+  // ne pas "griller" une cartouche prévue pour un confirmé).
+  const isIntermediaire =
+    user?.role === "collaborateur" && user?.collaborateur_level === "intermediaire";
+  const [tab, setTab] = useState<string>(isIntermediaire ? "mes_leads" : "a_affecter");
   const [statusFilter, setStatusFilter] = useState("all");
   const ADS_SOURCES = ["vsl_a", "vsl_b", "webi", "instagram_ads", "whatsapp_ads"];
   const [sourceFilter, setSourceFilter] = useState<string[]>(ADS_SOURCES);
@@ -536,7 +545,12 @@ export default function Leads() {
       {/* Tabs + search row */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center bg-card border border-border rounded-lg p-0.5">
-          {(isCeo ? CEO_TABS : COLLAB_TABS).map((t) => (
+          {(isCeo
+            ? CEO_TABS
+            : isIntermediaire
+              ? COLLAB_INTERMEDIAIRE_TABS
+              : COLLAB_CONFIRME_TABS
+          ).map((t) => (
             <button
               key={t.value}
               onClick={() => setTab(t.value)}

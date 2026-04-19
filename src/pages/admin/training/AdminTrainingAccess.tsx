@@ -44,6 +44,7 @@ import { SendInvitationDialog } from "@/components/admin/access/SendInvitationDi
 import { EditUserEmailDialog } from "@/components/admin/access/EditUserEmailDialog";
 import { AccessHistoryDialog } from "@/components/admin/access/AccessHistoryDialog";
 import { NewStudentDialog } from "@/components/admin/access/NewStudentDialog";
+import { DeleteUserDialog } from "@/components/admin/access/DeleteUserDialog";
 
 const ROLE_LABELS: Record<string, string> = {
   ceo: "CEO",
@@ -85,6 +86,7 @@ export default function AdminTrainingAccess() {
   const [editEmailUser, setEditEmailUser] = useState<UserAccessRow | null>(null);
   const [sendUsers, setSendUsers] = useState<UserAccessRow[] | null>(null);
   const [addDialogUserId, setAddDialogUserId] = useState<string | null>(null);
+  const [deleteUser, setDeleteUser] = useState<UserAccessRow | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const { data: rows, isLoading } = useAdminTrainingAccess(false);
@@ -387,6 +389,17 @@ export default function AdminTrainingAccess() {
                             >
                               <History className="h-4 w-4" />
                             </Button>
+                            {u.role !== "ceo" && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                onClick={() => setDeleteUser(u)}
+                                title="Supprimer l'utilisateur"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -445,6 +458,16 @@ export default function AdminTrainingAccess() {
         <AddFormationDialog
           user={addDialogUser}
           onClose={() => setAddDialogUserId(null)}
+        />
+      )}
+
+      {deleteUser && (
+        <DeleteUserDialog
+          userId={deleteUser.id}
+          userName={deleteUser.full_name || deleteUser.email}
+          userEmail={deleteUser.email}
+          userRole={deleteUser.role}
+          onClose={() => setDeleteUser(null)}
         />
       )}
     </div>
