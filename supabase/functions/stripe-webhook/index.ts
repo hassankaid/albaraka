@@ -121,6 +121,7 @@ async function ensureBonCommandeOrder(
 
   // Find or create profile
   let profileId: string | null = null;
+
   const { data: existingProfile } = await supabase
     .from("profiles")
     .select("id, origin")
@@ -138,23 +139,56 @@ async function ensureBonCommandeOrder(
       email_confirm: true,
       user_metadata: { full_name: fullName },
     });
-    if (createErr || !created?.user) {
-      console.error("[bon_commande] createUser failed:", createErr);
-      throw createErr ?? new Error("createUser returned no user");
+
+    if (created?.user?.id) {
+      profileId = created.user.id;
+    } else {
+      const msg = String(createErr?.message || "").toLowerCase();
+      const alreadyExists =
+        msg.includes("already") ||
+        msg.includes("exist") ||
+        msg.includes("registered");
+
+      if (!alreadyExists) {
+        console.error("[bon_commande] createUser failed (non-conflict):", createErr);
+        throw createErr ?? new Error("createUser returned no user");
+      }
+
+      console.warn(`[bon_commande] auth.users already has ${email}, fetching existing id`);
+      try {
+        const { data: list } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        const existing = list?.users?.find(
+          (u: { email?: string | null }) => (u.email || "").toLowerCase() === email,
+        );
+        if (!existing?.id) {
+          throw new Error(`auth user with email ${email} not found via listUsers`);
+        }
+        profileId = existing.id;
+      } catch (e) {
+        console.error("[bon_commande] listUsers failed:", e);
+        throw e;
+      }
     }
-    profileId = created.user.id;
+
+    // Ensure profiles row exists (handle_new_user trigger may not have fired
+    // for pre-existing auth users whose profile row was deleted or desynced).
     await supabase
       .from("profiles")
-      .update({
-        full_name: fullName || email,
-        phone: metadata.customer_phone || null,
-        address: metadata.customer_address || null,
-        postal_code: metadata.customer_postal_code || null,
-        city: metadata.customer_city || null,
-        country: metadata.customer_country || null,
-        origin: "bon_commande",
-      })
-      .eq("id", profileId);
+      .upsert(
+        {
+          id: profileId,
+          email,
+          full_name: fullName || email,
+          phone: metadata.customer_phone || null,
+          address: metadata.customer_address || null,
+          postal_code: metadata.customer_postal_code || null,
+          city: metadata.customer_city || null,
+          country: metadata.customer_country || null,
+          role: "apporteur",
+          origin: "bon_commande",
+        },
+        { onConflict: "id" },
+      );
   }
 
   // Upsert contact
