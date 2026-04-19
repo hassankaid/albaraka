@@ -14,11 +14,17 @@ export interface MarketingLead {
 
 export interface MarketingCall {
   id: string;
-  lead_id: string;
+  lead_id: string | null;
   scheduled_at: string | null;
   status: string | null;
   outcome: string | null;
   created_at: string;
+  // Utilisés pour les calls orphelins (sans lead) — affichage fallback
+  raw_full_name: string | null;
+  raw_email: string | null;
+  raw_phone: string | null;
+  contact_id: string | null;
+  is_orphan: boolean;
 }
 
 export interface MarketingSale {
@@ -28,6 +34,12 @@ export interface MarketingSale {
   amount_ht: number;
   product: string | null;
   payment_status: string | null;
+  // Pour les ventes orphelines : on récupère le contact pour afficher un nom
+  contact_id: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  is_orphan: boolean;
 }
 
 export interface MarketingTag {
@@ -63,7 +75,7 @@ export interface MarketingTagRow {
 }
 
 export interface MarketingDashboardData {
-  // Agrégats
+  // Agrégats globaux (leads + orphelins)
   budget: number;
   leads: number;
   calls: number;
@@ -72,15 +84,22 @@ export interface MarketingDashboardData {
   cpl: number;
   cpr: number;
   cac: number;
+  // Taux de conversion mesurés uniquement sur les leads trackés
   leadToCallRate: number;
   leadToSaleRate: number;
+  // Compteurs séparés pour distinguer "rattachés à un lead" vs "orphelins"
+  callsLinked: number;
+  callsOrphan: number;
+  salesLinked: number;
+  salesOrphan: number;
+  revenueOrphan: number;
   channelSpend: MarketingChannelRow[];
   sourceBreakdown: MarketingBreakdownRow[];
   tagBreakdown: MarketingTagRow[];
   // Données brutes (pour drill-down)
   rawLeads: MarketingLead[];
-  rawCalls: MarketingCall[];
-  rawSales: MarketingSale[];
+  rawCalls: MarketingCall[]; // inclut les orphelins (is_orphan: true)
+  rawSales: MarketingSale[]; // inclut les orphelins (is_orphan: true)
   rawTags: MarketingTag[];
 }
 
@@ -161,56 +180,167 @@ export function useMarketingDashboardData(range: DateRange | null) {
         return out;
       }
 
-      // ─── 3. Calls de ces leads ───────────────────────────────────────
-      const rawCalls: MarketingCall[] = await fetchInChunks(leadIds, async (chunk) => {
-        const { data, error } = await (supabase as any)
+      // ─── 3a. Calls rattachés aux leads de la fenêtre ─────────────────
+      const linkedCalls: MarketingCall[] = (
+        await fetchInChunks(leadIds, async (chunk) => {
+          const { data, error } = await (supabase as any)
+            .from("calls")
+            .select(
+              "id, lead_id, scheduled_at, status, outcome, created_at, raw_full_name, raw_email, raw_phone, contact_id",
+            )
+            .in("lead_id", chunk);
+          if (error) throw error;
+          return (data ?? []) as any[];
+        })
+      ).map(
+        (c: any) =>
+          ({
+            ...c,
+            is_orphan: false,
+          }) as MarketingCall,
+      );
+
+      // ─── 3b. Calls ORPHELINS (lead_id NULL) créés dans la fenêtre ────
+      let orphanCalls: MarketingCall[] = [];
+      if (range) {
+        const { data: oc, error: ocErr } = await (supabase as any)
           .from("calls")
-          .select("id, lead_id, scheduled_at, status, outcome, created_at")
-          .in("lead_id", chunk);
-        if (error) throw error;
-        return (data ?? []) as MarketingCall[];
-      });
+          .select(
+            "id, lead_id, scheduled_at, status, outcome, created_at, raw_full_name, raw_email, raw_phone, contact_id",
+          )
+          .is("lead_id", null)
+          .gte("created_at", range.from.toISOString())
+          .lt("created_at", range.to.toISOString());
+        if (ocErr) throw ocErr;
+        orphanCalls = (oc ?? []).map((c: any) => ({ ...c, is_orphan: true }) as MarketingCall);
+      } else {
+        const { data: oc, error: ocErr } = await (supabase as any)
+          .from("calls")
+          .select(
+            "id, lead_id, scheduled_at, status, outcome, created_at, raw_full_name, raw_email, raw_phone, contact_id",
+          )
+          .is("lead_id", null);
+        if (ocErr) throw ocErr;
+        orphanCalls = (oc ?? []).map((c: any) => ({ ...c, is_orphan: true }) as MarketingCall);
+      }
 
       const callsByLead = new Map<string, MarketingCall[]>();
-      let nbCalls = 0;
-      for (const c of rawCalls) {
+      let callsLinkedCount = 0;
+      for (const c of linkedCalls) {
         if (c.status === "cancelled") continue;
-        nbCalls += 1;
+        callsLinkedCount += 1;
+        if (!c.lead_id) continue;
         const arr = callsByLead.get(c.lead_id) ?? [];
         arr.push(c);
         callsByLead.set(c.lead_id, arr);
       }
+      const callsOrphanCount = orphanCalls.filter((c) => c.status !== "cancelled").length;
+      const nbCalls = callsLinkedCount + callsOrphanCount;
 
-      // ─── 4. Sales de ces leads ───────────────────────────────────────
-      const rawSales: MarketingSale[] = await fetchInChunks(leadIds, async (chunk) => {
+      // ─── 4a. Sales rattachées aux leads de la fenêtre ────────────────
+      const linkedSalesRaw = await fetchInChunks(leadIds, async (chunk) => {
         const { data, error } = await (supabase as any)
           .from("sales")
-          .select("id, lead_id, sold_at, amount_ht, product, payment_status, sale_type")
+          .select(
+            "id, lead_id, sold_at, amount_ht, product, payment_status, sale_type, contact_id",
+          )
           .in("lead_id", chunk);
         if (error) throw error;
-        return ((data ?? []) as any[])
-          .filter((s) => s.sale_type !== "acompte")
-          .map(
-            (s) =>
-              ({
-                id: s.id,
-                lead_id: s.lead_id,
-                sold_at: s.sold_at,
-                amount_ht: Number(s.amount_ht ?? 0),
-                product: s.product,
-                payment_status: s.payment_status,
-              }) as MarketingSale,
-          );
+        return ((data ?? []) as any[]).filter((s) => s.sale_type !== "acompte");
       });
 
+      // ─── 4b. Sales ORPHELINES (lead_id NULL) vendues dans la fenêtre ─
+      let orphanSalesRaw: any[] = [];
+      if (range) {
+        const { data: os, error: osErr } = await (supabase as any)
+          .from("sales")
+          .select("id, lead_id, sold_at, amount_ht, product, payment_status, sale_type, contact_id")
+          .is("lead_id", null)
+          .gte("sold_at", range.from.toISOString())
+          .lt("sold_at", range.to.toISOString());
+        if (osErr) throw osErr;
+        orphanSalesRaw = (os ?? []).filter((s: any) => s.sale_type !== "acompte");
+      } else {
+        const { data: os, error: osErr } = await (supabase as any)
+          .from("sales")
+          .select("id, lead_id, sold_at, amount_ht, product, payment_status, sale_type, contact_id")
+          .is("lead_id", null);
+        if (osErr) throw osErr;
+        orphanSalesRaw = (os ?? []).filter((s: any) => s.sale_type !== "acompte");
+      }
+
+      // ─── 4c. Résoudre les contacts (pour afficher le nom des orphelines) ─
+      const contactIdsToFetch = new Set<string>();
+      for (const s of orphanSalesRaw) if (s.contact_id) contactIdsToFetch.add(s.contact_id);
+      for (const c of orphanCalls) if (c.contact_id) contactIdsToFetch.add(c.contact_id);
+      const contactMap = new Map<
+        string,
+        { id: string; full_name: string | null; email: string | null; phone: string | null }
+      >();
+      if (contactIdsToFetch.size > 0) {
+        const ids = Array.from(contactIdsToFetch);
+        for (let i = 0; i < ids.length; i += 500) {
+          const chunk = ids.slice(i, i + 500);
+          const { data: cs, error: csErr } = await (supabase as any)
+            .from("contacts")
+            .select("id, full_name, email, phone")
+            .in("id", chunk);
+          if (csErr) throw csErr;
+          for (const c of cs ?? []) contactMap.set(c.id, c);
+        }
+      }
+
+      const makeSale = (s: any, isOrphan: boolean): MarketingSale => {
+        const ct = s.contact_id ? contactMap.get(s.contact_id) : null;
+        return {
+          id: s.id,
+          lead_id: s.lead_id,
+          sold_at: s.sold_at,
+          amount_ht: Number(s.amount_ht ?? 0),
+          product: s.product,
+          payment_status: s.payment_status,
+          contact_id: s.contact_id,
+          contact_name: ct?.full_name ?? null,
+          contact_email: ct?.email ?? null,
+          contact_phone: ct?.phone ?? null,
+          is_orphan: isOrphan,
+        };
+      };
+
+      const linkedSales: MarketingSale[] = linkedSalesRaw.map((s: any) => makeSale(s, false));
+      const orphanSales: MarketingSale[] = orphanSalesRaw.map((s: any) => makeSale(s, true));
+      // Enrichir aussi les calls orphelins avec contacts
+      const orphanCallsEnriched: MarketingCall[] = orphanCalls.map((c) => {
+        if (c.contact_id && !c.raw_full_name) {
+          const ct = contactMap.get(c.contact_id);
+          if (ct) {
+            return {
+              ...c,
+              raw_full_name: c.raw_full_name ?? ct.full_name,
+              raw_email: c.raw_email ?? ct.email,
+              raw_phone: c.raw_phone ?? ct.phone,
+            };
+          }
+        }
+        return c;
+      });
+      // Remplace orphanCalls dans rawCalls par la version enrichie
+      const rawCallsEnriched = [...linkedCalls, ...orphanCallsEnriched];
+
+      const rawSales: MarketingSale[] = [...linkedSales, ...orphanSales];
+
       const primarySalesByLead = new Map<string, MarketingSale>();
-      let revenue = 0;
-      for (const s of rawSales) {
+      let revenueLinked = 0;
+      for (const s of linkedSales) {
         if (!s.lead_id) continue;
         if (!primarySalesByLead.has(s.lead_id)) primarySalesByLead.set(s.lead_id, s);
-        revenue += s.amount_ht;
+        revenueLinked += s.amount_ht;
       }
-      const nbSales = primarySalesByLead.size;
+      const salesLinkedCount = primarySalesByLead.size;
+      const salesOrphanCount = orphanSales.length;
+      const revenueOrphan = orphanSales.reduce((sum, s) => sum + s.amount_ht, 0);
+      const nbSales = salesLinkedCount + salesOrphanCount;
+      const revenue = revenueLinked + revenueOrphan;
 
       // ─── 5. Sources breakdown ────────────────────────────────────────
       const sourceStats = new Map<
@@ -244,6 +374,19 @@ export function useMarketingDashboardData(range: DateRange | null) {
           leadToSale: s.leads > 0 ? s.sales / s.leads : 0,
         }))
         .sort((a, b) => b.leads - a.leads);
+
+      // Ligne "Inconnu" (orphelins) si non vide
+      if (callsOrphanCount > 0 || salesOrphanCount > 0) {
+        sourceBreakdown.push({
+          source: "inconnu",
+          leads: 0,
+          calls: callsOrphanCount,
+          sales: salesOrphanCount,
+          revenue: revenueOrphan,
+          leadToCall: 0,
+          leadToSale: 0,
+        });
+      }
 
       // ─── 6. Tags ─────────────────────────────────────────────────────
       const rawTagRows = await fetchInChunks(leadIds, async (chunk) => {
@@ -306,13 +449,20 @@ export function useMarketingDashboardData(range: DateRange | null) {
         cpl: nbLeads > 0 ? budget / nbLeads : 0,
         cpr: nbCalls > 0 ? budget / nbCalls : 0,
         cac: nbSales > 0 ? budget / nbSales : 0,
-        leadToCallRate: nbLeads > 0 ? nbCalls / nbLeads : 0,
-        leadToSaleRate: nbLeads > 0 ? nbSales / nbLeads : 0,
+        // Taux de conversion : mesurés uniquement sur les leads trackés
+        // (pour les orphelins, pas de lead au dénominateur donc n'entrent pas dans ces taux)
+        leadToCallRate: nbLeads > 0 ? callsLinkedCount / nbLeads : 0,
+        leadToSaleRate: nbLeads > 0 ? salesLinkedCount / nbLeads : 0,
+        callsLinked: callsLinkedCount,
+        callsOrphan: callsOrphanCount,
+        salesLinked: salesLinkedCount,
+        salesOrphan: salesOrphanCount,
+        revenueOrphan,
         channelSpend,
         sourceBreakdown,
         tagBreakdown,
         rawLeads,
-        rawCalls,
+        rawCalls: rawCallsEnriched,
         rawSales,
         rawTags,
       };

@@ -90,6 +90,7 @@ interface DrillState {
   mode: DrillMode;
   title: string;
   leadIds?: Set<string>; // si défini, on filtre les listes sur ces leads
+  orphanOnly?: boolean; // si true, ne montre que les calls/sales sans lead_id
 }
 
 // ─── Main Tab ────────────────────────────────────────────────────────
@@ -485,15 +486,18 @@ function SourcePerformanceTable({
             </thead>
             <tbody>
               {sorted.map((row, idx) => {
-                const leadIdsForSource = new Set(
-                  data.rawLeads.filter((l) => l.source === row.source).map((l) => l.id),
-                );
+                const isOrphan = row.source === "inconnu";
+                const leadIdsForSource = isOrphan
+                  ? undefined // orphelins : pas de leadIds, on filtre différemment dans le drill-down
+                  : new Set(
+                      data.rawLeads.filter((l) => l.source === row.source).map((l) => l.id),
+                    );
                 return (
                   <tr
                     key={row.source}
                     className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${
                       idx % 2 === 1 ? "bg-muted/10" : ""
-                    }`}
+                    } ${isOrphan ? "italic" : ""}`}
                   >
                     <td className="py-2 px-2">
                       <div className="flex items-center gap-2">
@@ -504,21 +508,37 @@ function SourcePerformanceTable({
                         <span className="text-xs font-medium text-foreground">
                           {sourceLabel(row.source)}
                         </span>
+                        {isOrphan && (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="h-3 w-3 text-muted-foreground/50" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[260px] text-xs">
+                              RDV ou ventes créés sans fiche lead rattachée (ex : closing direct via
+                              recommandation, appel entrant…). Comptés dans les totaux pour ne rien
+                              rater, mais sans source d'acquisition identifiée.
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </div>
                     </td>
                     <td className="py-2 px-2 text-right">
-                      <button
-                        onClick={() =>
-                          onDrill({
-                            mode: "leads",
-                            title: `Leads — ${sourceLabel(row.source)}`,
-                            leadIds: leadIdsForSource,
-                          })
-                        }
-                        className="text-xs font-semibold text-foreground tabular-nums hover:text-primary hover:underline"
-                      >
-                        {num(row.leads)}
-                      </button>
+                      {isOrphan ? (
+                        <span className="text-xs text-muted-foreground tabular-nums">—</span>
+                      ) : (
+                        <button
+                          onClick={() =>
+                            onDrill({
+                              mode: "leads",
+                              title: `Leads — ${sourceLabel(row.source)}`,
+                              leadIds: leadIdsForSource,
+                            })
+                          }
+                          className="text-xs font-semibold text-foreground tabular-nums hover:text-primary hover:underline"
+                        >
+                          {num(row.leads)}
+                        </button>
+                      )}
                     </td>
                     <td className="py-2 px-2 text-right">
                       <button
@@ -528,6 +548,7 @@ function SourcePerformanceTable({
                             mode: "calls",
                             title: `RDV — ${sourceLabel(row.source)}`,
                             leadIds: leadIdsForSource,
+                            orphanOnly: isOrphan,
                           })
                         }
                         className="text-xs text-foreground tabular-nums hover:text-primary hover:underline disabled:text-muted-foreground disabled:no-underline disabled:cursor-default"
@@ -536,7 +557,7 @@ function SourcePerformanceTable({
                       </button>
                     </td>
                     <td className="py-2 px-2 text-right text-xs text-muted-foreground tabular-nums">
-                      {row.leads > 0 ? pct(row.leadToCall, 0) : "—"}
+                      {isOrphan || row.leads === 0 ? "—" : pct(row.leadToCall, 0)}
                     </td>
                     <td className="py-2 px-2 text-right">
                       <button
@@ -546,6 +567,7 @@ function SourcePerformanceTable({
                             mode: "sales",
                             title: `Ventes — ${sourceLabel(row.source)}`,
                             leadIds: leadIdsForSource,
+                            orphanOnly: isOrphan,
                           })
                         }
                         className="text-xs text-foreground tabular-nums hover:text-primary hover:underline disabled:text-muted-foreground disabled:no-underline disabled:cursor-default"
@@ -554,7 +576,7 @@ function SourcePerformanceTable({
                       </button>
                     </td>
                     <td className="py-2 px-2 text-right text-xs text-muted-foreground tabular-nums">
-                      {row.leads > 0 ? pct(row.leadToSale, 0) : "—"}
+                      {isOrphan || row.leads === 0 ? "—" : pct(row.leadToSale, 0)}
                     </td>
                     <td className="py-2 px-2 text-right text-xs font-bold text-foreground tabular-nums">
                       {eur(row.revenue)}
@@ -721,8 +743,13 @@ function DrillDownDialog({
 
   const context = useMemo(() => {
     const leadIds = drill.leadIds;
-    const keepLead = (id: string | null) =>
-      !!id && (leadIds ? leadIds.has(id) : true);
+    const orphanOnly = !!drill.orphanOnly;
+    const keepCallOrSale = (entityLeadId: string | null, isOrphan: boolean) => {
+      if (orphanOnly) return isOrphan;
+      if (!leadIds) return true;
+      return !!entityLeadId && leadIds.has(entityLeadId);
+    };
+
     const leadsInScope = leadIds
       ? data.rawLeads.filter((l) => leadIds.has(l.id))
       : data.rawLeads;
@@ -730,8 +757,10 @@ function DrillDownDialog({
 
     const callsInScope = data.rawCalls
       .filter((c) => c.status !== "cancelled")
-      .filter((c) => keepLead(c.lead_id));
-    const salesInScope = data.rawSales.filter((s) => keepLead(s.lead_id));
+      .filter((c) => keepCallOrSale(c.lead_id, c.is_orphan));
+    const salesInScope = data.rawSales.filter((s) =>
+      keepCallOrSale(s.lead_id, s.is_orphan),
+    );
 
     const tagsByLead = new Map<string, MarketingTag[]>();
     for (const t of data.rawTags) {
@@ -743,6 +772,7 @@ function DrillDownDialog({
     const callsByLead = new Map<string, MarketingCall[]>();
     for (const c of data.rawCalls) {
       if (c.status === "cancelled") continue;
+      if (!c.lead_id) continue;
       const arr = callsByLead.get(c.lead_id) ?? [];
       arr.push(c);
       callsByLead.set(c.lead_id, arr);
@@ -775,12 +805,28 @@ function DrillDownDialog({
     match(l.raw_full_name, l.raw_email, l.raw_phone, sourceLabel(l.source)),
   );
   const filteredCalls = context.callsInScope.filter((c) => {
-    const l = context.leadById.get(c.lead_id);
-    return match(l?.raw_full_name, l?.raw_email, l?.raw_phone, l && sourceLabel(l.source));
+    const l = c.lead_id ? context.leadById.get(c.lead_id) : null;
+    return match(
+      l?.raw_full_name,
+      c.raw_full_name,
+      l?.raw_email,
+      c.raw_email,
+      l?.raw_phone,
+      c.raw_phone,
+      l ? sourceLabel(l.source) : "Inconnu",
+    );
   });
   const filteredSales = context.salesInScope.filter((s) => {
     const l = s.lead_id ? context.leadById.get(s.lead_id) : null;
-    return match(l?.raw_full_name, l?.raw_email, l?.raw_phone, s.product);
+    return match(
+      l?.raw_full_name,
+      s.contact_name,
+      l?.raw_email,
+      s.contact_email,
+      l?.raw_phone,
+      s.contact_phone,
+      s.product,
+    );
   });
 
   // Sort filtered lists
@@ -1060,7 +1106,10 @@ function CallsList({
       </div>
       <div className="divide-y divide-border/40 max-h-[55vh] overflow-y-auto">
         {page.items.map((c, idx) => {
-          const lead = leadById.get(c.lead_id);
+          const lead = c.lead_id ? leadById.get(c.lead_id) : null;
+          const displayName = lead?.raw_full_name || c.raw_full_name || "—";
+          const displayEmail = lead?.raw_email || c.raw_email;
+          const displayPhone = lead?.raw_phone || c.raw_phone;
           return (
             <div
               key={c.id}
@@ -1074,12 +1123,17 @@ function CallsList({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium text-foreground truncate">
-                    {lead?.raw_full_name || "—"}
+                    {displayName}
                   </p>
                   <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                    {lead?.raw_email && (
-                      <span className="truncate" title={lead.raw_email}>
-                        {lead.raw_email}
+                    {displayEmail && (
+                      <span className="truncate" title={displayEmail}>
+                        {displayEmail}
+                      </span>
+                    )}
+                    {displayPhone && (
+                      <span className="truncate" title={displayPhone}>
+                        · {displayPhone}
                       </span>
                     )}
                   </div>
@@ -1087,10 +1141,10 @@ function CallsList({
               </div>
               <Badge
                 variant="outline"
-                className="text-[10px] w-fit"
+                className={`text-[10px] w-fit ${c.is_orphan ? "italic text-muted-foreground" : ""}`}
                 style={{ borderColor: lead ? sourceColor(lead.source) : undefined }}
               >
-                {lead ? sourceLabel(lead.source) : "—"}
+                {lead ? sourceLabel(lead.source) : "Inconnu"}
               </Badge>
               <span className="text-[11px] text-muted-foreground tabular-nums">
                 {c.scheduled_at ? formatParisDateTime(c.scheduled_at) : "—"}
@@ -1149,6 +1203,9 @@ function SalesList({
       <div className="divide-y divide-border/40 max-h-[55vh] overflow-y-auto">
         {page.items.map((s, idx) => {
           const lead = s.lead_id ? leadById.get(s.lead_id) : null;
+          const displayName = lead?.raw_full_name || s.contact_name || "—";
+          const displayEmail = lead?.raw_email || s.contact_email;
+          const displayPhone = lead?.raw_phone || s.contact_phone;
           return (
             <div
               key={s.id}
@@ -1162,17 +1219,17 @@ function SalesList({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium text-foreground truncate">
-                    {lead?.raw_full_name || "—"}
+                    {displayName}
                   </p>
                   <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                    {lead?.raw_email && (
-                      <span className="truncate" title={lead.raw_email}>
-                        {lead.raw_email}
+                    {displayEmail && (
+                      <span className="truncate" title={displayEmail}>
+                        {displayEmail}
                       </span>
                     )}
-                    {lead?.raw_phone && (
-                      <span className="truncate" title={lead.raw_phone}>
-                        {lead.raw_phone}
+                    {displayPhone && (
+                      <span className="truncate" title={displayPhone}>
+                        · {displayPhone}
                       </span>
                     )}
                   </div>
@@ -1180,10 +1237,10 @@ function SalesList({
               </div>
               <Badge
                 variant="outline"
-                className="text-[10px] w-fit"
+                className={`text-[10px] w-fit ${s.is_orphan ? "italic text-muted-foreground" : ""}`}
                 style={{ borderColor: lead ? sourceColor(lead.source) : undefined }}
               >
-                {lead ? sourceLabel(lead.source) : "—"}
+                {lead ? sourceLabel(lead.source) : "Inconnu"}
               </Badge>
               <span className="text-[11px] text-muted-foreground tabular-nums">
                 {s.sold_at ? formatParisDateTime(s.sold_at) : "—"}
