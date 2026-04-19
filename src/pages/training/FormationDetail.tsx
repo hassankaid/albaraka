@@ -122,6 +122,11 @@ export default function FormationDetail() {
     },
   });
 
+  // Gate : liste des chapitres verrouillés par un quiz non validé.
+  // Appelé ici (avant les early returns) pour respecter les Rules of Hooks.
+  const { data: lockedData } = useLockedChapitres(data?.formation?.id ?? null);
+  const lockedSet = new Set((lockedData ?? []).map((l) => l.chapitre_id));
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -163,8 +168,6 @@ export default function FormationDetail() {
     progressPct,
   } = data;
   const isDraft = formation.status === "draft";
-  const { data: lockedData } = useLockedChapitres(formation.id);
-  const lockedSet = new Set((lockedData ?? []).map((l) => l.chapitre_id));
   const firstIncompleteModule = modules.find((m) => {
     const visibleChapitres = m.chapitres.filter(c => c.status === "published" || isCeo);
     return visibleChapitres.some(c => !completedSet.has(c.id));
