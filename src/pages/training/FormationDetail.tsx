@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { CertificateBanner } from "@/components/training/CertificateBanner";
 import { ModuleQuizCard, FormationFinalQuizCard } from "@/components/training/QuizInFormation";
+import { useLockedChapitres } from "@/hooks/useQuizzes";
 
 interface Chapitre {
   id: string;
@@ -162,6 +163,8 @@ export default function FormationDetail() {
     progressPct,
   } = data;
   const isDraft = formation.status === "draft";
+  const { data: lockedData } = useLockedChapitres(formation.id);
+  const lockedSet = new Set((lockedData ?? []).map((l) => l.chapitre_id));
   const firstIncompleteModule = modules.find((m) => {
     const visibleChapitres = m.chapitres.filter(c => c.status === "published" || isCeo);
     return visibleChapitres.some(c => !completedSet.has(c.id));
@@ -293,22 +296,32 @@ export default function FormationDetail() {
                         {modChapitresVisible.map((chap) => {
                           const done = completedSet.has(chap.id);
                           const chapDraft = chap.status === "draft";
+                          const chapLocked = !isCeo && lockedSet.has(chap.id);
                           return (
                             <div key={chap.id}>
                               <button
-                                onClick={() =>
+                                onClick={() => {
+                                  if (chapLocked) return;
                                   navigate(
                                     `/training/${formation.slug}/chapitre/${chap.id}`
-                                  )
-                                }
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-sm hover:bg-secondary transition-colors group"
+                                  );
+                                }}
+                                disabled={chapLocked}
+                                title={chapLocked ? "Valide le quiz du bloc précédent pour débloquer" : undefined}
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-sm transition-colors group ${
+                                  chapLocked
+                                    ? "text-muted-foreground/60 cursor-not-allowed"
+                                    : "hover:bg-secondary"
+                                }`}
                               >
-                                {done ? (
+                                {chapLocked ? (
+                                  <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
+                                ) : done ? (
                                   <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                                 ) : (
                                   <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
                                 )}
-                                <span className="flex-1 text-foreground">
+                                <span className={`flex-1 ${chapLocked ? "text-muted-foreground/80" : "text-foreground"}`}>
                                   {chap.titre}
                                 </span>
                                 {chapDraft && isCeo && (

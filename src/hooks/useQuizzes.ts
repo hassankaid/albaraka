@@ -17,6 +17,7 @@ export interface Quiz {
   id: string;
   module_id: string | null;
   formation_id: string | null;
+  chapitre_id: string | null;
   titre: string;
   description: string;
   max_errors: number;
@@ -27,6 +28,7 @@ export interface Quiz {
 export type QuizAttachment =
   | { kind: "training" }
   | { kind: "module"; module_id: string }
+  | { kind: "chapitre"; chapitre_id: string }
   | { kind: "formation_final"; formation_id: string };
 
 export interface QuizAttempt {
@@ -117,6 +119,7 @@ export function useTrainingQuizzes() {
         .select("*")
         .is("module_id", null)
         .is("formation_id", null)
+        .is("chapitre_id", null)
         .eq("status", "published")
         .order("titre", { ascending: true });
       if (error) throw error;
@@ -187,6 +190,63 @@ export function useQuizByFormation(formationId: string | null) {
       return { ...data, questions: questions || [] };
     },
     enabled: !!formationId,
+  });
+}
+
+/**
+ * Récupère le quiz attaché à un chapitre précis (chapitre_id set).
+ * Utilisé par ChapterViewer pour afficher le quiz de bloc sous la vidéo.
+ */
+export function useQuizByChapitre(chapitreId: string | null) {
+  return useQuery({
+    queryKey: ["quiz", "by-chapitre", chapitreId],
+    queryFn: async (): Promise<Quiz | null> => {
+      if (!chapitreId) return null;
+      const { data, error } = await (supabase as any)
+        .from("quizzes")
+        .select("*")
+        .eq("chapitre_id", chapitreId)
+        .eq("status", "published")
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      const { data: questions, error: qErr } = await (supabase as any)
+        .from("quiz_questions")
+        .select("*")
+        .eq("quiz_id", data.id)
+        .order("ordre");
+      if (qErr) throw qErr;
+      return { ...data, questions: questions || [] };
+    },
+    enabled: !!chapitreId,
+  });
+}
+
+/**
+ * Liste les chapitres verrouillés pour un utilisateur dans une formation donnée.
+ * Gate universelle : un chapitre est verrouillé s'il existe un quiz en amont
+ * (attaché chapitre ou module) non validé par l'utilisateur, ET que l'utilisateur
+ * n'a pas encore démarré ce chapitre (grandfathering).
+ */
+export interface LockedChapitre {
+  chapitre_id: string;
+  blocker_quiz_id: string;
+  blocker_quiz_titre: string;
+}
+
+export function useLockedChapitres(formationId: string | null) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["training", "locked-chapitres", formationId, user?.id],
+    enabled: !!formationId && !!user?.id,
+    queryFn: async (): Promise<LockedChapitre[]> => {
+      const { data, error } = await (supabase as any).rpc("get_locked_chapitres", {
+        p_user_id: user!.id,
+        p_formation_id: formationId!,
+      });
+      if (error) throw error;
+      return (data ?? []) as LockedChapitre[];
+    },
   });
 }
 

@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuizWithQuestions, useCreateQuizAttempt } from "@/hooks/useQuizzes";
 import { autoCompleteParcoursFormationChapter } from "@/lib/parcoursAutoComplete";
+import { isFormationCompleteForUser } from "@/lib/certificateEligibility";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -119,6 +121,36 @@ export default function QuizPage() {
             }
           } catch {
             // silencieux : l'utilisateur a validé son quiz, c'est le principal
+          }
+        }
+
+        // Si quiz attaché à un chapitre validé : débloquer le chapitre suivant (UI)
+        // + déclencher auto-complétion de la formation si c'est le dernier verrou.
+        if (validated && (quiz as any).chapitre_id && user?.id) {
+          // Récupérer la formation_id depuis le chapitre
+          const { data: chap } = await (supabase as any)
+            .from("formation_chapitres")
+            .select("formation_modules!inner(formation_id)")
+            .eq("id", (quiz as any).chapitre_id)
+            .maybeSingle();
+          const formationId = (chap as any)?.formation_modules?.formation_id;
+
+          // Invalide la gate pour rafraîchir les lock icons dans la sidebar
+          queryClient.invalidateQueries({ queryKey: ["training", "locked-chapitres"] });
+
+          if (formationId) {
+            try {
+              const eligible = await isFormationCompleteForUser(user.id, formationId);
+              if (eligible) {
+                const res = await autoCompleteParcoursFormationChapter(user.id, formationId);
+                if (res.completed > 0) {
+                  queryClient.invalidateQueries({ queryKey: ["parcours-progress"] });
+                  toast.success("Formation terminée — étape du parcours débloquée 🎉");
+                }
+              }
+            } catch {
+              // silencieux
+            }
           }
         }
       } catch (err: any) {

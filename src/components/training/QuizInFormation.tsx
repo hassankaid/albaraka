@@ -11,7 +11,12 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useQuizByModule, useQuizByFormation, useLatestQuizAttempt } from "@/hooks/useQuizzes";
+import {
+  useQuizByModule,
+  useQuizByFormation,
+  useQuizByChapitre,
+  useLatestQuizAttempt,
+} from "@/hooks/useQuizzes";
 
 /**
  * Card quiz de module — affiché en bas de chaque module dans FormationDetail.
@@ -106,6 +111,121 @@ export function ModuleQuizCard({
         </Button>
       </div>
     </div>
+  );
+}
+
+/**
+ * Card quiz de chapitre — affiché dans ChapterViewer sous la vidéo
+ * quand un quiz est attaché au chapitre courant.
+ * Tant que le quiz n'est pas validé, le chapitre suivant reste verrouillé.
+ */
+export function ChapterQuizCard({
+  chapitreId,
+  videosCompleted,
+}: {
+  chapitreId: string;
+  /** true si toutes les vidéos du chapitre sont vues (ou s'il n'y en a pas) */
+  videosCompleted: boolean;
+}) {
+  const navigate = useNavigate();
+  const { data: quiz, isLoading } = useQuizByChapitre(chapitreId);
+  const { data: lastAttempt } = useLatestQuizAttempt(quiz?.id ?? null);
+
+  if (isLoading || !quiz) return null;
+
+  const validated = !!lastAttempt?.validated;
+  const hasAttempted = !!lastAttempt;
+
+  return (
+    <Card
+      className={cn(
+        "border-2 transition-colors",
+        validated
+          ? "border-emerald-500/50 bg-emerald-500/5"
+          : !videosCompleted
+            ? "border-border bg-muted/30"
+            : "border-primary/50 bg-gradient-to-br from-primary/10 via-card to-card"
+      )}
+    >
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <div className="shrink-0">
+            {validated ? (
+              <div className="p-2 rounded-full bg-emerald-500/15">
+                <Trophy className="h-5 w-5 text-emerald-500" />
+              </div>
+            ) : !videosCompleted ? (
+              <div className="p-2 rounded-full bg-muted">
+                <Lock className="h-5 w-5 text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="p-2 rounded-full bg-primary/15">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" className="text-[10px] tracking-wider uppercase">
+                Quiz de bloc
+              </Badge>
+              {validated && (
+                <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white border-0 text-[10px]">
+                  ✅ Validé
+                </Badge>
+              )}
+              {!validated && hasAttempted && (
+                <Badge variant="secondary" className="text-[10px]">
+                  {lastAttempt.errors_count} erreur{lastAttempt.errors_count !== 1 ? "s" : ""} au dernier essai
+                </Badge>
+              )}
+            </div>
+            <h3 className="font-heading text-base sm:text-lg text-foreground mt-1.5">
+              {quiz.titre}
+            </h3>
+            {!videosCompleted && !validated ? (
+              <p className="text-xs text-muted-foreground mt-1">
+                Termine toutes les vidéos du chapitre pour débloquer le quiz.
+              </p>
+            ) : !validated ? (
+              <p className="text-xs text-muted-foreground mt-1">
+                Valide ce quiz (100 % de bonnes réponses) pour débloquer le chapitre suivant.
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1">
+                Bravo ! Le chapitre suivant est débloqué.
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <Button
+            onClick={() => navigate(`/training/quiz/${quiz.id}`)}
+            disabled={!videosCompleted && !validated}
+            variant={validated ? "outline" : "default"}
+            className="gap-2"
+            size="sm"
+          >
+            {validated ? (
+              <>
+                <RotateCcw className="h-4 w-4" />
+                Refaire
+              </>
+            ) : hasAttempted ? (
+              <>
+                <RotateCcw className="h-4 w-4" />
+                Recommencer
+              </>
+            ) : (
+              <>
+                <PlayCircle className="h-4 w-4" />
+                Commencer le quiz
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

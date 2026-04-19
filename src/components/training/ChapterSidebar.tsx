@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle, PlayCircle, EyeOff } from "lucide-react";
+import { CheckCircle2, Circle, PlayCircle, EyeOff, Lock } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useLockedChapitres } from "@/hooks/useQuizzes";
 
 interface ChapterSidebarProps {
   formationSlug: string;
@@ -31,6 +32,9 @@ export function ChapterSidebar({
   const navigate = useNavigate();
   const { profile } = useAuth();
   const userId = profile?.id;
+
+  const { data: lockedData } = useLockedChapitres(formationId);
+  const lockedSet = new Set((lockedData ?? []).map((l) => l.chapitre_id));
 
   const { data, isLoading } = useQuery({
     queryKey: ["training", "sidebar", formationId, userId],
@@ -141,20 +145,28 @@ export function ChapterSidebar({
                       const done = data.completedSet.has(chap.id);
                       const isActive = chap.id === currentChapitreId;
                       const chapDraft = chap.status === "draft";
+                      const isLocked = !isCeo && lockedSet.has(chap.id) && !isActive;
                       return (
                         <button
                           key={chap.id}
                           onClick={() => {
+                            if (isLocked) return;
                             navigate(`/training/${formationSlug}/chapitre/${chap.id}`);
                             onNavigate?.();
                           }}
+                          disabled={isLocked}
+                          title={isLocked ? "Valide le quiz du bloc précédent pour débloquer" : undefined}
                           className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-xs transition-colors ${
                             isActive
                               ? "bg-primary/10 text-primary font-medium"
-                              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                              : isLocked
+                                ? "text-muted-foreground/60 cursor-not-allowed"
+                                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                           }`}
                         >
-                          {done ? (
+                          {isLocked ? (
+                            <Lock className="h-3.5 w-3.5 shrink-0" />
+                          ) : done ? (
                             <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
                           ) : isActive ? (
                             <PlayCircle className="h-3.5 w-3.5 text-primary shrink-0" />

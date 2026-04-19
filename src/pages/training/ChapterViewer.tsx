@@ -27,6 +27,9 @@ import {
 import { toast } from "sonner";
 import { isFormationCompleteForUser } from "@/lib/certificateEligibility";
 import { autoCompleteParcoursFormationChapter } from "@/lib/parcoursAutoComplete";
+import { ChapterQuizCard } from "@/components/training/QuizInFormation";
+import { useLockedChapitres } from "@/hooks/useQuizzes";
+import { Lock } from "lucide-react";
 
 interface ChapitreVideo {
   id: string;
@@ -95,6 +98,10 @@ export default function ChapterViewer() {
       };
     },
   });
+
+  // ── Liste des chapitres verrouillés dans cette formation ──────
+  const formationIdForGate = (chapterData as any)?.formation?.id ?? null;
+  const { data: lockedData } = useLockedChapitres(formationIdForGate);
 
   // ── Load navigation prev/next via RPC ───────────────────────
   const { data: navData } = useQuery({
@@ -328,9 +335,16 @@ export default function ChapterViewer() {
   const videosCompleted = videoProgressMap
     ? videos.filter((v) => videoProgressMap.get(v.id)?.completed).length
     : 0;
+  const allVideosWatched = !hasVideos || videosCompleted === videos.length;
   const chapterRessources = ressources.filter((r) => !r.video_id);
   const getVideoRessources = (videoId: string) =>
     ressources.filter((r) => r.video_id === videoId);
+
+  // Gate : est-ce que le prochain chapitre est verrouillé par un quiz non validé ?
+  const nextChapitreId = (navData as any)?.next_chapitre_id as string | undefined;
+  const isNextLocked = !isCeo && !!nextChapitreId && !!(lockedData ?? []).find(
+    (l: any) => l.chapitre_id === nextChapitreId
+  );
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
@@ -539,19 +553,28 @@ export default function ChapterViewer() {
             <Button
               variant="outline"
               size="sm"
-              disabled={!navData?.next_chapitre_id}
+              disabled={!navData?.next_chapitre_id || isNextLocked}
               onClick={() =>
                 navData?.next_chapitre_id &&
+                !isNextLocked &&
                 navigate(
                   `/training/${formation.slug}/chapitre/${navData.next_chapitre_id}`
                 )
               }
               className="gap-2"
+              title={isNextLocked ? "Valide le quiz de ce chapitre pour débloquer" : undefined}
             >
+              {isNextLocked ? <Lock className="h-4 w-4" /> : null}
               Suivant
               <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
+
+          {/* Quiz de chapitre (si attaché) */}
+          <ChapterQuizCard
+            chapitreId={chapitre.id}
+            videosCompleted={allVideosWatched}
+          />
 
           {/* Notes formateur (synthèse chapitre) */}
           {chapitre.notes_formateur && (
