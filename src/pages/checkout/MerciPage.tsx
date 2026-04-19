@@ -35,7 +35,9 @@ const STEPS = [
 
 export default function MerciPage() {
   const [searchParams] = useSearchParams();
-  const sessionId = searchParams.get("session_id");
+  // Stripe Payment Element redirect adds ?payment_intent=pi_xxx...
+  // Legacy Checkout Session flow used ?session_id=cs_xxx...
+  const ref = searchParams.get("payment_intent") || searchParams.get("session_id");
 
   return (
     <div
@@ -290,7 +292,7 @@ export default function MerciPage() {
           Qu'Allah facilite ton parcours, inshaAllah.
         </div>
 
-        {sessionId && (
+        {ref && (
           <div
             style={{
               textAlign: "center",
@@ -300,7 +302,7 @@ export default function MerciPage() {
               fontFamily: "monospace",
             }}
           >
-            Réf. {sessionId.slice(-12)}
+            Réf. {ref.slice(-12)}
           </div>
         )}
 

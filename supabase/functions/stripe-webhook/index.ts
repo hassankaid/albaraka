@@ -8,32 +8,8 @@ const corsHeaders = {
 
 const STRIPE_WEBHOOK_SECRET_LIVE = Deno.env.get("STRIPE_WEBHOOK_SECRET");
 const STRIPE_WEBHOOK_SECRET_TEST = Deno.env.get("STRIPE_WEBHOOK_SECRET_TEST");
-const STRIPE_SECRET_KEY_LIVE = Deno.env.get("STRIPE_SECRET_KEY");
-const STRIPE_SECRET_KEY_TEST = Deno.env.get("STRIPE_SECRET_KEY_TEST");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-async function stripePatch(
-  apiKey: string,
-  path: string,
-  params: Record<string, string | number>,
-): Promise<unknown> {
-  const body = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) body.append(k, String(v));
-  const res = await fetch(`https://api.stripe.com/v1${path}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: body.toString(),
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Stripe ${path} ${res.status}: ${err}`);
-  }
-  return await res.json();
-}
 
 async function verifyStripeSignature(
   payload: string,
@@ -84,46 +60,70 @@ function extractId(field: unknown): string | null {
   return null;
 }
 
-async function handleCheckoutCompleted(
+interface BonCommandeIds {
+  paymentIntentId?: string | null;
+  subscriptionId?: string | null;
+  invoiceId?: string | null;
+}
+
+/**
+ * Idempotent creation of profile + contact + sale + N payments from a
+ * bon_commande PaymentIntent or Subscription invoice. Reads all customer
+ * info from metadata (set when creating the PaymentIntent/Subscription).
+ *
+ * If a sale already exists for the given stripe IDs, this is a no-op.
+ * Otherwise it creates everything and invokes the access email.
+ *
+ * The first payment is marked "paid" with paid_at=today and the given PI/invoice.
+ */
+async function ensureBonCommandeOrder(
   supabase: SupabaseClient,
-  session: Record<string, unknown>,
+  metadata: Record<string, string>,
+  ids: BonCommandeIds,
 ): Promise<void> {
-  const metadata = (session.metadata as Record<string, string>) || {};
-  if (metadata.source !== "bon_commande") {
-    console.log(`[checkout] session ${session.id} is not a bon_commande, skipping`);
+  if (metadata.source !== "bon_commande") return;
+
+  const email = String(metadata.customer_email || "").trim().toLowerCase();
+  const fullName = String(metadata.customer_full_name || "").trim();
+  if (!email || !fullName) {
+    console.error("[bon_commande] missing email/fullName in metadata", metadata);
     return;
   }
 
-  const sessionId = String(session.id);
+  const installments = Math.max(1, Math.min(8, Number(metadata.installments) || 1));
+  const discountPercent = Number(metadata.discount_percent) || 0;
+  const couponCode = metadata.coupon_code || null;
 
-  // Idempotency: skip if sale already exists
-  const { data: existingSale } = await supabase
-    .from("sales")
-    .select("id")
-    .eq("stripe_session_id", sessionId)
-    .maybeSingle();
+  // Idempotency: look up sale by any of the stripe ids
+  let existingSale: { id: string } | null = null;
+  if (ids.paymentIntentId) {
+    const { data } = await supabase
+      .from("payments")
+      .select("sale_id")
+      .eq("stripe_payment_intent_id", ids.paymentIntentId)
+      .limit(1);
+    if (data && data.length > 0) existingSale = { id: data[0].sale_id };
+  }
+  if (!existingSale && ids.subscriptionId) {
+    const { data } = await supabase
+      .from("payments")
+      .select("sale_id")
+      .eq("stripe_subscription_id", ids.subscriptionId)
+      .limit(1);
+    if (data && data.length > 0) existingSale = { id: data[0].sale_id };
+  }
+
   if (existingSale) {
-    console.log(`[checkout] sale already exists for session ${sessionId}`);
+    // Already created by a previous event, just ensure first payment is paid.
+    await markFirstPaymentPaid(supabase, existingSale.id, ids);
     return;
   }
 
-  const details = (session.customer_details as Record<string, unknown>) || {};
-  const address = (details.address as Record<string, unknown>) || {};
-  const email = String(details.email || session.customer_email || "").toLowerCase().trim();
-  const fullName = String(details.name || "").trim();
-  const phone = String(details.phone || "").trim();
-
-  if (!email) {
-    console.error(`[checkout] no email on session ${sessionId}`);
-    return;
-  }
-
-  // ---- Profile (auth user) ----
+  // Find or create profile
   let profileId: string | null = null;
-
   const { data: existingProfile } = await supabase
     .from("profiles")
-    .select("id, origin, onboarding_completed")
+    .select("id, origin")
     .eq("email", email)
     .maybeSingle();
 
@@ -139,44 +139,44 @@ async function handleCheckoutCompleted(
       user_metadata: { full_name: fullName },
     });
     if (createErr || !created?.user) {
-      console.error("[checkout] createUser failed:", createErr);
+      console.error("[bon_commande] createUser failed:", createErr);
       throw createErr ?? new Error("createUser returned no user");
     }
     profileId = created.user.id;
-
     await supabase
       .from("profiles")
       .update({
         full_name: fullName || email,
-        phone: phone || null,
-        address: (address.line1 as string) || null,
-        postal_code: (address.postal_code as string) || null,
-        city: (address.city as string) || null,
-        country: (address.country as string) || null,
+        phone: metadata.customer_phone || null,
+        address: metadata.customer_address || null,
+        postal_code: metadata.customer_postal_code || null,
+        city: metadata.customer_city || null,
+        country: metadata.customer_country || null,
         origin: "bon_commande",
       })
       .eq("id", profileId);
   }
 
-  // ---- Contact (upsert by email) ----
+  // Upsert contact
   const { data: contact, error: contactErr } = await supabase
     .from("contacts")
     .upsert(
-      { email, full_name: fullName || null, phone_original: phone || null },
+      {
+        email,
+        full_name: fullName || null,
+        phone_original: metadata.customer_phone || null,
+      },
       { onConflict: "email" },
     )
     .select("id")
     .single();
 
   if (contactErr || !contact) {
-    console.error("[checkout] contact upsert failed:", contactErr);
+    console.error("[bon_commande] contact upsert failed:", contactErr);
     throw contactErr ?? new Error("contact upsert failed");
   }
 
-  // ---- Sale ----
-  const installments = Math.max(1, Math.min(8, Number(metadata.installments) || 1));
-  const discountPercent = Number(metadata.discount_percent) || 0;
-  const couponCode = metadata.coupon_code || null;
+  // Sale
   const totalGross = 2500;
   const discountAmount = Math.round((totalGross * discountPercent) / 100 * 100) / 100;
   const totalNet = totalGross - discountAmount;
@@ -192,7 +192,7 @@ async function handleCheckoutCompleted(
       coupon_code: couponCode,
       mensualites: installments,
       sale_type: "bon_commande",
-      stripe_session_id: sessionId,
+      stripe_session_id: null,
       payment_status: "pending",
       sold_at: new Date().toISOString(),
     })
@@ -200,13 +200,10 @@ async function handleCheckoutCompleted(
     .single();
 
   if (saleErr || !sale) {
-    console.error("[checkout] sale insert failed:", saleErr);
+    console.error("[bon_commande] sale insert failed:", saleErr);
     throw saleErr ?? new Error("sale insert failed");
   }
 
-  // ---- Payments (N rows) ----
-  const subscriptionId = extractId(session.subscription);
-  const paymentIntentId = extractId(session.payment_intent);
   const perInstallment = Math.round((totalNet / installments) * 100) / 100;
   const today = new Date();
 
@@ -219,51 +216,21 @@ async function handleCheckoutCompleted(
     due_date: addMonthsISO(today, i),
     status: "pending" as const,
     payment_method: "stripe",
-    stripe_subscription_id: subscriptionId,
+    stripe_subscription_id: ids.subscriptionId || null,
   }));
 
   const { error: paymentsErr } = await supabase.from("payments").insert(rows);
   if (paymentsErr) {
-    console.error("[checkout] payments insert failed:", paymentsErr);
+    console.error("[bon_commande] payments insert failed:", paymentsErr);
     throw paymentsErr;
   }
 
-  if (installments === 1 && session.payment_status === "paid") {
-    await supabase
-      .from("payments")
-      .update({
-        status: "paid",
-        paid_at: todayISO(),
-        stripe_payment_intent_id: paymentIntentId,
-      })
-      .eq("sale_id", sale.id)
-      .eq("payment_number", 1);
-  }
+  await markFirstPaymentPaid(supabase, sale.id, ids);
 
-  // Subscription mode : on fixe cancel_at après création pour borner le nombre
-  // d'échéances. Stripe n'accepte plus ce paramètre à la création du checkout.
-  if (installments >= 2 && subscriptionId) {
-    const isLive = session.livemode === true;
-    const apiKey = isLive ? STRIPE_SECRET_KEY_LIVE : STRIPE_SECRET_KEY_TEST;
-    if (apiKey) {
-      const cancelDate = new Date();
-      cancelDate.setMonth(cancelDate.getMonth() + installments);
-      cancelDate.setDate(cancelDate.getDate() - 1);
-      const cancelAt = Math.floor(cancelDate.getTime() / 1000);
-      try {
-        await stripePatch(apiKey, `/subscriptions/${subscriptionId}`, { cancel_at: cancelAt });
-        console.log(`[checkout] subscription ${subscriptionId} cancel_at=${cancelAt} set`);
-      } catch (e) {
-        console.error(`[checkout] failed to set cancel_at on ${subscriptionId}:`, e);
-      }
-    } else {
-      console.error(`[checkout] no STRIPE_SECRET_KEY for livemode=${isLive}`);
-    }
-  }
+  console.log(
+    `[bon_commande] created profile=${profileId} sale=${sale.id} installments=${installments}`,
+  );
 
-  console.log(`[checkout] created profile=${profileId} sale=${sale.id} installments=${installments}`);
-
-  // ---- Send access email ----
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/send-apporteur-access-email`, {
       method: "POST",
@@ -275,49 +242,131 @@ async function handleCheckoutCompleted(
     });
     if (!res.ok) {
       const text = await res.text();
-      console.error(`[checkout] access-email failed ${res.status}: ${text}`);
+      console.error(`[bon_commande] access-email failed ${res.status}: ${text}`);
     } else {
-      console.log(`[checkout] access-email sent to profile=${profileId}`);
+      console.log(`[bon_commande] access-email sent to profile=${profileId}`);
     }
   } catch (e) {
-    console.error("[checkout] failed to invoke access-email:", e);
+    console.error("[bon_commande] failed to invoke access-email:", e);
   }
 }
 
-async function handleInvoicePaid(
+async function markFirstPaymentPaid(
   supabase: SupabaseClient,
-  obj: Record<string, unknown>,
+  saleId: string,
+  ids: BonCommandeIds,
 ): Promise<void> {
-  const metadata = (obj.metadata as Record<string, string>) || {};
+  const patch: Record<string, unknown> = {
+    status: "paid",
+    paid_at: todayISO(),
+  };
+  if (ids.paymentIntentId) patch.stripe_payment_intent_id = ids.paymentIntentId;
+  if (ids.invoiceId) patch.stripe_invoice_id = ids.invoiceId;
 
+  await supabase
+    .from("payments")
+    .update(patch)
+    .eq("sale_id", saleId)
+    .eq("payment_number", 1)
+    .eq("status", "pending");
+}
+
+/**
+ * checkout.session.completed — legacy flow (Stripe Checkout hosted).
+ * Inlined minimal version: delegates to ensureBonCommandeOrder when applicable.
+ */
+async function handleCheckoutCompleted(
+  supabase: SupabaseClient,
+  session: Record<string, unknown>,
+): Promise<void> {
+  const metadata = (session.metadata as Record<string, string>) || {};
+  if (metadata.source !== "bon_commande") return;
+
+  const details = (session.customer_details as Record<string, unknown>) || {};
+  const address = (details.address as Record<string, unknown>) || {};
+
+  // Merge customer_details into metadata (legacy sessions didn't have them)
+  const enriched: Record<string, string> = {
+    ...metadata,
+    customer_email:
+      metadata.customer_email ||
+      String(details.email || session.customer_email || "").toLowerCase(),
+    customer_full_name: metadata.customer_full_name || String(details.name || ""),
+    customer_phone: metadata.customer_phone || String(details.phone || ""),
+    customer_address: metadata.customer_address || String((address.line1 as string) || ""),
+    customer_postal_code:
+      metadata.customer_postal_code || String((address.postal_code as string) || ""),
+    customer_city: metadata.customer_city || String((address.city as string) || ""),
+    customer_country: metadata.customer_country || String((address.country as string) || ""),
+  };
+
+  const ids: BonCommandeIds = {
+    paymentIntentId: extractId(session.payment_intent),
+    subscriptionId: extractId(session.subscription),
+  };
+
+  await ensureBonCommandeOrder(supabase, enriched, ids);
+}
+
+async function handlePaymentIntentSucceeded(
+  supabase: SupabaseClient,
+  pi: Record<string, unknown>,
+): Promise<void> {
+  const metadata = (pi.metadata as Record<string, string>) || {};
+
+  // Legacy path (systeme.io)
   if (metadata.payment_id) {
     await supabase
       .from("payments")
       .update({ status: "paid", paid_at: todayISO() })
       .eq("id", metadata.payment_id);
-    console.log(`[invoice.paid] legacy metadata payment ${metadata.payment_id}`);
+    console.log(`[payment_intent.succeeded] legacy payment ${metadata.payment_id}`);
     return;
   }
 
-  const subscriptionId = extractId(obj.subscription);
-  const invoiceId = typeof obj.id === "string" ? obj.id : null;
-  const paymentIntentId = extractId(obj.payment_intent);
+  if (metadata.source !== "bon_commande") return;
 
-  if (!subscriptionId || !invoiceId) {
-    console.log(`[invoice.paid] no subscription/invoice id, skipping`);
+  const piId = typeof pi.id === "string" ? pi.id : null;
+  const subscriptionId = metadata.stripe_subscription_id || null;
+  const invoiceId = typeof pi.invoice === "string" ? pi.invoice : extractId(pi.invoice);
+
+  await ensureBonCommandeOrder(supabase, metadata, {
+    paymentIntentId: piId,
+    subscriptionId,
+    invoiceId,
+  });
+}
+
+async function handleInvoicePaid(
+  supabase: SupabaseClient,
+  invoice: Record<string, unknown>,
+): Promise<void> {
+  const metadata = (invoice.metadata as Record<string, string>) || {};
+
+  // Legacy systeme.io path
+  if (metadata.payment_id) {
+    await supabase
+      .from("payments")
+      .update({ status: "paid", paid_at: todayISO() })
+      .eq("id", metadata.payment_id);
     return;
   }
 
+  const subscriptionId = extractId(invoice.subscription);
+  const invoiceId = typeof invoice.id === "string" ? invoice.id : null;
+  const paymentIntentId = extractId(invoice.payment_intent);
+
+  if (!subscriptionId || !invoiceId) return;
+
+  // Idempotency: if this invoice is already recorded, skip
   const { data: already } = await supabase
     .from("payments")
     .select("id")
     .eq("stripe_invoice_id", invoiceId)
     .maybeSingle();
-  if (already) {
-    console.log(`[invoice.paid] invoice ${invoiceId} already recorded`);
-    return;
-  }
+  if (already) return;
 
+  // Find oldest pending payment for this subscription
   const { data: pendings } = await supabase
     .from("payments")
     .select("id, payment_number")
@@ -328,7 +377,9 @@ async function handleInvoicePaid(
 
   const target = pendings?.[0];
   if (!target) {
-    console.log(`[invoice.paid] no pending payment for subscription ${subscriptionId}`);
+    // Probably the sale hasn't been created yet (payment_intent.succeeded
+    // hasn't fired). It will handle it.
+    console.log(`[invoice.paid] no pending payment yet for subscription ${subscriptionId}`);
     return;
   }
 
@@ -351,10 +402,7 @@ async function handleInvoiceFailed(
 ): Promise<void> {
   const metadata = (obj.metadata as Record<string, string>) || {};
   if (metadata.payment_id) {
-    await supabase
-      .from("payments")
-      .update({ status: "late" })
-      .eq("id", metadata.payment_id);
+    await supabase.from("payments").update({ status: "late" }).eq("id", metadata.payment_id);
     return;
   }
 
@@ -420,9 +468,12 @@ Deno.serve(async (req) => {
           await handleCheckoutCompleted(supabase, event.data.object);
           break;
 
+        case "payment_intent.succeeded":
+          await handlePaymentIntentSucceeded(supabase, event.data.object);
+          break;
+
         case "invoice.paid":
         case "invoice.payment_succeeded":
-        case "payment_intent.succeeded":
           await handleInvoicePaid(supabase, event.data.object);
           break;
 
