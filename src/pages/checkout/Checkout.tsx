@@ -7,7 +7,12 @@ import {
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
-import PhoneInput, { isValidPhoneNumber, getCountries } from "react-phone-number-input";
+import PhoneInput, {
+  isValidPhoneNumber,
+  getCountries,
+  getCountryCallingCode,
+} from "react-phone-number-input";
+import type { Country } from "react-phone-number-input";
 import flags from "react-phone-number-input/flags";
 import "react-phone-number-input/style.css";
 import { supabase } from "@/integrations/supabase/client";
@@ -217,6 +222,217 @@ function CountrySearchSelect({ value, onChange }: CountrySelectProps) {
                     <span style={{ marginLeft: "auto", color: "rgba(245,241,230,0.4)", fontSize: 11 }}>
                       {iso}
                     </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface PhoneCountrySelectProps {
+  value?: Country;
+  onChange: (value?: Country) => void;
+  options: Array<{ value?: Country; label: string; divider?: boolean }>;
+  iconComponent: React.ComponentType<{
+    country: Country;
+    label: string;
+    aspectRatio?: number;
+  }>;
+  disabled?: boolean;
+  readOnly?: boolean;
+}
+
+function PhoneCountrySelect({
+  value,
+  onChange,
+  options,
+  iconComponent: Icon,
+  disabled,
+  readOnly,
+}: PhoneCountrySelectProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    } else {
+      setQuery("");
+    }
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    const list = options.filter((o) => !o.divider && o.value);
+    if (!query.trim()) return list;
+    const q = query.trim().toLowerCase();
+    return list.filter((o) => {
+      const name = countryName(o.value as string);
+      let dial = "";
+      try {
+        dial = getCountryCallingCode(o.value as Country);
+      } catch {
+        dial = "";
+      }
+      return (
+        name.toLowerCase().includes(q) ||
+        (o.value as string).toLowerCase().includes(q) ||
+        dial.includes(q.replace(/\+/g, ""))
+      );
+    });
+  }, [query, options]);
+
+  const currentDial = useMemo(() => {
+    if (!value) return "";
+    try {
+      return getCountryCallingCode(value);
+    } catch {
+      return "";
+    }
+  }, [value]);
+
+  return (
+    <div ref={wrapperRef} style={{ position: "relative" }}>
+      <button
+        type="button"
+        disabled={disabled || readOnly}
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          background: "transparent",
+          border: "none",
+          color: "#F5F1E6",
+          padding: "4px 8px 4px 0",
+          cursor: disabled || readOnly ? "not-allowed" : "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          fontSize: 14,
+          fontFamily: "inherit",
+          minHeight: 36,
+        }}
+      >
+        {value ? (
+          <span style={{ width: 22, height: 16, display: "inline-block" }}>
+            <Icon country={value} label={countryName(value)} />
+          </span>
+        ) : (
+          <span style={{ fontSize: 12, color: "rgba(245,241,230,0.5)" }}>🌐</span>
+        )}
+        <span style={{ fontSize: 13, color: "#C9A04E", letterSpacing: 0.3 }}>
+          +{currentDial}
+        </span>
+        <svg width="8" height="5" viewBox="0 0 10 6" style={{ opacity: 0.6, marginLeft: 2 }}>
+          <path
+            d="M1 1L5 5L9 1"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+          />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 6px)",
+            left: 0,
+            minWidth: 300,
+            background: "#0A0A0A",
+            border: `0.5px solid rgba(201,160,78,0.4)`,
+            borderRadius: 6,
+            zIndex: 20,
+            maxHeight: 280,
+            display: "flex",
+            flexDirection: "column",
+            boxShadow: "0 10px 32px rgba(0,0,0,0.5)",
+          }}
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Rechercher un pays…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "none",
+              borderBottom: `0.5px solid rgba(201,160,78,0.2)`,
+              color: "#F5F1E6",
+              padding: "12px 14px",
+              fontSize: 13,
+              fontFamily: "inherit",
+              outline: "none",
+              width: "100%",
+              boxSizing: "border-box",
+            }}
+          />
+          <div style={{ overflowY: "auto", maxHeight: 220 }}>
+            {filtered.length === 0 ? (
+              <div style={{ padding: "14px 16px", fontSize: 13, color: "rgba(245,241,230,0.5)" }}>
+                Aucun résultat
+              </div>
+            ) : (
+              filtered.map((o) => {
+                const iso = o.value as Country;
+                const selected = iso === value;
+                let dial = "";
+                try {
+                  dial = getCountryCallingCode(iso);
+                } catch {
+                  dial = "";
+                }
+                return (
+                  <button
+                    key={iso}
+                    type="button"
+                    onClick={() => {
+                      onChange(iso);
+                      setOpen(false);
+                    }}
+                    style={{
+                      width: "100%",
+                      background: selected ? "rgba(201,160,78,0.12)" : "transparent",
+                      border: "none",
+                      color: "#F5F1E6",
+                      padding: "10px 14px",
+                      fontSize: 13,
+                      fontFamily: "inherit",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!selected) e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!selected) e.currentTarget.style.background = "transparent";
+                    }}
+                  >
+                    <span style={{ width: 22, height: 16, display: "inline-block", flexShrink: 0 }}>
+                      <Icon country={iso} label={countryName(iso)} />
+                    </span>
+                    <span style={{ flex: 1 }}>{countryName(iso)}</span>
+                    <span style={{ color: "#C9A04E", fontSize: 12 }}>+{dial}</span>
                   </button>
                 );
               })
@@ -550,59 +766,54 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
         .alb-checkout input:focus { outline: none; border-color: ${BRAND.gold}; background: rgba(255,255,255,0.05); }
         .alb-checkout input[type="checkbox"] { accent-color: ${BRAND.gold}; width: auto; padding: 0; }
         /* react-phone-number-input overrides pour le thème noir/or */
-        .alb-phone-wrapper .PhoneInput {
+        .alb-phone-wrapper .PhoneInput,
+        .alb-phone-wrapper .PhoneInput--focus {
           display: flex;
-          align-items: center;
-          gap: 8px;
+          align-items: stretch;
+          gap: 4px;
           background: rgba(255,255,255,0.03);
           border: 0.5px solid ${BRAND.goldSoft};
           border-radius: 6px;
-          padding: 6px 10px 6px 12px;
-          transition: border-color 0.2s;
+          padding: 0 12px 0 10px;
+          transition: border-color 0.2s, background 0.2s;
+          box-shadow: none !important;
+          outline: none !important;
         }
-        .alb-phone-wrapper .PhoneInput--focus,
         .alb-phone-wrapper .PhoneInput:focus-within {
           border-color: ${BRAND.gold};
           background: rgba(255,255,255,0.05);
         }
+        .alb-phone-wrapper .PhoneInput > * {
+          box-shadow: none !important;
+        }
         .alb-phone-wrapper .PhoneInputCountry {
           display: flex;
           align-items: center;
-          gap: 6px;
+          border-right: 0.5px solid rgba(201,160,78,0.15);
+          padding-right: 8px;
+          margin-right: 4px;
         }
-        .alb-phone-wrapper .PhoneInputCountryIcon {
-          width: 24px;
-          height: 18px;
-          background: transparent;
-          box-shadow: none;
-        }
-        .alb-phone-wrapper .PhoneInputCountrySelect {
-          background: transparent;
-          color: ${BRAND.cream};
-          border: none;
-          cursor: pointer;
-          opacity: 0;
-          position: absolute;
-          inset: 0;
-          width: auto;
-        }
-        .alb-phone-wrapper .PhoneInputCountrySelectArrow {
-          border-style: solid;
-          border-color: ${BRAND.gold};
-          opacity: 0.8;
-        }
-        .alb-phone-wrapper .PhoneInputInput {
-          background: transparent;
-          border: none;
-          color: ${BRAND.cream};
+        .alb-phone-wrapper .PhoneInputInput,
+        .alb-phone-wrapper input.PhoneInputInput {
+          background: transparent !important;
+          border: none !important;
+          color: ${BRAND.cream} !important;
           font-size: 14px;
           font-family: inherit;
-          padding: 8px 4px;
+          padding: 13px 4px !important;
           width: 100%;
-          outline: none;
+          outline: none !important;
+          box-shadow: none !important;
+          border-radius: 0 !important;
+          min-width: 0;
+          flex: 1;
         }
         .alb-phone-wrapper .PhoneInputInput::placeholder {
           color: rgba(245,241,230,0.35);
+        }
+        .alb-phone-wrapper .PhoneInputInput:focus {
+          background: transparent !important;
+          border-color: transparent !important;
         }
         .alb-btn {
           width: 100%;
@@ -868,6 +1079,7 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
             onChange={(v) => onField("phone", v || "")}
             countryCallingCodeEditable={false}
             flags={flags}
+            countrySelectComponent={PhoneCountrySelect}
           />
         </div>
         <div style={{ marginBottom: 10 }}>
@@ -907,7 +1119,21 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
         <h2 style={{ fontSize: 11, fontWeight: 500, margin: "0 0 16px 0", letterSpacing: 3, color: BRAND.gold }}>
           INFORMATIONS DE PAIEMENT
         </h2>
-        <PaymentElement options={{ layout: "tabs" }} />
+        <PaymentElement
+          options={{
+            layout: "tabs",
+            wallets: { applePay: "never", googlePay: "never" },
+            terms: {
+              card: "never",
+              sepaDebit: "never",
+              ideal: "never",
+              bancontact: "never",
+              sofort: "never",
+              auBecsDebit: "never",
+              usBankAccount: "never",
+            },
+          }}
+        />
       </div>
 
       <div

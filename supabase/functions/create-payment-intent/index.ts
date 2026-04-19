@@ -55,6 +55,27 @@ async function stripeFetch<T = unknown>(
   return (await res.json()) as T;
 }
 
+const PRODUCT_ID = "pass_al_baraka";
+
+async function ensureStripeProduct(apiKey: string): Promise<string> {
+  try {
+    const existing = await stripeFetch<{ id: string; active: boolean }>(
+      apiKey,
+      `/products/${PRODUCT_ID}`,
+      {},
+      "GET",
+    );
+    if (existing?.id) return existing.id;
+  } catch {
+    // not found, create below
+  }
+  const created = await stripeFetch<{ id: string }>(apiKey, "/products", {
+    id: PRODUCT_ID,
+    name: PRODUCT_NAME,
+  });
+  return created.id;
+}
+
 async function ensureStripeCoupon(
   apiKey: string,
   supabase: ReturnType<typeof createClient>,
@@ -244,12 +265,14 @@ Deno.serve(async (req) => {
     cancelDate.setDate(cancelDate.getDate() - 1);
     const cancelAt = Math.floor(cancelDate.getTime() / 1000);
 
+    const productId = await ensureStripeProduct(apiKey);
+
     const subParams: Record<string, unknown> = {
       customer: customerId,
       "items[0][price_data][currency]": "eur",
       "items[0][price_data][unit_amount]": monthlyCents,
       "items[0][price_data][recurring][interval]": "month",
-      "items[0][price_data][product_data][name]": `${PRODUCT_NAME} — Paiement en ${installments}x`,
+      "items[0][price_data][product]": productId,
       payment_behavior: "default_incomplete",
       "payment_settings[save_default_payment_method]": "on_subscription",
       cancel_at: cancelAt,
