@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
 import {
   Loader2,
   Euro,
@@ -28,6 +29,11 @@ import {
   Calendar as CalendarIcon,
   Phone,
   ShoppingBag,
+  Mail,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  CheckCheck,
 } from "lucide-react";
 import { parisSundayNoonWeekRange } from "@/lib/marketing/weekRange";
 import {
@@ -690,6 +696,8 @@ function TagDashboardCard({
 }
 
 // ─── Drill-down Dialog ───────────────────────────────────────────────
+const PAGE_SIZE = 25;
+
 function DrillDownDialog({
   open,
   onClose,
@@ -701,101 +709,300 @@ function DrillDownDialog({
   drill: DrillState;
   data: MarketingDashboardData;
 }) {
-  const filtered = useMemo(() => {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+
+  // Reset search + page quand le drill change
+  const drillKey = `${drill.mode}__${drill.title}`;
+  useMemo(() => {
+    setSearch("");
+    setPage(0);
+  }, [drillKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const context = useMemo(() => {
     const leadIds = drill.leadIds;
-    const leads = leadIds
+    const keepLead = (id: string | null) =>
+      !!id && (leadIds ? leadIds.has(id) : true);
+    const leadsInScope = leadIds
       ? data.rawLeads.filter((l) => leadIds.has(l.id))
       : data.rawLeads;
-    const keepLead = (id: string) => (leadIds ? leadIds.has(id) : true);
-    const calls = data.rawCalls
+    const leadById = new Map(data.rawLeads.map((l) => [l.id, l]));
+
+    const callsInScope = data.rawCalls
       .filter((c) => c.status !== "cancelled")
       .filter((c) => keepLead(c.lead_id));
-    const sales = data.rawSales.filter((s) => s.lead_id && keepLead(s.lead_id));
-    const leadById = new Map(data.rawLeads.map((l) => [l.id, l]));
+    const salesInScope = data.rawSales.filter((s) => keepLead(s.lead_id));
+
     const tagsByLead = new Map<string, MarketingTag[]>();
     for (const t of data.rawTags) {
       const arr = tagsByLead.get(t.lead_id) ?? [];
       arr.push(t);
       tagsByLead.set(t.lead_id, arr);
     }
-    return { leads, calls, sales, leadById, tagsByLead };
+
+    const callsByLead = new Map<string, MarketingCall[]>();
+    for (const c of data.rawCalls) {
+      if (c.status === "cancelled") continue;
+      const arr = callsByLead.get(c.lead_id) ?? [];
+      arr.push(c);
+      callsByLead.set(c.lead_id, arr);
+    }
+    const salesByLead = new Map<string, MarketingSale[]>();
+    for (const s of data.rawSales) {
+      if (!s.lead_id) continue;
+      const arr = salesByLead.get(s.lead_id) ?? [];
+      arr.push(s);
+      salesByLead.set(s.lead_id, arr);
+    }
+
+    return {
+      leadsInScope,
+      callsInScope,
+      salesInScope,
+      leadById,
+      tagsByLead,
+      callsByLead,
+      salesByLead,
+    };
   }, [drill, data]);
+
+  // Apply search
+  const q = search.trim().toLowerCase();
+  const match = (...fields: (string | null | undefined)[]) =>
+    !q || fields.some((f) => f && f.toLowerCase().includes(q));
+
+  const filteredLeads = context.leadsInScope.filter((l) =>
+    match(l.raw_full_name, l.raw_email, l.raw_phone, sourceLabel(l.source)),
+  );
+  const filteredCalls = context.callsInScope.filter((c) => {
+    const l = context.leadById.get(c.lead_id);
+    return match(l?.raw_full_name, l?.raw_email, l?.raw_phone, l && sourceLabel(l.source));
+  });
+  const filteredSales = context.salesInScope.filter((s) => {
+    const l = s.lead_id ? context.leadById.get(s.lead_id) : null;
+    return match(l?.raw_full_name, l?.raw_email, l?.raw_phone, s.product);
+  });
+
+  // Sort filtered lists
+  const sortedLeads = useMemo(
+    () =>
+      [...filteredLeads].sort((a, b) => b.created_at.localeCompare(a.created_at)),
+    [filteredLeads],
+  );
+  const sortedCalls = useMemo(
+    () =>
+      [...filteredCalls].sort((a, b) =>
+        (b.scheduled_at || b.created_at).localeCompare(a.scheduled_at || a.created_at),
+      ),
+    [filteredCalls],
+  );
+  const sortedSales = useMemo(
+    () => [...filteredSales].sort((a, b) => (b.sold_at || "").localeCompare(a.sold_at || "")),
+    [filteredSales],
+  );
+
+  function paginate<T>(items: T[]) {
+    const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+    const safePage = Math.min(page, totalPages - 1);
+    return {
+      items: items.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE),
+      totalPages,
+      safePage,
+    };
+  }
+
+  let total = 0;
+  let totalSecondary = "";
+  if (drill.mode === "leads") total = sortedLeads.length;
+  else if (drill.mode === "calls") total = sortedCalls.length;
+  else if (drill.mode === "sales") {
+    total = sortedSales.length;
+    totalSecondary = eur(sortedSales.reduce((s, x) => s + x.amount_ht, 0));
+  }
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle className="text-base">{drill.title}</DialogTitle>
+      <DialogContent className="max-w-6xl w-[95vw]">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-base flex items-center gap-2">
+            {drill.title}
+            <Badge variant="secondary" className="font-mono">
+              {total}
+            </Badge>
+            {totalSecondary && (
+              <Badge variant="outline" className="font-mono">
+                {totalSecondary}
+              </Badge>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
-        {drill.mode === "leads" && (
-          <LeadsList
-            leads={filtered.leads}
-            tagsByLead={filtered.tagsByLead}
-          />
-        )}
-        {drill.mode === "calls" && (
-          <CallsList calls={filtered.calls} leadById={filtered.leadById} />
-        )}
-        {drill.mode === "sales" && (
-          <SalesList sales={filtered.sales} leadById={filtered.leadById} />
-        )}
+        <div className="space-y-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher un nom, email, téléphone…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(0);
+              }}
+              className="h-8 text-xs pl-8"
+            />
+          </div>
+
+          {drill.mode === "leads" && (
+            <LeadsList
+              page={paginate(sortedLeads)}
+              tagsByLead={context.tagsByLead}
+              callsByLead={context.callsByLead}
+              salesByLead={context.salesByLead}
+              onPageChange={setPage}
+            />
+          )}
+          {drill.mode === "calls" && (
+            <CallsList
+              page={paginate(sortedCalls)}
+              leadById={context.leadById}
+              onPageChange={setPage}
+            />
+          )}
+          {drill.mode === "sales" && (
+            <SalesList
+              page={paginate(sortedSales)}
+              leadById={context.leadById}
+              onPageChange={setPage}
+            />
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-function LeadsList({
-  leads,
-  tagsByLead,
+function ModalPagination({
+  page,
+  totalPages,
+  onChange,
 }: {
-  leads: MarketingLead[];
-  tagsByLead: Map<string, MarketingTag[]>;
+  page: number;
+  totalPages: number;
+  onChange: (p: number) => void;
 }) {
-  if (leads.length === 0) return <EmptyRow label="Aucun lead" />;
+  if (totalPages <= 1) return null;
   return (
-    <div className="max-h-[60vh] overflow-y-auto">
-      <div className="grid grid-cols-[1fr_130px_130px_1fr] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sticky top-0 bg-background">
+    <div className="flex items-center gap-1">
+      <button
+        disabled={page === 0}
+        onClick={() => onChange(page - 1)}
+        className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted disabled:opacity-30 transition-colors"
+        aria-label="Page précédente"
+      >
+        <ChevronLeft className="h-3.5 w-3.5" />
+      </button>
+      <span className="text-[11px] text-muted-foreground tabular-nums px-1">
+        {page + 1} / {totalPages}
+      </span>
+      <button
+        disabled={page >= totalPages - 1}
+        onClick={() => onChange(page + 1)}
+        className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted disabled:opacity-30 transition-colors"
+        aria-label="Page suivante"
+      >
+        <ChevronRight className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+function LeadsList({
+  page,
+  tagsByLead,
+  callsByLead,
+  salesByLead,
+  onPageChange,
+}: {
+  page: { items: MarketingLead[]; totalPages: number; safePage: number };
+  tagsByLead: Map<string, MarketingTag[]>;
+  callsByLead: Map<string, MarketingCall[]>;
+  salesByLead: Map<string, MarketingSale[]>;
+  onPageChange: (p: number) => void;
+}) {
+  if (page.items.length === 0) return <EmptyRow label="Aucun lead" />;
+  return (
+    <div>
+      <div className="grid grid-cols-[1.7fr_130px_150px_60px_60px_1.4fr] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         <span>Lead</span>
         <span>Source</span>
         <span>Opt-in</span>
+        <span className="text-center">RDV</span>
+        <span className="text-center">Vente</span>
         <span>Tags</span>
       </div>
-      <div className="divide-y divide-border/40">
-        {leads.map((l, idx) => {
+      <div className="divide-y divide-border/40 max-h-[55vh] overflow-y-auto">
+        {page.items.map((l, idx) => {
           const tags = tagsByLead.get(l.id) ?? [];
+          const nbCalls = callsByLead.get(l.id)?.length ?? 0;
+          const nbSales = salesByLead.get(l.id)?.length ?? 0;
           return (
             <div
               key={l.id}
-              className={`grid grid-cols-[1fr_130px_130px_1fr] gap-3 items-center px-3 py-2.5 ${
+              className={`grid grid-cols-[1.7fr_130px_150px_60px_60px_1.4fr] gap-3 items-center px-3 py-2.5 ${
                 idx % 2 === 1 ? "bg-muted/10" : ""
               }`}
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center shrink-0">
-                  <User className="h-3 w-3 text-muted-foreground" />
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <User className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium text-foreground truncate">
                     {l.raw_full_name || "—"}
                   </p>
-                  {l.raw_email && (
-                    <p className="text-[10px] text-muted-foreground truncate">{l.raw_email}</p>
-                  )}
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                    {l.raw_email && (
+                      <span className="flex items-center gap-1 truncate" title={l.raw_email}>
+                        <Mail className="h-2.5 w-2.5 shrink-0" />
+                        <span className="truncate">{l.raw_email}</span>
+                      </span>
+                    )}
+                    {l.raw_phone && (
+                      <span className="flex items-center gap-1 truncate" title={l.raw_phone}>
+                        <Phone className="h-2.5 w-2.5 shrink-0" />
+                        <span className="truncate">{l.raw_phone}</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-              <span className="text-[11px] text-foreground">
-                <Badge
-                  variant="outline"
-                  className="text-[10px]"
-                  style={{ borderColor: sourceColor(l.source) }}
-                >
-                  {sourceLabel(l.source)}
-                </Badge>
-              </span>
+              <Badge
+                variant="outline"
+                className="text-[10px] w-fit"
+                style={{ borderColor: sourceColor(l.source) }}
+              >
+                {sourceLabel(l.source)}
+              </Badge>
               <span className="text-[11px] text-muted-foreground tabular-nums">
                 {formatParisDateTime(l.created_at)}
               </span>
+              <div className="text-center">
+                {nbCalls > 0 ? (
+                  <Badge variant="secondary" className="text-[10px] font-mono">
+                    {nbCalls}
+                  </Badge>
+                ) : (
+                  <span className="text-[10px] text-muted-foreground/40">—</span>
+                )}
+              </div>
+              <div className="text-center">
+                {nbSales > 0 ? (
+                  <Badge className="text-[10px] font-mono bg-[hsl(var(--kpi-paid))] hover:bg-[hsl(var(--kpi-paid))]">
+                    {nbSales}
+                  </Badge>
+                ) : (
+                  <span className="text-[10px] text-muted-foreground/40">—</span>
+                )}
+              </div>
               <div className="flex flex-wrap gap-1">
                 {tags.length === 0 ? (
                   <span className="text-[10px] text-muted-foreground/60">—</span>
@@ -804,7 +1011,8 @@ function LeadsList({
                     <Badge
                       key={i}
                       variant="secondary"
-                      className="text-[9px] font-normal px-1.5"
+                      className="text-[9px] font-normal px-1.5 py-0"
+                      title={`${tagCategoryLabel(t.category)} · ${tagKeyLabel(t.key)}`}
                     >
                       {tagKeyLabel(t.key)}
                     </Badge>
@@ -815,143 +1023,205 @@ function LeadsList({
           );
         })}
       </div>
-      <p className="text-[11px] text-muted-foreground px-3 py-2 border-t border-border">
-        {leads.length} lead{leads.length > 1 ? "s" : ""}
-      </p>
+      <div className="flex items-center justify-between pt-3 border-t border-border px-3">
+        <span className="text-[11px] text-muted-foreground">
+          Page <span className="font-semibold text-foreground">{page.safePage + 1}</span> sur{" "}
+          {page.totalPages}
+        </span>
+        <ModalPagination
+          page={page.safePage}
+          totalPages={page.totalPages}
+          onChange={onPageChange}
+        />
+      </div>
     </div>
   );
 }
 
 function CallsList({
-  calls,
+  page,
   leadById,
+  onPageChange,
 }: {
-  calls: MarketingCall[];
+  page: { items: MarketingCall[]; totalPages: number; safePage: number };
   leadById: Map<string, MarketingLead>;
+  onPageChange: (p: number) => void;
 }) {
-  const sorted = useMemo(
-    () =>
-      [...calls].sort((a, b) => {
-        const ax = a.scheduled_at || a.created_at;
-        const bx = b.scheduled_at || b.created_at;
-        return bx.localeCompare(ax);
-      }),
-    [calls],
-  );
-  if (sorted.length === 0) return <EmptyRow label="Aucun RDV" />;
+  if (page.items.length === 0) return <EmptyRow label="Aucun RDV" />;
   return (
-    <div className="max-h-[60vh] overflow-y-auto">
-      <div className="grid grid-cols-[1fr_110px_130px_110px] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sticky top-0 bg-background">
+    <div>
+      <div className="grid grid-cols-[1.7fr_130px_150px_150px_110px_1fr] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         <span>Lead</span>
         <span>Source</span>
-        <span>Date RDV</span>
+        <span>RDV prévu</span>
+        <span>RDV pris le</span>
         <span>Statut</span>
+        <span>Résultat</span>
       </div>
-      <div className="divide-y divide-border/40">
-        {sorted.map((c, idx) => {
+      <div className="divide-y divide-border/40 max-h-[55vh] overflow-y-auto">
+        {page.items.map((c, idx) => {
           const lead = leadById.get(c.lead_id);
           return (
             <div
               key={c.id}
-              className={`grid grid-cols-[1fr_110px_130px_110px] gap-3 items-center px-3 py-2.5 ${
+              className={`grid grid-cols-[1.7fr_130px_150px_150px_110px_1fr] gap-3 items-center px-3 py-2.5 ${
                 idx % 2 === 1 ? "bg-muted/10" : ""
               }`}
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center shrink-0">
-                  <Phone className="h-3 w-3 text-muted-foreground" />
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
-                <span className="text-xs font-medium text-foreground truncate">
-                  {lead?.raw_full_name || "—"}
-                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-foreground truncate">
+                    {lead?.raw_full_name || "—"}
+                  </p>
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                    {lead?.raw_email && (
+                      <span className="truncate" title={lead.raw_email}>
+                        {lead.raw_email}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
-              <Badge variant="outline" className="text-[10px] w-fit">
+              <Badge
+                variant="outline"
+                className="text-[10px] w-fit"
+                style={{ borderColor: lead ? sourceColor(lead.source) : undefined }}
+              >
                 {lead ? sourceLabel(lead.source) : "—"}
               </Badge>
               <span className="text-[11px] text-muted-foreground tabular-nums">
                 {c.scheduled_at ? formatParisDateTime(c.scheduled_at) : "—"}
               </span>
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                {formatParisDateTime(c.created_at)}
+              </span>
               <Badge
-                variant={c.status === "completed" ? "default" : "secondary"}
-                className="text-[10px] w-fit"
+                variant="outline"
+                className={`text-[10px] w-fit ${callStatusClass(c.status)}`}
               >
                 {callStatusLabel(c.status)}
               </Badge>
+              <span className="text-[11px] text-foreground truncate" title={c.outcome ?? ""}>
+                {outcomeLabel(c.outcome)}
+              </span>
             </div>
           );
         })}
       </div>
-      <p className="text-[11px] text-muted-foreground px-3 py-2 border-t border-border">
-        {sorted.length} RDV
-      </p>
+      <div className="flex items-center justify-between pt-3 border-t border-border px-3">
+        <span className="text-[11px] text-muted-foreground">
+          Page <span className="font-semibold text-foreground">{page.safePage + 1}</span> sur{" "}
+          {page.totalPages}
+        </span>
+        <ModalPagination
+          page={page.safePage}
+          totalPages={page.totalPages}
+          onChange={onPageChange}
+        />
+      </div>
     </div>
   );
 }
 
 function SalesList({
-  sales,
+  page,
   leadById,
+  onPageChange,
 }: {
-  sales: MarketingSale[];
+  page: { items: MarketingSale[]; totalPages: number; safePage: number };
   leadById: Map<string, MarketingLead>;
+  onPageChange: (p: number) => void;
 }) {
-  const sorted = useMemo(
-    () =>
-      [...sales].sort((a, b) => (b.sold_at || "").localeCompare(a.sold_at || "")),
-    [sales],
-  );
-  if (sorted.length === 0) return <EmptyRow label="Aucune vente" />;
+  if (page.items.length === 0) return <EmptyRow label="Aucune vente" />;
   return (
-    <div className="max-h-[60vh] overflow-y-auto">
-      <div className="grid grid-cols-[1fr_110px_130px_1fr_100px] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sticky top-0 bg-background">
+    <div>
+      <div className="grid grid-cols-[1.7fr_130px_130px_1fr_100px_110px] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         <span>Client</span>
         <span>Source</span>
-        <span>Date</span>
+        <span>Date vente</span>
         <span>Produit</span>
         <span className="text-right">Montant HT</span>
+        <span>Paiement</span>
       </div>
-      <div className="divide-y divide-border/40">
-        {sorted.map((s, idx) => {
+      <div className="divide-y divide-border/40 max-h-[55vh] overflow-y-auto">
+        {page.items.map((s, idx) => {
           const lead = s.lead_id ? leadById.get(s.lead_id) : null;
           return (
             <div
               key={s.id}
-              className={`grid grid-cols-[1fr_110px_130px_1fr_100px] gap-3 items-center px-3 py-2.5 ${
+              className={`grid grid-cols-[1.7fr_130px_130px_1fr_100px_110px] gap-3 items-center px-3 py-2.5 ${
                 idx % 2 === 1 ? "bg-muted/10" : ""
               }`}
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center shrink-0">
-                  <ShoppingBag className="h-3 w-3 text-muted-foreground" />
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <ShoppingBag className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
-                <span className="text-xs font-medium text-foreground truncate">
-                  {lead?.raw_full_name || "—"}
-                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-foreground truncate">
+                    {lead?.raw_full_name || "—"}
+                  </p>
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                    {lead?.raw_email && (
+                      <span className="truncate" title={lead.raw_email}>
+                        {lead.raw_email}
+                      </span>
+                    )}
+                    {lead?.raw_phone && (
+                      <span className="truncate" title={lead.raw_phone}>
+                        {lead.raw_phone}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
-              <Badge variant="outline" className="text-[10px] w-fit">
+              <Badge
+                variant="outline"
+                className="text-[10px] w-fit"
+                style={{ borderColor: lead ? sourceColor(lead.source) : undefined }}
+              >
                 {lead ? sourceLabel(lead.source) : "—"}
               </Badge>
               <span className="text-[11px] text-muted-foreground tabular-nums">
                 {s.sold_at ? formatParisDateTime(s.sold_at) : "—"}
               </span>
-              <span className="text-[11px] text-foreground truncate">{s.product || "—"}</span>
+              <span className="text-[11px] text-foreground truncate" title={s.product ?? ""}>
+                {s.product || "—"}
+              </span>
               <span className="text-xs font-bold text-foreground tabular-nums text-right">
                 {eur(s.amount_ht)}
               </span>
+              <Badge
+                variant="outline"
+                className={`text-[10px] w-fit ${paymentStatusClass(s.payment_status)}`}
+              >
+                {paymentStatusLabel(s.payment_status)}
+              </Badge>
             </div>
           );
         })}
       </div>
-      <p className="text-[11px] text-muted-foreground px-3 py-2 border-t border-border">
-        {sorted.length} vente{sorted.length > 1 ? "s" : ""}
-      </p>
+      <div className="flex items-center justify-between pt-3 border-t border-border px-3">
+        <span className="text-[11px] text-muted-foreground">
+          Page <span className="font-semibold text-foreground">{page.safePage + 1}</span> sur{" "}
+          {page.totalPages}
+        </span>
+        <ModalPagination
+          page={page.safePage}
+          totalPages={page.totalPages}
+          onChange={onPageChange}
+        />
+      </div>
     </div>
   );
 }
 
 function EmptyRow({ label }: { label: string }) {
   return (
-    <div className="flex items-center justify-center py-10">
+    <div className="flex items-center justify-center py-16">
       <p className="text-sm text-muted-foreground">{label}</p>
     </div>
   );
@@ -971,5 +1241,66 @@ function callStatusLabel(s: string | null): string {
       return "Annulé";
     default:
       return s ?? "—";
+  }
+}
+
+function callStatusClass(s: string | null): string {
+  switch (s) {
+    case "completed":
+      return "border-[hsl(var(--kpi-paid)/0.4)] text-[hsl(var(--kpi-paid))] bg-[hsl(var(--kpi-paid)/0.08)]";
+    case "scheduled":
+      return "border-blue-500/40 text-blue-500 bg-blue-500/8";
+    case "no_show":
+      return "border-destructive/40 text-destructive bg-destructive/8";
+    case "rescheduled":
+      return "border-amber-500/40 text-amber-500 bg-amber-500/8";
+    default:
+      return "";
+  }
+}
+
+function outcomeLabel(o: string | null): string {
+  if (!o) return "—";
+  const map: Record<string, string> = {
+    sale: "💰 Vente",
+    no_sale: "❌ Pas de vente",
+    follow_up: "🔁 Relance",
+    not_qualified: "⚠️ Non qualifié",
+    not_interested: "❌ Pas intéressé",
+    wrong_number: "📵 Mauvais numéro",
+  };
+  return map[o] ?? o;
+}
+
+function paymentStatusLabel(s: string | null): string {
+  switch (s) {
+    case "paid":
+      return "Payé";
+    case "in_progress":
+      return "En cours";
+    case "pending":
+      return "En attente";
+    case "late":
+      return "Retard";
+    case "lost":
+      return "Perdu";
+    default:
+      return s ?? "—";
+  }
+}
+
+function paymentStatusClass(s: string | null): string {
+  switch (s) {
+    case "paid":
+      return "border-[hsl(var(--kpi-paid)/0.4)] text-[hsl(var(--kpi-paid))] bg-[hsl(var(--kpi-paid)/0.08)]";
+    case "in_progress":
+    case "pending":
+      return "border-[hsl(var(--kpi-in-progress)/0.4)] text-[hsl(var(--kpi-in-progress))] bg-[hsl(var(--kpi-in-progress)/0.08)]";
+    case "late":
+      return "border-[hsl(var(--kpi-late)/0.4)] text-[hsl(var(--kpi-late))] bg-[hsl(var(--kpi-late)/0.08)]";
+    case "lost":
+      return "border-[hsl(var(--kpi-lost)/0.4)] text-[hsl(var(--kpi-lost))] bg-[hsl(var(--kpi-lost)/0.08)]";
+    default:
+      return "";
   }
 }
