@@ -1140,7 +1140,14 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
                 name: "never",
                 email: "never",
                 phone: "never",
-                address: "never",
+                address: {
+                  country: "never",
+                  postalCode: "never",
+                  line1: "never",
+                  line2: "never",
+                  city: "never",
+                  state: "never",
+                },
               },
             },
             terms: {
@@ -1154,28 +1161,6 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
             },
           }}
         />
-        <style>{`
-          /* Masquer tout ce qui ressemble à Stripe Link / autofill prompts
-             qui persisteraient malgré la désactivation des wallets + email collection. */
-          iframe[name^="__privateStripeFrame"][title*="Link"],
-          iframe[name^="__privateStripeFrame"][src*="link"],
-          iframe[name^="__privateStripeFrame"][src*="LinkAutofill"],
-          iframe[name^="__privateStripeFrame"][src*="linkModal"],
-          [data-testid="linkAuthenticationElement"],
-          [class*="Link"][class*="Popup"],
-          [class*="LinkPaymentMethodPromoContent"],
-          [id^="__privateStripeLink"] {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
-          }
-          /* Stripe's floating notification bar (Link welcome / save prompt) */
-          div[aria-label*="Stripe"],
-          div[data-stripe-element][style*="position: fixed"] {
-            display: none !important;
-          }
-        `}</style>
       </div>
 
       <div
