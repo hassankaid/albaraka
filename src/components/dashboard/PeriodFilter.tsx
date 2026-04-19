@@ -7,17 +7,27 @@ import { CalendarIcon, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, addWeeks, subWeeks, getISOWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import {
+  parisSundayNoonWeekRange,
+  shiftParisWeek,
+  formatParisDate,
+  parisMarketingWeekNumber,
+} from "@/lib/marketing/weekRange";
 
 export interface DateRange {
   from: Date;
   to: Date;
 }
 
+export type WeekMode = "isoMonday" | "sundayNoonParis";
+
 type PresetKey = "week" | "month" | "quarter" | "year" | "all" | "custom";
 
 interface Props {
   value: DateRange | null;
   onChange: (range: DateRange | null) => void;
+  /** "isoMonday" (défaut, Dashboard financier) ou "sundayNoonParis" (Dashboard marketing). */
+  weekMode?: WeekMode;
 }
 
 const MONTHS_SHORT = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
@@ -28,7 +38,8 @@ function buildYears() {
   return Array.from({ length: 8 }, (_, i) => cur - 3 + i);
 }
 
-export default function PeriodFilter({ value, onChange }: Props) {
+export default function PeriodFilter({ value, onChange, weekMode = "isoMonday" }: Props) {
+  const useParisWeek = weekMode === "sundayNoonParis";
   const [activePreset, setActivePreset] = useState<PresetKey>("month");
   const initializedRef = useRef(false);
 
@@ -65,7 +76,11 @@ export default function PeriodFilter({ value, onChange }: Props) {
 
   const applyWeek = (ref: Date) => {
     setSelWeekRef(ref);
-    onChange({ from: startOfWeek(ref, { weekStartsOn: 1 }), to: endOfWeek(ref, { weekStartsOn: 1 }) });
+    if (useParisWeek) {
+      onChange(parisSundayNoonWeekRange(ref));
+    } else {
+      onChange({ from: startOfWeek(ref, { weekStartsOn: 1 }), to: endOfWeek(ref, { weekStartsOn: 1 }) });
+    }
   };
 
   const applyQuarter = (q: number, year: number) => {
@@ -117,9 +132,12 @@ export default function PeriodFilter({ value, onChange }: Props) {
     }
   };
 
-  const weekStart = startOfWeek(selWeekRef, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(selWeekRef, { weekStartsOn: 1 });
-  const weekNum = getISOWeek(selWeekRef);
+  const parisRange = useParisWeek ? parisSundayNoonWeekRange(selWeekRef) : null;
+  const weekStart = useParisWeek ? parisRange!.from : startOfWeek(selWeekRef, { weekStartsOn: 1 });
+  const weekEnd = useParisWeek
+    ? new Date(parisRange!.to.getTime() - 1) // to est exclusif, on affiche to - 1ms
+    : endOfWeek(selWeekRef, { weekStartsOn: 1 });
+  const weekNum = useParisWeek ? parisMarketingWeekNumber(parisRange!) : getISOWeek(selWeekRef);
 
   const presets: { key: PresetKey; label: string }[] = [
     { key: "week", label: "Semaine" },
@@ -154,14 +172,32 @@ export default function PeriodFilter({ value, onChange }: Props) {
       {/* ── WEEK sub-picker ── */}
       {activePreset === "week" && (
         <div className="flex items-center gap-1.5">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => applyWeek(subWeeks(selWeekRef, 1))}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => {
+              if (useParisWeek && parisRange) {
+                const prev = shiftParisWeek(parisRange, -1);
+                // on utilise le "from" de la semaine précédente + 12h comme ref Paris
+                const ref = new Date(prev.from.getTime() + 3.5 * 86400000);
+                applyWeek(ref);
+              } else {
+                applyWeek(subWeeks(selWeekRef, 1));
+              }
+            }}
+          >
             <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
 
           <Popover open={weekPickerOpen} onOpenChange={setWeekPickerOpen}>
             <PopoverTrigger asChild>
               <button className="text-xs font-medium text-foreground min-w-[180px] text-center hover:bg-muted/50 rounded-md px-2 py-1 transition-colors">
-                S{weekNum} — {format(weekStart, "d MMM", { locale: fr })} → {format(weekEnd, "d MMM yyyy", { locale: fr })}
+                {useParisWeek ? (
+                  <>S{weekNum} — dim. {formatParisDate(weekStart)} 12h → dim. {formatParisDate(weekEnd, { withYear: true })} 12h</>
+                ) : (
+                  <>S{weekNum} — {format(weekStart, "d MMM", { locale: fr })} → {format(weekEnd, "d MMM yyyy", { locale: fr })}</>
+                )}
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -180,7 +216,20 @@ export default function PeriodFilter({ value, onChange }: Props) {
             </PopoverContent>
           </Popover>
 
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => applyWeek(addWeeks(selWeekRef, 1))}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => {
+              if (useParisWeek && parisRange) {
+                const next = shiftParisWeek(parisRange, 1);
+                const ref = new Date(next.from.getTime() + 3.5 * 86400000);
+                applyWeek(ref);
+              } else {
+                applyWeek(addWeeks(selWeekRef, 1));
+              }
+            }}
+          >
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>
         </div>

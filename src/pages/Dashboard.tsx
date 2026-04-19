@@ -11,6 +11,7 @@ import TreasuryCard from "@/components/dashboard/TreasuryCard";
 import ChargesCard from "@/components/dashboard/ChargesCard";
 import PeriodSalesCard from "@/components/dashboard/PeriodSalesCard";
 import PeriodFilter, { type DateRange } from "@/components/dashboard/PeriodFilter";
+import MarketingTab from "@/components/dashboard/marketing/MarketingTab";
 import { Loader2 } from "lucide-react";
 
 function FinancialTab() {
@@ -152,7 +153,7 @@ const Dashboard = () => {
     <Tabs defaultValue="financier" className="space-y-4">
       <TabsList>
         <TabsTrigger value="financier">💰 Financier</TabsTrigger>
-        <TabsTrigger value="marketing" disabled>📣 Marketing</TabsTrigger>
+        <TabsTrigger value="marketing">📣 Marketing</TabsTrigger>
         <TabsTrigger value="sales" disabled>🎯 Sales</TabsTrigger>
       </TabsList>
 
@@ -160,7 +161,7 @@ const Dashboard = () => {
         <FinancialTab />
       </TabsContent>
       <TabsContent value="marketing">
-        <p className="text-muted-foreground text-sm py-10 text-center">Pôle Marketing — À venir</p>
+        <MarketingTab />
       </TabsContent>
       <TabsContent value="sales">
         <p className="text-muted-foreground text-sm py-10 text-center">Pôle Sales — À venir</p>
