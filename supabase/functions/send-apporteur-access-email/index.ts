@@ -173,29 +173,35 @@ Deno.serve(async (req) => {
     }
 
     const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
-    const callerClient = createClient(supabaseUrl, anonKey);
-    const { data: userData, error: userErr } = await callerClient.auth.getUser(bearer);
-    const caller = userData?.user;
-    if (userErr || !caller) {
-      console.error("[send-access] getUser error:", userErr);
-      return new Response(
-        JSON.stringify({ error: "Invalid token", detail: userErr?.message ?? "no user" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    const isServiceRoleCall = bearer === supabaseServiceKey;
+
+    if (!isServiceRoleCall) {
+      const callerClient = createClient(supabaseUrl, anonKey);
+      const { data: userData, error: userErr } = await callerClient.auth.getUser(bearer);
+      const caller = userData?.user;
+      if (userErr || !caller) {
+        console.error("[send-access] getUser error:", userErr);
+        return new Response(
+          JSON.stringify({ error: "Invalid token", detail: userErr?.message ?? "no user" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const adminClientForCheck = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: callerProfile } = await adminClientForCheck
+        .from("profiles")
+        .select("role")
+        .eq("id", caller.id)
+        .single();
+      if (callerProfile?.role !== "ceo") {
+        return new Response(JSON.stringify({ error: "CEO only" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-    const { data: callerProfile } = await adminClient
-      .from("profiles")
-      .select("role")
-      .eq("id", caller.id)
-      .single();
-    if (callerProfile?.role !== "ceo") {
-      return new Response(JSON.stringify({ error: "CEO only" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const body = await req.json();
     const userIds: string[] = Array.isArray(body.user_ids) ? body.user_ids : [];
@@ -244,7 +250,7 @@ Deno.serve(async (req) => {
         const toEmail = testMode ? BRAND.testEmail : profile.email;
         const subject = "Bienvenue dans l'écosystème AL BARAKA";
 
-        console.log(`[send-access] to=${toEmail} (real=${profile.email}) testMode=${testMode}`);
+        console.log(`[send-access] to=${toEmail} (real=${profile.email}) testMode=${testMode} serviceRole=${isServiceRoleCall}`);
         await sendResend(toEmail, subject, html, resendKey);
 
         await adminClient

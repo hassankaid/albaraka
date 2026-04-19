@@ -7,6 +7,7 @@ import {
   isLockedOut,
 } from "@/lib/access-scope";
 import { DeactivatedAccountScreen } from "@/components/DeactivatedAccountScreen";
+import { DiscordGate } from "@/components/DiscordGate";
 
 export function ProtectedRoute() {
   const { session, profile, isLoading } = useAuth();
@@ -26,6 +27,16 @@ export function ProtectedRoute() {
   // (is_active=false, is_also_apporteur=false). They cannot navigate the app.
   if (isLockedOut(profile)) {
     return <DeactivatedAccountScreen />;
+  }
+
+  // Discord gate — only for élèves arrivés via bon de commande qui n'ont pas
+  // encore rejoint Discord. Les apporteurs early_access bypass ce gate.
+  if (
+    profile?.role === "apporteur" &&
+    profile?.origin === "bon_commande" &&
+    !profile?.discord_joined_at
+  ) {
+    return <DiscordGate />;
   }
 
   // Onboarding gate — only enforced for real apporteurs. Deactivated collabs

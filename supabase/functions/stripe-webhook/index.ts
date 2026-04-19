@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,17 +6,16 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
-// Stripe webhook secret for signature verification
 const STRIPE_WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 async function verifyStripeSignature(
   payload: string,
   signature: string,
-  secret: string
+  secret: string,
 ): Promise<boolean> {
   const encoder = new TextEncoder();
-
-  // Parse the signature header
   const parts = signature.split(",");
   let timestamp = "";
   let v1Signature = "";
@@ -25,28 +24,308 @@ async function verifyStripeSignature(
     if (key === "t") timestamp = value;
     if (key === "v1") v1Signature = value;
   }
-
   if (!timestamp || !v1Signature) return false;
-
-  // Compute expected signature
   const signedPayload = `${timestamp}.${payload}`;
   const key = await crypto.subtle.importKey(
     "raw",
     encoder.encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign"]
+    ["sign"],
   );
-  const signatureBytes = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    encoder.encode(signedPayload)
-  );
+  const signatureBytes = await crypto.subtle.sign("HMAC", key, encoder.encode(signedPayload));
   const expectedSignature = Array.from(new Uint8Array(signatureBytes))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-
   return expectedSignature === v1Signature;
+}
+
+function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function addMonthsISO(base: Date, months: number): string {
+  const d = new Date(base);
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().slice(0, 10);
+}
+
+function extractId(field: unknown): string | null {
+  if (!field) return null;
+  if (typeof field === "string") return field;
+  if (typeof field === "object" && field !== null && "id" in field) {
+    return String((field as { id: unknown }).id);
+  }
+  return null;
+}
+
+async function handleCheckoutCompleted(
+  supabase: SupabaseClient,
+  session: Record<string, unknown>,
+): Promise<void> {
+  const metadata = (session.metadata as Record<string, string>) || {};
+  if (metadata.source !== "bon_commande") {
+    console.log(`[checkout] session ${session.id} is not a bon_commande, skipping`);
+    return;
+  }
+
+  const sessionId = String(session.id);
+
+  // Idempotency: skip if sale already exists
+  const { data: existingSale } = await supabase
+    .from("sales")
+    .select("id")
+    .eq("stripe_session_id", sessionId)
+    .maybeSingle();
+  if (existingSale) {
+    console.log(`[checkout] sale already exists for session ${sessionId}`);
+    return;
+  }
+
+  const details = (session.customer_details as Record<string, unknown>) || {};
+  const address = (details.address as Record<string, unknown>) || {};
+  const email = String(details.email || session.customer_email || "").toLowerCase().trim();
+  const fullName = String(details.name || "").trim();
+  const phone = String(details.phone || "").trim();
+
+  if (!email) {
+    console.error(`[checkout] no email on session ${sessionId}`);
+    return;
+  }
+
+  // ---- Profile (auth user) ----
+  let profileId: string | null = null;
+
+  const { data: existingProfile } = await supabase
+    .from("profiles")
+    .select("id, origin, onboarding_completed")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (existingProfile) {
+    profileId = existingProfile.id;
+    if (existingProfile.origin === "manual") {
+      await supabase.from("profiles").update({ origin: "bon_commande" }).eq("id", profileId);
+    }
+  } else {
+    const { data: created, error: createErr } = await supabase.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: { full_name: fullName },
+    });
+    if (createErr || !created?.user) {
+      console.error("[checkout] createUser failed:", createErr);
+      throw createErr ?? new Error("createUser returned no user");
+    }
+    profileId = created.user.id;
+
+    await supabase
+      .from("profiles")
+      .update({
+        full_name: fullName || email,
+        phone: phone || null,
+        address: (address.line1 as string) || null,
+        postal_code: (address.postal_code as string) || null,
+        city: (address.city as string) || null,
+        country: (address.country as string) || null,
+        origin: "bon_commande",
+      })
+      .eq("id", profileId);
+  }
+
+  // ---- Contact (upsert by email) ----
+  const { data: contact, error: contactErr } = await supabase
+    .from("contacts")
+    .upsert(
+      { email, full_name: fullName || null, phone_original: phone || null },
+      { onConflict: "email" },
+    )
+    .select("id")
+    .single();
+
+  if (contactErr || !contact) {
+    console.error("[checkout] contact upsert failed:", contactErr);
+    throw contactErr ?? new Error("contact upsert failed");
+  }
+
+  // ---- Sale ----
+  const installments = Math.max(1, Math.min(8, Number(metadata.installments) || 1));
+  const discountPercent = Number(metadata.discount_percent) || 0;
+  const couponCode = metadata.coupon_code || null;
+  const totalGross = 2500;
+  const discountAmount = Math.round((totalGross * discountPercent) / 100 * 100) / 100;
+  const totalNet = totalGross - discountAmount;
+
+  const { data: sale, error: saleErr } = await supabase
+    .from("sales")
+    .insert({
+      contact_id: contact.id,
+      buyer_profile_id: profileId,
+      product: "PASS AL BARAKA",
+      amount_ht: totalNet,
+      discount_amount: discountAmount,
+      coupon_code: couponCode,
+      mensualites: installments,
+      sale_type: "bon_commande",
+      stripe_session_id: sessionId,
+      payment_status: "pending",
+      sold_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+
+  if (saleErr || !sale) {
+    console.error("[checkout] sale insert failed:", saleErr);
+    throw saleErr ?? new Error("sale insert failed");
+  }
+
+  // ---- Payments (N rows) ----
+  const subscriptionId = extractId(session.subscription);
+  const paymentIntentId = extractId(session.payment_intent);
+  const perInstallment = Math.round((totalNet / installments) * 100) / 100;
+  const today = new Date();
+
+  const rows = Array.from({ length: installments }, (_, i) => ({
+    sale_id: sale.id,
+    contact_id: contact.id,
+    payment_number: i + 1,
+    total_payments: installments,
+    amount: perInstallment,
+    due_date: addMonthsISO(today, i),
+    status: "pending" as const,
+    payment_method: "stripe",
+    stripe_subscription_id: subscriptionId,
+  }));
+
+  const { error: paymentsErr } = await supabase.from("payments").insert(rows);
+  if (paymentsErr) {
+    console.error("[checkout] payments insert failed:", paymentsErr);
+    throw paymentsErr;
+  }
+
+  if (installments === 1 && session.payment_status === "paid") {
+    await supabase
+      .from("payments")
+      .update({
+        status: "paid",
+        paid_at: todayISO(),
+        stripe_payment_intent_id: paymentIntentId,
+      })
+      .eq("sale_id", sale.id)
+      .eq("payment_number", 1);
+  }
+
+  console.log(`[checkout] created profile=${profileId} sale=${sale.id} installments=${installments}`);
+
+  // ---- Send access email ----
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/send-apporteur-access-email`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ user_ids: [profileId] }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(`[checkout] access-email failed ${res.status}: ${text}`);
+    } else {
+      console.log(`[checkout] access-email sent to profile=${profileId}`);
+    }
+  } catch (e) {
+    console.error("[checkout] failed to invoke access-email:", e);
+  }
+}
+
+async function handleInvoicePaid(
+  supabase: SupabaseClient,
+  obj: Record<string, unknown>,
+): Promise<void> {
+  const metadata = (obj.metadata as Record<string, string>) || {};
+
+  if (metadata.payment_id) {
+    await supabase
+      .from("payments")
+      .update({ status: "paid", paid_at: todayISO() })
+      .eq("id", metadata.payment_id);
+    console.log(`[invoice.paid] legacy metadata payment ${metadata.payment_id}`);
+    return;
+  }
+
+  const subscriptionId = extractId(obj.subscription);
+  const invoiceId = typeof obj.id === "string" ? obj.id : null;
+  const paymentIntentId = extractId(obj.payment_intent);
+
+  if (!subscriptionId || !invoiceId) {
+    console.log(`[invoice.paid] no subscription/invoice id, skipping`);
+    return;
+  }
+
+  const { data: already } = await supabase
+    .from("payments")
+    .select("id")
+    .eq("stripe_invoice_id", invoiceId)
+    .maybeSingle();
+  if (already) {
+    console.log(`[invoice.paid] invoice ${invoiceId} already recorded`);
+    return;
+  }
+
+  const { data: pendings } = await supabase
+    .from("payments")
+    .select("id, payment_number")
+    .eq("stripe_subscription_id", subscriptionId)
+    .eq("status", "pending")
+    .order("payment_number", { ascending: true })
+    .limit(1);
+
+  const target = pendings?.[0];
+  if (!target) {
+    console.log(`[invoice.paid] no pending payment for subscription ${subscriptionId}`);
+    return;
+  }
+
+  await supabase
+    .from("payments")
+    .update({
+      status: "paid",
+      paid_at: todayISO(),
+      stripe_invoice_id: invoiceId,
+      stripe_payment_intent_id: paymentIntentId,
+    })
+    .eq("id", target.id);
+
+  console.log(`[invoice.paid] payment ${target.id} (#${target.payment_number}) marked paid`);
+}
+
+async function handleInvoiceFailed(
+  supabase: SupabaseClient,
+  obj: Record<string, unknown>,
+): Promise<void> {
+  const metadata = (obj.metadata as Record<string, string>) || {};
+  if (metadata.payment_id) {
+    await supabase
+      .from("payments")
+      .update({ status: "late" })
+      .eq("id", metadata.payment_id);
+    return;
+  }
+
+  const subscriptionId = extractId(obj.subscription);
+  if (!subscriptionId) return;
+
+  const { data: pendings } = await supabase
+    .from("payments")
+    .select("id")
+    .eq("stripe_subscription_id", subscriptionId)
+    .eq("status", "pending")
+    .order("payment_number", { ascending: true })
+    .limit(1);
+
+  if (pendings?.[0]) {
+    await supabase.from("payments").update({ status: "late" }).eq("id", pendings[0].id);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -55,15 +334,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
 
     const body = await req.text();
     const signature = req.headers.get("stripe-signature");
 
-    // Verify signature if webhook secret is configured
     if (STRIPE_WEBHOOK_SECRET && signature) {
       const isValid = await verifyStripeSignature(body, signature, STRIPE_WEBHOOK_SECRET);
       if (!isValid) {
@@ -76,57 +353,30 @@ Deno.serve(async (req) => {
     }
 
     const event = JSON.parse(body);
-    console.log(`Stripe event received: ${event.type}`);
+    console.log(`Stripe event: ${event.type} (${event.id})`);
 
-    switch (event.type) {
-      case "invoice.paid":
-      case "payment_intent.succeeded": {
-        // Extract metadata to find the payment ID
-        const metadata = event.data.object.metadata || {};
-        const paymentId = metadata.payment_id;
+    try {
+      switch (event.type) {
+        case "checkout.session.completed":
+          await handleCheckoutCompleted(supabase, event.data.object);
+          break;
 
-        if (paymentId) {
-          const paidAt = new Date().toISOString().split("T")[0];
-          const { error } = await supabase
-            .from("payments")
-            .update({ status: "paid", paid_at: paidAt })
-            .eq("id", paymentId);
+        case "invoice.paid":
+        case "invoice.payment_succeeded":
+        case "payment_intent.succeeded":
+          await handleInvoicePaid(supabase, event.data.object);
+          break;
 
-          if (error) {
-            console.error("Error updating payment to paid:", error);
-          } else {
-            console.log(`Payment ${paymentId} marked as paid`);
-          }
-        } else {
-          console.log("No payment_id in metadata, skipping");
-        }
-        break;
+        case "invoice.payment_failed":
+        case "charge.failed":
+          await handleInvoiceFailed(supabase, event.data.object);
+          break;
+
+        default:
+          console.log(`Unhandled event type: ${event.type}`);
       }
-
-      case "invoice.payment_failed":
-      case "charge.failed": {
-        const metadata = event.data.object.metadata || {};
-        const paymentId = metadata.payment_id;
-
-        if (paymentId) {
-          const { error } = await supabase
-            .from("payments")
-            .update({ status: "late" })
-            .eq("id", paymentId);
-
-          if (error) {
-            console.error("Error updating payment to late:", error);
-          } else {
-            console.log(`Payment ${paymentId} marked as late`);
-          }
-        } else {
-          console.log("No payment_id in metadata, skipping");
-        }
-        break;
-      }
-
-      default:
-        console.log(`Unhandled event type: ${event.type}`);
+    } catch (handlerErr) {
+      console.error(`Handler error for ${event.type}:`, handlerErr);
     }
 
     return new Response(JSON.stringify({ received: true }), {
@@ -134,13 +384,10 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Webhook error:", error);
+    console.error("Webhook fatal error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });

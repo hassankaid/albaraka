@@ -8,6 +8,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute, PublicOnlyRoute } from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
+import Checkout from "./pages/checkout/Checkout";
+import MerciPage from "./pages/checkout/MerciPage";
 import DashboardLayout from "./components/DashboardLayout";
 import ApporteurLayout from "./components/ApporteurLayout";
 import Dashboard from "./pages/Dashboard";
@@ -95,6 +97,9 @@ const App = () => (
               <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify/:number" element={<VerifyCertificate />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/checkout/:installments" element={<Checkout />} />
+              <Route path="/merci" element={<MerciPage />} />
               <Route element={<ProtectedRoute />}>
                 {/* Onboarding (no layout) */}
                 <Route path="/onboarding" element={<ApporteurOnboarding />} />

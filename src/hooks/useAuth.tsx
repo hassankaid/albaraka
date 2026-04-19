@@ -25,6 +25,9 @@ interface Profile {
   bank_rib_url: string | null;
   bank_details: any;
   early_access: boolean | null;
+  origin: string | null;
+  discord_joined_at: string | null;
+  welcome_video_completed_at: string | null;
 }
 
 interface AuthContextType {
@@ -47,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, email, full_name, role, phone, is_also_apporteur, can_add_instagram_leads, avatar_url, timezone, onboarding_completed, collaborateur_level, is_active, is_coach, address, postal_code, city, country, siret, bank_rib_url, bank_details, early_access")
+      .select("id, email, full_name, role, phone, is_also_apporteur, can_add_instagram_leads, avatar_url, timezone, onboarding_completed, collaborateur_level, is_active, is_coach, address, postal_code, city, country, siret, bank_rib_url, bank_details, early_access, origin, discord_joined_at, welcome_video_completed_at")
       .eq("id", userId)
       .maybeSingle();
     setProfile(data);
