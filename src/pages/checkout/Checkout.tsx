@@ -334,9 +334,6 @@ function PhoneCountrySelect({
         ) : (
           <span style={{ fontSize: 12, color: "rgba(245,241,230,0.5)" }}>🌐</span>
         )}
-        <span style={{ fontSize: 13, color: "#C9A04E", letterSpacing: 0.3 }}>
-          +{currentDial}
-        </span>
         <svg width="8" height="5" viewBox="0 0 10 6" style={{ opacity: 0.6, marginLeft: 2 }}>
           <path
             d="M1 1L5 5L9 1"
@@ -722,7 +719,22 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
       const { error: confirmErr } = await stripe.confirmPayment({
         elements,
         clientSecret: data.client_secret,
-        confirmParams: { return_url: returnUrl },
+        confirmParams: {
+          return_url: returnUrl,
+          payment_method_data: {
+            billing_details: {
+              name: fullName,
+              email: billing.email.trim().toLowerCase(),
+              phone: billing.phone.trim() || undefined,
+              address: {
+                line1: billing.address.trim(),
+                postal_code: billing.postal_code.trim(),
+                city: billing.city.trim(),
+                country: billing.country.trim(),
+              },
+            },
+          },
+        },
       });
 
       if (confirmErr) {
@@ -1072,6 +1084,7 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
         </div>
         <div style={{ marginBottom: 10 }} className="alb-phone-wrapper">
           <PhoneInput
+            international
             defaultCountry="FR"
             placeholder="Numéro de téléphone"
             value={billing.phone}
@@ -1122,6 +1135,14 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
           options={{
             layout: "tabs",
             wallets: { applePay: "never", googlePay: "never" },
+            fields: {
+              billingDetails: {
+                name: "never",
+                email: "never",
+                phone: "never",
+                address: "never",
+              },
+            },
             terms: {
               card: "never",
               sepaDebit: "never",
@@ -1134,12 +1155,24 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
           }}
         />
         <style>{`
-          /* Masquer tout badge Stripe Link / autofill qui pourrait apparaître */
-          iframe[name^="__privateStripeFrame"][src*="link-authentication"],
-          iframe[name^="__privateStripeFrame"][src*="LinkAutofillModal"],
-          iframe[name^="__privateStripeFrame"][src*="Link"],
+          /* Masquer tout ce qui ressemble à Stripe Link / autofill prompts
+             qui persisteraient malgré la désactivation des wallets + email collection. */
+          iframe[name^="__privateStripeFrame"][title*="Link"],
+          iframe[name^="__privateStripeFrame"][src*="link"],
+          iframe[name^="__privateStripeFrame"][src*="LinkAutofill"],
+          iframe[name^="__privateStripeFrame"][src*="linkModal"],
           [data-testid="linkAuthenticationElement"],
-          [class*="Link"][class*="Popup"] {
+          [class*="Link"][class*="Popup"],
+          [class*="LinkPaymentMethodPromoContent"],
+          [id^="__privateStripeLink"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+          }
+          /* Stripe's floating notification bar (Link welcome / save prompt) */
+          div[aria-label*="Stripe"],
+          div[data-stripe-element][style*="position: fixed"] {
             display: none !important;
           }
         `}</style>

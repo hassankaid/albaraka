@@ -207,8 +207,35 @@ export default function ApporteurOnboarding() {
     }
 
     toast({ title: "Bienvenue chez Al Baraka !" });
+
+    // Redirige vers le 1er chapitre du parcours Al Baraka (vidéo d'introduction)
+    // la toute première fois après l'onboarding. Les connexions suivantes
+    // passent par PublicOnlyRoute qui envoie vers /training.
+    let targetPath = "/training";
+    try {
+      const { data: parc } = await supabase
+        .from("parcours")
+        .select(
+          `id, parcours_phases(id, ordre, parcours_chapitres(id, ordre))`,
+        )
+        .eq("slug", "al-baraka")
+        .maybeSingle();
+      const phases = (parc?.parcours_phases ?? []).slice().sort(
+        (a: { ordre: number }, b: { ordre: number }) => a.ordre - b.ordre,
+      );
+      const firstPhase = phases[0];
+      const chapters = (firstPhase?.parcours_chapitres ?? []).slice().sort(
+        (a: { ordre: number }, b: { ordre: number }) => a.ordre - b.ordre,
+      );
+      const firstChapter = chapters[0];
+      if (firstChapter?.id) {
+        targetPath = `/parcours/al-baraka/chapitre/${firstChapter.id}`;
+      }
+    } catch {
+      /* fallback vers /training */
+    }
     // Force profile refresh
-    window.location.href = "/training";
+    window.location.href = targetPath;
   };
 
   return (
