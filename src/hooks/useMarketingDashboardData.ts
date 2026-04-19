@@ -283,10 +283,16 @@ export function useMarketingDashboardData(range: DateRange | null) {
           const chunk = ids.slice(i, i + 500);
           const { data: cs, error: csErr } = await (supabase as any)
             .from("contacts")
-            .select("id, full_name, email, phone")
+            .select("id, full_name, email, phone_normalized, phone_original")
             .in("id", chunk);
           if (csErr) throw csErr;
-          for (const c of cs ?? []) contactMap.set(c.id, c);
+          for (const c of cs ?? [])
+            contactMap.set(c.id, {
+              id: c.id,
+              full_name: c.full_name,
+              email: c.email,
+              phone: c.phone_original || c.phone_normalized || null,
+            });
         }
       }
 
