@@ -423,20 +423,22 @@ async function handleInvoicePaid(
     .maybeSingle();
   if (already) return;
 
-  // Find oldest pending payment for this subscription
-  const { data: pendings } = await supabase
+  // Find oldest unpaid payment (pending OR late) for this subscription.
+  // Inclure "late" permet aux retries Stripe de récupérer une échéance
+  // précédemment marquée en échec.
+  const { data: unpaids } = await supabase
     .from("payments")
     .select("id, payment_number")
     .eq("stripe_subscription_id", subscriptionId)
-    .eq("status", "pending")
+    .in("status", ["pending", "late"])
     .order("payment_number", { ascending: true })
     .limit(1);
 
-  const target = pendings?.[0];
+  const target = unpaids?.[0];
   if (!target) {
     // Probably the sale hasn't been created yet (payment_intent.succeeded
     // hasn't fired). It will handle it.
-    console.log(`[invoice.paid] no pending payment yet for subscription ${subscriptionId}`);
+    console.log(`[invoice.paid] no unpaid payment yet for subscription ${subscriptionId}`);
     return;
   }
 
@@ -464,6 +466,8 @@ async function handleInvoiceFailed(
   }
 
   const subscriptionId = extractId(obj.subscription);
+  const invoiceId = typeof obj.id === "string" ? obj.id : null;
+  const paymentIntentId = extractId(obj.payment_intent);
   if (!subscriptionId) return;
 
   const { data: pendings } = await supabase
@@ -475,7 +479,10 @@ async function handleInvoiceFailed(
     .limit(1);
 
   if (pendings?.[0]) {
-    await supabase.from("payments").update({ status: "late" }).eq("id", pendings[0].id);
+    const patch: Record<string, unknown> = { status: "late" };
+    if (invoiceId) patch.stripe_invoice_id = invoiceId;
+    if (paymentIntentId) patch.stripe_payment_intent_id = paymentIntentId;
+    await supabase.from("payments").update(patch).eq("id", pendings[0].id);
   }
 }
 
