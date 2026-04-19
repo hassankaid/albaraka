@@ -725,11 +725,13 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
             billing_details: {
               name: fullName,
               email: billing.email.trim().toLowerCase(),
-              phone: billing.phone.trim() || undefined,
+              phone: billing.phone.trim() || "",
               address: {
                 line1: billing.address.trim(),
+                line2: "",
                 postal_code: billing.postal_code.trim(),
                 city: billing.city.trim(),
+                state: "",
                 country: billing.country.trim(),
               },
             },
