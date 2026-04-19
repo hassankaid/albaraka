@@ -262,6 +262,28 @@ async function ensureBonCommandeOrder(
 
   await markFirstPaymentPaid(supabase, sale.id, ids);
 
+  // Grant PASS AL BARAKA to unlock parcours + formations via PassGuard.
+  // Idempotent: skip if an active pass already exists for this user.
+  try {
+    const { data: existingPass } = await supabase
+      .from("user_passes")
+      .select("id")
+      .eq("user_id", profileId!)
+      .eq("pass_type", "al_baraka")
+      .is("revoked_at", null)
+      .limit(1);
+    if (!existingPass || existingPass.length === 0) {
+      await supabase.from("user_passes").insert({
+        user_id: profileId,
+        pass_type: "al_baraka",
+        notes: "auto-granted on bon_commande payment",
+      });
+      console.log(`[bon_commande] pass al_baraka granted to profile=${profileId}`);
+    }
+  } catch (e) {
+    console.error("[bon_commande] grant pass failed:", e);
+  }
+
   console.log(
     `[bon_commande] created profile=${profileId} sale=${sale.id} installments=${installments}`,
   );

@@ -1072,7 +1072,6 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
         </div>
         <div style={{ marginBottom: 10 }} className="alb-phone-wrapper">
           <PhoneInput
-            international
             defaultCountry="FR"
             placeholder="Numéro de téléphone"
             value={billing.phone}
@@ -1134,6 +1133,16 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
             },
           }}
         />
+        <style>{`
+          /* Masquer tout badge Stripe Link / autofill qui pourrait apparaître */
+          iframe[name^="__privateStripeFrame"][src*="link-authentication"],
+          iframe[name^="__privateStripeFrame"][src*="LinkAutofillModal"],
+          iframe[name^="__privateStripeFrame"][src*="Link"],
+          [data-testid="linkAuthenticationElement"],
+          [class*="Link"][class*="Popup"] {
+            display: none !important;
+          }
+        `}</style>
       </div>
 
       <div

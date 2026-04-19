@@ -15,6 +15,15 @@ const BRAND = {
   black: "#0A0A0A",
 };
 
+const BULLET_UL_STYLE: React.CSSProperties = {
+  margin: "0",
+  paddingLeft: 20,
+  listStyle: "disc",
+  color: BRAND.creamMuted,
+  fontSize: 13,
+  lineHeight: 1.8,
+};
+
 function suggestPseudo(fullName: string | null | undefined): string {
   if (!fullName) return "";
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -33,6 +42,7 @@ export function DiscordGate({ onJoined }: Props) {
   const { profile } = useAuth();
   const [joining, setJoining] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
 
   const firstName = useMemo(() => {
     const fn = profile?.full_name?.trim() || "";
@@ -42,6 +52,7 @@ export function DiscordGate({ onJoined }: Props) {
   const pseudo = useMemo(() => suggestPseudo(profile?.full_name), [profile?.full_name]);
 
   async function onJoinClick() {
+    if (!confirmed) return;
     setJoining(true);
     try {
       const { error } = await supabase.rpc("record_discord_join");
@@ -49,9 +60,6 @@ export function DiscordGate({ onJoined }: Props) {
       window.open(DISCORD_INVITE_URL, "_blank", "noopener,noreferrer");
       toast.success("Bienvenue dans la famille Al Baraka !");
       onJoined?.();
-      // Force the AuthProvider to refetch the profile so the gate disappears.
-      // (auth session onAuthStateChange will pick it up on the next focus,
-      //  but a manual refresh ensures immediate UI update.)
       setTimeout(() => window.location.reload(), 400);
     } catch (e) {
       console.error("record_discord_join error:", e);
@@ -96,6 +104,7 @@ export function DiscordGate({ onJoined }: Props) {
           borderRadius: 12,
         }}
       >
+        {/* Header */}
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
           <div
             style={{
@@ -125,15 +134,7 @@ export function DiscordGate({ onJoined }: Props) {
               </text>
             </svg>
           </div>
-          <div
-            style={{
-              fontSize: 14,
-              fontWeight: 500,
-              letterSpacing: 5,
-              color: BRAND.cream,
-              marginBottom: 5,
-            }}
-          >
+          <div style={{ fontSize: 14, fontWeight: 500, letterSpacing: 5, color: BRAND.cream, marginBottom: 5 }}>
             AL BARAKA
           </div>
           <div style={{ fontSize: 9, color: BRAND.gold, letterSpacing: 2.5 }}>
@@ -160,7 +161,7 @@ export function DiscordGate({ onJoined }: Props) {
             color: BRAND.creamSoft,
             fontSize: 15,
             lineHeight: 1.75,
-            margin: "0 0 14px 0",
+            margin: "0 0 28px 0",
             textAlign: "center",
           }}
         >
@@ -169,48 +170,40 @@ export function DiscordGate({ onJoined }: Props) {
           les frères et sœurs qui ont le même projet que toi.
         </p>
 
-        <button
-          type="button"
-          onClick={onJoinClick}
-          disabled={joining}
+        {/* Pas de compte Discord */}
+        <div
           style={{
-            width: "100%",
-            background: BRAND.gold,
-            color: BRAND.black,
-            border: "none",
+            padding: "16px 20px",
+            border: `0.5px solid ${BRAND.goldSoft}`,
             borderRadius: 8,
-            padding: "17px 20px",
-            fontSize: 14,
-            fontWeight: 500,
-            cursor: joining ? "not-allowed" : "pointer",
-            letterSpacing: 3,
-            fontFamily: "inherit",
-            margin: "28px 0",
-            opacity: joining ? 0.6 : 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 10,
+            background: BRAND.goldMuted,
+            marginBottom: 20,
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
-          </svg>
-          {joining ? "OUVERTURE..." : "REJOINDRE LE DISCORD AL BARAKA"}
-        </button>
+          <h2
+            style={{
+              fontSize: 11,
+              fontWeight: 500,
+              margin: "0 0 8px 0",
+              letterSpacing: 3,
+              color: BRAND.gold,
+            }}
+          >
+            PAS ENCORE DE COMPTE DISCORD ?
+          </h2>
+          <p style={{ color: BRAND.creamSoft, fontSize: 13, lineHeight: 1.7, margin: 0 }}>
+            Tu vas devoir en créer un avant de rejoindre le serveur. C'est gratuit et ça prend 2 minutes.
+          </p>
+        </div>
 
-        <p style={{ color: BRAND.creamMuted, fontSize: 13, lineHeight: 1.7, margin: "0 0 24px 0" }}>
-          Si tu n'as pas encore de compte Discord, tu vas devoir en créer un avant de rejoindre le
-          serveur (c'est gratuit et ça prend 2 minutes).
-        </p>
-
+        {/* Pseudo */}
         <div
           style={{
             padding: "20px 22px",
             border: `0.5px solid ${BRAND.goldSoft}`,
             borderRadius: 8,
             background: BRAND.goldMuted,
-            marginBottom: 24,
+            marginBottom: 20,
           }}
         >
           <h2
@@ -279,14 +272,14 @@ export function DiscordGate({ onJoined }: Props) {
             </div>
           )}
 
-          <div style={{ fontSize: 12, color: BRAND.creamMuted, lineHeight: 1.8 }}>
-            <div style={{ marginBottom: 4 }}>Exemples :</div>
-            <ul style={{ margin: 0, paddingLeft: 18 }}>
-              <li>Mohamed Benali → MohamedBen</li>
-              <li>Fatima El Idrissi → FatimaElI</li>
-              <li>Yacine-Amine Toumi → YacineTou</li>
-            </ul>
+          <div style={{ fontSize: 12, color: BRAND.creamMuted, lineHeight: 1.8, marginBottom: 10 }}>
+            <strong style={{ color: BRAND.creamSoft }}>Exemples :</strong>
           </div>
+          <ul style={BULLET_UL_STYLE}>
+            <li>Mohamed Benali → <strong style={{ color: BRAND.cream }}>MohamedBen</strong></li>
+            <li>Fatima El Idrissi → <strong style={{ color: BRAND.cream }}>FatimaElI</strong></li>
+            <li>Yacine-Amine Toumi → <strong style={{ color: BRAND.cream }}>YacineTou</strong></li>
+          </ul>
 
           <p style={{ color: BRAND.creamMuted, fontSize: 12, lineHeight: 1.7, margin: "14px 0 0 0" }}>
             Si tu utilises déjà Discord, pas besoin de changer ton pseudo global — clique sur ton
@@ -295,12 +288,13 @@ export function DiscordGate({ onJoined }: Props) {
           </p>
         </div>
 
+        {/* Présente-toi */}
         <div
           style={{
             padding: "20px 22px",
             border: `0.5px solid ${BRAND.goldSoft}`,
             borderRadius: 8,
-            marginBottom: 24,
+            marginBottom: 28,
           }}
         >
           <h2
@@ -314,11 +308,11 @@ export function DiscordGate({ onJoined }: Props) {
           >
             PRÉSENTE-TOI À LA FAMILLE
           </h2>
-          <p style={{ color: BRAND.creamSoft, fontSize: 13, lineHeight: 1.7, margin: "0 0 10px 0" }}>
+          <p style={{ color: BRAND.creamSoft, fontSize: 13, lineHeight: 1.7, margin: "0 0 12px 0" }}>
             Une fois dans le Discord, rends-toi dans le salon <strong>#présentation</strong> pour
             enregistrer un vocal court (1 à 2 minutes) où tu te présentes :
           </p>
-          <ul style={{ color: BRAND.creamMuted, fontSize: 13, lineHeight: 1.8, margin: 0, paddingLeft: 18 }}>
+          <ul style={BULLET_UL_STYLE}>
             <li>Ton prénom</li>
             <li>Ton âge</li>
             <li>Ce que tu fais dans la vie</li>
@@ -329,6 +323,71 @@ export function DiscordGate({ onJoined }: Props) {
           </p>
         </div>
 
+        {/* Checkbox de confirmation */}
+        <label
+          style={{
+            display: "flex",
+            gap: 12,
+            alignItems: "flex-start",
+            padding: "16px 18px",
+            border: `0.5px solid ${confirmed ? BRAND.gold : BRAND.goldSoft}`,
+            borderRadius: 8,
+            background: confirmed ? "rgba(201,160,78,0.08)" : BRAND.goldMuted,
+            marginBottom: 20,
+            cursor: "pointer",
+            transition: "border-color 0.2s, background 0.2s",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={confirmed}
+            onChange={(e) => setConfirmed(e.target.checked)}
+            style={{
+              accentColor: BRAND.gold,
+              marginTop: 3,
+              flexShrink: 0,
+              width: 16,
+              height: 16,
+              cursor: "pointer",
+            }}
+          />
+          <span style={{ fontSize: 13, color: BRAND.creamSoft, lineHeight: 1.6 }}>
+            J'ai pris connaissance des instructions ci-dessus (règle du pseudo, présentation dans
+            <strong> #présentation</strong>).
+          </span>
+        </label>
+
+        {/* Bouton rejoindre Discord (bas, désactivé tant que pas coché) */}
+        <button
+          type="button"
+          onClick={onJoinClick}
+          disabled={joining || !confirmed}
+          style={{
+            width: "100%",
+            background: BRAND.gold,
+            color: BRAND.black,
+            border: "none",
+            borderRadius: 8,
+            padding: "17px 20px",
+            fontSize: 14,
+            fontWeight: 500,
+            cursor: joining || !confirmed ? "not-allowed" : "pointer",
+            letterSpacing: 3,
+            fontFamily: "inherit",
+            opacity: joining || !confirmed ? 0.5 : 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+            transition: "opacity 0.2s",
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+          </svg>
+          {joining ? "OUVERTURE..." : "REJOINDRE LE DISCORD AL BARAKA"}
+        </button>
+
         <div
           style={{
             textAlign: "center",
@@ -338,7 +397,9 @@ export function DiscordGate({ onJoined }: Props) {
             marginTop: 16,
           }}
         >
-          Tu ne peux accéder au reste de la plateforme qu'après avoir rejoint Discord.
+          {confirmed
+            ? "Clique sur le bouton pour ouvrir Discord dans un nouvel onglet."
+            : "Coche la case ci-dessus pour activer le bouton."}
         </div>
       </div>
     </div>

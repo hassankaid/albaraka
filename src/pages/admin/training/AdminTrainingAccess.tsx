@@ -43,6 +43,7 @@ import { useToggleEarlyAccess } from "@/hooks/useAccessAdmin";
 import { SendInvitationDialog } from "@/components/admin/access/SendInvitationDialog";
 import { EditUserEmailDialog } from "@/components/admin/access/EditUserEmailDialog";
 import { AccessHistoryDialog } from "@/components/admin/access/AccessHistoryDialog";
+import { NewStudentDialog } from "@/components/admin/access/NewStudentDialog";
 
 const ROLE_LABELS: Record<string, string> = {
   ceo: "CEO",
@@ -173,12 +174,15 @@ export default function AdminTrainingAccess() {
             Hub unique de gestion des accès utilisateur : passes, formations, invitations, early access, email et historique.
           </p>
         </div>
-        <Button asChild variant="outline" className="gap-2">
-          <Link to="/admin/invitations/campaign">
-            <BarChart3 className="h-4 w-4" />
-            Suivi des vagues de campagne
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <NewStudentDialog />
+          <Button asChild variant="outline" className="gap-2">
+            <Link to="/admin/invitations/campaign">
+              <BarChart3 className="h-4 w-4" />
+              Suivi des vagues de campagne
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Toggle mode test */}
