@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import {
@@ -7,6 +7,9 @@ import {
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
+import PhoneInput, { isValidPhoneNumber, getCountries } from "react-phone-number-input";
+import flags from "react-phone-number-input/flags";
+import "react-phone-number-input/style.css";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -29,6 +32,200 @@ function formatEur(n: number): string {
     minimumFractionDigits: n % 1 === 0 ? 0 : 2,
     maximumFractionDigits: 2,
   }).format(n);
+}
+
+const COUNTRY_NAMES: Intl.DisplayNames | null = (() => {
+  try {
+    return new Intl.DisplayNames(["fr"], { type: "region" });
+  } catch {
+    return null;
+  }
+})();
+
+function countryName(iso: string): string {
+  try {
+    const n = COUNTRY_NAMES?.of(iso);
+    return n || iso;
+  } catch {
+    return iso;
+  }
+}
+
+const ALL_COUNTRIES: string[] = (() => {
+  try {
+    return getCountries().slice().sort((a, b) => countryName(a).localeCompare(countryName(b), "fr"));
+  } catch {
+    return ["FR", "BE", "CH", "LU", "DZ", "MA", "TN", "SN", "CI", "CM", "US", "GB", "DE", "ES", "IT"];
+  }
+})();
+
+interface CountrySelectProps {
+  value: string;
+  onChange: (iso: string) => void;
+}
+
+function CountrySearchSelect({ value, onChange }: CountrySelectProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    } else {
+      setQuery("");
+    }
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    if (!query.trim()) return ALL_COUNTRIES;
+    const q = query.trim().toLowerCase();
+    return ALL_COUNTRIES.filter((iso) => {
+      return countryName(iso).toLowerCase().includes(q) || iso.toLowerCase().includes(q);
+    });
+  }, [query]);
+
+  const CurrentFlag = flags[value as keyof typeof flags];
+
+  return (
+    <div ref={wrapperRef} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          width: "100%",
+          background: "rgba(255,255,255,0.03)",
+          border: `0.5px solid rgba(201,160,78,0.28)`,
+          color: "#F5F1E6",
+          padding: "11px 14px",
+          borderRadius: 6,
+          fontSize: 14,
+          fontFamily: "inherit",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          cursor: "pointer",
+          textAlign: "left",
+          justifyContent: "space-between",
+        }}
+      >
+        <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {CurrentFlag ? (
+            <span style={{ width: 22, height: 16, display: "inline-block" }}>
+              <CurrentFlag title={countryName(value)} />
+            </span>
+          ) : null}
+          <span>{value ? countryName(value) : "Sélectionner un pays"}</span>
+        </span>
+        <svg width="10" height="6" viewBox="0 0 10 6" style={{ opacity: 0.6 }}>
+          <path d="M1 1L5 5L9 1" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 4px)",
+            left: 0,
+            right: 0,
+            background: "#0A0A0A",
+            border: `0.5px solid rgba(201,160,78,0.4)`,
+            borderRadius: 6,
+            zIndex: 20,
+            maxHeight: 280,
+            display: "flex",
+            flexDirection: "column",
+            boxShadow: "0 10px 32px rgba(0,0,0,0.5)",
+          }}
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Rechercher un pays…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "none",
+              borderBottom: `0.5px solid rgba(201,160,78,0.2)`,
+              color: "#F5F1E6",
+              padding: "12px 14px",
+              fontSize: 13,
+              fontFamily: "inherit",
+              outline: "none",
+              width: "100%",
+              boxSizing: "border-box",
+            }}
+          />
+          <div style={{ overflowY: "auto", maxHeight: 220 }}>
+            {filtered.length === 0 ? (
+              <div style={{ padding: "14px 16px", fontSize: 13, color: "rgba(245,241,230,0.5)" }}>
+                Aucun résultat
+              </div>
+            ) : (
+              filtered.map((iso) => {
+                const Flag = flags[iso as keyof typeof flags];
+                const selected = iso === value;
+                return (
+                  <button
+                    key={iso}
+                    type="button"
+                    onClick={() => {
+                      onChange(iso);
+                      setOpen(false);
+                    }}
+                    style={{
+                      width: "100%",
+                      background: selected ? "rgba(201,160,78,0.12)" : "transparent",
+                      border: "none",
+                      color: "#F5F1E6",
+                      padding: "10px 14px",
+                      fontSize: 13,
+                      fontFamily: "inherit",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!selected) e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!selected) e.currentTarget.style.background = "transparent";
+                    }}
+                  >
+                    {Flag ? (
+                      <span style={{ width: 22, height: 16, display: "inline-block", flexShrink: 0 }}>
+                        <Flag title={countryName(iso)} />
+                      </span>
+                    ) : null}
+                    <span>{countryName(iso)}</span>
+                    <span style={{ marginLeft: "auto", color: "rgba(245,241,230,0.4)", fontSize: 11 }}>
+                      {iso}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 type CouponState =
@@ -59,20 +256,21 @@ export default function Checkout() {
       ? parsedInstallments
       : 1;
 
+  const missingKeyName = testMode
+    ? "VITE_STRIPE_PUBLISHABLE_KEY_TEST"
+    : "VITE_STRIPE_PUBLISHABLE_KEY";
+  const publishableKey = testMode
+    ? import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_TEST
+    : import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+  const stripeKeyMissing = !publishableKey;
+
   const stripePromise = useMemo<Promise<Stripe | null>>(() => {
-    const key = testMode
-      ? import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_TEST
-      : import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-    if (!key) {
-      console.error(
-        `Clé publique Stripe manquante (${
-          testMode ? "VITE_STRIPE_PUBLISHABLE_KEY_TEST" : "VITE_STRIPE_PUBLISHABLE_KEY"
-        })`,
-      );
+    if (!publishableKey) {
+      console.error(`Clé publique Stripe manquante (${missingKeyName})`);
       return Promise.resolve(null);
     }
-    return loadStripe(key);
-  }, [testMode]);
+    return loadStripe(publishableKey);
+  }, [publishableKey, missingKeyName]);
 
   const [coupon, setCoupon] = useState<CouponState>({ status: "idle" });
   const discountPercent = coupon.status === "valid" ? coupon.percent : 0;
@@ -127,6 +325,27 @@ export default function Checkout() {
         padding: "3rem 1.5rem",
       }}
     >
+      {stripeKeyMissing && (
+        <div
+          style={{
+            maxWidth: 520,
+            margin: "0 auto 1.5rem",
+            padding: "14px 16px",
+            background: "rgba(225, 90, 90, 0.12)",
+            border: "1px solid rgba(225, 90, 90, 0.55)",
+            borderRadius: 8,
+            color: "#ff9999",
+            fontSize: 12,
+            letterSpacing: 0.3,
+            textAlign: "center",
+            lineHeight: 1.5,
+          }}
+        >
+          ⚠ Clé publique Stripe non configurée côté Vercel (<code>{missingKeyName}</code>).
+          Le paiement ne fonctionnera pas tant qu'elle n'est pas ajoutée dans les variables
+          d'environnement Vercel (puis redéploiement).
+        </div>
+      )}
       {testMode && (
         <div
           style={{
@@ -179,7 +398,7 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
     address: "",
     postal_code: "",
     city: "",
-    country: "France",
+    country: "FR",
   });
 
   const [couponInput, setCouponInput] = useState("");
@@ -224,6 +443,7 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
     if (!billing.last_name.trim()) return "Nom requis";
     if (!billing.email.trim() || !billing.email.includes("@")) return "Email invalide";
     if (!billing.phone.trim()) return "Téléphone requis";
+    if (!isValidPhoneNumber(billing.phone)) return "Numéro de téléphone invalide";
     if (!billing.address.trim()) return "Adresse requise";
     if (!billing.postal_code.trim()) return "Code postal requis";
     if (!billing.city.trim()) return "Ville requise";
@@ -329,6 +549,61 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
         .alb-checkout input::placeholder { color: rgba(245,241,230,0.35); }
         .alb-checkout input:focus { outline: none; border-color: ${BRAND.gold}; background: rgba(255,255,255,0.05); }
         .alb-checkout input[type="checkbox"] { accent-color: ${BRAND.gold}; width: auto; padding: 0; }
+        /* react-phone-number-input overrides pour le thème noir/or */
+        .alb-phone-wrapper .PhoneInput {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: rgba(255,255,255,0.03);
+          border: 0.5px solid ${BRAND.goldSoft};
+          border-radius: 6px;
+          padding: 6px 10px 6px 12px;
+          transition: border-color 0.2s;
+        }
+        .alb-phone-wrapper .PhoneInput--focus,
+        .alb-phone-wrapper .PhoneInput:focus-within {
+          border-color: ${BRAND.gold};
+          background: rgba(255,255,255,0.05);
+        }
+        .alb-phone-wrapper .PhoneInputCountry {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .alb-phone-wrapper .PhoneInputCountryIcon {
+          width: 24px;
+          height: 18px;
+          background: transparent;
+          box-shadow: none;
+        }
+        .alb-phone-wrapper .PhoneInputCountrySelect {
+          background: transparent;
+          color: ${BRAND.cream};
+          border: none;
+          cursor: pointer;
+          opacity: 0;
+          position: absolute;
+          inset: 0;
+          width: auto;
+        }
+        .alb-phone-wrapper .PhoneInputCountrySelectArrow {
+          border-style: solid;
+          border-color: ${BRAND.gold};
+          opacity: 0.8;
+        }
+        .alb-phone-wrapper .PhoneInputInput {
+          background: transparent;
+          border: none;
+          color: ${BRAND.cream};
+          font-size: 14px;
+          font-family: inherit;
+          padding: 8px 4px;
+          width: 100%;
+          outline: none;
+        }
+        .alb-phone-wrapper .PhoneInputInput::placeholder {
+          color: rgba(245,241,230,0.35);
+        }
         .alb-btn {
           width: 100%;
           background: ${BRAND.gold};
@@ -584,13 +859,15 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
             required
           />
         </div>
-        <div style={{ marginBottom: 10 }}>
-          <input
-            type="tel"
+        <div style={{ marginBottom: 10 }} className="alb-phone-wrapper">
+          <PhoneInput
+            international
+            defaultCountry="FR"
             placeholder="Numéro de téléphone"
             value={billing.phone}
-            onChange={(e) => onField("phone", e.target.value)}
-            required
+            onChange={(v) => onField("phone", v || "")}
+            countryCallingCodeEditable={false}
+            flags={flags}
           />
         </div>
         <div style={{ marginBottom: 10 }}>
@@ -619,12 +896,9 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
           />
         </div>
         <div>
-          <input
-            type="text"
-            placeholder="Pays"
+          <CountrySearchSelect
             value={billing.country}
-            onChange={(e) => onField("country", e.target.value)}
-            required
+            onChange={(iso) => onField("country", iso)}
           />
         </div>
       </div>
@@ -665,7 +939,16 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
           />
           <span>Je confirme mon inscription au PASS AL BARAKA.</span>
         </label>
-        <ul style={{ margin: "8px 0 0 28px", padding: 0, color: "rgba(245,241,230,0.6)", fontSize: 12, lineHeight: 1.65 }}>
+        <ul
+          style={{
+            margin: "8px 0 0 28px",
+            paddingLeft: 20,
+            listStyle: "disc",
+            color: "rgba(245,241,230,0.6)",
+            fontSize: 12,
+            lineHeight: 1.65,
+          }}
+        >
           <li style={{ marginBottom: 5 }}>Je souhaite accéder au contenu immédiatement.</li>
           <li style={{ marginBottom: 5 }}>
             S'agissant de produits numériques, je renonce à mon droit de rétractation de 14 jours (article L221-28 13° du Code de la consommation).
