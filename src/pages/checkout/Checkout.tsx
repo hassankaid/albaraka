@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -32,17 +32,15 @@ type CouponState =
 
 export default function Checkout() {
   const params = useParams();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const testMode = searchParams.get("test") === "1";
 
   const parsedInstallments = Number(params.installments);
-  const initialInstallments =
+  const installments =
     Number.isInteger(parsedInstallments) && parsedInstallments >= 1 && parsedInstallments <= 8
       ? parsedInstallments
       : 1;
 
-  const [installments, setInstallments] = useState(initialInstallments);
   const [couponInput, setCouponInput] = useState("");
   const [coupon, setCoupon] = useState<CouponState>({ status: "idle" });
   const [submitting, setSubmitting] = useState(false);
@@ -56,12 +54,6 @@ export default function Checkout() {
     () => Math.round((totalAfterDiscount / installments) * 100) / 100,
     [totalAfterDiscount, installments],
   );
-
-  function onSelectInstallments(n: number) {
-    setInstallments(n);
-    const suffix = testMode ? "?test=1" : "";
-    navigate(`/checkout/${n}${suffix}`, { replace: true });
-  }
 
   async function onApplyCoupon() {
     const code = couponInput.trim().toUpperCase();
@@ -140,25 +132,6 @@ export default function Checkout() {
         }
         .alb-checkout input::placeholder { color: rgba(245,241,230,0.35); }
         .alb-checkout input:focus { outline: none; border-color: ${BRAND.gold}; background: rgba(255,255,255,0.05); }
-        .alb-plan-btn {
-          background: transparent;
-          border: 0.5px solid ${BRAND.goldSoft};
-          color: ${BRAND.creamSoft};
-          padding: 14px 8px;
-          border-radius: 6px;
-          font-size: 13px;
-          letter-spacing: 1px;
-          cursor: pointer;
-          transition: all 0.2s;
-          font-family: inherit;
-        }
-        .alb-plan-btn:hover { border-color: ${BRAND.gold}; color: ${BRAND.cream}; }
-        .alb-plan-btn.active {
-          background: ${BRAND.gold};
-          color: ${BRAND.black};
-          border-color: ${BRAND.gold};
-          font-weight: 500;
-        }
         .alb-btn {
           width: 100%;
           background: ${BRAND.gold};
@@ -324,30 +297,6 @@ export default function Checkout() {
                 </svg>
                 <span>{item}</span>
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ marginBottom: "2rem" }}>
-          <h2 style={{ fontSize: 11, fontWeight: 500, margin: "0 0 16px 0", letterSpacing: 3, color: BRAND.gold }}>
-            PLAN DE PAIEMENT
-          </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
-              gap: 8,
-            }}
-          >
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-              <button
-                key={n}
-                type="button"
-                className={`alb-plan-btn ${installments === n ? "active" : ""}`}
-                onClick={() => onSelectInstallments(n)}
-              >
-                {n === 1 ? "1 fois" : `${n} fois`}
-              </button>
             ))}
           </div>
         </div>
