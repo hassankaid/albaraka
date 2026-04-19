@@ -247,10 +247,10 @@ export default function AgentIA() {
                 <div className="text-center max-w-md space-y-4">
                   <Bot className="h-12 w-12 mx-auto text-muted-foreground/50" />
                   <div>
-                    <h3 className="text-lg font-semibold">Agent IA Al Baraka</h3>
+                    <h3 className="text-lg font-semibold">Agent IA AL BARAKA</h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       Colle un message de prospect ou pose une question. L'agent t'aide à formuler
-                      la meilleure réponse en se basant sur les scripts et objections Al Baraka.
+                      la meilleure réponse en se basant sur les scripts et objections AL BARAKA.
                     </p>
                   </div>
                 </div>
