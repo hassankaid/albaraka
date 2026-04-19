@@ -195,12 +195,9 @@ Deno.serve(async (req) => {
         payment_intent_data: { metadata: metadataCommon },
       };
     } else {
-      // Subscription with cancel_at to bound the number of charges
-      const cancelDate = new Date();
-      cancelDate.setMonth(cancelDate.getMonth() + installments);
-      cancelDate.setDate(cancelDate.getDate() - 1);
-      const cancelAt = Math.floor(cancelDate.getTime() / 1000);
-
+      // Stripe n'accepte plus cancel_at dans subscription_data à la création
+      // de la session. Le webhook stripe-webhook fixe cancel_at après création
+      // via PATCH sur la subscription, en se basant sur metadata.installments.
       params = {
         ...baseParams,
         mode: "subscription",
@@ -215,7 +212,6 @@ Deno.serve(async (req) => {
         }],
         subscription_data: {
           metadata: metadataCommon,
-          cancel_at: cancelAt,
           description: `${PRODUCT_NAME} — ${installments} mensualités`,
         },
       };

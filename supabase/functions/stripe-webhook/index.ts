@@ -8,8 +8,32 @@ const corsHeaders = {
 
 const STRIPE_WEBHOOK_SECRET_LIVE = Deno.env.get("STRIPE_WEBHOOK_SECRET");
 const STRIPE_WEBHOOK_SECRET_TEST = Deno.env.get("STRIPE_WEBHOOK_SECRET_TEST");
+const STRIPE_SECRET_KEY_LIVE = Deno.env.get("STRIPE_SECRET_KEY");
+const STRIPE_SECRET_KEY_TEST = Deno.env.get("STRIPE_SECRET_KEY_TEST");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+async function stripePatch(
+  apiKey: string,
+  path: string,
+  params: Record<string, string | number>,
+): Promise<unknown> {
+  const body = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) body.append(k, String(v));
+  const res = await fetch(`https://api.stripe.com/v1${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body.toString(),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Stripe ${path} ${res.status}: ${err}`);
+  }
+  return await res.json();
+}
 
 async function verifyStripeSignature(
   payload: string,
@@ -214,6 +238,27 @@ async function handleCheckoutCompleted(
       })
       .eq("sale_id", sale.id)
       .eq("payment_number", 1);
+  }
+
+  // Subscription mode : on fixe cancel_at après création pour borner le nombre
+  // d'échéances. Stripe n'accepte plus ce paramètre à la création du checkout.
+  if (installments >= 2 && subscriptionId) {
+    const isLive = session.livemode === true;
+    const apiKey = isLive ? STRIPE_SECRET_KEY_LIVE : STRIPE_SECRET_KEY_TEST;
+    if (apiKey) {
+      const cancelDate = new Date();
+      cancelDate.setMonth(cancelDate.getMonth() + installments);
+      cancelDate.setDate(cancelDate.getDate() - 1);
+      const cancelAt = Math.floor(cancelDate.getTime() / 1000);
+      try {
+        await stripePatch(apiKey, `/subscriptions/${subscriptionId}`, { cancel_at: cancelAt });
+        console.log(`[checkout] subscription ${subscriptionId} cancel_at=${cancelAt} set`);
+      } catch (e) {
+        console.error(`[checkout] failed to set cancel_at on ${subscriptionId}:`, e);
+      }
+    } else {
+      console.error(`[checkout] no STRIPE_SECRET_KEY for livemode=${isLive}`);
+    }
   }
 
   console.log(`[checkout] created profile=${profileId} sale=${sale.id} installments=${installments}`);
