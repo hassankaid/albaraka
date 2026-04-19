@@ -7,7 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
+const STRIPE_SECRET_KEY_LIVE = Deno.env.get("STRIPE_SECRET_KEY");
+const STRIPE_SECRET_KEY_TEST = Deno.env.get("STRIPE_SECRET_KEY_TEST");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -33,12 +34,17 @@ function flattenParams(params: Record<string, unknown>): URLSearchParams {
   return out;
 }
 
-async function stripeFetch<T = unknown>(path: string, params: Record<string, unknown>, method = "POST"): Promise<T> {
+async function stripeFetch<T = unknown>(
+  apiKey: string,
+  path: string,
+  params: Record<string, unknown>,
+  method = "POST",
+): Promise<T> {
   const body = method === "GET" ? undefined : flattenParams(params).toString();
   const res = await fetch(`https://api.stripe.com/v1${path}`, {
     method,
     headers: {
-      Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body,
@@ -51,35 +57,45 @@ async function stripeFetch<T = unknown>(path: string, params: Record<string, unk
 }
 
 async function ensureStripeCoupon(
+  apiKey: string,
   supabase: ReturnType<typeof createClient>,
   code: string,
   percent: number,
+  isTestMode: boolean,
 ): Promise<string> {
-  const { data: row } = await supabase
-    .from("coupons")
-    .select("stripe_coupon_id")
-    .eq("code", code)
-    .maybeSingle();
-  if (row?.stripe_coupon_id) return row.stripe_coupon_id;
+  // In test mode we don't cache the stripe_coupon_id in DB because the
+  // LIVE and TEST Stripe environments are separate: a coupon id from TEST
+  // is NOT valid in LIVE. We still try to reuse existing coupons by id.
+  if (!isTestMode) {
+    const { data: row } = await supabase
+      .from("coupons")
+      .select("stripe_coupon_id")
+      .eq("code", code)
+      .maybeSingle();
+    if (row?.stripe_coupon_id) return row.stripe_coupon_id;
+  }
 
-  // Try to fetch the coupon in Stripe first (idempotent in case DB was wiped)
   try {
-    const existing = await stripeFetch<{ id: string }>(`/coupons/${encodeURIComponent(code)}`, {}, "GET");
+    const existing = await stripeFetch<{ id: string }>(apiKey, `/coupons/${encodeURIComponent(code)}`, {}, "GET");
     if (existing?.id) {
-      await supabase.from("coupons").update({ stripe_coupon_id: existing.id }).eq("code", code);
+      if (!isTestMode) {
+        await supabase.from("coupons").update({ stripe_coupon_id: existing.id }).eq("code", code);
+      }
       return existing.id;
     }
   } catch {
     // not found, will create below
   }
 
-  const coupon = await stripeFetch<{ id: string }>("/coupons", {
+  const coupon = await stripeFetch<{ id: string }>(apiKey, "/coupons", {
     id: code,
     percent_off: percent,
     duration: "forever",
     name: `${code} — ${percent}% de réduction`,
   });
-  await supabase.from("coupons").update({ stripe_coupon_id: coupon.id }).eq("code", code);
+  if (!isTestMode) {
+    await supabase.from("coupons").update({ stripe_coupon_id: coupon.id }).eq("code", code);
+  }
   return coupon.id;
 }
 
@@ -94,16 +110,10 @@ Deno.serve(async (req) => {
     });
   }
 
-  if (!STRIPE_SECRET_KEY) {
-    return new Response(
-      JSON.stringify({ error: "STRIPE_SECRET_KEY not configured" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
-
   try {
     const input = await req.json().catch(() => ({}));
     const installments = Number(input.installments);
+    const isTestMode = !!input.test_mode;
     const couponCode: string | undefined = typeof input.coupon_code === "string" && input.coupon_code.trim()
       ? input.coupon_code.trim().toUpperCase()
       : undefined;
@@ -118,6 +128,18 @@ Deno.serve(async (req) => {
       );
     }
 
+    const apiKey = isTestMode ? STRIPE_SECRET_KEY_TEST : STRIPE_SECRET_KEY_LIVE;
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({
+          error: isTestMode
+            ? "STRIPE_SECRET_KEY_TEST not configured"
+            : "STRIPE_SECRET_KEY not configured",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Resolve coupon via SQL RPC (single source of truth)
@@ -128,7 +150,7 @@ Deno.serve(async (req) => {
       if (rpcErr) console.error("validate_coupon rpc error:", rpcErr);
       if (validation?.valid) {
         discountPercent = validation.discount_percent;
-        stripeCouponId = await ensureStripeCoupon(supabase, validation.code, discountPercent);
+        stripeCouponId = await ensureStripeCoupon(apiKey, supabase, validation.code, discountPercent, isTestMode);
       }
     }
 
@@ -141,6 +163,7 @@ Deno.serve(async (req) => {
       discount_percent: String(discountPercent),
       product: PRODUCT_NAME,
       source: "bon_commande",
+      test_mode: isTestMode ? "true" : "false",
     };
 
     const baseParams: Record<string, unknown> = {
@@ -198,7 +221,7 @@ Deno.serve(async (req) => {
       };
     }
 
-    const session = await stripeFetch<{ id: string; url: string }>("/checkout/sessions", params);
+    const session = await stripeFetch<{ id: string; url: string }>(apiKey, "/checkout/sessions", params);
 
     return new Response(
       JSON.stringify({

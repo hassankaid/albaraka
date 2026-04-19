@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -33,6 +33,9 @@ type CouponState =
 export default function Checkout() {
   const params = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const testMode = searchParams.get("test") === "1";
+
   const parsedInstallments = Number(params.installments);
   const initialInstallments =
     Number.isInteger(parsedInstallments) && parsedInstallments >= 1 && parsedInstallments <= 8
@@ -56,7 +59,8 @@ export default function Checkout() {
 
   function onSelectInstallments(n: number) {
     setInstallments(n);
-    navigate(`/checkout/${n}`, { replace: true });
+    const suffix = testMode ? "?test=1" : "";
+    navigate(`/checkout/${n}${suffix}`, { replace: true });
   }
 
   async function onApplyCoupon() {
@@ -89,6 +93,7 @@ export default function Checkout() {
           body: {
             installments,
             coupon_code: coupon.status === "valid" ? coupon.code : undefined,
+            test_mode: testMode,
           },
         },
       );
@@ -187,6 +192,25 @@ export default function Checkout() {
         .alb-coupon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
       `}</style>
 
+      {testMode && (
+        <div
+          style={{
+            maxWidth: 520,
+            margin: "0 auto 1.5rem",
+            padding: "12px 16px",
+            background: "rgba(255, 180, 0, 0.1)",
+            border: "1px solid rgba(255, 180, 0, 0.5)",
+            borderRadius: 8,
+            color: "#FFB400",
+            fontSize: 12,
+            letterSpacing: 1,
+            textAlign: "center",
+            fontFamily: "monospace",
+          }}
+        >
+          ⚠ MODE TEST — utilise la carte 4242 4242 4242 4242, aucun débit réel
+        </div>
+      )}
       <div
         className="alb-checkout"
         style={{

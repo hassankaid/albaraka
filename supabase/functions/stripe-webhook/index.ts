@@ -6,7 +6,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
-const STRIPE_WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+const STRIPE_WEBHOOK_SECRET_LIVE = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+const STRIPE_WEBHOOK_SECRET_TEST = Deno.env.get("STRIPE_WEBHOOK_SECRET_TEST");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -341,14 +342,27 @@ Deno.serve(async (req) => {
     const body = await req.text();
     const signature = req.headers.get("stripe-signature");
 
-    if (STRIPE_WEBHOOK_SECRET && signature) {
-      const isValid = await verifyStripeSignature(body, signature, STRIPE_WEBHOOK_SECRET);
-      if (!isValid) {
-        console.error("Invalid Stripe signature");
-        return new Response(JSON.stringify({ error: "Invalid signature" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+    if (signature) {
+      const secrets = [STRIPE_WEBHOOK_SECRET_LIVE, STRIPE_WEBHOOK_SECRET_TEST].filter(
+        (s): s is string => typeof s === "string" && s.length > 0,
+      );
+      if (secrets.length === 0) {
+        console.warn("No webhook secret configured — skipping signature verification");
+      } else {
+        let valid = false;
+        for (const secret of secrets) {
+          if (await verifyStripeSignature(body, signature, secret)) {
+            valid = true;
+            break;
+          }
+        }
+        if (!valid) {
+          console.error("Invalid Stripe signature (tried all configured secrets)");
+          return new Response(JSON.stringify({ error: "Invalid signature" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
     }
 
