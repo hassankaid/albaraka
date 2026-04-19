@@ -91,3 +91,16 @@ export function formatConferenceLabelShort(dateStr: string): string {
   });
   return fmt.format(d).replace(".", "");
 }
+
+/** Format complet : "Conférence du dimanche 19 avril 2026". */
+export function formatConferenceLabelFull(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00Z");
+  const fmt = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  return `Conférence du ${fmt.format(d)}`;
+}

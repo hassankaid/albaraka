@@ -104,11 +104,8 @@ export interface MarketingDashboardData {
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
-/** Event types de calls qui comptent comme "RDV pris" (exclut les inscriptions au webinaire). */
-const REAL_CALL_EVENT_TYPES_EXCLUDE = new Set([
-  "INSCRIPTION CONFÉRENCE",
-  "inscription_conference",
-]);
+// Tous les calls (y compris INSCRIPTION CONFÉRENCE) comptent comme RDV.
+// Une inscription à la conf via Calendly = un engagement du prospect, donc un RDV.
 
 /** Calcule les bornes (UTC dates) d'une fenêtre couvrant les ads d'une plage de conf. */
 function conferenceToAdsDateRange(
@@ -201,11 +198,10 @@ export function useMarketingDashboardData(filter: ConferenceFilter) {
       const { data: callRowsRaw, error: callErr } = await callsQuery;
       if (callErr) throw callErr;
 
-      // Les inscriptions conf (webinaire) ne comptent PAS comme "RDV pris" dans les KPIs.
-      // On garde quand même la ligne pour le drill-down, mais on la distingue.
-      const rawCalls: MarketingCall[] = ((callRowsRaw ?? []) as any[])
-        .filter((c) => !REAL_CALL_EVENT_TYPES_EXCLUDE.has(c.event_type))
-        .map((c) => ({ ...c, is_orphan: !c.lead_id }));
+      const rawCalls: MarketingCall[] = ((callRowsRaw ?? []) as any[]).map((c) => ({
+        ...c,
+        is_orphan: !c.lead_id,
+      }));
 
       const callsByLead = new Map<string, MarketingCall[]>();
       let callsLinkedCount = 0;

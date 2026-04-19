@@ -17,7 +17,7 @@ import type { ConferenceFilter } from "@/lib/marketing/conferenceFilter";
 import {
   buildConferenceList,
   currentOrPrevSunday,
-  formatConferenceLabelShort,
+  formatConferenceLabelFull,
 } from "@/lib/marketing/conferenceFilter";
 
 type PresetKey = "conference" | "month" | "quarter" | "year" | "all" | "custom";
@@ -202,7 +202,7 @@ export default function ConferenceFilter({ value, onChange }: Props) {
             <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
           <Select value={selConf} onValueChange={applyConf}>
-            <SelectTrigger className="h-7 text-xs w-[200px]">
+            <SelectTrigger className="h-7 text-xs w-[320px]">
               <SelectValue placeholder="Sélectionne une conférence" />
             </SelectTrigger>
             <SelectContent className="max-h-[320px]">
@@ -212,7 +212,7 @@ export default function ConferenceFilter({ value, onChange }: Props) {
                 return (
                   <SelectItem key={c} value={c}>
                     <span className="flex items-center gap-2">
-                      {formatConferenceLabelShort(c)}
+                      <span>{formatConferenceLabelFull(c)}</span>
                       {isCurrent && (
                         <span className="text-[10px] text-primary">(en cours)</span>
                       )}
@@ -387,8 +387,8 @@ export default function ConferenceFilter({ value, onChange }: Props) {
       )}
 
       {value.mode === "single" && preset === "conference" && (
-        <span className="text-[11px] text-muted-foreground hidden sm:inline">
-          Cohorte du dim {formatConferenceLabelShort(value.date)} 12h Paris
+        <span className="text-[11px] text-muted-foreground hidden lg:inline">
+          Cohorte démarre le {formatConferenceLabelFull(value.date).replace("Conférence du ", "")} à 12h00 Paris
         </span>
       )}
     </div>
