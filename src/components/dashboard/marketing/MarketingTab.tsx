@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
-import PeriodFilter, { type DateRange } from "@/components/dashboard/PeriodFilter";
+import ConferenceFilter from "@/components/dashboard/marketing/ConferenceFilter";
+import type { ConferenceFilter as ConferenceFilterValue } from "@/lib/marketing/conferenceFilter";
+import { currentOrPrevSunday } from "@/lib/marketing/conferenceFilter";
 import {
   useMarketingDashboardData,
   type MarketingDashboardData,
@@ -35,7 +37,6 @@ import {
   Search,
   CheckCheck,
 } from "lucide-react";
-import { parisSundayNoonWeekRange } from "@/lib/marketing/weekRange";
 import {
   sourceLabel,
   tagCategoryLabel,
@@ -95,10 +96,11 @@ interface DrillState {
 
 // ─── Main Tab ────────────────────────────────────────────────────────
 export default function MarketingTab() {
-  const [dateRange, setDateRange] = useState<DateRange | null>(() =>
-    parisSundayNoonWeekRange(new Date()),
-  );
-  const { data, isLoading } = useMarketingDashboardData(dateRange);
+  const [filter, setFilter] = useState<ConferenceFilterValue>(() => ({
+    mode: "single" as const,
+    date: currentOrPrevSunday(new Date()),
+  }));
+  const { data, isLoading } = useMarketingDashboardData(filter);
   const [drill, setDrill] = useState<DrillState | null>(null);
 
   return (
@@ -106,24 +108,22 @@ export default function MarketingTab() {
       <div className="space-y-4">
         {/* ── Barre filtre ── */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <PeriodFilter
-            value={dateRange}
-            onChange={setDateRange}
-            weekMode="sundayNoonParis"
-          />
+          <ConferenceFilter value={filter} onChange={setFilter} />
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-help">
                 <Info className="h-3 w-3" />
-                <span>Règle de cohorte</span>
+                <span>Règle d'attribution</span>
               </div>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-[320px] text-xs leading-relaxed">
-              <p>
-                <strong>Tous les RDV et ventes sont attribués à la semaine d'inscription du lead.</strong>
-                {" "}Un lead opt-in dimanche 14h sur le webi du 19 avril reste dans cette semaine,
-                même si son call tombe mardi et sa vente 3 semaines plus tard.
-              </p>
+            <TooltipContent side="bottom" className="max-w-[360px] text-xs leading-relaxed">
+              <p className="font-semibold mb-1">Chaque conférence du dimanche 12h Paris porte sa cohorte.</p>
+              <ul className="list-disc pl-4 space-y-0.5">
+                <li><strong>Lead</strong> : prochain dim 12h après l'opt-in.</li>
+                <li><strong>Inscription conf Calendly</strong> : dim de la conf visée (scheduled_at).</li>
+                <li><strong>RDV 1-to-1</strong> : prochain dim 12h après scheduled_at.</li>
+                <li><strong>Vente</strong> : hérite du lead, sinon du RDV, sinon dim qui vient de passer.</li>
+              </ul>
             </TooltipContent>
           </Tooltip>
         </div>

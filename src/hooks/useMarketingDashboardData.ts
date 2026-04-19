@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { DateRange } from "@/components/dashboard/PeriodFilter";
+import type { ConferenceFilter } from "@/lib/marketing/conferenceFilter";
 
+// ─── Types ───────────────────────────────────────────────────────────
 export interface MarketingLead {
   id: string;
   source: string;
   created_at: string;
+  conference_date: string; // YYYY-MM-DD
   raw_full_name: string | null;
   raw_email: string | null;
   raw_phone: string | null;
@@ -18,8 +20,9 @@ export interface MarketingCall {
   scheduled_at: string | null;
   status: string | null;
   outcome: string | null;
+  event_type: string | null;
   created_at: string;
-  // Utilisés pour les calls orphelins (sans lead) — affichage fallback
+  conference_date: string;
   raw_full_name: string | null;
   raw_email: string | null;
   raw_phone: string | null;
@@ -34,7 +37,7 @@ export interface MarketingSale {
   amount_ht: number;
   product: string | null;
   payment_status: string | null;
-  // Pour les ventes orphelines : on récupère le contact pour afficher un nom
+  conference_date: string;
   contact_id: string | null;
   contact_name: string | null;
   contact_email: string | null;
@@ -75,7 +78,6 @@ export interface MarketingTagRow {
 }
 
 export interface MarketingDashboardData {
-  // Agrégats globaux (leads + orphelins)
   budget: number;
   leads: number;
   calls: number;
@@ -84,10 +86,8 @@ export interface MarketingDashboardData {
   cpl: number;
   cpr: number;
   cac: number;
-  // Taux de conversion mesurés uniquement sur les leads trackés
   leadToCallRate: number;
   leadToSaleRate: number;
-  // Compteurs séparés pour distinguer "rattachés à un lead" vs "orphelins"
   callsLinked: number;
   callsOrphan: number;
   salesLinked: number;
@@ -96,40 +96,62 @@ export interface MarketingDashboardData {
   channelSpend: MarketingChannelRow[];
   sourceBreakdown: MarketingBreakdownRow[];
   tagBreakdown: MarketingTagRow[];
-  // Données brutes (pour drill-down)
   rawLeads: MarketingLead[];
-  rawCalls: MarketingCall[]; // inclut les orphelins (is_orphan: true)
-  rawSales: MarketingSale[]; // inclut les orphelins (is_orphan: true)
+  rawCalls: MarketingCall[];
+  rawSales: MarketingSale[];
   rawTags: MarketingTag[];
 }
 
-function utcToParisYmd(d: Date): string {
-  const fmt = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Paris",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  return fmt.format(d);
+// ─── Helpers ─────────────────────────────────────────────────────────
+
+/** Event types de calls qui comptent comme "RDV pris" (exclut les inscriptions au webinaire). */
+const REAL_CALL_EVENT_TYPES_EXCLUDE = new Set([
+  "INSCRIPTION CONFÉRENCE",
+  "inscription_conference",
+]);
+
+/** Calcule les bornes (UTC dates) d'une fenêtre couvrant les ads d'une plage de conf. */
+function conferenceToAdsDateRange(
+  filter: ConferenceFilter,
+): { fromYmd: string; toYmd: string } | null {
+  // Les ads sont agrégées par jour Paris (ads.date).
+  // La "fenêtre d'ads" d'une conf du dim D = [dim D-7, dim D] (les 7 jours qui ont alimenté la conf).
+  // Pour simple : on fait from = D-7j, to = D (inclusif côté ads pour ne rien perdre).
+  // En range : from = firstConf - 7j, to = lastConf.
+  if (filter.mode === "all") return null;
+  if (filter.mode === "single") {
+    const d = filter.date;
+    const confDate = new Date(d + "T00:00:00Z");
+    const fromDate = new Date(confDate.getTime() - 7 * 86400000);
+    return {
+      fromYmd: fromDate.toISOString().slice(0, 10),
+      toYmd: d, // inclusif
+    };
+  }
+  // range
+  const from = new Date(filter.from + "T00:00:00Z");
+  const fromDate = new Date(from.getTime() - 7 * 86400000);
+  return {
+    fromYmd: fromDate.toISOString().slice(0, 10),
+    toYmd: filter.to,
+  };
 }
 
 /**
- * Charge toutes les données du dashboard marketing pour une fenêtre donnée.
- * Règle unique : tous les calls/sales sont attribués à la semaine d'inscription du lead.
+ * Hook principal du dashboard marketing.
+ * Filtre par conference_date (attribution cohorte), règle unique vue avec le CEO.
  */
-export function useMarketingDashboardData(range: DateRange | null) {
+export function useMarketingDashboardData(filter: ConferenceFilter) {
   return useQuery({
-    queryKey: [
-      "marketing-dashboard",
-      range ? `${range.from.toISOString()}_${range.to.toISOString()}` : "all",
-    ],
+    queryKey: ["marketing-dashboard", JSON.stringify(filter)],
     queryFn: async (): Promise<MarketingDashboardData> => {
-      // ─── 1. Ads (par date Paris dans la fenêtre) ─────────────────────
+      // ─── 1. Budget Ads (par date, fenêtre antérieure qui alimente la conf) ──
       let adsQuery = (supabase as any).from("ads").select("channel, amount_spent, date");
-      if (range) {
+      const adsRange = conferenceToAdsDateRange(filter);
+      if (adsRange) {
         adsQuery = adsQuery
-          .gte("date", utcToParisYmd(range.from))
-          .lt("date", utcToParisYmd(range.to));
+          .gte("date", adsRange.fromYmd)
+          .lte("date", adsRange.toYmd);
       }
       const { data: adsRows, error: adsErr } = await adsQuery;
       if (adsErr) throw adsErr;
@@ -147,135 +169,82 @@ export function useMarketingDashboardData(range: DateRange | null) {
         .map(([channel, spent]) => ({ channel, spent }))
         .sort((a, b) => b.spent - a.spent);
 
-      // ─── 2. Leads de la fenêtre ──────────────────────────────────────
+      // ─── 2. Filtre sur conference_date pour leads/calls/sales ───────────
+      const applyConferenceFilter = (q: any) => {
+        if (filter.mode === "all") return q;
+        if (filter.mode === "single") return q.eq("conference_date", filter.date);
+        return q.gte("conference_date", filter.from).lte("conference_date", filter.to);
+      };
+
+      // Leads
       let leadsQuery = (supabase as any)
         .from("leads")
-        .select("id, source, created_at, raw_full_name, raw_email, raw_phone, contact_id");
-      if (range) {
-        leadsQuery = leadsQuery
-          .gte("created_at", range.from.toISOString())
-          .lt("created_at", range.to.toISOString());
-      }
+        .select(
+          "id, source, created_at, conference_date, raw_full_name, raw_email, raw_phone, contact_id",
+        );
+      leadsQuery = applyConferenceFilter(leadsQuery);
       const { data: leadRows, error: leadErr } = await leadsQuery.order("created_at", {
         ascending: false,
       });
       if (leadErr) throw leadErr;
-
       const rawLeads: MarketingLead[] = (leadRows ?? []) as MarketingLead[];
       const leadIds = rawLeads.map((l) => l.id);
-      const leadSourceById = new Map<string, string>(
-        rawLeads.map((l) => [l.id, l.source ?? "inconnu"]),
-      );
       const nbLeads = rawLeads.length;
 
-      async function fetchInChunks<T>(
-        ids: string[],
-        fetcher: (chunk: string[]) => Promise<T[]>,
-      ): Promise<T[]> {
-        if (ids.length === 0) return [];
-        const out: T[] = [];
-        for (let i = 0; i < ids.length; i += 500) {
-          out.push(...(await fetcher(ids.slice(i, i + 500))));
-        }
-        return out;
-      }
+      // Calls
+      let callsQuery = (supabase as any)
+        .from("calls")
+        .select(
+          "id, lead_id, scheduled_at, status, outcome, event_type, created_at, conference_date, raw_full_name, raw_email, raw_phone, contact_id",
+        );
+      callsQuery = applyConferenceFilter(callsQuery);
+      const { data: callRowsRaw, error: callErr } = await callsQuery;
+      if (callErr) throw callErr;
 
-      // ─── 3a. Calls rattachés aux leads de la fenêtre ─────────────────
-      const linkedCalls: MarketingCall[] = (
-        await fetchInChunks(leadIds, async (chunk) => {
-          const { data, error } = await (supabase as any)
-            .from("calls")
-            .select(
-              "id, lead_id, scheduled_at, status, outcome, created_at, raw_full_name, raw_email, raw_phone, contact_id",
-            )
-            .in("lead_id", chunk);
-          if (error) throw error;
-          return (data ?? []) as any[];
-        })
-      ).map(
-        (c: any) =>
-          ({
-            ...c,
-            is_orphan: false,
-          }) as MarketingCall,
-      );
-
-      // ─── 3b. Calls ORPHELINS (lead_id NULL) créés dans la fenêtre ────
-      let orphanCalls: MarketingCall[] = [];
-      if (range) {
-        const { data: oc, error: ocErr } = await (supabase as any)
-          .from("calls")
-          .select(
-            "id, lead_id, scheduled_at, status, outcome, created_at, raw_full_name, raw_email, raw_phone, contact_id",
-          )
-          .is("lead_id", null)
-          .gte("created_at", range.from.toISOString())
-          .lt("created_at", range.to.toISOString());
-        if (ocErr) throw ocErr;
-        orphanCalls = (oc ?? []).map((c: any) => ({ ...c, is_orphan: true }) as MarketingCall);
-      } else {
-        const { data: oc, error: ocErr } = await (supabase as any)
-          .from("calls")
-          .select(
-            "id, lead_id, scheduled_at, status, outcome, created_at, raw_full_name, raw_email, raw_phone, contact_id",
-          )
-          .is("lead_id", null);
-        if (ocErr) throw ocErr;
-        orphanCalls = (oc ?? []).map((c: any) => ({ ...c, is_orphan: true }) as MarketingCall);
-      }
+      // Les inscriptions conf (webinaire) ne comptent PAS comme "RDV pris" dans les KPIs.
+      // On garde quand même la ligne pour le drill-down, mais on la distingue.
+      const rawCalls: MarketingCall[] = ((callRowsRaw ?? []) as any[])
+        .filter((c) => !REAL_CALL_EVENT_TYPES_EXCLUDE.has(c.event_type))
+        .map((c) => ({ ...c, is_orphan: !c.lead_id }));
 
       const callsByLead = new Map<string, MarketingCall[]>();
       let callsLinkedCount = 0;
-      for (const c of linkedCalls) {
+      let callsOrphanCount = 0;
+      for (const c of rawCalls) {
         if (c.status === "cancelled") continue;
-        callsLinkedCount += 1;
-        if (!c.lead_id) continue;
-        const arr = callsByLead.get(c.lead_id) ?? [];
-        arr.push(c);
-        callsByLead.set(c.lead_id, arr);
+        if (c.lead_id) {
+          callsLinkedCount += 1;
+          const arr = callsByLead.get(c.lead_id) ?? [];
+          arr.push(c);
+          callsByLead.set(c.lead_id, arr);
+        } else {
+          callsOrphanCount += 1;
+        }
       }
-      const callsOrphanCount = orphanCalls.filter((c) => c.status !== "cancelled").length;
       const nbCalls = callsLinkedCount + callsOrphanCount;
 
-      // ─── 4a. Sales rattachées aux leads de la fenêtre ────────────────
-      const linkedSalesRaw = await fetchInChunks(leadIds, async (chunk) => {
-        const { data, error } = await (supabase as any)
-          .from("sales")
-          .select(
-            "id, lead_id, sold_at, amount_ht, product, payment_status, sale_type, contact_id",
-          )
-          .in("lead_id", chunk);
-        if (error) throw error;
-        return ((data ?? []) as any[]).filter((s) => s.sale_type !== "acompte");
-      });
+      // Sales
+      let salesQuery = (supabase as any)
+        .from("sales")
+        .select(
+          "id, lead_id, call_id, sold_at, amount_ht, product, payment_status, sale_type, conference_date, contact_id",
+        );
+      salesQuery = applyConferenceFilter(salesQuery);
+      const { data: saleRowsRaw, error: saleErr } = await salesQuery;
+      if (saleErr) throw saleErr;
 
-      // ─── 4b. Sales ORPHELINES (lead_id NULL) vendues dans la fenêtre ─
-      let orphanSalesRaw: any[] = [];
-      if (range) {
-        const { data: os, error: osErr } = await (supabase as any)
-          .from("sales")
-          .select("id, lead_id, sold_at, amount_ht, product, payment_status, sale_type, contact_id")
-          .is("lead_id", null)
-          .gte("sold_at", range.from.toISOString())
-          .lt("sold_at", range.to.toISOString());
-        if (osErr) throw osErr;
-        orphanSalesRaw = (os ?? []).filter((s: any) => s.sale_type !== "acompte");
-      } else {
-        const { data: os, error: osErr } = await (supabase as any)
-          .from("sales")
-          .select("id, lead_id, sold_at, amount_ht, product, payment_status, sale_type, contact_id")
-          .is("lead_id", null);
-        if (osErr) throw osErr;
-        orphanSalesRaw = (os ?? []).filter((s: any) => s.sale_type !== "acompte");
-      }
-
-      // ─── 4c. Résoudre les contacts (pour afficher le nom des orphelines) ─
+      // Résolution des contacts (pour orphelines)
       const contactIdsToFetch = new Set<string>();
-      for (const s of orphanSalesRaw) if (s.contact_id) contactIdsToFetch.add(s.contact_id);
-      for (const c of orphanCalls) if (c.contact_id) contactIdsToFetch.add(c.contact_id);
+      for (const s of (saleRowsRaw ?? []) as any[]) {
+        if (s.sale_type !== "acompte" && !s.lead_id && s.contact_id)
+          contactIdsToFetch.add(s.contact_id);
+      }
+      for (const c of rawCalls) {
+        if (!c.lead_id && c.contact_id) contactIdsToFetch.add(c.contact_id);
+      }
       const contactMap = new Map<
         string,
-        { id: string; full_name: string | null; email: string | null; phone: string | null }
+        { full_name: string | null; email: string | null; phone: string | null }
       >();
       if (contactIdsToFetch.size > 0) {
         const ids = Array.from(contactIdsToFetch);
@@ -288,7 +257,6 @@ export function useMarketingDashboardData(range: DateRange | null) {
           if (csErr) throw csErr;
           for (const c of cs ?? [])
             contactMap.set(c.id, {
-              id: c.id,
               full_name: c.full_name,
               email: c.email,
               phone: c.phone_original || c.phone_normalized || null,
@@ -296,63 +264,64 @@ export function useMarketingDashboardData(range: DateRange | null) {
         }
       }
 
-      const makeSale = (s: any, isOrphan: boolean): MarketingSale => {
-        const ct = s.contact_id ? contactMap.get(s.contact_id) : null;
-        return {
-          id: s.id,
-          lead_id: s.lead_id,
-          sold_at: s.sold_at,
-          amount_ht: Number(s.amount_ht ?? 0),
-          product: s.product,
-          payment_status: s.payment_status,
-          contact_id: s.contact_id,
-          contact_name: ct?.full_name ?? null,
-          contact_email: ct?.email ?? null,
-          contact_phone: ct?.phone ?? null,
-          is_orphan: isOrphan,
-        };
-      };
+      const rawSales: MarketingSale[] = ((saleRowsRaw ?? []) as any[])
+        .filter((s) => s.sale_type !== "acompte")
+        .map((s) => {
+          const ct = s.contact_id ? contactMap.get(s.contact_id) : null;
+          return {
+            id: s.id,
+            lead_id: s.lead_id,
+            sold_at: s.sold_at,
+            amount_ht: Number(s.amount_ht ?? 0),
+            product: s.product,
+            payment_status: s.payment_status,
+            conference_date: s.conference_date,
+            contact_id: s.contact_id,
+            contact_name: ct?.full_name ?? null,
+            contact_email: ct?.email ?? null,
+            contact_phone: ct?.phone ?? null,
+            is_orphan: !s.lead_id,
+          } as MarketingSale;
+        });
 
-      const linkedSales: MarketingSale[] = linkedSalesRaw.map((s: any) => makeSale(s, false));
-      const orphanSales: MarketingSale[] = orphanSalesRaw.map((s: any) => makeSale(s, true));
-      // Enrichir aussi les calls orphelins avec contacts
-      const orphanCallsEnriched: MarketingCall[] = orphanCalls.map((c) => {
-        if (c.contact_id && !c.raw_full_name) {
+      // Enrichir calls orphelins avec contacts
+      for (const c of rawCalls) {
+        if (c.is_orphan && c.contact_id && !c.raw_full_name) {
           const ct = contactMap.get(c.contact_id);
           if (ct) {
-            return {
-              ...c,
-              raw_full_name: c.raw_full_name ?? ct.full_name,
-              raw_email: c.raw_email ?? ct.email,
-              raw_phone: c.raw_phone ?? ct.phone,
-            };
+            c.raw_full_name = ct.full_name;
+            c.raw_email = c.raw_email ?? ct.email;
+            c.raw_phone = c.raw_phone ?? ct.phone;
           }
         }
-        return c;
-      });
-      // Remplace orphanCalls dans rawCalls par la version enrichie
-      const rawCallsEnriched = [...linkedCalls, ...orphanCallsEnriched];
-
-      const rawSales: MarketingSale[] = [...linkedSales, ...orphanSales];
+      }
 
       const primarySalesByLead = new Map<string, MarketingSale>();
       let revenueLinked = 0;
-      for (const s of linkedSales) {
-        if (!s.lead_id) continue;
-        if (!primarySalesByLead.has(s.lead_id)) primarySalesByLead.set(s.lead_id, s);
-        revenueLinked += s.amount_ht;
+      let revenueOrphan = 0;
+      let salesLinkedCount = 0;
+      let salesOrphanCount = 0;
+      for (const s of rawSales) {
+        if (s.lead_id) {
+          if (!primarySalesByLead.has(s.lead_id)) primarySalesByLead.set(s.lead_id, s);
+          revenueLinked += s.amount_ht;
+          salesLinkedCount = primarySalesByLead.size;
+        } else {
+          salesOrphanCount += 1;
+          revenueOrphan += s.amount_ht;
+        }
       }
-      const salesLinkedCount = primarySalesByLead.size;
-      const salesOrphanCount = orphanSales.length;
-      const revenueOrphan = orphanSales.reduce((sum, s) => sum + s.amount_ht, 0);
       const nbSales = salesLinkedCount + salesOrphanCount;
       const revenue = revenueLinked + revenueOrphan;
 
-      // ─── 5. Sources breakdown ────────────────────────────────────────
+      // ─── 3. Sources breakdown ─────────────────────────────────────────
       const sourceStats = new Map<
         string,
         { leads: number; calls: number; sales: number; revenue: number }
       >();
+      const leadSourceById = new Map<string, string>(
+        rawLeads.map((l) => [l.id, l.source ?? "inconnu"]),
+      );
       for (const l of rawLeads) {
         const src = l.source ?? "inconnu";
         const entry = sourceStats.get(src) ?? { leads: 0, calls: 0, sales: 0, revenue: 0 };
@@ -381,7 +350,6 @@ export function useMarketingDashboardData(range: DateRange | null) {
         }))
         .sort((a, b) => b.leads - a.leads);
 
-      // Ligne "Inconnu" (orphelins) si non vide
       if (callsOrphanCount > 0 || salesOrphanCount > 0) {
         sourceBreakdown.push({
           source: "inconnu",
@@ -394,15 +362,19 @@ export function useMarketingDashboardData(range: DateRange | null) {
         });
       }
 
-      // ─── 6. Tags ─────────────────────────────────────────────────────
-      const rawTagRows = await fetchInChunks(leadIds, async (chunk) => {
-        const { data, error } = await (supabase as any)
-          .from("lead_tags")
-          .select("lead_id, tag_category, tag_key")
-          .in("lead_id", chunk);
-        if (error) throw error;
-        return (data ?? []) as any[];
-      });
+      // ─── 4. Tags ──────────────────────────────────────────────────────
+      let rawTagRows: any[] = [];
+      if (leadIds.length > 0) {
+        for (let i = 0; i < leadIds.length; i += 500) {
+          const chunk = leadIds.slice(i, i + 500);
+          const { data, error } = await (supabase as any)
+            .from("lead_tags")
+            .select("lead_id, tag_category, tag_key")
+            .in("lead_id", chunk);
+          if (error) throw error;
+          rawTagRows = rawTagRows.concat(data ?? []);
+        }
+      }
       const rawTags: MarketingTag[] = rawTagRows.map((t: any) => ({
         lead_id: t.lead_id,
         category: t.tag_category,
@@ -455,8 +427,6 @@ export function useMarketingDashboardData(range: DateRange | null) {
         cpl: nbLeads > 0 ? budget / nbLeads : 0,
         cpr: nbCalls > 0 ? budget / nbCalls : 0,
         cac: nbSales > 0 ? budget / nbSales : 0,
-        // Taux de conversion : mesurés uniquement sur les leads trackés
-        // (pour les orphelins, pas de lead au dénominateur donc n'entrent pas dans ces taux)
         leadToCallRate: nbLeads > 0 ? callsLinkedCount / nbLeads : 0,
         leadToSaleRate: nbLeads > 0 ? salesLinkedCount / nbLeads : 0,
         callsLinked: callsLinkedCount,
@@ -468,7 +438,7 @@ export function useMarketingDashboardData(range: DateRange | null) {
         sourceBreakdown,
         tagBreakdown,
         rawLeads,
-        rawCalls: rawCallsEnriched,
+        rawCalls,
         rawSales,
         rawTags,
       };
