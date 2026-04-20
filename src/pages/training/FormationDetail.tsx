@@ -20,10 +20,11 @@ import {
   PlayCircle,
   EyeOff,
   Lock,
+  Sparkles,
 } from "lucide-react";
 import { CertificateBanner } from "@/components/training/CertificateBanner";
 import { ModuleQuizCard, FormationFinalQuizCard } from "@/components/training/QuizInFormation";
-import { useLockedChapitres } from "@/hooks/useQuizzes";
+import { useLockedChapitres, useFormationQuizStatuses } from "@/hooks/useQuizzes";
 
 interface Chapitre {
   id: string;
@@ -126,6 +127,11 @@ export default function FormationDetail() {
   // Appelé ici (avant les early returns) pour respecter les Rules of Hooks.
   const { data: lockedData } = useLockedChapitres(data?.formation?.id ?? null);
   const lockedSet = new Set((lockedData ?? []).map((l) => l.chapitre_id));
+
+  // Statut des quiz par chapitre (pour afficher les badges "Quiz à faire/validé")
+  const { data: quizStatuses } = useFormationQuizStatuses(
+    data?.formation?.id ?? null,
+  );
 
   if (isLoading) {
     return (
@@ -300,6 +306,7 @@ export default function FormationDetail() {
                           const done = completedSet.has(chap.id);
                           const chapDraft = chap.status === "draft";
                           const chapLocked = !isCeo && lockedSet.has(chap.id);
+                          const quizInfo = quizStatuses?.byChapitre[chap.id];
                           return (
                             <div key={chap.id}>
                               <button
@@ -327,6 +334,39 @@ export default function FormationDetail() {
                                 <span className={`flex-1 ${chapLocked ? "text-muted-foreground/80" : "text-foreground"}`}>
                                   {chap.titre}
                                 </span>
+                                {/* Badge quiz : indication visuelle de l'état */}
+                                {quizInfo && !chapLocked && (
+                                  quizInfo.status === "validated" ? (
+                                    <Badge className="gap-1 text-[10px] bg-[hsl(var(--kpi-paid))] hover:bg-[hsl(var(--kpi-paid))] text-white border-0 shrink-0">
+                                      <CheckCircle2 className="h-3 w-3" />
+                                      Quiz validé
+                                    </Badge>
+                                  ) : quizInfo.status === "attempted" ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="gap-1 text-[10px] border-amber-500/60 text-amber-700 dark:text-amber-400 bg-amber-500/5 shrink-0"
+                                    >
+                                      <Sparkles className="h-3 w-3" />
+                                      Quiz à repasser
+                                    </Badge>
+                                  ) : done ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="gap-1 text-[10px] border-amber-500/60 text-amber-700 dark:text-amber-400 bg-amber-500/5 shrink-0 animate-pulse"
+                                    >
+                                      <Sparkles className="h-3 w-3" />
+                                      Quiz à faire
+                                    </Badge>
+                                  ) : (
+                                    <Badge
+                                      variant="outline"
+                                      className="gap-1 text-[10px] text-muted-foreground shrink-0"
+                                    >
+                                      <Sparkles className="h-3 w-3" />
+                                      Quiz
+                                    </Badge>
+                                  )
+                                )}
                                 {chapDraft && isCeo && (
                                   <Badge
                                     variant="secondary"

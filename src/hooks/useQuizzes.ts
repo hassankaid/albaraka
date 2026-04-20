@@ -247,6 +247,15 @@ export interface MissingFormationQuiz {
   module_ordre: number | null;
 }
 
+export type QuizAttemptStatus = "not_started" | "attempted" | "validated";
+
+export interface FormationQuizStatuses {
+  /** Statut du quiz pour chaque chapitre qui en a un (clé = chapitre_id). */
+  byChapitre: Record<string, { quizId: string; status: QuizAttemptStatus }>;
+  /** Statut du quiz final de la formation (si existe). */
+  finalQuiz?: { quizId: string; status: QuizAttemptStatus };
+}
+
 export function useLockedChapitres(formationId: string | null) {
   const { user } = useAuth();
   return useQuery({
@@ -268,6 +277,89 @@ export function useLockedChapitres(formationId: string | null) {
  * Utilisé pour signaler les quiz manquants quand la formation est "vidéos OK"
  * mais le certificat n'est pas encore émis.
  */
+/**
+ * Statut des quiz d'une formation pour l'utilisateur connecté.
+ * Pour chaque chapitre ayant un quiz, indique : validé / tenté / jamais tenté.
+ * Utilisé dans FormationDetail pour afficher des badges sur la liste des chapitres.
+ */
+export function useFormationQuizStatuses(formationId: string | null) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["training", "formation-quiz-statuses", formationId, user?.id],
+    enabled: !!formationId && !!user?.id,
+    queryFn: async (): Promise<FormationQuizStatuses> => {
+      // 1. Quiz attachés à un chapitre ou à la formation
+      const { data: chapitres } = await (supabase as any)
+        .from("formation_chapitres")
+        .select("id, module_id")
+        .eq("formation_modules.formation_id", formationId)
+        .eq("status", "published");
+
+      const { data: quizzes, error: qErr } = await (supabase as any)
+        .from("quizzes")
+        .select("id, chapitre_id, formation_id, module_id, status")
+        .eq("status", "published")
+        .or(`formation_id.eq.${formationId},chapitre_id.not.is.null`);
+      if (qErr) throw qErr;
+
+      const allChapIdsOfFormation = await (async () => {
+        const { data } = await (supabase as any)
+          .from("formation_chapitres")
+          .select("id, formation_modules!inner(formation_id)")
+          .eq("formation_modules.formation_id", formationId);
+        return new Set<string>((data ?? []).map((c: any) => c.id));
+      })();
+
+      const chapQuizzes = (quizzes ?? []).filter(
+        (q: any) => q.chapitre_id && allChapIdsOfFormation.has(q.chapitre_id),
+      );
+      const finalQ = (quizzes ?? []).find(
+        (q: any) => q.formation_id === formationId && !q.chapitre_id && !q.module_id,
+      );
+
+      const allQuizIds = [
+        ...chapQuizzes.map((q: any) => q.id as string),
+        ...(finalQ ? [finalQ.id as string] : []),
+      ];
+      if (allQuizIds.length === 0) return { byChapitre: {} };
+
+      // 2. Toutes les tentatives de cet user sur ces quiz
+      const { data: attempts, error: aErr } = await (supabase as any)
+        .from("quiz_attempts")
+        .select("quiz_id, validated")
+        .eq("user_id", user!.id)
+        .in("quiz_id", allQuizIds);
+      if (aErr) throw aErr;
+
+      const validatedSet = new Set<string>();
+      const attemptedSet = new Set<string>();
+      for (const a of attempts ?? []) {
+        attemptedSet.add(a.quiz_id);
+        if (a.validated) validatedSet.add(a.quiz_id);
+      }
+
+      const statusOf = (quizId: string): QuizAttemptStatus =>
+        validatedSet.has(quizId)
+          ? "validated"
+          : attemptedSet.has(quizId)
+            ? "attempted"
+            : "not_started";
+
+      const byChapitre: FormationQuizStatuses["byChapitre"] = {};
+      for (const q of chapQuizzes) {
+        byChapitre[q.chapitre_id as string] = {
+          quizId: q.id,
+          status: statusOf(q.id),
+        };
+      }
+      return {
+        byChapitre,
+        finalQuiz: finalQ ? { quizId: finalQ.id, status: statusOf(finalQ.id) } : undefined,
+      };
+    },
+  });
+}
+
 export function useMissingFormationQuizzes(formationId: string | null) {
   const { user } = useAuth();
   return useQuery({
