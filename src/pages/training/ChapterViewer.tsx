@@ -343,8 +343,69 @@ export default function ChapterViewer() {
   // Gate : est-ce que le prochain chapitre est verrouillé par un quiz non validé ?
   const nextChapitreId = (navData as any)?.next_chapitre_id as string | undefined;
   const isNextLocked = !isCeo && !!nextChapitreId && !!(lockedData ?? []).find(
-    (l: any) => l.chapitre_id === nextChapitreId
+    (l: any) => l.chapitre_id === nextChapitreId,
   );
+
+  // Gate : est-ce que le chapitre courant est verrouillé par un quiz en amont ?
+  // (cas où l'utilisateur atterrit ici via URL directe ou navigation sidebar ancienne).
+  const currentLockEntry = !isCeo
+    ? (lockedData ?? []).find((l: any) => l.chapitre_id === chapitre.id)
+    : null;
+  const isCurrentLocked = !!currentLockEntry;
+
+  // Si le chapitre courant est locked, on affiche un placeholder à la place de la
+  // vidéo et on désactive l'auto-complete. L'utilisateur doit passer le quiz.
+  if (isCurrentLocked) {
+    const blockerChapId = (currentLockEntry as any)?.blocker_chapitre_id as
+      | string
+      | undefined;
+    const blockerTitle =
+      (currentLockEntry as any)?.blocker_quiz_titre ?? "quiz du bloc précédent";
+    return (
+      <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+        <div className="hidden lg:block w-72 border-r border-border shrink-0 overflow-y-auto">
+          <ChapterSidebar
+            formationSlug={formation.slug}
+            formationId={formation.id}
+            currentChapitreId={chapitre.id}
+            isCeo={!!isCeo}
+          />
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-2xl mx-auto p-6 mt-10 space-y-6">
+            <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/5 p-8 text-center space-y-4">
+              <div className="mx-auto h-16 w-16 rounded-full bg-amber-500/15 flex items-center justify-center">
+                <Lock className="h-8 w-8 text-amber-500" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-foreground">
+                  Ce chapitre est verrouillé
+                </h2>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Pour accéder à <span className="font-medium">"{chapitre.titre}"</span>,
+                  tu dois d'abord valider le quiz :
+                </p>
+                <p className="text-sm font-semibold text-amber-700 dark:text-amber-400 mt-2">
+                  {blockerTitle}
+                </p>
+              </div>
+              {blockerChapId && (
+                <Button
+                  onClick={() =>
+                    navigate(`/training/${formation.slug}/chapitre/${blockerChapId}`)
+                  }
+                  className="gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Aller passer le quiz
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden">

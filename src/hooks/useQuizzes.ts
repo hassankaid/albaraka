@@ -232,6 +232,19 @@ export interface LockedChapitre {
   chapitre_id: string;
   blocker_quiz_id: string;
   blocker_quiz_titre: string;
+  blocker_chapitre_id: string | null;
+}
+
+export interface MissingFormationQuiz {
+  quiz_id: string;
+  quiz_titre: string;
+  quiz_type: "chapitre" | "module" | "final";
+  chapitre_id: string | null;
+  chapitre_titre: string | null;
+  chapitre_ordre: number | null;
+  module_id: string | null;
+  module_titre: string | null;
+  module_ordre: number | null;
 }
 
 export function useLockedChapitres(formationId: string | null) {
@@ -246,6 +259,30 @@ export function useLockedChapitres(formationId: string | null) {
       });
       if (error) throw error;
       return (data ?? []) as LockedChapitre[];
+    },
+  });
+}
+
+/**
+ * Liste les quiz d'une formation que l'utilisateur n'a pas encore validés.
+ * Utilisé pour signaler les quiz manquants quand la formation est "vidéos OK"
+ * mais le certificat n'est pas encore émis.
+ */
+export function useMissingFormationQuizzes(formationId: string | null) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["training", "missing-quizzes", formationId, user?.id],
+    enabled: !!formationId && !!user?.id,
+    queryFn: async (): Promise<MissingFormationQuiz[]> => {
+      const { data, error } = await (supabase as any).rpc(
+        "get_missing_formation_quizzes",
+        {
+          p_user_id: user!.id,
+          p_formation_id: formationId!,
+        },
+      );
+      if (error) throw error;
+      return (data ?? []) as MissingFormationQuiz[];
     },
   });
 }

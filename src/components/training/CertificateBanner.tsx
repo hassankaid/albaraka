@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
-import { Award, Download, Copy, Loader2, Sparkles } from "lucide-react";
+import { Award, Download, Copy, Loader2, Sparkles, AlertCircle, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   useCertificateForFormation,
@@ -10,6 +13,7 @@ import {
 import { getVerifyUrl } from "@/lib/downloadCertificatePdf";
 import { isFormationCompleteForUser } from "@/lib/certificateEligibility";
 import { useAuth } from "@/hooks/useAuth";
+import { useMissingFormationQuizzes } from "@/hooks/useQuizzes";
 
 interface Props {
   userId: string;
@@ -20,7 +24,24 @@ interface Props {
 export function CertificateBanner({ userId, formationId, isComplete }: Props) {
   const { profile } = useAuth();
   const isCeo = profile?.role === "ceo";
+  const navigate = useNavigate();
   const { data: cert, isLoading, refetch } = useCertificateForFormation(formationId);
+  const { data: missingQuizzes } = useMissingFormationQuizzes(
+    isComplete && !cert ? formationId : null,
+  );
+  // Slug de la formation pour construire les URLs vers les chapitres
+  const { data: formationSlug } = useQuery({
+    queryKey: ["formation-slug", formationId],
+    enabled: !!formationId,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("formations")
+        .select("slug")
+        .eq("id", formationId)
+        .maybeSingle();
+      return (data?.slug ?? null) as string | null;
+    },
+  });
   const issueMutation = useIssueCertificate();
   const [autoChecked, setAutoChecked] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -95,6 +116,57 @@ export function CertificateBanner({ userId, formationId, isComplete }: Props) {
 
   if (!cert) {
     if (!isComplete) return null;
+
+    // Si des quiz manquent, on affiche le vrai blocage avec la liste
+    const hasMissing = (missingQuizzes?.length ?? 0) > 0;
+    if (hasMissing && !isIssuing) {
+      return (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-5 space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-full bg-amber-500/15 shrink-0">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-foreground">
+                Ton certificat t'attend — il reste {missingQuizzes!.length} quiz à valider
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Toutes les vidéos sont vues. Valide les quiz ci-dessous pour recevoir ton certificat et débloquer la suite du parcours.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-1.5 pl-11">
+            {missingQuizzes!.map((q) => (
+              <button
+                key={q.quiz_id}
+                onClick={() => {
+                  if (q.chapitre_id && formationSlug) {
+                    navigate(`/training/${formationSlug}/chapitre/${q.chapitre_id}`);
+                  } else {
+                    navigate(`/training/quiz/${q.quiz_id}`);
+                  }
+                }}
+                className="w-full flex items-center gap-2 p-2.5 rounded-md border border-border bg-background hover:bg-muted/50 transition-colors text-left"
+              >
+                <PlayCircle className="h-4 w-4 text-primary shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-foreground truncate">
+                    {q.quiz_titre}
+                  </p>
+                  {q.chapitre_titre && (
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      Se trouve sous le chapitre : {q.chapitre_titre}
+                    </p>
+                  )}
+                </div>
+                <span className="text-[10px] text-primary font-medium">Y aller →</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="rounded-lg border border-amber-500/30 bg-gradient-to-br from-neutral-950 to-neutral-900 p-5 text-amber-50 flex items-center gap-4">
         {isIssuing ? (
