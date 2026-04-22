@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Tables } from "@/integrations/supabase/types";
-import { phoneMatches } from "@/lib/phoneSearch";
+import { anyPhoneMatches } from "@/lib/phoneSearch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -153,7 +153,7 @@ export default function Calls() {
       result = result.filter((c) =>
         c.contact_full_name?.toLowerCase().includes(q) ||
         c.contact_email?.toLowerCase().includes(q) ||
-        phoneMatches(c.contact_phone, search)
+        anyPhoneMatches([c.raw_phone, c.contact_phone], search)
       );
     }
 
@@ -311,23 +311,29 @@ export default function Calls() {
                         {call.contact_email && (
                           <p className="text-xs text-muted-foreground truncate">{call.contact_email}</p>
                         )}
-                        {call.contact_phone && (
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <a href={`tel:${call.contact_phone}`} className="text-xs text-muted-foreground hover:text-foreground hover:underline truncate">
-                              {call.contact_phone}
-                            </a>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigator.clipboard.writeText(call.contact_phone!);
-                                toast({ title: "Numéro copié" });
-                              }}
-                              className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                            >
-                              <Copy className="h-3 w-3" />
-                            </button>
-                          </div>
-                        )}
+                        {(() => {
+                          // Priorité au numéro donné lors du booking du call (Calendly),
+                          // fallback sur le numéro du contact si le call n'en a pas.
+                          const phone = call.raw_phone || call.contact_phone;
+                          if (!phone) return null;
+                          return (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <a href={`tel:${phone}`} className="text-xs text-muted-foreground hover:text-foreground hover:underline truncate">
+                                {phone}
+                              </a>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigator.clipboard.writeText(phone);
+                                  toast({ title: "Numéro copié" });
+                                }}
+                                className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </button>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </TableCell>
                     {/* Type */}
