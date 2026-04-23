@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureUnlocks } from "@/hooks/useFeatureUnlock";
 import { useToast } from "@/hooks/use-toast";
+import { getPublicAppOrigin } from "@/lib/impersonation";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import { Copy, Check, ExternalLink, Sparkles, Pencil, Save, X, Link as LinkIcon, Eye, Mail, CheckCircle2, Phone as PhoneIcon, MessageCircle, Loader2 } from "lucide-react";
@@ -61,10 +62,9 @@ function proposeSlug(fullName: string | null | undefined, userId: string): strin
 }
 
 function buildPublicUrl(slug: string): string {
-  if (typeof window !== "undefined") {
-    return `${window.location.origin}/quiz/${slug}`;
-  }
-  return `/quiz/${slug}`;
+  // Toujours utiliser l'origine primaire (plateforme.albarakaecosysteme.com)
+  // même en mode impersonation — pour ne jamais partager un lien en view.*
+  return `${getPublicAppOrigin()}/quiz/${slug}`;
 }
 
 // ──────────────────────────────────────────────────────────────────────
