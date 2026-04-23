@@ -1,61 +1,20 @@
 /**
- * Canvas de fond premium pour les pages checkout & merci Al Baraka.
+ * Canvas premium Al Baraka — direction "Nour" (lumière).
  *
- * Couvre TOUTE la hauteur de la page parente (pas juste la viewport) —
- * donc il scrolle naturellement avec le contenu : plus le formulaire
- * est long, plus il y a d'étoiles et d'ondulations visibles.
+ * Principe : 1 seule idée, exécutée avec précision.
+ * → un pattern islamique tessellé en toile de fond (3% opacity),
+ *   pour donner de la matière à ce qui serait sinon un noir plat,
+ * → deux aurores dorées géantes qui dérivent lentement à travers
+ *   toute la page (60s et 85s, trajectoires décalées), pour le
+ *   mouvement hypnotique,
+ * → base noire très profonde avec léger dégradé.
  *
- * Composition (du plus loin au plus près) :
- *  1. Gradient radial doré multi-couches (remplace le noir pur)
- *  2. Ondulations dorées horizontales (SVG paths sinusoïdaux)
- *  3. Champ d'étoiles scintillantes (~72 points répartis sur toute la page)
- *  4. Liseré doré très fin en haut et en bas
- *
- * 100% SVG + CSS, aucune image. L'usage : placer dans un wrapper
- * `position: relative; overflow: hidden` qui englobe tout le contenu.
+ * Rien d'autre. Pas d'étoiles, pas d'ondulations, pas de skyline.
+ * Le canvas couvre toute la hauteur de la page (absolute/inset 0
+ * dans un wrapper relative+overflow-hidden) et scrolle avec.
  */
 
-const GOLD = "#C9A04E";
-const GOLD_BRIGHT = "#E4C57A";
-
-const STAR_COUNT = 72;
-
-function Star({ i }: { i: number }) {
-  // Positions déterministes par i (pas de Math.random → pas de flash au remount)
-  const seedA = (i * 9301 + 49297) % 233280;
-  const seedB = ((i * 1664525 + 1013904223) % 4294967296) / 4294967296;
-  const seedC = ((i * 22695477 + 1) % 4294967296) / 4294967296;
-
-  const left = (seedA / 233280) * 100;
-  const top = seedB * 100;
-  const size = 0.8 + seedC * 2.4;
-  const isBright = (i % 11 === 0);
-  const duration = 2.5 + seedC * 3.5;
-  const delay = -seedB * 6;
-  const baseOpacity = 0.35 + seedA / 466560; // 0.35 – 0.85
-
-  const color = isBright ? GOLD_BRIGHT : GOLD;
-  const glow = isBright ? `0 0 ${3 + size * 2}px rgba(228,197,122,0.9), 0 0 ${6 + size * 3}px rgba(201,160,78,0.4)` : `0 0 ${2 + size}px rgba(201,160,78,0.55)`;
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: `${left}%`,
-        top: `${top}%`,
-        width: `${size}px`,
-        height: `${size}px`,
-        borderRadius: "50%",
-        background: color,
-        boxShadow: glow,
-        opacity: baseOpacity,
-        animation: `alb-twinkle-${isBright ? "bright" : "soft"} ${duration}s ease-in-out infinite`,
-        animationDelay: `${delay}s`,
-        pointerEvents: "none",
-      }}
-    />
-  );
-}
+const PATTERN_ID = "alb-girih";
 
 export default function CheckoutCanvas() {
   return (
@@ -70,188 +29,175 @@ export default function CheckoutCanvas() {
       }}
     >
       <style>{`
-        @keyframes alb-twinkle-soft {
-          0%, 100% { opacity: 0.35; transform: scale(1); }
-          50% { opacity: 0.9; transform: scale(1.15); }
+        @keyframes alb-aurora-a {
+          0%   { transform: translate(-12%, -8%) scale(1); opacity: 0.75; }
+          25%  { transform: translate(18%, -18%) scale(1.18); opacity: 1; }
+          50%  { transform: translate(32%, 14%) scale(1.1); opacity: 0.9; }
+          75%  { transform: translate(-8%, 22%) scale(1.22); opacity: 1; }
+          100% { transform: translate(-12%, -8%) scale(1); opacity: 0.75; }
         }
-        @keyframes alb-twinkle-bright {
-          0%, 100% { opacity: 0.55; transform: scale(1); }
-          30% { opacity: 1; transform: scale(1.35); }
-          70% { opacity: 0.7; transform: scale(1.1); }
+        @keyframes alb-aurora-b {
+          0%   { transform: translate(20%, 10%) scale(1.1); opacity: 0.6; }
+          33%  { transform: translate(-18%, -10%) scale(1); opacity: 0.9; }
+          66%  { transform: translate(22%, -14%) scale(1.25); opacity: 0.75; }
+          100% { transform: translate(20%, 10%) scale(1.1); opacity: 0.6; }
         }
-        @keyframes alb-wave-flow-1 {
-          0%, 100% { transform: translateX(0); }
-          50% { transform: translateX(-14px); }
-        }
-        @keyframes alb-wave-flow-2 {
-          0%, 100% { transform: translateX(0); }
-          50% { transform: translateX(12px); }
-        }
-        @keyframes alb-wave-flow-3 {
-          0%, 100% { transform: translateX(0); }
-          50% { transform: translateX(-18px); }
-        }
-        @keyframes alb-glow-breathe {
-          0%, 100% { opacity: 0.55; }
-          50% { opacity: 0.95; }
+        @keyframes alb-aurora-c {
+          0%   { transform: translate(-14%, 20%) scale(0.95); opacity: 0.5; }
+          40%  { transform: translate(14%, 4%) scale(1.15); opacity: 0.8; }
+          70%  { transform: translate(22%, -18%) scale(1); opacity: 0.65; }
+          100% { transform: translate(-14%, 20%) scale(0.95); opacity: 0.5; }
         }
       `}</style>
 
-      {/* 1. Fond dégradé multi-couches — remplace le noir uni */}
+      {/* 1. Base sombre avec léger dégradé vertical (pas de noir LCD) */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          background: `
-            radial-gradient(ellipse 80% 40% at 50% 8%, rgba(201,160,78,0.16) 0%, rgba(201,160,78,0.04) 35%, transparent 65%),
-            radial-gradient(ellipse 100% 60% at 50% 110%, rgba(201,160,78,0.12) 0%, transparent 55%),
-            radial-gradient(ellipse 60% 40% at 15% 45%, rgba(228,197,122,0.05) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 40% at 85% 65%, rgba(201,160,78,0.05) 0%, transparent 60%),
-            linear-gradient(180deg, #0A0A0A 0%, #0C0A06 30%, #0A0807 70%, #0A0A0A 100%)
-          `,
+          background:
+            "linear-gradient(180deg, #0B0908 0%, #080707 35%, #060606 65%, #0A0807 100%)",
         }}
       />
 
-      {/* 2. Ondulations dorées — SVG preserveAspectRatio none pour s'étirer sur toute la hauteur */}
+      {/* 2. Pattern islamique tessellé — étoile à 8 branches répétée, ultra subtil */}
       <svg
-        preserveAspectRatio="none"
-        viewBox="0 0 1600 2400"
+        width="100%"
+        height="100%"
         style={{
           position: "absolute",
           inset: 0,
-          width: "100%",
-          height: "100%",
-          opacity: 1,
+          opacity: 0.22,
         }}
       >
         <defs>
-          <linearGradient id="alb-wave-grad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor={GOLD} stopOpacity="0" />
-            <stop offset="25%" stopColor={GOLD} stopOpacity="0.35" />
-            <stop offset="50%" stopColor={GOLD_BRIGHT} stopOpacity="0.7" />
-            <stop offset="75%" stopColor={GOLD} stopOpacity="0.35" />
-            <stop offset="100%" stopColor={GOLD} stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="alb-wave-grad-2" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor={GOLD} stopOpacity="0" />
-            <stop offset="30%" stopColor={GOLD} stopOpacity="0.28" />
-            <stop offset="50%" stopColor={GOLD} stopOpacity="0.55" />
-            <stop offset="70%" stopColor={GOLD} stopOpacity="0.28" />
-            <stop offset="100%" stopColor={GOLD} stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="alb-wave-grad-3" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor={GOLD} stopOpacity="0" />
-            <stop offset="40%" stopColor={GOLD} stopOpacity="0.2" />
-            <stop offset="60%" stopColor={GOLD} stopOpacity="0.2" />
-            <stop offset="100%" stopColor={GOLD} stopOpacity="0" />
-          </linearGradient>
+          <pattern
+            id={PATTERN_ID}
+            x="0"
+            y="0"
+            width="88"
+            height="88"
+            patternUnits="userSpaceOnUse"
+          >
+            <g
+              fill="none"
+              stroke="#C9A04E"
+              strokeWidth="0.45"
+              strokeOpacity="0.55"
+              strokeLinejoin="round"
+            >
+              {/* Étoile à 8 branches = 2 carrés superposés (motif Girih traditionnel) */}
+              <g transform="translate(44 44)">
+                <rect x="-18" y="-18" width="36" height="36" />
+                <rect x="-18" y="-18" width="36" height="36" transform="rotate(45)" />
+                <circle cx="0" cy="0" r="6" strokeOpacity="0.35" />
+              </g>
+              {/* Motif aux 4 coins pour que la tessellation soit continue */}
+              <g transform="translate(0 0)">
+                <rect x="-12" y="-12" width="24" height="24" strokeOpacity="0.4" />
+                <rect x="-12" y="-12" width="24" height="24" transform="rotate(45)" strokeOpacity="0.4" />
+              </g>
+              <g transform="translate(88 0)">
+                <rect x="-12" y="-12" width="24" height="24" strokeOpacity="0.4" />
+                <rect x="-12" y="-12" width="24" height="24" transform="rotate(45)" strokeOpacity="0.4" />
+              </g>
+              <g transform="translate(0 88)">
+                <rect x="-12" y="-12" width="24" height="24" strokeOpacity="0.4" />
+                <rect x="-12" y="-12" width="24" height="24" transform="rotate(45)" strokeOpacity="0.4" />
+              </g>
+              <g transform="translate(88 88)">
+                <rect x="-12" y="-12" width="24" height="24" strokeOpacity="0.4" />
+                <rect x="-12" y="-12" width="24" height="24" transform="rotate(45)" strokeOpacity="0.4" />
+              </g>
+            </g>
+          </pattern>
+
+          {/* Mask radial : le pattern s'estompe vers les bords */}
+          <radialGradient id="alb-pattern-mask" cx="50%" cy="40%" r="65%">
+            <stop offset="0%" stopColor="#fff" stopOpacity="0.9" />
+            <stop offset="55%" stopColor="#fff" stopOpacity="0.45" />
+            <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+          </radialGradient>
+
+          <mask id="alb-pattern-vignette">
+            <rect width="100%" height="100%" fill="url(#alb-pattern-mask)" />
+          </mask>
         </defs>
 
-        {/* Vague 1 — haut */}
-        <g style={{ animation: "alb-wave-flow-1 11s ease-in-out infinite" }}>
-          <path
-            d="M -50 260 Q 200 180 400 260 T 800 260 T 1200 260 T 1650 260"
-            fill="none"
-            stroke="url(#alb-wave-grad)"
-            strokeWidth="0.9"
-          />
-          <path
-            d="M -50 290 Q 200 210 400 290 T 800 290 T 1200 290 T 1650 290"
-            fill="none"
-            stroke="url(#alb-wave-grad-3)"
-            strokeWidth="0.6"
-          />
-        </g>
-
-        {/* Vague 2 — un tiers */}
-        <g style={{ animation: "alb-wave-flow-2 14s ease-in-out infinite" }}>
-          <path
-            d="M -50 700 Q 240 640 480 700 T 960 700 T 1440 700 T 1650 700"
-            fill="none"
-            stroke="url(#alb-wave-grad-2)"
-            strokeWidth="0.8"
-          />
-          <path
-            d="M -50 730 Q 240 780 480 730 T 960 730 T 1440 730 T 1650 730"
-            fill="none"
-            stroke="url(#alb-wave-grad-3)"
-            strokeWidth="0.5"
-          />
-        </g>
-
-        {/* Vague 3 — milieu */}
-        <g style={{ animation: "alb-wave-flow-3 13s ease-in-out infinite" }}>
-          <path
-            d="M -50 1200 Q 180 1140 360 1200 T 720 1200 T 1080 1200 T 1440 1200 T 1650 1200"
-            fill="none"
-            stroke="url(#alb-wave-grad)"
-            strokeWidth="0.8"
-          />
-        </g>
-
-        {/* Vague 4 — bas */}
-        <g style={{ animation: "alb-wave-flow-2 16s ease-in-out infinite" }}>
-          <path
-            d="M -50 1700 Q 250 1640 500 1700 T 1000 1700 T 1500 1700 T 1650 1700"
-            fill="none"
-            stroke="url(#alb-wave-grad-2)"
-            strokeWidth="0.7"
-          />
-          <path
-            d="M -50 1730 Q 250 1780 500 1730 T 1000 1730 T 1500 1730 T 1650 1730"
-            fill="none"
-            stroke="url(#alb-wave-grad-3)"
-            strokeWidth="0.5"
-          />
-        </g>
-
-        {/* Vague 5 — très bas */}
-        <g style={{ animation: "alb-wave-flow-1 18s ease-in-out infinite" }}>
-          <path
-            d="M -50 2100 Q 220 2040 440 2100 T 880 2100 T 1320 2100 T 1650 2100"
-            fill="none"
-            stroke="url(#alb-wave-grad)"
-            strokeWidth="0.9"
-          />
-        </g>
+        <rect
+          width="100%"
+          height="100%"
+          fill={`url(#${PATTERN_ID})`}
+          mask="url(#alb-pattern-vignette)"
+        />
       </svg>
 
-      {/* 3. Champ d'étoiles scintillantes */}
-      {Array.from({ length: STAR_COUNT }).map((_, i) => (
-        <Star key={i} i={i} />
-      ))}
-
-      {/* 4. Deux zones de glow doux en profondeur */}
+      {/* 3. Aurore A — grande tache dorée chaude qui dérive depuis le centre-gauche */}
       <div
         style={{
           position: "absolute",
-          top: "12%",
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: "min(720px, 90vw)",
-          height: "540px",
+          top: "5%",
+          left: "15%",
+          width: "min(820px, 70vw)",
+          height: "min(820px, 70vw)",
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(201,160,78,0.13) 0%, transparent 60%)",
-          filter: "blur(50px)",
-          animation: "alb-glow-breathe 9s ease-in-out infinite",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          top: "60%",
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: "min(540px, 80vw)",
-          height: "420px",
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(228,197,122,0.08) 0%, transparent 65%)",
-          filter: "blur(60px)",
-          animation: "alb-glow-breathe 12s ease-in-out infinite 2s",
+          background:
+            "radial-gradient(circle, rgba(228,197,122,0.28) 0%, rgba(201,160,78,0.18) 25%, rgba(201,160,78,0.06) 50%, transparent 70%)",
+          filter: "blur(80px)",
+          animation: "alb-aurora-a 58s ease-in-out infinite",
+          mixBlendMode: "screen",
+          willChange: "transform, opacity",
         }}
       />
 
-      {/* 5. Liseré doré ultra-fin en haut */}
+      {/* 4. Aurore B — tache plus froide / claire en bas-droite */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "10%",
+          right: "5%",
+          width: "min(720px, 65vw)",
+          height: "min(720px, 65vw)",
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(228,197,122,0.2) 0%, rgba(201,160,78,0.1) 35%, transparent 65%)",
+          filter: "blur(90px)",
+          animation: "alb-aurora-b 86s ease-in-out infinite",
+          mixBlendMode: "screen",
+          willChange: "transform, opacity",
+        }}
+      />
+
+      {/* 5. Aurore C — plus petite, haut-droit, pour équilibrer visuellement */}
+      <div
+        style={{
+          position: "absolute",
+          top: "45%",
+          right: "20%",
+          width: "min(460px, 50vw)",
+          height: "min(460px, 50vw)",
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(201,160,78,0.14) 0%, transparent 60%)",
+          filter: "blur(70px)",
+          animation: "alb-aurora-c 72s ease-in-out infinite",
+          mixBlendMode: "screen",
+          willChange: "transform, opacity",
+        }}
+      />
+
+      {/* 6. Vignette haut + bas pour assombrir les extrémités (ancre le contenu central) */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.55) 0%, transparent 18%, transparent 82%, rgba(0,0,0,0.55) 100%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* 7. Liseré doré ultra-fin en haut (signature visuelle discrète) */}
       <div
         style={{
           position: "absolute",
@@ -260,19 +206,7 @@ export default function CheckoutCanvas() {
           right: 0,
           height: "1px",
           background:
-            "linear-gradient(90deg, transparent 0%, rgba(201,160,78,0.55) 50%, transparent 100%)",
-        }}
-      />
-      {/* 6. Liseré doré ultra-fin en bas */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: "1px",
-          background:
-            "linear-gradient(90deg, transparent 0%, rgba(201,160,78,0.35) 50%, transparent 100%)",
+            "linear-gradient(90deg, transparent 0%, rgba(201,160,78,0.5) 50%, transparent 100%)",
         }}
       />
     </div>
