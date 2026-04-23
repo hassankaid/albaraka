@@ -1,24 +1,34 @@
 /**
- * Canvas Al Baraka — étoiles scintillantes sur les côtés.
+ * Canvas Al Baraka — direction "Ciel étoilé ottoman".
  *
- * Le formulaire (max-width 440px centré) occupe la zone centrale et
- * doit rester visuellement propre : pas d'étoiles qui chevauchent les
- * champs. Les étoiles sont donc confinées aux **flancs** (x < 22 % ou
- * x > 78 %), sur toute la hauteur de la page, pour animer l'espace
- * qui serait sinon un grand vide noir.
+ * 3 couches successives sur les flancs (jamais au centre) :
  *
- * Tout est en absolute dans un wrapper relative+overflow-hidden qui
- * englobe le contenu → scrolle avec la page, rien n'est fixed.
+ *  1. Gradient multi-radial : au lieu d'un noir uni, 4 points
+ *     lumineux dorés sont ancrés aux 4 angles de la page. Le centre
+ *     reste sombre pour faire ressortir le formulaire. Gradients
+ *     très diffus, pas de frontière visible.
+ *
+ *  2. 4 nébuleuses dorées (blur 110px) placées aux 4 coins. Chacune
+ *     respire très lentement à son propre rythme (65-90s) avec des
+ *     amplitudes minuscules. Donne de la "matière" aux zones vides.
+ *
+ *  3. Constellation : 8 lignes dorées ultra-fines (SVG, stroke 0.3px)
+ *     qui relient certaines étoiles des flancs entre elles, formant
+ *     des petits dessins verticaux à gauche et à droite. Aucune
+ *     ligne ne traverse la zone centrale.
+ *
+ *  4. 30 étoiles scintillantes (inchangées) sur les flancs.
+ *
+ * Tout en absolute + zIndex 0, scrolle avec la page.
  */
 
 const GOLD = "#C9A04E";
 const GOLD_BRIGHT = "#E4C57A";
 
-/* Positions déterministes : moitiés gauche (x 2-22) et droite (x 78-98),
-   réparties sur toute la hauteur (y 2-98). Tailles + vitesses variées
-   pour créer un rythme naturel sans synchronisation visible. */
+/* Étoiles confinées aux flancs gauche (x 3-19%) et droite (x 82-97%).
+   Positions stables pour que la constellation puisse les référencer par index. */
 const STARS = [
-  // --- Flanc gauche (haut → bas) ---
+  // --- Flanc gauche (0-14) ---
   { x: 4,  y: 3,  size: 1.1, bright: false, dur: 4.2, delay: 0    },
   { x: 11, y: 7,  size: 1.6, bright: true,  dur: 3.4, delay: -1.1 },
   { x: 6,  y: 13, size: 0.9, bright: false, dur: 5.0, delay: -2.3 },
@@ -35,7 +45,7 @@ const STARS = [
   { x: 16, y: 86, size: 1.0, bright: false, dur: 4.9, delay: -1.6 },
   { x: 8,  y: 93, size: 0.9, bright: false, dur: 5.3, delay: -0.5 },
 
-  // --- Flanc droit (haut → bas) ---
+  // --- Flanc droit (15-29) ---
   { x: 87, y: 4,  size: 1.3, bright: false, dur: 4.6, delay: -1.8 },
   { x: 95, y: 9,  size: 1.7, bright: true,  dur: 3.3, delay: -0.2 },
   { x: 82, y: 15, size: 0.9, bright: false, dur: 5.1, delay: -2.7 },
@@ -51,6 +61,21 @@ const STARS = [
   { x: 88, y: 83, size: 1.6, bright: true,  dur: 3.4, delay: -1.3 },
   { x: 97, y: 90, size: 0.9, bright: false, dur: 5.1, delay: -2.8 },
   { x: 85, y: 96, size: 1.0, bright: false, dur: 4.8, delay: -0.6 },
+];
+
+/* Lignes de constellation : paires d'index d'étoiles à relier.
+   On ne relie que des étoiles du même flanc, jamais traversant le centre. */
+const CONSTELLATION_LINES: Array<[number, number]> = [
+  // Flanc gauche
+  [1, 3],     // étoile brillante y=7 → y=19
+  [3, 5],     // y=19 → étoile brillante y=31
+  [5, 8],     // y=31 → étoile brillante y=52
+  [8, 12],    // y=52 → étoile brillante y=79
+  // Flanc droit
+  [16, 18],   // y=9 → y=21
+  [18, 20],   // y=21 → étoile brillante y=34
+  [20, 23],   // y=34 → étoile brillante y=55
+  [23, 26],   // y=55 → étoile brillante y=83
 ];
 
 export default function CheckoutCanvas() {
@@ -74,31 +99,119 @@ export default function CheckoutCanvas() {
           0%, 100% { opacity: 0.55; transform: scale(1); }
           50%      { opacity: 1;    transform: scale(1.3); }
         }
+        @keyframes alb-nebula-a { 0%,100%{opacity:.55;transform:translate(0,0) scale(1)} 50%{opacity:.85;transform:translate(14px,-8px) scale(1.07)} }
+        @keyframes alb-nebula-b { 0%,100%{opacity:.45;transform:translate(0,0) scale(1)} 50%{opacity:.75;transform:translate(-12px,10px) scale(1.1)} }
+        @keyframes alb-nebula-c { 0%,100%{opacity:.4 ;transform:translate(0,0) scale(1)} 50%{opacity:.7 ;transform:translate(10px,14px) scale(1.08)} }
+        @keyframes alb-nebula-d { 0%,100%{opacity:.5 ;transform:translate(0,0) scale(1)} 50%{opacity:.8 ;transform:translate(-14px,-10px) scale(1.12)} }
+        @keyframes alb-line-breathe {
+          0%, 100% { opacity: 0.16; }
+          50%      { opacity: 0.38; }
+        }
       `}</style>
 
-      {/* Fond noir avec léger dégradé vertical (pour éviter le noir LCD plat) */}
+      {/* 1. Fond multi-radial : 4 ancres de lumière aux angles */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          background: "linear-gradient(180deg, #0A0908 0%, #080707 50%, #0B0908 100%)",
+          background: `
+            radial-gradient(ellipse 55% 45% at 0% 0%,   rgba(201,160,78,0.16) 0%, transparent 55%),
+            radial-gradient(ellipse 55% 45% at 100% 0%, rgba(201,160,78,0.14) 0%, transparent 55%),
+            radial-gradient(ellipse 60% 50% at 0% 100%, rgba(201,160,78,0.10) 0%, transparent 55%),
+            radial-gradient(ellipse 60% 50% at 100% 100%, rgba(201,160,78,0.12) 0%, transparent 55%),
+            linear-gradient(180deg, #0B0908 0%, #080707 50%, #0B0908 100%)
+          `,
         }}
       />
 
-      {/* Liseré doré ultra-fin en haut (signature) */}
+      {/* 2. Quatre nébuleuses dorées aux 4 coins (blur + respiration) */}
       <div
         style={{
           position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: "1px",
-          background:
-            "linear-gradient(90deg, transparent 0%, rgba(201,160,78,0.45) 50%, transparent 100%)",
+          top: "-8%",
+          left: "-8%",
+          width: "min(520px, 48vw)",
+          height: "min(460px, 45vw)",
+          background: "radial-gradient(circle, rgba(228,197,122,0.22) 0%, rgba(201,160,78,0.08) 35%, transparent 65%)",
+          filter: "blur(110px)",
+          animation: "alb-nebula-a 68s ease-in-out infinite",
+          mixBlendMode: "screen",
+          willChange: "transform, opacity",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          top: "-8%",
+          right: "-8%",
+          width: "min(500px, 46vw)",
+          height: "min(440px, 44vw)",
+          background: "radial-gradient(circle, rgba(228,197,122,0.2) 0%, rgba(201,160,78,0.07) 35%, transparent 65%)",
+          filter: "blur(110px)",
+          animation: "alb-nebula-b 76s ease-in-out infinite",
+          mixBlendMode: "screen",
+          willChange: "transform, opacity",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          bottom: "-10%",
+          left: "-10%",
+          width: "min(540px, 50vw)",
+          height: "min(480px, 48vw)",
+          background: "radial-gradient(circle, rgba(201,160,78,0.14) 0%, rgba(201,160,78,0.05) 40%, transparent 70%)",
+          filter: "blur(120px)",
+          animation: "alb-nebula-c 84s ease-in-out infinite",
+          mixBlendMode: "screen",
+          willChange: "transform, opacity",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          bottom: "-10%",
+          right: "-10%",
+          width: "min(520px, 48vw)",
+          height: "min(460px, 46vw)",
+          background: "radial-gradient(circle, rgba(201,160,78,0.16) 0%, rgba(201,160,78,0.06) 40%, transparent 70%)",
+          filter: "blur(120px)",
+          animation: "alb-nebula-d 92s ease-in-out infinite",
+          mixBlendMode: "screen",
+          willChange: "transform, opacity",
         }}
       />
 
-      {/* Champ d'étoiles sur les flancs gauche + droit, toute la hauteur de la page */}
+      {/* 3. Constellation : lignes fines qui relient certaines étoiles (un par un flanc) */}
+      <svg
+        width="100%"
+        height="100%"
+        preserveAspectRatio="none"
+        style={{
+          position: "absolute",
+          inset: 0,
+          animation: "alb-line-breathe 7s ease-in-out infinite",
+        }}
+      >
+        {CONSTELLATION_LINES.map(([a, b], i) => {
+          const sa = STARS[a];
+          const sb = STARS[b];
+          return (
+            <line
+              key={i}
+              x1={`${sa.x}%`}
+              y1={`${sa.y}%`}
+              x2={`${sb.x}%`}
+              y2={`${sb.y}%`}
+              stroke={GOLD}
+              strokeWidth="0.5"
+              strokeLinecap="round"
+            />
+          );
+        })}
+      </svg>
+
+      {/* 4. Étoiles scintillantes (inchangées) */}
       {STARS.map((s, i) => (
         <div
           key={i}
@@ -119,6 +232,19 @@ export default function CheckoutCanvas() {
           }}
         />
       ))}
+
+      {/* 5. Liseré doré ultra-fin en haut */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "1px",
+          background:
+            "linear-gradient(90deg, transparent 0%, rgba(201,160,78,0.45) 50%, transparent 100%)",
+        }}
+      />
     </div>
   );
 }
