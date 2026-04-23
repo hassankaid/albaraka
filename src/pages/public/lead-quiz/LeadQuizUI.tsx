@@ -4,10 +4,115 @@
 //   - Palette : zinc-950 / gold-400 (#D4AF37) / cream
 // Le composant est autonome (ne dépend ni du theme ni du layout global).
 
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
+import frLocale from "react-phone-number-input/locale/fr.json";
 import "react-phone-number-input/style.css";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronDown, Globe } from "lucide-react";
 import type { QuizConfig, QuizOption, QuizOwner, QuizProfile, QuizQuestion } from "./types";
+
+// ──────────────────────────────────────────────────────────────────────
+// CountrySelect — sélecteur de pays custom, recherchable, en français,
+// aligné avec la palette plateforme (shadcn Command + Popover).
+// Remplace le <select> natif de react-phone-number-input.
+// ──────────────────────────────────────────────────────────────────────
+
+interface CountryOption {
+  value: string | undefined;
+  label: string;
+}
+
+interface CountrySelectProps {
+  value?: string;
+  onChange: (country: string | undefined) => void;
+  options: CountryOption[];
+  iconComponent: React.ComponentType<{ country: string; label?: string; aspectRatio?: number }>;
+  disabled?: boolean;
+  readOnly?: boolean;
+}
+
+function CountrySelect({ value, onChange, options, iconComponent: IconComponent, disabled }: CountrySelectProps) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          disabled={disabled}
+          className="flex h-full items-center gap-2 border-r border-gold-400/15 px-3 transition-colors hover:bg-gold-400/5 disabled:opacity-40"
+          aria-haspopup="listbox"
+          aria-expanded={open}
+        >
+          <span className="flex h-[18px] w-[24px] items-center justify-center">
+            {value ? (
+              <IconComponent country={value} label={selected?.label ?? value} />
+            ) : (
+              <Globe className="h-4 w-4 text-[#f4ecd8]/60" />
+            )}
+          </span>
+          <ChevronDown className="h-3.5 w-3.5 text-[#f4ecd8]/50" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-[300px] border-gold-400/25 bg-[#14100a] p-0 text-[#f4ecd8] shadow-xl"
+        align="start"
+        sideOffset={8}
+      >
+        <Command
+          className="bg-transparent [&_[cmdk-input-wrapper]]:border-gold-400/15"
+          filter={(val, search) => {
+            // val = opt.value (country code or 'intl'), ou on cherche dans label via keywords
+            const needle = search.toLowerCase().trim();
+            const opt = options.find((o) => (o.value ?? "intl") === val);
+            if (!opt) return 0;
+            return opt.label.toLowerCase().includes(needle) ? 1 : 0;
+          }}
+        >
+          <CommandInput
+            placeholder="Rechercher un pays…"
+            className="h-10 text-[14px] text-[#f4ecd8] placeholder:text-[#f4ecd8]/40"
+          />
+          <CommandList className="max-h-[300px]">
+            <CommandEmpty className="py-6 text-center text-[13px] text-[#f4ecd8]/50">
+              Aucun pays trouvé.
+            </CommandEmpty>
+            <CommandGroup>
+              {options.map((opt) => {
+                const key = opt.value ?? "intl";
+                const isSel = opt.value === value;
+                return (
+                  <CommandItem
+                    key={key}
+                    value={key}
+                    onSelect={() => {
+                      onChange(opt.value);
+                      setOpen(false);
+                    }}
+                    className="cursor-pointer gap-2.5 text-[13.5px] text-[#f4ecd8]/90 aria-selected:bg-gold-400/10 aria-selected:text-gold-400"
+                  >
+                    <span className="flex h-[18px] w-[26px] shrink-0 items-center justify-center">
+                      {opt.value ? (
+                        <IconComponent country={opt.value} label={opt.label} />
+                      ) : (
+                        <Globe className="h-4 w-4 text-[#f4ecd8]/50" />
+                      )}
+                    </span>
+                    <span className="flex-1 truncate">{opt.label}</span>
+                    {isSel && <Check className="h-4 w-4 shrink-0 text-gold-400" />}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 // ──────────────────────────────────────────────────────────────────────
 // Frame commun : fond noir + ornementations or
@@ -59,7 +164,7 @@ export function QuizFrame({
         .alb-q-pulse { animation: alb-q-pulse 2s ease-in-out infinite; }
         .alb-q-shimmer { background-size: 200% auto; animation: alb-q-shimmer 3s linear infinite; }
 
-        /* react-phone-number-input — un SEUL champ unifié, pas de bordures internes */
+        /* react-phone-number-input — un SEUL champ unifié avec CountrySelect custom */
         .alb-phone .PhoneInput {
           display: flex;
           align-items: stretch;
@@ -77,11 +182,8 @@ export function QuizFrame({
         }
         .alb-phone.has-error .PhoneInput { border-color: rgba(239,68,68,0.55); }
         .alb-phone .PhoneInputCountry {
-          position: relative;
           display: flex;
-          align-items: center;
-          padding: 0 0.85rem 0 0.9rem;
-          border-right: 1px solid rgba(212,175,55,0.15);
+          align-items: stretch;
           background: transparent;
         }
         .alb-phone .PhoneInputCountryIcon {
@@ -94,20 +196,6 @@ export function QuizFrame({
         .alb-phone .PhoneInputCountryIcon img,
         .alb-phone .PhoneInputCountryIcon svg { width: 100%; height: 100%; object-fit: cover; }
         .alb-phone .PhoneInputCountryIcon--border { box-shadow: 0 0 0 1px rgba(212,175,55,0.2) !important; }
-        .alb-phone .PhoneInputCountrySelectArrow {
-          color: rgba(244,236,216,0.5);
-          margin-left: 0.55rem;
-          width: 0.45rem; height: 0.45rem;
-          border-style: solid;
-          border-color: currentColor;
-          border-width: 0 1.5px 1.5px 0;
-          transform: rotate(45deg);
-        }
-        .alb-phone .PhoneInputCountrySelect {
-          position: absolute; inset: 0; opacity: 0; cursor: pointer;
-          color: #f4ecd8; /* couleur de la police dans la popup */
-        }
-        .alb-phone .PhoneInputCountrySelect option { background: #1a1510; color: #f4ecd8; }
         .alb-phone .PhoneInputInput {
           flex: 1;
           width: 100%;
@@ -379,21 +467,11 @@ export function LandingPhase({
         ))}
       </div>
 
-      {/* Carte apporteur */}
-      <div className="mt-10 rounded-2xl border border-gold-400/15 bg-black/30 px-5 py-4 backdrop-blur-sm">
-        <div className="mb-2 text-[10px] font-medium uppercase tracking-[1.8px] text-[#f4ecd8]/40">Partagé par</div>
-        <div className="flex items-center justify-center gap-3">
-          <div
-            className="flex h-11 w-11 items-center justify-center rounded-full font-heading text-xl font-bold text-[#0a0906]"
-            style={{ background: "linear-gradient(135deg, #F5D77A, #A68B3E)" }}
-          >
-            {ownerDisplayName.charAt(0).toUpperCase()}
-          </div>
-          <div className="text-left">
-            <div className="text-[14px] font-medium text-[#f4ecd8]">{ownerDisplayName}</div>
-            <div className="text-[11px] text-[#f4ecd8]/50">{ownerDisplayRole}</div>
-          </div>
-        </div>
+      {/* Carte apporteur (sans avatar) */}
+      <div className="mt-10 rounded-2xl border border-gold-400/15 bg-black/30 px-5 py-4 text-center backdrop-blur-sm">
+        <div className="mb-1.5 text-[10px] font-medium uppercase tracking-[1.8px] text-[#f4ecd8]/40">Partagé par</div>
+        <div className="font-heading text-[17px] font-semibold text-[#f4ecd8]">{ownerDisplayName}</div>
+        <div className="mt-0.5 text-[11px] text-[#f4ecd8]/50">{ownerDisplayRole}</div>
       </div>
 
       <div className="mt-4 rounded-2xl border border-gold-400/15 bg-black/20 px-5 py-4">
@@ -771,6 +849,8 @@ export function PhonePhase({
             <PhoneInput
               international
               defaultCountry="FR"
+              labels={frLocale}
+              countrySelectComponent={CountrySelect}
               value={phone}
               onChange={(v) => onChange(v ?? "")}
               placeholder="6 12 34 56 78"
@@ -870,13 +950,7 @@ export function ConferencePhase({
 
       <div className="mb-5 rounded-2xl border border-gold-400/25 bg-gradient-to-br from-gold-400/10 to-gold-400/3 p-5 text-center">
         <div className="mb-4 text-[13.5px] leading-relaxed text-[#f4ecd8]/75">{whatsappIntro}</div>
-        <div
-          className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full font-heading text-2xl font-bold text-[#0a0906]"
-          style={{ background: "linear-gradient(135deg, #F5D77A, #A68B3E)" }}
-        >
-          {owner.display_name.charAt(0).toUpperCase()}
-        </div>
-        <div className="text-[15px] font-semibold text-[#f4ecd8]">{owner.display_name}</div>
+        <div className="font-heading text-[20px] font-semibold text-[#f4ecd8]">{owner.display_name}</div>
         <div className="mb-5 text-[11.5px] text-[#f4ecd8]/45">{owner.display_role}</div>
         <a
           href={whatsappUrl}
