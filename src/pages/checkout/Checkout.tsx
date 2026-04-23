@@ -1194,48 +1194,37 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
               fontWeight: 500,
             }}
           >
-            TOTAL
+            {installments === 1 ? "TOTAL" : "À PAYER AUJOURD'HUI"}
           </span>
           <div style={{ textAlign: "right" }}>
-            {installments > 1 ? (
-              <>
-                <div
-                  style={{
-                    fontSize: "clamp(28px, 5vw, 36px)",
-                    fontWeight: 500,
-                    color: BRAND.gold,
-                    fontFamily: "'Cormorant Garamond', Georgia, serif",
-                    letterSpacing: 1,
-                    lineHeight: 1,
-                    textShadow: "0 0 24px rgba(201,160,78,0.3)",
-                  }}
-                >
-                  {formatEur(perInstallment)}
-                </div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "rgba(245,241,230,0.6)",
-                    marginTop: 6,
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  × {installments} versements · soit {formatEur(totalAfterDiscount)}
-                </div>
-              </>
-            ) : (
+            <div
+              style={{
+                fontSize: "clamp(32px, 6vw, 44px)",
+                fontWeight: 500,
+                color: BRAND.gold,
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                letterSpacing: 1,
+                lineHeight: 1,
+                textShadow: "0 0 24px rgba(201,160,78,0.3)",
+              }}
+            >
+              {formatEur(installments === 1 ? totalAfterDiscount : perInstallment)}
+            </div>
+            {installments > 1 && (
               <div
                 style={{
-                  fontSize: "clamp(32px, 6vw, 44px)",
-                  fontWeight: 500,
-                  color: BRAND.gold,
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
-                  letterSpacing: 1,
-                  lineHeight: 1,
-                  textShadow: "0 0 24px rgba(201,160,78,0.3)",
+                  fontSize: 12,
+                  color: "rgba(245,241,230,0.6)",
+                  marginTop: 8,
+                  letterSpacing: 0.3,
+                  lineHeight: 1.5,
                 }}
               >
-                {formatEur(totalAfterDiscount)}
+                puis {installments - 1} × {formatEur(perInstallment)} / mois
+                <br />
+                <span style={{ color: "rgba(245,241,230,0.5)" }}>
+                  total {formatEur(totalAfterDiscount)}
+                </span>
               </div>
             )}
           </div>
@@ -1473,7 +1462,11 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
         ) : (
           <>
             <Lock size={15} strokeWidth={2.2} />
-            <span>VALIDER MON PASS · {formatEur(totalAfterDiscount)}</span>
+            <span>
+              {installments === 1
+                ? `VALIDER MON PASS · ${formatEur(totalAfterDiscount)}`
+                : `PAYER ${formatEur(perInstallment)} AUJOURD'HUI`}
+            </span>
             <ArrowRight size={16} strokeWidth={2.2} className="alb-btn-arrow" />
           </>
         )}
@@ -1481,6 +1474,35 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
       <style>{`
         @keyframes alb-spin { to { transform: rotate(360deg); } }
       `}</style>
+
+      {/* Rappel paiement échelonné sous le bouton — évite toute confusion sur le montant débité */}
+      {installments > 1 && !submitting && (
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: 12,
+            fontSize: 12.5,
+            color: BRAND.creamSoft,
+            lineHeight: 1.55,
+            letterSpacing: 0.2,
+          }}
+        >
+          <span style={{ color: BRAND.gold, fontWeight: 600 }}>
+            {formatEur(perInstallment)}
+          </span>
+          {" "}débité maintenant,{" "}
+          <br style={{ display: "inline" }} />
+          puis {installments - 1} versements mensuels de{" "}
+          <span style={{ color: BRAND.cream, fontWeight: 500 }}>
+            {formatEur(perInstallment)}
+          </span>
+          {" "}— total{" "}
+          <span style={{ color: BRAND.cream, fontWeight: 500 }}>
+            {formatEur(totalAfterDiscount)}
+          </span>
+          .
+        </div>
+      )}
 
       {/* Bandeau de réassurance */}
       <div
