@@ -1,6 +1,7 @@
 import { useSearchParams } from "react-router-dom";
 import logo from "@/assets/al-baraka-logo-v2.png";
 import { Mail, KeyRound, Users, Compass, CheckCircle2 } from "lucide-react";
+import CheckoutCanvas from "./CheckoutCanvas";
 
 const THEME = {
   bg: "#0A0A0A",
@@ -71,15 +72,6 @@ export default function MerciPage() {
         .alb-fade-2 { animation: alb-fade-up 0.7s ease-out 0.15s both; }
         .alb-fade-3 { animation: alb-fade-up 0.7s ease-out 0.3s both; }
 
-        .alb-page-bg {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          background:
-            radial-gradient(ellipse 70% 45% at 50% 0%, rgba(201,160,78,0.13) 0%, rgba(201,160,78,0.04) 35%, transparent 70%),
-            radial-gradient(ellipse 50% 30% at 50% 18%, rgba(228,197,122,0.06) 0%, transparent 60%);
-        }
-
         .alb-title-gradient {
           background: linear-gradient(180deg, #F5F1E6 0%, #E4C57A 50%, #C9A04E 100%);
           -webkit-background-clip: text;
@@ -104,7 +96,7 @@ export default function MerciPage() {
           box-shadow: 0 0 24px rgba(201,160,78,0.08);
         }
       `}</style>
-      <div className="alb-page-bg" aria-hidden />
+      <CheckoutCanvas />
 
       <div style={{ maxWidth: 440, margin: "0 auto", position: "relative", zIndex: 2 }}>
         {/* Header logo + halo */}

@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import logo from "@/assets/al-baraka-logo-v2.png";
 import { Lock, ShieldCheck, CheckCircle2, Tag, X, ArrowRight, ChevronDown } from "lucide-react";
+import CheckoutCanvas from "./CheckoutCanvas";
 
 const TOTAL_EUR = 2500;
 
@@ -649,16 +650,6 @@ export default function Checkout() {
         .alb-fade { animation: alb-fade-up 0.7s ease-out both; }
         .alb-fade-2 { animation: alb-fade-up 0.7s ease-out 0.1s both; }
 
-        /* Fond global : radial gradient subtil en haut */
-        .alb-page-bg {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          background:
-            radial-gradient(ellipse 70% 45% at 50% 0%, rgba(201,160,78,0.13) 0%, rgba(201,160,78,0.04) 35%, transparent 70%),
-            radial-gradient(ellipse 50% 30% at 50% 18%, rgba(228,197,122,0.06) 0%, transparent 60%);
-        }
-
         /* Titre gradient or */
         .alb-title-gradient {
           background: linear-gradient(180deg, #F5F1E6 0%, #E4C57A 50%, #C9A04E 100%);
@@ -897,7 +888,7 @@ export default function Checkout() {
           letter-spacing: 0.1em;
         }
       `}</style>
-      <div className="alb-page-bg" aria-hidden />
+      <CheckoutCanvas />
 
       <div style={{ maxWidth: 440, margin: "0 auto", position: "relative", zIndex: 2 }}>
         {stripeKeyMissing && (
