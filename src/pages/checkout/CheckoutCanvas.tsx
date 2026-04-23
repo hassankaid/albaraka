@@ -103,22 +103,29 @@ export default function CheckoutCanvas() {
         @keyframes alb-nebula-b { 0%,100%{opacity:.45;transform:translate(0,0) scale(1)} 50%{opacity:.75;transform:translate(-12px,10px) scale(1.1)} }
         @keyframes alb-nebula-c { 0%,100%{opacity:.4 ;transform:translate(0,0) scale(1)} 50%{opacity:.7 ;transform:translate(10px,14px) scale(1.08)} }
         @keyframes alb-nebula-d { 0%,100%{opacity:.5 ;transform:translate(0,0) scale(1)} 50%{opacity:.8 ;transform:translate(-14px,-10px) scale(1.12)} }
+        @keyframes alb-nebula-e { 0%,100%{opacity:.45;transform:translate(0,0) scale(1)} 50%{opacity:.7 ;transform:translate(10px,-12px) scale(1.08)} }
+        @keyframes alb-nebula-f { 0%,100%{opacity:.4 ;transform:translate(0,0) scale(1)} 50%{opacity:.75;transform:translate(-12px,14px) scale(1.1)} }
         @keyframes alb-line-breathe {
           0%, 100% { opacity: 0.16; }
           50%      { opacity: 0.38; }
         }
       `}</style>
 
-      {/* 1. Fond multi-radial : 4 ancres de lumière aux angles */}
+      {/* 1. Fond multi-radial : 6 ancres de lumière dorée
+         (4 coins + 2 milieux de flancs) pour que le gradient couvre
+         toute la hauteur de la page, y compris sur les pages longues. */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           background: `
-            radial-gradient(ellipse 55% 45% at 0% 0%,   rgba(201,160,78,0.16) 0%, transparent 55%),
-            radial-gradient(ellipse 55% 45% at 100% 0%, rgba(201,160,78,0.14) 0%, transparent 55%),
-            radial-gradient(ellipse 60% 50% at 0% 100%, rgba(201,160,78,0.10) 0%, transparent 55%),
-            radial-gradient(ellipse 60% 50% at 100% 100%, rgba(201,160,78,0.12) 0%, transparent 55%),
+            radial-gradient(ellipse 55% 40% at 0% 0%,   rgba(201,160,78,0.17) 0%, transparent 55%),
+            radial-gradient(ellipse 55% 40% at 100% 0%, rgba(201,160,78,0.15) 0%, transparent 55%),
+            radial-gradient(ellipse 45% 35% at 0% 50%,  rgba(201,160,78,0.14) 0%, transparent 55%),
+            radial-gradient(ellipse 45% 35% at 100% 50%,rgba(201,160,78,0.13) 0%, transparent 55%),
+            radial-gradient(ellipse 60% 45% at 0% 100%, rgba(201,160,78,0.13) 0%, transparent 55%),
+            radial-gradient(ellipse 60% 45% at 100% 100%, rgba(201,160,78,0.14) 0%, transparent 55%),
+            linear-gradient(90deg, rgba(201,160,78,0.08) 0%, transparent 22%, transparent 78%, rgba(201,160,78,0.08) 100%),
             linear-gradient(180deg, #0B0908 0%, #080707 50%, #0B0908 100%)
           `,
         }}
@@ -177,6 +184,36 @@ export default function CheckoutCanvas() {
           background: "radial-gradient(circle, rgba(201,160,78,0.16) 0%, rgba(201,160,78,0.06) 40%, transparent 70%)",
           filter: "blur(120px)",
           animation: "alb-nebula-d 92s ease-in-out infinite",
+          mixBlendMode: "screen",
+          willChange: "transform, opacity",
+        }}
+      />
+
+      {/* 2bis. Nébuleuses milieu des flancs — pour que le doré ne se concentre pas seulement aux coins */}
+      <div
+        style={{
+          position: "absolute",
+          top: "38%",
+          left: "-10%",
+          width: "min(480px, 44vw)",
+          height: "min(440px, 40vw)",
+          background: "radial-gradient(circle, rgba(228,197,122,0.18) 0%, rgba(201,160,78,0.06) 40%, transparent 68%)",
+          filter: "blur(115px)",
+          animation: "alb-nebula-e 80s ease-in-out infinite",
+          mixBlendMode: "screen",
+          willChange: "transform, opacity",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          top: "42%",
+          right: "-10%",
+          width: "min(460px, 42vw)",
+          height: "min(420px, 40vw)",
+          background: "radial-gradient(circle, rgba(228,197,122,0.17) 0%, rgba(201,160,78,0.06) 40%, transparent 68%)",
+          filter: "blur(115px)",
+          animation: "alb-nebula-f 88s ease-in-out infinite",
           mixBlendMode: "screen",
           willChange: "transform, opacity",
         }}
