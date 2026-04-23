@@ -16,19 +16,15 @@ import type { QuizConfig, QuizOption, QuizOwner, QuizProfile, QuizQuestion } fro
 export function QuizFrame({
   children,
   glowColor,
-  centered = true,
 }: {
   children: ReactNode;
   glowColor?: string;
-  centered?: boolean;
 }) {
+  // Layout : min-h-screen + flex column + my-auto sur l'enfant.
+  // Résultat : si le contenu tient dans la hauteur, il est centré verticalement.
+  //            S'il dépasse, il flow naturellement sans couper le haut.
   return (
-    <div
-      className={`relative min-h-screen w-full overflow-x-hidden bg-[#0a0906] text-[#f4ecd8] font-sans antialiased ${
-        centered ? "flex items-center justify-center py-10" : "py-10"
-      }`}
-    >
-      {/* Halo doré central */}
+    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-[#0a0906] text-[#f4ecd8] font-sans antialiased">
       <div
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-[-280px] h-[680px] w-[680px] -translate-x-1/2 rounded-full blur-3xl"
@@ -38,13 +34,11 @@ export function QuizFrame({
             : "radial-gradient(circle, rgba(212,175,55,0.10) 0%, transparent 70%)",
         }}
       />
-      {/* Ornementation discrète en bas */}
       <div
         aria-hidden
         className="pointer-events-none absolute bottom-[-320px] left-1/2 h-[540px] w-[540px] -translate-x-1/2 rounded-full blur-3xl"
         style={{ background: "radial-gradient(circle, rgba(212,175,55,0.04) 0%, transparent 70%)" }}
       />
-      {/* Grain texture */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.035]"
@@ -53,7 +47,10 @@ export function QuizFrame({
             "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E\")",
         }}
       />
-      <div className="relative z-10 mx-auto w-full max-w-[460px] px-5">{children}</div>
+      {/* my-auto centre verticalement si le contenu tient, collapse si trop grand */}
+      <div className="relative z-10 mx-auto my-auto w-full max-w-[460px] px-5 py-10">
+        {children}
+      </div>
       <style>{`
         @keyframes alb-q-fade { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes alb-q-pulse { 0%,100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.08); opacity: 1; } }
@@ -62,22 +59,117 @@ export function QuizFrame({
         .alb-q-pulse { animation: alb-q-pulse 2s ease-in-out infinite; }
         .alb-q-shimmer { background-size: 200% auto; animation: alb-q-shimmer 3s linear infinite; }
 
-        /* react-phone-number-input dark theme override */
-        .alb-phone { width: 100%; }
-        .alb-phone .PhoneInput { display: flex; gap: 0.5rem; align-items: center; }
-        .alb-phone .PhoneInputCountry { position: relative; display: flex; align-items: center; padding: 0 0.75rem; border: 1px solid rgba(212,175,55,0.25); border-radius: 0.75rem; background: rgba(20,15,8,0.6); height: 48px; }
-        .alb-phone .PhoneInputCountryIcon { width: 24px; height: auto; box-shadow: none !important; background: transparent !important; }
-        .alb-phone .PhoneInputCountryIcon--border { box-shadow: none !important; border-radius: 3px; overflow: hidden; }
-        .alb-phone .PhoneInputCountrySelectArrow { color: rgba(244,236,216,0.5); margin-left: 0.5rem; border-style: solid; border-color: currentColor; border-width: 0 1.5px 1.5px 0; padding: 2px; transform: rotate(45deg); }
-        .alb-phone .PhoneInputCountrySelect { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-        .alb-phone .PhoneInputInput { flex: 1; height: 48px; padding: 0 1rem; border: 1px solid rgba(212,175,55,0.25); border-radius: 0.75rem; background: rgba(20,15,8,0.6); color: #f4ecd8; font-size: 15px; outline: none; transition: border-color 0.2s; }
-        .alb-phone .PhoneInputInput::placeholder { color: rgba(244,236,216,0.35); }
-        .alb-phone .PhoneInputInput:focus { border-color: rgba(212,175,55,0.6); }
-        .alb-phone .PhoneInputInput--error { border-color: rgba(239,68,68,0.6); }
+        /* react-phone-number-input — un SEUL champ unifié, pas de bordures internes */
+        .alb-phone .PhoneInput {
+          display: flex;
+          align-items: stretch;
+          width: 100%;
+          height: 52px;
+          border: 1px solid rgba(212,175,55,0.25);
+          border-radius: 0.75rem;
+          background: rgba(20,15,8,0.5);
+          transition: border-color 0.2s, background 0.2s;
+          overflow: hidden;
+        }
+        .alb-phone .PhoneInput:focus-within {
+          border-color: rgba(212,175,55,0.6);
+          background: rgba(20,15,8,0.7);
+        }
+        .alb-phone.has-error .PhoneInput { border-color: rgba(239,68,68,0.55); }
+        .alb-phone .PhoneInputCountry {
+          position: relative;
+          display: flex;
+          align-items: center;
+          padding: 0 0.85rem 0 0.9rem;
+          border-right: 1px solid rgba(212,175,55,0.15);
+          background: transparent;
+        }
+        .alb-phone .PhoneInputCountryIcon {
+          width: 24px; height: 18px;
+          box-shadow: none !important;
+          background: transparent !important;
+          border-radius: 2px;
+          overflow: hidden;
+        }
+        .alb-phone .PhoneInputCountryIcon img,
+        .alb-phone .PhoneInputCountryIcon svg { width: 100%; height: 100%; object-fit: cover; }
+        .alb-phone .PhoneInputCountryIcon--border { box-shadow: 0 0 0 1px rgba(212,175,55,0.2) !important; }
+        .alb-phone .PhoneInputCountrySelectArrow {
+          color: rgba(244,236,216,0.5);
+          margin-left: 0.55rem;
+          width: 0.45rem; height: 0.45rem;
+          border-style: solid;
+          border-color: currentColor;
+          border-width: 0 1.5px 1.5px 0;
+          transform: rotate(45deg);
+        }
+        .alb-phone .PhoneInputCountrySelect {
+          position: absolute; inset: 0; opacity: 0; cursor: pointer;
+          color: #f4ecd8; /* couleur de la police dans la popup */
+        }
+        .alb-phone .PhoneInputCountrySelect option { background: #1a1510; color: #f4ecd8; }
+        .alb-phone .PhoneInputInput {
+          flex: 1;
+          width: 100%;
+          height: 100%;
+          padding: 0 1rem;
+          border: none;
+          background: transparent;
+          color: #f4ecd8;
+          font-size: 15px;
+          outline: none;
+        }
+        .alb-phone .PhoneInputInput::placeholder { color: rgba(244,236,216,0.3); }
       `}</style>
     </div>
   );
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// SVG Flags — rendu universel (pas d'emojis) pour la question pays
+// ──────────────────────────────────────────────────────────────────────
+
+function FlagSVG({ value, title }: { value?: string; title?: string }) {
+  const size = { width: 22, height: 16 };
+  if (value === "france") {
+    return (
+      <svg viewBox="0 0 3 2" {...size} aria-label={title ?? "France"} className="rounded-[2px] ring-1 ring-black/30">
+        <rect width="1" height="2" x="0" fill="#002654" />
+        <rect width="1" height="2" x="1" fill="#FFFFFF" />
+        <rect width="1" height="2" x="2" fill="#ED2939" />
+      </svg>
+    );
+  }
+  if (value === "belgique") {
+    return (
+      <svg viewBox="0 0 3 2" {...size} aria-label={title ?? "Belgique"} className="rounded-[2px] ring-1 ring-black/30">
+        <rect width="1" height="2" x="0" fill="#000000" />
+        <rect width="1" height="2" x="1" fill="#FDDA24" />
+        <rect width="1" height="2" x="2" fill="#EF3340" />
+      </svg>
+    );
+  }
+  if (value === "suisse") {
+    return (
+      <svg viewBox="0 0 32 32" {...size} aria-label={title ?? "Suisse"} className="rounded-[2px] ring-1 ring-black/30">
+        <rect width="32" height="32" fill="#D52B1E" />
+        <rect x="13" y="6" width="6" height="20" fill="#FFFFFF" />
+        <rect x="6" y="13" width="20" height="6" fill="#FFFFFF" />
+      </svg>
+    );
+  }
+  // Globe for "autre"
+  return (
+    <svg viewBox="0 0 24 24" {...size} aria-label={title ?? "Autre pays"} className="text-[#f4ecd8]/70">
+      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <ellipse cx="12" cy="12" rx="4" ry="10" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M2 12h20" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+// Map des valeurs pays → flag SVG (utilisé par QuestionPhase quand l'option a un value dans cette liste)
+const FLAG_VALUES = new Set(["france", "belgique", "suisse", "autre"]);
 
 // ──────────────────────────────────────────────────────────────────────
 // ProgressBar
@@ -482,6 +574,7 @@ export function QuestionPhase({
       <div className="space-y-2.5">
         {question.options.map((opt, i) => {
           const isSel = selectedOptionText === opt.text;
+          const isCountry = !!opt.value && FLAG_VALUES.has(opt.value);
           return (
             <button
               key={i}
@@ -497,7 +590,13 @@ export function QuestionPhase({
               } ${selectedOptionText && !isSel ? "opacity-40" : ""}`}
             >
               <div className="flex items-center gap-3">
-                {opt.icon && <span className="shrink-0 text-[22px] leading-none">{opt.icon}</span>}
+                {isCountry ? (
+                  <span className="flex h-[22px] w-[26px] shrink-0 items-center justify-center">
+                    <FlagSVG value={opt.value} title={opt.text} />
+                  </span>
+                ) : opt.icon ? (
+                  <span className="shrink-0 text-[22px] leading-none">{opt.icon}</span>
+                ) : null}
                 <span className={`flex-1 text-[14px] font-medium leading-snug ${isSel ? "text-gold-400" : "text-[#f4ecd8]/85"}`}>
                   {opt.text}
                 </span>
@@ -668,7 +767,7 @@ export function PhonePhase({
           <label className="block text-[12.5px] font-medium uppercase tracking-wider text-[#f4ecd8]/60">
             Ton numéro de téléphone
           </label>
-          <div className="alb-phone">
+          <div className={`alb-phone ${error ? "has-error" : ""}`}>
             <PhoneInput
               international
               defaultCountry="FR"

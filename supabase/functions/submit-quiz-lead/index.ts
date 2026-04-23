@@ -106,11 +106,29 @@ serve(async (req) => {
         return json({ error: "unknown_action", action }, 400);
     }
   } catch (error) {
-    console.error("[submit-quiz-lead] error", action, error);
-    const message = error instanceof Error ? error.message : String(error);
+    // Les PostgrestError de Supabase sont des objets plains ({message, code, details, hint}).
+    // Il faut les sérialiser proprement sinon on tombe sur "[object Object]".
+    const message = extractErrorMessage(error);
+    console.error("[submit-quiz-lead] error", action, JSON.stringify(error, null, 2));
     return json({ error: "internal", message }, 500);
   }
 });
+
+function extractErrorMessage(error: unknown): string {
+  if (!error) return "unknown";
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object") {
+    const e = error as Record<string, unknown>;
+    const parts: string[] = [];
+    if (e.message) parts.push(String(e.message));
+    if (e.details) parts.push(`details: ${e.details}`);
+    if (e.hint) parts.push(`hint: ${e.hint}`);
+    if (e.code) parts.push(`code: ${e.code}`);
+    if (parts.length > 0) return parts.join(" | ");
+    try { return JSON.stringify(error); } catch { return "unserializable_error"; }
+  }
+  return String(error);
+}
 
 // ─── resolve : charge les infos publiques d'un slug ───
 async function handleResolve(supabase: any, body: any) {
