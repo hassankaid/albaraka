@@ -1,6 +1,7 @@
 import { useSearchParams } from "react-router-dom";
 import CheckoutHero from "./CheckoutHero";
 import CheckoutBackground from "./CheckoutBackground";
+import { CornerArabesque, OrnamentalDivider, SectionLabel } from "./CheckoutOrnaments";
 import {
   Mail,
   KeyRound,
@@ -102,15 +103,29 @@ export default function MerciPage() {
           padding: "2.25rem 2rem 2.25rem",
           border: `0.5px solid ${BRAND.goldSoft}`,
           borderRadius: 14,
-          background: "rgba(10,10,10,0.55)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
+          background: "rgba(10,10,10,0.62)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
           boxShadow:
-            "0 30px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(201,160,78,0.05)",
+            "0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,160,78,0.06), inset 0 0 80px rgba(201,160,78,0.02)",
           position: "relative",
           zIndex: 2,
         }}
       >
+        {/* Arabesques aux 4 coins */}
+        <div style={{ position: "absolute", top: 10, left: 10, pointerEvents: "none" }}>
+          <CornerArabesque corner="tl" size={50} />
+        </div>
+        <div style={{ position: "absolute", top: 10, right: 10, pointerEvents: "none" }}>
+          <CornerArabesque corner="tr" size={50} />
+        </div>
+        <div style={{ position: "absolute", bottom: 10, left: 10, pointerEvents: "none" }}>
+          <CornerArabesque corner="bl" size={50} />
+        </div>
+        <div style={{ position: "absolute", bottom: 10, right: 10, pointerEvents: "none" }}>
+          <CornerArabesque corner="br" size={50} />
+        </div>
+
         {/* Cercle de validation — pulse doré animé */}
         <div style={{ textAlign: "center", marginBottom: "2.25rem" }}>
           <div
@@ -232,18 +247,7 @@ export default function MerciPage() {
 
         {/* Étapes */}
         <div style={{ marginBottom: "2rem" }}>
-          <h2
-            style={{
-              fontSize: 11,
-              fontWeight: 500,
-              margin: "0 0 20px 0",
-              letterSpacing: 3,
-              color: BRAND.gold,
-              textAlign: "center",
-            }}
-          >
-            LES PROCHAINES ÉTAPES
-          </h2>
+          <SectionLabel>LES PROCHAINES ÉTAPES</SectionLabel>
 
           {STEPS.map((s, i) => (
             <div
@@ -332,35 +336,15 @@ export default function MerciPage() {
           Qu'Allah facilite ton parcours, inshaAllah.
         </div>
 
-        {/* Ornement bas */}
+        {/* Fleuron ornemental */}
         <div
           style={{
             display: "flex",
-            alignItems: "center",
             justifyContent: "center",
-            gap: 12,
             marginTop: "1.75rem",
           }}
         >
-          <div
-            style={{
-              width: 70,
-              height: 0.5,
-              background:
-                "linear-gradient(90deg, transparent 0%, rgba(201,160,78,0.5) 100%)",
-            }}
-          />
-          <svg width="7" height="7" viewBox="0 0 8 8">
-            <path d="M4 0L8 4L4 8L0 4Z" fill={BRAND.gold} opacity="0.7" />
-          </svg>
-          <div
-            style={{
-              width: 70,
-              height: 0.5,
-              background:
-                "linear-gradient(90deg, rgba(201,160,78,0.5) 0%, transparent 100%)",
-            }}
-          />
+          <OrnamentalDivider width={180} />
         </div>
 
         {/* Bandeau de réassurance */}

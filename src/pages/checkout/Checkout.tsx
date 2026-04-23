@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import CheckoutHero from "./CheckoutHero";
 import CheckoutBackground from "./CheckoutBackground";
+import { CornerArabesque, OrnamentalDivider, IslamicStar, SectionLabel } from "./CheckoutOrnaments";
 import {
   GraduationCap,
   Users,
@@ -787,14 +788,29 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
         padding: "2.5rem 2rem",
         border: `0.5px solid rgba(201,160,78,0.22)`,
         borderRadius: 14,
-        background: "rgba(10,10,10,0.55)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        boxShadow: "0 30px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(201,160,78,0.05)",
+        background: "rgba(10,10,10,0.62)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+        boxShadow:
+          "0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,160,78,0.06), inset 0 0 80px rgba(201,160,78,0.02)",
         position: "relative",
         zIndex: 2,
       }}
     >
+      {/* Arabesques aux 4 coins du formulaire */}
+      <div style={{ position: "absolute", top: 10, left: 10, pointerEvents: "none" }}>
+        <CornerArabesque corner="tl" size={50} />
+      </div>
+      <div style={{ position: "absolute", top: 10, right: 10, pointerEvents: "none" }}>
+        <CornerArabesque corner="tr" size={50} />
+      </div>
+      <div style={{ position: "absolute", bottom: 10, left: 10, pointerEvents: "none" }}>
+        <CornerArabesque corner="bl" size={50} />
+      </div>
+      <div style={{ position: "absolute", bottom: 10, right: 10, pointerEvents: "none" }}>
+        <CornerArabesque corner="br" size={50} />
+      </div>
+
       <style>{`
         .alb-checkout input[type="text"], .alb-checkout input[type="email"], .alb-checkout input[type="tel"] {
           background: rgba(255,255,255,0.03);
@@ -982,18 +998,7 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
       </div>
 
       <div style={{ marginBottom: "2.5rem" }}>
-        <h2
-          style={{
-            fontSize: 11,
-            fontWeight: 500,
-            margin: "0 0 18px 0",
-            letterSpacing: 3,
-            color: BRAND.gold,
-            textAlign: "center",
-          }}
-        >
-          CE QUE TU REJOINS
-        </h2>
+        <SectionLabel>CE QUE TU REJOINS</SectionLabel>
         <div
           style={{
             display: "grid",
@@ -1072,22 +1077,27 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
           boxShadow: "inset 0 0 50px rgba(201,160,78,0.05), 0 8px 30px rgba(0,0,0,0.3)",
         }}
       >
-        {/* Coin "wax seal" dorée en haut à droite */}
+        {/* Sceau "TA COMMANDE" en haut à droite — avec étoile islamique */}
         <div
           style={{
             position: "absolute",
-            top: -10,
+            top: -12,
             right: 18,
             background: BRAND.black,
-            padding: "3px 12px",
+            padding: "4px 12px 4px 6px",
             border: `0.5px solid ${BRAND.gold}`,
             borderRadius: 20,
             fontSize: 9,
             letterSpacing: 2.5,
             color: BRAND.gold,
             fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            boxShadow: "0 2px 12px rgba(201,160,78,0.2)",
           }}
         >
+          <IslamicStar size={14} />
           TA COMMANDE
         </div>
 
@@ -1232,9 +1242,7 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
       </div>
 
       <div style={{ marginBottom: "2rem" }}>
-        <h2 style={{ fontSize: 11, fontWeight: 500, margin: "0 0 12px 0", letterSpacing: 3, color: BRAND.gold }}>
-          CODE PROMO
-        </h2>
+        <SectionLabel>CODE PROMO</SectionLabel>
         <div style={{ display: "flex", gap: 8 }}>
           <input
             type="text"
@@ -1274,9 +1282,7 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
       </div>
 
       <div style={{ marginBottom: "2.5rem" }}>
-        <h2 style={{ fontSize: 11, fontWeight: 500, margin: "0 0 16px 0", letterSpacing: 3, color: BRAND.gold }}>
-          INFORMATIONS DE FACTURATION
-        </h2>
+        <SectionLabel>INFORMATIONS DE FACTURATION</SectionLabel>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
           <div className="alb-input-wrap">
             <input
@@ -1362,9 +1368,16 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
       </div>
 
       <div style={{ marginBottom: "2.5rem" }}>
-        <h2 style={{ fontSize: 11, fontWeight: 500, margin: "0 0 16px 0", letterSpacing: 3, color: BRAND.gold }}>
-          INFORMATIONS DE PAIEMENT
-        </h2>
+        <SectionLabel>INFORMATIONS DE PAIEMENT</SectionLabel>
+        <div
+          style={{
+            padding: "16px 14px",
+            border: `0.5px solid rgba(201,160,78,0.22)`,
+            borderRadius: 10,
+            background:
+              "linear-gradient(180deg, rgba(201,160,78,0.04) 0%, rgba(201,160,78,0.01) 100%)",
+          }}
+        >
         <PaymentElement
           options={{
             layout: "tabs",
@@ -1395,6 +1408,7 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
             },
           }}
         />
+        </div>
       </div>
 
       <div
@@ -1546,12 +1560,8 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
         AL BARAKA · ÉCOSYSTÈME BY ETHICARENA
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: "0.75rem" }}>
-        <div style={{ width: 40, height: 0.5, background: "rgba(201,160,78,0.3)" }} />
-        <svg width="5" height="5" viewBox="0 0 8 8">
-          <path d="M4 0L8 4L4 8L0 4Z" fill="rgba(201,160,78,0.5)" />
-        </svg>
-        <div style={{ width: 40, height: 0.5, background: "rgba(201,160,78,0.3)" }} />
+      <div style={{ display: "flex", justifyContent: "center", marginTop: "1rem" }}>
+        <OrnamentalDivider width={160} />
       </div>
     </form>
   );
