@@ -24,7 +24,7 @@ export function QuizFrame({
   // Résultat : si le contenu tient dans la hauteur, il est centré verticalement.
   //            S'il dépasse, il flow naturellement sans couper le haut.
   return (
-    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-[#0a0906] text-[#f4ecd8] font-sans antialiased">
+    <div className="relative flex min-h-screen w-full flex-col overflow-hidden bg-[#0a0906] text-[#f4ecd8] font-sans antialiased">
       <div
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-[-280px] h-[680px] w-[680px] -translate-x-1/2 rounded-full blur-3xl"
