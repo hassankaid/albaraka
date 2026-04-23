@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import CheckoutHero from "./CheckoutHero";
 import CheckoutBackground from "./CheckoutBackground";
-import { CornerArabesque, OrnamentalDivider, IslamicStar, SectionLabel } from "./CheckoutOrnaments";
+import { DigitalEcosystem, OrnamentalDivider, IslamicStar, SectionLabel } from "./CheckoutOrnaments";
 import {
   GraduationCap,
   Users,
@@ -565,6 +565,25 @@ export default function Checkout() {
           subtitle="ÉCOSYSTÈME BY ETHICARENA"
         />
       </div>
+
+      {/* Scène écosystème — laptop + tablette + icônes sociales + lanterne + lune + minarets lointains */}
+      <div
+        style={{
+          position: "relative",
+          zIndex: 2,
+          margin: "0 auto 2.5rem",
+          opacity: 0,
+          animation: "alb-eco-in 1.4s ease-out 1.1s forwards",
+        }}
+      >
+        <style>{`
+          @keyframes alb-eco-in {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+        <DigitalEcosystem />
+      </div>
       {stripeKeyMissing && (
         <div
           style={{
@@ -797,19 +816,6 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
         zIndex: 2,
       }}
     >
-      {/* Arabesques aux 4 coins du formulaire */}
-      <div style={{ position: "absolute", top: 10, left: 10, pointerEvents: "none" }}>
-        <CornerArabesque corner="tl" size={50} />
-      </div>
-      <div style={{ position: "absolute", top: 10, right: 10, pointerEvents: "none" }}>
-        <CornerArabesque corner="tr" size={50} />
-      </div>
-      <div style={{ position: "absolute", bottom: 10, left: 10, pointerEvents: "none" }}>
-        <CornerArabesque corner="bl" size={50} />
-      </div>
-      <div style={{ position: "absolute", bottom: 10, right: 10, pointerEvents: "none" }}>
-        <CornerArabesque corner="br" size={50} />
-      </div>
 
       <style>{`
         .alb-checkout input[type="text"], .alb-checkout input[type="email"], .alb-checkout input[type="tel"] {

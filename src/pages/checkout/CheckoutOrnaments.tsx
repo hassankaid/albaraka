@@ -479,7 +479,378 @@ export function SectionLabel({ children, center = true }: { children: string; ce
 }
 
 /* ========================================================================
- *  8. Constellation manuscrite — champ d'étoiles avec lignes
+ *  8bis. Scène "Écosystème Al Baraka"
+ *  Reprise de la bannière client : laptop + tablette + icônes sociales,
+ *  minarets stylisés en arrière-plan, lune croissant, lanterne.
+ *  Silhouette dorée sur fond transparent, lignes de connexion animées.
+ *  Pas fixed — s'intègre dans le flux de la page (scrolle avec).
+ * ======================================================================== */
+export function DigitalEcosystem() {
+  return (
+    <div
+      style={{
+        width: "100%",
+        maxWidth: 720,
+        margin: "0 auto",
+        position: "relative",
+        padding: "0 16px",
+        pointerEvents: "none",
+      }}
+      aria-hidden
+    >
+      <style>{`
+        @keyframes alb-eco-float-a {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
+        }
+        @keyframes alb-eco-float-b {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-9px); }
+        }
+        @keyframes alb-eco-float-c {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
+        @keyframes alb-eco-pulse {
+          0%, 100% { opacity: 0.55; }
+          50% { opacity: 1; }
+        }
+        @keyframes alb-eco-dash {
+          to { stroke-dashoffset: -30; }
+        }
+        @keyframes alb-eco-bar-grow {
+          0% { transform: scaleY(0.4); opacity: 0.6; }
+          100% { transform: scaleY(1); opacity: 1; }
+        }
+        .alb-eco-float-a { animation: alb-eco-float-a 5s ease-in-out infinite; }
+        .alb-eco-float-b { animation: alb-eco-float-b 6s ease-in-out infinite 0.6s; }
+        .alb-eco-float-c { animation: alb-eco-float-c 7s ease-in-out infinite 1.2s; }
+        .alb-eco-pulse { animation: alb-eco-pulse 2.4s ease-in-out infinite; }
+        .alb-eco-dash-line { stroke-dasharray: 4 4; animation: alb-eco-dash 2s linear infinite; }
+        .alb-eco-bar { transform-origin: bottom; animation: alb-eco-bar-grow 1.4s cubic-bezier(0.25, 1.2, 0.5, 1) both; }
+      `}</style>
+
+      <svg
+        viewBox="0 0 720 280"
+        width="100%"
+        height="auto"
+        style={{ display: "block", overflow: "visible" }}
+      >
+        <defs>
+          <linearGradient id="eco-screen-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(201,160,78,0.18)" />
+            <stop offset="100%" stopColor="rgba(201,160,78,0.04)" />
+          </linearGradient>
+          <linearGradient id="eco-minaret-fade" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stopColor={GOLD} stopOpacity="0.35" />
+            <stop offset="100%" stopColor={GOLD} stopOpacity="0.05" />
+          </linearGradient>
+          <radialGradient id="eco-glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor={GOLD_BRIGHT} stopOpacity="0.7" />
+            <stop offset="100%" stopColor={GOLD} stopOpacity="0" />
+          </radialGradient>
+          <filter id="eco-soft-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="1.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Ondulation dorée en fond */}
+        <path
+          d="M 0 210 Q 180 180 360 210 T 720 210"
+          fill="none"
+          stroke={GOLD}
+          strokeWidth="0.6"
+          opacity="0.25"
+        />
+        <path
+          d="M 0 228 Q 180 200 360 228 T 720 228"
+          fill="none"
+          stroke={GOLD}
+          strokeWidth="0.4"
+          opacity="0.18"
+        />
+
+        {/* Minarets stylisés — fond éloigné */}
+        <g fill="url(#eco-minaret-fade)" opacity="0.55">
+          {/* Minaret gauche */}
+          <path d="M 38 250 L 38 130 L 44 118 L 50 106 Q 54 100 52 100 Q 48 100 52 106 L 58 118 L 64 130 L 64 250 Z" />
+          <circle cx="51" cy="94" r="3" />
+          <path d="M 51 86 L 53 91 L 51 90 L 49 91 Z" />
+          {/* Dôme gauche */}
+          <path d="M 82 250 L 82 186 Q 115 150 148 186 L 148 250 Z" />
+          <rect x="113" y="158" width="3" height="18" />
+          <circle cx="114.5" cy="156" r="2.5" />
+          {/* Minaret droite */}
+          <path d="M 656 250 L 656 140 L 662 128 L 668 116 Q 672 110 670 110 Q 666 110 670 116 L 676 128 L 682 140 L 682 250 Z" />
+          <circle cx="669" cy="104" r="3" />
+          <path d="M 669 96 L 671 101 L 669 100 L 667 101 Z" />
+          {/* Dôme droite */}
+          <path d="M 574 250 L 574 180 Q 608 148 642 180 L 642 250 Z" />
+          <rect x="606" y="154" width="3" height="18" />
+          <circle cx="607.5" cy="152" r="2.5" />
+        </g>
+
+        {/* Laptop central (signature de la scène) */}
+        <g transform="translate(360 190)" className="alb-eco-float-a">
+          {/* Écran */}
+          <rect
+            x="-85"
+            y="-78"
+            width="170"
+            height="108"
+            rx="6"
+            fill="rgba(10,10,10,0.85)"
+            stroke={GOLD}
+            strokeWidth="1.2"
+            filter="url(#eco-soft-glow)"
+          />
+          {/* Ecran intérieur */}
+          <rect
+            x="-80"
+            y="-73"
+            width="160"
+            height="98"
+            rx="3"
+            fill="url(#eco-screen-fill)"
+            stroke="rgba(201,160,78,0.35)"
+            strokeWidth="0.5"
+          />
+
+          {/* Dashboard : 4 barres animées */}
+          {[
+            { x: -60, h: 30 },
+            { x: -30, h: 48 },
+            { x: 0, h: 36 },
+            { x: 30, h: 58 },
+          ].map((b, i) => (
+            <rect
+              key={i}
+              x={b.x}
+              y={20 - b.h}
+              width="18"
+              height={b.h}
+              fill={GOLD}
+              opacity="0.85"
+              rx="1"
+              className="alb-eco-bar"
+              style={{ animationDelay: `${i * 0.15}s` }}
+            />
+          ))}
+
+          {/* Ligne de tendance en hausse */}
+          <polyline
+            points="-68,-30 -50,-42 -30,-35 -10,-52 15,-45 35,-60 55,-55 72,-65"
+            fill="none"
+            stroke={GOLD_BRIGHT}
+            strokeWidth="1.3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            filter="url(#eco-soft-glow)"
+          />
+          {/* Point brillant au bout */}
+          <circle cx="72" cy="-65" r="2.5" fill={GOLD_BRIGHT} className="alb-eco-pulse" />
+
+          {/* Base du laptop */}
+          <path
+            d="M -100 32 L 100 32 L 95 42 L -95 42 Z"
+            fill="rgba(10,10,10,0.9)"
+            stroke={GOLD}
+            strokeWidth="1.2"
+          />
+          <line x1="-8" y1="36" x2="8" y2="36" stroke={GOLD} strokeWidth="0.6" opacity="0.6" />
+        </g>
+
+        {/* Tablette à droite en avant-plan */}
+        <g transform="translate(560 200) rotate(-8)" className="alb-eco-float-b">
+          <rect
+            x="-36"
+            y="-52"
+            width="72"
+            height="104"
+            rx="5"
+            fill="rgba(10,10,10,0.92)"
+            stroke={GOLD}
+            strokeWidth="1.1"
+            filter="url(#eco-soft-glow)"
+          />
+          <rect
+            x="-32"
+            y="-46"
+            width="64"
+            height="86"
+            rx="2"
+            fill="url(#eco-screen-fill)"
+            stroke="rgba(201,160,78,0.3)"
+            strokeWidth="0.4"
+          />
+          {/* Mini-app : cercles concentriques (formation/progression) */}
+          <circle cx="0" cy="-16" r="18" fill="none" stroke={GOLD} strokeWidth="0.8" opacity="0.6" />
+          <circle cx="0" cy="-16" r="12" fill="none" stroke={GOLD} strokeWidth="0.8" opacity="0.8" />
+          <circle cx="0" cy="-16" r="6" fill={GOLD} opacity="0.9" />
+          {/* Lignes texte en bas */}
+          <line x1="-22" y1="14" x2="22" y2="14" stroke={GOLD} strokeWidth="0.5" opacity="0.55" />
+          <line x1="-22" y1="22" x2="14" y2="22" stroke={GOLD} strokeWidth="0.5" opacity="0.45" />
+          <line x1="-22" y1="30" x2="18" y2="30" stroke={GOLD} strokeWidth="0.5" opacity="0.45" />
+          {/* Bouton home */}
+          <circle cx="0" cy="46" r="3" fill="none" stroke={GOLD} strokeWidth="0.6" opacity="0.7" />
+        </g>
+
+        {/* Téléphone / petit écran à gauche */}
+        <g transform="translate(180 210) rotate(6)" className="alb-eco-float-c">
+          <rect
+            x="-22"
+            y="-42"
+            width="44"
+            height="84"
+            rx="5"
+            fill="rgba(10,10,10,0.92)"
+            stroke={GOLD}
+            strokeWidth="1"
+            filter="url(#eco-soft-glow)"
+          />
+          <rect
+            x="-19"
+            y="-37"
+            width="38"
+            height="68"
+            rx="2"
+            fill="url(#eco-screen-fill)"
+            stroke="rgba(201,160,78,0.25)"
+            strokeWidth="0.4"
+          />
+          {/* Icônes grid */}
+          {[
+            [-10, -26],
+            [0, -26],
+            [10, -26],
+            [-10, -14],
+            [0, -14],
+            [10, -14],
+          ].map(([x, y], i) => (
+            <circle key={i} cx={x} cy={y} r="2.5" fill={GOLD} opacity="0.7" />
+          ))}
+          <line x1="-14" y1="0" x2="14" y2="0" stroke={GOLD} strokeWidth="0.5" opacity="0.5" />
+          <line x1="-14" y1="8" x2="10" y2="8" stroke={GOLD} strokeWidth="0.5" opacity="0.4" />
+          <line x1="-14" y1="16" x2="12" y2="16" stroke={GOLD} strokeWidth="0.5" opacity="0.4" />
+          {/* Bouton home */}
+          <circle cx="0" cy="36" r="2" fill="none" stroke={GOLD} strokeWidth="0.5" opacity="0.7" />
+        </g>
+
+        {/* Icônes sociales flottantes autour du laptop, reliées par des lignes */}
+        {/* Instagram */}
+        <g transform="translate(230 70)" className="alb-eco-float-a">
+          <circle cx="0" cy="0" r="16" fill="rgba(10,10,10,0.85)" stroke={GOLD} strokeWidth="1" filter="url(#eco-soft-glow)" />
+          <rect x="-7" y="-7" width="14" height="14" rx="3" fill="none" stroke={GOLD} strokeWidth="1.2" />
+          <circle cx="0" cy="0" r="3.5" fill="none" stroke={GOLD} strokeWidth="1.2" />
+          <circle cx="4.5" cy="-4.5" r="0.9" fill={GOLD} />
+        </g>
+        <line x1="245" y1="82" x2="300" y2="140" stroke={GOLD} strokeWidth="0.5" opacity="0.4" className="alb-eco-dash-line" />
+
+        {/* Facebook/f */}
+        <g transform="translate(320 40)" className="alb-eco-float-b">
+          <circle cx="0" cy="0" r="14" fill="rgba(10,10,10,0.85)" stroke={GOLD} strokeWidth="1" filter="url(#eco-soft-glow)" />
+          <path
+            d="M 2 -7 L 2 -4 L 5 -4 M 2 -4 L 2 8 M -2 -1 L 5 -1"
+            fill="none"
+            stroke={GOLD}
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+        <line x1="320" y1="55" x2="330" y2="110" stroke={GOLD} strokeWidth="0.5" opacity="0.4" className="alb-eco-dash-line" />
+
+        {/* YouTube (triangle play) */}
+        <g transform="translate(400 40)" className="alb-eco-float-c">
+          <rect x="-15" y="-10" width="30" height="20" rx="5" fill="rgba(10,10,10,0.85)" stroke={GOLD} strokeWidth="1" filter="url(#eco-soft-glow)" />
+          <path d="M -3 -5 L 6 0 L -3 5 Z" fill={GOLD} />
+        </g>
+        <line x1="400" y1="55" x2="395" y2="110" stroke={GOLD} strokeWidth="0.5" opacity="0.4" className="alb-eco-dash-line" />
+
+        {/* WhatsApp */}
+        <g transform="translate(480 70)" className="alb-eco-float-a">
+          <circle cx="0" cy="0" r="15" fill="rgba(10,10,10,0.85)" stroke={GOLD} strokeWidth="1" filter="url(#eco-soft-glow)" />
+          <path
+            d="M -5 5 Q -6 -4 -2 -6 Q 4 -7 6 -2 Q 7 2 3 4 L 4 7 L -2 6 Q -5 6 -5 5 Z"
+            fill="none"
+            stroke={GOLD}
+            strokeWidth="1.1"
+            strokeLinejoin="round"
+          />
+        </g>
+        <line x1="465" y1="82" x2="420" y2="140" stroke={GOLD} strokeWidth="0.5" opacity="0.4" className="alb-eco-dash-line" />
+
+        {/* Croissant de lune en haut droite */}
+        <g transform="translate(640 50)" className="alb-eco-float-b">
+          <path
+            d="M 12 -4 A 15 15 0 1 0 12 26 A 12 12 0 1 1 12 -4 Z"
+            fill="none"
+            stroke={GOLD}
+            strokeWidth="1"
+            opacity="0.85"
+            filter="url(#eco-soft-glow)"
+          />
+          <path
+            d="M -6 8 L -5 10 L -3 10 L -4 12 L -3 14 L -6 13 L -9 14 L -8 12 L -9 10 L -7 10 Z"
+            fill={GOLD_BRIGHT}
+          />
+        </g>
+
+        {/* Lanterne à gauche */}
+        <g transform="translate(80 90)" className="alb-eco-float-c">
+          <line x1="0" y1="-20" x2="0" y2="-12" stroke={GOLD} strokeWidth="0.8" />
+          <path
+            d="M -8 -12 L 8 -12 L 10 -8 L -10 -8 Z"
+            fill="rgba(10,10,10,0.85)"
+            stroke={GOLD}
+            strokeWidth="0.9"
+          />
+          <path
+            d="M -10 -8 L -10 10 Q -10 16 -4 16 L 4 16 Q 10 16 10 10 L 10 -8 Z"
+            fill="rgba(201,160,78,0.15)"
+            stroke={GOLD}
+            strokeWidth="1"
+          />
+          <circle cx="0" cy="4" r="3" fill={GOLD_BRIGHT} className="alb-eco-pulse" filter="url(#eco-soft-glow)" />
+          <line x1="-10" y1="0" x2="10" y2="0" stroke={GOLD} strokeWidth="0.5" opacity="0.5" />
+          <path
+            d="M -4 16 L -4 22 L 4 22 L 4 16"
+            fill="none"
+            stroke={GOLD}
+            strokeWidth="0.7"
+          />
+        </g>
+
+        {/* Étoiles scintillantes d'ambiance */}
+        {[
+          { x: 120, y: 45, r: 1.2 },
+          { x: 160, y: 90, r: 0.8 },
+          { x: 540, y: 40, r: 1 },
+          { x: 270, y: 100, r: 0.7 },
+          { x: 430, y: 110, r: 0.9 },
+          { x: 360, y: 70, r: 1 },
+        ].map((s, i) => (
+          <circle
+            key={i}
+            cx={s.x}
+            cy={s.y}
+            r={s.r}
+            fill={GOLD_BRIGHT}
+            className="alb-eco-pulse"
+            style={{ animationDelay: `${i * 0.4}s` }}
+          />
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+/* ========================================================================
+ *  9. Constellation manuscrite — champ d'étoiles avec lignes
  *  Remplace les particules génériques par des vraies étoiles liées.
  * ======================================================================== */
 export function Constellation() {

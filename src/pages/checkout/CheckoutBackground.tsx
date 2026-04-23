@@ -1,23 +1,17 @@
 /**
- * Background cinematic — "manuscrit céleste islamique".
- * Composé en couches (du plus loin au plus près) :
- *  1. Gradient radial doré centré en haut
- *  2. Halo central qui respire
- *  3. Constellation (étoiles reliées) → SVG vectoriel, vraies étoiles
- *  4. Poussière dorée flottante (CSS pur)
- *  5. Croissant de lune + étoile en haut à droite
- *  6. Skyline de mosquées en bas (silhouette fondue)
- *  7. Liserés dorés haut/bas
- * Aucune dépendance, zéro image — 100% CSS + SVG inline.
+ * Background cinematic — "manuscrit céleste islamique" (version allégée).
+ * Uniquement des éléments d'ambiance en arrière-plan : gradient, halo
+ * pulsant, constellation, particules. Plus de skyline / lune en fixed —
+ * ces éléments figuratifs sont maintenant intégrés dans le flux (hero
+ * et scène "écosystème") pour qu'ils scrollent avec la page.
  */
-import { CrescentMoon, MosqueSkyline, Constellation } from "./CheckoutOrnaments";
+import { Constellation } from "./CheckoutOrnaments";
 
 const GOLD = "#C9A04E";
 
 const PARTICLE_COUNT = 22;
 
 function Particle({ i }: { i: number }) {
-  // Positions déterministes → pas de flash au remount
   const seed = (i * 9301 + 49297) % 233280;
   const rand = seed / 233280;
   const rand2 = ((i * 1664525 + 1013904223) % 4294967296) / 4294967296;
@@ -62,13 +56,9 @@ export default function CheckoutBackground() {
           0%, 100% { opacity: 0.38; transform: translate(-50%, -50%) scale(1); }
           50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.08); }
         }
-        @keyframes alb-moon-fade-in {
-          from { opacity: 0; transform: translate(0, -12px); }
-          to { opacity: 1; transform: translate(0, 0); }
-        }
       `}</style>
 
-      {/* 1. Gradient radial doré subtil centré en haut */}
+      {/* Gradient radial doré subtil centré en haut */}
       <div
         style={{
           position: "fixed",
@@ -80,7 +70,7 @@ export default function CheckoutBackground() {
         }}
       />
 
-      {/* 2. Halo central qui respire */}
+      {/* Halo central qui respire */}
       <div
         style={{
           position: "fixed",
@@ -98,10 +88,10 @@ export default function CheckoutBackground() {
         }}
       />
 
-      {/* 3. Constellation */}
+      {/* Constellation */}
       <Constellation />
 
-      {/* 4. Poussière dorée flottante */}
+      {/* Poussière dorée flottante */}
       <div
         style={{
           position: "fixed",
@@ -116,40 +106,7 @@ export default function CheckoutBackground() {
         ))}
       </div>
 
-      {/* 5. Croissant de lune + étoile en haut à droite */}
-      <div
-        style={{
-          position: "fixed",
-          top: 36,
-          right: 40,
-          pointerEvents: "none",
-          zIndex: 1,
-          animation: "alb-moon-fade-in 1.4s ease-out 0.3s both",
-          filter: "drop-shadow(0 0 12px rgba(201,160,78,0.35))",
-        }}
-      >
-        <CrescentMoon size={72} />
-      </div>
-
-      {/* 6. Skyline de mosquées en bas */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          pointerEvents: "none",
-          zIndex: 1,
-          maskImage:
-            "linear-gradient(to top, black 25%, transparent 100%)",
-          WebkitMaskImage:
-            "linear-gradient(to top, black 25%, transparent 100%)",
-        }}
-      >
-        <MosqueSkyline />
-      </div>
-
-      {/* 7. Liserés dorés haut + bas */}
+      {/* Liseré doré en haut uniquement (le bas de page est ancré par la scène écosystème scrollable) */}
       <div
         style={{
           position: "fixed",

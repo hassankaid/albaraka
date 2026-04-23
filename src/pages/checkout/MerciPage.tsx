@@ -1,7 +1,7 @@
 import { useSearchParams } from "react-router-dom";
 import CheckoutHero from "./CheckoutHero";
 import CheckoutBackground from "./CheckoutBackground";
-import { CornerArabesque, OrnamentalDivider, SectionLabel } from "./CheckoutOrnaments";
+import { DigitalEcosystem, OrnamentalDivider, SectionLabel } from "./CheckoutOrnaments";
 import {
   Mail,
   KeyRound,
@@ -96,6 +96,25 @@ export default function MerciPage() {
         />
       </div>
 
+      {/* Scène écosystème */}
+      <div
+        style={{
+          position: "relative",
+          zIndex: 2,
+          margin: "0 auto 2rem",
+          opacity: 0,
+          animation: "alb-eco-in 1.4s ease-out 1s forwards",
+        }}
+      >
+        <style>{`
+          @keyframes alb-eco-in {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+        <DigitalEcosystem />
+      </div>
+
       <div
         style={{
           maxWidth: 560,
@@ -112,19 +131,6 @@ export default function MerciPage() {
           zIndex: 2,
         }}
       >
-        {/* Arabesques aux 4 coins */}
-        <div style={{ position: "absolute", top: 10, left: 10, pointerEvents: "none" }}>
-          <CornerArabesque corner="tl" size={50} />
-        </div>
-        <div style={{ position: "absolute", top: 10, right: 10, pointerEvents: "none" }}>
-          <CornerArabesque corner="tr" size={50} />
-        </div>
-        <div style={{ position: "absolute", bottom: 10, left: 10, pointerEvents: "none" }}>
-          <CornerArabesque corner="bl" size={50} />
-        </div>
-        <div style={{ position: "absolute", bottom: 10, right: 10, pointerEvents: "none" }}>
-          <CornerArabesque corner="br" size={50} />
-        </div>
 
         {/* Cercle de validation — pulse doré animé */}
         <div style={{ textAlign: "center", marginBottom: "2.25rem" }}>
