@@ -495,14 +495,15 @@ function PaymentHeader({ installments }: { installments: number }) {
       </div>
 
       <h1
+        className="alb-title-gradient"
         style={{
           fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontSize: "clamp(28px, 5vw, 36px)",
+          fontSize: "clamp(30px, 5.5vw, 38px)",
           fontWeight: 500,
-          color: THEME.cream,
           margin: 0,
-          letterSpacing: "0.12em",
+          letterSpacing: "0.14em",
           lineHeight: 1.1,
+          filter: "drop-shadow(0 2px 12px rgba(201,160,78,0.3))",
         }}
       >
         PASS AL BARAKA
@@ -622,6 +623,8 @@ export default function Checkout() {
         color: THEME.cream,
         fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         padding: "4rem 1.25rem 3rem",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
       <style>{`
@@ -630,9 +633,41 @@ export default function Checkout() {
           to { opacity: 1; transform: translateY(0); }
         }
         @keyframes alb-spin { to { transform: rotate(360deg); } }
+        @keyframes alb-shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        @keyframes alb-shine-sweep {
+          0% { transform: translateX(-120%) skewX(-20deg); }
+          100% { transform: translateX(220%) skewX(-20deg); }
+        }
+        @keyframes alb-border-glow {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
+        }
 
         .alb-fade { animation: alb-fade-up 0.7s ease-out both; }
         .alb-fade-2 { animation: alb-fade-up 0.7s ease-out 0.1s both; }
+
+        /* Fond global : radial gradient subtil en haut */
+        .alb-page-bg {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background:
+            radial-gradient(ellipse 70% 45% at 50% 0%, rgba(201,160,78,0.13) 0%, rgba(201,160,78,0.04) 35%, transparent 70%),
+            radial-gradient(ellipse 50% 30% at 50% 18%, rgba(228,197,122,0.06) 0%, transparent 60%);
+        }
+
+        /* Titre gradient or */
+        .alb-title-gradient {
+          background: linear-gradient(180deg, #F5F1E6 0%, #E4C57A 50%, #C9A04E 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: transparent;
+          text-shadow: none;
+        }
 
         /* Field = style unifié pour tous les inputs et selects */
         .alb-field {
@@ -645,60 +680,150 @@ export default function Checkout() {
           font-family: inherit;
           box-sizing: border-box;
           width: 100%;
-          transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+          transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
           outline: none;
         }
         .alb-field::placeholder { color: ${THEME.creamDim}; }
         .alb-field:hover { border-color: ${THEME.goldLine}; }
         .alb-field:focus {
           border-color: ${THEME.gold};
-          background: rgba(255,255,255,0.04);
-          box-shadow: 0 0 0 3px rgba(201,160,78,0.12);
+          background: linear-gradient(180deg, rgba(201,160,78,0.04) 0%, rgba(201,160,78,0.01) 100%);
+          box-shadow:
+            0 0 0 3px rgba(201,160,78,0.14),
+            0 0 20px rgba(201,160,78,0.12);
         }
 
         /* Section label */
         .alb-section-label {
-          display: block;
+          display: flex;
+          align-items: center;
+          gap: 10px;
           font-size: 10.5px;
           font-weight: 600;
-          letter-spacing: 0.2em;
+          letter-spacing: 0.22em;
           color: ${THEME.gold};
           text-transform: uppercase;
           margin-bottom: 14px;
+        }
+        .alb-section-label::after {
+          content: "";
+          flex: 1;
+          height: 1px;
+          background: linear-gradient(90deg, ${THEME.goldDim}, transparent);
         }
 
         /* Checkbox */
         .alb-checkbox { accent-color: ${THEME.gold}; }
 
-        /* Bouton primaire */
+        /* Card prix : bordure shimmer subtile */
+        .alb-price-card {
+          position: relative;
+          padding: 22px 22px;
+          border-radius: 14px;
+          background:
+            linear-gradient(180deg, rgba(201,160,78,0.07) 0%, rgba(201,160,78,0.015) 100%),
+            ${THEME.bg};
+          overflow: hidden;
+          box-shadow:
+            inset 0 1px 0 rgba(228,197,122,0.12),
+            0 10px 30px rgba(0,0,0,0.35),
+            0 0 0 1px rgba(201,160,78,0.22);
+        }
+        /* Bordure supérieure animée */
+        .alb-price-card::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: 14px;
+          padding: 1px;
+          background: linear-gradient(
+            110deg,
+            transparent 20%,
+            rgba(228,197,122,0.7) 45%,
+            rgba(228,197,122,0.95) 50%,
+            rgba(228,197,122,0.7) 55%,
+            transparent 80%
+          );
+          background-size: 200% 100%;
+          -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          opacity: 0.65;
+          animation: alb-shimmer 6s linear infinite;
+          pointer-events: none;
+        }
+        /* Coins discrets (4 micro-L dorés) */
+        .alb-price-card-corner {
+          position: absolute;
+          width: 10px;
+          height: 10px;
+          border: 1px solid ${THEME.gold};
+          opacity: 0.6;
+          pointer-events: none;
+        }
+
+        /* Bouton primaire — gradient + shine sweep + glow respirant */
         .alb-submit {
+          position: relative;
           width: 100%;
-          background: linear-gradient(180deg, #DDB968 0%, ${THEME.gold} 100%);
+          background: linear-gradient(180deg, #E8C47A 0%, ${THEME.gold} 50%, #B28840 100%);
           color: #1a1200;
           border: none;
           border-radius: 12px;
-          padding: 17px 20px;
+          padding: 18px 22px;
           font-size: 14px;
           font-weight: 600;
           cursor: pointer;
-          letter-spacing: 0.12em;
+          letter-spacing: 0.14em;
           font-family: inherit;
-          transition: transform 0.15s, box-shadow 0.25s, filter 0.15s;
-          box-shadow: 0 1px 0 rgba(255,255,255,0.2) inset, 0 0 0 1px ${THEME.gold}, 0 8px 24px rgba(201,160,78,0.25);
+          transition: transform 0.18s, box-shadow 0.3s, filter 0.18s;
+          box-shadow:
+            0 1px 0 rgba(255,255,255,0.3) inset,
+            0 -1px 0 rgba(0,0,0,0.15) inset,
+            0 0 0 1px ${THEME.gold},
+            0 8px 24px rgba(201,160,78,0.3);
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 10px;
+          overflow: hidden;
+          isolation: isolate;
         }
+        /* Shine sweep au hover */
+        .alb-submit::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 60%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255,255,255,0.5) 50%,
+            transparent 100%
+          );
+          transform: translateX(-120%) skewX(-20deg);
+          pointer-events: none;
+          z-index: 1;
+        }
+        .alb-submit:hover:not(:disabled)::before {
+          animation: alb-shine-sweep 0.9s ease-out;
+        }
+        .alb-submit > * { position: relative; z-index: 2; }
         .alb-submit:hover:not(:disabled) {
           transform: translateY(-1px);
-          filter: brightness(1.06);
-          box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 0 0 1px ${THEME.goldBright}, 0 14px 40px rgba(201,160,78,0.45);
+          filter: brightness(1.05);
+          box-shadow:
+            0 1px 0 rgba(255,255,255,0.35) inset,
+            0 -1px 0 rgba(0,0,0,0.12) inset,
+            0 0 0 1px ${THEME.goldBright},
+            0 16px 48px rgba(201,160,78,0.55);
         }
         .alb-submit:active:not(:disabled) { transform: translateY(0); }
         .alb-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-        .alb-submit .alb-arrow { transition: transform 0.25s; }
-        .alb-submit:hover:not(:disabled) .alb-arrow { transform: translateX(4px); }
+        .alb-submit .alb-arrow { transition: transform 0.3s; }
+        .alb-submit:hover:not(:disabled) .alb-arrow { transform: translateX(5px); }
 
         /* Bouton secondaire (code promo) */
         .alb-btn-ghost {
@@ -708,16 +833,17 @@ export default function Checkout() {
           padding: 12px 16px;
           border-radius: 10px;
           font-size: 12px;
-          letter-spacing: 0.12em;
+          letter-spacing: 0.14em;
           font-weight: 500;
           cursor: pointer;
           font-family: inherit;
-          transition: background 0.15s, border-color 0.15s;
+          transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
           white-space: nowrap;
         }
         .alb-btn-ghost:hover:not(:disabled) {
-          background: rgba(201,160,78,0.06);
+          background: rgba(201,160,78,0.08);
           border-color: ${THEME.gold};
+          box-shadow: 0 0 16px rgba(201,160,78,0.15);
         }
         .alb-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -730,12 +856,14 @@ export default function Checkout() {
           border: 1px solid ${THEME.goldDim};
           border-radius: 10px;
           padding: 0 14px 0 12px;
-          transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+          transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
         }
         .alb-phone .PhoneInput:focus-within {
           border-color: ${THEME.gold};
-          background: rgba(255,255,255,0.04);
-          box-shadow: 0 0 0 3px rgba(201,160,78,0.12);
+          background: linear-gradient(180deg, rgba(201,160,78,0.04) 0%, rgba(201,160,78,0.01) 100%);
+          box-shadow:
+            0 0 0 3px rgba(201,160,78,0.14),
+            0 0 20px rgba(201,160,78,0.12);
         }
         .alb-phone .PhoneInputCountry {
           display: flex;
@@ -766,11 +894,12 @@ export default function Checkout() {
           gap: 6px;
           font-size: 11px;
           color: ${THEME.creamMuted};
-          letter-spacing: 0.08em;
+          letter-spacing: 0.1em;
         }
       `}</style>
+      <div className="alb-page-bg" aria-hidden />
 
-      <div style={{ maxWidth: 440, margin: "0 auto" }}>
+      <div style={{ maxWidth: 440, margin: "0 auto", position: "relative", zIndex: 2 }}>
         {stripeKeyMissing && (
           <div
             style={{
@@ -1195,16 +1324,14 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
         )}
       </section>
 
-      {/* Résumé prix — ligne très nette */}
-      <section
-        style={{
-          padding: "20px 20px",
-          border: `1px solid ${THEME.goldLine}`,
-          borderRadius: 14,
-          background:
-            "linear-gradient(180deg, rgba(201,160,78,0.04) 0%, rgba(201,160,78,0.01) 100%)",
-        }}
-      >
+      {/* Résumé prix — card premium avec bordure shimmer + coins accent */}
+      <section className="alb-price-card">
+        {/* 4 coins accent (L dorés fins) */}
+        <span className="alb-price-card-corner" style={{ top: 10, left: 10, borderRight: "none", borderBottom: "none" }} />
+        <span className="alb-price-card-corner" style={{ top: 10, right: 10, borderLeft: "none", borderBottom: "none" }} />
+        <span className="alb-price-card-corner" style={{ bottom: 10, left: 10, borderRight: "none", borderTop: "none" }} />
+        <span className="alb-price-card-corner" style={{ bottom: 10, right: 10, borderLeft: "none", borderTop: "none" }} />
+
         {discountPercent > 0 && (
           <div
             style={{
@@ -1283,17 +1410,19 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
         )}
       </section>
 
-      {/* CGV — compact */}
+      {/* CGV — liste à puces dorées */}
       <section>
         <label
           style={{
             display: "flex",
-            gap: 10,
-            fontSize: 12.5,
+            gap: 12,
+            fontSize: 13,
             cursor: "pointer",
             alignItems: "flex-start",
             color: THEME.cream,
             lineHeight: 1.55,
+            marginBottom: 12,
+            fontWeight: 500,
           }}
         >
           <input
@@ -1301,13 +1430,47 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
             className="alb-checkbox"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
-            style={{ marginTop: 3, flexShrink: 0, width: 16, height: 16 }}
+            style={{ marginTop: 2, flexShrink: 0, width: 16, height: 16 }}
           />
-          <span>
-            Je confirme mon inscription au PASS AL BARAKA. Je souhaite accéder au contenu immédiatement et renonce à mon droit de rétractation de 14 jours (article L221-28 13° du Code de la consommation).
-            {installments > 1 && " Je m'engage sur la totalité du paiement échelonné."}
-          </span>
+          <span>Je confirme mon inscription au PASS AL BARAKA.</span>
         </label>
+        <ul
+          style={{
+            listStyle: "none",
+            margin: 0,
+            padding: "0 0 0 28px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 7,
+            fontSize: 12,
+            color: THEME.creamMuted,
+            lineHeight: 1.55,
+          }}
+        >
+          {[
+            "Je souhaite accéder au contenu immédiatement.",
+            "S'agissant de produits numériques, je renonce à mon droit de rétractation de 14 jours (article L221-28 13° du Code de la consommation).",
+            ...(installments > 1
+              ? ["En cas de paiement en plusieurs fois, je m'engage sur la totalité du paiement prévu."]
+              : []),
+          ].map((item, i) => (
+            <li key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start" }}>
+              <span
+                aria-hidden
+                style={{
+                  width: 4,
+                  height: 4,
+                  background: THEME.gold,
+                  borderRadius: "50%",
+                  flexShrink: 0,
+                  marginTop: 8,
+                  boxShadow: "0 0 6px rgba(201,160,78,0.6)",
+                }}
+              />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* Bouton */}

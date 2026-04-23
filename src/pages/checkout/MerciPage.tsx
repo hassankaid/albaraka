@@ -48,6 +48,8 @@ export default function MerciPage() {
         color: THEME.cream,
         fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         padding: "4rem 1.25rem 3rem",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
       <style>{`
@@ -61,13 +63,30 @@ export default function MerciPage() {
           100% { transform: scale(1); opacity: 1; }
         }
         @keyframes alb-ring-pulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(201,160,78,0.5); }
-          50% { box-shadow: 0 0 0 16px rgba(201,160,78,0); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(201,160,78,0.55); }
+          50% { box-shadow: 0 0 0 20px rgba(201,160,78,0); }
         }
 
         .alb-fade { animation: alb-fade-up 0.7s ease-out both; }
         .alb-fade-2 { animation: alb-fade-up 0.7s ease-out 0.15s both; }
         .alb-fade-3 { animation: alb-fade-up 0.7s ease-out 0.3s both; }
+
+        .alb-page-bg {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background:
+            radial-gradient(ellipse 70% 45% at 50% 0%, rgba(201,160,78,0.13) 0%, rgba(201,160,78,0.04) 35%, transparent 70%),
+            radial-gradient(ellipse 50% 30% at 50% 18%, rgba(228,197,122,0.06) 0%, transparent 60%);
+        }
+
+        .alb-title-gradient {
+          background: linear-gradient(180deg, #F5F1E6 0%, #E4C57A 50%, #C9A04E 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: transparent;
+        }
 
         .alb-step {
           display: flex;
@@ -75,17 +94,19 @@ export default function MerciPage() {
           padding: 16px 16px;
           border: 1px solid ${THEME.goldDim};
           border-radius: 12px;
-          background: rgba(201,160,78,0.02);
-          transition: border-color 0.2s, background 0.2s, transform 0.2s;
+          background: linear-gradient(180deg, rgba(201,160,78,0.03) 0%, rgba(201,160,78,0.01) 100%);
+          transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
         }
         .alb-step:hover {
           border-color: ${THEME.goldLine};
-          background: rgba(201,160,78,0.05);
+          background: linear-gradient(180deg, rgba(201,160,78,0.06) 0%, rgba(201,160,78,0.02) 100%);
           transform: translateY(-1px);
+          box-shadow: 0 0 24px rgba(201,160,78,0.08);
         }
       `}</style>
+      <div className="alb-page-bg" aria-hidden />
 
-      <div style={{ maxWidth: 440, margin: "0 auto" }}>
+      <div style={{ maxWidth: 440, margin: "0 auto", position: "relative", zIndex: 2 }}>
         {/* Header logo + halo */}
         <div className="alb-fade" style={{ textAlign: "center", marginBottom: 36, position: "relative" }}>
           <div
@@ -159,14 +180,15 @@ export default function MerciPage() {
           </div>
 
           <h1
+            className="alb-title-gradient"
             style={{
               fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: "clamp(32px, 6vw, 40px)",
+              fontSize: "clamp(34px, 6vw, 42px)",
               fontWeight: 500,
-              color: THEME.cream,
               margin: "0 0 14px 0",
-              letterSpacing: "0.08em",
+              letterSpacing: "0.1em",
               lineHeight: 1.1,
+              filter: "drop-shadow(0 2px 14px rgba(201,160,78,0.35))",
             }}
           >
             Al Hamdoulilah
