@@ -1,426 +1,349 @@
 import { useSearchParams } from "react-router-dom";
-import CheckoutHero from "./CheckoutHero";
-import CheckoutBackground from "./CheckoutBackground";
-import { DigitalEcosystem, OrnamentalDivider, SectionLabel } from "./CheckoutOrnaments";
-import {
-  Mail,
-  KeyRound,
-  Users,
-  Compass,
-  CheckCircle2,
-  ShieldCheck,
-  Globe,
-  Lock,
-} from "lucide-react";
+import logo from "@/assets/al-baraka-logo-v2.png";
+import { Mail, KeyRound, Users, Compass, CheckCircle2 } from "lucide-react";
 
-const BRAND = {
+const THEME = {
+  bg: "#0A0A0A",
   gold: "#C9A04E",
-  goldSoft: "rgba(201,160,78,0.22)",
-  goldMuted: "rgba(201,160,78,0.05)",
+  goldBright: "#E4C57A",
+  goldDim: "rgba(201,160,78,0.18)",
+  goldLine: "rgba(201,160,78,0.28)",
   cream: "#F5F1E6",
-  creamMuted: "rgba(245,241,230,0.65)",
-  creamSoft: "rgba(245,241,230,0.82)",
-  black: "#0A0A0A",
+  creamMuted: "rgba(245,241,230,0.62)",
+  creamDim: "rgba(245,241,230,0.38)",
 };
 
 const STEPS = [
   {
-    n: "01",
     Icon: Mail,
     title: "Consulte ta boîte mail",
-    body: "Ouvre l'email que nous venons de t'envoyer. Pense à vérifier tes spams si tu ne le vois pas tout de suite.",
+    body: "Un email avec ta facture et ton lien d'accès t'a été envoyé. Vérifie aussi tes spams.",
   },
   {
-    n: "02",
     Icon: KeyRound,
     title: "Définis ton mot de passe",
     body: "Clique sur le lien de l'email pour créer ton accès personnel à la plateforme.",
   },
   {
-    n: "03",
     Icon: Users,
-    title: "Rejoins la famille sur Discord",
-    body: "Dès ta connexion, une étape te proposera de rejoindre notre communauté privée — c'est là que bat le cœur d'Al Baraka.",
+    title: "Rejoins la communauté",
+    body: "À ta première connexion, une étape te proposera de rejoindre notre Discord privé.",
   },
   {
-    n: "04",
     Icon: Compass,
     title: "Découvre ton parcours",
-    body: "Une fois connecté·e, la plateforme te guidera pas à pas dans ton écosystème Al Baraka.",
+    body: "La plateforme te guidera pas à pas dans ton écosystème Al Baraka.",
   },
 ];
 
 export default function MerciPage() {
   const [searchParams] = useSearchParams();
-  // Stripe Payment Element redirect adds ?payment_intent=pi_xxx...
-  // Legacy Checkout Session flow used ?session_id=cs_xxx...
   const ref = searchParams.get("payment_intent") || searchParams.get("session_id");
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: BRAND.black,
-        color: BRAND.cream,
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif',
-        padding: "3.5rem 1.5rem 3rem",
-        position: "relative",
-        overflow: "hidden",
+        background: THEME.bg,
+        color: THEME.cream,
+        fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        padding: "4rem 1.25rem 3rem",
       }}
     >
-      <CheckoutBackground />
-
       <style>{`
+        @keyframes alb-fade-up {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         @keyframes alb-check-pop {
-          0% { transform: scale(0.6); opacity: 0; }
-          60% { transform: scale(1.1); opacity: 1; }
+          0% { transform: scale(0.5); opacity: 0; }
+          60% { transform: scale(1.15); opacity: 1; }
           100% { transform: scale(1); opacity: 1; }
         }
         @keyframes alb-ring-pulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(201,160,78,0.5), 0 0 40px rgba(201,160,78,0.2); }
-          50% { box-shadow: 0 0 0 16px rgba(201,160,78,0), 0 0 60px rgba(201,160,78,0.35); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(201,160,78,0.5); }
+          50% { box-shadow: 0 0 0 16px rgba(201,160,78,0); }
+        }
+
+        .alb-fade { animation: alb-fade-up 0.7s ease-out both; }
+        .alb-fade-2 { animation: alb-fade-up 0.7s ease-out 0.15s both; }
+        .alb-fade-3 { animation: alb-fade-up 0.7s ease-out 0.3s both; }
+
+        .alb-step {
+          display: flex;
+          gap: 14px;
+          padding: 16px 16px;
+          border: 1px solid ${THEME.goldDim};
+          border-radius: 12px;
+          background: rgba(201,160,78,0.02);
+          transition: border-color 0.2s, background 0.2s, transform 0.2s;
         }
         .alb-step:hover {
-          border-color: rgba(201,160,78,0.55);
-          background: rgba(201,160,78,0.06);
+          border-color: ${THEME.goldLine};
+          background: rgba(201,160,78,0.05);
           transform: translateY(-1px);
         }
       `}</style>
 
-      <div style={{ position: "relative", zIndex: 2, maxWidth: 560, margin: "0 auto" }}>
-        <CheckoutHero
-          title="AL HAMDOULILAH"
-          subtitle="ÉCOSYSTÈME BY ETHICARENA"
-          compact
-        />
-      </div>
-
-      {/* Scène écosystème */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 2,
-          margin: "0 auto 2rem",
-          opacity: 0,
-          animation: "alb-eco-in 1.4s ease-out 1s forwards",
-        }}
-      >
-        <style>{`
-          @keyframes alb-eco-in {
-            from { opacity: 0; transform: translateY(14px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
-        <DigitalEcosystem />
-      </div>
-
-      <div
-        style={{
-          maxWidth: 560,
-          margin: "0 auto",
-          padding: "2.25rem 2rem 2.25rem",
-          border: `0.5px solid ${BRAND.goldSoft}`,
-          borderRadius: 14,
-          background: "rgba(10,10,10,0.62)",
-          backdropFilter: "blur(14px)",
-          WebkitBackdropFilter: "blur(14px)",
-          boxShadow:
-            "0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,160,78,0.06), inset 0 0 80px rgba(201,160,78,0.02)",
-          position: "relative",
-          zIndex: 2,
-        }}
-      >
-
-        {/* Cercle de validation — pulse doré animé */}
-        <div style={{ textAlign: "center", marginBottom: "2.25rem" }}>
+      <div style={{ maxWidth: 440, margin: "0 auto" }}>
+        {/* Header logo + halo */}
+        <div className="alb-fade" style={{ textAlign: "center", marginBottom: 36, position: "relative" }}>
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              top: -20,
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 260,
+              height: 260,
+              background: "radial-gradient(circle, rgba(201,160,78,0.14) 0%, transparent 60%)",
+              filter: "blur(20px)",
+              pointerEvents: "none",
+            }}
+          />
           <div
             style={{
-              width: 120,
-              height: 120,
-              margin: "0 auto",
-              border: `1px solid ${BRAND.gold}`,
+              width: 72,
+              height: 72,
+              margin: "0 auto 22px",
+              borderRadius: "50%",
+              background:
+                "radial-gradient(circle, rgba(201,160,78,0.12) 0%, rgba(10,10,10,0.9) 72%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+            }}
+          >
+            <img
+              src={logo}
+              alt="Al Baraka"
+              style={{
+                width: 58,
+                height: 58,
+                objectFit: "contain",
+                filter: "drop-shadow(0 0 10px rgba(201,160,78,0.4))",
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Cercle de validation — signature de la page merci */}
+        <div className="alb-fade-2" style={{ textAlign: "center", marginBottom: 30 }}>
+          <div
+            style={{
+              width: 96,
+              height: 96,
+              margin: "0 auto 24px",
+              border: `1px solid ${THEME.gold}`,
               borderRadius: "50%",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               position: "relative",
               background:
-                "radial-gradient(circle, rgba(201,160,78,0.14) 0%, rgba(10,10,10,0.3) 70%)",
-              animation: "alb-ring-pulse 3s ease-in-out infinite",
+                "radial-gradient(circle, rgba(201,160,78,0.15) 0%, rgba(10,10,10,0.3) 70%)",
+              animation: "alb-ring-pulse 2.6s ease-in-out infinite",
             }}
           >
             <CheckCircle2
-              size={58}
-              strokeWidth={1.3}
+              size={48}
+              strokeWidth={1.4}
               style={{
-                color: BRAND.gold,
+                color: THEME.gold,
                 animation: "alb-check-pop 0.9s ease-out",
-                filter: "drop-shadow(0 0 12px rgba(201,160,78,0.6))",
+                filter: "drop-shadow(0 0 10px rgba(201,160,78,0.5))",
               }}
             />
           </div>
-        </div>
 
-        {/* Message d'accueil */}
-        <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-          <p
+          <h1
             style={{
-              color: BRAND.cream,
-              fontSize: 17,
-              margin: "0 0 18px 0",
-              lineHeight: 1.5,
-              fontWeight: 500,
               fontFamily: "'Cormorant Garamond', Georgia, serif",
-              letterSpacing: 0.5,
-            }}
-          >
-            Félicitations pour ce choix courageux.
-          </p>
-          <p
-            style={{
-              color: BRAND.creamSoft,
-              fontSize: 14,
-              margin: "0 auto",
-              lineHeight: 1.85,
-              maxWidth: 440,
-            }}
-          >
-            Tu fais désormais partie de la famille Al Baraka. Investir en toi, dans tes compétences, dans un écosystème aligné avec tes valeurs, c'est la plus belle décision que tu aies prise aujourd'hui.
-          </p>
-          <p
-            style={{
-              color: BRAND.gold,
-              fontSize: 12,
-              margin: "22px 0 0 0",
+              fontSize: "clamp(32px, 6vw, 40px)",
               fontWeight: 500,
-              fontStyle: "italic",
-              letterSpacing: 1,
+              color: THEME.cream,
+              margin: "0 0 14px 0",
+              letterSpacing: "0.08em",
+              lineHeight: 1.1,
             }}
           >
-            — Félicitations encore une fois —
+            Al Hamdoulilah
+          </h1>
+
+          <p
+            style={{
+              color: THEME.creamMuted,
+              fontSize: 15,
+              margin: "0 auto",
+              maxWidth: 380,
+              lineHeight: 1.6,
+            }}
+          >
+            Félicitations pour ce choix courageux. Tu fais désormais partie de la famille Al Baraka.
           </p>
         </div>
 
-        {/* Email d'accès — card premium */}
+        {/* Email d'accès */}
         <div
+          className="alb-fade-3"
           style={{
-            marginBottom: "2.5rem",
-            padding: "20px 22px",
-            border: `0.5px solid ${BRAND.gold}`,
+            padding: "18px 20px",
+            border: `1px solid ${THEME.gold}`,
             borderRadius: 12,
             background:
-              "linear-gradient(145deg, rgba(201,160,78,0.1) 0%, rgba(201,160,78,0.02) 100%)",
+              "linear-gradient(180deg, rgba(201,160,78,0.08) 0%, rgba(201,160,78,0.02) 100%)",
             display: "flex",
-            gap: 16,
+            gap: 14,
             alignItems: "center",
-            boxShadow: "inset 0 0 40px rgba(201,160,78,0.04)",
+            marginBottom: 28,
           }}
         >
           <div
             style={{
               flexShrink: 0,
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
               borderRadius: "50%",
               background: "rgba(201,160,78,0.15)",
-              border: `0.5px solid ${BRAND.gold}`,
+              border: `1px solid ${THEME.gold}`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: BRAND.gold,
+              color: THEME.gold,
             }}
           >
-            <Mail size={20} strokeWidth={1.4} />
+            <Mail size={18} strokeWidth={1.5} />
           </div>
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
-                fontSize: 14.5,
+                fontSize: 13.5,
                 fontWeight: 600,
-                color: BRAND.cream,
-                marginBottom: 4,
-                letterSpacing: 0.2,
+                color: THEME.cream,
+                marginBottom: 3,
               }}
             >
-              Ton email d'accès t'attend
+              Ton accès arrive par email
             </div>
-            <div style={{ fontSize: 12.5, color: "rgba(245,241,230,0.75)", lineHeight: 1.55 }}>
-              Nous venons de t'envoyer un email avec ta facture et le lien pour définir ton mot de passe.
+            <div style={{ fontSize: 12.5, color: THEME.creamMuted, lineHeight: 1.5 }}>
+              Facture + lien pour définir ton mot de passe.
             </div>
           </div>
         </div>
 
         {/* Étapes */}
-        <div style={{ marginBottom: "2rem" }}>
-          <SectionLabel>LES PROCHAINES ÉTAPES</SectionLabel>
+        <div className="alb-fade-3" style={{ marginBottom: 36 }}>
+          <div
+            style={{
+              fontSize: 10.5,
+              fontWeight: 600,
+              letterSpacing: "0.22em",
+              color: THEME.gold,
+              textTransform: "uppercase",
+              marginBottom: 16,
+              textAlign: "center",
+            }}
+          >
+            Tes prochaines étapes
+          </div>
 
-          {STEPS.map((s, i) => (
-            <div
-              key={s.n}
-              className="alb-step"
-              style={{
-                display: "flex",
-                gap: 14,
-                padding: "16px 18px",
-                border: `0.5px solid ${BRAND.goldSoft}`,
-                borderRadius: 10,
-                marginBottom: i === STEPS.length - 1 ? 0 : 10,
-                alignItems: "flex-start",
-                transition: "border-color 0.25s, background 0.25s, transform 0.25s",
-                background: "rgba(201,160,78,0.02)",
-              }}
-            >
-              <div
-                style={{
-                  flexShrink: 0,
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  background:
-                    "linear-gradient(135deg, rgba(201,160,78,0.22), rgba(201,160,78,0.05))",
-                  border: "0.5px solid rgba(201,160,78,0.45)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: BRAND.gold,
-                  position: "relative",
-                }}
-              >
-                <s.Icon size={18} strokeWidth={1.5} />
-                <span
-                  style={{
-                    position: "absolute",
-                    top: -6,
-                    right: -6,
-                    background: BRAND.black,
-                    color: BRAND.gold,
-                    border: `0.5px solid ${BRAND.gold}`,
-                    borderRadius: 10,
-                    fontSize: 9,
-                    padding: "1px 6px",
-                    fontFamily: "'Cormorant Garamond', Georgia, serif",
-                    letterSpacing: 0.5,
-                    fontWeight: 600,
-                  }}
-                >
-                  {s.n}
-                </span>
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {STEPS.map((s, i) => (
+              <div key={i} className="alb-step">
                 <div
                   style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: BRAND.cream,
-                    marginBottom: 4,
-                    letterSpacing: 0.2,
+                    flexShrink: 0,
+                    width: 38,
+                    height: 38,
+                    borderRadius: "50%",
+                    background: "rgba(201,160,78,0.08)",
+                    border: `1px solid ${THEME.goldLine}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: THEME.gold,
+                    position: "relative",
                   }}
                 >
-                  {s.title}
+                  <s.Icon size={16} strokeWidth={1.5} />
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: -5,
+                      right: -5,
+                      width: 16,
+                      height: 16,
+                      borderRadius: "50%",
+                      background: THEME.bg,
+                      border: `1px solid ${THEME.gold}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 9.5,
+                      fontWeight: 600,
+                      color: THEME.gold,
+                      fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    }}
+                  >
+                    {i + 1}
+                  </span>
                 </div>
-                <div style={{ fontSize: 13, color: BRAND.creamMuted, lineHeight: 1.6 }}>
-                  {s.body}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 13.5,
+                      fontWeight: 600,
+                      color: THEME.cream,
+                      marginBottom: 3,
+                    }}
+                  >
+                    {s.title}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: THEME.creamMuted, lineHeight: 1.55 }}>
+                    {s.body}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* Baraka */}
+        {/* Baraka + réf */}
         <div
+          className="alb-fade-3"
           style={{
             textAlign: "center",
-            fontSize: 12.5,
-            color: "rgba(245,241,230,0.65)",
-            lineHeight: 1.7,
-            paddingTop: "1.25rem",
-            fontStyle: "italic",
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
-          }}
-        >
-          Qu'Allah facilite ton parcours, inshaAllah.
-        </div>
-
-        {/* Fleuron ornemental */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            marginTop: "1.75rem",
-          }}
-        >
-          <OrnamentalDivider width={180} />
-        </div>
-
-        {/* Bandeau de réassurance */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 22,
-            marginTop: "1.5rem",
-            flexWrap: "wrap",
-            padding: "14px 0 0",
+            paddingTop: 16,
+            borderTop: `1px solid ${THEME.goldDim}`,
           }}
         >
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 11,
-              color: "rgba(245,241,230,0.55)",
-              letterSpacing: 1,
-            }}
-          >
-            <Lock size={13} strokeWidth={1.6} style={{ color: BRAND.gold }} />
-            <span>PAIEMENT STRIPE</span>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 11,
-              color: "rgba(245,241,230,0.55)",
-              letterSpacing: 1,
-            }}
-          >
-            <ShieldCheck size={13} strokeWidth={1.6} style={{ color: BRAND.gold }} />
-            <span>SSL · 256 BITS</span>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 11,
-              color: "rgba(245,241,230,0.55)",
-              letterSpacing: 1,
-            }}
-          >
-            <Globe size={13} strokeWidth={1.6} style={{ color: BRAND.gold }} />
-            <span>CONFORME RGPD</span>
-          </div>
-        </div>
-
-        {/* Référence */}
-        {ref && (
-          <div
-            style={{
-              textAlign: "center",
-              fontSize: 10,
-              color: "rgba(245,241,230,0.25)",
-              marginTop: 18,
-              fontFamily: "monospace",
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: 14,
+              color: THEME.creamMuted,
+              fontStyle: "italic",
               letterSpacing: 0.5,
             }}
           >
-            Réf. {ref.slice(-12)}
+            Qu'Allah facilite ton parcours, inshaAllah.
           </div>
-        )}
+          {ref && (
+            <div
+              style={{
+                marginTop: 14,
+                fontSize: 10,
+                color: THEME.creamDim,
+                fontFamily: "monospace",
+                letterSpacing: 0.3,
+              }}
+            >
+              Réf. {ref.slice(-12)}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

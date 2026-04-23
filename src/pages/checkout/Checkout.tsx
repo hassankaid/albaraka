@@ -17,34 +17,21 @@ import flags from "react-phone-number-input/flags";
 import "react-phone-number-input/style.css";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import CheckoutHero from "./CheckoutHero";
-import CheckoutBackground from "./CheckoutBackground";
-import { DigitalEcosystem, OrnamentalDivider, IslamicStar, SectionLabel } from "./CheckoutOrnaments";
-import {
-  GraduationCap,
-  Users,
-  Sparkles,
-  Cpu,
-  TrendingUp,
-  Lock,
-  ShieldCheck,
-  Mail,
-  User as UserIcon,
-  MapPin,
-  Globe,
-  ArrowRight,
-} from "lucide-react";
+import logo from "@/assets/al-baraka-logo-v2.png";
+import { Lock, ShieldCheck, CheckCircle2, Tag, X, ArrowRight, ChevronDown } from "lucide-react";
 
 const TOTAL_EUR = 2500;
 
-const BRAND = {
+const THEME = {
+  bg: "#0A0A0A",
+  bgSoft: "#111111",
   gold: "#C9A04E",
-  goldSoft: "rgba(201,160,78,0.28)",
-  goldMuted: "rgba(201,160,78,0.03)",
+  goldBright: "#E4C57A",
+  goldDim: "rgba(201,160,78,0.18)",
+  goldLine: "rgba(201,160,78,0.28)",
   cream: "#F5F1E6",
-  creamMuted: "rgba(245,241,230,0.65)",
-  creamSoft: "rgba(245,241,230,0.9)",
-  black: "#0A0A0A",
+  creamMuted: "rgba(245,241,230,0.62)",
+  creamDim: "rgba(245,241,230,0.38)",
 };
 
 function formatEur(n: number): string {
@@ -75,18 +62,24 @@ function countryName(iso: string): string {
 
 const ALL_COUNTRIES: string[] = (() => {
   try {
-    return getCountries().slice().sort((a, b) => countryName(a).localeCompare(countryName(b), "fr"));
+    return getCountries()
+      .slice()
+      .sort((a, b) => countryName(a).localeCompare(countryName(b), "fr"));
   } catch {
     return ["FR", "BE", "CH", "LU", "DZ", "MA", "TN", "SN", "CI", "CM", "US", "GB", "DE", "ES", "IT"];
   }
 })();
 
-interface CountrySelectProps {
+/* ------------------------------------------------------------------
+ * Sélecteur pays facturation (adresse)
+ * ------------------------------------------------------------------ */
+function CountrySearchSelect({
+  value,
+  onChange,
+}: {
   value: string;
   onChange: (iso: string) => void;
-}
-
-function CountrySearchSelect({ value, onChange }: CountrySelectProps) {
+}) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -114,9 +107,9 @@ function CountrySearchSelect({ value, onChange }: CountrySelectProps) {
   const filtered = useMemo(() => {
     if (!query.trim()) return ALL_COUNTRIES;
     const q = query.trim().toLowerCase();
-    return ALL_COUNTRIES.filter((iso) => {
-      return countryName(iso).toLowerCase().includes(q) || iso.toLowerCase().includes(q);
-    });
+    return ALL_COUNTRIES.filter(
+      (iso) => countryName(iso).toLowerCase().includes(q) || iso.toLowerCase().includes(q),
+    );
   }, [query]);
 
   const CurrentFlag = flags[value as keyof typeof flags];
@@ -125,52 +118,44 @@ function CountrySearchSelect({ value, onChange }: CountrySelectProps) {
     <div ref={wrapperRef} style={{ position: "relative" }}>
       <button
         type="button"
+        className="alb-field"
         onClick={() => setOpen((v) => !v)}
         style={{
           width: "100%",
-          background: "rgba(255,255,255,0.03)",
-          border: `0.5px solid rgba(201,160,78,0.28)`,
-          color: "#F5F1E6",
-          padding: "11px 14px",
-          borderRadius: 6,
-          fontSize: 14,
-          fontFamily: "inherit",
           display: "flex",
           alignItems: "center",
-          gap: 10,
+          justifyContent: "space-between",
           cursor: "pointer",
           textAlign: "left",
-          justifyContent: "space-between",
         }}
       >
         <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {CurrentFlag ? (
+          {CurrentFlag && (
             <span style={{ width: 22, height: 16, display: "inline-block" }}>
               <CurrentFlag title={countryName(value)} />
             </span>
-          ) : null}
+          )}
           <span>{value ? countryName(value) : "Sélectionner un pays"}</span>
         </span>
-        <svg width="10" height="6" viewBox="0 0 10 6" style={{ opacity: 0.6 }}>
-          <path d="M1 1L5 5L9 1" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-        </svg>
+        <ChevronDown size={14} style={{ opacity: 0.6 }} />
       </button>
 
       {open && (
         <div
           style={{
             position: "absolute",
-            top: "calc(100% + 4px)",
+            top: "calc(100% + 6px)",
             left: 0,
             right: 0,
-            background: "#0A0A0A",
-            border: `0.5px solid rgba(201,160,78,0.4)`,
-            borderRadius: 6,
-            zIndex: 20,
-            maxHeight: 280,
+            background: THEME.bgSoft,
+            border: `1px solid ${THEME.goldLine}`,
+            borderRadius: 10,
+            zIndex: 30,
+            maxHeight: 300,
             display: "flex",
             flexDirection: "column",
-            boxShadow: "0 10px 32px rgba(0,0,0,0.5)",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.6), 0 0 30px rgba(201,160,78,0.08)",
+            overflow: "hidden",
           }}
         >
           <input
@@ -180,11 +165,11 @@ function CountrySearchSelect({ value, onChange }: CountrySelectProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             style={{
-              background: "rgba(255,255,255,0.04)",
+              background: "rgba(255,255,255,0.03)",
               border: "none",
-              borderBottom: `0.5px solid rgba(201,160,78,0.2)`,
-              color: "#F5F1E6",
-              padding: "12px 14px",
+              borderBottom: `1px solid ${THEME.goldDim}`,
+              color: THEME.cream,
+              padding: "13px 14px",
               fontSize: 13,
               fontFamily: "inherit",
               outline: "none",
@@ -192,9 +177,9 @@ function CountrySearchSelect({ value, onChange }: CountrySelectProps) {
               boxSizing: "border-box",
             }}
           />
-          <div style={{ overflowY: "auto", maxHeight: 220 }}>
+          <div style={{ overflowY: "auto", maxHeight: 240 }}>
             {filtered.length === 0 ? (
-              <div style={{ padding: "14px 16px", fontSize: 13, color: "rgba(245,241,230,0.5)" }}>
+              <div style={{ padding: "14px 16px", fontSize: 13, color: THEME.creamDim }}>
                 Aucun résultat
               </div>
             ) : (
@@ -213,8 +198,8 @@ function CountrySearchSelect({ value, onChange }: CountrySelectProps) {
                       width: "100%",
                       background: selected ? "rgba(201,160,78,0.12)" : "transparent",
                       border: "none",
-                      color: "#F5F1E6",
-                      padding: "10px 14px",
+                      color: THEME.cream,
+                      padding: "11px 14px",
                       fontSize: 13,
                       fontFamily: "inherit",
                       display: "flex",
@@ -222,6 +207,7 @@ function CountrySearchSelect({ value, onChange }: CountrySelectProps) {
                       gap: 10,
                       cursor: "pointer",
                       textAlign: "left",
+                      transition: "background 0.12s",
                     }}
                     onMouseEnter={(e) => {
                       if (!selected) e.currentTarget.style.background = "rgba(255,255,255,0.04)";
@@ -230,15 +216,13 @@ function CountrySearchSelect({ value, onChange }: CountrySelectProps) {
                       if (!selected) e.currentTarget.style.background = "transparent";
                     }}
                   >
-                    {Flag ? (
+                    {Flag && (
                       <span style={{ width: 22, height: 16, display: "inline-block", flexShrink: 0 }}>
                         <Flag title={countryName(iso)} />
                       </span>
-                    ) : null}
+                    )}
                     <span>{countryName(iso)}</span>
-                    <span style={{ marginLeft: "auto", color: "rgba(245,241,230,0.4)", fontSize: 11 }}>
-                      {iso}
-                    </span>
+                    <span style={{ marginLeft: "auto", color: THEME.creamDim, fontSize: 11 }}>{iso}</span>
                   </button>
                 );
               })
@@ -250,15 +234,14 @@ function CountrySearchSelect({ value, onChange }: CountrySelectProps) {
   );
 }
 
+/* ------------------------------------------------------------------
+ * Sélecteur pays téléphone (indicatif)
+ * ------------------------------------------------------------------ */
 interface PhoneCountrySelectProps {
   value?: Country;
   onChange: (value?: Country) => void;
   options: Array<{ value?: Country; label: string; divider?: boolean }>;
-  iconComponent: React.ComponentType<{
-    country: Country;
-    label: string;
-    aspectRatio?: number;
-  }>;
+  iconComponent: React.ComponentType<{ country: Country; label: string; aspectRatio?: number }>;
   disabled?: boolean;
   readOnly?: boolean;
 }
@@ -288,11 +271,8 @@ function PhoneCountrySelect({
   }, [open]);
 
   useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 50);
-    } else {
-      setQuery("");
-    }
+    if (open) setTimeout(() => inputRef.current?.focus(), 50);
+    else setQuery("");
   }, [open]);
 
   const filtered = useMemo(() => {
@@ -315,15 +295,6 @@ function PhoneCountrySelect({
     });
   }, [query, options]);
 
-  const currentDial = useMemo(() => {
-    if (!value) return "";
-    try {
-      return getCountryCallingCode(value);
-    } catch {
-      return "";
-    }
-  }, [value]);
-
   return (
     <div ref={wrapperRef} style={{ position: "relative" }}>
       <button
@@ -333,7 +304,7 @@ function PhoneCountrySelect({
         style={{
           background: "transparent",
           border: "none",
-          color: "#F5F1E6",
+          color: THEME.cream,
           padding: "4px 8px 4px 0",
           cursor: disabled || readOnly ? "not-allowed" : "pointer",
           display: "flex",
@@ -349,17 +320,9 @@ function PhoneCountrySelect({
             <Icon country={value} label={countryName(value)} />
           </span>
         ) : (
-          <span style={{ fontSize: 12, color: "rgba(245,241,230,0.5)" }}>🌐</span>
+          <span style={{ fontSize: 12, color: THEME.creamDim }}>🌐</span>
         )}
-        <svg width="8" height="5" viewBox="0 0 10 6" style={{ opacity: 0.6, marginLeft: 2 }}>
-          <path
-            d="M1 1L5 5L9 1"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-          />
-        </svg>
+        <ChevronDown size={12} style={{ opacity: 0.6 }} />
       </button>
 
       {open && (
@@ -369,14 +332,15 @@ function PhoneCountrySelect({
             top: "calc(100% + 6px)",
             left: 0,
             minWidth: 300,
-            background: "#0A0A0A",
-            border: `0.5px solid rgba(201,160,78,0.4)`,
-            borderRadius: 6,
-            zIndex: 20,
-            maxHeight: 280,
+            background: THEME.bgSoft,
+            border: `1px solid ${THEME.goldLine}`,
+            borderRadius: 10,
+            zIndex: 30,
+            maxHeight: 300,
             display: "flex",
             flexDirection: "column",
-            boxShadow: "0 10px 32px rgba(0,0,0,0.5)",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.6), 0 0 30px rgba(201,160,78,0.08)",
+            overflow: "hidden",
           }}
         >
           <input
@@ -386,11 +350,11 @@ function PhoneCountrySelect({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             style={{
-              background: "rgba(255,255,255,0.04)",
+              background: "rgba(255,255,255,0.03)",
               border: "none",
-              borderBottom: `0.5px solid rgba(201,160,78,0.2)`,
-              color: "#F5F1E6",
-              padding: "12px 14px",
+              borderBottom: `1px solid ${THEME.goldDim}`,
+              color: THEME.cream,
+              padding: "13px 14px",
               fontSize: 13,
               fontFamily: "inherit",
               outline: "none",
@@ -398,9 +362,9 @@ function PhoneCountrySelect({
               boxSizing: "border-box",
             }}
           />
-          <div style={{ overflowY: "auto", maxHeight: 220 }}>
+          <div style={{ overflowY: "auto", maxHeight: 240 }}>
             {filtered.length === 0 ? (
-              <div style={{ padding: "14px 16px", fontSize: 13, color: "rgba(245,241,230,0.5)" }}>
+              <div style={{ padding: "14px 16px", fontSize: 13, color: THEME.creamDim }}>
                 Aucun résultat
               </div>
             ) : (
@@ -425,8 +389,8 @@ function PhoneCountrySelect({
                       width: "100%",
                       background: selected ? "rgba(201,160,78,0.12)" : "transparent",
                       border: "none",
-                      color: "#F5F1E6",
-                      padding: "10px 14px",
+                      color: THEME.cream,
+                      padding: "11px 14px",
                       fontSize: 13,
                       fontFamily: "inherit",
                       display: "flex",
@@ -446,7 +410,7 @@ function PhoneCountrySelect({
                       <Icon country={iso} label={countryName(iso)} />
                     </span>
                     <span style={{ flex: 1 }}>{countryName(iso)}</span>
-                    <span style={{ color: "#C9A04E", fontSize: 12 }}>+{dial}</span>
+                    <span style={{ color: THEME.gold, fontSize: 12 }}>+{dial}</span>
                   </button>
                 );
               })
@@ -458,6 +422,9 @@ function PhoneCountrySelect({
   );
 }
 
+/* ------------------------------------------------------------------
+ * Types
+ * ------------------------------------------------------------------ */
 type CouponState =
   | { status: "idle" }
   | { status: "validating" }
@@ -475,6 +442,101 @@ interface BillingFields {
   country: string;
 }
 
+/* ------------------------------------------------------------------
+ * Header — logo + titre, épuré
+ * ------------------------------------------------------------------ */
+function PaymentHeader({ installments }: { installments: number }) {
+  const planLabel =
+    installments === 1 ? "Paiement comptant" : `Paiement en ${installments} fois`;
+
+  return (
+    <div style={{ textAlign: "center", marginBottom: 40, position: "relative" }}>
+      {/* Halo doré derrière le logo, discret et statique (pas d'animation bruyante) */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: -20,
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: 260,
+          height: 260,
+          background: "radial-gradient(circle, rgba(201,160,78,0.14) 0%, transparent 60%)",
+          filter: "blur(20px)",
+          pointerEvents: "none",
+        }}
+      />
+
+      <div
+        className="alb-logo-ring"
+        style={{
+          width: 72,
+          height: 72,
+          margin: "0 auto 22px",
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(201,160,78,0.12) 0%, rgba(10,10,10,0.9) 72%)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+        }}
+      >
+        <img
+          src={logo}
+          alt="Al Baraka"
+          style={{
+            width: 58,
+            height: 58,
+            objectFit: "contain",
+            filter: "drop-shadow(0 0 10px rgba(201,160,78,0.4))",
+          }}
+        />
+      </div>
+
+      <h1
+        style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: "clamp(28px, 5vw, 36px)",
+          fontWeight: 500,
+          color: THEME.cream,
+          margin: 0,
+          letterSpacing: "0.12em",
+          lineHeight: 1.1,
+        }}
+      >
+        PASS AL BARAKA
+      </h1>
+
+      <div
+        style={{
+          marginTop: 10,
+          fontSize: 10.5,
+          color: THEME.gold,
+          letterSpacing: "0.32em",
+          fontWeight: 500,
+        }}
+      >
+        ÉCOSYSTÈME · BY ETHICARENA
+      </div>
+
+      <div
+        style={{
+          marginTop: 18,
+          fontSize: 12,
+          color: THEME.creamMuted,
+          letterSpacing: "0.08em",
+        }}
+      >
+        {planLabel}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------
+ * Checkout — wrapper Stripe Elements
+ * ------------------------------------------------------------------ */
 export default function Checkout() {
   const params = useParams();
   const [searchParams] = useSearchParams();
@@ -486,9 +548,7 @@ export default function Checkout() {
       ? parsedInstallments
       : 1;
 
-  const missingKeyName = testMode
-    ? "VITE_STRIPE_PUBLISHABLE_KEY_TEST"
-    : "VITE_STRIPE_PUBLISHABLE_KEY";
+  const missingKeyName = testMode ? "VITE_STRIPE_PUBLISHABLE_KEY_TEST" : "VITE_STRIPE_PUBLISHABLE_KEY";
   const publishableKey = testMode
     ? import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_TEST
     : import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -514,29 +574,39 @@ export default function Checkout() {
       appearance: {
         theme: "night" as const,
         variables: {
-          colorPrimary: BRAND.gold,
-          colorBackground: "rgba(255,255,255,0.03)",
-          colorText: BRAND.cream,
+          colorPrimary: THEME.gold,
+          colorBackground: "rgba(255,255,255,0.02)",
+          colorText: THEME.cream,
           colorDanger: "#e15a5a",
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          borderRadius: "6px",
+          fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
+          borderRadius: "10px",
           fontSizeBase: "14px",
+          spacingUnit: "4px",
         },
         rules: {
           ".Input": {
-            border: `0.5px solid ${BRAND.goldSoft}`,
+            border: `1px solid ${THEME.goldDim}`,
             padding: "13px 14px",
+            transition: "border-color 0.15s, box-shadow 0.15s",
           },
           ".Input:focus": {
-            borderColor: BRAND.gold,
-            boxShadow: "none",
+            borderColor: THEME.gold,
+            boxShadow: `0 0 0 3px rgba(201,160,78,0.15)`,
           },
           ".Label": {
-            color: "rgba(245,241,230,0.6)",
+            color: "rgba(245,241,230,0.55)",
             fontSize: "11px",
-            letterSpacing: "1px",
+            letterSpacing: "0.12em",
             textTransform: "uppercase" as const,
+            fontWeight: "500",
+          },
+          ".Tab": {
+            border: `1px solid ${THEME.goldDim}`,
+            padding: "13px 14px",
+          },
+          ".Tab--selected": {
+            borderColor: THEME.gold,
+            boxShadow: `0 0 0 1px ${THEME.gold}`,
           },
         },
       },
@@ -548,95 +618,217 @@ export default function Checkout() {
     <div
       style={{
         minHeight: "100vh",
-        background: BRAND.black,
-        color: BRAND.cream,
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif',
-        padding: "3.5rem 1.5rem 3rem",
-        position: "relative",
-        overflow: "hidden",
+        background: THEME.bg,
+        color: THEME.cream,
+        fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        padding: "4rem 1.25rem 3rem",
       }}
     >
-      <CheckoutBackground />
-      <div style={{ position: "relative", zIndex: 2, maxWidth: 560, margin: "0 auto" }}>
-        <CheckoutHero
-          eyebrow="FÉLICITATIONS"
-          title="PASS AL BARAKA"
-          subtitle="ÉCOSYSTÈME BY ETHICARENA"
-        />
-      </div>
+      <style>{`
+        @keyframes alb-fade-up {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes alb-spin { to { transform: rotate(360deg); } }
 
-      {/* Scène écosystème — laptop + tablette + icônes sociales + lanterne + lune + minarets lointains */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 2,
-          margin: "0 auto 2.5rem",
-          opacity: 0,
-          animation: "alb-eco-in 1.4s ease-out 1.1s forwards",
-        }}
-      >
-        <style>{`
-          @keyframes alb-eco-in {
-            from { opacity: 0; transform: translateY(14px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
-        <DigitalEcosystem />
+        .alb-fade { animation: alb-fade-up 0.7s ease-out both; }
+        .alb-fade-2 { animation: alb-fade-up 0.7s ease-out 0.1s both; }
+
+        /* Field = style unifié pour tous les inputs et selects */
+        .alb-field {
+          background: rgba(255,255,255,0.025);
+          border: 1px solid ${THEME.goldDim};
+          color: ${THEME.cream};
+          padding: 13px 14px;
+          border-radius: 10px;
+          font-size: 14px;
+          font-family: inherit;
+          box-sizing: border-box;
+          width: 100%;
+          transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+          outline: none;
+        }
+        .alb-field::placeholder { color: ${THEME.creamDim}; }
+        .alb-field:hover { border-color: ${THEME.goldLine}; }
+        .alb-field:focus {
+          border-color: ${THEME.gold};
+          background: rgba(255,255,255,0.04);
+          box-shadow: 0 0 0 3px rgba(201,160,78,0.12);
+        }
+
+        /* Section label */
+        .alb-section-label {
+          display: block;
+          font-size: 10.5px;
+          font-weight: 600;
+          letter-spacing: 0.2em;
+          color: ${THEME.gold};
+          text-transform: uppercase;
+          margin-bottom: 14px;
+        }
+
+        /* Checkbox */
+        .alb-checkbox { accent-color: ${THEME.gold}; }
+
+        /* Bouton primaire */
+        .alb-submit {
+          width: 100%;
+          background: linear-gradient(180deg, #DDB968 0%, ${THEME.gold} 100%);
+          color: #1a1200;
+          border: none;
+          border-radius: 12px;
+          padding: 17px 20px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          letter-spacing: 0.12em;
+          font-family: inherit;
+          transition: transform 0.15s, box-shadow 0.25s, filter 0.15s;
+          box-shadow: 0 1px 0 rgba(255,255,255,0.2) inset, 0 0 0 1px ${THEME.gold}, 0 8px 24px rgba(201,160,78,0.25);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+        }
+        .alb-submit:hover:not(:disabled) {
+          transform: translateY(-1px);
+          filter: brightness(1.06);
+          box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 0 0 1px ${THEME.goldBright}, 0 14px 40px rgba(201,160,78,0.45);
+        }
+        .alb-submit:active:not(:disabled) { transform: translateY(0); }
+        .alb-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+        .alb-submit .alb-arrow { transition: transform 0.25s; }
+        .alb-submit:hover:not(:disabled) .alb-arrow { transform: translateX(4px); }
+
+        /* Bouton secondaire (code promo) */
+        .alb-btn-ghost {
+          background: transparent;
+          border: 1px solid ${THEME.goldLine};
+          color: ${THEME.gold};
+          padding: 12px 16px;
+          border-radius: 10px;
+          font-size: 12px;
+          letter-spacing: 0.12em;
+          font-weight: 500;
+          cursor: pointer;
+          font-family: inherit;
+          transition: background 0.15s, border-color 0.15s;
+          white-space: nowrap;
+        }
+        .alb-btn-ghost:hover:not(:disabled) {
+          background: rgba(201,160,78,0.06);
+          border-color: ${THEME.gold};
+        }
+        .alb-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* react-phone-number-input override */
+        .alb-phone .PhoneInput {
+          display: flex;
+          align-items: stretch;
+          gap: 4px;
+          background: rgba(255,255,255,0.025);
+          border: 1px solid ${THEME.goldDim};
+          border-radius: 10px;
+          padding: 0 14px 0 12px;
+          transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+        }
+        .alb-phone .PhoneInput:focus-within {
+          border-color: ${THEME.gold};
+          background: rgba(255,255,255,0.04);
+          box-shadow: 0 0 0 3px rgba(201,160,78,0.12);
+        }
+        .alb-phone .PhoneInputCountry {
+          display: flex;
+          align-items: center;
+          border-right: 1px solid ${THEME.goldDim};
+          padding-right: 10px;
+          margin-right: 6px;
+        }
+        .alb-phone .PhoneInputInput {
+          background: transparent !important;
+          border: none !important;
+          color: ${THEME.cream} !important;
+          font-size: 14px;
+          font-family: inherit;
+          padding: 13px 0 !important;
+          width: 100%;
+          outline: none !important;
+          box-shadow: none !important;
+          min-width: 0;
+          flex: 1;
+        }
+        .alb-phone .PhoneInputInput::placeholder { color: ${THEME.creamDim}; }
+
+        /* Trust badges */
+        .alb-trust {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 11px;
+          color: ${THEME.creamMuted};
+          letter-spacing: 0.08em;
+        }
+      `}</style>
+
+      <div style={{ maxWidth: 440, margin: "0 auto" }}>
+        {stripeKeyMissing && (
+          <div
+            style={{
+              marginBottom: 24,
+              padding: "14px 16px",
+              background: "rgba(225, 90, 90, 0.1)",
+              border: "1px solid rgba(225, 90, 90, 0.5)",
+              borderRadius: 10,
+              color: "#ff9999",
+              fontSize: 12,
+              textAlign: "center",
+            }}
+          >
+            ⚠ Clé publique Stripe non configurée côté Vercel (<code>{missingKeyName}</code>).
+          </div>
+        )}
+        {testMode && (
+          <div
+            style={{
+              marginBottom: 24,
+              padding: "12px 16px",
+              background: "rgba(255, 180, 0, 0.08)",
+              border: "1px solid rgba(255, 180, 0, 0.4)",
+              borderRadius: 10,
+              color: "#FFB400",
+              fontSize: 11.5,
+              textAlign: "center",
+              fontFamily: "monospace",
+              letterSpacing: "0.05em",
+            }}
+          >
+            ⚠ MODE TEST — carte 4242 4242 4242 4242, aucun débit réel
+          </div>
+        )}
+
+        <div className="alb-fade">
+          <PaymentHeader installments={installments} />
+        </div>
+
+        <div className="alb-fade-2">
+          <Elements stripe={stripePromise} options={elementsOptions}>
+            <CheckoutForm
+              installments={installments}
+              testMode={testMode}
+              coupon={coupon}
+              setCoupon={setCoupon}
+              totalAfterDiscount={totalAfterDiscount}
+            />
+          </Elements>
+        </div>
       </div>
-      {stripeKeyMissing && (
-        <div
-          style={{
-            maxWidth: 520,
-            margin: "0 auto 1.5rem",
-            padding: "14px 16px",
-            background: "rgba(225, 90, 90, 0.12)",
-            border: "1px solid rgba(225, 90, 90, 0.55)",
-            borderRadius: 8,
-            color: "#ff9999",
-            fontSize: 12,
-            letterSpacing: 0.3,
-            textAlign: "center",
-            lineHeight: 1.5,
-          }}
-        >
-          ⚠ Clé publique Stripe non configurée côté Vercel (<code>{missingKeyName}</code>).
-          Le paiement ne fonctionnera pas tant qu'elle n'est pas ajoutée dans les variables
-          d'environnement Vercel (puis redéploiement).
-        </div>
-      )}
-      {testMode && (
-        <div
-          style={{
-            maxWidth: 520,
-            margin: "0 auto 1.5rem",
-            padding: "12px 16px",
-            background: "rgba(255, 180, 0, 0.1)",
-            border: "1px solid rgba(255, 180, 0, 0.5)",
-            borderRadius: 8,
-            color: "#FFB400",
-            fontSize: 12,
-            letterSpacing: 1,
-            textAlign: "center",
-            fontFamily: "monospace",
-          }}
-        >
-          ⚠ MODE TEST — utilise la carte 4242 4242 4242 4242, aucun débit réel
-        </div>
-      )}
-      <Elements stripe={stripePromise} options={elementsOptions}>
-        <CheckoutForm
-          installments={installments}
-          testMode={testMode}
-          coupon={coupon}
-          setCoupon={setCoupon}
-          totalAfterDiscount={totalAfterDiscount}
-        />
-      </Elements>
     </div>
   );
 }
 
+/* ------------------------------------------------------------------
+ * Le vrai formulaire
+ * ------------------------------------------------------------------ */
 interface FormProps {
   installments: number;
   testMode: boolean;
@@ -661,17 +853,12 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
   });
 
   const [couponInput, setCouponInput] = useState("");
+  const [couponOpen, setCouponOpen] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const discountPercent = coupon.status === "valid" ? coupon.percent : 0;
   const perInstallment = Math.round((totalAfterDiscount / installments) * 100) / 100;
-
-  const planLabel = installments === 1 ? "Paiement en 1 fois" : `Paiement en ${installments} fois`;
-  const perInstallmentLabel =
-    installments === 1
-      ? formatEur(totalAfterDiscount)
-      : `${formatEur(perInstallment)} × ${installments}`;
 
   function onField<K extends keyof BillingFields>(k: K, v: string) {
     setBilling((b) => ({ ...b, [k]: v }));
@@ -789,7 +976,6 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
         toast.error(confirmErr.message || "Paiement refusé");
         setSubmitting(false);
       }
-      // On success, Stripe redirects to returnUrl.
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erreur inconnue";
       toast.error(msg);
@@ -797,531 +983,54 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
     }
   }
 
+  const buttonLabel =
+    installments === 1
+      ? `Payer ${formatEur(totalAfterDiscount)}`
+      : `Payer ${formatEur(perInstallment)} aujourd'hui`;
+
   return (
     <form
-      className="alb-checkout"
       onSubmit={onSubmit}
       style={{
-        maxWidth: 560,
-        margin: "0 auto",
-        padding: "2.5rem 2rem",
-        border: `0.5px solid rgba(201,160,78,0.22)`,
-        borderRadius: 14,
-        background: "rgba(10,10,10,0.62)",
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
-        boxShadow:
-          "0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,160,78,0.06), inset 0 0 80px rgba(201,160,78,0.02)",
-        position: "relative",
-        zIndex: 2,
+        display: "flex",
+        flexDirection: "column",
+        gap: 32,
       }}
     >
-
-      <style>{`
-        .alb-checkout input[type="text"], .alb-checkout input[type="email"], .alb-checkout input[type="tel"] {
-          background: rgba(255,255,255,0.03);
-          border: 0.5px solid ${BRAND.goldSoft};
-          color: ${BRAND.cream};
-          padding: 13px 14px;
-          border-radius: 8px;
-          font-size: 14px;
-          font-family: inherit;
-          box-sizing: border-box;
-          width: 100%;
-          transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
-        }
-        .alb-checkout .alb-input-wrap > input[type="text"],
-        .alb-checkout .alb-input-wrap > input[type="email"],
-        .alb-checkout .alb-input-wrap > input[type="tel"] {
-          padding-left: 40px;
-        }
-        .alb-checkout input::placeholder { color: rgba(245,241,230,0.35); }
-        .alb-checkout input:focus {
-          outline: none;
-          border-color: ${BRAND.gold};
-          background: rgba(255,255,255,0.05);
-          box-shadow: 0 0 0 3px rgba(201,160,78,0.15), 0 0 20px rgba(201,160,78,0.2);
-        }
-        .alb-checkout input[type="checkbox"] {
-          accent-color: ${BRAND.gold};
-          width: auto;
-          padding: 0;
-        }
-        .alb-input-wrap { position: relative; }
-        .alb-input-wrap .alb-input-icon {
-          position: absolute;
-          left: 14px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: rgba(201,160,78,0.6);
-          pointer-events: none;
-          transition: color 0.2s;
-        }
-        .alb-input-wrap:focus-within .alb-input-icon { color: ${BRAND.gold}; }
-        /* react-phone-number-input overrides pour le thème noir/or */
-        .alb-phone-wrapper .PhoneInput,
-        .alb-phone-wrapper .PhoneInput--focus {
-          display: flex;
-          align-items: stretch;
-          gap: 4px;
-          background: rgba(255,255,255,0.03);
-          border: 0.5px solid ${BRAND.goldSoft};
-          border-radius: 6px;
-          padding: 0 12px 0 10px;
-          transition: border-color 0.2s, background 0.2s;
-          box-shadow: none !important;
-          outline: none !important;
-        }
-        .alb-phone-wrapper .PhoneInput:focus-within {
-          border-color: ${BRAND.gold};
-          background: rgba(255,255,255,0.05);
-        }
-        .alb-phone-wrapper .PhoneInput > * {
-          box-shadow: none !important;
-        }
-        .alb-phone-wrapper .PhoneInputCountry {
-          display: flex;
-          align-items: center;
-          border-right: 0.5px solid rgba(201,160,78,0.15);
-          padding-right: 8px;
-          margin-right: 4px;
-        }
-        .alb-phone-wrapper .PhoneInputInput,
-        .alb-phone-wrapper input.PhoneInputInput {
-          background: transparent !important;
-          border: none !important;
-          color: ${BRAND.cream} !important;
-          font-size: 14px;
-          font-family: inherit;
-          padding: 13px 4px !important;
-          width: 100%;
-          outline: none !important;
-          box-shadow: none !important;
-          border-radius: 0 !important;
-          min-width: 0;
-          flex: 1;
-        }
-        .alb-phone-wrapper .PhoneInputInput::placeholder {
-          color: rgba(245,241,230,0.35);
-        }
-        .alb-phone-wrapper .PhoneInputInput:focus {
-          background: transparent !important;
-          border-color: transparent !important;
-        }
-        .alb-btn {
-          width: 100%;
-          background: linear-gradient(135deg, #DDB968 0%, ${BRAND.gold} 50%, #A88238 100%);
-          background-size: 200% 100%;
-          background-position: 0% 50%;
-          color: ${BRAND.black};
-          border: none;
-          border-radius: 10px;
-          padding: 18px 22px;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          letter-spacing: 3px;
-          font-family: inherit;
-          transition: background-position 0.4s ease, box-shadow 0.3s, transform 0.15s;
-          box-shadow: 0 6px 18px rgba(201,160,78,0.25), 0 0 0 1px rgba(201,160,78,0.4);
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-        }
-        .alb-btn:hover:not(:disabled) {
-          background-position: 100% 50%;
-          box-shadow: 0 10px 40px rgba(201,160,78,0.5), 0 0 0 1px rgba(255,220,140,0.6);
-          transform: translateY(-1px);
-        }
-        .alb-btn:active:not(:disabled) { transform: translateY(0); }
-        .alb-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-        .alb-btn .alb-btn-arrow { transition: transform 0.3s; }
-        .alb-btn:hover:not(:disabled) .alb-btn-arrow { transform: translateX(4px); }
-        .alb-coupon-btn {
-          background: transparent;
-          border: 0.5px solid ${BRAND.gold};
-          color: ${BRAND.gold};
-          padding: 13px 18px;
-          border-radius: 8px;
-          font-size: 12px;
-          letter-spacing: 2px;
-          cursor: pointer;
-          font-family: inherit;
-          white-space: nowrap;
-          transition: background 0.2s, box-shadow 0.2s;
-        }
-        .alb-coupon-btn:hover:not(:disabled) {
-          background: ${BRAND.goldMuted};
-          box-shadow: 0 0 18px rgba(201,160,78,0.2);
-        }
-        .alb-coupon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        /* Card benefit */
-        .alb-benefit {
-          display: flex;
-          gap: 12px;
-          padding: 14px 14px;
-          border: 0.5px solid rgba(201,160,78,0.22);
-          border-radius: 10px;
-          background: rgba(201,160,78,0.03);
-          transition: border-color 0.25s, background 0.25s, transform 0.25s;
-          align-items: flex-start;
-        }
-        .alb-benefit:hover {
-          border-color: rgba(201,160,78,0.55);
-          background: rgba(201,160,78,0.06);
-          transform: translateY(-1px);
-        }
-        .alb-benefit-icon {
-          width: 36px;
-          height: 36px;
-          min-width: 36px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, rgba(201,160,78,0.2), rgba(201,160,78,0.05));
-          border: 0.5px solid rgba(201,160,78,0.4);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: ${BRAND.gold};
-        }
-        /* Reassurance row */
-        .alb-reassure {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 11px;
-          color: rgba(245,241,230,0.55);
-          letter-spacing: 1px;
-        }
-      `}</style>
-
-      {/* Bloc de bienvenue — le logo et le titre principal sont dans le hero au-dessus */}
-      <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-        <p style={{ color: "rgba(245,241,230,0.85)", fontSize: 14.5, margin: 0, lineHeight: 1.85 }}>
-          Bienvenue dans l'écosystème Al Baraka. Tu prends la bonne décision, qu'Allah te facilite ton cheminement. Nous serons avec toi jusqu'au bout.
-        </p>
-      </div>
-
-      <div style={{ marginBottom: "2.5rem" }}>
-        <SectionLabel>CE QUE TU REJOINS</SectionLabel>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
-            gap: 10,
-          }}
-        >
-          {[
-            {
-              Icon: GraduationCap,
-              title: "Plusieurs programmes",
-              body: "Des compétences variées et complémentaires",
-            },
-            {
-              Icon: Users,
-              title: "Coaching sur mesure",
-              body: "Un accompagnement par nos coachs dédiés",
-            },
-            {
-              Icon: Sparkles,
-              title: "Communauté active",
-              body: "Des frères et sœurs animés par les mêmes ambitions",
-            },
-            {
-              Icon: Cpu,
-              title: "Outils IA inclus",
-              body: "Une suite d'intelligence artificielle intégrée",
-            },
-            {
-              Icon: TrendingUp,
-              title: "Perspectives claires",
-              body: "Une évolution pas à pas, structurée et durable",
-            },
-          ].map(({ Icon, title, body }, i) => (
-            <div key={i} className="alb-benefit">
-              <div className="alb-benefit-icon">
-                <Icon size={18} strokeWidth={1.5} />
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: BRAND.cream,
-                    marginBottom: 3,
-                    letterSpacing: 0.2,
-                  }}
-                >
-                  {title}
-                </div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: BRAND.creamMuted,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {body}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Récap paiement — ticket premium */}
-      <div
-        style={{
-          marginBottom: "2.5rem",
-          padding: "26px 24px 22px",
-          border: `0.5px solid rgba(201,160,78,0.35)`,
-          borderRadius: 14,
-          background:
-            "linear-gradient(145deg, rgba(201,160,78,0.08) 0%, rgba(201,160,78,0.02) 100%)",
-          position: "relative",
-          boxShadow: "inset 0 0 50px rgba(201,160,78,0.05), 0 8px 30px rgba(0,0,0,0.3)",
-        }}
-      >
-        {/* Sceau "TA COMMANDE" en haut à droite — avec étoile islamique */}
-        <div
-          style={{
-            position: "absolute",
-            top: -12,
-            right: 18,
-            background: BRAND.black,
-            padding: "4px 12px 4px 6px",
-            border: `0.5px solid ${BRAND.gold}`,
-            borderRadius: 20,
-            fontSize: 9,
-            letterSpacing: 2.5,
-            color: BRAND.gold,
-            fontWeight: 600,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            boxShadow: "0 2px 12px rgba(201,160,78,0.2)",
-          }}
-        >
-          <IslamicStar size={14} />
-          TA COMMANDE
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            fontSize: 12,
-            color: "rgba(245,241,230,0.55)",
-            marginBottom: 4,
-            letterSpacing: 0.5,
-          }}
-        >
-          <span>PROGRAMME</span>
-        </div>
-        <div
-          style={{
-            fontSize: 18,
-            fontWeight: 500,
-            color: BRAND.cream,
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
-            letterSpacing: 2,
-            marginBottom: 16,
-          }}
-        >
-          PASS AL BARAKA
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            padding: "5px 0",
-            fontSize: 13,
-          }}
-        >
-          <span style={{ color: "rgba(245,241,230,0.6)" }}>Accès</span>
-          <span style={{ fontWeight: 500, color: BRAND.cream }}>Immédiat après paiement</span>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            padding: "5px 0",
-            fontSize: 13,
-          }}
-        >
-          <span style={{ color: "rgba(245,241,230,0.6)" }}>Modalité</span>
-          <span style={{ fontWeight: 500, color: BRAND.cream }}>{planLabel}</span>
-        </div>
-
-        {discountPercent > 0 && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "8px 0",
-              fontSize: 13,
-              marginTop: 4,
-            }}
-          >
-            <span style={{ color: "rgba(245,241,230,0.6)" }}>
-              Prix initial
-              <span
-                style={{
-                  marginLeft: 8,
-                  fontSize: 10,
-                  color: BRAND.gold,
-                  background: "rgba(201,160,78,0.12)",
-                  border: `0.5px solid ${BRAND.gold}`,
-                  padding: "2px 8px",
-                  borderRadius: 10,
-                  letterSpacing: 1,
-                  fontWeight: 600,
-                }}
-              >
-                −{discountPercent}%
-              </span>
-            </span>
-            <span style={{ color: "rgba(245,241,230,0.5)", textDecoration: "line-through" }}>
-              {formatEur(TOTAL_EUR)}
-            </span>
-          </div>
-        )}
-
-        <div
-          style={{
-            borderTop: "0.5px solid rgba(201,160,78,0.3)",
-            marginTop: 14,
-            paddingTop: 16,
-            display: "flex",
-            alignItems: "baseline",
-            justifyContent: "space-between",
-            gap: 12,
-            flexWrap: "wrap",
-          }}
-        >
-          <span
-            style={{
-              fontSize: 11,
-              color: "rgba(245,241,230,0.55)",
-              letterSpacing: 2.5,
-              fontWeight: 500,
-            }}
-          >
-            {installments === 1 ? "TOTAL" : "À PAYER AUJOURD'HUI"}
-          </span>
-          <div style={{ textAlign: "right" }}>
-            <div
-              style={{
-                fontSize: "clamp(32px, 6vw, 44px)",
-                fontWeight: 500,
-                color: BRAND.gold,
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
-                letterSpacing: 1,
-                lineHeight: 1,
-                textShadow: "0 0 24px rgba(201,160,78,0.3)",
-              }}
-            >
-              {formatEur(installments === 1 ? totalAfterDiscount : perInstallment)}
-            </div>
-            {installments > 1 && (
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "rgba(245,241,230,0.6)",
-                  marginTop: 8,
-                  letterSpacing: 0.3,
-                  lineHeight: 1.5,
-                }}
-              >
-                puis {installments - 1} × {formatEur(perInstallment)} / mois
-                <br />
-                <span style={{ color: "rgba(245,241,230,0.5)" }}>
-                  total {formatEur(totalAfterDiscount)}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div style={{ marginBottom: "2rem" }}>
-        <SectionLabel>CODE PROMO</SectionLabel>
-        <div style={{ display: "flex", gap: 8 }}>
+      {/* Facturation */}
+      <section>
+        <span className="alb-section-label">Tes coordonnées</span>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
           <input
             type="text"
-            placeholder="Entrer un code"
-            value={couponInput}
-            onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-            disabled={coupon.status === "valid"}
-            style={{ textTransform: "uppercase" }}
-          />
-          {coupon.status === "valid" ? (
-            <button
-              type="button"
-              className="alb-coupon-btn"
-              onClick={() => {
-                setCoupon({ status: "idle" });
-                setCouponInput("");
-              }}
-            >
-              RETIRER
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="alb-coupon-btn"
-              onClick={onApplyCoupon}
-              disabled={coupon.status === "validating" || !couponInput.trim()}
-            >
-              {coupon.status === "validating" ? "…" : "APPLIQUER"}
-            </button>
-          )}
-        </div>
-        {coupon.status === "valid" && (
-          <p style={{ color: BRAND.gold, fontSize: 12, margin: "8px 0 0 0" }}>
-            ✓ Code {coupon.code} appliqué — {coupon.percent}% de réduction
-          </p>
-        )}
-      </div>
-
-      <div style={{ marginBottom: "2.5rem" }}>
-        <SectionLabel>INFORMATIONS DE FACTURATION</SectionLabel>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-          <div className="alb-input-wrap">
-            <input
-              type="text"
-              placeholder="Prénom"
-              value={billing.first_name}
-              onChange={(e) => onField("first_name", e.target.value)}
-              required
-            />
-            <UserIcon className="alb-input-icon" size={16} strokeWidth={1.5} />
-          </div>
-          <div className="alb-input-wrap">
-            <input
-              type="text"
-              placeholder="Nom"
-              value={billing.last_name}
-              onChange={(e) => onField("last_name", e.target.value)}
-              required
-            />
-            <UserIcon className="alb-input-icon" size={16} strokeWidth={1.5} />
-          </div>
-        </div>
-        <div style={{ marginBottom: 10 }} className="alb-input-wrap">
-          <input
-            type="email"
-            placeholder="Adresse e-mail"
-            value={billing.email}
-            onChange={(e) => onField("email", e.target.value)}
+            className="alb-field"
+            placeholder="Prénom"
+            value={billing.first_name}
+            onChange={(e) => onField("first_name", e.target.value)}
+            autoComplete="given-name"
             required
           />
-          <Mail className="alb-input-icon" size={16} strokeWidth={1.5} />
+          <input
+            type="text"
+            className="alb-field"
+            placeholder="Nom"
+            value={billing.last_name}
+            onChange={(e) => onField("last_name", e.target.value)}
+            autoComplete="family-name"
+            required
+          />
         </div>
-        <div style={{ marginBottom: 10 }} className="alb-phone-wrapper">
+        <input
+          type="email"
+          className="alb-field"
+          placeholder="Adresse e-mail"
+          value={billing.email}
+          onChange={(e) => onField("email", e.target.value)}
+          autoComplete="email"
+          required
+          style={{ marginBottom: 10 }}
+        />
+        <div className="alb-phone" style={{ marginBottom: 10 }}>
           <PhoneInput
             international
             defaultCountry="FR"
@@ -1333,57 +1042,42 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
             countrySelectComponent={PhoneCountrySelect}
           />
         </div>
-        <div style={{ marginBottom: 10 }} className="alb-input-wrap">
+        <input
+          type="text"
+          className="alb-field"
+          placeholder="Adresse postale"
+          value={billing.address}
+          onChange={(e) => onField("address", e.target.value)}
+          autoComplete="street-address"
+          required
+          style={{ marginBottom: 10 }}
+        />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10, marginBottom: 10 }}>
           <input
             type="text"
-            placeholder="Adresse postale"
-            value={billing.address}
-            onChange={(e) => onField("address", e.target.value)}
+            className="alb-field"
+            placeholder="Code postal"
+            value={billing.postal_code}
+            onChange={(e) => onField("postal_code", e.target.value)}
+            autoComplete="postal-code"
             required
           />
-          <MapPin className="alb-input-icon" size={16} strokeWidth={1.5} />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10, marginBottom: 10 }}>
-          <div className="alb-input-wrap">
-            <input
-              type="text"
-              placeholder="Code postal"
-              value={billing.postal_code}
-              onChange={(e) => onField("postal_code", e.target.value)}
-              required
-            />
-            <MapPin className="alb-input-icon" size={16} strokeWidth={1.5} />
-          </div>
-          <div className="alb-input-wrap">
-            <input
-              type="text"
-              placeholder="Ville"
-              value={billing.city}
-              onChange={(e) => onField("city", e.target.value)}
-              required
-            />
-            <MapPin className="alb-input-icon" size={16} strokeWidth={1.5} />
-          </div>
-        </div>
-        <div>
-          <CountrySearchSelect
-            value={billing.country}
-            onChange={(iso) => onField("country", iso)}
+          <input
+            type="text"
+            className="alb-field"
+            placeholder="Ville"
+            value={billing.city}
+            onChange={(e) => onField("city", e.target.value)}
+            autoComplete="address-level2"
+            required
           />
         </div>
-      </div>
+        <CountrySearchSelect value={billing.country} onChange={(iso) => onField("country", iso)} />
+      </section>
 
-      <div style={{ marginBottom: "2.5rem" }}>
-        <SectionLabel>INFORMATIONS DE PAIEMENT</SectionLabel>
-        <div
-          style={{
-            padding: "16px 14px",
-            border: `0.5px solid rgba(201,160,78,0.22)`,
-            borderRadius: 10,
-            background:
-              "linear-gradient(180deg, rgba(201,160,78,0.04) 0%, rgba(201,160,78,0.01) 100%)",
-          }}
-        >
+      {/* Paiement */}
+      <section>
+        <span className="alb-section-label">Paiement</span>
         <PaymentElement
           options={{
             layout: "tabs",
@@ -1414,160 +1108,258 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
             },
           }}
         />
-        </div>
-      </div>
+      </section>
 
-      <div
+      {/* Code promo — collapsed par défaut pour alléger visuellement */}
+      <section>
+        {!couponOpen && coupon.status !== "valid" ? (
+          <button
+            type="button"
+            onClick={() => setCouponOpen(true)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: THEME.creamMuted,
+              fontSize: 12.5,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: 0,
+              fontFamily: "inherit",
+            }}
+          >
+            <Tag size={13} style={{ opacity: 0.7 }} />
+            J'ai un code promo
+          </button>
+        ) : (
+          <div>
+            <span className="alb-section-label">Code promo</span>
+            {coupon.status === "valid" ? (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "12px 14px",
+                  background: "rgba(201,160,78,0.08)",
+                  border: `1px solid ${THEME.gold}`,
+                  borderRadius: 10,
+                }}
+              >
+                <span style={{ fontSize: 13, color: THEME.cream, display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  <CheckCircle2 size={15} style={{ color: THEME.gold }} />
+                  <strong style={{ fontWeight: 600 }}>{coupon.code}</strong>
+                  <span style={{ color: THEME.gold }}>−{coupon.percent}%</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCoupon({ status: "idle" });
+                    setCouponInput("");
+                    setCouponOpen(false);
+                  }}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: THEME.creamMuted,
+                    cursor: "pointer",
+                    display: "flex",
+                    padding: 4,
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="text"
+                  className="alb-field"
+                  placeholder="Entre ton code"
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                  style={{ textTransform: "uppercase" }}
+                />
+                <button
+                  type="button"
+                  className="alb-btn-ghost"
+                  onClick={onApplyCoupon}
+                  disabled={coupon.status === "validating" || !couponInput.trim()}
+                >
+                  {coupon.status === "validating" ? "…" : "APPLIQUER"}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* Résumé prix — ligne très nette */}
+      <section
         style={{
-          marginBottom: "1.75rem",
-          padding: "16px 18px",
-          border: `0.5px solid ${BRAND.goldSoft}`,
-          borderRadius: 8,
-          background: BRAND.goldMuted,
+          padding: "20px 20px",
+          border: `1px solid ${THEME.goldLine}`,
+          borderRadius: 14,
+          background:
+            "linear-gradient(180deg, rgba(201,160,78,0.04) 0%, rgba(201,160,78,0.01) 100%)",
         }}
       >
+        {discountPercent > 0 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 12.5,
+              marginBottom: 10,
+              color: THEME.creamMuted,
+            }}
+          >
+            <span>
+              Prix initial{" "}
+              <span
+                style={{
+                  marginLeft: 4,
+                  fontSize: 10,
+                  color: THEME.gold,
+                  background: "rgba(201,160,78,0.1)",
+                  border: `1px solid ${THEME.goldLine}`,
+                  padding: "1px 6px",
+                  borderRadius: 10,
+                  letterSpacing: 1,
+                  fontWeight: 600,
+                }}
+              >
+                −{discountPercent}%
+              </span>
+            </span>
+            <span style={{ textDecoration: "line-through" }}>{formatEur(TOTAL_EUR)}</span>
+          </div>
+        )}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
+        >
+          <span
+            style={{
+              fontSize: 10.5,
+              color: THEME.creamMuted,
+              letterSpacing: "0.22em",
+              fontWeight: 500,
+              textTransform: "uppercase",
+            }}
+          >
+            {installments === 1 ? "Total" : "Aujourd'hui"}
+          </span>
+          <span
+            style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: "clamp(30px, 5vw, 38px)",
+              fontWeight: 500,
+              color: THEME.gold,
+              letterSpacing: 0.5,
+              lineHeight: 1,
+            }}
+          >
+            {formatEur(installments === 1 ? totalAfterDiscount : perInstallment)}
+          </span>
+        </div>
+        {installments > 1 && (
+          <div
+            style={{
+              marginTop: 10,
+              fontSize: 11.5,
+              color: THEME.creamMuted,
+              textAlign: "right",
+              letterSpacing: 0.2,
+            }}
+          >
+            puis {installments - 1} × {formatEur(perInstallment)} / mois · total {formatEur(totalAfterDiscount)}
+          </div>
+        )}
+      </section>
+
+      {/* CGV — compact */}
+      <section>
         <label
           style={{
             display: "flex",
             gap: 10,
-            fontSize: 13,
+            fontSize: 12.5,
             cursor: "pointer",
-            fontWeight: 500,
-            marginBottom: 8,
             alignItems: "flex-start",
-            color: BRAND.cream,
+            color: THEME.cream,
+            lineHeight: 1.55,
           }}
         >
           <input
             type="checkbox"
+            className="alb-checkbox"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
-            style={{ marginTop: 3, flexShrink: 0 }}
+            style={{ marginTop: 3, flexShrink: 0, width: 16, height: 16 }}
           />
-          <span>Je confirme mon inscription au PASS AL BARAKA.</span>
+          <span>
+            Je confirme mon inscription au PASS AL BARAKA. Je souhaite accéder au contenu immédiatement et renonce à mon droit de rétractation de 14 jours (article L221-28 13° du Code de la consommation).
+            {installments > 1 && " Je m'engage sur la totalité du paiement échelonné."}
+          </span>
         </label>
-        <ul
-          style={{
-            margin: "8px 0 0 28px",
-            paddingLeft: 20,
-            listStyle: "disc",
-            color: "rgba(245,241,230,0.6)",
-            fontSize: 12,
-            lineHeight: 1.65,
-          }}
-        >
-          <li style={{ marginBottom: 5 }}>Je souhaite accéder au contenu immédiatement.</li>
-          <li style={{ marginBottom: 5 }}>
-            S'agissant de produits numériques, je renonce à mon droit de rétractation de 14 jours (article L221-28 13° du Code de la consommation).
-          </li>
-          <li>En cas de paiement en plusieurs fois, je m'engage sur la totalité du paiement prévu.</li>
-        </ul>
-      </div>
+      </section>
 
-      <button type="submit" className="alb-btn" disabled={submitting || !stripe}>
+      {/* Bouton */}
+      <button type="submit" className="alb-submit" disabled={submitting || !stripe}>
         {submitting ? (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+          <>
             <span
               style={{
                 width: 14,
                 height: 14,
-                border: "2px solid rgba(10,10,10,0.3)",
-                borderTopColor: BRAND.black,
+                border: "2px solid rgba(26,18,0,0.3)",
+                borderTopColor: "#1a1200",
                 borderRadius: "50%",
                 animation: "alb-spin 0.8s linear infinite",
               }}
             />
-            PAIEMENT EN COURS…
-          </span>
+            <span>Paiement en cours…</span>
+          </>
         ) : (
           <>
-            <Lock size={15} strokeWidth={2.2} />
-            <span>
-              {installments === 1
-                ? `VALIDER MON PASS · ${formatEur(totalAfterDiscount)}`
-                : `PAYER ${formatEur(perInstallment)} AUJOURD'HUI`}
-            </span>
-            <ArrowRight size={16} strokeWidth={2.2} className="alb-btn-arrow" />
+            <Lock size={14} strokeWidth={2.2} />
+            <span>{buttonLabel}</span>
+            <ArrowRight size={15} strokeWidth={2.2} className="alb-arrow" />
           </>
         )}
       </button>
-      <style>{`
-        @keyframes alb-spin { to { transform: rotate(360deg); } }
-      `}</style>
 
-      {/* Rappel paiement échelonné sous le bouton — évite toute confusion sur le montant débité */}
-      {installments > 1 && !submitting && (
-        <div
-          style={{
-            textAlign: "center",
-            marginTop: 12,
-            fontSize: 12.5,
-            color: BRAND.creamSoft,
-            lineHeight: 1.55,
-            letterSpacing: 0.2,
-          }}
-        >
-          <span style={{ color: BRAND.gold, fontWeight: 600 }}>
-            {formatEur(perInstallment)}
-          </span>
-          {" "}débité maintenant,{" "}
-          <br style={{ display: "inline" }} />
-          puis {installments - 1} versements mensuels de{" "}
-          <span style={{ color: BRAND.cream, fontWeight: 500 }}>
-            {formatEur(perInstallment)}
-          </span>
-          {" "}— total{" "}
-          <span style={{ color: BRAND.cream, fontWeight: 500 }}>
-            {formatEur(totalAfterDiscount)}
-          </span>
-          .
-        </div>
-      )}
-
-      {/* Bandeau de réassurance */}
+      {/* Trust badges — ultra discret */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: 22,
-          marginTop: "1.5rem",
+          gap: 20,
           flexWrap: "wrap",
-          padding: "14px 0",
-          borderTop: "0.5px solid rgba(201,160,78,0.2)",
-          borderBottom: "0.5px solid rgba(201,160,78,0.2)",
+          paddingTop: 8,
+          borderTop: `1px solid ${THEME.goldDim}`,
+          marginTop: -12,
         }}
       >
-        <div className="alb-reassure">
-          <Lock size={13} strokeWidth={1.6} style={{ color: BRAND.gold }} />
-          <span>PAIEMENT STRIPE</span>
-        </div>
-        <div className="alb-reassure">
-          <ShieldCheck size={13} strokeWidth={1.6} style={{ color: BRAND.gold }} />
-          <span>SSL · 256 BITS</span>
-        </div>
-        <div className="alb-reassure">
-          <Globe size={13} strokeWidth={1.6} style={{ color: BRAND.gold }} />
-          <span>CONFORME RGPD</span>
-        </div>
-      </div>
-
-      {/* Baseline Al Baraka */}
-      <div
-        style={{
-          textAlign: "center",
-          fontSize: 10,
-          color: "rgba(245,241,230,0.45)",
-          letterSpacing: 3,
-          marginTop: "1.5rem",
-          fontWeight: 500,
-        }}
-      >
-        AL BARAKA · ÉCOSYSTÈME BY ETHICARENA
-      </div>
-
-      <div style={{ display: "flex", justifyContent: "center", marginTop: "1rem" }}>
-        <OrnamentalDivider width={160} />
+        <span className="alb-trust" style={{ paddingTop: 16 }}>
+          <ShieldCheck size={12} strokeWidth={1.8} style={{ color: THEME.gold }} />
+          Paiement sécurisé
+        </span>
+        <span className="alb-trust" style={{ paddingTop: 16 }}>
+          <Lock size={11} strokeWidth={1.8} style={{ color: THEME.gold }} />
+          Stripe · SSL
+        </span>
+        <span className="alb-trust" style={{ paddingTop: 16 }}>
+          <CheckCircle2 size={12} strokeWidth={1.8} style={{ color: THEME.gold }} />
+          RGPD
+        </span>
       </div>
     </form>
   );
