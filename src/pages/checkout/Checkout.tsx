@@ -17,6 +17,22 @@ import flags from "react-phone-number-input/flags";
 import "react-phone-number-input/style.css";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import CheckoutHero from "./CheckoutHero";
+import CheckoutBackground from "./CheckoutBackground";
+import {
+  GraduationCap,
+  Users,
+  Sparkles,
+  Cpu,
+  TrendingUp,
+  Lock,
+  ShieldCheck,
+  Mail,
+  User as UserIcon,
+  MapPin,
+  Globe,
+  ArrowRight,
+} from "lucide-react";
 
 const TOTAL_EUR = 2500;
 
@@ -535,9 +551,19 @@ export default function Checkout() {
         color: BRAND.cream,
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif',
-        padding: "3rem 1.5rem",
+        padding: "3.5rem 1.5rem 3rem",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
+      <CheckoutBackground />
+      <div style={{ position: "relative", zIndex: 2, maxWidth: 560, margin: "0 auto" }}>
+        <CheckoutHero
+          eyebrow="FÉLICITATIONS"
+          title="PASS AL BARAKA"
+          subtitle="ÉCOSYSTÈME BY ETHICARENA"
+        />
+      </div>
       {stripeKeyMissing && (
         <div
           style={{
@@ -756,11 +782,17 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
       className="alb-checkout"
       onSubmit={onSubmit}
       style={{
-        maxWidth: 520,
+        maxWidth: 560,
         margin: "0 auto",
-        padding: "3rem 2rem",
-        border: `0.5px solid rgba(201,160,78,0.2)`,
-        borderRadius: 12,
+        padding: "2.5rem 2rem",
+        border: `0.5px solid rgba(201,160,78,0.22)`,
+        borderRadius: 14,
+        background: "rgba(10,10,10,0.55)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        boxShadow: "0 30px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(201,160,78,0.05)",
+        position: "relative",
+        zIndex: 2,
       }}
     >
       <style>{`
@@ -769,16 +801,41 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
           border: 0.5px solid ${BRAND.goldSoft};
           color: ${BRAND.cream};
           padding: 13px 14px;
-          border-radius: 6px;
+          border-radius: 8px;
           font-size: 14px;
           font-family: inherit;
           box-sizing: border-box;
           width: 100%;
-          transition: border-color 0.2s;
+          transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+        }
+        .alb-checkout .alb-input-wrap > input[type="text"],
+        .alb-checkout .alb-input-wrap > input[type="email"],
+        .alb-checkout .alb-input-wrap > input[type="tel"] {
+          padding-left: 40px;
         }
         .alb-checkout input::placeholder { color: rgba(245,241,230,0.35); }
-        .alb-checkout input:focus { outline: none; border-color: ${BRAND.gold}; background: rgba(255,255,255,0.05); }
-        .alb-checkout input[type="checkbox"] { accent-color: ${BRAND.gold}; width: auto; padding: 0; }
+        .alb-checkout input:focus {
+          outline: none;
+          border-color: ${BRAND.gold};
+          background: rgba(255,255,255,0.05);
+          box-shadow: 0 0 0 3px rgba(201,160,78,0.15), 0 0 20px rgba(201,160,78,0.2);
+        }
+        .alb-checkout input[type="checkbox"] {
+          accent-color: ${BRAND.gold};
+          width: auto;
+          padding: 0;
+        }
+        .alb-input-wrap { position: relative; }
+        .alb-input-wrap .alb-input-icon {
+          position: absolute;
+          left: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: rgba(201,160,78,0.6);
+          pointer-events: none;
+          transition: color 0.2s;
+        }
+        .alb-input-wrap:focus-within .alb-input-icon { color: ${BRAND.gold}; }
         /* react-phone-number-input overrides pour le thème noir/or */
         .alb-phone-wrapper .PhoneInput,
         .alb-phone-wrapper .PhoneInput--focus {
@@ -831,185 +888,357 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
         }
         .alb-btn {
           width: 100%;
-          background: ${BRAND.gold};
+          background: linear-gradient(135deg, #DDB968 0%, ${BRAND.gold} 50%, #A88238 100%);
+          background-size: 200% 100%;
+          background-position: 0% 50%;
           color: ${BRAND.black};
           border: none;
-          border-radius: 8px;
-          padding: 17px 20px;
+          border-radius: 10px;
+          padding: 18px 22px;
           font-size: 14px;
-          font-weight: 500;
+          font-weight: 600;
           cursor: pointer;
           letter-spacing: 3px;
           font-family: inherit;
-          transition: background 0.2s, opacity 0.2s;
+          transition: background-position 0.4s ease, box-shadow 0.3s, transform 0.15s;
+          box-shadow: 0 6px 18px rgba(201,160,78,0.25), 0 0 0 1px rgba(201,160,78,0.4);
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
         }
-        .alb-btn:hover:not(:disabled) { background: #DDB968; }
-        .alb-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .alb-btn:hover:not(:disabled) {
+          background-position: 100% 50%;
+          box-shadow: 0 10px 40px rgba(201,160,78,0.5), 0 0 0 1px rgba(255,220,140,0.6);
+          transform: translateY(-1px);
+        }
+        .alb-btn:active:not(:disabled) { transform: translateY(0); }
+        .alb-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .alb-btn .alb-btn-arrow { transition: transform 0.3s; }
+        .alb-btn:hover:not(:disabled) .alb-btn-arrow { transform: translateX(4px); }
         .alb-coupon-btn {
           background: transparent;
           border: 0.5px solid ${BRAND.gold};
           color: ${BRAND.gold};
           padding: 13px 18px;
-          border-radius: 6px;
+          border-radius: 8px;
           font-size: 12px;
           letter-spacing: 2px;
           cursor: pointer;
           font-family: inherit;
           white-space: nowrap;
-          transition: background 0.2s;
+          transition: background 0.2s, box-shadow 0.2s;
         }
-        .alb-coupon-btn:hover:not(:disabled) { background: ${BRAND.goldMuted}; }
+        .alb-coupon-btn:hover:not(:disabled) {
+          background: ${BRAND.goldMuted};
+          box-shadow: 0 0 18px rgba(201,160,78,0.2);
+        }
         .alb-coupon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        /* Card benefit */
+        .alb-benefit {
+          display: flex;
+          gap: 12px;
+          padding: 14px 14px;
+          border: 0.5px solid rgba(201,160,78,0.22);
+          border-radius: 10px;
+          background: rgba(201,160,78,0.03);
+          transition: border-color 0.25s, background 0.25s, transform 0.25s;
+          align-items: flex-start;
+        }
+        .alb-benefit:hover {
+          border-color: rgba(201,160,78,0.55);
+          background: rgba(201,160,78,0.06);
+          transform: translateY(-1px);
+        }
+        .alb-benefit-icon {
+          width: 36px;
+          height: 36px;
+          min-width: 36px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, rgba(201,160,78,0.2), rgba(201,160,78,0.05));
+          border: 0.5px solid rgba(201,160,78,0.4);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: ${BRAND.gold};
+        }
+        /* Reassurance row */
+        .alb-reassure {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 11px;
+          color: rgba(245,241,230,0.55);
+          letter-spacing: 1px;
+        }
       `}</style>
 
-      <div style={{ textAlign: "center", marginBottom: "2.25rem" }}>
-        <div
-          style={{
-            width: 72,
-            height: 72,
-            margin: "0 auto 20px",
-            background: BRAND.black,
-            border: `1px solid ${BRAND.gold}`,
-            borderRadius: 8,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <svg width="40" height="40" viewBox="0 0 40 40">
-            <text
-              x="20"
-              y="28"
-              textAnchor="middle"
-              fontFamily="Georgia, serif"
-              fontSize="22"
-              fontWeight="400"
-              fill={BRAND.gold}
-              letterSpacing="1.5"
-            >
-              AB
-            </text>
-          </svg>
-        </div>
-        <div style={{ fontSize: 17, fontWeight: 500, letterSpacing: 6, color: BRAND.cream, marginBottom: 6 }}>
-          AL BARAKA
-        </div>
-        <div style={{ fontSize: 10, color: BRAND.gold, letterSpacing: 3 }}>
-          ÉCOSYSTÈME BY ETHICARENA
-        </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginTop: 22 }}>
-          <div style={{ width: 70, height: 0.5, background: BRAND.gold }} />
-          <svg width="8" height="8" viewBox="0 0 8 8">
-            <path d="M4 0L8 4L4 8L0 4Z" fill={BRAND.gold} />
-          </svg>
-          <div style={{ width: 70, height: 0.5, background: BRAND.gold }} />
-        </div>
-      </div>
-
-      <h1
-        style={{
-          fontSize: 24,
-          fontWeight: 500,
-          margin: "0 0 18px 0",
-          letterSpacing: 2.5,
-          textAlign: "center",
-          fontFamily: "Georgia, serif",
-          color: BRAND.cream,
-        }}
-      >
-        PASS AL BARAKA
-      </h1>
-
-      <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-        <p style={{ color: "rgba(245,241,230,0.8)", fontSize: 14, margin: 0, lineHeight: 1.85 }}>
+      {/* Bloc de bienvenue — le logo et le titre principal sont dans le hero au-dessus */}
+      <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
+        <p style={{ color: "rgba(245,241,230,0.85)", fontSize: 14.5, margin: 0, lineHeight: 1.85 }}>
           Bienvenue dans l'écosystème Al Baraka. Tu prends la bonne décision, qu'Allah te facilite ton cheminement. Nous serons avec toi jusqu'au bout.
-        </p>
-        <p style={{ color: BRAND.gold, fontSize: 11, margin: "18px 0 0 0", fontWeight: 500, letterSpacing: 4 }}>
-          — FÉLICITATIONS —
         </p>
       </div>
 
       <div style={{ marginBottom: "2.5rem" }}>
-        <h2 style={{ fontSize: 11, fontWeight: 500, margin: "0 0 16px 0", letterSpacing: 3, color: BRAND.gold }}>
+        <h2
+          style={{
+            fontSize: 11,
+            fontWeight: 500,
+            margin: "0 0 18px 0",
+            letterSpacing: 3,
+            color: BRAND.gold,
+            textAlign: "center",
+          }}
+        >
           CE QUE TU REJOINS
         </h2>
-        <p style={{ color: BRAND.creamMuted, fontSize: 13, lineHeight: 1.75, margin: "0 0 18px 0" }}>
-          Avec le PASS AL BARAKA, tu ne rejoins pas une simple formation — tu intègres un écosystème complet pensé pour t'accompagner dans la durée :
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
+            gap: 10,
+          }}
+        >
           {[
-            "Accès à plusieurs programmes pour développer des compétences variées et complémentaires",
-            "Un accompagnement sur mesure par nos coachs dédiés",
-            "Une communauté active de frères et sœurs animés par les mêmes ambitions",
-            "Des outils d'intelligence artificielle inclus dans ton offre",
-            "Des perspectives d'évolution claires pour progresser pas à pas",
-          ].map((item, i) => (
-            <div key={i} style={{ display: "flex", gap: 11, fontSize: 13, lineHeight: 1.6, color: BRAND.creamSoft }}>
-              <svg width="13" height="13" viewBox="0 0 14 14" style={{ flexShrink: 0, marginTop: 4 }}>
-                <path
-                  d="M2 7L5.5 10.5L12 4"
-                  fill="none"
-                  stroke={BRAND.gold}
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span>{item}</span>
+            {
+              Icon: GraduationCap,
+              title: "Plusieurs programmes",
+              body: "Des compétences variées et complémentaires",
+            },
+            {
+              Icon: Users,
+              title: "Coaching sur mesure",
+              body: "Un accompagnement par nos coachs dédiés",
+            },
+            {
+              Icon: Sparkles,
+              title: "Communauté active",
+              body: "Des frères et sœurs animés par les mêmes ambitions",
+            },
+            {
+              Icon: Cpu,
+              title: "Outils IA inclus",
+              body: "Une suite d'intelligence artificielle intégrée",
+            },
+            {
+              Icon: TrendingUp,
+              title: "Perspectives claires",
+              body: "Une évolution pas à pas, structurée et durable",
+            },
+          ].map(({ Icon, title, body }, i) => (
+            <div key={i} className="alb-benefit">
+              <div className="alb-benefit-icon">
+                <Icon size={18} strokeWidth={1.5} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: BRAND.cream,
+                    marginBottom: 3,
+                    letterSpacing: 0.2,
+                  }}
+                >
+                  {title}
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: BRAND.creamMuted,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {body}
+                </div>
+              </div>
             </div>
           ))}
         </div>
       </div>
 
+      {/* Récap paiement — ticket premium */}
       <div
         style={{
           marginBottom: "2.5rem",
-          padding: "18px 20px",
-          border: `0.5px solid ${BRAND.goldSoft}`,
-          borderRadius: 8,
-          background: BRAND.goldMuted,
+          padding: "26px 24px 22px",
+          border: `0.5px solid rgba(201,160,78,0.35)`,
+          borderRadius: 14,
+          background:
+            "linear-gradient(145deg, rgba(201,160,78,0.08) 0%, rgba(201,160,78,0.02) 100%)",
+          position: "relative",
+          boxShadow: "inset 0 0 50px rgba(201,160,78,0.05), 0 8px 30px rgba(0,0,0,0.3)",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 13 }}>
-          <span style={{ color: "rgba(245,241,230,0.6)" }}>Programme</span>
-          <span style={{ fontWeight: 500, color: BRAND.cream }}>PASS AL BARAKA</span>
+        {/* Coin "wax seal" dorée en haut à droite */}
+        <div
+          style={{
+            position: "absolute",
+            top: -10,
+            right: 18,
+            background: BRAND.black,
+            padding: "3px 12px",
+            border: `0.5px solid ${BRAND.gold}`,
+            borderRadius: 20,
+            fontSize: 9,
+            letterSpacing: 2.5,
+            color: BRAND.gold,
+            fontWeight: 600,
+          }}
+        >
+          TA COMMANDE
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 13 }}>
-          <span style={{ color: "rgba(245,241,230,0.6)" }}>Accès</span>
-          <span style={{ fontWeight: 500, color: BRAND.cream }}>Immédiat après paiement</span>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 13 }}>
-          <span style={{ color: "rgba(245,241,230,0.6)" }}>Modalité</span>
-          <span style={{ fontWeight: 500, color: BRAND.cream }}>{planLabel}</span>
-        </div>
-        {discountPercent > 0 && (
-          <>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 13 }}>
-              <span style={{ color: "rgba(245,241,230,0.6)" }}>Montant initial</span>
-              <span style={{ color: "rgba(245,241,230,0.5)", textDecoration: "line-through" }}>
-                {formatEur(TOTAL_EUR)}
-              </span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 13 }}>
-              <span style={{ color: "rgba(245,241,230,0.6)" }}>Réduction ({discountPercent}%)</span>
-              <span style={{ fontWeight: 500, color: BRAND.gold }}>
-                − {formatEur(TOTAL_EUR - totalAfterDiscount)}
-              </span>
-            </div>
-          </>
-        )}
+
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            padding: "12px 0 2px 0",
-            fontSize: 15,
-            borderTop: "0.5px solid rgba(201,160,78,0.25)",
-            marginTop: 8,
+            fontSize: 12,
+            color: "rgba(245,241,230,0.55)",
+            marginBottom: 4,
+            letterSpacing: 0.5,
           }}
         >
-          <span style={{ color: BRAND.cream }}>Montant</span>
-          <span style={{ fontWeight: 500, color: BRAND.gold, letterSpacing: 1 }}>{perInstallmentLabel}</span>
+          <span>PROGRAMME</span>
+        </div>
+        <div
+          style={{
+            fontSize: 18,
+            fontWeight: 500,
+            color: BRAND.cream,
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            letterSpacing: 2,
+            marginBottom: 16,
+          }}
+        >
+          PASS AL BARAKA
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            padding: "5px 0",
+            fontSize: 13,
+          }}
+        >
+          <span style={{ color: "rgba(245,241,230,0.6)" }}>Accès</span>
+          <span style={{ fontWeight: 500, color: BRAND.cream }}>Immédiat après paiement</span>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            padding: "5px 0",
+            fontSize: 13,
+          }}
+        >
+          <span style={{ color: "rgba(245,241,230,0.6)" }}>Modalité</span>
+          <span style={{ fontWeight: 500, color: BRAND.cream }}>{planLabel}</span>
+        </div>
+
+        {discountPercent > 0 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "8px 0",
+              fontSize: 13,
+              marginTop: 4,
+            }}
+          >
+            <span style={{ color: "rgba(245,241,230,0.6)" }}>
+              Prix initial
+              <span
+                style={{
+                  marginLeft: 8,
+                  fontSize: 10,
+                  color: BRAND.gold,
+                  background: "rgba(201,160,78,0.12)",
+                  border: `0.5px solid ${BRAND.gold}`,
+                  padding: "2px 8px",
+                  borderRadius: 10,
+                  letterSpacing: 1,
+                  fontWeight: 600,
+                }}
+              >
+                −{discountPercent}%
+              </span>
+            </span>
+            <span style={{ color: "rgba(245,241,230,0.5)", textDecoration: "line-through" }}>
+              {formatEur(TOTAL_EUR)}
+            </span>
+          </div>
+        )}
+
+        <div
+          style={{
+            borderTop: "0.5px solid rgba(201,160,78,0.3)",
+            marginTop: 14,
+            paddingTop: 16,
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <span
+            style={{
+              fontSize: 11,
+              color: "rgba(245,241,230,0.55)",
+              letterSpacing: 2.5,
+              fontWeight: 500,
+            }}
+          >
+            TOTAL
+          </span>
+          <div style={{ textAlign: "right" }}>
+            {installments > 1 ? (
+              <>
+                <div
+                  style={{
+                    fontSize: "clamp(28px, 5vw, 36px)",
+                    fontWeight: 500,
+                    color: BRAND.gold,
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    letterSpacing: 1,
+                    lineHeight: 1,
+                    textShadow: "0 0 24px rgba(201,160,78,0.3)",
+                  }}
+                >
+                  {formatEur(perInstallment)}
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "rgba(245,241,230,0.6)",
+                    marginTop: 6,
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  × {installments} versements · soit {formatEur(totalAfterDiscount)}
+                </div>
+              </>
+            ) : (
+              <div
+                style={{
+                  fontSize: "clamp(32px, 6vw, 44px)",
+                  fontWeight: 500,
+                  color: BRAND.gold,
+                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  letterSpacing: 1,
+                  lineHeight: 1,
+                  textShadow: "0 0 24px rgba(201,160,78,0.3)",
+                }}
+              >
+                {formatEur(totalAfterDiscount)}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1060,22 +1289,28 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
           INFORMATIONS DE FACTURATION
         </h2>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-          <input
-            type="text"
-            placeholder="Prénom"
-            value={billing.first_name}
-            onChange={(e) => onField("first_name", e.target.value)}
-            required
-          />
-          <input
-            type="text"
-            placeholder="Nom"
-            value={billing.last_name}
-            onChange={(e) => onField("last_name", e.target.value)}
-            required
-          />
+          <div className="alb-input-wrap">
+            <input
+              type="text"
+              placeholder="Prénom"
+              value={billing.first_name}
+              onChange={(e) => onField("first_name", e.target.value)}
+              required
+            />
+            <UserIcon className="alb-input-icon" size={16} strokeWidth={1.5} />
+          </div>
+          <div className="alb-input-wrap">
+            <input
+              type="text"
+              placeholder="Nom"
+              value={billing.last_name}
+              onChange={(e) => onField("last_name", e.target.value)}
+              required
+            />
+            <UserIcon className="alb-input-icon" size={16} strokeWidth={1.5} />
+          </div>
         </div>
-        <div style={{ marginBottom: 10 }}>
+        <div style={{ marginBottom: 10 }} className="alb-input-wrap">
           <input
             type="email"
             placeholder="Adresse e-mail"
@@ -1083,6 +1318,7 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
             onChange={(e) => onField("email", e.target.value)}
             required
           />
+          <Mail className="alb-input-icon" size={16} strokeWidth={1.5} />
         </div>
         <div style={{ marginBottom: 10 }} className="alb-phone-wrapper">
           <PhoneInput
@@ -1096,7 +1332,7 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
             countrySelectComponent={PhoneCountrySelect}
           />
         </div>
-        <div style={{ marginBottom: 10 }}>
+        <div style={{ marginBottom: 10 }} className="alb-input-wrap">
           <input
             type="text"
             placeholder="Adresse postale"
@@ -1104,22 +1340,29 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
             onChange={(e) => onField("address", e.target.value)}
             required
           />
+          <MapPin className="alb-input-icon" size={16} strokeWidth={1.5} />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10, marginBottom: 10 }}>
-          <input
-            type="text"
-            placeholder="Code postal"
-            value={billing.postal_code}
-            onChange={(e) => onField("postal_code", e.target.value)}
-            required
-          />
-          <input
-            type="text"
-            placeholder="Ville"
-            value={billing.city}
-            onChange={(e) => onField("city", e.target.value)}
-            required
-          />
+          <div className="alb-input-wrap">
+            <input
+              type="text"
+              placeholder="Code postal"
+              value={billing.postal_code}
+              onChange={(e) => onField("postal_code", e.target.value)}
+              required
+            />
+            <MapPin className="alb-input-icon" size={16} strokeWidth={1.5} />
+          </div>
+          <div className="alb-input-wrap">
+            <input
+              type="text"
+              placeholder="Ville"
+              value={billing.city}
+              onChange={(e) => onField("city", e.target.value)}
+              required
+            />
+            <MapPin className="alb-input-icon" size={16} strokeWidth={1.5} />
+          </div>
         </div>
         <div>
           <CountrySearchSelect
@@ -1213,35 +1456,80 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
       </div>
 
       <button type="submit" className="alb-btn" disabled={submitting || !stripe}>
-        {submitting ? "PAIEMENT EN COURS…" : `VALIDER — ${formatEur(totalAfterDiscount)}`}
+        {submitting ? (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+            <span
+              style={{
+                width: 14,
+                height: 14,
+                border: "2px solid rgba(10,10,10,0.3)",
+                borderTopColor: BRAND.black,
+                borderRadius: "50%",
+                animation: "alb-spin 0.8s linear infinite",
+              }}
+            />
+            PAIEMENT EN COURS…
+          </span>
+        ) : (
+          <>
+            <Lock size={15} strokeWidth={2.2} />
+            <span>VALIDER MON PASS · {formatEur(totalAfterDiscount)}</span>
+            <ArrowRight size={16} strokeWidth={2.2} className="alb-btn-arrow" />
+          </>
+        )}
       </button>
+      <style>{`
+        @keyframes alb-spin { to { transform: rotate(360deg); } }
+      `}</style>
 
+      {/* Bandeau de réassurance */}
       <div
         style={{
-          textAlign: "center",
-          marginTop: "1.25rem",
-          fontSize: 11,
-          color: "rgba(245,241,230,0.45)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: 6,
-          letterSpacing: 1,
+          gap: 22,
+          marginTop: "1.5rem",
+          flexWrap: "wrap",
+          padding: "14px 0",
+          borderTop: "0.5px solid rgba(201,160,78,0.2)",
+          borderBottom: "0.5px solid rgba(201,160,78,0.2)",
         }}
       >
-        <svg width="11" height="11" viewBox="0 0 14 14" style={{ flexShrink: 0 }}>
-          <rect x="2.5" y="6" width="9" height="6.5" rx="1" fill="none" stroke="currentColor" strokeWidth="1.2" />
-          <path d="M4.5 6V4C4.5 2.5 5.5 1.5 7 1.5C8.5 1.5 9.5 2.5 9.5 4V6" fill="none" stroke="currentColor" strokeWidth="1.2" />
-        </svg>
-        <span>PAIEMENT SÉCURISÉ · STRIPE</span>
+        <div className="alb-reassure">
+          <Lock size={13} strokeWidth={1.6} style={{ color: BRAND.gold }} />
+          <span>PAIEMENT STRIPE</span>
+        </div>
+        <div className="alb-reassure">
+          <ShieldCheck size={13} strokeWidth={1.6} style={{ color: BRAND.gold }} />
+          <span>SSL · 256 BITS</span>
+        </div>
+        <div className="alb-reassure">
+          <Globe size={13} strokeWidth={1.6} style={{ color: BRAND.gold }} />
+          <span>CONFORME RGPD</span>
+        </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginTop: "2rem" }}>
-        <div style={{ width: 50, height: 0.5, background: "rgba(201,160,78,0.4)" }} />
-        <svg width="6" height="6" viewBox="0 0 8 8">
+      {/* Baseline Al Baraka */}
+      <div
+        style={{
+          textAlign: "center",
+          fontSize: 10,
+          color: "rgba(245,241,230,0.45)",
+          letterSpacing: 3,
+          marginTop: "1.5rem",
+          fontWeight: 500,
+        }}
+      >
+        AL BARAKA · ÉCOSYSTÈME BY ETHICARENA
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: "0.75rem" }}>
+        <div style={{ width: 40, height: 0.5, background: "rgba(201,160,78,0.3)" }} />
+        <svg width="5" height="5" viewBox="0 0 8 8">
           <path d="M4 0L8 4L4 8L0 4Z" fill="rgba(201,160,78,0.5)" />
         </svg>
-        <div style={{ width: 50, height: 0.5, background: "rgba(201,160,78,0.4)" }} />
+        <div style={{ width: 40, height: 0.5, background: "rgba(201,160,78,0.3)" }} />
       </div>
     </form>
   );

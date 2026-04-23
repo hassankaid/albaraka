@@ -1,8 +1,20 @@
 import { useSearchParams } from "react-router-dom";
+import CheckoutHero from "./CheckoutHero";
+import CheckoutBackground from "./CheckoutBackground";
+import {
+  Mail,
+  KeyRound,
+  Users,
+  Compass,
+  CheckCircle2,
+  ShieldCheck,
+  Globe,
+  Lock,
+} from "lucide-react";
 
 const BRAND = {
   gold: "#C9A04E",
-  goldSoft: "rgba(201,160,78,0.2)",
+  goldSoft: "rgba(201,160,78,0.22)",
   goldMuted: "rgba(201,160,78,0.05)",
   cream: "#F5F1E6",
   creamMuted: "rgba(245,241,230,0.65)",
@@ -13,21 +25,25 @@ const BRAND = {
 const STEPS = [
   {
     n: "01",
+    Icon: Mail,
     title: "Consulte ta boîte mail",
     body: "Ouvre l'email que nous venons de t'envoyer. Pense à vérifier tes spams si tu ne le vois pas tout de suite.",
   },
   {
     n: "02",
+    Icon: KeyRound,
     title: "Définis ton mot de passe",
     body: "Clique sur le lien de l'email pour créer ton accès personnel à la plateforme.",
   },
   {
     n: "03",
+    Icon: Users,
     title: "Rejoins la famille sur Discord",
     body: "Dès ta connexion, une étape te proposera de rejoindre notre communauté privée — c'est là que bat le cœur d'Al Baraka.",
   },
   {
     n: "04",
+    Icon: Compass,
     title: "Découvre ton parcours",
     body: "Une fois connecté·e, la plateforme te guidera pas à pas dans ton écosystème Al Baraka.",
   },
@@ -47,64 +63,60 @@ export default function MerciPage() {
         color: BRAND.cream,
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif',
-        padding: "3.5rem 1.5rem",
+        padding: "3.5rem 1.5rem 3rem",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
+      <CheckoutBackground />
+
       <style>{`
-        .alb-conf-step { transition: border-color 0.3s; }
-        .alb-conf-step:hover { border-color: rgba(201,160,78,0.5); }
+        @keyframes alb-check-pop {
+          0% { transform: scale(0.6); opacity: 0; }
+          60% { transform: scale(1.1); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes alb-ring-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(201,160,78,0.5), 0 0 40px rgba(201,160,78,0.2); }
+          50% { box-shadow: 0 0 0 16px rgba(201,160,78,0), 0 0 60px rgba(201,160,78,0.35); }
+        }
+        .alb-step:hover {
+          border-color: rgba(201,160,78,0.55);
+          background: rgba(201,160,78,0.06);
+          transform: translateY(-1px);
+        }
       `}</style>
+
+      <div style={{ position: "relative", zIndex: 2, maxWidth: 560, margin: "0 auto" }}>
+        <CheckoutHero
+          title="AL HAMDOULILAH"
+          subtitle="ÉCOSYSTÈME BY ETHICARENA"
+          compact
+        />
+      </div>
+
       <div
         style={{
-          maxWidth: 520,
+          maxWidth: 560,
           margin: "0 auto",
-          padding: "3rem 2rem",
+          padding: "2.25rem 2rem 2.25rem",
           border: `0.5px solid ${BRAND.goldSoft}`,
-          borderRadius: 12,
+          borderRadius: 14,
+          background: "rgba(10,10,10,0.55)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          boxShadow:
+            "0 30px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(201,160,78,0.05)",
+          position: "relative",
+          zIndex: 2,
         }}
       >
-        <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
+        {/* Cercle de validation — pulse doré animé */}
+        <div style={{ textAlign: "center", marginBottom: "2.25rem" }}>
           <div
             style={{
-              width: 60,
-              height: 60,
-              margin: "0 auto 16px",
-              background: BRAND.black,
-              border: `1px solid ${BRAND.gold}`,
-              borderRadius: 8,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <svg width="34" height="34" viewBox="0 0 40 40">
-              <text
-                x="20"
-                y="28"
-                textAnchor="middle"
-                fontFamily="Georgia, serif"
-                fontSize="19"
-                fontWeight="400"
-                fill={BRAND.gold}
-                letterSpacing="1.5"
-              >
-                AB
-              </text>
-            </svg>
-          </div>
-          <div style={{ fontSize: 14, fontWeight: 500, letterSpacing: 5, color: BRAND.cream, marginBottom: 5 }}>
-            AL BARAKA
-          </div>
-          <div style={{ fontSize: 9, color: BRAND.gold, letterSpacing: 2.5 }}>
-            ÉCOSYSTÈME BY ETHICARENA
-          </div>
-        </div>
-
-        <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-          <div
-            style={{
-              width: 110,
-              height: 110,
+              width: 120,
+              height: 120,
               margin: "0 auto",
               border: `1px solid ${BRAND.gold}`,
               borderRadius: "50%",
@@ -112,44 +124,36 @@ export default function MerciPage() {
               alignItems: "center",
               justifyContent: "center",
               position: "relative",
+              background:
+                "radial-gradient(circle, rgba(201,160,78,0.14) 0%, rgba(10,10,10,0.3) 70%)",
+              animation: "alb-ring-pulse 3s ease-in-out infinite",
             }}
           >
-            <div
+            <CheckCircle2
+              size={58}
+              strokeWidth={1.3}
               style={{
-                position: "absolute",
-                width: 130,
-                height: 130,
-                border: "0.5px solid rgba(201,160,78,0.3)",
-                borderRadius: "50%",
+                color: BRAND.gold,
+                animation: "alb-check-pop 0.9s ease-out",
+                filter: "drop-shadow(0 0 12px rgba(201,160,78,0.6))",
               }}
             />
-            <svg width="52" height="52" viewBox="0 0 52 52">
-              <path
-                d="M14 26L22 34L38 18"
-                fill="none"
-                stroke={BRAND.gold}
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
           </div>
         </div>
 
+        {/* Message d'accueil */}
         <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-          <h1
+          <p
             style={{
-              fontSize: 32,
+              color: BRAND.cream,
+              fontSize: 17,
+              margin: "0 0 18px 0",
+              lineHeight: 1.5,
               fontWeight: 500,
-              margin: "0 0 14px 0",
-              letterSpacing: 1,
-              fontFamily: "Georgia, serif",
-              color: BRAND.gold,
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              letterSpacing: 0.5,
             }}
           >
-            Al Hamdoulilah.
-          </h1>
-          <p style={{ color: BRAND.cream, fontSize: 16, margin: "0 0 20px 0", lineHeight: 1.6, fontWeight: 500 }}>
             Félicitations pour ce choix courageux.
           </p>
           <p
@@ -158,7 +162,7 @@ export default function MerciPage() {
               fontSize: 14,
               margin: "0 auto",
               lineHeight: 1.85,
-              maxWidth: 400,
+              maxWidth: 440,
             }}
           >
             Tu fais désormais partie de la famille Al Baraka. Investir en toi, dans tes compétences, dans un écosystème aligné avec tes valeurs, c'est la plus belle décision que tu aies prise aujourd'hui.
@@ -166,68 +170,67 @@ export default function MerciPage() {
           <p
             style={{
               color: BRAND.gold,
-              fontSize: 13,
-              margin: "18px 0 0 0",
+              fontSize: 12,
+              margin: "22px 0 0 0",
               fontWeight: 500,
               fontStyle: "italic",
-              letterSpacing: 0.5,
+              letterSpacing: 1,
             }}
           >
-            Félicitations encore une fois.
+            — Félicitations encore une fois —
           </p>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 12,
-            marginBottom: "2.5rem",
-          }}
-        >
-          <div style={{ width: 70, height: 0.5, background: BRAND.gold }} />
-          <svg width="8" height="8" viewBox="0 0 8 8">
-            <path d="M4 0L8 4L4 8L0 4Z" fill={BRAND.gold} />
-          </svg>
-          <div style={{ width: 70, height: 0.5, background: BRAND.gold }} />
-        </div>
-
+        {/* Email d'accès — card premium */}
         <div
           style={{
             marginBottom: "2.5rem",
             padding: "20px 22px",
-            border: `1px solid ${BRAND.gold}`,
-            borderRadius: 8,
-            background: BRAND.goldMuted,
+            border: `0.5px solid ${BRAND.gold}`,
+            borderRadius: 12,
+            background:
+              "linear-gradient(145deg, rgba(201,160,78,0.1) 0%, rgba(201,160,78,0.02) 100%)",
             display: "flex",
             gap: 16,
             alignItems: "center",
+            boxShadow: "inset 0 0 40px rgba(201,160,78,0.04)",
           }}
         >
-          <div style={{ flexShrink: 0 }}>
-            <svg width="34" height="34" viewBox="0 0 34 34">
-              <rect x="3" y="7" width="28" height="20" rx="2" fill="none" stroke={BRAND.gold} strokeWidth="1.2" />
-              <path
-                d="M3 9L17 19L31 9"
-                fill="none"
-                stroke={BRAND.gold}
-                strokeWidth="1.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+          <div
+            style={{
+              flexShrink: 0,
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              background: "rgba(201,160,78,0.15)",
+              border: `0.5px solid ${BRAND.gold}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: BRAND.gold,
+            }}
+          >
+            <Mail size={20} strokeWidth={1.4} />
           </div>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 500, color: BRAND.cream, marginBottom: 4 }}>
+            <div
+              style={{
+                fontSize: 14.5,
+                fontWeight: 600,
+                color: BRAND.cream,
+                marginBottom: 4,
+                letterSpacing: 0.2,
+              }}
+            >
               Ton email d'accès t'attend
             </div>
-            <div style={{ fontSize: 12, color: "rgba(245,241,230,0.7)", lineHeight: 1.55 }}>
+            <div style={{ fontSize: 12.5, color: "rgba(245,241,230,0.75)", lineHeight: 1.55 }}>
               Nous venons de t'envoyer un email avec ta facture et le lien pour définir ton mot de passe.
             </div>
           </div>
         </div>
 
+        {/* Étapes */}
         <div style={{ marginBottom: "2rem" }}>
           <h2
             style={{
@@ -245,82 +248,189 @@ export default function MerciPage() {
           {STEPS.map((s, i) => (
             <div
               key={s.n}
-              className="alb-conf-step"
+              className="alb-step"
               style={{
                 display: "flex",
-                gap: 16,
+                gap: 14,
                 padding: "16px 18px",
                 border: `0.5px solid ${BRAND.goldSoft}`,
-                borderRadius: 8,
+                borderRadius: 10,
                 marginBottom: i === STEPS.length - 1 ? 0 : 10,
                 alignItems: "flex-start",
+                transition: "border-color 0.25s, background 0.25s, transform 0.25s",
+                background: "rgba(201,160,78,0.02)",
               }}
             >
               <div
                 style={{
                   flexShrink: 0,
-                  fontFamily: "Georgia, serif",
-                  fontSize: 20,
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  background:
+                    "linear-gradient(135deg, rgba(201,160,78,0.22), rgba(201,160,78,0.05))",
+                  border: "0.5px solid rgba(201,160,78,0.45)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   color: BRAND.gold,
-                  fontWeight: 400,
-                  lineHeight: 1,
-                  minWidth: 28,
+                  position: "relative",
                 }}
               >
-                {s.n}
+                <s.Icon size={18} strokeWidth={1.5} />
+                <span
+                  style={{
+                    position: "absolute",
+                    top: -6,
+                    right: -6,
+                    background: BRAND.black,
+                    color: BRAND.gold,
+                    border: `0.5px solid ${BRAND.gold}`,
+                    borderRadius: 10,
+                    fontSize: 9,
+                    padding: "1px 6px",
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    letterSpacing: 0.5,
+                    fontWeight: 600,
+                  }}
+                >
+                  {s.n}
+                </span>
               </div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: BRAND.cream, marginBottom: 4 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: BRAND.cream,
+                    marginBottom: 4,
+                    letterSpacing: 0.2,
+                  }}
+                >
                   {s.title}
                 </div>
-                <div style={{ fontSize: 13, color: BRAND.creamMuted, lineHeight: 1.55 }}>{s.body}</div>
+                <div style={{ fontSize: 13, color: BRAND.creamMuted, lineHeight: 1.6 }}>
+                  {s.body}
+                </div>
               </div>
             </div>
           ))}
         </div>
 
+        {/* Baraka */}
         <div
           style={{
             textAlign: "center",
-            fontSize: 12,
-            color: "rgba(245,241,230,0.55)",
+            fontSize: 12.5,
+            color: "rgba(245,241,230,0.65)",
             lineHeight: 1.7,
-            paddingTop: "1rem",
+            paddingTop: "1.25rem",
             fontStyle: "italic",
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
           }}
         >
           Qu'Allah facilite ton parcours, inshaAllah.
         </div>
 
-        {ref && (
-          <div
-            style={{
-              textAlign: "center",
-              fontSize: 10,
-              color: "rgba(245,241,230,0.25)",
-              marginTop: 16,
-              fontFamily: "monospace",
-            }}
-          >
-            Réf. {ref.slice(-12)}
-          </div>
-        )}
-
+        {/* Ornement bas */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: 12,
-            marginTop: "2rem",
+            marginTop: "1.75rem",
           }}
         >
-          <div style={{ width: 50, height: 0.5, background: "rgba(201,160,78,0.4)" }} />
-          <svg width="6" height="6" viewBox="0 0 8 8">
-            <path d="M4 0L8 4L4 8L0 4Z" fill="rgba(201,160,78,0.5)" />
+          <div
+            style={{
+              width: 70,
+              height: 0.5,
+              background:
+                "linear-gradient(90deg, transparent 0%, rgba(201,160,78,0.5) 100%)",
+            }}
+          />
+          <svg width="7" height="7" viewBox="0 0 8 8">
+            <path d="M4 0L8 4L4 8L0 4Z" fill={BRAND.gold} opacity="0.7" />
           </svg>
-          <div style={{ width: 50, height: 0.5, background: "rgba(201,160,78,0.4)" }} />
+          <div
+            style={{
+              width: 70,
+              height: 0.5,
+              background:
+                "linear-gradient(90deg, rgba(201,160,78,0.5) 0%, transparent 100%)",
+            }}
+          />
         </div>
+
+        {/* Bandeau de réassurance */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 22,
+            marginTop: "1.5rem",
+            flexWrap: "wrap",
+            padding: "14px 0 0",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 11,
+              color: "rgba(245,241,230,0.55)",
+              letterSpacing: 1,
+            }}
+          >
+            <Lock size={13} strokeWidth={1.6} style={{ color: BRAND.gold }} />
+            <span>PAIEMENT STRIPE</span>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 11,
+              color: "rgba(245,241,230,0.55)",
+              letterSpacing: 1,
+            }}
+          >
+            <ShieldCheck size={13} strokeWidth={1.6} style={{ color: BRAND.gold }} />
+            <span>SSL · 256 BITS</span>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 11,
+              color: "rgba(245,241,230,0.55)",
+              letterSpacing: 1,
+            }}
+          >
+            <Globe size={13} strokeWidth={1.6} style={{ color: BRAND.gold }} />
+            <span>CONFORME RGPD</span>
+          </div>
+        </div>
+
+        {/* Référence */}
+        {ref && (
+          <div
+            style={{
+              textAlign: "center",
+              fontSize: 10,
+              color: "rgba(245,241,230,0.25)",
+              marginTop: 18,
+              fontFamily: "monospace",
+              letterSpacing: 0.5,
+            }}
+          >
+            Réf. {ref.slice(-12)}
+          </div>
+        )}
       </div>
     </div>
   );
