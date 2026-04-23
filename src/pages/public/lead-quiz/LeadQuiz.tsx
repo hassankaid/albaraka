@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { isValidPhoneNumber } from "react-phone-number-input";
 import {
   pingView,
   resolveQuiz,
@@ -47,10 +48,12 @@ function validateEmail(email: string): { valid: boolean; error: string | null } 
 }
 
 function validatePhone(phone: string): { valid: boolean; error: string | null } {
-  if (!phone || phone.trim().length < 6) return { valid: false, error: "Numéro de téléphone requis" };
-  const cleaned = phone.replace(/[\s\-.()]/g, "");
-  if (!/^\+?[0-9]{8,15}$/.test(cleaned)) return { valid: false, error: "Numéro invalide (8 à 15 chiffres)" };
-  if (/^(.)\1{7,}$/.test(cleaned.replace("+", ""))) return { valid: false, error: "Ce numéro ne semble pas valide" };
+  if (!phone || phone.trim().length < 4) return { valid: false, error: "Numéro de téléphone requis" };
+  try {
+    if (!isValidPhoneNumber(phone)) return { valid: false, error: "Numéro invalide" };
+  } catch {
+    return { valid: false, error: "Numéro invalide" };
+  }
   return { valid: true, error: null };
 }
 
@@ -519,7 +522,10 @@ export default function LeadQuiz() {
   const canSubmitPhone = phoneCheck.valid;
 
   const handlePhoneSubmit = async () => {
-    if (!state.submissionId) return;
+    if (!state.submissionId) {
+      dispatch({ type: "SET_FORM_ERRORS", errors: { phone: "Session expirée. Rafraîchis la page." } });
+      return;
+    }
     const pCheck = validatePhone(state.phone);
     if (!pCheck.valid) {
       dispatch({ type: "SET_FORM_ERRORS", errors: { phone: pCheck.error ?? "Numéro invalide" } });
@@ -531,8 +537,36 @@ export default function LeadQuiz() {
       dispatch({ type: "MARK_PHONE_CAPTURED" });
       dispatch({ type: "SET_FORM_ERRORS", errors: {} });
       dispatch({ type: "SET_PHASE", phase: "conference" });
-    } catch {
-      dispatch({ type: "SET_FORM_ERRORS", errors: { phone: "Un problème est survenu, réessaye." } });
+    } catch (e: any) {
+      const msg = e?.message ?? String(e);
+      // Tentative de récupération auto : si la submission est introuvable
+      // (cache LocalStorage périmé), on recrée une submission et on réessaye.
+      if (msg.includes("submission_not_found")) {
+        try {
+          const { submission_id } = await submitEmailCapture({
+            slug: slugLower,
+            first_name: state.firstName,
+            last_name: state.lastName,
+            email: state.email,
+            referrer: document.referrer || null,
+          });
+          dispatch({ type: "SET_SUBMISSION_ID", id: submission_id });
+          storeSubmission(slugLower, submission_id);
+          await submitPhoneCapture({ submission_id, phone: state.phone.trim() });
+          dispatch({ type: "MARK_PHONE_CAPTURED" });
+          dispatch({ type: "SET_FORM_ERRORS", errors: {} });
+          dispatch({ type: "SET_PHASE", phase: "conference" });
+        } catch (e2: any) {
+          console.error("[quiz] phone submit recovery failed", e2);
+          dispatch({ type: "SET_FORM_ERRORS", errors: { phone: "Un problème est survenu, réessaye dans un instant." } });
+        }
+      } else {
+        console.error("[quiz] phone submit failed", e);
+        const friendly = msg.includes("invalid_phone")
+          ? "Numéro invalide, vérifie le format."
+          : "Un problème est survenu, réessaye dans un instant.";
+        dispatch({ type: "SET_FORM_ERRORS", errors: { phone: friendly } });
+      }
     } finally {
       dispatch({ type: "SET_SUBMITTING_PHONE", value: false });
     }
