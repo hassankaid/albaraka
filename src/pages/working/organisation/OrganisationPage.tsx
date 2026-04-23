@@ -5,12 +5,13 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Flame, ArrowLeft, ArrowRight, Sparkles, RefreshCw, Trash2, CheckCheck } from "lucide-react";
+import { Flame, ArrowLeft, ArrowRight, Sparkles, RefreshCw, Trash2, CheckCheck, CalendarCog } from "lucide-react";
 import { toast } from "sonner";
 import { useUserPass } from "@/hooks/useUserPass";
 import { BARAKA_QUESTIONS, LIBERTY_QUESTIONS, type Question } from "./lib/questions";
-import { generatePlanning, type Answers, type WeekPlan } from "./lib/generatePlanning";
+import { generatePlanning, type Answers, type DayOverrides, type WeekPlan } from "./lib/generatePlanning";
 import { QuestionCard } from "./components/QuestionEditors";
+import { DayOverridesEditor } from "./components/DayOverridesEditor";
 import { WeeklyAgenda } from "./components/WeeklyAgenda";
 import {
   useCoachingSlots,
@@ -37,6 +38,10 @@ export default function OrganisationPage() {
   const [plan, setPlan] = useState<WeekPlan | null>(null);
   const [version, setVersion] = useState(1);
   const [showRefinement, setShowRefinement] = useState(false);
+  const [showDayEditor, setShowDayEditor] = useState(false);
+  /** Buffer local des overrides pendant l'édition, pour ne pas
+   *  écraser les réponses tant que l'élève n'a pas validé. */
+  const [draftOverrides, setDraftOverrides] = useState<DayOverrides | undefined>(undefined);
 
   // Initialisation à partir du state BDD
   useEffect(() => {
@@ -108,6 +113,38 @@ export default function OrganisationPage() {
     setStep("questionnaire");
     setQIndex(0);
     setShowRefinement(false);
+  };
+
+  const handleOpenDayEditor = () => {
+    setDraftOverrides(answers.day_overrides);
+    setShowRefinement(false);
+    setShowDayEditor(true);
+  };
+
+  const handleApplyDayEditor = async () => {
+    try {
+      const newAnswers: Answers = { ...answers, day_overrides: draftOverrides };
+      const coachings = coachingsQuery.data ?? [];
+      const newPlan = generatePlanning(newAnswers, pack, coachings);
+      const selectedIds = (newAnswers.coachings ?? []) as string[];
+      await saveMutation.mutateAsync({
+        answers: newAnswers,
+        plan: newPlan,
+        selectedRecurrenceIds: selectedIds,
+      });
+      setAnswers(newAnswers);
+      setPlan(newPlan);
+      setVersion((v) => v + 1);
+      setShowDayEditor(false);
+      const count = Object.keys(draftOverrides || {}).length;
+      toast.success(
+        count > 0
+          ? `Planning mis à jour · ${count} ${count > 1 ? "jours personnalisés" : "jour personnalisé"}`
+          : "Planning mis à jour"
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erreur");
+    }
   };
 
   // ─────────── LOADING ───────────
@@ -208,25 +245,94 @@ export default function OrganisationPage() {
             <SheetHeader>
               <SheetTitle>Ajuster ton planning</SheetTitle>
               <SheetDescription>
-                Modifie tes réponses pour régénérer un planning adapté.
+                Modifie tes réponses ou tes horaires pour régénérer un planning adapté.
               </SheetDescription>
             </SheetHeader>
             <div className="mt-6 space-y-3">
+              {/* Action prioritaire — nouveau raccourci vers les exceptions par jour */}
               <Button
-                onClick={handleRestart}
-                variant="outline"
+                onClick={handleOpenDayEditor}
                 className="w-full justify-start gap-2"
               >
-                <RefreshCw className="h-4 w-4" />
-                Refaire le questionnaire
+                <CalendarCog className="h-4 w-4" />
+                Personnaliser mes horaires par jour
               </Button>
+              <div className="text-[11px] text-muted-foreground px-1 -mt-1">
+                Parfait pour ajouter une exception (shift, sport, jour férié…) sans refaire tout le questionnaire.
+              </div>
+
+              <div className="border-t border-border/60 my-4" />
+
               <Button
                 onClick={handleRegenerateFromAnswers}
                 disabled={saveMutation.isPending}
+                variant="outline"
                 className="w-full justify-start gap-2"
               >
                 <CheckCheck className="h-4 w-4" />
                 Régénérer depuis mes réponses actuelles
+              </Button>
+              <Button
+                onClick={handleRestart}
+                variant="ghost"
+                className="w-full justify-start gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refaire le questionnaire entier
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {/* Éditeur dédié aux horaires par jour */}
+        <Sheet open={showDayEditor} onOpenChange={setShowDayEditor}>
+          <SheetContent
+            side="right"
+            className="overflow-y-auto sm:max-w-lg w-full"
+          >
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <CalendarCog className="h-5 w-5 text-primary" />
+                Horaires par jour
+              </SheetTitle>
+              <SheetDescription>
+                Ajoute des exceptions aux horaires que tu as renseignés dans le questionnaire.
+                Les jours non modifiés garderont tes horaires habituels.
+              </SheetDescription>
+            </SheetHeader>
+
+            <div className="mt-5">
+              <DayOverridesEditor
+                value={draftOverrides}
+                onChange={setDraftOverrides}
+                answers={answers}
+                mode={
+                  answers.profile === "Étudiant(e)"
+                    ? "study"
+                    : answers.profile === "Salarié(e)" ||
+                      (answers.has_job && answers.has_job !== "Non")
+                    ? "work"
+                    : "none"
+                }
+              />
+            </div>
+
+            {/* Actions collées en bas avec sécurité */}
+            <div className="sticky bottom-0 left-0 right-0 -mx-6 px-6 pt-4 pb-4 mt-6 bg-background border-t flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowDayEditor(false)}
+                className="flex-1"
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleApplyDayEditor}
+                disabled={saveMutation.isPending}
+                className="flex-1 gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                {saveMutation.isPending ? "…" : "Enregistrer et régénérer"}
               </Button>
             </div>
           </SheetContent>
