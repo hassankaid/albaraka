@@ -130,7 +130,7 @@ export default function OrganisationPage() {
     const isLast = qIndex >= visibleQuestions.length - 1;
     const canNext = currentQ
       ? answers[currentQ.id] !== undefined && answers[currentQ.id] !== "" ||
-        ["coaching_select", "task_select", "custom_tasks", "blocked_slots"].includes(currentQ.type)
+        ["coaching_select", "task_select", "custom_tasks", "blocked_slots", "day_overrides"].includes(currentQ.type)
       : false;
 
     return (
@@ -153,6 +153,7 @@ export default function OrganisationPage() {
                 value={answers[currentQ.id]}
                 onChange={handleAnswer}
                 coachings={coachingsQuery.data ?? []}
+                answers={answers}
               />
             )}
           </CardContent>

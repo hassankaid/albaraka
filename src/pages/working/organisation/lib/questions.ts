@@ -2,7 +2,8 @@ import { ALL_DAYS } from "./predefinedTasks";
 
 export type QuestionType =
   | "select" | "multi" | "number" | "time" | "text"
-  | "blocked_slots" | "coaching_select" | "task_select" | "custom_tasks";
+  | "blocked_slots" | "coaching_select" | "task_select" | "custom_tasks"
+  | "day_overrides";
 
 export interface Question {
   id: string;
@@ -37,6 +38,12 @@ export const BARAKA_QUESTIONS: Question[] = [
   { id: "wake_weekend", type: "time", label: "Réveil le week-end ?" },
   { id: "sleep_week", type: "time", label: "Coucher en semaine ?" },
   { id: "sleep_weekend", type: "time", label: "Coucher le week-end ?" },
+  {
+    id: "day_overrides",
+    type: "day_overrides",
+    label: "Tes horaires varient selon les jours ?",
+    subtitle: "Optionnel. Si tes horaires habituels te conviennent pour toute la semaine, tu peux passer cette étape. Sinon, personnalise jour par jour.",
+  },
   { id: "morning_routine", type: "select", label: "Routine matinale ?", options: ["Non", "~30 min", "~1h", "+1h"] },
   { id: "religious", type: "select", label: "Obligations religieuses à horaires fixes ?", options: ["Non", "Oui, 5 prières", "Oui, méditation", "Oui, autre"] },
   { id: "sport", type: "select", label: "Sport régulier ?", options: ["Non", "1-2x/sem", "3-4x/sem", "Tous les jours"] },
@@ -84,6 +91,12 @@ export const LIBERTY_QUESTIONS: Question[] = [
   { id: "wake_weekend", type: "time", label: "Réveil le week-end ?" },
   { id: "sleep_week", type: "time", label: "Coucher en semaine ?" },
   { id: "sleep_weekend", type: "time", label: "Coucher le week-end ?" },
+  {
+    id: "day_overrides",
+    type: "day_overrides",
+    label: "Tes horaires varient selon les jours ?",
+    subtitle: "Optionnel. Si tes horaires habituels te conviennent pour toute la semaine, tu peux passer cette étape. Sinon, personnalise jour par jour.",
+  },
   { id: "morning_routine", type: "select", label: "Routine matinale ?", options: ["Non", "~30 min", "~1h", "+1h"] },
   { id: "religious", type: "select", label: "Obligations religieuses à horaires fixes ?", options: ["Non", "Oui, 5 prières", "Oui, méditation", "Oui, autre"] },
   { id: "sport", type: "select", label: "Sport régulier ?", options: ["Non", "1-2x/sem", "3-4x/sem", "Tous les jours"] },

@@ -27,6 +27,31 @@ export interface CustomTask {
   time?: string;
 }
 
+/**
+ * Surcharge ponctuelle des horaires d'un jour spécifique.
+ * Si un champ est absent, on retombe sur la valeur globale de Answers.
+ */
+export interface DayOverride {
+  wake?: string;  // "06:30"
+  sleep?: string; // "23:30"
+  work?: {
+    /** L'élève ne travaille PAS ce jour (même s'il est dans work_days globalement). */
+    disabled?: boolean;
+    /** L'élève travaille ce jour (même s'il n'est pas dans work_days globalement). */
+    forced?: boolean;
+    start?: string; // "09:00"
+    end?: string;   // "17:00"
+  };
+  study?: {
+    disabled?: boolean;
+    forced?: boolean;
+    start?: string;
+    end?: string;
+  };
+}
+
+export type DayOverrides = Partial<Record<DayName, DayOverride>>;
+
 export interface PlanSlot {
   h: number;
   m: number;
@@ -61,7 +86,58 @@ export interface Answers {
   selected_tasks?: Record<string, number>;
   custom_tasks?: CustomTask[];
   blocked_slots?: BlockedSlot[];
+  /** Exceptions d'horaires pour certains jours. Optionnel et rétrocompatible. */
+  day_overrides?: DayOverrides;
   [key: string]: any;
+}
+
+/* ────────────────────────────────────────────────────────────
+ * Helpers pour lire les horaires d'un jour en tenant compte
+ * des day_overrides éventuels. Une valeur surchargée pour un
+ * jour prime toujours sur la valeur globale.
+ * ──────────────────────────────────────────────────────────── */
+
+function parseHour(s?: string | null, fallback = 0): number {
+  if (!s) return fallback;
+  const h = parseInt(String(s).split(":")[0]);
+  return Number.isFinite(h) ? h : fallback;
+}
+
+export function resolveDayWake(day: DayName, a: Answers, fallbackWake = 7, fallbackWakeWE = 8): number {
+  const ov = a.day_overrides?.[day]?.wake;
+  if (ov) return parseHour(ov, fallbackWake);
+  const isWE = day === "Samedi" || day === "Dimanche";
+  return parseHour(isWE ? a.wake_weekend : a.wake_week, isWE ? fallbackWakeWE : fallbackWake);
+}
+
+export function resolveDaySleep(day: DayName, a: Answers, fallbackSleep = 23, fallbackSleepWE = 23): number {
+  const ov = a.day_overrides?.[day]?.sleep;
+  if (ov) return parseHour(ov, fallbackSleep);
+  const isWE = day === "Samedi" || day === "Dimanche";
+  const raw = parseHour(isWE ? a.sleep_weekend : a.sleep_week, isWE ? fallbackSleepWE : fallbackSleep);
+  return raw || (isWE ? 24 : 23);
+}
+
+export function resolveDayWork(day: DayName, a: Answers): { start: number; end: number } | null {
+  const ov = a.day_overrides?.[day]?.work;
+  if (ov?.disabled) return null;
+  const inWorkDays = (a.work_days || []).includes(day);
+  const forced = ov?.forced === true;
+  if (!inWorkDays && !forced) return null;
+  const start = parseHour(ov?.start || a.work_start, 8);
+  const end = parseHour(ov?.end || a.work_end, 17);
+  return { start, end };
+}
+
+export function resolveDayStudy(day: DayName, a: Answers): { start: number; end: number } | null {
+  const ov = a.day_overrides?.[day]?.study;
+  if (ov?.disabled) return null;
+  const inStudyDays = (a.study_days || []).includes(day);
+  const forced = ov?.forced === true;
+  if (!inStudyDays && !forced) return null;
+  const start = parseHour(ov?.start || a.study_start, 8);
+  const end = parseHour(ov?.end || a.study_end, 16);
+  return { start, end };
 }
 
 export function generatePlanning(
@@ -75,12 +151,6 @@ export function generatePlanning(
   const sleepH = parseInt((answers.sleep_week || "23:00").split(":")[0]);
   const sleepWeH = parseInt((answers.sleep_weekend || "23:00").split(":")[0]) || 24;
   const hasPrayers = answers.religious === "Oui, 5 prières";
-  const workDays = (answers.work_days || []) as DayName[];
-  const studyDays = (answers.study_days || []) as DayName[];
-  const workStart = parseInt((answers.work_start || "08:00").split(":")[0]);
-  const workEnd = parseInt((answers.work_end || "17:00").split(":")[0]);
-  const studyStart = parseInt((answers.study_start || "08:00").split(":")[0]);
-  const studyEnd = parseInt((answers.study_end || "16:00").split(":")[0]);
   const restDay = answers.rest_day || "Aucun";
   const selectedCoachingIds = answers.coachings || [];
   const selectedTasks = answers.selected_tasks || {};
@@ -130,12 +200,15 @@ export function generatePlanning(
 
   function buildDay(dayName: DayName): PlanSlot[] {
     const slots: PlanSlot[] = [];
-    const isWorkDay = workDays.includes(dayName) || (!!hasJob && workDays.includes(dayName));
-    const isStudyDay = studyDays.includes(dayName);
+    // Horaires résolus avec day_overrides éventuels — prime sur les globaux
+    const dWake = resolveDayWake(dayName, answers, wakeH, wakeWeH);
+    const dSleep = resolveDaySleep(dayName, answers, sleepH, sleepWeH);
+    const workHours = resolveDayWork(dayName, answers);
+    const studyHours = resolveDayStudy(dayName, answers);
+    const isWorkDay = workHours !== null;
+    const isStudyDay = studyHours !== null;
     const isRestDay = restDay === dayName;
     const isWE = dayName === "Samedi" || dayName === "Dimanche";
-    const dWake = isWE ? wakeWeH : wakeH;
-    const dSleep = isWE ? sleepWeH : sleepH;
 
     blockedSlots
       .filter((b) => (b.days || (b.day ? [b.day] : [])).includes(dayName))
@@ -199,25 +272,25 @@ export function generatePlanning(
       }
     });
 
-    if ((p === "Salarié(e)" && isWorkDay) || (hasJob && isWorkDay)) {
-      const leaveH = workStart - 1;
+    if (((p === "Salarié(e)") || hasJob) && isWorkDay && workHours) {
+      const leaveH = workHours.start - 1;
       if (dWake + 1 < leaveH) {
         const sl = nextFree(dayName, dWake + 1, 60, leaveH);
         if (sl) slots.push({ h: sl.h, m: sl.m, dur: 60, label: "🔥 Session matin", cat: "business" });
       }
       slots.push({
-        h: workStart,
+        h: workHours.start,
         m: 0,
-        dur: (workEnd - workStart) * 60,
+        dur: (workHours.end - workHours.start) * 60,
         label: "💼 Emploi",
         cat: "emploi",
       });
-      slots.push({ h: workEnd + 1, m: 0, dur: 30, label: "Décompression", cat: "perso" });
-    } else if (p === "Étudiant(e)" && isStudyDay) {
+      slots.push({ h: workHours.end + 1, m: 0, dur: 30, label: "Décompression", cat: "perso" });
+    } else if (p === "Étudiant(e)" && isStudyDay && studyHours) {
       slots.push({
-        h: studyStart,
+        h: studyHours.start,
         m: 0,
-        dur: (studyEnd - studyStart) * 60,
+        dur: (studyHours.end - studyHours.start) * 60,
         label: "📕 Cours",
         cat: "emploi",
       });
@@ -229,8 +302,8 @@ export function generatePlanning(
     }
 
     let bizStartH: number;
-    if ((p === "Salarié(e)" && isWorkDay) || (hasJob && isWorkDay)) bizStartH = workEnd + 2;
-    else if (p === "Étudiant(e)" && isStudyDay) bizStartH = studyEnd + 1;
+    if (((p === "Salarié(e)") || hasJob) && isWorkDay && workHours) bizStartH = workHours.end + 2;
+    else if (p === "Étudiant(e)" && isStudyDay && studyHours) bizStartH = studyHours.end + 1;
     else bizStartH = dWake + 1;
 
     let cursor = bizStartH * 60;

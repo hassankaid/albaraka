@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, X, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ALL_DAYS, DayName, PREDEFINED_TASKS } from "../lib/predefinedTasks";
-import type { BlockedSlot, CoachingSlot, CustomTask } from "../lib/generatePlanning";
+import type { Answers, BlockedSlot, CoachingSlot, CustomTask, DayOverrides } from "../lib/generatePlanning";
+import { DayOverridesEditor } from "./DayOverridesEditor";
 
 // ═══════════════════════════════════════════════════════════
 // BlockedSlotsEditor — créneaux bloqués (cours, RDV, etc.)
@@ -341,12 +342,13 @@ export function CustomTaskEditor({
 // QuestionCard — dispatcher
 // ═══════════════════════════════════════════════════════════
 export function QuestionCard({
-  question, value, onChange, coachings,
+  question, value, onChange, coachings, answers,
 }: {
   question: any;
   value: any;
   onChange: (v: any) => void;
   coachings: CoachingSlot[];
+  answers: Answers;
 }) {
   const q = question;
   const isMulti = q.type === "multi";
@@ -431,6 +433,22 @@ export function QuestionCard({
 
       {q.type === "blocked_slots" && (
         <BlockedSlotsEditor value={value || []} onChange={onChange} />
+      )}
+
+      {q.type === "day_overrides" && (
+        <DayOverridesEditor
+          value={(value as DayOverrides) || undefined}
+          onChange={onChange}
+          answers={answers}
+          mode={
+            answers.profile === "Étudiant(e)"
+              ? "study"
+              : answers.profile === "Salarié(e)" ||
+                (answers.has_job && answers.has_job !== "Non")
+              ? "work"
+              : "none"
+          }
+        />
       )}
     </div>
   );
