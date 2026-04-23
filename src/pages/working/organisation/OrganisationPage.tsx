@@ -284,13 +284,17 @@ export default function OrganisationPage() {
           </SheetContent>
         </Sheet>
 
-        {/* Éditeur dédié aux horaires par jour */}
+        {/* Éditeur dédié aux horaires par jour — structure flex col 3 zones :
+            - Header fixe (ne scrolle pas)
+            - Body scrollable (occupe l'espace restant)
+            - Footer fixe (toujours visible, les jours passent au-dessus puis disparaissent sous lui) */}
         <Sheet open={showDayEditor} onOpenChange={setShowDayEditor}>
           <SheetContent
             side="right"
-            className="overflow-y-auto sm:max-w-lg w-full"
+            className="sm:max-w-lg w-full p-0 flex flex-col gap-0"
           >
-            <SheetHeader>
+            {/* Zone 1 : header fixe */}
+            <SheetHeader className="shrink-0 border-b px-6 py-5 text-left space-y-1.5">
               <SheetTitle className="flex items-center gap-2">
                 <CalendarCog className="h-5 w-5 text-primary" />
                 Horaires par jour
@@ -301,7 +305,8 @@ export default function OrganisationPage() {
               </SheetDescription>
             </SheetHeader>
 
-            <div className="mt-5">
+            {/* Zone 2 : body scrollable (flex-1 → prend tout l'espace restant entre header et footer) */}
+            <div className="flex-1 overflow-y-auto px-6 py-5 min-h-0">
               <DayOverridesEditor
                 value={draftOverrides}
                 onChange={setDraftOverrides}
@@ -317,8 +322,8 @@ export default function OrganisationPage() {
               />
             </div>
 
-            {/* Actions collées en bas avec sécurité */}
-            <div className="sticky bottom-0 left-0 right-0 -mx-6 px-6 pt-4 pb-4 mt-6 bg-background border-t flex gap-2">
+            {/* Zone 3 : footer fixe (hors flux scrollable → les jours du body ne passent plus en dessous) */}
+            <div className="shrink-0 border-t bg-background px-6 py-4 flex gap-2">
               <Button
                 variant="outline"
                 onClick={() => setShowDayEditor(false)}
