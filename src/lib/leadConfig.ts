@@ -15,6 +15,7 @@ export const leadSourceConfig: Record<string, { label: string; color: string }> 
   apporteur_telegram: { label: "Apporteur - Telegram", color: "cyan" },
   apporteur_tiktok: { label: "Apporteur - TikTok", color: "slate" },
   apporteur_autre: { label: "Apporteur - Autre", color: "gray" },
+  apporteur_quiz: { label: "Apporteur - Quiz", color: "violet" },
   autre: { label: "Autre", color: "gray" },
 };
 
@@ -133,6 +134,7 @@ export const SOURCE_GROUPS = [
       "apporteur_telegram",
       "apporteur_tiktok",
       "apporteur_autre",
+      "apporteur_quiz",
       "autre",
     ],
   },

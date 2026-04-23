@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-export type FeatureKey = "quiz_organisation" | "working_activity";
+export type FeatureKey = "quiz_organisation" | "working_activity" | "quiz_lead_magnet";
 
 export function useFeatureUnlocks() {
   const { user } = useAuth();

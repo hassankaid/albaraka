@@ -39,6 +39,7 @@ const workingNavItems: NavItem[] = [
 const adminNavItems: NavItem[] = [
   { title: "Équipe", path: "/admin/team", icon: UsersRound, roles: ["ceo"] },
   { title: "Annonces", path: "/admin/announcements", icon: Megaphone, roles: ["ceo"] },
+  { title: "Quiz prospection", path: "/admin/quiz-lead", icon: Sparkles, roles: ["ceo"] },
   { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"] },
   { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
@@ -74,6 +75,7 @@ const pageTitles: Record<string, string> = {
   "/my-commissions": "Mes Commissions",
   "/admin/team": "Équipe",
   "/admin/announcements": "Annonces",
+  "/admin/quiz-lead": "Quiz prospection",
   "/admin/invitations": "Invitations & Accès",
   "/admin/webhooks/calendly": "Webhooks Calendly",
   "/admin/parcours": "Parcours",
