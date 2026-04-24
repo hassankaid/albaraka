@@ -1,6 +1,7 @@
 // QuizLinkCard — section affichée dans le dashboard apporteur (/my-space)
 // pour configurer son lien de prospection quiz et consulter ses stats funnel.
-// Gated par la feature `quiz_lead_magnet` (whitelist Sid Test au démarrage).
+// Accès : CEO, OU détenteur d'un pass AL BARAKA actif, OU whitelist manuelle
+// via la feature `quiz_lead_magnet` (back-door exceptions).
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureUnlocks } from "@/hooks/useFeatureUnlock";
+import { useUserPass } from "@/hooks/useUserPass";
 import { useToast } from "@/hooks/use-toast";
 import { getPublicAppOrigin } from "@/lib/impersonation";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
@@ -74,11 +76,14 @@ function buildPublicUrl(slug: string): string {
 export default function QuizLinkCard() {
   const { profile } = useAuth();
   const { isLoading: featureLoading, has } = useFeatureUnlocks();
+  const { hasAlBaraka, isLoading: passLoading } = useUserPass();
   const { toast } = useToast();
 
   const isCeo = profile?.role === "ceo";
   const isWhitelisted = has("quiz_lead_magnet");
-  const canAccess = isCeo || isWhitelisted;
+  // Accès : CEO, ou pass AL BARAKA actif, ou whitelist manuelle (back-door)
+  const canAccess = isCeo || hasAlBaraka || isWhitelisted;
+  const accessLoading = featureLoading || passLoading;
 
   const [loading, setLoading] = useState(true);
   const [owner, setOwner] = useState<QuizOwnerRow | null>(null);
@@ -248,7 +253,7 @@ export default function QuizLinkCard() {
   // ─── Rendu ───
 
   // Gated : pas d'accès → on n'affiche rien du tout (section invisible)
-  if (featureLoading) {
+  if (accessLoading) {
     return (
       <Card className="border-border/50">
         <CardContent className="p-4">
