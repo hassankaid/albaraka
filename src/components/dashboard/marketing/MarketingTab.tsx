@@ -95,11 +95,21 @@ interface DrillState {
 }
 
 // ─── Main Tab ────────────────────────────────────────────────────────
-export default function MarketingTab() {
-  const [filter, setFilter] = useState<ConferenceFilterValue>(() => ({
+// Props optionnelles pour un filtre contrôlé (utilisé par AgencyDashboard
+// qui doit synchroniser le filtre entre MarketingTab et le bloc commissions).
+// En usage standard (CEO), aucune prop → le composant gère son filtre en interne.
+interface MarketingTabProps {
+  filter?: ConferenceFilterValue;
+  onFilterChange?: (f: ConferenceFilterValue) => void;
+}
+
+export default function MarketingTab({ filter: externalFilter, onFilterChange }: MarketingTabProps = {}) {
+  const [internalFilter, setInternalFilter] = useState<ConferenceFilterValue>(() => ({
     mode: "single" as const,
     date: currentOrPrevSunday(new Date()),
   }));
+  const filter = externalFilter ?? internalFilter;
+  const setFilter = onFilterChange ?? setInternalFilter;
   const { data, isLoading } = useMarketingDashboardData(filter);
   const [drill, setDrill] = useState<DrillState | null>(null);
 

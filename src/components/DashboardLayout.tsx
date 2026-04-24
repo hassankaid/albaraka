@@ -26,13 +26,13 @@ const workingNavItems: NavItem[] = [
   { title: "Mes Contenus", path: "/working/contents", icon: Library, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true },
   // After separator
-  { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur"], adminSection: true },
+  { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur", "agence"], adminSection: true },
   { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"], adminSection: true },
   { title: "Mes Calls", path: "/calls", icon: Phone, roles: ["ceo", "collaborateur"], adminSection: true },
   { title: "Contacts", path: "/contacts", icon: BookUser, roles: ["ceo"], adminSection: true },
   { title: "Mes Ventes", path: "/sales", icon: BadgeEuro, roles: ["ceo", "collaborateur", "apporteur"], adminSection: true },
   { title: "Mes Paiements", path: "/payments", icon: CreditCard, roles: ["ceo", "collaborateur"], adminSection: true },
-  { title: "Mes Commissions", path: "/my-commissions", icon: Receipt, roles: ["ceo", "collaborateur"], adminSection: true },
+  { title: "Mes Commissions", path: "/my-commissions", icon: Receipt, roles: ["ceo", "collaborateur", "agence"], adminSection: true },
   { title: "Mon profil", path: "/profile", icon: User, roles: ["agence"] },
 ];
 
@@ -127,10 +127,8 @@ export default function DashboardLayout() {
     return <Navigate to="/training" replace />;
   }
 
-  // Redirect agence to profile if they land on dashboard
-  if (profile?.role === "agence" && location.pathname === "/dashboard") {
-    return <Navigate to="/profile" replace />;
-  }
+  // Note : l'agence a désormais son propre AgencyDashboard sur /dashboard
+  // (assemblage Marketing + Commissions). Pas de redirect vers /profile.
 
   const userRole = profile?.role || "apporteur";
   const isCeo = profile?.role === "ceo";

@@ -12,6 +12,7 @@ import ChargesCard from "@/components/dashboard/ChargesCard";
 import PeriodSalesCard from "@/components/dashboard/PeriodSalesCard";
 import PeriodFilter, { type DateRange } from "@/components/dashboard/PeriodFilter";
 import MarketingTab from "@/components/dashboard/marketing/MarketingTab";
+import AgencyDashboard from "@/pages/agency/AgencyDashboard";
 import { Loader2 } from "lucide-react";
 
 function FinancialTab() {
@@ -139,6 +140,12 @@ function FinancialTab() {
 const Dashboard = () => {
   const { profile } = useAuth();
   const isCeo = profile?.role === "ceo";
+  const isAgence = profile?.role === "agence";
+
+  // Agence : dashboard dédié (Marketing + Commissions)
+  if (isAgence) {
+    return <AgencyDashboard />;
+  }
 
   if (!isCeo) {
     return (

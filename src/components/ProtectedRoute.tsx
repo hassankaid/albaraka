@@ -78,8 +78,7 @@ export function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   if (session) {
     // Redirect apporteurs to their dedicated space
     if (profile?.role === "apporteur") return <Navigate to="/training" replace />;
-    // Redirect agence to their profile
-    if (profile?.role === "agence") return <Navigate to="/profile" replace />;
+    // Agence : landing sur son Dashboard dédié (Marketing + Commissions)
     return <Navigate to="/dashboard" replace />;
   }
   return <>{children}</>;
