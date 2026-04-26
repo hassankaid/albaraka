@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,17 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { RefreshCw, Upload, Building2, Loader2, Check, ChevronsUpDown, Pencil, UserCheck, Info } from "lucide-react";
+import { RefreshCw, Check, ChevronsUpDown, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PhoneInput } from "react-international-phone";
 import "react-international-phone/style.css";
 import logo from "@/assets/al-baraka-logo-v2.png";
 import { COUNTRIES, findCountryByName, normalizeForSearch } from "@/lib/countries";
+import { resolveCountryName } from "@/lib/countryUtils";
 import * as Flags from "country-flag-icons/string/3x2";
 
 function CountryFlag({ code, className }: { code: string; className?: string }) {
@@ -32,31 +30,14 @@ function CountryFlag({ code, className }: { code: string; className?: string }) 
   );
 }
 
-interface BankDetails {
-  type?: string;
-  account_holder?: string;
-  iban?: string;
-  bic?: string;
-  bank_name?: string;
-  bank_code?: string;
-  city_code?: string;
-  account_number?: string;
-  rib_key?: string;
-  additional_info?: string;
-}
-
-const formatIbanInput = (iban: string) => {
-  if (!iban) return "";
-  return iban.replace(/(.{4})(?=.)/g, "$1 ");
-};
-
 export default function ApporteurOnboarding() {
   const { profile, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const ribInputRef = useRef<HTMLInputElement>(null);
 
-  // Pre-fill from profile data (set during registration)
+  // Pre-fill from profile data (set during checkout/registration)
+  // resolveCountryName : safety net pour anciens profils qui pourraient avoir
+  // un code ISO ou un format non normalisé en DB.
   const nameParts = (profile?.full_name || "").split(" ");
   const initialFirstName = nameParts.slice(0, -1).join(" ") || nameParts[0] || "";
   const initialLastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
@@ -69,21 +50,11 @@ export default function ApporteurOnboarding() {
   const [address, setAddress] = useState(profile?.address || "");
   const [postalCode, setPostalCode] = useState(profile?.postal_code || "");
   const [city, setCity] = useState(profile?.city || "");
-  const [country, setCountry] = useState(profile?.country || "");
+  const [country, setCountry] = useState(resolveCountryName(profile?.country));
   const [countryOpen, setCountryOpen] = useState(false);
   const [siret, setSiret] = useState(profile?.siret || "");
 
-  // Bank
-  const [bankRibUrl, setBankRibUrl] = useState<string | null>(profile?.bank_rib_url || null);
-  const [bankDetails, setBankDetails] = useState<BankDetails>((profile?.bank_details as BankDetails) || {});
-  const [uploadingRib, setUploadingRib] = useState(false);
-  const [extractingRib, setExtractingRib] = useState(false);
-  const [editBankOpen, setEditBankOpen] = useState(false);
-  const [editBankForm, setEditBankForm] = useState<BankDetails>({});
-
   const [saving, setSaving] = useState(false);
-
-  const hasBankData = !!(bankDetails?.iban || bankDetails?.account_holder || bankDetails?.account_number);
 
   const selectedCountry = findCountryByName(country);
 
@@ -100,93 +71,14 @@ export default function ApporteurOnboarding() {
     );
   }, [firstName, lastName, email, phone, address, postalCode, city, country]);
 
-  const handleRibUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-    if (file.size > 5 * 1024 * 1024) { toast({ title: "Fichier trop volumineux", description: "5 Mo max", variant: "destructive" }); return; }
-    const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
-    const allowedExts = [".txt", ".docx"];
-    const fileExt = "." + (file.name.split(".").pop()?.toLowerCase() || "");
-    if (!allowedTypes.includes(file.type) && !allowedExts.includes(fileExt)) { toast({ title: "Format non supporté", description: "PDF, JPG, PNG, WebP, TXT ou DOCX", variant: "destructive" }); return; }
-    
-    const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
-    const filePath = `${user.id}/rib.${ext}`;
-    
-    setUploadingRib(true);
-    try {
-      const { error: uploadError } = await supabase.storage.from("ribs").upload(filePath, file, { upsert: true, contentType: file.type });
-      if (uploadError) throw uploadError;
-      const { data: signedData } = await supabase.storage.from("ribs").createSignedUrl(filePath, 60 * 60 * 24 * 365);
-      const ribUrl = signedData?.signedUrl || filePath;
-      await supabase.from("profiles").update({ bank_rib_url: ribUrl }).eq("id", user.id);
-      setBankRibUrl(ribUrl);
-      setUploadingRib(false);
-      
-      setExtractingRib(true);
-      try {
-        const { data: extractData, error: extractError } = await supabase.functions.invoke("extract-rib-data", {
-          body: { user_id: user.id, file_path: filePath },
-        });
-        if (extractError) throw extractError;
-        if (extractData?.bank_details) {
-          setBankDetails(extractData.bank_details);
-          toast({ title: "Données bancaires extraites avec succès !" });
-        } else if (extractData?.error) {
-          throw new Error(extractData.error);
-        }
-      } catch {
-        toast({ title: "Extraction automatique échouée", description: "Veuillez saisir vos données bancaires manuellement.", variant: "destructive" });
-        openEditBank();
-      } finally { setExtractingRib(false); }
-    } catch (err: any) {
-      toast({ title: "Erreur d'upload", description: err.message, variant: "destructive" });
-      setUploadingRib(false);
-    } finally { e.target.value = ""; }
-  };
-
-  const openEditBank = () => {
-    setEditBankForm({
-      type: bankDetails.type || "iban",
-      account_holder: bankDetails.account_holder || "",
-      iban: bankDetails.iban || "",
-      bic: bankDetails.bic || "",
-      bank_name: bankDetails.bank_name || "",
-      bank_code: bankDetails.bank_code || "",
-      city_code: bankDetails.city_code || "",
-      account_number: bankDetails.account_number || "",
-      rib_key: bankDetails.rib_key || "",
-      additional_info: bankDetails.additional_info || "",
-    });
-    setEditBankOpen(true);
-  };
-
-  const handleSaveBankDetails = async () => {
-    if (!user) return;
-    const bankType = editBankForm.type || "iban";
-    let details: BankDetails;
-    if (bankType === "iban") {
-      details = { type: "iban", account_holder: editBankForm.account_holder || "", iban: editBankForm.iban || "", bic: editBankForm.bic || "", bank_name: editBankForm.bank_name || "" };
-    } else if (bankType === "rib_maroc") {
-      details = { type: "rib_maroc", account_holder: editBankForm.account_holder || "", bank_code: editBankForm.bank_code || "", city_code: editBankForm.city_code || "", account_number: editBankForm.account_number || "", rib_key: editBankForm.rib_key || "", bic: editBankForm.bic || "", bank_name: editBankForm.bank_name || "" };
-    } else {
-      details = { type: "other", account_holder: editBankForm.account_holder || "", account_number: editBankForm.account_number || "", bic: editBankForm.bic || "", bank_name: editBankForm.bank_name || "", additional_info: editBankForm.additional_info || "" };
-    }
-    const { error } = await supabase.from("profiles").update({ bank_details: details as any }).eq("id", user.id);
-    if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
-    } else {
-      setBankDetails(details);
-      setEditBankOpen(false);
-      toast({ title: "Coordonnées bancaires enregistrées" });
-    }
-  };
-
   const handleSubmit = async () => {
     if (!user || !canSubmit) return;
     setSaving(true);
 
     const fullName = `${firstName.trim()} ${lastName.trim()}`.toUpperCase();
 
+    // Note : le RIB n'est plus saisi ici. Il sera renseigné via la page Profil
+    // une fois l'utilisateur dans le programme (moins anxiogène à cette étape).
     const { error } = await supabase.from("profiles").update({
       full_name: fullName,
       email: email.trim().toLowerCase(),
@@ -196,7 +88,6 @@ export default function ApporteurOnboarding() {
       city: city.trim().toUpperCase(),
       country: country,
       siret: siret.trim() || null,
-      bank_details: (hasBankData ? bankDetails : undefined) as any,
       onboarding_completed: true,
     }).eq("id", user.id);
 
@@ -355,71 +246,6 @@ export default function ApporteurOnboarding() {
           </CardContent>
         </Card>
 
-        {/* Bank info */}
-        <Card className="border-border/50">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-foreground flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-muted-foreground" />
-                Informations bancaires <span className="text-xs font-normal text-muted-foreground">(facultatif)</span>
-              </CardTitle>
-              {hasBankData && (
-                <Button variant="ghost" size="sm" onClick={openEditBank} className="text-muted-foreground">
-                  <Pencil className="h-4 w-4 mr-1" /> Modifier
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
-              <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-              <p className="text-sm text-foreground/80 leading-relaxed">
-                Tu peux ignorer cette section pour l'instant. En revanche, dès que tu commenceras à travailler dans l'écosystème AL BARAKA, tu devras renseigner ton RIB depuis ton profil pour pouvoir recevoir tes commissions.
-              </p>
-            </div>
-            {extractingRib ? (
-              <div className="text-center py-8 space-y-4">
-                <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
-                <div>
-                  <p className="text-foreground font-medium">Extraction des données en cours...</p>
-                  <p className="text-sm text-muted-foreground mt-1">Analyse du RIB par intelligence artificielle</p>
-                </div>
-              </div>
-            ) : hasBankData ? (
-              <div className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Titulaire</p>
-                    <p className="text-sm font-medium text-foreground">{bankDetails.account_holder || "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Banque</p>
-                    <p className="text-sm font-medium text-foreground">{bankDetails.bank_name || "—"}</p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => ribInputRef.current?.click()} disabled={uploadingRib} className="gap-1">
-                  {uploadingRib ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-                  Remplacer le RIB
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center py-6 space-y-4">
-                <Building2 className="h-12 w-12 text-muted-foreground mx-auto" />
-                <div>
-                  <p className="text-foreground font-medium">Téléchargez votre RIB <span className="text-destructive">*</span></p>
-                  <p className="text-sm text-muted-foreground mt-1">Vos données bancaires seront extraites automatiquement par IA.</p>
-                </div>
-                <Button variant="outline" onClick={() => ribInputRef.current?.click()} disabled={uploadingRib} className="gap-2">
-                  {uploadingRib ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  Télécharger mon RIB (PDF, Image, TXT)
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <input ref={ribInputRef} type="file" accept="application/pdf,image/jpeg,image/png,image/webp,text/plain,.txt,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={handleRibUpload} />
-
         {/* Submit */}
         <Button
           onClick={handleSubmit}
@@ -433,113 +259,6 @@ export default function ApporteurOnboarding() {
 
         <div className="h-8" />
       </div>
-
-      {/* Edit Bank Modal */}
-      <Dialog open={editBankOpen} onOpenChange={setEditBankOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>Coordonnées bancaires</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Type de compte</Label>
-              <Select value={editBankForm.type || "iban"} onValueChange={(v) => setEditBankForm({ ...editBankForm, type: v })}>
-                <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="iban">IBAN (Europe)</SelectItem>
-                  <SelectItem value="rib_maroc">RIB Maroc</SelectItem>
-                  <SelectItem value="other">Autre</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Titulaire du compte</Label>
-              <Input value={editBankForm.account_holder || ""} onChange={(e) => setEditBankForm({ ...editBankForm, account_holder: e.target.value.toUpperCase() })} placeholder="PRÉNOM NOM" className="bg-background" />
-            </div>
-
-            {(editBankForm.type || "iban") === "iban" && (
-              <>
-                <div className="space-y-2">
-                  <Label>IBAN</Label>
-                  <Input
-                    value={formatIbanInput(editBankForm.iban || "")}
-                    onChange={(e) => { const raw = e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase(); setEditBankForm({ ...editBankForm, iban: raw }); }}
-                    placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX" className="bg-background font-mono text-sm tracking-wide"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>BIC</Label>
-                    <Input value={editBankForm.bic || ""} onChange={(e) => setEditBankForm({ ...editBankForm, bic: e.target.value.toUpperCase() })} placeholder="BNPAFRPP" className="bg-background font-mono" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Nom de la banque</Label>
-                    <Input value={editBankForm.bank_name || ""} onChange={(e) => setEditBankForm({ ...editBankForm, bank_name: e.target.value })} placeholder="BNP Paribas" className="bg-background" />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {editBankForm.type === "rib_maroc" && (
-              <>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-2">
-                    <Label>Code banque</Label>
-                    <Input value={editBankForm.bank_code || ""} onChange={(e) => setEditBankForm({ ...editBankForm, bank_code: e.target.value.replace(/\D/g, "").slice(0, 3) })} placeholder="XXX" maxLength={3} className="bg-background font-mono" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Code ville</Label>
-                    <Input value={editBankForm.city_code || ""} onChange={(e) => setEditBankForm({ ...editBankForm, city_code: e.target.value.replace(/\D/g, "").slice(0, 3) })} placeholder="XXX" maxLength={3} className="bg-background font-mono" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Clé RIB</Label>
-                    <Input value={editBankForm.rib_key || ""} onChange={(e) => setEditBankForm({ ...editBankForm, rib_key: e.target.value.replace(/\D/g, "").slice(0, 2) })} placeholder="XX" maxLength={2} className="bg-background font-mono" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Numéro de compte</Label>
-                  <Input value={editBankForm.account_number || ""} onChange={(e) => setEditBankForm({ ...editBankForm, account_number: e.target.value })} placeholder="Numéro de compte" className="bg-background font-mono" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>BIC/SWIFT</Label>
-                    <Input value={editBankForm.bic || ""} onChange={(e) => setEditBankForm({ ...editBankForm, bic: e.target.value.toUpperCase() })} placeholder="BMCEXXXX" className="bg-background font-mono" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Nom de la banque</Label>
-                    <Input value={editBankForm.bank_name || ""} onChange={(e) => setEditBankForm({ ...editBankForm, bank_name: e.target.value })} placeholder="BMCE Bank" className="bg-background" />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {editBankForm.type === "other" && (
-              <>
-                <div className="space-y-2">
-                  <Label>Numéro de compte</Label>
-                  <Input value={editBankForm.account_number || ""} onChange={(e) => setEditBankForm({ ...editBankForm, account_number: e.target.value })} placeholder="Numéro de compte" className="bg-background font-mono" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>BIC/SWIFT</Label>
-                    <Input value={editBankForm.bic || ""} onChange={(e) => setEditBankForm({ ...editBankForm, bic: e.target.value.toUpperCase() })} placeholder="XXXXXXXX" className="bg-background font-mono" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Nom de la banque</Label>
-                    <Input value={editBankForm.bank_name || ""} onChange={(e) => setEditBankForm({ ...editBankForm, bank_name: e.target.value })} placeholder="Nom de la banque" className="bg-background" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Informations complémentaires</Label>
-                  <Textarea value={editBankForm.additional_info || ""} onChange={(e) => setEditBankForm({ ...editBankForm, additional_info: e.target.value })} placeholder="Informations supplémentaires..." className="bg-background" rows={3} />
-                </div>
-              </>
-            )}
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setEditBankOpen(false)}>Annuler</Button>
-            <Button onClick={handleSaveBankDetails} className="gradient-primary text-primary-foreground">Enregistrer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

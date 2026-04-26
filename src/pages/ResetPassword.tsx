@@ -1,11 +1,51 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/al-baraka-logo-v2.png";
-import { Lock, Eye, EyeOff, RefreshCw, CheckCircle, Mail, ArrowLeft } from "lucide-react";
+import { Lock, Eye, EyeOff, RefreshCw, CheckCircle, Mail, ArrowLeft, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Mode = "loading" | "recovery" | "expired" | "requestSent";
+
+// ─── Règles de validation du mot de passe ────────────────────────────
+const PASSWORD_RULES = [
+  { key: "length", label: "Au moins 8 caractères", test: (p: string) => p.length >= 8 },
+  { key: "lower", label: "Une lettre minuscule (a-z)", test: (p: string) => /[a-z]/.test(p) },
+  { key: "upper", label: "Une lettre majuscule (A-Z)", test: (p: string) => /[A-Z]/.test(p) },
+  { key: "digit", label: "Un chiffre (0-9)", test: (p: string) => /\d/.test(p) },
+  { key: "special", label: "Un caractère spécial (!@#$…)", test: (p: string) => /[^a-zA-Z0-9]/.test(p) },
+] as const;
+
+// ─── Traduction FR des messages d'erreur Supabase ────────────────────
+function translateAuthError(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes("token has expired") || m.includes("invalid") && m.includes("token")) {
+    return "Le lien a expiré ou n'est plus valide. Demande-en un nouveau.";
+  }
+  if (m.includes("auth session missing") || m.includes("session_not_found")) {
+    return "Session introuvable. Reclique sur le lien dans ton email.";
+  }
+  if (m.includes("new password should be different")) {
+    return "Le nouveau mot de passe doit être différent de l'ancien.";
+  }
+  if (m.includes("password should be at least") || m.includes("weak password") || m.includes("password is too weak")) {
+    return "Mot de passe trop faible. Respecte toutes les règles ci-dessous.";
+  }
+  if (m.includes("rate limit") || m.includes("too many requests")) {
+    return "Trop de tentatives. Réessaie dans quelques minutes.";
+  }
+  if (m.includes("user not found") || m.includes("user_not_found")) {
+    return "Aucun compte ne correspond à cet email.";
+  }
+  if (m.includes("email") && m.includes("invalid")) {
+    return "Adresse email invalide.";
+  }
+  if (m.includes("network") || m.includes("failed to fetch")) {
+    return "Problème de connexion. Vérifie ta connexion internet.";
+  }
+  // Fallback : message générique en français + détail technique
+  return `Erreur : ${message}`;
+}
 
 const ResetPassword = () => {
   const [mode, setMode] = useState<Mode>("loading");
@@ -54,15 +94,30 @@ const ResetPassword = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // État de validation des règles de mot de passe (pour UI + bouton)
+  const ruleStates = useMemo(
+    () => PASSWORD_RULES.map((r) => ({ ...r, ok: r.test(password) })),
+    [password],
+  );
+  const allRulesOk = ruleStates.every((r) => r.ok);
+  const passwordsMatch = confirm.length > 0 && password === confirm;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (password.length < 6) {
-      toast({ title: "Le mot de passe doit contenir au moins 6 caractères", variant: "destructive" });
+    if (!allRulesOk) {
+      toast({
+        title: "Mot de passe trop faible",
+        description: "Toutes les règles doivent être respectées.",
+        variant: "destructive",
+      });
       return;
     }
     if (password !== confirm) {
-      toast({ title: "Les mots de passe ne correspondent pas", variant: "destructive" });
+      toast({
+        title: "Les mots de passe ne correspondent pas",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -70,7 +125,11 @@ const ResetPassword = () => {
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      toast({
+        title: "Erreur",
+        description: translateAuthError(error.message),
+        variant: "destructive",
+      });
       setLoading(false);
       return;
     }
@@ -91,7 +150,11 @@ const ResetPassword = () => {
     });
     setLoading(false);
     if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      toast({
+        title: "Erreur",
+        description: translateAuthError(error.message),
+        variant: "destructive",
+      });
       return;
     }
     setMode("requestSent");
@@ -220,17 +283,42 @@ const ResetPassword = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
                 className="w-full pl-10 pr-10 py-2.5 bg-transparent border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+
+            {/* Checklist des règles — visible dès qu'on tape, pour guider l'user */}
+            {password.length > 0 && (
+              <ul className="grid grid-cols-1 gap-1 pt-1 text-xs">
+                {ruleStates.map((rule) => (
+                  <li
+                    key={rule.key}
+                    className={`flex items-center gap-1.5 ${rule.ok ? "text-emerald-500" : "text-muted-foreground"}`}
+                  >
+                    {rule.ok ? (
+                      <Check className="h-3 w-3 shrink-0" />
+                    ) : (
+                      <X className="h-3 w-3 shrink-0 opacity-50" />
+                    )}
+                    <span>{rule.label}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {password.length === 0 && (
+              <p className="text-[11px] text-muted-foreground leading-relaxed pt-0.5">
+                8 caractères minimum, avec au moins une minuscule, une majuscule, un chiffre et un caractère spécial.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -249,6 +337,7 @@ const ResetPassword = () => {
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -256,15 +345,18 @@ const ResetPassword = () => {
             {confirm.length > 0 && password !== confirm && (
               <p className="text-xs text-destructive">Les mots de passe ne correspondent pas</p>
             )}
-            {confirm.length > 0 && password === confirm && password.length >= 6 && (
-              <p className="text-xs text-emerald-500">Les mots de passe correspondent</p>
+            {passwordsMatch && allRulesOk && (
+              <p className="text-xs text-emerald-500 flex items-center gap-1.5">
+                <Check className="h-3 w-3" />
+                Les mots de passe correspondent
+              </p>
             )}
           </div>
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-2.5 rounded-full gradient-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+            disabled={loading || !allRulesOk || !passwordsMatch}
+            className="w-full py-2.5 rounded-full gradient-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading && <RefreshCw className="h-4 w-4 animate-spin" />}
             Activer mon accès

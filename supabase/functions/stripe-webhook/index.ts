@@ -11,6 +11,48 @@ const STRIPE_WEBHOOK_SECRET_TEST = Deno.env.get("STRIPE_WEBHOOK_SECRET_TEST");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+/**
+ * Normalise un nom de pays vers le nom canonique français Title Case.
+ * Gère codes ISO 2 lettres (FR → France) et noms en majuscules (FRANCE → France).
+ * Source unique : doit rester aligné avec src/lib/countryUtils.ts.
+ */
+function normalizeCountryToFrName(input: string | null | undefined): string | null {
+  if (!input) return null;
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  try {
+    const display = new Intl.DisplayNames(["fr"], { type: "region" });
+
+    // Code ISO 2 lettres → résolution directe via Intl
+    if (trimmed.length === 2) {
+      const upper = trimmed.toUpperCase();
+      const name = display.of(upper);
+      if (name && name !== upper) return name;
+    }
+
+    // Recherche du nom canonique en comparant insensible casse + diacritiques
+    const stripDiacritics = (s: string) =>
+      s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+    const target = stripDiacritics(trimmed);
+    // On itère sur quelques codes ISO probables (subset suffisant en pratique).
+    // Pour une couverture complète, on laisse Intl résoudre tous les codes
+    // depuis A à Z en majuscule (ISO 3166-1 alpha-2 = 2 lettres).
+    for (let a = 65; a <= 90; a++) {
+      for (let b = 65; b <= 90; b++) {
+        const code = String.fromCharCode(a, b);
+        const name = display.of(code);
+        if (!name || name === code) continue;
+        if (stripDiacritics(name) === target) return name;
+      }
+    }
+  } catch {
+    // Fallback si Intl indispo : retourner tel quel
+  }
+
+  return trimmed;
+}
+
 async function verifyStripeSignature(
   payload: string,
   signature: string,
@@ -183,7 +225,7 @@ async function ensureBonCommandeOrder(
           address: metadata.customer_address || null,
           postal_code: metadata.customer_postal_code || null,
           city: metadata.customer_city || null,
-          country: metadata.customer_country || null,
+          country: normalizeCountryToFrName(metadata.customer_country),
           role: "apporteur",
           origin: "bon_commande",
         },
