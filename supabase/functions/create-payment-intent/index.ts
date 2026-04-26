@@ -204,13 +204,20 @@ Deno.serve(async (req) => {
 
     if (installments === 1) {
       // One-time payment
+      // payment_method_types: ["card"] doit matcher le front (paymentMethodTypes
+      // dans elementsOptions de Checkout.tsx). Sans cohérence des deux côtés,
+      // Stripe refuse au moment du confirmPayment avec :
+      // "Payment details were collected through Stripe elements using automatic
+      //  payment methods and cannot be confirmed through the API configured
+      //  with payment method types..."
       const pi = await stripeFetch<{ id: string; client_secret: string }>(apiKey, "/payment_intents", {
         amount: totalAfterDiscountCents,
         currency: "eur",
         receipt_email: email,
         metadata,
         description: `${PRODUCT_NAME} — Paiement en 1 fois`,
-        automatic_payment_methods: { enabled: true },
+        "payment_method_types[0]": "card",
+        "payment_method_options[card][request_three_d_secure]": "automatic",
       });
       return new Response(
         JSON.stringify({
@@ -275,6 +282,17 @@ Deno.serve(async (req) => {
       "items[0][price_data][product]": productId,
       payment_behavior: "default_incomplete",
       "payment_settings[save_default_payment_method]": "on_subscription",
+      // Force la subscription à n'utiliser QUE la carte bancaire.
+      // Sans ce paramètre, Stripe utilise les méthodes activées sur le
+      // dashboard (TEST et LIVE peuvent diverger), ce qui crée un mismatch
+      // avec PaymentElement automatic et provoque l'erreur :
+      // "Payment details were collected through Stripe elements using
+      //  automatic payment methods and cannot be confirmed through the
+      //  API configured with payment method types..."
+      // Apple Pay / Google Pay sont déjà désactivés côté front (wallets:never).
+      "payment_settings[payment_method_types][0]": "card",
+      // 3D Secure : automatique selon les règles Stripe (PSD2 EU + détection fraude).
+      "payment_settings[payment_method_options][card][request_three_d_secure]": "automatic",
       cancel_at: cancelAt,
       description: `${PRODUCT_NAME} — ${installments} mensualités`,
       "expand[0]": "latest_invoice.payment_intent",

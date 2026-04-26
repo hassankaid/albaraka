@@ -573,6 +573,21 @@ export default function Checkout() {
       mode: (installments === 1 ? "payment" : "subscription") as "payment" | "subscription",
       amount: Math.round(totalAfterDiscount * 100),
       currency: "eur",
+      // ⚠ IMPORTANT : doit matcher payment_method_types côté backend
+      // (create-payment-intent → "payment_method_types[0]": "card").
+      //
+      // Sans cette ligne, Elements démarre en mode "automatic" et propose les
+      // méthodes activées sur le dashboard Stripe (Link, Klarna, SEPA…),
+      // ce qui crée un mismatch au confirm avec le PaymentIntent forcé sur
+      // "card" et déclenche l'erreur :
+      //   "Payment details were collected through Stripe elements using
+      //    automatic payment methods and cannot be confirmed through the
+      //    API configured with payment method types..."
+      //
+      // Bug observé en LIVE uniquement (TEST n'a souvent que card activé).
+      // Apple Pay / Google Pay sont déjà désactivés via wallets:never sur
+      // le PaymentElement (lignes ~1204).
+      paymentMethodTypes: ["card"] as string[],
       appearance: {
         theme: "night" as const,
         variables: {
