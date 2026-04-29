@@ -12,10 +12,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
-import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare, MoreHorizontal, Clock, XCircle, CalendarIcon } from "lucide-react";
+import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare, MoreHorizontal, Clock, XCircle, CalendarIcon, ListOrdered, Save, X as XIcon, Loader2 } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useUpdatePaymentAdmin } from "@/hooks/usePaymentAdmin";
+import PaymentScheduleModal from "@/components/payments/PaymentScheduleModal";
 
 interface PaymentRow {
   id: string;
@@ -135,6 +137,25 @@ export default function Payments() {
   const [lostConfirmPayment, setLostConfirmPayment] = useState<PaymentRow | null>(null);
   // Paid date picker
   const [paidPickerPayment, setPaidPickerPayment] = useState<PaymentRow | null>(null);
+  // Schedule modal (toutes les mensualités d'une vente)
+  const [scheduleModal, setScheduleModal] = useState<{ saleId: string; contactName: string | null } | null>(null);
+  // Inline edit states
+  const [editingDateId, setEditingDateId] = useState<string | null>(null);
+  const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
+  const [amountDraft, setAmountDraft] = useState<string>("");
+  const updatePaymentAdmin = useUpdatePaymentAdmin();
+
+  // Inline update handler (CEO only). Refetch après update pour avoir la
+  // bonne valeur (avec cascade commissions appliquée côté DB).
+  async function handleInlineUpdate(payment_id: string, patch: { due_date?: string; amount?: number }) {
+    try {
+      await updatePaymentAdmin.mutateAsync({ payment_id, ...patch });
+      toast({ title: "Mensualité mise à jour" });
+      fetchPayments();
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    }
+  }
 
   const fetchPayments = useCallback(async () => {
     const batchSize = 1000;
@@ -481,10 +502,100 @@ export default function Payments() {
                         {p.payment_number}/{p.total_payments}
                       </TableCell>
                       <TableCell className="font-semibold text-sm text-foreground">
-                        {p.amount.toLocaleString("fr-FR")} €
+                        {isCeo && p.status !== "paid" ? (
+                          editingAmountId === p.id ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={amountDraft}
+                                onChange={(e) => setAmountDraft(e.target.value)}
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    const n = Number(amountDraft);
+                                    if (n > 0 && n !== p.amount) {
+                                      handleInlineUpdate(p.id, { amount: n });
+                                    }
+                                    setEditingAmountId(null);
+                                  } else if (e.key === "Escape") {
+                                    setEditingAmountId(null);
+                                  }
+                                }}
+                                className="h-7 w-24 text-xs"
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0"
+                                onClick={() => {
+                                  const n = Number(amountDraft);
+                                  if (n > 0 && n !== p.amount) {
+                                    handleInlineUpdate(p.id, { amount: n });
+                                  }
+                                  setEditingAmountId(null);
+                                }}
+                              >
+                                <Save className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0"
+                                onClick={() => setEditingAmountId(null)}
+                              >
+                                <XIcon className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-auto px-2 py-0.5 font-semibold text-sm hover:bg-secondary"
+                              onClick={() => {
+                                setAmountDraft(String(p.amount));
+                                setEditingAmountId(p.id);
+                              }}
+                            >
+                              {p.amount.toLocaleString("fr-FR")} €
+                            </Button>
+                          )
+                        ) : (
+                          `${p.amount.toLocaleString("fr-FR")} €`
+                        )}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {formatDateOnly(p.due_date, userTz)}
+                        {isCeo && p.status !== "paid" ? (
+                          <Popover
+                            open={editingDateId === p.id}
+                            onOpenChange={(o) => setEditingDateId(o ? p.id : null)}
+                          >
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-auto px-2 py-0.5 text-xs gap-1.5 hover:bg-secondary">
+                                <CalendarIcon className="h-3 w-3 opacity-50" />
+                                {formatDateOnly(p.due_date, userTz)}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={new Date(p.due_date)}
+                                onSelect={(d) => {
+                                  if (d) {
+                                    handleInlineUpdate(p.id, { due_date: format(d, "yyyy-MM-dd") });
+                                    setEditingDateId(null);
+                                  }
+                                }}
+                                locale={fr}
+                                initialFocus
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        ) : (
+                          formatDateOnly(p.due_date, userTz)
+                        )}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {isCeo && (p.paid_at || p.status === "paid") ? (
@@ -519,28 +630,41 @@ export default function Payments() {
                       </TableCell>
                       {isCeo && (
                         <TableCell>
-                          {canChangeStatus(p.status) ? (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40">
-                                <DropdownMenuItem onClick={() => setPaidPickerPayment(p)} className="text-emerald-400">
-                                  <Check className="h-3.5 w-3.5 mr-2" /> Payé
-                                </DropdownMenuItem>
-                                {p.status !== "late" && (
-                                  <DropdownMenuItem onClick={() => markAsLate(p.id)} className="text-red-400">
-                                    <Clock className="h-3.5 w-3.5 mr-2" /> En retard
+                          <div className="flex items-center gap-1">
+                            {p.sale_id && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                title="Voir toutes les mensualités du client"
+                                onClick={() => setScheduleModal({ saleId: p.sale_id!, contactName: p.contact_name })}
+                              >
+                                <ListOrdered className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                            {canChangeStatus(p.status) && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40">
+                                  <DropdownMenuItem onClick={() => setPaidPickerPayment(p)} className="text-emerald-400">
+                                    <Check className="h-3.5 w-3.5 mr-2" /> Payé
                                   </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem onClick={() => setLostConfirmPayment(p)} className="text-zinc-400">
-                                  <XCircle className="h-3.5 w-3.5 mr-2" /> Perdu
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          ) : null}
+                                  {p.status !== "late" && (
+                                    <DropdownMenuItem onClick={() => markAsLate(p.id)} className="text-red-400">
+                                      <Clock className="h-3.5 w-3.5 mr-2" /> En retard
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem onClick={() => setLostConfirmPayment(p)} className="text-zinc-400">
+                                    <XCircle className="h-3.5 w-3.5 mr-2" /> Perdu
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </div>
                         </TableCell>
                       )}
                     </TableRow>
@@ -612,6 +736,14 @@ export default function Payments() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Modale "Toutes les mensualités du client" — CEO only */}
+      <PaymentScheduleModal
+        open={!!scheduleModal}
+        onClose={() => setScheduleModal(null)}
+        saleId={scheduleModal?.saleId ?? null}
+        contactName={scheduleModal?.contactName ?? null}
+      />
     </div>
   );
 }
