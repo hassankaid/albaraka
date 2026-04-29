@@ -70,10 +70,10 @@ BEGIN
   WHERE id = p_payment_id
   RETURNING * INTO v_new;
 
+  -- Cascade commissions (sans updated_at car la colonne n'existe pas dans commissions)
   IF p_amount IS NOT NULL AND p_amount != v_old.amount THEN
     UPDATE commissions
-    SET amount = ROUND((p_amount * percentage / 100)::numeric, 2),
-        updated_at = now()
+    SET amount = ROUND((p_amount * percentage / 100)::numeric, 2)
     WHERE payment_id = p_payment_id;
   END IF;
 
