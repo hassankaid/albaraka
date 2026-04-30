@@ -107,6 +107,34 @@ export const LEAD_STATUS_LIST = LEAD_MANUAL_STATUSES.map((key) => ({
   label: leadStatusConfig[key].label,
 }));
 
+// Statuts qu'un collaborateur intermédiaire ne peut pas appliquer manuellement.
+// Raison métier : ces statuts déclenchent un recyclage instantané (le lead
+// quitte le pipeline du collab et part au pot "À recycler" du CEO), donc
+// réservés aux profils confirmés.
+const RESTRICTED_FOR_INTERMEDIAIRE = new Set<string>([
+  "pas_de_reponse",
+  "pas_de_reponse_post_conference",
+]);
+
+/**
+ * Retourne la liste des statuts manuellement sélectionnables dans le dropdown
+ * de qualification d'un lead, en fonction du rôle et du niveau.
+ *
+ * - CEO et collaborateurs confirmés : tous les statuts.
+ * - Collaborateurs intermédiaires : "pas_de_reponse" est masqué.
+ * - Cas non précisés (role/level non fournis) : liste complète par défaut
+ *   (ne jamais bloquer plus que nécessaire).
+ */
+export function getLeadStatusListForLevel(
+  role: string | null | undefined,
+  collaborateurLevel: string | null | undefined,
+): { value: string; label: string }[] {
+  if (role === "collaborateur" && collaborateurLevel === "intermediaire") {
+    return LEAD_STATUS_LIST.filter((s) => !RESTRICTED_FOR_INTERMEDIAIRE.has(s.value));
+  }
+  return LEAD_STATUS_LIST;
+}
+
 // Source filter options for dropdowns
 export const SOURCE_FILTER_OPTIONS = [
   { value: "all", label: "Tous" },

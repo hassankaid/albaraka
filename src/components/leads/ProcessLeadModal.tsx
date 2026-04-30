@@ -22,11 +22,9 @@ import {
 
 type LeadEnriched = Tables<"leads_enriched">;
 
-import { LEAD_STATUS_LIST, LEAD_STATUS_COLORS, LEAD_STATUS_LABELS } from "@/lib/leadConfig";
+import { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS, getLeadStatusListForLevel } from "@/lib/leadConfig";
 
 export { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS };
-
-const STATUS_LIST = LEAD_STATUS_LIST;
 
 // Statuses that trigger instant recycling (unassign + route to CEO's "À recycler" queue)
 const INSTANT_RECYCLE_STATUSES = ["pas_de_reponse", "pas_de_reponse_post_conference"] as const;
@@ -52,6 +50,11 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
   const [originalTagKeys, setOriginalTagKeys] = useState<Set<string>>(new Set());
 
   const canEdit = !!lead && (lead.assigned_to === user?.id || user?.role === "ceo");
+
+  // Liste des statuts manuellement sélectionnables, adaptée au rôle/niveau du user
+  // courant. Les collaborateurs intermédiaires n'ont pas accès à "Pas de réponse"
+  // (réservé aux confirmés car déclenche un recyclage instantané du lead).
+  const statusList = getLeadStatusListForLevel(user?.role, user?.collaborateur_level);
 
   useEffect(() => {
     if (lead && open) {
@@ -287,7 +290,7 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {STATUS_LIST.map((item) => (
+              {statusList.map((item) => (
                 <SelectItem key={item.value} value={item.value}>
                   {item.label}
                 </SelectItem>
