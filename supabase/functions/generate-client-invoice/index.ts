@@ -1,14 +1,20 @@
-// generate-client-invoice v3 — Email AL BARAKA aux couleurs de la marque,
-// wording musulman, PDF en pièce jointe.
+// generate-client-invoice v4 — Génération PDF côté Deno + email Resend.
 //
-// Le PDF est généré côté front via @react-pdf/renderer et uploadé dans
-// Storage par le front. Cette fonction se contente de :
-//   1. Récupérer la row client_invoices via payment_id
-//   2. Fetch le PDF depuis Storage
-//   3. Encoder en base64 + envoyer via Resend avec attachments
-//   4. Si vrai client (pas test) : update email_sent_at + email_sent_to
+// Workflow (1 seul appel) :
+//   1. Auth : CEO (anon JWT) OU service role (appelé par stripe-webhook).
+//   2. Récupère payment + sale + contact + buyer profile.
+//   3. Idempotent : si facture existe avec PDF, retourne (sauf regenerate).
+//   4. Génère un numéro séquentiel via RPC next_client_invoice_number.
+//   5. Génère le PDF avec pdf-lib (rendering serveur, branding AL BARAKA).
+//   6. Upload PDF dans Storage `invoices/clients/{contact_id}/{number}.pdf`.
+//   7. Insert/update DB row.
+//   8. Si send_email = true : email Resend avec PDF en pièce jointe.
+//
+// Auto-trigger : appelé par stripe-webhook (1ère mensualité + invoice.paid)
+// et par le front (CEO marquage manuel paid).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { PDFDocument, rgb, StandardFonts, type PDFFont, type PDFPage } from "https://esm.sh/pdf-lib@1.17.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,7 +29,7 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const RESEND_FROM = Deno.env.get("RESEND_FROM_EMAIL") || "AL BARAKA <noreply@albarakaecosysteme.com>";
 
-// ===== Brand AL BARAKA (aligné avec send-apporteur-access-email) =====
+// ===== Brand AL BARAKA =====
 const BRAND = {
   gold: "#D4AF37",
   goldSoft: "rgba(212,175,55,0.25)",
@@ -35,6 +41,17 @@ const BRAND = {
   domainLabel: "plateforme.albarakaecosysteme.com",
 };
 
+// ===== Issuer =====
+const ISSUER = {
+  name: "ETHICARENA LLC",
+  rep: "Sidali GHALMI",
+  line1: "Meydan Grandstand, 6th floor",
+  line2: "Meydan Road, Nad Al Sheba",
+  city: "Dubai",
+  country: "United Arab Emirates",
+};
+
+// ===== Helpers =====
 function escapeHtml(s: string): string {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
@@ -43,6 +60,184 @@ function firstName(fullName: string): string {
   return (fullName || "").trim().split(/\s+/)[0] || "";
 }
 
+function fmtEur(n: number): string {
+  return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+}
+
+function fmtDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-FR");
+}
+
+// pdf-lib avec WinAnsi ne supporte pas tous les unicodes (ex: ﷻ). On sanitize.
+function sanitize(s: string): string {
+  return String(s)
+    .replace(/[ﷻ]/g, "")
+    .replace(/[…]/g, "...")
+    .replace(/[—–]/g, "-")
+    .replace(/[«»]/g, '"')
+    .replace(/['']/g, "'");
+}
+
+function uint8ToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+// ===== PDF generation =====
+interface InvoicePdfData {
+  invoiceNumber: string;
+  paidAt: string;
+  amount: number;
+  paymentNumber: number | null;
+  totalPayments: number | null;
+  product: string;
+  client: {
+    name: string;
+    email: string | null;
+    address: string | null;
+    postal_code: string | null;
+    city: string | null;
+    country: string | null;
+  };
+}
+
+async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  const page = doc.addPage([595.28, 841.89]); // A4 portrait
+  const { width, height } = page.getSize();
+
+  const helv = await doc.embedFont(StandardFonts.Helvetica);
+  const helvBold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const courier = await doc.embedFont(StandardFonts.Courier);
+
+  // Colors
+  const gold = rgb(0xC5 / 255, 0xA5 / 255, 0x5A / 255);
+  const goldLight = rgb(0xFD / 255, 0xF8 / 255, 0xED / 255);
+  const goldDark = rgb(0x8A / 255, 0x6D / 255, 0x2C / 255);
+  const dark = rgb(0x1A / 255, 0x1A / 255, 0x2E / 255);
+  const gray = rgb(0.4, 0.4, 0.4);
+  const grayBorder = rgb(0xF0 / 255, 0xE6 / 255, 0xD0 / 255);
+  const lightGray = rgb(0.6, 0.6, 0.6);
+
+  const drawText = (
+    p: PDFPage,
+    txt: string,
+    x: number,
+    y: number,
+    opts: { size?: number; font?: PDFFont; color?: ReturnType<typeof rgb> } = {},
+  ) => {
+    p.drawText(sanitize(txt), {
+      x,
+      y,
+      size: opts.size ?? 10,
+      font: opts.font ?? helv,
+      color: opts.color ?? dark,
+    });
+  };
+
+  const margin = 50;
+  let y = height - margin;
+
+  // ── Header AL BARAKA + FACTURE ──
+  drawText(page, "AL BARAKA", margin, y - 10, { size: 22, font: helvBold, color: dark });
+  drawText(page, "Ecosysteme by Ethicarena", margin, y - 28, { size: 8, font: helv, color: gold });
+
+  drawText(page, "FACTURE", width - margin - 80, y - 10, { size: 20, font: helvBold, color: gold });
+  drawText(page, data.invoiceNumber, width - margin - 130, y - 32, { size: 11, font: courier, color: gray });
+
+  const issueDate = new Date().toISOString();
+  drawText(page, `Date d'emission : ${fmtDate(issueDate)}`, width - margin - 165, y - 50, { size: 9, font: helv, color: gray });
+  drawText(page, `Date de paiement : ${fmtDate(data.paidAt)}`, width - margin - 165, y - 64, { size: 9, font: helv, color: gray });
+
+  // Gold separator
+  page.drawRectangle({ x: margin, y: y - 80, width: width - 2 * margin, height: 2, color: gold });
+  y -= 110;
+
+  // ── Émetteur / Destinataire ──
+  const colWidth = (width - 2 * margin - 30) / 2;
+  const colLeftX = margin;
+  const colRightX = margin + colWidth + 30;
+
+  drawText(page, "EMETTEUR", colLeftX, y, { size: 8, font: helvBold, color: gold });
+  drawText(page, "DESTINATAIRE", colRightX, y, { size: 8, font: helvBold, color: gold });
+  y -= 16;
+
+  drawText(page, ISSUER.name, colLeftX, y, { size: 11, font: helvBold, color: dark });
+  drawText(page, data.client.name, colRightX, y, { size: 11, font: helvBold, color: dark });
+  y -= 14;
+
+  drawText(page, ISSUER.rep, colLeftX, y, { size: 9, font: helv, color: gray });
+  if (data.client.address) drawText(page, data.client.address, colRightX, y, { size: 9, font: helv, color: gray });
+  y -= 12;
+
+  drawText(page, ISSUER.line1, colLeftX, y, { size: 9, font: helv, color: gray });
+  if (data.client.postal_code || data.client.city) {
+    drawText(page, `${data.client.postal_code || ""} ${data.client.city || ""}`.trim(), colRightX, y, { size: 9, font: helv, color: gray });
+  }
+  y -= 12;
+
+  drawText(page, ISSUER.line2, colLeftX, y, { size: 9, font: helv, color: gray });
+  if (data.client.country) drawText(page, data.client.country, colRightX, y, { size: 9, font: helv, color: gray });
+  y -= 12;
+
+  drawText(page, `${ISSUER.city}, ${ISSUER.country}`, colLeftX, y, { size: 9, font: helv, color: gray });
+  if (data.client.email) drawText(page, data.client.email, colRightX, y, { size: 9, font: helv, color: gray });
+  y -= 40;
+
+  // ── Table Description / Montant ──
+  const tableTop = y;
+  const colDescX = margin + 12;
+  const colAmountX = width - margin - 12;
+
+  // Header bar
+  page.drawRectangle({ x: margin, y: y - 4, width: width - 2 * margin, height: 26, color: goldLight });
+  drawText(page, "DESCRIPTION", colDescX, y + 6, { size: 8, font: helvBold, color: goldDark });
+  const amountHeader = "MONTANT";
+  const amountHeaderWidth = helvBold.widthOfTextAtSize(amountHeader, 8);
+  drawText(page, amountHeader, colAmountX - amountHeaderWidth, y + 6, { size: 8, font: helvBold, color: goldDark });
+  y -= 26;
+
+  // Row 1 : Description + montant
+  const mensLabel = data.paymentNumber && data.totalPayments
+    ? `Mensualite ${data.paymentNumber}/${data.totalPayments}`
+    : "Paiement";
+
+  drawText(page, sanitize(data.product || "PASS AL BARAKA"), colDescX, y - 5, { size: 11, font: helvBold, color: dark });
+  drawText(page, `${mensLabel} - Paiement recu le ${fmtDate(data.paidAt)}`, colDescX, y - 20, { size: 9, font: helv, color: lightGray });
+
+  const amountStr = fmtEur(data.amount);
+  const amountStrWidth = helv.widthOfTextAtSize(amountStr, 11);
+  drawText(page, amountStr, colAmountX - amountStrWidth, y - 5, { size: 11, font: helv, color: dark });
+
+  y -= 40;
+  page.drawRectangle({ x: margin, y, width: width - 2 * margin, height: 1, color: grayBorder });
+  y -= 8;
+
+  // Total row
+  page.drawRectangle({ x: margin, y: y - 22, width: width - 2 * margin, height: 30, color: goldLight });
+  drawText(page, "TOTAL PAYE", colDescX, y - 14, { size: 12, font: helvBold, color: dark });
+  const totalStr = fmtEur(data.amount);
+  const totalStrWidth = helvBold.widthOfTextAtSize(totalStr, 13);
+  drawText(page, totalStr, colAmountX - totalStrWidth, y - 14, { size: 13, font: helvBold, color: gold });
+
+  // ── Footer ──
+  const footerY = 60;
+  page.drawRectangle({ x: margin, y: footerY + 30, width: width - 2 * margin, height: 1, color: grayBorder });
+  const ecosysText = "AL BARAKA - ECOSYSTEME BY ETHICARENA";
+  const ecosysWidth = helvBold.widthOfTextAtSize(ecosysText, 9);
+  drawText(page, ecosysText, (width - ecosysWidth) / 2, footerY + 14, { size: 9, font: helvBold, color: gold });
+  const issuerText = `Facture emise par ${ISSUER.name} (${ISSUER.city}, ${ISSUER.country})`;
+  const issuerWidth = helv.widthOfTextAtSize(issuerText, 8);
+  drawText(page, issuerText, (width - issuerWidth) / 2, footerY, { size: 8, font: helv, color: gray });
+  const thanksText = "Document genere automatiquement - Merci pour votre confiance.";
+  const thanksWidth = helv.widthOfTextAtSize(thanksText, 8);
+  drawText(page, thanksText, (width - thanksWidth) / 2, footerY - 12, { size: 8, font: helv, color: gray });
+
+  return await doc.save();
+}
+
+// ===== Email HTML =====
 function buildEmailHtml(params: {
   clientName: string;
   invoiceNumber: string;
@@ -52,45 +247,37 @@ function buildEmailHtml(params: {
   paymentNumber: number | null;
   totalPayments: number | null;
 }): string {
-  const fmtEur = (n: number) => n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
-  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("fr-FR");
   const prenom = firstName(params.clientName);
   const mensInfo = params.paymentNumber && params.totalPayments
     ? `(mensualité ${params.paymentNumber}/${params.totalPayments})`
     : "";
 
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="https://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="fr">
+<html xmlns="https://www.w3.org/1999/xhtml" lang="fr">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="color-scheme" content="dark only" />
 <meta name="supported-color-schemes" content="dark only" />
 <title>Ta facture ${escapeHtml(params.invoiceNumber)} — AL BARAKA</title>
 <style type="text/css">
   :root { color-scheme: dark only; supported-color-schemes: dark only; }
-  html, body { margin:0 !important; padding:0 !important; width:100% !important; height:100% !important; background-color:${BRAND.black} !important; }
+  html, body { margin:0 !important; padding:0 !important; width:100% !important; background-color:${BRAND.black} !important; }
   body, table, td, div, p, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
-  table, td { mso-table-lspace:0pt; mso-table-rspace:0pt; border-collapse:collapse !important; }
-  img { border:0; line-height:100%; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; }
+  table, td { border-collapse:collapse !important; }
   .bg-black { background-color:${BRAND.black} !important; }
   .bg-card { background-color:${BRAND.cardBg} !important; }
-  @media (prefers-color-scheme: light) {
-    html, body, .bg-black, [data-bg="black"] { background-color:${BRAND.black} !important; }
-    .bg-card, [data-bg="card"] { background-color:${BRAND.cardBg} !important; }
-  }
   @media screen and (max-width: 600px) {
     .container { width:100% !important; max-width:100% !important; }
     .px-mobile { padding-left:24px !important; padding-right:24px !important; }
   }
 </style>
 </head>
-<body class="bg-black" bgcolor="${BRAND.black}" style="margin:0;padding:0;width:100%;height:100%;background-color:${BRAND.black};font-family:Georgia,'Times New Roman',serif;color:${BRAND.textMain};">
+<body class="bg-black" bgcolor="${BRAND.black}" style="margin:0;padding:0;width:100%;background-color:${BRAND.black};font-family:Georgia,'Times New Roman',serif;color:${BRAND.textMain};">
   <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:${BRAND.black};opacity:0;">
     Ta facture ${escapeHtml(params.invoiceNumber)} est en pièce jointe.
   </div>
-  <table role="presentation" class="bg-black" data-bg="black" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.black}" style="background-color:${BRAND.black};width:100%;border-collapse:collapse;">
+  <table role="presentation" class="bg-black" data-bg="black" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.black}" style="background-color:${BRAND.black};width:100%;">
     <tr>
       <td class="bg-black" data-bg="black" bgcolor="${BRAND.black}" align="center" valign="top" style="background-color:${BRAND.black};padding:40px 16px;">
         <table role="presentation" class="container bg-card" data-bg="card" width="600" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.cardBg}" style="width:600px;max-width:600px;background-color:${BRAND.cardBg};border:1px solid ${BRAND.goldSoft};border-radius:12px;">
@@ -106,35 +293,19 @@ function buildEmailHtml(params: {
               <h2 style="margin:0 0 20px 0;font-size:22px;color:${BRAND.textMain};font-weight:normal;">
                 As salam alaykoum${prenom ? ` ${escapeHtml(prenom)}` : ""},
               </h2>
-              <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
-                Baraka Allahou fik pour ta confiance.
-              </p>
-              <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
-                Nous avons bien reçu ton paiement de <strong style="color:${BRAND.gold};font-weight:normal;">${fmtEur(params.amount)}</strong> ${mensInfo} pour le <strong style="color:${BRAND.gold};font-weight:normal;">${escapeHtml(params.product)}</strong>, encaissé le ${fmtDate(params.paidAt)}.
-              </p>
-              <p style="margin:0 0 28px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
-                Tu trouveras ta facture <strong style="color:${BRAND.gold};font-weight:normal;">${escapeHtml(params.invoiceNumber)}</strong> en pièce jointe (PDF).
-              </p>
-              <p style="margin:0 0 28px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};font-style:italic;">
-                Qu'Allah ﷻ te bénisse et te facilite dans ton parcours.
-              </p>
-              <p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:${BRAND.textSecondary};">
-                Wa salam alaykoum,
-              </p>
-              <p style="margin:0 0 0 0;font-size:14px;line-height:1.6;color:${BRAND.textMain};">
-                <strong style="color:${BRAND.gold};font-weight:normal;">L'équipe AL BARAKA</strong>
-              </p>
+              <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">Baraka Allahou fik pour ta confiance.</p>
+              <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">Nous avons bien reçu ton paiement de <strong style="color:${BRAND.gold};font-weight:normal;">${fmtEur(params.amount)}</strong> ${mensInfo} pour le <strong style="color:${BRAND.gold};font-weight:normal;">${escapeHtml(params.product)}</strong>, encaissé le ${fmtDate(params.paidAt)}.</p>
+              <p style="margin:0 0 28px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">Tu trouveras ta facture <strong style="color:${BRAND.gold};font-weight:normal;">${escapeHtml(params.invoiceNumber)}</strong> en pièce jointe (PDF).</p>
+              <p style="margin:0 0 28px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};font-style:italic;">Qu'Allah ﷻ te bénisse et te facilite dans ton parcours.</p>
+              <p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:${BRAND.textSecondary};">Wa salam alaykoum,</p>
+              <p style="margin:0;font-size:14px;line-height:1.6;color:${BRAND.textMain};"><strong style="color:${BRAND.gold};font-weight:normal;">L'équipe AL BARAKA</strong></p>
             </td>
           </tr>
           <tr><td class="bg-card" data-bg="card" bgcolor="${BRAND.cardBg}" style="background-color:${BRAND.cardBg};padding:8px 0 32px;"></td></tr>
           <tr>
             <td class="bg-card" data-bg="card" bgcolor="${BRAND.cardBg}" align="center" style="background-color:${BRAND.cardBg};padding:20px 32px;border-top:1px solid ${BRAND.goldSoft};">
-              <p style="margin:0 0 4px 0;font-size:11px;color:${BRAND.textSecondary};letter-spacing:0.5px;">
-                Facture émise par <strong style="color:${BRAND.textMain};font-weight:normal;">ETHICARENA LLC</strong> (Dubai, UAE)
-              </p>
-              <p style="margin:0;font-size:11px;color:${BRAND.textSecondary};letter-spacing:0.5px;">
-                © AL BARAKA — <a href="${BRAND.domain}" style="color:${BRAND.gold};text-decoration:none;">${BRAND.domainLabel}</a>
-              </p>
+              <p style="margin:0 0 4px 0;font-size:11px;color:${BRAND.textSecondary};letter-spacing:0.5px;">Facture émise par <strong style="color:${BRAND.textMain};font-weight:normal;">ETHICARENA LLC</strong> (Dubai, UAE)</p>
+              <p style="margin:0;font-size:11px;color:${BRAND.textSecondary};letter-spacing:0.5px;">© AL BARAKA — <a href="${BRAND.domain}" style="color:${BRAND.gold};text-decoration:none;">${BRAND.domainLabel}</a></p>
             </td>
           </tr>
         </table>
@@ -143,13 +314,6 @@ function buildEmailHtml(params: {
   </table>
 </body>
 </html>`;
-}
-
-function uint8ToBase64(bytes: Uint8Array): string {
-  let binary = "";
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
 }
 
 async function sendInvoiceEmail(params: {
@@ -177,6 +341,7 @@ async function sendInvoiceEmail(params: {
   }
 }
 
+// ===== Main handler =====
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -199,66 +364,154 @@ Deno.serve(async (req) => {
     const payment_id = body.payment_id;
     const send_email: boolean = body.send_email !== false;
     const email_to_override: string | undefined = body.email_to_override;
+    const regenerate: boolean = body.regenerate === true;
 
     if (!payment_id) return new Response(JSON.stringify({ error: "payment_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    const { data: invoice, error: invErr } = await supabase
-      .from("client_invoices")
-      .select("*")
-      .eq("payment_id", payment_id)
-      .maybeSingle();
-    if (invErr) return new Response(JSON.stringify({ error: "Invoice lookup failed", detail: invErr }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    if (!invoice) return new Response(JSON.stringify({ error: "Invoice not yet created" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    if (!invoice.html_path) return new Response(JSON.stringify({ error: "PDF not yet uploaded" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // 1. Récupère payment + sale + contact
+    const { data: payment, error: payErr } = await supabase
+      .from("payments")
+      .select(`id, sale_id, contact_id, payment_number, total_payments, amount, paid_at, status,
+               sales!payments_sale_id_fkey(id, product, buyer_profile_id, contact_id),
+               contacts!payments_contact_id_fkey(id, full_name, email)`)
+      .eq("id", payment_id).single();
+    if (payErr || !payment) return new Response(JSON.stringify({ error: "Payment not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (payment.status !== "paid") return new Response(JSON.stringify({ error: "Payment not paid yet" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    if (!send_email) {
-      return new Response(JSON.stringify({ ok: true, invoice }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const sale: any = payment.sales;
+    const contact: any = payment.contacts;
+    const contactId = contact?.id || sale?.contact_id || payment.contact_id;
+    const saleId = sale?.id || payment.sale_id;
+
+    // Buyer profile
+    let buyerProfile: any = null;
+    if (sale?.buyer_profile_id) {
+      const { data } = await supabase.from("profiles")
+        .select("full_name, email, address, postal_code, city, country")
+        .eq("id", sale.buyer_profile_id).single();
+      buyerProfile = data;
     }
 
-    if (!RESEND_API_KEY) {
-      return new Response(JSON.stringify({ error: "RESEND_API_KEY missing" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const clientName = (buyerProfile?.full_name || contact?.full_name || "Client").toString().trim();
+    const clientEmail = (buyerProfile?.email || contact?.email || "").toString().trim();
+
+    // 2. Idempotence : facture existe ?
+    const { data: existing } = await supabase.from("client_invoices").select("*").eq("payment_id", payment_id).maybeSingle();
+
+    let invoiceRow: any = existing;
+    let invoiceNumber: string;
+    let pdfPath: string;
+
+    if (!existing) {
+      // 3. Numérotation
+      const paidDate = new Date(payment.paid_at);
+      const year = paidDate.getUTCFullYear();
+      const month = paidDate.getUTCMonth() + 1;
+      const { data: numData, error: numErr } = await supabase.rpc("next_client_invoice_number", { p_year: year, p_month: month });
+      if (numErr || !numData) return new Response(JSON.stringify({ error: "Failed to generate invoice number", detail: numErr }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      invoiceNumber = numData as string;
+      pdfPath = `clients/${contactId}/${invoiceNumber}.pdf`;
+
+      // Insert row sans pdf_path (sera updaté après upload)
+      const { data: inserted, error: insErr } = await supabase.from("client_invoices").insert({
+        invoice_number: invoiceNumber,
+        payment_id,
+        sale_id: saleId,
+        contact_id: contactId,
+        client_name: clientName,
+        client_email: clientEmail || null,
+        client_address: buyerProfile?.address || null,
+        client_postal_code: buyerProfile?.postal_code || null,
+        client_city: buyerProfile?.city || null,
+        client_country: buyerProfile?.country || null,
+        amount: Number(payment.amount),
+        payment_number: payment.payment_number,
+        total_payments: payment.total_payments,
+        product: sale?.product || "PASS AL BARAKA",
+        paid_at: payment.paid_at,
+      }).select().single();
+      if (insErr) return new Response(JSON.stringify({ error: "Failed to insert invoice row", detail: insErr }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      invoiceRow = inserted;
+    } else {
+      invoiceNumber = existing.invoice_number;
+      pdfPath = existing.html_path || `clients/${contactId}/${invoiceNumber}.pdf`;
     }
 
-    const { data: pdfBlob, error: dlErr } = await supabase.storage.from("invoices").download(invoice.html_path);
-    if (dlErr || !pdfBlob) return new Response(JSON.stringify({ error: "Failed to fetch PDF", detail: dlErr }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    const arrayBuf = await pdfBlob.arrayBuffer();
-    const base64 = uint8ToBase64(new Uint8Array(arrayBuf));
+    // 4. Génère PDF si pas encore présent ou si regenerate
+    if (!invoiceRow.html_path || regenerate) {
+      const pdfBytes = await generateInvoicePdf({
+        invoiceNumber,
+        paidAt: payment.paid_at,
+        amount: Number(payment.amount),
+        paymentNumber: payment.payment_number,
+        totalPayments: payment.total_payments,
+        product: sale?.product || "PASS AL BARAKA",
+        client: {
+          name: clientName,
+          email: clientEmail || null,
+          address: buyerProfile?.address || null,
+          postal_code: buyerProfile?.postal_code || null,
+          city: buyerProfile?.city || null,
+          country: buyerProfile?.country || null,
+        },
+      });
 
-    const toEmail = email_to_override || invoice.client_email;
-    if (!toEmail) return new Response(JSON.stringify({ error: "No email to send to" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      // Upload Storage
+      const { error: uploadErr } = await supabase.storage.from("invoices").upload(pdfPath, pdfBytes, {
+        contentType: "application/pdf",
+        upsert: true,
+      });
+      if (uploadErr) return new Response(JSON.stringify({ error: "Storage upload failed", detail: uploadErr }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    const emailHtml = buildEmailHtml({
-      clientName: invoice.client_name,
-      invoiceNumber: invoice.invoice_number,
-      amount: Number(invoice.amount),
-      paidAt: invoice.paid_at,
-      product: invoice.product || "PASS AL BARAKA",
-      paymentNumber: invoice.payment_number,
-      totalPayments: invoice.total_payments,
-    });
-
-    await sendInvoiceEmail({
-      to: toEmail,
-      subject: `Ta facture ${invoice.invoice_number} — AL BARAKA`,
-      html: emailHtml,
-      attachmentBase64: base64,
-      attachmentFilename: `${invoice.invoice_number}.pdf`,
-      apiKey: RESEND_API_KEY,
-    });
-
-    let updatedInvoice = invoice;
-    if (!email_to_override) {
-      const nowIso = new Date().toISOString();
-      const { data: upd } = await supabase
-        .from("client_invoices")
-        .update({ email_sent_at: nowIso, email_sent_to: toEmail })
-        .eq("id", invoice.id)
-        .select()
-        .single();
-      if (upd) updatedInvoice = upd;
+      // Update DB
+      await supabase.from("client_invoices").update({ html_path: pdfPath }).eq("id", invoiceRow.id);
+      invoiceRow.html_path = pdfPath;
     }
 
-    return new Response(JSON.stringify({ ok: true, invoice: updatedInvoice, sent_to: toEmail, was_test: !!email_to_override }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // 5. Envoi email
+    if (send_email) {
+      if (!RESEND_API_KEY) return new Response(JSON.stringify({ ok: true, invoice: invoiceRow, email_skipped: "RESEND_API_KEY missing" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+      // Fetch PDF from storage
+      const { data: pdfBlob, error: dlErr } = await supabase.storage.from("invoices").download(pdfPath);
+      if (dlErr || !pdfBlob) return new Response(JSON.stringify({ error: "Failed to fetch PDF", detail: dlErr }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const arrayBuf = await pdfBlob.arrayBuffer();
+      const base64 = uint8ToBase64(new Uint8Array(arrayBuf));
+
+      const toEmail = email_to_override || clientEmail;
+      if (!toEmail) return new Response(JSON.stringify({ error: "No email to send to" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+      const emailHtml = buildEmailHtml({
+        clientName,
+        invoiceNumber,
+        amount: Number(payment.amount),
+        paidAt: payment.paid_at,
+        product: sale?.product || "PASS AL BARAKA",
+        paymentNumber: payment.payment_number,
+        totalPayments: payment.total_payments,
+      });
+
+      await sendInvoiceEmail({
+        to: toEmail,
+        subject: `Ta facture ${invoiceNumber} — AL BARAKA`,
+        html: emailHtml,
+        attachmentBase64: base64,
+        attachmentFilename: `${invoiceNumber}.pdf`,
+        apiKey: RESEND_API_KEY,
+      });
+
+      if (!email_to_override) {
+        const nowIso = new Date().toISOString();
+        const { data: upd } = await supabase.from("client_invoices")
+          .update({ email_sent_at: nowIso, email_sent_to: toEmail })
+          .eq("id", invoiceRow.id).select().single();
+        if (upd) invoiceRow = upd;
+      }
+
+      return new Response(JSON.stringify({ ok: true, invoice: invoiceRow, sent_to: toEmail, was_test: !!email_to_override }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    return new Response(JSON.stringify({ ok: true, invoice: invoiceRow }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err: any) {
     console.error("generate-client-invoice error:", err);
     return new Response(JSON.stringify({ error: err.message ?? String(err) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });

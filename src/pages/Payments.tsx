@@ -244,6 +244,19 @@ export default function Payments() {
       toast({ title: "Paiement marqué comme payé" });
       setPaidPickerPayment(null);
       fetchPayments();
+      // Déclenche en arrière-plan la génération + envoi de la facture client.
+      // Non-bloquant : si ça échoue, le CEO peut toujours regénérer via le
+      // bouton facture (FileText) sur la ligne du paiement.
+      (supabase.functions as any)
+        .invoke("generate-client-invoice", {
+          body: { payment_id: paymentId, send_email: true },
+        })
+        .then((res: any) => {
+          if (res?.error) {
+            console.warn("[client-invoice] auto-trigger failed:", res.error);
+          }
+        })
+        .catch((e: any) => console.warn("[client-invoice] auto-trigger error:", e));
     }
   };
 

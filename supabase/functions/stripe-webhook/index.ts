@@ -362,12 +362,45 @@ async function markFirstPaymentPaid(
   if (ids.paymentIntentId) patch.stripe_payment_intent_id = ids.paymentIntentId;
   if (ids.invoiceId) patch.stripe_invoice_id = ids.invoiceId;
 
-  await supabase
+  // Update + récupère l'id pour déclencher la facture client
+  const { data: updated } = await supabase
     .from("payments")
     .update(patch)
     .eq("sale_id", saleId)
     .eq("payment_number", 1)
-    .eq("status", "pending");
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle();
+
+  if (updated?.id) {
+    triggerClientInvoice(updated.id);
+  }
+}
+
+/**
+ * Déclenche la génération + envoi de la facture client en arrière-plan.
+ * Non-bloquant : si la function échoue, on log mais on n'interrompt pas
+ * le flow Stripe (la facture peut être (re)générée manuellement plus tard
+ * via /payments → bouton facture).
+ */
+function triggerClientInvoice(payment_id: string): void {
+  fetch(`${SUPABASE_URL}/functions/v1/generate-client-invoice`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ payment_id, send_email: true }),
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        const text = await res.text();
+        console.error(`[client-invoice] failed ${res.status}: ${text}`);
+      } else {
+        console.log(`[client-invoice] generated and sent for payment=${payment_id}`);
+      }
+    })
+    .catch((e) => console.error("[client-invoice] invoke failed:", e));
 }
 
 /**
@@ -495,6 +528,9 @@ async function handleInvoicePaid(
     .eq("id", target.id);
 
   console.log(`[invoice.paid] payment ${target.id} (#${target.payment_number}) marked paid`);
+
+  // Déclenche la génération + envoi de la facture client (mensualité N×)
+  triggerClientInvoice(target.id);
 }
 
 async function handleInvoiceFailed(
