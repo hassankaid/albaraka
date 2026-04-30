@@ -96,3 +96,25 @@ export function useRecalculatePayments() {
     },
   });
 }
+
+/**
+ * Supprime une vente complète (CEO uniquement).
+ * Cascade auto sur payments + commissions via FK.
+ * Bloqué côté DB si invoice_lines existent ou si la vente a des ventes filles.
+ */
+export function useDeleteSaleAdmin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (sale_id: string) => {
+      const { error } = await (supabase.rpc as any)("delete_sale_admin", { p_sale_id: sale_id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["sales"] });
+      qc.invalidateQueries({ queryKey: ["payments-list"] });
+      qc.invalidateQueries({ queryKey: ["schedule"] });
+      qc.invalidateQueries({ queryKey: ["commissions"] });
+      qc.invalidateQueries({ queryKey: ["financial"] });
+    },
+  });
+}

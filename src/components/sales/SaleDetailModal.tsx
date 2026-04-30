@@ -14,10 +14,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Check, RefreshCw, Trash2, Plus, CalendarIcon, Pencil, X, Save } from "lucide-react";
+import { Check, RefreshCw, Trash2, Plus, CalendarIcon, Pencil, X, Save, AlertTriangle, Loader2 } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useDeleteSaleAdmin } from "@/hooks/usePaymentAdmin";
+import { useQuery } from "@tanstack/react-query";
 
 interface Payment {
   id: string;
@@ -207,6 +209,45 @@ export default function SaleDetailModal({
 
   const totalPaid = payments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
   const totalPending = payments.filter((p) => p.status === "pending").reduce((s, p) => s + p.amount, 0);
+
+  // ─── Suppression complète de la vente (CEO) ─────────────────────────
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const deleteSale = useDeleteSaleAdmin();
+
+  // Calcule l'impact de la suppression (counts) pour le résumé dans la modale
+  const { data: impact } = useQuery({
+    queryKey: ["sale-deletion-impact", saleId],
+    enabled: !!saleId && deleteConfirmOpen,
+    queryFn: async () => {
+      const [paymentsRes, commissionsRes, invoiceLinesRes, childSalesRes] = await Promise.all([
+        (supabase as any).from("payments").select("id", { count: "exact", head: true }).eq("sale_id", saleId),
+        (supabase as any).from("commissions").select("id", { count: "exact", head: true }).eq("sale_id", saleId),
+        (supabase as any).from("invoice_lines").select("id", { count: "exact", head: true }).eq("sale_id", saleId),
+        (supabase as any).from("sales").select("id", { count: "exact", head: true }).eq("parent_sale_id", saleId),
+      ]);
+      return {
+        payments: paymentsRes.count ?? 0,
+        commissions: commissionsRes.count ?? 0,
+        invoice_lines: invoiceLinesRes.count ?? 0,
+        child_sales: childSalesRes.count ?? 0,
+      };
+    },
+  });
+
+  const canDelete = (impact?.invoice_lines ?? 0) === 0 && (impact?.child_sales ?? 0) === 0;
+
+  async function handleDeleteSale() {
+    if (!saleId) return;
+    try {
+      await deleteSale.mutateAsync(saleId);
+      toast({ title: "Vente supprimée", description: "La vente et toutes ses données liées ont été supprimées." });
+      setDeleteConfirmOpen(false);
+      onOpenChange(false);
+      onUpdated();
+    } catch (e: any) {
+      toast({ title: "Suppression impossible", description: e.message, variant: "destructive" });
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -491,7 +532,98 @@ export default function SaleDetailModal({
             </Table>
           )}
         </div>
+
+        {/* Danger zone — Supprimer la vente (CEO uniquement) */}
+        {isCeo && saleId && (
+          <>
+            <Separator />
+            <div className="flex items-center justify-between gap-4 pt-2">
+              <div className="text-xs text-muted-foreground">
+                Suppression complète de la vente, des paiements et des commissions associés.
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => setDeleteConfirmOpen(true)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Supprimer la vente
+              </Button>
+            </div>
+          </>
+        )}
       </DialogContent>
+
+      {/* Confirmation de suppression complète */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Supprimer cette vente ?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <p>
+                  <strong>{saleProduct}</strong> — {contactName || "—"} —{" "}
+                  <strong>{saleAmountHt.toLocaleString("fr-FR")} €</strong>
+                </p>
+
+                <div className="rounded-md border border-border/50 bg-secondary/30 p-3 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                    Seront supprimés en cascade :
+                  </p>
+                  <ul className="text-xs space-y-0.5 list-disc pl-5">
+                    <li>
+                      <strong>{impact?.payments ?? "…"}</strong> paiement(s) / mensualité(s)
+                    </li>
+                    <li>
+                      <strong>{impact?.commissions ?? "…"}</strong> commission(s) liée(s)
+                    </li>
+                  </ul>
+                </div>
+
+                {(impact?.invoice_lines ?? 0) > 0 && (
+                  <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+                    <strong>⛔ Suppression bloquée</strong>
+                    <p className="mt-1 text-foreground/80">
+                      Cette vente apparaît dans <strong>{impact!.invoice_lines}</strong> ligne(s) de facture déjà émise(s).
+                      Détache d'abord ces lignes ou supprime les factures concernées.
+                    </p>
+                  </div>
+                )}
+
+                {(impact?.child_sales ?? 0) > 0 && (
+                  <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+                    <strong>⛔ Suppression bloquée</strong>
+                    <p className="mt-1 text-foreground/80">
+                      Cette vente est la vente parente de <strong>{impact!.child_sales}</strong> vente(s) liée(s)
+                      (acompte ou solde). Supprime d'abord les ventes filles.
+                    </p>
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground italic">
+                  Cette action est irréversible. Un audit log est enregistré (snapshot complet de la vente).
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteSale}
+              disabled={!canDelete || deleteSale.isPending}
+            >
+              {deleteSale.isPending && <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />}
+              <Trash2 className="h-3.5 w-3.5 mr-2" />
+              Supprimer définitivement
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
