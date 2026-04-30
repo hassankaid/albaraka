@@ -8,6 +8,7 @@ const corsHeaders = {
 
 const VALID_SOURCES = ['vsl_a', 'vsl_b', 'vsl_webi']
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as const
+const SYSTEME_IO_API_TIMEOUT_MS = 5000
 
 type UtmKey = typeof UTM_KEYS[number]
 type Utm = Partial<Record<UtmKey, string>>
@@ -35,20 +36,13 @@ function formatPhoneE164(phone: string | null | undefined): string | null {
   return cleaned
 }
 
-// Parcourt récursivement le payload à la recherche de strings qui ressemblent
-// à des URLs avec des UTM. Retourne la première URL trouvée + le chemin où elle
-// a été trouvée (debug). Limite la profondeur pour éviter les boucles infinies.
+// Recherche récursive d'une URL avec UTM dans le payload (tentative rapide)
 function findUrlWithUtm(obj: unknown, path: string = '', depth: number = 0): { url: string; path: string } | null {
   if (depth > 6 || obj === null || obj === undefined) return null
-
   if (typeof obj === 'string') {
-    // Heuristique : contient http(s):// et au moins un utm_*
-    if (/^https?:\/\//i.test(obj) && /[?&]utm_/i.test(obj)) {
-      return { url: obj, path }
-    }
+    if (/^https?:\/\//i.test(obj) && /[?&]utm_/i.test(obj)) return { url: obj, path }
     return null
   }
-
   if (Array.isArray(obj)) {
     for (let i = 0; i < obj.length; i++) {
       const found = findUrlWithUtm(obj[i], `${path}[${i}]`, depth + 1)
@@ -56,43 +50,34 @@ function findUrlWithUtm(obj: unknown, path: string = '', depth: number = 0): { u
     }
     return null
   }
-
   if (typeof obj === 'object') {
     for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
       const found = findUrlWithUtm(value, path ? `${path}.${key}` : key, depth + 1)
       if (found) return found
     }
   }
-
   return null
 }
 
-// Tente d'extraire les UTM directement depuis des champs nommés utm_* dans le payload
-// (fallback si pas d'URL détectée). Cherche en profondeur dans n'importe quel objet.
 function findDirectUtmFields(obj: unknown, depth: number = 0): Utm {
   if (depth > 6 || obj === null || obj === undefined || typeof obj !== 'object') return {}
   const out: Utm = {}
-
   const visit = (o: unknown, d: number) => {
     if (d > 6 || o === null || o === undefined || typeof o !== 'object') return
-    if (Array.isArray(o)) {
-      for (const item of o) visit(item, d + 1)
-      return
-    }
+    if (Array.isArray(o)) { for (const item of o) visit(item, d + 1); return }
     for (const [key, value] of Object.entries(o as Record<string, unknown>)) {
       const lk = key.toLowerCase()
       if ((UTM_KEYS as readonly string[]).includes(lk) && typeof value === 'string' && value.length > 0) {
         if (!out[lk as UtmKey]) out[lk as UtmKey] = value
-      } else if (typeof value === 'object') {
-        visit(value, d + 1)
-      }
+      } else if (typeof value === 'object') visit(value, d + 1)
     }
   }
   visit(obj, depth)
   return out
 }
 
-function parseUtmFromUrl(url: string): Utm {
+function parseUtmFromUrl(url: string | null | undefined): Utm {
+  if (!url || typeof url !== 'string') return {}
   try {
     const u = new URL(url)
     const out: Utm = {}
@@ -101,28 +86,50 @@ function parseUtmFromUrl(url: string): Utm {
       if (v) out[k] = v
     }
     return out
-  } catch {
-    return {}
-  }
+  } catch { return {} }
 }
 
-// Stratégie de parsing UTM :
-//   1. Cherche une URL avec UTM dans le payload (le plus fiable)
-//   2. Si pas trouvée, cherche des champs nommés utm_* directement dans le payload
-//   3. Sinon : pas d'UTM (renvoie objet vide)
-function extractUtm(payload: unknown): { utm: Utm; sourceUrl: string | null; notes: string } {
+// 1. Cherche dans le payload (rapide, sans appel réseau)
+function extractUtmFromPayload(payload: unknown): { utm: Utm; sourceUrl: string | null; notes: string } {
   const found = findUrlWithUtm(payload)
   if (found) {
     const utm = parseUtmFromUrl(found.url)
     if (Object.keys(utm).length > 0) {
-      return { utm, sourceUrl: found.url, notes: `Parsed from URL at: ${found.path}` }
+      return { utm, sourceUrl: found.url, notes: `payload-url:${found.path}` }
     }
   }
   const direct = findDirectUtmFields(payload)
   if (Object.keys(direct).length > 0) {
-    return { utm: direct, sourceUrl: null, notes: 'Parsed from direct utm_* fields in payload' }
+    return { utm: direct, sourceUrl: null, notes: 'payload-direct-fields' }
   }
-  return { utm: {}, sourceUrl: null, notes: 'No URL with UTM found, no direct utm_* fields found' }
+  return { utm: {}, sourceUrl: null, notes: 'payload-no-match' }
+}
+
+// 2. Fallback API Systeme.io : récupère le contact et son sourceURL
+async function fetchUtmFromApi(systemeIoId: string, apiKey: string): Promise<{ utm: Utm; sourceUrl: string | null; notes: string }> {
+  if (!systemeIoId || !apiKey) {
+    return { utm: {}, sourceUrl: null, notes: 'api-skip:missing-id-or-key' }
+  }
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), SYSTEME_IO_API_TIMEOUT_MS)
+  try {
+    const resp = await fetch(`https://api.systeme.io/api/contacts/${systemeIoId}`, {
+      method: 'GET',
+      headers: { 'X-API-Key': apiKey, 'accept': 'application/json' },
+      signal: controller.signal,
+    })
+    if (!resp.ok) {
+      return { utm: {}, sourceUrl: null, notes: `api-http-${resp.status}` }
+    }
+    const contact = await resp.json()
+    const sourceUrl: string | null = contact?.sourceURL ?? contact?.sourceUrl ?? null
+    const utm = parseUtmFromUrl(sourceUrl)
+    return { utm, sourceUrl, notes: Object.keys(utm).length > 0 ? 'api-ok' : 'api-no-utm-in-source-url' }
+  } catch (e: any) {
+    return { utm: {}, sourceUrl: null, notes: `api-exception:${e?.name ?? 'Error'}` }
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 serve(async (req) => {
@@ -135,7 +142,6 @@ serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   )
 
-  // Variables remontées dans l'archive même en cas d'erreur partielle
   let archivedPayload: unknown = null
   let archivedSource: string | null = null
   let archivedSystemeIoId: string | null = null
@@ -160,13 +166,6 @@ serve(async (req) => {
     const payload = await req.json()
     archivedPayload = payload
     console.log('Webhook Systeme IO reçu:', JSON.stringify(payload))
-
-    // Parsing UTM (avant traitement métier pour qu'on archive même si le contact est invalide)
-    const { utm, sourceUrl, notes } = extractUtm(payload)
-    archivedUtm = utm
-    archivedSourceUrl = sourceUrl
-    archivedParseNotes = notes
-    console.log('UTM extraits:', utm, '| URL:', sourceUrl, '| notes:', notes)
 
     const contact = payload.data?.contact
     if (!contact) {
@@ -193,7 +192,41 @@ serve(async (req) => {
       )
     }
 
-    console.log('Données formatées:', { email, phone, fullName, systemeIoId })
+    // ============================================================
+    // Extraction UTM : payload d'abord (rapide), API Systeme.io en
+    // fallback si rien trouvé dans le payload. Garantit qu'on capte
+    // les UTM via le sourceURL exposé par l'API même si Systeme.io
+    // ne les met pas dans son webhook payload.
+    // ============================================================
+    const fromPayload = extractUtmFromPayload(payload)
+    let utm: Utm = fromPayload.utm
+    let sourceUrl: string | null = fromPayload.sourceUrl
+    let notes: string = fromPayload.notes
+
+    if (Object.keys(utm).length === 0 && systemeIoId) {
+      // Aucun UTM dans le payload → fallback API
+      const { data: keyRow } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'systeme_io_api_key')
+        .maybeSingle()
+      const stored = keyRow?.value
+      const apiKey: string = typeof stored === 'string' ? stored : (stored ?? '')
+
+      if (apiKey) {
+        const fromApi = await fetchUtmFromApi(systemeIoId, apiKey)
+        utm = fromApi.utm
+        sourceUrl = fromApi.sourceUrl
+        notes = `${fromPayload.notes} → ${fromApi.notes}`
+      } else {
+        notes = `${fromPayload.notes} → api-skip:no-key-in-app-settings`
+      }
+    }
+
+    archivedUtm = utm
+    archivedSourceUrl = sourceUrl
+    archivedParseNotes = notes
+    console.log('UTM final:', utm, '| URL:', sourceUrl, '| notes:', notes)
 
     const { data: contactId, error: contactError } = await supabase
       .rpc('find_or_create_contact', {
@@ -205,7 +238,6 @@ serve(async (req) => {
     if (contactError) throw contactError
     archivedContactId = contactId
 
-    // Dédup technique 10s (retry instantané)
     const tenSecondsAgo = new Date(Date.now() - 10000).toISOString()
     const { data: recentLead } = await supabase
       .from('leads')
@@ -249,11 +281,11 @@ serve(async (req) => {
     console.log('Lead créé:', lead.id, '| UTM:', utm)
 
     return new Response(
-      JSON.stringify({ success: true, contact_id: contactId, lead_id: lead.id, source, utm }),
+      JSON.stringify({ success: true, contact_id: contactId, lead_id: lead.id, source, utm, parse_notes: notes }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erreur webhook:', error)
     archivedParseNotes = (archivedParseNotes ? archivedParseNotes + ' | ' : '') + 'ERREUR: ' + (error?.message ?? String(error))
     return new Response(
@@ -261,7 +293,6 @@ serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } finally {
-    // Archive systématique (même en cas d'erreur) pour pouvoir analyser
     if (archivedPayload !== null) {
       try {
         await supabase
