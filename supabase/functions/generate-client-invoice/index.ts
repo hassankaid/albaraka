@@ -1,14 +1,12 @@
-// generate-client-invoice v2 — Envoi email avec PDF en pièce jointe.
+// generate-client-invoice v3 — Email AL BARAKA aux couleurs de la marque,
+// wording musulman, PDF en pièce jointe.
 //
 // Le PDF est généré côté front via @react-pdf/renderer et uploadé dans
-// Storage par le front (RPC create_client_invoice + set_client_invoice_pdf_path).
-// Cette fonction se contente de :
+// Storage par le front. Cette fonction se contente de :
 //   1. Récupérer la row client_invoices via payment_id
 //   2. Fetch le PDF depuis Storage
 //   3. Encoder en base64 + envoyer via Resend avec attachments
 //   4. Si vrai client (pas test) : update email_sent_at + email_sent_to
-//
-// Auth : CEO (anon JWT) ou service_role.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -25,8 +23,24 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const RESEND_FROM = Deno.env.get("RESEND_FROM_EMAIL") || "AL BARAKA <noreply@albarakaecosysteme.com>";
 
+// ===== Brand AL BARAKA (aligné avec send-apporteur-access-email) =====
+const BRAND = {
+  gold: "#D4AF37",
+  goldSoft: "rgba(212,175,55,0.25)",
+  black: "#0A0A0A",
+  cardBg: "#141414",
+  textMain: "#EDEDED",
+  textSecondary: "#9A9A9A",
+  domain: "https://plateforme.albarakaecosysteme.com",
+  domainLabel: "plateforme.albarakaecosysteme.com",
+};
+
 function escapeHtml(s: string): string {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function firstName(fullName: string): string {
+  return (fullName || "").trim().split(/\s+/)[0] || "";
 }
 
 function buildEmailHtml(params: {
@@ -40,24 +54,95 @@ function buildEmailHtml(params: {
 }): string {
   const fmtEur = (n: number) => n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("fr-FR");
-  const mensInfo = params.paymentNumber && params.totalPayments ? ` (mensualité ${params.paymentNumber}/${params.totalPayments})` : "";
-  return `<!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#f5f1e6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f1e6;padding:40px 20px;"><tr><td align="center">
-<table width="540" cellpadding="0" cellspacing="0" style="max-width:540px;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #e6dcc4;">
-<tr><td style="padding:32px 32px 16px;border-bottom:2px solid #C5A55A">
-  <div style="font-family:Georgia,serif;font-size:22px;font-weight:600;letter-spacing:2px;color:#1a1a2e">AL BARAKA</div>
-  <div style="font-size:10px;color:#C5A55A;letter-spacing:3px;text-transform:uppercase;margin-top:4px">Écosystème by Ethicarena</div>
-</td></tr>
-<tr><td style="padding:24px 32px">
-  <h1 style="font-size:18px;color:#1a1a2e;margin:0 0 16px">Bonjour ${escapeHtml(params.clientName)},</h1>
-  <p style="font-size:14px;color:#444;line-height:1.6;margin:0 0 16px">Nous avons bien reçu votre paiement de <strong>${fmtEur(params.amount)}</strong>${mensInfo} pour le <strong>${escapeHtml(params.product)}</strong>.</p>
-  <p style="font-size:14px;color:#444;line-height:1.6;margin:0 0 8px">Vous trouverez votre facture <strong>${escapeHtml(params.invoiceNumber)}</strong> en pièce jointe (PDF) — paiement reçu le ${fmtDate(params.paidAt)}.</p>
-  <p style="font-size:14px;color:#444;line-height:1.6;margin:24px 0 0">Merci pour votre confiance.<br/><strong>L'équipe AL BARAKA</strong></p>
-</td></tr>
-<tr><td style="padding:16px 32px 24px;border-top:1px solid #f0e6d0;text-align:center"><p style="font-size:11px;color:#999;margin:0;line-height:1.6">Facture émise par ETHICARENA LLC (Dubai, UAE)<br/><span style="color:#C5A55A;letter-spacing:1.5px;text-transform:uppercase;font-size:10px">AL BARAKA · Écosystème by Ethicarena</span></p></td></tr>
-</table></td></tr></table></body></html>`;
+  const prenom = firstName(params.clientName);
+  const mensInfo = params.paymentNumber && params.totalPayments
+    ? `(mensualité ${params.paymentNumber}/${params.totalPayments})`
+    : "";
+
+  return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="https://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="color-scheme" content="dark only" />
+<meta name="supported-color-schemes" content="dark only" />
+<title>Ta facture ${escapeHtml(params.invoiceNumber)} — AL BARAKA</title>
+<style type="text/css">
+  :root { color-scheme: dark only; supported-color-schemes: dark only; }
+  html, body { margin:0 !important; padding:0 !important; width:100% !important; height:100% !important; background-color:${BRAND.black} !important; }
+  body, table, td, div, p, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+  table, td { mso-table-lspace:0pt; mso-table-rspace:0pt; border-collapse:collapse !important; }
+  img { border:0; line-height:100%; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; }
+  .bg-black { background-color:${BRAND.black} !important; }
+  .bg-card { background-color:${BRAND.cardBg} !important; }
+  @media (prefers-color-scheme: light) {
+    html, body, .bg-black, [data-bg="black"] { background-color:${BRAND.black} !important; }
+    .bg-card, [data-bg="card"] { background-color:${BRAND.cardBg} !important; }
+  }
+  @media screen and (max-width: 600px) {
+    .container { width:100% !important; max-width:100% !important; }
+    .px-mobile { padding-left:24px !important; padding-right:24px !important; }
+  }
+</style>
+</head>
+<body class="bg-black" bgcolor="${BRAND.black}" style="margin:0;padding:0;width:100%;height:100%;background-color:${BRAND.black};font-family:Georgia,'Times New Roman',serif;color:${BRAND.textMain};">
+  <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:${BRAND.black};opacity:0;">
+    Ta facture ${escapeHtml(params.invoiceNumber)} est en pièce jointe.
+  </div>
+  <table role="presentation" class="bg-black" data-bg="black" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.black}" style="background-color:${BRAND.black};width:100%;border-collapse:collapse;">
+    <tr>
+      <td class="bg-black" data-bg="black" bgcolor="${BRAND.black}" align="center" valign="top" style="background-color:${BRAND.black};padding:40px 16px;">
+        <table role="presentation" class="container bg-card" data-bg="card" width="600" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.cardBg}" style="width:600px;max-width:600px;background-color:${BRAND.cardBg};border:1px solid ${BRAND.goldSoft};border-radius:12px;">
+          <tr>
+            <td class="bg-card px-mobile" data-bg="card" bgcolor="${BRAND.cardBg}" align="center" style="background-color:${BRAND.cardBg};padding:48px 32px 16px;">
+              <h1 style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:32px;color:${BRAND.gold};letter-spacing:6px;font-weight:normal;">AL BARAKA</h1>
+              <p style="margin:10px 0 0 0;color:${BRAND.textSecondary};font-size:11px;letter-spacing:3px;text-transform:uppercase;">L'écosystème</p>
+              <div style="width:60px;height:1px;background-color:${BRAND.gold};margin:24px auto 0 auto;line-height:1px;font-size:1px;">&nbsp;</div>
+            </td>
+          </tr>
+          <tr>
+            <td class="bg-card px-mobile" data-bg="card" bgcolor="${BRAND.cardBg}" style="background-color:${BRAND.cardBg};padding:32px 40px 8px;">
+              <h2 style="margin:0 0 20px 0;font-size:22px;color:${BRAND.textMain};font-weight:normal;">
+                As salam alaykoum${prenom ? ` ${escapeHtml(prenom)}` : ""},
+              </h2>
+              <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
+                Baraka Allahou fik pour ta confiance.
+              </p>
+              <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
+                Nous avons bien reçu ton paiement de <strong style="color:${BRAND.gold};font-weight:normal;">${fmtEur(params.amount)}</strong> ${mensInfo} pour le <strong style="color:${BRAND.gold};font-weight:normal;">${escapeHtml(params.product)}</strong>, encaissé le ${fmtDate(params.paidAt)}.
+              </p>
+              <p style="margin:0 0 28px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
+                Tu trouveras ta facture <strong style="color:${BRAND.gold};font-weight:normal;">${escapeHtml(params.invoiceNumber)}</strong> en pièce jointe (PDF).
+              </p>
+              <p style="margin:0 0 28px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};font-style:italic;">
+                Qu'Allah ﷻ te bénisse et te facilite dans ton parcours.
+              </p>
+              <p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:${BRAND.textSecondary};">
+                Wa salam alaykoum,
+              </p>
+              <p style="margin:0 0 0 0;font-size:14px;line-height:1.6;color:${BRAND.textMain};">
+                <strong style="color:${BRAND.gold};font-weight:normal;">L'équipe AL BARAKA</strong>
+              </p>
+            </td>
+          </tr>
+          <tr><td class="bg-card" data-bg="card" bgcolor="${BRAND.cardBg}" style="background-color:${BRAND.cardBg};padding:8px 0 32px;"></td></tr>
+          <tr>
+            <td class="bg-card" data-bg="card" bgcolor="${BRAND.cardBg}" align="center" style="background-color:${BRAND.cardBg};padding:20px 32px;border-top:1px solid ${BRAND.goldSoft};">
+              <p style="margin:0 0 4px 0;font-size:11px;color:${BRAND.textSecondary};letter-spacing:0.5px;">
+                Facture émise par <strong style="color:${BRAND.textMain};font-weight:normal;">ETHICARENA LLC</strong> (Dubai, UAE)
+              </p>
+              <p style="margin:0;font-size:11px;color:${BRAND.textSecondary};letter-spacing:0.5px;">
+                © AL BARAKA — <a href="${BRAND.domain}" style="color:${BRAND.gold};text-decoration:none;">${BRAND.domainLabel}</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
 
 function uint8ToBase64(bytes: Uint8Array): string {
@@ -123,8 +208,8 @@ Deno.serve(async (req) => {
       .eq("payment_id", payment_id)
       .maybeSingle();
     if (invErr) return new Response(JSON.stringify({ error: "Invoice lookup failed", detail: invErr }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    if (!invoice) return new Response(JSON.stringify({ error: "Invoice not yet created. Generate it first from the front." }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    if (!invoice.html_path) return new Response(JSON.stringify({ error: "PDF not yet uploaded. Generate it first from the front." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!invoice) return new Response(JSON.stringify({ error: "Invoice not yet created" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!invoice.html_path) return new Response(JSON.stringify({ error: "PDF not yet uploaded" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     if (!send_email) {
       return new Response(JSON.stringify({ ok: true, invoice }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -135,7 +220,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: pdfBlob, error: dlErr } = await supabase.storage.from("invoices").download(invoice.html_path);
-    if (dlErr || !pdfBlob) return new Response(JSON.stringify({ error: "Failed to fetch PDF from storage", detail: dlErr }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (dlErr || !pdfBlob) return new Response(JSON.stringify({ error: "Failed to fetch PDF", detail: dlErr }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     const arrayBuf = await pdfBlob.arrayBuffer();
     const base64 = uint8ToBase64(new Uint8Array(arrayBuf));
 
@@ -154,7 +239,7 @@ Deno.serve(async (req) => {
 
     await sendInvoiceEmail({
       to: toEmail,
-      subject: `Votre facture ${invoice.invoice_number} — AL BARAKA`,
+      subject: `Ta facture ${invoice.invoice_number} — AL BARAKA`,
       html: emailHtml,
       attachmentBase64: base64,
       attachmentFilename: `${invoice.invoice_number}.pdf`,
