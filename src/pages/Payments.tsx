@@ -12,12 +12,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
-import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare, MoreHorizontal, Clock, XCircle, CalendarIcon, ListOrdered, Save, X as XIcon, Loader2 } from "lucide-react";
+import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare, MoreHorizontal, Clock, XCircle, CalendarIcon, ListOrdered, Save, X as XIcon, Loader2, FileText } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useUpdatePaymentAdmin } from "@/hooks/usePaymentAdmin";
 import PaymentScheduleModal from "@/components/payments/PaymentScheduleModal";
+import ClientInvoiceModal from "@/components/payments/ClientInvoiceModal";
 
 interface PaymentRow {
   id: string;
@@ -139,6 +140,14 @@ export default function Payments() {
   const [paidPickerPayment, setPaidPickerPayment] = useState<PaymentRow | null>(null);
   // Schedule modal (toutes les mensualités d'une vente)
   const [scheduleModal, setScheduleModal] = useState<{ saleId: string; contactName: string | null } | null>(null);
+  // Client invoice modal (facture liée à un payment paid)
+  const [invoiceModal, setInvoiceModal] = useState<{
+    paymentId: string;
+    contactName: string | null;
+    contactEmail: string | null;
+    amount: number;
+    paidAt: string | null;
+  } | null>(null);
   // Inline edit states
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
   const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
@@ -642,6 +651,23 @@ export default function Payments() {
                                 <ListOrdered className="h-3.5 w-3.5" />
                               </Button>
                             )}
+                            {p.status === "paid" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                                title="Facture client"
+                                onClick={() => setInvoiceModal({
+                                  paymentId: p.id,
+                                  contactName: p.contact_name,
+                                  contactEmail: p.contact_email,
+                                  amount: p.amount,
+                                  paidAt: p.paid_at,
+                                })}
+                              >
+                                <FileText className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
                             {canChangeStatus(p.status) && (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -743,6 +769,17 @@ export default function Payments() {
         onClose={() => setScheduleModal(null)}
         saleId={scheduleModal?.saleId ?? null}
         contactName={scheduleModal?.contactName ?? null}
+      />
+
+      {/* Modale "Facture client" — CEO only, sur paid */}
+      <ClientInvoiceModal
+        open={!!invoiceModal}
+        onClose={() => setInvoiceModal(null)}
+        paymentId={invoiceModal?.paymentId ?? null}
+        clientName={invoiceModal?.contactName ?? null}
+        clientEmail={invoiceModal?.contactEmail ?? null}
+        amount={invoiceModal?.amount ?? 0}
+        paidAt={invoiceModal?.paidAt ?? null}
       />
     </div>
   );
