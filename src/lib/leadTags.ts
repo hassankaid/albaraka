@@ -33,6 +33,7 @@ export const LEAD_TAGS: LeadTagDefinition[] = [
   { key: "salarie",                    label: "Salarié",                    category: "profil" },
   { key: "etudiant",                   label: "Étudiant",                   category: "profil" },
   { key: "entrepreneur",               label: "Entrepreneur",               category: "profil" },
+  { key: "plus_de_55_ans",             label: "+ de 55 ans",                category: "profil" },
 
   // ── Budget (single-select dans la catégorie) ──
   { key: "zero_budget",                label: "Zéro budget",                category: "budget" },

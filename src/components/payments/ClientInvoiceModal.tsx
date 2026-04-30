@@ -1,14 +1,15 @@
 // ClientInvoiceModal — gestion d'une facture client liée à un payment paid.
 //
 // Workflow CEO :
-//   1. Ouvre la modale → soit la facture existe déjà (preview + boutons),
-//      soit elle n'existe pas (bouton "Générer").
-//   2. Avant d'envoyer au vrai client, le CEO peut "Tester sur mon email"
-//      pour valider visuellement le rendu.
-//   3. Une fois validé, "Envoyer au client" envoie l'email réel.
-//   4. Bouton "Voir le HTML" ouvre la facture en preview dans un nouvel onglet.
+//   1. Si pas encore générée : "Générer la facture" → PDF créé côté front +
+//      uploadé Storage + DB row inséré.
+//   2. "Voir la facture" : ouvre le PDF dans un nouvel onglet (rendu natif).
+//   3. "Tester sur mon email" : envoie l'email avec PJ PDF à l'adresse CEO
+//      (sans toucher email_sent_at).
+//   4. "Envoyer au client" : envoie l'email avec PJ PDF au vrai client +
+//      marque email_sent_at.
 
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,8 @@ import { toast } from "@/hooks/use-toast";
 import { formatDateOnly } from "@/lib/formatDate";
 import {
   useClientInvoiceForPayment,
-  useGenerateClientInvoice,
+  useGeneratePdfOnly,
+  useSendClientInvoice,
   getInvoiceSignedUrl,
 } from "@/hooks/useClientInvoice";
 
@@ -28,7 +30,6 @@ interface Props {
   open: boolean;
   onClose: () => void;
   paymentId: string | null;
-  // Contexte (pour pré-affichage avant que la facture existe)
   clientName: string | null;
   clientEmail: string | null;
   amount: number;
@@ -40,40 +41,66 @@ export default function ClientInvoiceModal({
 }: Props) {
   const { profile } = useAuth();
   const { data: invoice, isLoading } = useClientInvoiceForPayment(paymentId);
-  const generate = useGenerateClientInvoice();
+  const generatePdf = useGeneratePdfOnly();
+  const sendInvoice = useSendClientInvoice();
 
   const ceoEmail = profile?.email || "";
   const [testEmail, setTestEmail] = useState<string>(ceoEmail);
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const hasInvoice = !!invoice;
+  const hasPdf = !!invoice?.html_path;
   const wasSentToClient = !!invoice?.email_sent_at;
 
   // Reset testEmail à chaque ouverture
-  useMemo(() => {
+  useEffect(() => {
     if (open && ceoEmail) setTestEmail(ceoEmail);
-    return null;
   }, [open, ceoEmail]);
 
   // ─── Actions ────────────────────────────────────────────────────────
-  async function handleGenerate(opts: { sendTest?: boolean; sendToClient?: boolean }) {
+  async function handleGenerate() {
     if (!paymentId) return;
     try {
-      const res = await generate.mutateAsync({
-        payment_id: paymentId,
-        send_email: !!(opts.sendTest || opts.sendToClient),
-        email_to_override: opts.sendTest ? testEmail : undefined,
-        regenerate: hasInvoice && (opts.sendTest || opts.sendToClient) ? false : false,
-      });
-      if (opts.sendTest) {
-        toast({ title: "Email de test envoyé", description: `Vérifie ${testEmail}` });
-      } else if (opts.sendToClient) {
-        toast({ title: "Facture envoyée au client", description: clientEmail || "" });
-      } else {
-        toast({ title: "Facture générée", description: res?.invoice?.invoice_number });
-      }
+      const res = await generatePdf.mutateAsync({ payment_id: paymentId });
+      toast({ title: "Facture générée", description: res?.invoice?.invoice_number });
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message ?? String(e), variant: "destructive" });
+    }
+  }
+
+  async function handleRegenerate() {
+    if (!paymentId) return;
+    try {
+      await generatePdf.mutateAsync({ payment_id: paymentId, forceRegenerate: true });
+      toast({ title: "PDF régénéré" });
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleSendTest() {
+    if (!paymentId || !testEmail) return;
+    try {
+      await sendInvoice.mutateAsync({ payment_id: paymentId, email_to_override: testEmail });
+      toast({
+        title: "Email de test envoyé",
+        description: `Vérifie ${testEmail} (PDF en pièce jointe)`,
+      });
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleSendToClient() {
+    if (!paymentId) return;
+    try {
+      await sendInvoice.mutateAsync({ payment_id: paymentId });
+      toast({
+        title: "Facture envoyée au client",
+        description: clientEmail || "",
+      });
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
     }
   }
 
@@ -90,15 +117,7 @@ export default function ClientInvoiceModal({
     }
   }
 
-  async function handleRegenerate() {
-    if (!paymentId) return;
-    try {
-      await generate.mutateAsync({ payment_id: paymentId, send_email: false, regenerate: true });
-      toast({ title: "Facture régénérée" });
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
-    }
-  }
+  const busy = generatePdf.isPending || sendInvoice.isPending;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -127,7 +146,7 @@ export default function ClientInvoiceModal({
                 <div>
                   Aucune facture n'a encore été générée pour ce paiement.
                   La génération va créer un numéro <strong>FAC-YYYY-MM-XXXX</strong>,
-                  produire le PDF et le stocker en base.
+                  produire le PDF et le stocker.
                 </div>
               </div>
             </div>
@@ -136,22 +155,39 @@ export default function ClientInvoiceModal({
               <div><strong>Email :</strong> {clientEmail ?? "—"}</div>
             </div>
             <DialogFooter className="gap-2">
-              <Button variant="ghost" onClick={onClose} disabled={generate.isPending}>
+              <Button variant="ghost" onClick={onClose} disabled={busy}>
                 Annuler
               </Button>
-              <Button
-                onClick={() => handleGenerate({})}
-                disabled={generate.isPending}
-                className="gap-2"
-              >
-                {generate.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              <Button onClick={handleGenerate} disabled={busy} className="gap-2">
+                {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 <FileText className="h-3.5 w-3.5" />
                 Générer la facture
               </Button>
             </DialogFooter>
           </>
+        ) : !hasPdf ? (
+          // Cas étrange : row DB existe mais pas de PDF (interruption du flow)
+          <>
+            <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                <div>
+                  Facture <strong>{invoice.invoice_number}</strong> créée mais le PDF n'a pas été
+                  uploadé. Régénère pour produire le PDF.
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="ghost" onClick={onClose} disabled={busy}>Annuler</Button>
+              <Button onClick={handleRegenerate} disabled={busy} className="gap-2">
+                {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                <RefreshCw className="h-3.5 w-3.5" />
+                Générer le PDF
+              </Button>
+            </DialogFooter>
+          </>
         ) : (
-          // ─── Facture existe ───
+          // ─── Facture existe avec PDF ───
           <>
             <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs">
               <div className="flex items-start gap-2">
@@ -184,12 +220,12 @@ export default function ClientInvoiceModal({
 
             <Separator />
 
-            {/* Aperçu */}
+            {/* Aperçu PDF */}
             <div className="space-y-2">
               <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Aperçu</div>
               <Button variant="outline" size="sm" onClick={handlePreview} disabled={previewLoading} className="gap-2 w-full">
                 {previewLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
-                Voir la facture (nouvel onglet)
+                Voir le PDF de la facture
               </Button>
             </div>
 
@@ -212,15 +248,15 @@ export default function ClientInvoiceModal({
                   size="sm"
                   variant="outline"
                   className="gap-1.5"
-                  onClick={() => handleGenerate({ sendTest: true })}
-                  disabled={!testEmail || generate.isPending}
+                  onClick={handleSendTest}
+                  disabled={!testEmail || busy}
                 >
-                  {generate.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                  {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                   Test
                 </Button>
               </div>
               <div className="text-[11px] text-muted-foreground">
-                L'email sera envoyé à cette adresse pour preview. Le statut "Envoyée au client" reste inchangé.
+                L'email part avec le PDF en pièce jointe. Le statut "Envoyée au client" reste inchangé.
               </div>
             </div>
 
@@ -238,10 +274,10 @@ export default function ClientInvoiceModal({
                 variant="default"
                 size="sm"
                 className="w-full gap-2"
-                onClick={() => handleGenerate({ sendToClient: true })}
-                disabled={!clientEmail || generate.isPending}
+                onClick={handleSendToClient}
+                disabled={!clientEmail || busy}
               >
-                {generate.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
+                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
                 {wasSentToClient ? "Renvoyer au client" : "Envoyer au client"}
               </Button>
             </div>
@@ -254,10 +290,10 @@ export default function ClientInvoiceModal({
               size="sm"
               className="text-xs gap-1.5 text-muted-foreground"
               onClick={handleRegenerate}
-              disabled={generate.isPending}
+              disabled={busy}
             >
               <RefreshCw className="h-3 w-3" />
-              Régénérer le PDF (depuis les données actuelles du paiement)
+              Régénérer le PDF
             </Button>
 
             <DialogFooter>
