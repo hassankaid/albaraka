@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import ConferenceFilter from "@/components/dashboard/marketing/ConferenceFilter";
+import AdsDrillDownModal from "@/components/dashboard/marketing/AdsDrillDownModal";
 import type { ConferenceFilter as ConferenceFilterValue } from "@/lib/marketing/conferenceFilter";
 import { currentOrPrevSunday } from "@/lib/marketing/conferenceFilter";
 import {
@@ -112,6 +113,7 @@ export default function MarketingTab({ filter: externalFilter, onFilterChange }:
   const setFilter = onFilterChange ?? setInternalFilter;
   const { data, isLoading } = useMarketingDashboardData(filter);
   const [drill, setDrill] = useState<DrillState | null>(null);
+  const [adsDrillOpen, setAdsDrillOpen] = useState(false);
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -144,7 +146,11 @@ export default function MarketingTab({ filter: externalFilter, onFilterChange }:
           </div>
         ) : (
           <>
-            <MarketingKPIs data={data} onDrill={setDrill} />
+            <MarketingKPIs
+              data={data}
+              onDrill={setDrill}
+              onOpenAdsDrill={() => setAdsDrillOpen(true)}
+            />
             {data.channelSpend.length > 0 && <ChannelSpendCard data={data} />}
             <SourcePerformanceTable data={data} onDrill={setDrill} />
             <TagDashboardCard data={data} onDrill={setDrill} />
@@ -159,6 +165,12 @@ export default function MarketingTab({ filter: externalFilter, onFilterChange }:
             data={data}
           />
         )}
+
+        <AdsDrillDownModal
+          open={adsDrillOpen}
+          onClose={() => setAdsDrillOpen(false)}
+          filter={filter}
+        />
       </div>
     </TooltipProvider>
   );
@@ -168,9 +180,11 @@ export default function MarketingTab({ filter: externalFilter, onFilterChange }:
 function MarketingKPIs({
   data,
   onDrill,
+  onOpenAdsDrill,
 }: {
   data: MarketingDashboardData;
   onDrill: (s: DrillState) => void;
+  onOpenAdsDrill: () => void;
 }) {
   const kpis: Array<{
     key: string;
@@ -187,7 +201,9 @@ function MarketingKPIs({
       value: eur(data.budget),
       icon: Euro,
       color: "text-primary",
-      tooltip: "Somme de toutes les dépenses ads (Meta, TikTok…) sur la période.",
+      tooltip:
+        "Somme de toutes les dépenses ads (Meta, TikTok…) sur la période. Cliquer pour voir le détail par campagne et par jour.",
+      onClick: data.budget > 0 ? onOpenAdsDrill : undefined,
     },
     {
       key: "leads",
