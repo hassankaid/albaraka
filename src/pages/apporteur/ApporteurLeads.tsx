@@ -37,8 +37,7 @@ const STATUS_OPTIONS = [
   { value: "call_booke", label: "Call booké" },
 ];
 
-// Liste des statuts qu'un apporteur peut appliquer à ses propres leads
-// (sécurité en cas d'oubli ou d'erreur du collaborateur).
+// Liste des statuts qu'un apporteur peut appliquer à ses propres leads.
 // Doit rester aligné avec la whitelist de la RPC apporteur_update_lead_status.
 const APPORTEUR_EDITABLE_STATUSES = [
   { value: "a_qualifier", label: "À qualifier" },
@@ -49,7 +48,14 @@ const APPORTEUR_EDITABLE_STATUSES = [
   { value: "pas_qualifie", label: "Pas qualifié" },
   { value: "perdu", label: "Perdu" },
   { value: "close", label: "Close (vente)" },
+  { value: "pas_de_reponse", label: "Pas de réponse" },
+  { value: "pas_de_reponse_post_conference", label: "Pas de réponse post-conf" },
 ];
+
+// Statuts qui déclenchent un recyclage instantané du lead
+// (désaffectation du commercial + retour dans le pot "À recycler" du CEO).
+// Identique à INSTANT_RECYCLE_STATUSES côté ProcessLeadModal.
+const RECYCLE_TRIGGER_STATUSES = new Set(["pas_de_reponse", "pas_de_reponse_post_conference"]);
 
 export default function ApporteurLeads() {
   const { profile } = useAuth();
@@ -92,12 +98,14 @@ export default function ApporteurLeads() {
         p_note: editNote.trim() || null,
       });
       if (error) throw new Error(error.message);
-      const result = data as { ok: boolean; changed: boolean };
+      const result = data as { ok: boolean; changed: boolean; recycled?: boolean };
       toast({
         title: result?.changed ? "Statut mis à jour" : "Aucun changement",
-        description: result?.changed
-          ? `Le statut du lead a bien été modifié.`
-          : "Le statut était déjà identique.",
+        description: !result?.changed
+          ? "Le statut était déjà identique."
+          : result?.recycled
+            ? "Statut modifié et lead recyclé (commercial retiré, retour au pot « À recycler »)."
+            : "Le statut du lead a bien été modifié.",
       });
       setEditLead(null);
       setEditNote("");
@@ -483,6 +491,14 @@ export default function ApporteurLeads() {
                   rows={3}
                 />
               </div>
+
+              {RECYCLE_TRIGGER_STATUSES.has(editStatus) && (
+                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300 leading-relaxed">
+                  ⚠️ Ce statut déclenche un <strong>recyclage automatique</strong> du lead :
+                  le commercial actuellement assigné sera retiré et le lead retournera dans
+                  le pot « À recycler » côté admin pour redistribution.
+                </div>
+              )}
 
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 La modification est tracée dans l'historique du lead avec votre nom.
