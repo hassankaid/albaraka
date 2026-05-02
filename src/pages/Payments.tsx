@@ -171,13 +171,25 @@ export default function Payments() {
     d.setMonth(d.getMonth() - 1);
     return d.toISOString().slice(0, 7); // "YYYY-MM"
   });
-  const [bulkPreview, setBulkPreview] = useState<{ count: number; total: number; loading: boolean }>({
-    count: 0,
-    total: 0,
+  const [bulkPreview, setBulkPreview] = useState<{
+    paidPayments: number;
+    existingInvoices: number;
+    toGenerate: number;
+    totalAmount: number;
+    loading: boolean;
+  }>({
+    paidPayments: 0,
+    existingInvoices: 0,
+    toGenerate: 0,
+    totalAmount: 0,
     loading: false,
   });
   const [bulkDownloading, setBulkDownloading] = useState(false);
-  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
+  const [bulkProgress, setBulkProgress] = useState<{
+    phase: "idle" | "generating" | "downloading";
+    current: number;
+    total: number;
+  }>({ phase: "idle", current: 0, total: 0 });
   // Inline edit states
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
   const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
@@ -283,79 +295,166 @@ export default function Payments() {
     };
   }
 
-  // Aperçu : compte des factures + somme du mois sélectionné
+  // Aperçu : compte des paiements payés + factures déjà générées + à générer
   useEffect(() => {
     if (!bulkOpen) return;
     let cancelled = false;
     (async () => {
       setBulkPreview((p) => ({ ...p, loading: true }));
       const { from, to } = monthBounds(bulkMonth);
-      const { data, error } = await (supabase as any)
-        .from("client_invoices")
-        .select("id, amount, html_path")
+
+      // 1. Tous les paiements payés du mois
+      const { data: paid } = await (supabase as any)
+        .from("payments")
+        .select("id, amount")
+        .eq("status", "paid")
         .gte("paid_at", from)
         .lt("paid_at", to);
+
       if (cancelled) return;
-      if (error) {
-        setBulkPreview({ count: 0, total: 0, loading: false });
-        return;
+      const paidPayments = (paid || []).length;
+      const totalAmount = (paid || []).reduce(
+        (s: number, p: any) => s + Number(p.amount || 0),
+        0,
+      );
+
+      // 2. Compte les factures déjà générées (avec PDF) pour ces paiements
+      let existingInvoices = 0;
+      if (paid && paid.length > 0) {
+        const ids = paid.map((p: any) => p.id);
+        const { data: invs } = await (supabase as any)
+          .from("client_invoices")
+          .select("id, html_path, payment_id")
+          .in("payment_id", ids)
+          .not("html_path", "is", null);
+        existingInvoices = (invs || []).length;
       }
-      const valid = (data || []).filter((r: any) => r.html_path);
-      const total = valid.reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
-      setBulkPreview({ count: valid.length, total, loading: false });
+
+      if (cancelled) return;
+      setBulkPreview({
+        paidPayments,
+        existingInvoices,
+        toGenerate: paidPayments - existingInvoices,
+        totalAmount,
+        loading: false,
+      });
     })();
     return () => { cancelled = true; };
   }, [bulkOpen, bulkMonth]);
 
   async function handleBulkDownload() {
     setBulkDownloading(true);
-    setBulkProgress({ current: 0, total: 0 });
+    setBulkProgress({ phase: "idle", current: 0, total: 0 });
+
     try {
       const { from, to } = monthBounds(bulkMonth);
-      const { data: invoices, error } = await (supabase as any)
-        .from("client_invoices")
-        .select("id, invoice_number, html_path, paid_at, amount, client_name")
+
+      // 1. Récupère TOUS les paiements payés du mois
+      const { data: paid, error: paidErr } = await (supabase as any)
+        .from("payments")
+        .select("id, paid_at")
+        .eq("status", "paid")
         .gte("paid_at", from)
         .lt("paid_at", to)
-        .not("html_path", "is", null)
-        .order("invoice_number", { ascending: true });
+        .order("paid_at", { ascending: true });
 
-      if (error) throw new Error(error.message);
-      if (!invoices || invoices.length === 0) {
-        toast({ title: "Aucune facture trouvée pour ce mois" });
+      if (paidErr) throw new Error(paidErr.message);
+      if (!paid || paid.length === 0) {
+        toast({ title: "Aucun paiement payé sur ce mois" });
         return;
       }
 
-      setBulkProgress({ current: 0, total: invoices.length });
+      // 2. Phase "Génération" : pour chaque paiement, génère la facture
+      //    si elle n'existe pas (idempotent côté generate-client-invoice).
+      setBulkProgress({ phase: "generating", current: 0, total: paid.length });
+      const invoicePathsByPaymentId = new Map<string, { invoiceNumber: string; htmlPath: string }>();
+      const failedGen: string[] = [];
+
+      for (let i = 0; i < paid.length; i++) {
+        const p = paid[i];
+        try {
+          // D'abord check si une facture existe déjà avec PDF
+          const { data: existing } = await (supabase as any)
+            .from("client_invoices")
+            .select("invoice_number, html_path")
+            .eq("payment_id", p.id)
+            .maybeSingle();
+
+          if (existing?.html_path) {
+            invoicePathsByPaymentId.set(p.id, {
+              invoiceNumber: existing.invoice_number,
+              htmlPath: existing.html_path,
+            });
+          } else {
+            // Génération via edge function (send_email: false pour ne pas
+            // re-spammer le client)
+            const { data, error } = await (supabase as any).functions.invoke(
+              "generate-client-invoice",
+              { body: { payment_id: p.id, send_email: false } },
+            );
+            if (error) {
+              console.error("generate-client-invoice error for", p.id, error);
+              failedGen.push(p.id);
+            } else if (data?.invoice?.invoice_number && data?.invoice?.html_path) {
+              invoicePathsByPaymentId.set(p.id, {
+                invoiceNumber: data.invoice.invoice_number,
+                htmlPath: data.invoice.html_path,
+              });
+            } else if (data?.error) {
+              console.error("generate-client-invoice failed for", p.id, data.error);
+              failedGen.push(p.id);
+            }
+          }
+        } catch (e) {
+          console.error("error processing payment", p.id, e);
+          failedGen.push(p.id);
+        }
+        setBulkProgress({ phase: "generating", current: i + 1, total: paid.length });
+      }
+
+      // 3. Phase "Téléchargement" : zip tous les PDF
+      const invoices = Array.from(invoicePathsByPaymentId.values()).sort((a, b) =>
+        a.invoiceNumber.localeCompare(b.invoiceNumber),
+      );
+      if (invoices.length === 0) {
+        toast({
+          title: "Aucune facture disponible",
+          description: "Impossible de générer ou récupérer les factures pour ce mois.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setBulkProgress({ phase: "downloading", current: 0, total: invoices.length });
       const zip = new JSZip();
       const folderName = `factures-clients-${bulkMonth}`;
       const folder = zip.folder(folderName);
       let okCount = 0;
-      const failed: string[] = [];
+      const failedDl: string[] = [];
 
       for (let i = 0; i < invoices.length; i++) {
         const inv = invoices[i];
         try {
           const { data: signed, error: signErr } = await (supabase as any).storage
             .from("invoices")
-            .createSignedUrl(inv.html_path, 300);
+            .createSignedUrl(inv.htmlPath, 300);
           if (signErr || !signed?.signedUrl) {
-            failed.push(inv.invoice_number);
+            failedDl.push(inv.invoiceNumber);
             continue;
           }
           const res = await fetch(signed.signedUrl);
           if (!res.ok) {
-            failed.push(inv.invoice_number);
+            failedDl.push(inv.invoiceNumber);
             continue;
           }
           const blob = await res.blob();
-          folder!.file(`${inv.invoice_number}.pdf`, blob);
+          folder!.file(`${inv.invoiceNumber}.pdf`, blob);
           okCount++;
         } catch (e) {
-          console.error("download failed for", inv.invoice_number, e);
-          failed.push(inv.invoice_number);
+          console.error("download failed for", inv.invoiceNumber, e);
+          failedDl.push(inv.invoiceNumber);
         }
-        setBulkProgress({ current: i + 1, total: invoices.length });
+        setBulkProgress({ phase: "downloading", current: i + 1, total: invoices.length });
       }
 
       if (okCount === 0) {
@@ -377,11 +476,12 @@ export default function Payments() {
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
 
+      const totalFailed = failedGen.length + failedDl.length;
       toast({
         title: `${okCount} facture${okCount > 1 ? "s" : ""} téléchargée${okCount > 1 ? "s" : ""}`,
         description:
-          failed.length > 0
-            ? `${failed.length} facture(s) en échec : ${failed.slice(0, 3).join(", ")}${failed.length > 3 ? "…" : ""}`
+          totalFailed > 0
+            ? `${totalFailed} en échec (génération ou téléchargement). ZIP prêt avec ${okCount} factures.`
             : "ZIP prêt à transmettre à votre comptable",
       });
       setBulkOpen(false);
@@ -393,7 +493,7 @@ export default function Payments() {
       });
     } finally {
       setBulkDownloading(false);
-      setBulkProgress({ current: 0, total: 0 });
+      setBulkProgress({ phase: "idle", current: 0, total: 0 });
     }
   }
 
@@ -1038,43 +1138,58 @@ export default function Payments() {
               </Select>
             </div>
 
-            <div className="rounded-md border border-border/60 bg-muted/30 p-3 text-sm">
+            <div className="rounded-md border border-border/60 bg-muted/30 p-3 text-sm space-y-2">
               {bulkPreview.loading ? (
                 <span className="text-muted-foreground inline-flex items-center gap-2">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   Calcul en cours…
                 </span>
-              ) : bulkPreview.count === 0 ? (
+              ) : bulkPreview.paidPayments === 0 ? (
                 <span className="text-muted-foreground">
-                  Aucune facture encaissée ce mois-ci.
+                  Aucun paiement encaissé ce mois-ci.
                 </span>
               ) : (
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-foreground">
-                    <strong className="text-primary">{bulkPreview.count}</strong> facture{bulkPreview.count > 1 ? "s" : ""}
-                  </span>
-                  <span className="text-muted-foreground tabular-nums">
-                    {bulkPreview.total.toLocaleString("fr-FR", {
-                      style: "currency",
-                      currency: "EUR",
-                      maximumFractionDigits: 0,
-                    })}
-                  </span>
-                </div>
+                <>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-foreground">
+                      <strong className="text-primary">{bulkPreview.paidPayments}</strong> paiement{bulkPreview.paidPayments > 1 ? "s" : ""} encaissé{bulkPreview.paidPayments > 1 ? "s" : ""}
+                    </span>
+                    <span className="text-muted-foreground tabular-nums">
+                      {bulkPreview.totalAmount.toLocaleString("fr-FR", {
+                        style: "currency",
+                        currency: "EUR",
+                        maximumFractionDigits: 0,
+                      })}
+                    </span>
+                  </div>
+                  {bulkPreview.toGenerate > 0 && (
+                    <div className="text-[11px] text-amber-300/90 leading-relaxed pt-1 border-t border-border/40">
+                      <strong>{bulkPreview.toGenerate}</strong> facture{bulkPreview.toGenerate > 1 ? "s" : ""} à générer
+                      {bulkPreview.existingInvoices > 0 ? ` (${bulkPreview.existingInvoices} déjà disponible${bulkPreview.existingInvoices > 1 ? "s" : ""})` : ""}.
+                      Elles seront créées automatiquement avant le téléchargement (sans envoi d'email au client).
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
             {bulkDownloading && bulkProgress.total > 0 && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Téléchargement en cours…</span>
+                  <span>
+                    {bulkProgress.phase === "generating"
+                      ? "Génération des factures manquantes…"
+                      : "Téléchargement et création du ZIP…"}
+                  </span>
                   <span className="tabular-nums">
                     {bulkProgress.current} / {bulkProgress.total}
                   </span>
                 </div>
                 <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                   <div
-                    className="h-full bg-primary transition-all"
+                    className={`h-full transition-all ${
+                      bulkProgress.phase === "generating" ? "bg-amber-400" : "bg-primary"
+                    }`}
                     style={{
                       width: `${(bulkProgress.current / bulkProgress.total) * 100}%`,
                     }}
@@ -1096,7 +1211,7 @@ export default function Payments() {
             <Button
               type="button"
               onClick={handleBulkDownload}
-              disabled={bulkDownloading || bulkPreview.count === 0 || bulkPreview.loading}
+              disabled={bulkDownloading || bulkPreview.paidPayments === 0 || bulkPreview.loading}
               className="gap-2"
             >
               {bulkDownloading ? (
@@ -1105,8 +1220,10 @@ export default function Payments() {
                 <Download className="h-3.5 w-3.5" />
               )}
               {bulkDownloading
-                ? "Téléchargement…"
-                : `Télécharger ${bulkPreview.count > 0 ? `(${bulkPreview.count})` : ""}`}
+                ? bulkProgress.phase === "generating"
+                  ? "Génération…"
+                  : "Téléchargement…"
+                : `Télécharger ${bulkPreview.paidPayments > 0 ? `(${bulkPreview.paidPayments})` : ""}`}
             </Button>
           </DialogFooter>
         </DialogContent>
