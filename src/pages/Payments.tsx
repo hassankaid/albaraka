@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
-import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare, MoreHorizontal, Clock, XCircle, CalendarIcon, ListOrdered, Save, X as XIcon, Loader2, FileText, Link as LinkIcon } from "lucide-react";
+import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare, MoreHorizontal, Clock, XCircle, CalendarIcon, ListOrdered, Save, X as XIcon, Loader2, FileText, Link as LinkIcon, Download, Archive } from "lucide-react";
+import JSZip from "jszip";
 import { formatDateOnly } from "@/lib/formatDate";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -158,6 +159,25 @@ export default function Payments() {
     contactName: string | null;
   } | null>(null);
   const [linkInstallments, setLinkInstallments] = useState<number>(1);
+
+  // Modale "Téléchargement factures du mois" : pour la compta, génère un ZIP
+  // de toutes les factures clients (PDF) encaissées sur le mois sélectionné.
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkMonth, setBulkMonth] = useState<string>(() => {
+    // Default au mois précédent (le plus utile pour la compta : "transmettre
+    // les factures du mois écoulé au comptable")
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 7); // "YYYY-MM"
+  });
+  const [bulkPreview, setBulkPreview] = useState<{ count: number; total: number; loading: boolean }>({
+    count: 0,
+    total: 0,
+    loading: false,
+  });
+  const [bulkDownloading, setBulkDownloading] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
   // Inline edit states
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
   const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
@@ -236,6 +256,146 @@ export default function Payments() {
   }, [isCeo, profile?.id]);
 
   useEffect(() => { fetchPayments(); }, [fetchPayments]);
+
+  // ── Téléchargement en masse des factures clients du mois (CEO compta) ──
+  // Helpers : 12 derniers mois pour le sélecteur
+  const monthOptions = useMemo(() => {
+    const opts: Array<{ value: string; label: string }> = [];
+    const d = new Date();
+    d.setDate(1);
+    for (let i = 0; i < 12; i++) {
+      const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+      opts.push({ value: ymd, label: label.charAt(0).toUpperCase() + label.slice(1) });
+      d.setMonth(d.getMonth() - 1);
+    }
+    return opts;
+  }, []);
+
+  // Calcule les bornes [from, to[ d'un mois donné (YYYY-MM)
+  function monthBounds(ym: string): { from: string; to: string } {
+    const [y, m] = ym.split("-").map(Number);
+    const fromDate = new Date(Date.UTC(y, m - 1, 1));
+    const toDate = new Date(Date.UTC(m === 12 ? y + 1 : y, m === 12 ? 0 : m, 1));
+    return {
+      from: fromDate.toISOString().slice(0, 10),
+      to: toDate.toISOString().slice(0, 10),
+    };
+  }
+
+  // Aperçu : compte des factures + somme du mois sélectionné
+  useEffect(() => {
+    if (!bulkOpen) return;
+    let cancelled = false;
+    (async () => {
+      setBulkPreview((p) => ({ ...p, loading: true }));
+      const { from, to } = monthBounds(bulkMonth);
+      const { data, error } = await (supabase as any)
+        .from("client_invoices")
+        .select("id, amount, html_path")
+        .gte("paid_at", from)
+        .lt("paid_at", to);
+      if (cancelled) return;
+      if (error) {
+        setBulkPreview({ count: 0, total: 0, loading: false });
+        return;
+      }
+      const valid = (data || []).filter((r: any) => r.html_path);
+      const total = valid.reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
+      setBulkPreview({ count: valid.length, total, loading: false });
+    })();
+    return () => { cancelled = true; };
+  }, [bulkOpen, bulkMonth]);
+
+  async function handleBulkDownload() {
+    setBulkDownloading(true);
+    setBulkProgress({ current: 0, total: 0 });
+    try {
+      const { from, to } = monthBounds(bulkMonth);
+      const { data: invoices, error } = await (supabase as any)
+        .from("client_invoices")
+        .select("id, invoice_number, html_path, paid_at, amount, client_name")
+        .gte("paid_at", from)
+        .lt("paid_at", to)
+        .not("html_path", "is", null)
+        .order("invoice_number", { ascending: true });
+
+      if (error) throw new Error(error.message);
+      if (!invoices || invoices.length === 0) {
+        toast({ title: "Aucune facture trouvée pour ce mois" });
+        return;
+      }
+
+      setBulkProgress({ current: 0, total: invoices.length });
+      const zip = new JSZip();
+      const folderName = `factures-clients-${bulkMonth}`;
+      const folder = zip.folder(folderName);
+      let okCount = 0;
+      const failed: string[] = [];
+
+      for (let i = 0; i < invoices.length; i++) {
+        const inv = invoices[i];
+        try {
+          const { data: signed, error: signErr } = await (supabase as any).storage
+            .from("invoices")
+            .createSignedUrl(inv.html_path, 300);
+          if (signErr || !signed?.signedUrl) {
+            failed.push(inv.invoice_number);
+            continue;
+          }
+          const res = await fetch(signed.signedUrl);
+          if (!res.ok) {
+            failed.push(inv.invoice_number);
+            continue;
+          }
+          const blob = await res.blob();
+          folder!.file(`${inv.invoice_number}.pdf`, blob);
+          okCount++;
+        } catch (e) {
+          console.error("download failed for", inv.invoice_number, e);
+          failed.push(inv.invoice_number);
+        }
+        setBulkProgress({ current: i + 1, total: invoices.length });
+      }
+
+      if (okCount === 0) {
+        toast({
+          title: "Échec",
+          description: "Aucune facture n'a pu être téléchargée.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${folderName}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+      toast({
+        title: `${okCount} facture${okCount > 1 ? "s" : ""} téléchargée${okCount > 1 ? "s" : ""}`,
+        description:
+          failed.length > 0
+            ? `${failed.length} facture(s) en échec : ${failed.slice(0, 3).join(", ")}${failed.length > 3 ? "…" : ""}`
+            : "ZIP prêt à transmettre à votre comptable",
+      });
+      setBulkOpen(false);
+    } catch (e: any) {
+      toast({
+        title: "Erreur",
+        description: e?.message || "Impossible de générer l'archive",
+        variant: "destructive",
+      });
+    } finally {
+      setBulkDownloading(false);
+      setBulkProgress({ current: 0, total: 0 });
+    }
+  }
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -413,9 +573,23 @@ export default function Payments() {
             <span className="text-xs text-muted-foreground">perdu</span>
           </div>
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefresh} disabled={refreshing} title="Actualiser">
-          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-        </Button>
+        <div className="flex items-center gap-1">
+          {isCeo && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={() => setBulkOpen(true)}
+              title="Télécharger toutes les factures clients d'un mois (pour la comptabilité)"
+            >
+              <Archive className="h-3.5 w-3.5" />
+              Factures du mois
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefresh} disabled={refreshing} title="Actualiser">
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
       </div>
 
       {/* Filters row */}
@@ -823,6 +997,120 @@ export default function Payments() {
         amount={invoiceModal?.amount ?? 0}
         paidAt={invoiceModal?.paidAt ?? null}
       />
+
+      {/* Modale "Téléchargement factures du mois" — CEO uniquement, génère
+          un ZIP des PDF des factures clients encaissées sur le mois choisi.
+          Idéal pour transmettre l'archive au comptable. */}
+      <Dialog
+        open={bulkOpen}
+        onOpenChange={(o) => {
+          if (!bulkDownloading) setBulkOpen(o);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Télécharger les factures du mois</DialogTitle>
+            <DialogDescription>
+              Génère un ZIP avec toutes les factures clients (PDF) encaissées sur le mois
+              sélectionné. À transmettre à la comptabilité.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Mois
+              </label>
+              <Select
+                value={bulkMonth}
+                onValueChange={setBulkMonth}
+                disabled={bulkDownloading}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {monthOptions.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="rounded-md border border-border/60 bg-muted/30 p-3 text-sm">
+              {bulkPreview.loading ? (
+                <span className="text-muted-foreground inline-flex items-center gap-2">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Calcul en cours…
+                </span>
+              ) : bulkPreview.count === 0 ? (
+                <span className="text-muted-foreground">
+                  Aucune facture encaissée ce mois-ci.
+                </span>
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-foreground">
+                    <strong className="text-primary">{bulkPreview.count}</strong> facture{bulkPreview.count > 1 ? "s" : ""}
+                  </span>
+                  <span className="text-muted-foreground tabular-nums">
+                    {bulkPreview.total.toLocaleString("fr-FR", {
+                      style: "currency",
+                      currency: "EUR",
+                      maximumFractionDigits: 0,
+                    })}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {bulkDownloading && bulkProgress.total > 0 && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Téléchargement en cours…</span>
+                  <span className="tabular-nums">
+                    {bulkProgress.current} / {bulkProgress.total}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all"
+                    style={{
+                      width: `${(bulkProgress.current / bulkProgress.total) * 100}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setBulkOpen(false)}
+              disabled={bulkDownloading}
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              onClick={handleBulkDownload}
+              disabled={bulkDownloading || bulkPreview.count === 0 || bulkPreview.loading}
+              className="gap-2"
+            >
+              {bulkDownloading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
+              {bulkDownloading
+                ? "Téléchargement…"
+                : `Télécharger ${bulkPreview.count > 0 ? `(${bulkPreview.count})` : ""}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modale "Lien personnalisé" — choix du nombre de mensualités pour
           générer le lien checkout adapté à transmettre au client */}
