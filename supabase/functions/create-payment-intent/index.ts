@@ -1,3 +1,17 @@
+// create-payment-intent
+//
+// 2 modes :
+//   1. product_type = "pass_al_baraka" (défaut) : flow PASS AL BARAKA classique
+//      avec installments 1-8. Optionnellement, si `payment_code` fourni, lookup
+//      du contact + acomptes payés et déduction du solde à payer.
+//   2. product_type = "acompte" : paiement one-shot de 50/100/150 € sans accès,
+//      sans plan de paiement, sans coupon. La facture sera envoyée par email,
+//      le contact recevra un payment_code à utiliser sur le checkout principal.
+//
+// Important : quand un acompte est appliqué OU qu'un coupon est appliqué, on
+// calcule nous-même le solde net côté serveur et on envoie le montant final
+// à Stripe SANS coupon Stripe (pour précision et cohérence d'affichage).
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -14,6 +28,10 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const TOTAL_AMOUNT_EUR = 2500;
 const PRODUCT_NAME = "PASS AL BARAKA";
+const PRODUCT_ID = "pass_al_baraka";
+
+const ACOMPTE_VALID_AMOUNTS = [50, 100, 150];
+const ACOMPTE_PRODUCT_NAME = "Acompte AL BARAKA";
 
 function flattenParams(params: Record<string, unknown>): URLSearchParams {
   const out = new URLSearchParams();
@@ -55,13 +73,15 @@ async function stripeFetch<T = unknown>(
   return (await res.json()) as T;
 }
 
-const PRODUCT_ID = "pass_al_baraka";
-
-async function ensureStripeProduct(apiKey: string): Promise<string> {
+async function ensureStripeProduct(
+  apiKey: string,
+  productId: string,
+  productName: string,
+): Promise<string> {
   try {
     const existing = await stripeFetch<{ id: string; active: boolean }>(
       apiKey,
-      `/products/${PRODUCT_ID}`,
+      `/products/${productId}`,
       {},
       "GET",
     );
@@ -70,50 +90,10 @@ async function ensureStripeProduct(apiKey: string): Promise<string> {
     // not found, create below
   }
   const created = await stripeFetch<{ id: string }>(apiKey, "/products", {
-    id: PRODUCT_ID,
-    name: PRODUCT_NAME,
+    id: productId,
+    name: productName,
   });
   return created.id;
-}
-
-async function ensureStripeCoupon(
-  apiKey: string,
-  supabase: ReturnType<typeof createClient>,
-  code: string,
-  percent: number,
-  isTestMode: boolean,
-): Promise<string> {
-  if (!isTestMode) {
-    const { data: row } = await supabase
-      .from("coupons")
-      .select("stripe_coupon_id")
-      .eq("code", code)
-      .maybeSingle();
-    if (row?.stripe_coupon_id) return row.stripe_coupon_id;
-  }
-
-  try {
-    const existing = await stripeFetch<{ id: string }>(apiKey, `/coupons/${encodeURIComponent(code)}`, {}, "GET");
-    if (existing?.id) {
-      if (!isTestMode) {
-        await supabase.from("coupons").update({ stripe_coupon_id: existing.id }).eq("code", code);
-      }
-      return existing.id;
-    }
-  } catch {
-    // not found, will create below
-  }
-
-  const coupon = await stripeFetch<{ id: string }>(apiKey, "/coupons", {
-    id: code,
-    percent_off: percent,
-    duration: "forever",
-    name: `${code} — ${percent}% de réduction`,
-  });
-  if (!isTestMode) {
-    await supabase.from("coupons").update({ stripe_coupon_id: coupon.id }).eq("code", code);
-  }
-  return coupon.id;
 }
 
 Deno.serve(async (req) => {
@@ -129,19 +109,10 @@ Deno.serve(async (req) => {
 
   try {
     const input = await req.json().catch(() => ({}));
-    const installments = Number(input.installments);
+    const productType: "pass_al_baraka" | "acompte" =
+      input.product_type === "acompte" ? "acompte" : "pass_al_baraka";
     const isTestMode = !!input.test_mode;
-    const couponCode: string | undefined = typeof input.coupon_code === "string" && input.coupon_code.trim()
-      ? input.coupon_code.trim().toUpperCase()
-      : undefined;
     const customer = (input.customer || {}) as Record<string, string>;
-
-    if (!Number.isInteger(installments) || installments < 1 || installments > 8) {
-      return new Response(
-        JSON.stringify({ error: "installments doit être un entier entre 1 et 8" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
 
     const email = String(customer.email || "").trim().toLowerCase();
     const fullName = String(customer.full_name || "").trim();
@@ -172,25 +143,150 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    let stripeCouponId: string | undefined;
+    // ════════════════════════════════════════════════════════════════════
+    // MODE 1 : ACOMPTE
+    // Paiement one-shot 50/100/150 €. Pas de coupon, pas de plan.
+    // ════════════════════════════════════════════════════════════════════
+    if (productType === "acompte") {
+      const acompteAmount = Number(input.acompte_amount);
+      if (!ACOMPTE_VALID_AMOUNTS.includes(acompteAmount)) {
+        return new Response(
+          JSON.stringify({
+            error: `acompte_amount doit être 50, 100 ou 150 (reçu: ${acompteAmount})`,
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const acompteCents = acompteAmount * 100;
+      const metadata: Record<string, string> = {
+        product: ACOMPTE_PRODUCT_NAME,
+        product_type: "acompte",
+        source: "acompte",
+        acompte_amount_eur: String(acompteAmount),
+        test_mode: isTestMode ? "true" : "false",
+        customer_email: email,
+        customer_full_name: fullName,
+        customer_phone: String(customer.phone || ""),
+        customer_address: String(customer.address || ""),
+        customer_postal_code: String(customer.postal_code || ""),
+        customer_city: String(customer.city || ""),
+        customer_country: String(customer.country || ""),
+      };
+
+      const pi = await stripeFetch<{ id: string; client_secret: string }>(
+        apiKey,
+        "/payment_intents",
+        {
+          amount: acompteCents,
+          currency: "eur",
+          receipt_email: email,
+          metadata,
+          description: `${ACOMPTE_PRODUCT_NAME} — ${acompteAmount} €`,
+          "payment_method_types[0]": "card",
+          "payment_method_options[card][request_three_d_secure]": "automatic",
+        },
+      );
+
+      return new Response(
+        JSON.stringify({
+          client_secret: pi.client_secret,
+          intent_id: pi.id,
+          intent_type: "payment",
+          product_type: "acompte",
+          amount_cents: acompteCents,
+          test_mode: isTestMode,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // MODE 2 : PASS AL BARAKA (avec optionnellement payment_code et coupon)
+    // ════════════════════════════════════════════════════════════════════
+    const installments = Number(input.installments);
+    if (!Number.isInteger(installments) || installments < 1 || installments > 8) {
+      return new Response(
+        JSON.stringify({ error: "installments doit être un entier entre 1 et 8" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const couponCode: string | undefined =
+      typeof input.coupon_code === "string" && input.coupon_code.trim()
+        ? input.coupon_code.trim().toUpperCase()
+        : undefined;
+
+    const paymentCode: string | undefined =
+      typeof input.payment_code === "string" && input.payment_code.trim()
+        ? input.payment_code.trim().toUpperCase()
+        : undefined;
+
+    // ── Résolution du coupon (tracking côté DB, on n'utilise plus l'API
+    //    coupon Stripe pour la subscription pour garder un calcul précis) ──
     let discountPercent = 0;
     if (couponCode) {
-      const { data: validation } = await supabase.rpc("validate_coupon", { p_code: couponCode });
+      const { data: validation } = await supabase.rpc("validate_coupon", {
+        p_code: couponCode,
+      });
       if (validation?.valid) {
         discountPercent = validation.discount_percent;
-        stripeCouponId = await ensureStripeCoupon(apiKey, supabase, validation.code, discountPercent, isTestMode);
       }
     }
 
+    // ── Lookup payment_code → contact + total des acomptes payés ──────
+    let acompteTotalCents = 0;
+    let acompteSaleIds: string[] = [];
+    let resolvedContactId: string | null = null;
+    if (paymentCode) {
+      const { data: rows } = await supabase.rpc("lookup_payment_code", {
+        p_code: paymentCode,
+      });
+      const row = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+      if (row?.contact_id) {
+        resolvedContactId = row.contact_id;
+        acompteTotalCents = Math.round(Number(row.acompte_total ?? 0) * 100);
+
+        // Récupère les sale_ids des acomptes (pour les lier à la vente
+        // principale dans le webhook)
+        const { data: acomptes } = await supabase
+          .from("sales")
+          .select("id")
+          .eq("contact_id", row.contact_id)
+          .eq("sale_type", "acompte")
+          .eq("payment_status", "paid");
+        acompteSaleIds = (acomptes || []).map((s: { id: string }) => s.id);
+      }
+    }
+
+    // ── Calcul du solde à payer ──────────────────────────────────────
     const totalCents = TOTAL_AMOUNT_EUR * 100;
-    const totalAfterDiscountCents = Math.round((totalCents * (100 - discountPercent)) / 100);
-    const monthlyCents = Math.round(totalCents / installments);
+    const subtotalAfterDiscountCents = Math.round(
+      (totalCents * (100 - discountPercent)) / 100,
+    );
+    const payableCents = Math.max(subtotalAfterDiscountCents - acompteTotalCents, 0);
+
+    if (payableCents === 0) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Le solde à payer est nul ou négatif. Acompte déjà supérieur au montant net. Contactez le support.",
+          subtotal_after_discount_cents: subtotalAfterDiscountCents,
+          acompte_total_cents: acompteTotalCents,
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Pour la subscription : prix unitaire = payable / installments
+    const monthlyCents = Math.round(payableCents / installments);
 
     const metadata: Record<string, string> = {
       installments: String(installments),
       coupon_code: couponCode || "",
       discount_percent: String(discountPercent),
       product: PRODUCT_NAME,
+      product_type: "pass_al_baraka",
       source: "bon_commande",
       test_mode: isTestMode ? "true" : "false",
       customer_email: email,
@@ -200,32 +296,37 @@ Deno.serve(async (req) => {
       customer_postal_code: String(customer.postal_code || ""),
       customer_city: String(customer.city || ""),
       customer_country: String(customer.country || ""),
+      payment_code: paymentCode || "",
+      contact_id: resolvedContactId || "",
+      acompte_total_cents: String(acompteTotalCents),
+      acompte_sale_ids: acompteSaleIds.join(","),
+      payable_cents: String(payableCents),
+      total_brut_cents: String(totalCents),
     };
 
     if (installments === 1) {
-      // One-time payment
-      // payment_method_types: ["card"] doit matcher le front (paymentMethodTypes
-      // dans elementsOptions de Checkout.tsx). Sans cohérence des deux côtés,
-      // Stripe refuse au moment du confirmPayment avec :
-      // "Payment details were collected through Stripe elements using automatic
-      //  payment methods and cannot be confirmed through the API configured
-      //  with payment method types..."
-      const pi = await stripeFetch<{ id: string; client_secret: string }>(apiKey, "/payment_intents", {
-        amount: totalAfterDiscountCents,
-        currency: "eur",
-        receipt_email: email,
-        metadata,
-        description: `${PRODUCT_NAME} — Paiement en 1 fois`,
-        "payment_method_types[0]": "card",
-        "payment_method_options[card][request_three_d_secure]": "automatic",
-      });
+      const pi = await stripeFetch<{ id: string; client_secret: string }>(
+        apiKey,
+        "/payment_intents",
+        {
+          amount: payableCents,
+          currency: "eur",
+          receipt_email: email,
+          metadata,
+          description: `${PRODUCT_NAME} — Paiement en 1 fois`,
+          "payment_method_types[0]": "card",
+          "payment_method_options[card][request_three_d_secure]": "automatic",
+        },
+      );
       return new Response(
         JSON.stringify({
           client_secret: pi.client_secret,
           intent_id: pi.id,
           intent_type: "payment",
-          amount_cents: totalAfterDiscountCents,
+          product_type: "pass_al_baraka",
+          amount_cents: payableCents,
           discount_percent: discountPercent,
+          acompte_total_cents: acompteTotalCents,
           installments,
           test_mode: isTestMode,
         }),
@@ -233,7 +334,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Subscription (N>=2)
+    // ── Subscription (N >= 2) ────────────────────────────────────────
     const searchResult = await stripeFetch<{ data: Array<{ id: string }> }>(
       apiKey,
       `/customers/search?query=${encodeURIComponent(`email:"${email}"`)}`,
@@ -272,7 +373,7 @@ Deno.serve(async (req) => {
     cancelDate.setDate(cancelDate.getDate() - 1);
     const cancelAt = Math.floor(cancelDate.getTime() / 1000);
 
-    const productId = await ensureStripeProduct(apiKey);
+    const productId = await ensureStripeProduct(apiKey, PRODUCT_ID, PRODUCT_NAME);
 
     const subParams: Record<string, unknown> = {
       customer: customerId,
@@ -282,26 +383,19 @@ Deno.serve(async (req) => {
       "items[0][price_data][product]": productId,
       payment_behavior: "default_incomplete",
       "payment_settings[save_default_payment_method]": "on_subscription",
-      // Force la subscription à n'utiliser QUE la carte bancaire.
-      // Sans ce paramètre, Stripe utilise les méthodes activées sur le
-      // dashboard (TEST et LIVE peuvent diverger), ce qui crée un mismatch
-      // avec PaymentElement automatic et provoque l'erreur :
-      // "Payment details were collected through Stripe elements using
-      //  automatic payment methods and cannot be confirmed through the
-      //  API configured with payment method types..."
-      // Apple Pay / Google Pay sont déjà désactivés côté front (wallets:never).
       "payment_settings[payment_method_types][0]": "card",
-      // 3D Secure : automatique selon les règles Stripe (PSD2 EU + détection fraude).
-      "payment_settings[payment_method_options][card][request_three_d_secure]": "automatic",
+      "payment_settings[payment_method_options][card][request_three_d_secure]":
+        "automatic",
       cancel_at: cancelAt,
       description: `${PRODUCT_NAME} — ${installments} mensualités`,
       "expand[0]": "latest_invoice.payment_intent",
       metadata,
     };
 
-    if (stripeCouponId) {
-      subParams["discounts[0][coupon]"] = stripeCouponId;
-    }
+    // Note : on n'utilise plus le coupon Stripe ici. Le calcul du solde
+    // (incluant remise et acompte) est fait côté serveur dans `payableCents`.
+    // Le webhook stocke `discount_amount` et `coupon_code` dans `sales`
+    // pour la traçabilité.
 
     const subscription = await stripeFetch<{
       id: string;
@@ -310,15 +404,10 @@ Deno.serve(async (req) => {
 
     const pi = subscription.latest_invoice?.payment_intent;
 
-    // Le webhook lit les metadata sur le PaymentIntent pour créer le profile
-    // + sale + payments dès que l'événement payment_intent.succeeded arrive.
-    // On copie donc les metadata de la subscription sur le PI, + l'id de
-    // la subscription (utile pour retrouver les échéances suivantes).
     if (pi?.id) {
       try {
         const piMetadata = { ...metadata, stripe_subscription_id: subscription.id };
-        const piParams: Record<string, unknown> = { metadata: piMetadata };
-        await stripeFetch(apiKey, `/payment_intents/${pi.id}`, piParams);
+        await stripeFetch(apiKey, `/payment_intents/${pi.id}`, { metadata: piMetadata });
       } catch (e) {
         console.error("Failed to patch PaymentIntent metadata:", e);
       }
@@ -339,10 +428,13 @@ Deno.serve(async (req) => {
         client_secret: pi.client_secret,
         intent_id: pi.id,
         intent_type: "subscription",
+        product_type: "pass_al_baraka",
         subscription_id: subscription.id,
         customer_id: customerId,
-        amount_cents: Math.round(totalAfterDiscountCents / installments),
+        amount_cents: monthlyCents, // mensualité
+        payable_cents: payableCents, // solde total
         discount_percent: discountPercent,
+        acompte_total_cents: acompteTotalCents,
         installments,
         test_mode: isTestMode,
       }),
@@ -351,9 +443,9 @@ Deno.serve(async (req) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("create-payment-intent error:", message);
-    return new Response(
-      JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });

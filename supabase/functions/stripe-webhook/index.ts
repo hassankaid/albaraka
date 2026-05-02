@@ -253,10 +253,39 @@ async function ensureBonCommandeOrder(
 
   const contact = { id: contactId as string };
 
-  // Sale
+  // ── Acompte : si le checkout a lookup un payment_code, l'acompte est
+  //    déjà déduit côté Stripe (payable_cents). On lie la vente principale
+  //    à la vente acompte via parent_sale_id pour le tracking admin.
+  const payableCents = Number(metadata.payable_cents) || 0;
+  const acompteTotalCents = Number(metadata.acompte_total_cents) || 0;
+  const acompteSaleIds = (metadata.acompte_sale_ids || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  // amount_ht de la vente principale = ce qui est PAYÉ via cette vente
+  // (acompte exclu — l'acompte a sa propre vente avec sa propre amount_ht).
+  // discount_amount = la remise appliquée sur le brut 2500 €.
   const totalGross = 2500;
-  const discountAmount = Math.round((totalGross * discountPercent) / 100 * 100) / 100;
-  const totalNet = totalGross - discountAmount;
+  const discountAmount =
+    Math.round(((totalGross * discountPercent) / 100) * 100) / 100;
+  const totalNet =
+    payableCents > 0
+      ? payableCents / 100
+      : totalGross - discountAmount; // fallback ancien flow
+
+  // Lien vers le 1er acompte (le plus ancien si plusieurs cumulés)
+  let parentSaleId: string | null = null;
+  if (acompteSaleIds.length > 0) {
+    const { data: oldestAcompte } = await supabase
+      .from("sales")
+      .select("id, created_at")
+      .in("id", acompteSaleIds)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    parentSaleId = oldestAcompte?.id || null;
+  }
 
   const { data: sale, error: saleErr } = await supabase
     .from("sales")
@@ -269,6 +298,7 @@ async function ensureBonCommandeOrder(
       coupon_code: couponCode,
       mensualites: installments,
       sale_type: "bon_commande",
+      parent_sale_id: parentSaleId,
       stripe_session_id: null,
       payment_status: "pending",
       sold_at: new Date().toISOString(),
@@ -404,6 +434,137 @@ function triggerClientInvoice(payment_id: string): void {
 }
 
 /**
+ * Idempotent creation of contact + sale (sale_type=acompte) + payment from
+ * an acompte PaymentIntent. Generates a payment_code on the contact (or
+ * reuses existing). Triggers the client invoice. NO access grant, NO
+ * onboarding email, NO subscription.
+ */
+async function ensureAcompteOrder(
+  supabase: SupabaseClient,
+  metadata: Record<string, string>,
+  ids: BonCommandeIds,
+): Promise<void> {
+  if (metadata.source !== "acompte") return;
+
+  const email = String(metadata.customer_email || "").trim().toLowerCase();
+  const fullName = String(metadata.customer_full_name || "").trim();
+  if (!email || !fullName) {
+    console.error("[acompte] missing email/fullName", metadata);
+    return;
+  }
+
+  const acompteAmount = Number(metadata.acompte_amount_eur);
+  if (!Number.isFinite(acompteAmount) || acompteAmount <= 0) {
+    console.error("[acompte] invalid acompte_amount_eur", metadata);
+    return;
+  }
+
+  // Idempotency: lookup existing sale by paymentIntentId
+  if (ids.paymentIntentId) {
+    const { data } = await supabase
+      .from("payments")
+      .select("sale_id, id, status")
+      .eq("stripe_payment_intent_id", ids.paymentIntentId)
+      .limit(1);
+    if (data && data.length > 0) {
+      const existing = data[0];
+      if (existing.status !== "paid") {
+        await supabase
+          .from("payments")
+          .update({ status: "paid", paid_at: todayISO() })
+          .eq("id", existing.id);
+        triggerClientInvoice(existing.id);
+      }
+      console.log(
+        `[acompte] already exists for PI=${ids.paymentIntentId}, idempotent`,
+      );
+      return;
+    }
+  }
+
+  // find_or_create_contact (gère dédup email/téléphone)
+  const { data: contactId, error: contactErr } = await supabase.rpc(
+    "find_or_create_contact",
+    {
+      p_email: email,
+      p_phone: metadata.customer_phone || "",
+      p_full_name: fullName || null,
+    },
+  );
+  if (contactErr || !contactId) {
+    console.error("[acompte] find_or_create_contact failed:", contactErr);
+    throw contactErr ?? new Error("find_or_create_contact returned null");
+  }
+
+  // Génère le payment_code (ou récupère l'existant si déjà attribué)
+  const { data: paymentCode, error: codeErr } = await supabase.rpc(
+    "generate_payment_code",
+    { p_contact_id: contactId },
+  );
+  if (codeErr) {
+    console.error("[acompte] generate_payment_code failed:", codeErr);
+  } else {
+    console.log(
+      `[acompte] payment_code=${paymentCode} for contact=${contactId}`,
+    );
+  }
+
+  // INSERT vente acompte
+  const { data: sale, error: saleErr } = await supabase
+    .from("sales")
+    .insert({
+      contact_id: contactId,
+      product: `Acompte AL BARAKA — ${acompteAmount} €`,
+      amount_ht: acompteAmount,
+      discount_amount: 0,
+      mensualites: 1,
+      sale_type: "acompte",
+      payment_status: "paid",
+      sold_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+
+  if (saleErr || !sale) {
+    console.error("[acompte] sale insert failed:", saleErr);
+    throw saleErr ?? new Error("sale insert failed");
+  }
+
+  // INSERT 1 payment déjà payé
+  const { data: payment, error: paymentErr } = await supabase
+    .from("payments")
+    .insert({
+      sale_id: sale.id,
+      contact_id: contactId,
+      payment_number: 1,
+      total_payments: 1,
+      amount: acompteAmount,
+      due_date: todayISO(),
+      status: "paid",
+      paid_at: todayISO(),
+      payment_method: "stripe",
+      stripe_payment_intent_id: ids.paymentIntentId || null,
+    })
+    .select("id")
+    .single();
+
+  if (paymentErr) {
+    console.error("[acompte] payment insert failed:", paymentErr);
+    throw paymentErr;
+  }
+
+  console.log(
+    `[acompte] created sale=${sale.id} payment=${payment.id} contact=${contactId} amount=${acompteAmount}€ code=${paymentCode}`,
+  );
+
+  // Déclenche la facture client (PDF + email)
+  // NOTE : pas d'ouverture d'accès, pas d'email apporteur, pas d'onboarding
+  if (payment?.id) {
+    triggerClientInvoice(payment.id);
+  }
+}
+
+/**
  * checkout.session.completed — legacy flow (Stripe Checkout hosted).
  * Inlined minimal version: delegates to ensureBonCommandeOrder when applicable.
  */
@@ -456,11 +617,22 @@ async function handlePaymentIntentSucceeded(
     return;
   }
 
-  if (metadata.source !== "bon_commande") return;
-
   const piId = typeof pi.id === "string" ? pi.id : null;
   const subscriptionId = metadata.stripe_subscription_id || null;
   const invoiceId = typeof pi.invoice === "string" ? pi.invoice : extractId(pi.invoice);
+
+  // Branche acompte : paiement one-shot 50/100/150 €
+  if (metadata.source === "acompte") {
+    await ensureAcompteOrder(supabase, metadata, {
+      paymentIntentId: piId,
+      subscriptionId,
+      invoiceId,
+    });
+    return;
+  }
+
+  // Branche bon_commande (PASS AL BARAKA, 1x ou 2-8x)
+  if (metadata.source !== "bon_commande") return;
 
   await ensureBonCommandeOrder(supabase, metadata, {
     paymentIntentId: piId,

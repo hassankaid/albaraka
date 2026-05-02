@@ -92,6 +92,8 @@ interface InvoicePdfData {
   paymentNumber: number | null;
   totalPayments: number | null;
   product: string;
+  saleType: string | null;
+  paymentCode: string | null; // affiché dans le PDF des factures d'acompte
   client: {
     name: string;
     email: string | null;
@@ -185,6 +187,39 @@ async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Array> {
   if (data.client.email) drawText(page, data.client.email, colRightX, y, { size: 9, font: helv, color: gray });
   y -= 40;
 
+  // Bandeau "Code paiement personnel" — uniquement pour les factures d'acompte.
+  // Visible et bien identifié pour que le client puisse le retrouver et que
+  // le commercial puisse l'utiliser pour générer le lien de paiement final.
+  if (data.saleType === "acompte" && data.paymentCode) {
+    const codeBoxHeight = 36;
+    page.drawRectangle({
+      x: margin,
+      y: y - codeBoxHeight + 10,
+      width: width - 2 * margin,
+      height: codeBoxHeight,
+      color: goldLight,
+      borderColor: gold,
+      borderWidth: 0.8,
+    });
+    drawText(page, "CODE PAIEMENT PERSONNEL", margin + 12, y - 2, {
+      size: 8,
+      font: helvBold,
+      color: goldDark,
+    });
+    drawText(page, data.paymentCode, margin + 12, y - 18, {
+      size: 14,
+      font: courier,
+      color: dark,
+    });
+    const noteText = "A communiquer pour reglement final - acompte deduit automatiquement";
+    drawText(page, noteText, width - margin - 280, y - 18, {
+      size: 7,
+      font: helv,
+      color: gray,
+    });
+    y -= codeBoxHeight + 12;
+  }
+
   // ── Table Description / Montant ──
   const tableTop = y;
   const colDescX = margin + 12;
@@ -246,10 +281,27 @@ function buildEmailHtml(params: {
   product: string;
   paymentNumber: number | null;
   totalPayments: number | null;
+  saleType: string | null;
+  paymentCode: string | null;
 }): string {
   const prenom = firstName(params.clientName);
-  const mensInfo = params.paymentNumber && params.totalPayments
+  const isAcompte = params.saleType === "acompte";
+  const mensInfo = !isAcompte && params.paymentNumber && params.totalPayments
     ? `(mensualité ${params.paymentNumber}/${params.totalPayments})`
+    : "";
+
+  // Section "Code paiement personnel" uniquement pour les factures d'acompte
+  const codeBlock = isAcompte && params.paymentCode
+    ? `
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 24px 0;">
+                <tr>
+                  <td style="background-color:rgba(212,175,55,0.08);border:1px solid ${BRAND.gold};border-radius:10px;padding:20px 24px;">
+                    <p style="margin:0 0 6px 0;font-size:11px;color:${BRAND.gold};letter-spacing:2px;text-transform:uppercase;font-weight:bold;">Ton code paiement personnel</p>
+                    <p style="margin:0 0 8px 0;font-family:'Courier New',monospace;font-size:28px;color:${BRAND.gold};letter-spacing:4px;">${escapeHtml(params.paymentCode)}</p>
+                    <p style="margin:0;font-size:13px;line-height:1.6;color:${BRAND.textMain};">Ce code te sera demandé lorsque ton conseiller te transmettra le lien pour finaliser ton PASS AL BARAKA. <strong style="color:${BRAND.gold};font-weight:normal;">Ton acompte sera automatiquement déduit du solde à régler.</strong></p>
+                  </td>
+                </tr>
+              </table>`
     : "";
 
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -294,8 +346,9 @@ function buildEmailHtml(params: {
                 As salam alaykoum${prenom ? ` ${escapeHtml(prenom)}` : ""},
               </h2>
               <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">Baraka Allahou fik pour ta confiance.</p>
-              <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">Nous avons bien reçu ton paiement de <strong style="color:${BRAND.gold};font-weight:normal;">${fmtEur(params.amount)}</strong> ${mensInfo} pour le <strong style="color:${BRAND.gold};font-weight:normal;">${escapeHtml(params.product)}</strong>, encaissé le ${fmtDate(params.paidAt)}.</p>
+              <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">Nous avons bien reçu ${isAcompte ? "ton" : "ton paiement de"} <strong style="color:${BRAND.gold};font-weight:normal;">${fmtEur(params.amount)}</strong> ${isAcompte ? "d'acompte" : mensInfo} pour ${isAcompte ? "réserver ton PASS AL BARAKA" : `le <strong style="color:${BRAND.gold};font-weight:normal;">${escapeHtml(params.product)}</strong>`}, encaissé le ${fmtDate(params.paidAt)}.</p>
               <p style="margin:0 0 28px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">Tu trouveras ta facture <strong style="color:${BRAND.gold};font-weight:normal;">${escapeHtml(params.invoiceNumber)}</strong> en pièce jointe (PDF).</p>
+              ${codeBlock}
               <p style="margin:0 0 28px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};font-style:italic;">Qu'Allah ﷻ te bénisse et te facilite dans ton parcours.</p>
               <p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:${BRAND.textSecondary};">Wa salam alaykoum,</p>
               <p style="margin:0;font-size:14px;line-height:1.6;color:${BRAND.textMain};"><strong style="color:${BRAND.gold};font-weight:normal;">L'équipe AL BARAKA</strong></p>
@@ -372,8 +425,8 @@ Deno.serve(async (req) => {
     const { data: payment, error: payErr } = await supabase
       .from("payments")
       .select(`id, sale_id, contact_id, payment_number, total_payments, amount, paid_at, status,
-               sales!payments_sale_id_fkey(id, product, buyer_profile_id, contact_id),
-               contacts!payments_contact_id_fkey(id, full_name, email)`)
+               sales!payments_sale_id_fkey(id, product, sale_type, buyer_profile_id, contact_id),
+               contacts!payments_contact_id_fkey(id, full_name, email, payment_code)`)
       .eq("id", payment_id).single();
     if (payErr || !payment) return new Response(JSON.stringify({ error: "Payment not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     if (payment.status !== "paid") return new Response(JSON.stringify({ error: "Payment not paid yet" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -446,6 +499,8 @@ Deno.serve(async (req) => {
         paymentNumber: payment.payment_number,
         totalPayments: payment.total_payments,
         product: sale?.product || "PASS AL BARAKA",
+        saleType: sale?.sale_type || null,
+        paymentCode: contact?.payment_code || null,
         client: {
           name: clientName,
           email: clientEmail || null,
@@ -489,11 +544,14 @@ Deno.serve(async (req) => {
         product: sale?.product || "PASS AL BARAKA",
         paymentNumber: payment.payment_number,
         totalPayments: payment.total_payments,
+        saleType: sale?.sale_type || null,
+        paymentCode: contact?.payment_code || null,
       });
 
+      const subjectPrefix = sale?.sale_type === "acompte" ? "Ton acompte AL BARAKA" : `Ta facture ${invoiceNumber}`;
       await sendInvoiceEmail({
         to: toEmail,
-        subject: `Ta facture ${invoiceNumber} — AL BARAKA`,
+        subject: `${subjectPrefix} — AL BARAKA`,
         html: emailHtml,
         attachmentBase64: base64,
         attachmentFilename: `${invoiceNumber}.pdf`,

@@ -550,6 +550,58 @@ export default function Checkout() {
       ? parsedInstallments
       : 1;
 
+  // Lookup payment_code (acompte déjà versé) si le lien personnalisé contient
+  // ?code=ALB-XXXXXX. On affiche un bandeau "Acompte déjà versé" et on déduit
+  // automatiquement le montant des acomptes du solde à régler.
+  const paymentCode = (searchParams.get("code") || "").trim().toUpperCase() || null;
+  const [acompteLookup, setAcompteLookup] = useState<{
+    contact_id: string | null;
+    email: string | null;
+    full_name: string | null;
+    phone: string | null;
+    acompte_total: number;
+    acompte_count: number;
+  } | null>(null);
+  const [lookupLoading, setLookupLoading] = useState(!!paymentCode);
+
+  useEffect(() => {
+    if (!paymentCode) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.rpc("lookup_payment_code", { p_code: paymentCode });
+        if (cancelled) return;
+        if (Array.isArray(data) && data.length > 0) {
+          const row = data[0] as {
+            contact_id: string;
+            email: string | null;
+            full_name: string | null;
+            phone: string | null;
+            acompte_total: number;
+            acompte_count: number;
+          };
+          setAcompteLookup({
+            contact_id: row.contact_id,
+            email: row.email,
+            full_name: row.full_name,
+            phone: row.phone,
+            acompte_total: Number(row.acompte_total ?? 0),
+            acompte_count: Number(row.acompte_count ?? 0),
+          });
+        }
+      } catch (e) {
+        console.error("lookup_payment_code failed:", e);
+      } finally {
+        if (!cancelled) setLookupLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [paymentCode]);
+
+  const acompteTotal = acompteLookup?.acompte_total ?? 0;
+
   const missingKeyName = testMode ? "VITE_STRIPE_PUBLISHABLE_KEY_TEST" : "VITE_STRIPE_PUBLISHABLE_KEY";
   const publishableKey = testMode
     ? import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_TEST
@@ -567,11 +619,13 @@ export default function Checkout() {
   const [coupon, setCoupon] = useState<CouponState>({ status: "idle" });
   const discountPercent = coupon.status === "valid" ? coupon.percent : 0;
   const totalAfterDiscount = Math.round((TOTAL_EUR * (100 - discountPercent)) / 100 * 100) / 100;
+  // Solde réel à payer après déduction des acomptes
+  const payableTotal = Math.max(totalAfterDiscount - acompteTotal, 0);
 
   const elementsOptions = useMemo(
     () => ({
       mode: (installments === 1 ? "payment" : "subscription") as "payment" | "subscription",
-      amount: Math.round(totalAfterDiscount * 100),
+      amount: Math.round(payableTotal * 100),
       currency: "eur",
       // ⚠ IMPORTANT : doit matcher payment_method_types côté backend
       // (create-payment-intent → "payment_method_types[0]": "card").
@@ -628,7 +682,7 @@ export default function Checkout() {
         },
       },
     }),
-    [installments, totalAfterDiscount],
+    [installments, payableTotal],
   );
 
   return (
@@ -953,6 +1007,13 @@ export default function Checkout() {
               coupon={coupon}
               setCoupon={setCoupon}
               totalAfterDiscount={totalAfterDiscount}
+              paymentCode={paymentCode}
+              acompteTotal={acompteTotal}
+              acompteCount={acompteLookup?.acompte_count ?? 0}
+              prefilledEmail={acompteLookup?.email ?? null}
+              prefilledFullName={acompteLookup?.full_name ?? null}
+              prefilledPhone={acompteLookup?.phone ?? null}
+              lookupLoading={lookupLoading}
             />
           </Elements>
         </div>
@@ -970,9 +1031,29 @@ interface FormProps {
   coupon: CouponState;
   setCoupon: (c: CouponState) => void;
   totalAfterDiscount: number;
+  paymentCode?: string | null;
+  acompteTotal?: number;
+  acompteCount?: number;
+  prefilledEmail?: string | null;
+  prefilledFullName?: string | null;
+  prefilledPhone?: string | null;
+  lookupLoading?: boolean;
 }
 
-function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDiscount }: FormProps) {
+function CheckoutForm({
+  installments,
+  testMode,
+  coupon,
+  setCoupon,
+  totalAfterDiscount,
+  paymentCode = null,
+  acompteTotal = 0,
+  acompteCount = 0,
+  prefilledEmail = null,
+  prefilledFullName = null,
+  prefilledPhone = null,
+  lookupLoading = false,
+}: FormProps) {
   const stripe = useStripe();
   const elements = useElements();
 
@@ -993,7 +1074,27 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
   const [submitting, setSubmitting] = useState(false);
 
   const discountPercent = coupon.status === "valid" ? coupon.percent : 0;
-  const perInstallment = Math.round((totalAfterDiscount / installments) * 100) / 100;
+  // Solde à régler : prix après remise − acompte déjà versé
+  const payableTotal = Math.max(totalAfterDiscount - acompteTotal, 0);
+  const perInstallment = Math.round((payableTotal / installments) * 100) / 100;
+
+  // Pré-remplissage des champs depuis le lookup payment_code (acompte existant)
+  // Effectué une seule fois quand les données arrivent (ne pas écraser une saisie utilisateur).
+  useEffect(() => {
+    if (!prefilledEmail && !prefilledFullName && !prefilledPhone) return;
+    setBilling((b) => {
+      const next = { ...b };
+      if (prefilledEmail && !b.email) next.email = prefilledEmail;
+      if (prefilledFullName && !b.first_name && !b.last_name) {
+        const parts = prefilledFullName.trim().split(/\s+/);
+        next.first_name = parts[0] || "";
+        next.last_name = parts.slice(1).join(" ");
+      }
+      if (prefilledPhone && !b.phone) next.phone = prefilledPhone;
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefilledEmail, prefilledFullName, prefilledPhone]);
 
   function onField<K extends keyof BillingFields>(k: K, v: string) {
     setBilling((b) => ({ ...b, [k]: v }));
@@ -1064,6 +1165,7 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
           installments,
           test_mode: testMode,
           coupon_code: coupon.status === "valid" ? coupon.code : undefined,
+          payment_code: paymentCode || undefined,
           customer: {
             email: billing.email.trim().toLowerCase(),
             full_name: fullName,
@@ -1132,6 +1234,37 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
         gap: 32,
       }}
     >
+      {/* Bandeau "Acompte versé" — visible si le client est arrivé via un
+          lien personnalisé ?code=ALB-XXXXXX et a déjà versé un acompte */}
+      {paymentCode && (lookupLoading || acompteTotal > 0) && (
+        <div
+          style={{
+            background: "rgba(201,160,78,0.08)",
+            border: `1px solid ${THEME.goldLine}`,
+            borderRadius: 12,
+            padding: "14px 16px",
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 12,
+          }}
+        >
+          <CheckCircle2 size={18} style={{ color: THEME.gold, flexShrink: 0, marginTop: 1 }} />
+          <div style={{ fontSize: 13, color: THEME.cream, lineHeight: 1.5 }}>
+            {lookupLoading ? (
+              <span style={{ color: THEME.creamMuted }}>Vérification de votre acompte…</span>
+            ) : (
+              <>
+                <strong>Bienvenue !</strong> Vous avez déjà versé{" "}
+                <span style={{ color: THEME.goldBright, fontWeight: 600 }}>
+                  {formatEur(acompteTotal)}
+                </span>{" "}
+                d'acompte. Ce montant a été automatiquement déduit de votre solde à régler.
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Facturation */}
       <section>
         <span className="alb-section-label">Tes coordonnées</span>
@@ -1369,6 +1502,30 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
             <span style={{ textDecoration: "line-through" }}>{formatEur(TOTAL_EUR)}</span>
           </div>
         )}
+
+        {/* Acompte déjà versé (lien personnalisé via ?code=ALB-XXXXXX) */}
+        {acompteTotal > 0 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 12.5,
+              marginBottom: 10,
+              color: THEME.creamMuted,
+            }}
+          >
+            <span>
+              Acompte déjà versé
+              {acompteCount > 1 ? (
+                <span style={{ marginLeft: 6, color: THEME.creamDim, fontSize: 11 }}>
+                  ({acompteCount} versements)
+                </span>
+              ) : null}
+            </span>
+            <span style={{ color: THEME.goldBright }}>−{formatEur(acompteTotal)}</span>
+          </div>
+        )}
+
         <div
           style={{
             display: "flex",
@@ -1386,7 +1543,11 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
               textTransform: "uppercase",
             }}
           >
-            {installments === 1 ? "Total" : "Aujourd'hui"}
+            {installments === 1
+              ? acompteTotal > 0
+                ? "Solde à régler"
+                : "Total"
+              : "Aujourd'hui"}
           </span>
           <span
             style={{
@@ -1398,7 +1559,7 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
               lineHeight: 1,
             }}
           >
-            {formatEur(installments === 1 ? totalAfterDiscount : perInstallment)}
+            {formatEur(installments === 1 ? payableTotal : perInstallment)}
           </span>
         </div>
         {installments > 1 && (
@@ -1411,7 +1572,7 @@ function CheckoutForm({ installments, testMode, coupon, setCoupon, totalAfterDis
               letterSpacing: 0.2,
             }}
           >
-            puis {installments - 1} × {formatEur(perInstallment)} / mois · total {formatEur(totalAfterDiscount)}
+            puis {installments - 1} × {formatEur(perInstallment)} / mois · total {formatEur(payableTotal)}
           </div>
         )}
       </section>

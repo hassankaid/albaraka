@@ -10,6 +10,8 @@ import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import Checkout from "./pages/checkout/Checkout";
 import MerciPage from "./pages/checkout/MerciPage";
+import AcompteCheckout from "./pages/checkout/AcompteCheckout";
+import MerciAcomptePage from "./pages/checkout/MerciAcomptePage";
 import DashboardLayout from "./components/DashboardLayout";
 import ApporteurLayout from "./components/ApporteurLayout";
 import Dashboard from "./pages/Dashboard";
@@ -103,6 +105,8 @@ const App = () => (
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/checkout/:installments" element={<Checkout />} />
               <Route path="/merci" element={<MerciPage />} />
+              <Route path="/acompte/:montant" element={<AcompteCheckout />} />
+              <Route path="/merci-acompte" element={<MerciAcomptePage />} />
               <Route element={<ProtectedRoute />}>
                 {/* Onboarding (no layout) */}
                 <Route path="/onboarding" element={<ApporteurOnboarding />} />

@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
-import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare, MoreHorizontal, Clock, XCircle, CalendarIcon, ListOrdered, Save, X as XIcon, Loader2, FileText } from "lucide-react";
+import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare, MoreHorizontal, Clock, XCircle, CalendarIcon, ListOrdered, Save, X as XIcon, Loader2, FileText, Link as LinkIcon } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -34,6 +34,8 @@ interface PaymentRow {
   contact_phone: string | null;
   sale_id: string | null;
   closed_by: string | null;
+  sale_type: string | null;
+  payment_code: string | null;
   _isUserInvolved: boolean;
 }
 
@@ -177,8 +179,8 @@ export default function Payments() {
         .from("payments")
         .select(`
           id, payment_number, total_payments, amount, due_date, paid_at, status, notes, sale_id,
-          contacts!payments_contact_id_fkey(full_name, email, phone_normalized),
-          sales!payments_sale_id_fkey(closed_by)
+          contacts!payments_contact_id_fkey(full_name, email, phone_normalized, payment_code),
+          sales!payments_sale_id_fkey(closed_by, sale_type)
         `)
         .order("due_date", { ascending: false })
         .range(from, from + batchSize - 1);
@@ -217,6 +219,8 @@ export default function Payments() {
         contact_phone: p.contacts?.phone_normalized || null,
         sale_id: p.sale_id || null,
         closed_by: p.sales?.closed_by || null,
+        sale_type: p.sales?.sale_type || null,
+        payment_code: p.contacts?.payment_code || null,
         _isUserInvolved: userSaleIds ? (p.sale_id ? userSaleIds.has(p.sale_id) : false) : true,
       }))
     );
@@ -679,6 +683,24 @@ export default function Payments() {
                                 })}
                               >
                                 <FileText className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                            {p.sale_type === "acompte" && p.payment_code && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 text-primary hover:text-primary/80 hover:bg-primary/10"
+                                title="Copier le lien personnalisé pour le paiement final"
+                                onClick={() => {
+                                  const link = `${window.location.origin}/checkout?code=${p.payment_code}`;
+                                  navigator.clipboard.writeText(link);
+                                  toast({
+                                    title: "Lien copié",
+                                    description: "Le lien personnalisé a été copié dans le presse-papier.",
+                                  });
+                                }}
+                              >
+                                <LinkIcon className="h-3.5 w-3.5" />
                               </Button>
                             )}
                             {canChangeStatus(p.status) && (
