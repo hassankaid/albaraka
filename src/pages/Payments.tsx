@@ -636,7 +636,41 @@ export default function Payments() {
   }, [allPayments, isCeo, periodFilter]);
 
   const totalPendingMonth = kpiPayments.filter((p) => p.status === "pending").reduce((s, p) => s + p.amount, 0);
-  const totalPaidMonth = kpiPayments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
+
+  // "Encaissé" filtre par paid_at (date d'encaissement réelle), pas par
+  // due_date. Cohérent avec la modale "Factures du mois" et avec la
+  // sémantique comptable. Permet d'aligner les chiffres dashboard ↔ ZIP
+  // factures pour la transmission au comptable.
+  const totalPaidMonth = useMemo(() => {
+    const inUserScope = isCeo
+      ? allPayments
+      : allPayments.filter((p) => p._isUserInvolved);
+    const paid = inUserScope.filter((p) => p.status === "paid" && !!p.paid_at);
+
+    if (periodFilter === "all") {
+      return paid.reduce((s, p) => s + p.amount, 0);
+    }
+    if (periodFilter === "today") {
+      const todayStr = new Date().toISOString().split("T")[0];
+      return paid
+        .filter((p) => p.paid_at === todayStr)
+        .reduce((s, p) => s + p.amount, 0);
+    }
+    if (periodFilter === "this_month" || periodFilter === "next_month") {
+      const offset = periodFilter === "this_month" ? 0 : 1;
+      const { start, end } = getMonthRange(offset);
+      return paid
+        .filter((p) => p.paid_at! >= start && p.paid_at! <= end)
+        .reduce((s, p) => s + p.amount, 0);
+    }
+    if (periodFilter === "billing_period") {
+      const { start, end } = getMonthRange(-1);
+      return paid
+        .filter((p) => p.paid_at! >= start && p.paid_at! <= end)
+        .reduce((s, p) => s + p.amount, 0);
+    }
+    return 0;
+  }, [allPayments, isCeo, periodFilter]);
   const today = new Date().toISOString().split("T")[0];
   const totalOverdue = kpiPayments
     .filter((p) => (p.status === "pending" && p.due_date < today) || p.status === "late")
