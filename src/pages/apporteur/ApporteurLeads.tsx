@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Users, UserPlus, RefreshCw, Search } from "lucide-react";
+import { Users, UserPlus, RefreshCw, Search, Pencil } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +37,20 @@ const STATUS_OPTIONS = [
   { value: "call_booke", label: "Call booké" },
 ];
 
+// Liste des statuts qu'un apporteur peut appliquer à ses propres leads
+// (sécurité en cas d'oubli ou d'erreur du collaborateur).
+// Doit rester aligné avec la whitelist de la RPC apporteur_update_lead_status.
+const APPORTEUR_EDITABLE_STATUSES = [
+  { value: "a_qualifier", label: "À qualifier" },
+  { value: "inscrit_conference", label: "Inscrit conférence" },
+  { value: "call_booke", label: "Call booké" },
+  { value: "a_relancer", label: "À relancer" },
+  { value: "faux_numero", label: "Faux numéro" },
+  { value: "pas_qualifie", label: "Pas qualifié" },
+  { value: "perdu", label: "Perdu" },
+  { value: "close", label: "Close (vente)" },
+];
+
 export default function ApporteurLeads() {
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -55,6 +69,49 @@ export default function ApporteurLeads() {
   const [leadStatus, setLeadStatus] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Edit-status modal state
+  const [editLead, setEditLead] = useState<LeadEnriched | null>(null);
+  const [editStatus, setEditStatus] = useState("");
+  const [editNote, setEditNote] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+
+  function openEditModal(lead: LeadEnriched) {
+    setEditLead(lead);
+    setEditStatus(lead.status || "a_qualifier");
+    setEditNote("");
+  }
+
+  async function handleSaveEdit() {
+    if (!editLead || !editLead.id) return;
+    setEditSaving(true);
+    try {
+      const { data, error } = await (supabase as any).rpc("apporteur_update_lead_status", {
+        p_lead_id: editLead.id,
+        p_new_status: editStatus,
+        p_note: editNote.trim() || null,
+      });
+      if (error) throw new Error(error.message);
+      const result = data as { ok: boolean; changed: boolean };
+      toast({
+        title: result?.changed ? "Statut mis à jour" : "Aucun changement",
+        description: result?.changed
+          ? `Le statut du lead a bien été modifié.`
+          : "Le statut était déjà identique.",
+      });
+      setEditLead(null);
+      setEditNote("");
+      await fetchLeads();
+    } catch (err: any) {
+      toast({
+        title: "Erreur",
+        description: err?.message || "Impossible de modifier le statut",
+        variant: "destructive",
+      });
+    } finally {
+      setEditSaving(false);
+    }
+  }
 
   const fetchLeads = useCallback(async () => {
     if (!profile) return;
@@ -216,6 +273,7 @@ export default function ApporteurLeads() {
                   <TableHead>Source</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Statut</TableHead>
+                  <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -247,6 +305,17 @@ export default function ApporteurLeads() {
                         </Badge>
                       )}
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        title="Modifier le statut"
+                        onClick={() => openEditModal(lead)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -256,18 +325,25 @@ export default function ApporteurLeads() {
           {/* Mobile */}
           <div className="space-y-3 md:hidden">
             {filtered.map((lead) => (
-              <Card key={lead.id} className="border-border/50">
+              <Card
+                key={lead.id}
+                className="border-border/50 cursor-pointer hover:border-primary/40 transition-colors"
+                onClick={() => openEditModal(lead)}
+              >
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
                       <p className="font-semibold text-foreground">{lead.contact_full_name || "—"}</p>
-                      <p className="text-xs text-muted-foreground">{lead.contact_phone}</p>
+                      <p className="text-xs text-muted-foreground truncate">{lead.contact_phone}</p>
                     </div>
-                    {lead.status && (
-                      <Badge variant="outline" className={`text-xs ${LEAD_STATUS_COLORS[lead.status] || ""}`}>
-                        {LEAD_STATUS_LABELS[lead.status] || lead.status}
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {lead.status && (
+                        <Badge variant="outline" className={`text-xs ${LEAD_STATUS_COLORS[lead.status] || ""}`}>
+                          {LEAD_STATUS_LABELS[lead.status] || lead.status}
+                        </Badge>
+                      )}
+                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                     {lead.source && (
@@ -349,6 +425,85 @@ export default function ApporteurLeads() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modale "Modifier le statut" — pour rectifier en cas d'oubli ou
+          d'erreur du collaborateur. RPC apporteur_update_lead_status filtre
+          côté serveur (whitelist statuts + propriété du lead). */}
+      <Dialog open={!!editLead} onOpenChange={(o) => { if (!o) setEditLead(null); }}>
+        <DialogContent className="bg-card border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Modifier le statut</DialogTitle>
+          </DialogHeader>
+          {editLead && (
+            <div className="space-y-4 py-2">
+              <div className="rounded-md border border-border/60 bg-muted/30 p-3">
+                <p className="text-sm font-medium text-foreground">
+                  {editLead.contact_full_name || "—"}
+                </p>
+                {editLead.contact_email && (
+                  <p className="text-xs text-muted-foreground">{editLead.contact_email}</p>
+                )}
+                <div className="mt-2 flex items-center gap-2 text-xs">
+                  <span className="text-muted-foreground">Statut actuel :</span>
+                  {editLead.status && (
+                    <Badge variant="outline" className={`text-xs ${LEAD_STATUS_COLORS[editLead.status] || ""}`}>
+                      {LEAD_STATUS_LABELS[editLead.status] || editLead.status}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Nouveau statut</label>
+                <Select value={editStatus} onValueChange={setEditStatus}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {APPORTEUR_EDITABLE_STATUSES.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Note <span className="text-xs text-muted-foreground font-normal">(optionnelle)</span>
+                </label>
+                <Textarea
+                  value={editNote}
+                  onChange={(e) => setEditNote(e.target.value)}
+                  placeholder="Ex : oubli du collaborateur, erreur, info reçue par le prospect..."
+                  className="bg-background"
+                  rows={3}
+                />
+              </div>
+
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                La modification est tracée dans l'historique du lead avec votre nom.
+                Le commercial concerné verra le changement.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setEditLead(null)} disabled={editSaving}>
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSaveEdit}
+              disabled={editSaving || !editStatus}
+              className="gradient-primary text-primary-foreground"
+            >
+              {editSaving && <RefreshCw className="h-4 w-4 animate-spin mr-2" />}
+              Enregistrer
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
