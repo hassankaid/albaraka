@@ -3,6 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ConferenceFilter } from "@/lib/marketing/conferenceFilter";
 
 // ─── Types ───────────────────────────────────────────────────────────
+
+// Canal publicitaire dérivé de l'UTM source (Meta Ads).
+// 'fb' = Facebook, 'ig' = Instagram. 'autre' = autres utm_source (an, msg…) ou null.
+export type AdChannel = "fb" | "ig" | "autre";
+
+export function classifyAdChannel(utmSource: string | null | undefined): AdChannel {
+  if (!utmSource) return "autre";
+  const v = utmSource.trim().toLowerCase();
+  if (v === "fb" || v === "facebook") return "fb";
+  if (v === "ig" || v === "instagram") return "ig";
+  return "autre";
+}
+
 export interface MarketingLead {
   id: string;
   source: string;
@@ -12,6 +25,8 @@ export interface MarketingLead {
   raw_email: string | null;
   raw_phone: string | null;
   contact_id: string | null;
+  utm_source: string | null;
+  ad_channel: AdChannel; // dérivé de utm_source
 }
 
 export interface MarketingCall {
@@ -51,6 +66,12 @@ export interface MarketingTag {
   key: string;
 }
 
+// Sous-stats par canal publicitaire pour une source ou un tag.
+export interface ByChannelStats {
+  fb: { leads: number; calls: number; sales: number; revenue: number; leadIds: string[] };
+  ig: { leads: number; calls: number; sales: number; revenue: number; leadIds: string[] };
+}
+
 export interface MarketingBreakdownRow {
   source: string;
   leads: number;
@@ -59,6 +80,7 @@ export interface MarketingBreakdownRow {
   revenue: number;
   leadToCall: number;
   leadToSale: number;
+  byChannel: ByChannelStats;
 }
 
 export interface MarketingChannelRow {
@@ -75,6 +97,41 @@ export interface MarketingTagRow {
   leadToCall: number;
   leadToSale: number;
   leadIds: string[];
+  byChannel: ByChannelStats;
+}
+
+// Comparaison FB vs IG pour le bloc maître "Performance Facebook vs Instagram".
+export interface ChannelTagDistinctive {
+  category: string;
+  key: string;
+  pctInChannel: number; // % des leads de ce canal porteurs de ce tag
+  pctInOther: number;   // % des leads de l'autre canal porteurs de ce tag
+  lift: number;         // pctInChannel / pctInOther
+  leadsInChannel: number;
+}
+
+export interface ChannelComparisonStats {
+  channel: AdChannel; // 'fb' ou 'ig'
+  leads: number;
+  calls: number;
+  sales: number;
+  revenue: number;
+  leadToCall: number;
+  leadToSale: number;
+  leadIds: string[];
+  topDistinctiveTags: ChannelTagDistinctive[]; // tags surreprésentés vs l'autre canal
+}
+
+export interface ChannelComparison {
+  fb: ChannelComparisonStats;
+  ig: ChannelComparisonStats;
+  // Verdict synthétique calculé : quel canal performe le mieux sur chaque axe ?
+  verdict: {
+    moreLeads: AdChannel | "tie";
+    bestLeadToCall: AdChannel | "tie";
+    bestLeadToSale: AdChannel | "tie";
+    moreRevenue: AdChannel | "tie";
+  };
 }
 
 export interface MarketingDashboardData {
@@ -96,6 +153,7 @@ export interface MarketingDashboardData {
   channelSpend: MarketingChannelRow[];
   sourceBreakdown: MarketingBreakdownRow[];
   tagBreakdown: MarketingTagRow[];
+  channelComparison: ChannelComparison;
   rawLeads: MarketingLead[];
   rawCalls: MarketingCall[];
   rawSales: MarketingSale[];
@@ -177,16 +235,24 @@ export function useMarketingDashboardData(filter: ConferenceFilter) {
       let leadsQuery = (supabase as any)
         .from("leads")
         .select(
-          "id, source, created_at, conference_date, raw_full_name, raw_email, raw_phone, contact_id",
+          "id, source, created_at, conference_date, raw_full_name, raw_email, raw_phone, contact_id, utm_source",
         );
       leadsQuery = applyConferenceFilter(leadsQuery);
       const { data: leadRows, error: leadErr } = await leadsQuery.order("created_at", {
         ascending: false,
       });
       if (leadErr) throw leadErr;
-      const rawLeads: MarketingLead[] = (leadRows ?? []) as MarketingLead[];
+      const rawLeads: MarketingLead[] = ((leadRows ?? []) as any[]).map((l) => ({
+        ...l,
+        ad_channel: classifyAdChannel(l.utm_source),
+      })) as MarketingLead[];
       const leadIds = rawLeads.map((l) => l.id);
       const nbLeads = rawLeads.length;
+
+      // Index : lead_id → ad_channel (utilisé partout par la suite).
+      const leadChannelById = new Map<string, AdChannel>(
+        rawLeads.map((l) => [l.id, l.ad_channel]),
+      );
 
       // Calls
       let callsQuery = (supabase as any)
@@ -310,28 +376,66 @@ export function useMarketingDashboardData(filter: ConferenceFilter) {
       const nbSales = salesLinkedCount + salesOrphanCount;
       const revenue = revenueLinked + revenueOrphan;
 
-      // ─── 3. Sources breakdown ─────────────────────────────────────────
+      // ─── 3. Sources breakdown (avec sous-stats par canal fb/ig) ──────
+      // Helper pour init un objet ByChannelStats vide.
+      const emptyByChannel = (): ByChannelStats => ({
+        fb: { leads: 0, calls: 0, sales: 0, revenue: 0, leadIds: [] },
+        ig: { leads: 0, calls: 0, sales: 0, revenue: 0, leadIds: [] },
+      });
+
       const sourceStats = new Map<
         string,
-        { leads: number; calls: number; sales: number; revenue: number }
+        {
+          leads: number;
+          calls: number;
+          sales: number;
+          revenue: number;
+          byChannel: ByChannelStats;
+        }
       >();
       const leadSourceById = new Map<string, string>(
         rawLeads.map((l) => [l.id, l.source ?? "inconnu"]),
       );
+
       for (const l of rawLeads) {
         const src = l.source ?? "inconnu";
-        const entry = sourceStats.get(src) ?? { leads: 0, calls: 0, sales: 0, revenue: 0 };
+        const entry = sourceStats.get(src) ?? {
+          leads: 0,
+          calls: 0,
+          sales: 0,
+          revenue: 0,
+          byChannel: emptyByChannel(),
+        };
         entry.leads += 1;
-        entry.calls += callsByLead.get(l.id)?.length ?? 0;
-        if (primarySalesByLead.has(l.id)) entry.sales += 1;
+        const cnt = callsByLead.get(l.id)?.length ?? 0;
+        entry.calls += cnt;
+        const isSold = primarySalesByLead.has(l.id);
+        if (isSold) entry.sales += 1;
+
+        // Sous-stats canal (uniquement fb / ig — 'autre' n'apparaît pas dans le breakdown)
+        if (l.ad_channel === "fb" || l.ad_channel === "ig") {
+          const sub = entry.byChannel[l.ad_channel];
+          sub.leads += 1;
+          sub.calls += cnt;
+          if (isSold) sub.sales += 1;
+          sub.leadIds.push(l.id);
+        }
+
         sourceStats.set(src, entry);
       }
+
+      // Revenu par source (et par canal au sein de chaque source)
       for (const s of rawSales) {
         if (!s.lead_id) continue;
         const src = leadSourceById.get(s.lead_id);
         if (!src) continue;
         const entry = sourceStats.get(src);
-        if (entry) entry.revenue += s.amount_ht;
+        if (!entry) continue;
+        entry.revenue += s.amount_ht;
+        const ch = leadChannelById.get(s.lead_id);
+        if (ch === "fb" || ch === "ig") {
+          entry.byChannel[ch].revenue += s.amount_ht;
+        }
       }
 
       const sourceBreakdown: MarketingBreakdownRow[] = Array.from(sourceStats.entries())
@@ -343,6 +447,7 @@ export function useMarketingDashboardData(filter: ConferenceFilter) {
           revenue: s.revenue,
           leadToCall: s.leads > 0 ? s.calls / s.leads : 0,
           leadToSale: s.leads > 0 ? s.sales / s.leads : 0,
+          byChannel: s.byChannel,
         }))
         .sort((a, b) => b.leads - a.leads);
 
@@ -355,6 +460,7 @@ export function useMarketingDashboardData(filter: ConferenceFilter) {
           revenue: revenueOrphan,
           leadToCall: 0,
           leadToSale: 0,
+          byChannel: emptyByChannel(),
         });
       }
 
@@ -392,10 +498,30 @@ export function useMarketingDashboardData(filter: ConferenceFilter) {
         .map((t) => {
           let calls = 0;
           let sales = 0;
+          const byCh = emptyByChannel();
           const leadIdsArr = Array.from(t.leads);
           for (const lid of leadIdsArr) {
-            calls += callsByLead.get(lid)?.length ?? 0;
-            if (primarySalesByLead.has(lid)) sales += 1;
+            const cnt = callsByLead.get(lid)?.length ?? 0;
+            calls += cnt;
+            const isSold = primarySalesByLead.has(lid);
+            if (isSold) sales += 1;
+
+            const ch = leadChannelById.get(lid);
+            if (ch === "fb" || ch === "ig") {
+              const sub = byCh[ch];
+              sub.leads += 1;
+              sub.calls += cnt;
+              if (isSold) sub.sales += 1;
+              sub.leadIds.push(lid);
+            }
+          }
+          // Revenu par canal pour ce tag
+          for (const s of rawSales) {
+            if (!s.lead_id || !t.leads.has(s.lead_id)) continue;
+            const ch = leadChannelById.get(s.lead_id);
+            if (ch === "fb" || ch === "ig") {
+              byCh[ch].revenue += s.amount_ht;
+            }
           }
           const lc = t.leads.size;
           return {
@@ -407,12 +533,131 @@ export function useMarketingDashboardData(filter: ConferenceFilter) {
             leadToCall: lc > 0 ? calls / lc : 0,
             leadToSale: lc > 0 ? sales / lc : 0,
             leadIds: leadIdsArr,
+            byChannel: byCh,
           };
         })
         .sort((a, b) => {
           if (a.category !== b.category) return a.category.localeCompare(b.category);
           return b.leads - a.leads;
         });
+
+      // ─── 5. Channel comparison (FB vs IG) — zone 2 du bloc maître ───
+      // On agrège tout au niveau global, puis on calcule les "tags distinctifs"
+      // (surreprésentés sur un canal vs l'autre) pour révéler les profils types.
+      const fbLeadIds: string[] = [];
+      const igLeadIds: string[] = [];
+      let fbCalls = 0, fbSales = 0, fbRevenue = 0;
+      let igCalls = 0, igSales = 0, igRevenue = 0;
+
+      for (const l of rawLeads) {
+        if (l.ad_channel === "fb") {
+          fbLeadIds.push(l.id);
+          fbCalls += callsByLead.get(l.id)?.length ?? 0;
+          if (primarySalesByLead.has(l.id)) fbSales += 1;
+        } else if (l.ad_channel === "ig") {
+          igLeadIds.push(l.id);
+          igCalls += callsByLead.get(l.id)?.length ?? 0;
+          if (primarySalesByLead.has(l.id)) igSales += 1;
+        }
+      }
+      for (const s of rawSales) {
+        if (!s.lead_id) continue;
+        const ch = leadChannelById.get(s.lead_id);
+        if (ch === "fb") fbRevenue += s.amount_ht;
+        else if (ch === "ig") igRevenue += s.amount_ht;
+      }
+
+      const fbLeadCount = fbLeadIds.length;
+      const igLeadCount = igLeadIds.length;
+
+      // Calcul des tags distinctifs : pour chaque tag, comparer pct_fb vs pct_ig.
+      // Critères (filtrage final côté UI) :
+      //  - Le tag doit toucher >= 3% des leads du canal
+      //  - lift >= 1.3 (30% de surreprésentation) pour être affiché comme distinctif
+      //  - On garde le top 5 trié par lift desc
+      const fbDistinctive: ChannelTagDistinctive[] = [];
+      const igDistinctive: ChannelTagDistinctive[] = [];
+      for (const t of tagBreakdown) {
+        const fbInTag = t.byChannel.fb.leads;
+        const igInTag = t.byChannel.ig.leads;
+        if (fbInTag === 0 && igInTag === 0) continue;
+
+        const pctFb = fbLeadCount > 0 ? fbInTag / fbLeadCount : 0;
+        const pctIg = igLeadCount > 0 ? igInTag / igLeadCount : 0;
+
+        // Distinctif FB : surreprésenté sur FB
+        if (pctFb >= 0.03 && pctFb > pctIg) {
+          const lift = pctIg > 0 ? pctFb / pctIg : pctFb / 0.001; // évite division par 0
+          if (lift >= 1.3) {
+            fbDistinctive.push({
+              category: t.category,
+              key: t.key,
+              pctInChannel: pctFb,
+              pctInOther: pctIg,
+              lift,
+              leadsInChannel: fbInTag,
+            });
+          }
+        }
+        // Distinctif IG : surreprésenté sur IG
+        if (pctIg >= 0.03 && pctIg > pctFb) {
+          const lift = pctFb > 0 ? pctIg / pctFb : pctIg / 0.001;
+          if (lift >= 1.3) {
+            igDistinctive.push({
+              category: t.category,
+              key: t.key,
+              pctInChannel: pctIg,
+              pctInOther: pctFb,
+              lift,
+              leadsInChannel: igInTag,
+            });
+          }
+        }
+      }
+      fbDistinctive.sort((a, b) => b.lift - a.lift);
+      igDistinctive.sort((a, b) => b.lift - a.lift);
+
+      // Verdict synthétique
+      const fbLeadToCall = fbLeadCount > 0 ? fbCalls / fbLeadCount : 0;
+      const igLeadToCall = igLeadCount > 0 ? igCalls / igLeadCount : 0;
+      const fbLeadToSale = fbLeadCount > 0 ? fbSales / fbLeadCount : 0;
+      const igLeadToSale = igLeadCount > 0 ? igSales / igLeadCount : 0;
+
+      const compareWithTie = (a: number, b: number, tieEps = 0.001): AdChannel | "tie" => {
+        if (Math.abs(a - b) <= tieEps) return "tie";
+        return a > b ? "fb" : "ig";
+      };
+
+      const channelComparison: ChannelComparison = {
+        fb: {
+          channel: "fb",
+          leads: fbLeadCount,
+          calls: fbCalls,
+          sales: fbSales,
+          revenue: fbRevenue,
+          leadToCall: fbLeadToCall,
+          leadToSale: fbLeadToSale,
+          leadIds: fbLeadIds,
+          topDistinctiveTags: fbDistinctive.slice(0, 5),
+        },
+        ig: {
+          channel: "ig",
+          leads: igLeadCount,
+          calls: igCalls,
+          sales: igSales,
+          revenue: igRevenue,
+          leadToCall: igLeadToCall,
+          leadToSale: igLeadToSale,
+          leadIds: igLeadIds,
+          topDistinctiveTags: igDistinctive.slice(0, 5),
+        },
+        verdict: {
+          moreLeads: compareWithTie(fbLeadCount, igLeadCount, 1),
+          bestLeadToCall: compareWithTie(fbLeadToCall, igLeadToCall),
+          bestLeadToSale: compareWithTie(fbLeadToSale, igLeadToSale),
+          moreRevenue: compareWithTie(fbRevenue, igRevenue, 1),
+        },
+      };
 
       return {
         budget,
@@ -433,6 +678,7 @@ export function useMarketingDashboardData(filter: ConferenceFilter) {
         channelSpend,
         sourceBreakdown,
         tagBreakdown,
+        channelComparison,
         rawLeads,
         rawCalls,
         rawSales,

@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import ConferenceFilter from "@/components/dashboard/marketing/ConferenceFilter";
 import AdsDrillDownModal from "@/components/dashboard/marketing/AdsDrillDownModal";
+import ChannelComparisonCard from "@/components/dashboard/marketing/ChannelComparisonCard";
 import type { ConferenceFilter as ConferenceFilterValue } from "@/lib/marketing/conferenceFilter";
 import { currentOrPrevSunday } from "@/lib/marketing/conferenceFilter";
 import {
@@ -10,6 +11,8 @@ import {
   type MarketingCall,
   type MarketingSale,
   type MarketingTag,
+  type ByChannelStats,
+  type AdChannel,
 } from "@/hooks/useMarketingDashboardData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,8 +38,11 @@ import {
   Mail,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Search,
   CheckCheck,
+  Facebook,
+  Instagram,
 } from "lucide-react";
 import {
   sourceLabel,
@@ -152,6 +158,7 @@ export default function MarketingTab({ filter: externalFilter, onFilterChange }:
               onOpenAdsDrill={() => setAdsDrillOpen(true)}
             />
             {data.channelSpend.length > 0 && <ChannelSpendCard data={data} />}
+            <ChannelComparisonCard data={data} onDrill={setDrill} />
             <SourcePerformanceTable data={data} onDrill={setDrill} />
             <TagDashboardCard data={data} onDrill={setDrill} />
           </>
@@ -433,6 +440,8 @@ function SourcePerformanceTable({
 }) {
   const [sortKey, setSortKey] = useState<SortKey>("leads");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  // Sources dépliées : permet de voir le split fb/ig sous chaque source.
+  const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
 
   const sorted = useMemo(() => {
     const arr = [...data.sourceBreakdown];
@@ -443,6 +452,15 @@ function SourcePerformanceTable({
     });
     return arr;
   }, [data.sourceBreakdown, sortKey, sortDir]);
+
+  const toggleExpand = (source: string) => {
+    setExpandedSources((prev) => {
+      const next = new Set(prev);
+      if (next.has(source)) next.delete(source);
+      else next.add(source);
+      return next;
+    });
+  };
 
   function toggleSort(k: SortKey) {
     if (sortKey === k) {
@@ -518,15 +536,35 @@ function SourcePerformanceTable({
                   : new Set(
                       data.rawLeads.filter((l) => l.source === row.source).map((l) => l.id),
                     );
+                const hasChannelData =
+                  !isOrphan && (row.byChannel.fb.leads > 0 || row.byChannel.ig.leads > 0);
+                const isExpanded = expandedSources.has(row.source);
                 return (
+                  <Fragment key={row.source}>
                   <tr
-                    key={row.source}
                     className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${
                       idx % 2 === 1 ? "bg-muted/10" : ""
                     } ${isOrphan ? "italic" : ""}`}
                   >
                     <td className="py-2 px-2">
                       <div className="flex items-center gap-2">
+                        {hasChannelData ? (
+                          <button
+                            type="button"
+                            onClick={() => toggleExpand(row.source)}
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                            aria-label={isExpanded ? "Replier" : "Déplier le split FB/IG"}
+                            title={isExpanded ? "Replier" : "Voir Facebook vs Instagram"}
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className="h-3 w-3" />
+                            ) : (
+                              <ChevronRight className="h-3 w-3" />
+                            )}
+                          </button>
+                        ) : (
+                          <span className="w-3" /> /* spacer */
+                        )}
                         <span
                           className="h-2 w-2 rounded-full shrink-0"
                           style={{ background: sourceColor(row.source) }}
@@ -608,6 +646,16 @@ function SourcePerformanceTable({
                       {eur(row.revenue)}
                     </td>
                   </tr>
+                  {/* Sous-lignes Facebook / Instagram (visible si la source est dépliée) */}
+                  {isExpanded && hasChannelData && (
+                    <ChannelSubRows
+                      sourceLabel={sourceLabel(row.source)}
+                      byChannel={row.byChannel}
+                      sourceLeads={row.leads}
+                      onDrill={onDrill}
+                    />
+                  )}
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -643,6 +691,105 @@ function SourcePerformanceTable({
   );
 }
 
+// ─── Sous-lignes par canal (FB / IG) sous une source dépliable ─────
+function ChannelSubRows({
+  sourceLabel: srcLabel,
+  byChannel,
+  sourceLeads,
+  onDrill,
+}: {
+  sourceLabel: string;
+  byChannel: ByChannelStats;
+  sourceLeads: number;
+  onDrill: (s: DrillState) => void;
+}) {
+  const renderRow = (channel: AdChannel) => {
+    const sub = channel === "fb" ? byChannel.fb : byChannel.ig;
+    if (sub.leads === 0) return null;
+    const Icon = channel === "fb" ? Facebook : Instagram;
+    const accent = channel === "fb" ? "text-blue-400" : "text-pink-400";
+    const channelLabel = channel === "fb" ? "Facebook" : "Instagram";
+    const leadIdsSet = new Set(sub.leadIds);
+    const leadToCall = sub.leads > 0 ? sub.calls / sub.leads : 0;
+    const leadToSale = sub.leads > 0 ? sub.sales / sub.leads : 0;
+    const sharePct = sourceLeads > 0 ? (sub.leads / sourceLeads) * 100 : 0;
+
+    return (
+      <tr key={channel} className="bg-muted/5 border-b border-border/40">
+        <td className="py-1.5 px-2 pl-9">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Icon className={`h-3 w-3 ${accent}`} />
+            <span>{channelLabel}</span>
+            <span className="text-muted-foreground/60 text-[10px]">
+              ({sharePct.toFixed(0)}% de la source)
+            </span>
+          </div>
+        </td>
+        <td className="py-1.5 px-2 text-right">
+          <button
+            onClick={() =>
+              onDrill({
+                mode: "leads",
+                title: `Leads — ${srcLabel} / ${channelLabel}`,
+                leadIds: leadIdsSet,
+              })
+            }
+            className="text-[11px] tabular-nums text-foreground hover:text-primary hover:underline"
+          >
+            {num(sub.leads)}
+          </button>
+        </td>
+        <td className="py-1.5 px-2 text-right">
+          <button
+            disabled={sub.calls === 0}
+            onClick={() =>
+              onDrill({
+                mode: "calls",
+                title: `RDV — ${srcLabel} / ${channelLabel}`,
+                leadIds: leadIdsSet,
+              })
+            }
+            className="text-[11px] tabular-nums text-foreground hover:text-primary hover:underline disabled:text-muted-foreground disabled:no-underline disabled:cursor-default"
+          >
+            {num(sub.calls)}
+          </button>
+        </td>
+        <td className="py-1.5 px-2 text-right text-[11px] tabular-nums text-muted-foreground">
+          {sub.leads > 0 ? pct(leadToCall, 0) : "—"}
+        </td>
+        <td className="py-1.5 px-2 text-right">
+          <button
+            disabled={sub.sales === 0}
+            onClick={() =>
+              onDrill({
+                mode: "sales",
+                title: `Ventes — ${srcLabel} / ${channelLabel}`,
+                leadIds: leadIdsSet,
+              })
+            }
+            className="text-[11px] tabular-nums text-foreground hover:text-primary hover:underline disabled:text-muted-foreground disabled:no-underline disabled:cursor-default"
+          >
+            {num(sub.sales)}
+          </button>
+        </td>
+        <td className="py-1.5 px-2 text-right text-[11px] tabular-nums text-muted-foreground">
+          {sub.leads > 0 ? pct(leadToSale, 0) : "—"}
+        </td>
+        <td className="py-1.5 px-2 text-right text-[11px] tabular-nums text-muted-foreground">
+          {eur(sub.revenue)}
+        </td>
+      </tr>
+    );
+  };
+
+  return (
+    <>
+      {renderRow("fb")}
+      {renderRow("ig")}
+    </>
+  );
+}
+
 // ─── Dashboard tags ──────────────────────────────────────────────────
 function TagDashboardCard({
   data,
@@ -651,14 +798,43 @@ function TagDashboardCard({
   data: MarketingDashboardData;
   onDrill: (s: DrillState) => void;
 }) {
-  const categories = Array.from(new Set(data.tagBreakdown.map((r) => r.category)));
+  // Toggle de canal : 'all' | 'fb' | 'ig'
+  // Permet de voir le profil-type des leads filtré uniquement sur Facebook
+  // ou Instagram (et donc identifier qui répond le mieux à quel canal).
+  const [channelFilter, setChannelFilter] = useState<"all" | "fb" | "ig">("all");
+
+  // tagBreakdown filtré : remplace les compteurs globaux par les sous-stats
+  // du canal sélectionné, et masque les tags vides dans ce canal.
+  const filteredBreakdown = useMemo(() => {
+    if (channelFilter === "all") return data.tagBreakdown;
+    return data.tagBreakdown
+      .map((r) => {
+        const sub = channelFilter === "fb" ? r.byChannel.fb : r.byChannel.ig;
+        return {
+          ...r,
+          leads: sub.leads,
+          calls: sub.calls,
+          sales: sub.sales,
+          leadToCall: sub.leads > 0 ? sub.calls / sub.leads : 0,
+          leadToSale: sub.leads > 0 ? sub.sales / sub.leads : 0,
+          leadIds: sub.leadIds,
+        };
+      })
+      .filter((r) => r.leads > 0);
+  }, [data.tagBreakdown, channelFilter]);
+
+  const categories = Array.from(new Set(filteredBreakdown.map((r) => r.category)));
   const byCategory = new Map(
-    categories.map((c) => [c, data.tagBreakdown.filter((r) => r.category === c)]),
+    categories.map((c) => [c, filteredBreakdown.filter((r) => r.category === c)]),
   );
+
+  // Label suffix pour les titres de drill-down
+  const channelSuffix =
+    channelFilter === "fb" ? " (Facebook)" : channelFilter === "ig" ? " (Instagram)" : "";
 
   return (
     <div className="bg-card border border-border rounded-xl p-4 space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <TagIcon className="h-4 w-4 text-primary" />
           <div>
@@ -666,15 +842,44 @@ function TagDashboardCard({
               Profil type des leads de la période
             </h3>
             <p className="text-[11px] text-muted-foreground">
-              Répartition par tag et taux de conversion associé
+              {channelFilter === "all"
+                ? "Répartition par tag et taux de conversion associé"
+                : channelFilter === "fb"
+                  ? "Profil des leads issus de Facebook uniquement"
+                  : "Profil des leads issus d'Instagram uniquement"}
             </p>
           </div>
         </div>
+        {/* Toggle de canal */}
+        <div className="inline-flex items-center rounded-md border border-border bg-muted/20 p-0.5">
+          <ChannelToggleButton
+            active={channelFilter === "all"}
+            onClick={() => setChannelFilter("all")}
+          >
+            Tous
+          </ChannelToggleButton>
+          <ChannelToggleButton
+            active={channelFilter === "fb"}
+            onClick={() => setChannelFilter("fb")}
+            icon={<Facebook className="h-3 w-3 text-blue-400" />}
+          >
+            Facebook
+          </ChannelToggleButton>
+          <ChannelToggleButton
+            active={channelFilter === "ig"}
+            onClick={() => setChannelFilter("ig")}
+            icon={<Instagram className="h-3 w-3 text-pink-400" />}
+          >
+            Instagram
+          </ChannelToggleButton>
+        </div>
       </div>
 
-      {data.tagBreakdown.length === 0 ? (
+      {filteredBreakdown.length === 0 ? (
         <p className="text-sm text-muted-foreground py-8 text-center">
-          Aucun tag posé sur les leads de cette période.
+          {channelFilter === "all"
+            ? "Aucun tag posé sur les leads de cette période."
+            : `Aucun tag sur les leads ${channelFilter === "fb" ? "Facebook" : "Instagram"} de cette période.`}
         </p>
       ) : (
         categories.map((cat) => {
@@ -699,7 +904,7 @@ function TagDashboardCard({
                       onClick={() =>
                         onDrill({
                           mode: "leads",
-                          title: `Leads — ${tagCategoryLabel(cat)} : ${tagKeyLabel(r.key)}`,
+                          title: `Leads — ${tagCategoryLabel(cat)} : ${tagKeyLabel(r.key)}${channelSuffix}`,
                           leadIds: new Set(r.leadIds),
                         })
                       }
@@ -710,7 +915,13 @@ function TagDashboardCard({
                       </span>
                       <div className="flex-1 relative h-6 rounded-md bg-muted overflow-hidden">
                         <div
-                          className="absolute inset-y-0 left-0 bg-primary/80 rounded-md transition-all"
+                          className={`absolute inset-y-0 left-0 rounded-md transition-all ${
+                            channelFilter === "fb"
+                              ? "bg-blue-500/70"
+                              : channelFilter === "ig"
+                                ? "bg-pink-500/70"
+                                : "bg-primary/80"
+                          }`}
                           style={{ width: `${w}%` }}
                         />
                         <span className="absolute inset-0 flex items-center px-2 text-[11px] font-semibold text-foreground">
@@ -740,6 +951,34 @@ function TagDashboardCard({
         })
       )}
     </div>
+  );
+}
+
+// ─── Toggle button utilisé pour le filtre de canal ──────────────────
+function ChannelToggleButton({
+  active,
+  onClick,
+  icon,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
+        active
+          ? "bg-background border border-border shadow-sm text-foreground"
+          : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {icon}
+      {children}
+    </button>
   );
 }
 
@@ -1028,8 +1267,9 @@ function LeadsList({
                   <User className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-foreground truncate">
-                    {l.raw_full_name || "—"}
+                  <p className="text-xs font-medium text-foreground truncate flex items-center gap-1">
+                    <ChannelBadge channel={l.ad_channel} />
+                    <span className="truncate">{l.raw_full_name || "—"}</span>
                   </p>
                   <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                     {l.raw_email && (
@@ -1148,8 +1388,9 @@ function CallsList({
                   <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-foreground truncate">
-                    {displayName}
+                  <p className="text-xs font-medium text-foreground truncate flex items-center gap-1">
+                    {lead && <ChannelBadge channel={lead.ad_channel} />}
+                    <span className="truncate">{displayName}</span>
                   </p>
                   <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                     {displayEmail && (
@@ -1244,8 +1485,9 @@ function SalesList({
                   <ShoppingBag className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-foreground truncate">
-                    {displayName}
+                  <p className="text-xs font-medium text-foreground truncate flex items-center gap-1">
+                    {lead && <ChannelBadge channel={lead.ad_channel} />}
+                    <span className="truncate">{displayName}</span>
                   </p>
                   <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                     {displayEmail && (
@@ -1300,6 +1542,28 @@ function SalesList({
       </div>
     </div>
   );
+}
+
+// Petit badge canal publicitaire (FB / IG) à côté du nom du lead/contact
+// dans les listes de drill-down. Rien si autre source ou pas d'utm.
+function ChannelBadge({ channel }: { channel: AdChannel }) {
+  if (channel === "fb") {
+    return (
+      <Facebook
+        className="h-3 w-3 text-blue-400 flex-shrink-0"
+        aria-label="Facebook"
+      />
+    );
+  }
+  if (channel === "ig") {
+    return (
+      <Instagram
+        className="h-3 w-3 text-pink-400 flex-shrink-0"
+        aria-label="Instagram"
+      />
+    );
+  }
+  return null;
 }
 
 function EmptyRow({ label }: { label: string }) {
