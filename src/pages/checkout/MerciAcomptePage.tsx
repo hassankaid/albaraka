@@ -56,6 +56,8 @@ export default function MerciAcomptePage() {
             height: 90,
             objectFit: "contain",
             marginBottom: 24,
+            marginInline: "auto",
+            display: "block",
             filter: "drop-shadow(0 0 24px rgba(201,160,78,0.22))",
           }}
         />

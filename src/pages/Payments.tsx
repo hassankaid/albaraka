@@ -150,6 +150,14 @@ export default function Payments() {
     amount: number;
     paidAt: string | null;
   } | null>(null);
+  // Modale "Lien personnalisé" : pour les ventes acompte, permet au commercial
+  // de choisir le nombre de mensualités du paiement final puis copier le lien
+  // adapté (?code=ALB-XXX → 1x, /checkout/4?code=ALB-XXX → 4x, etc.)
+  const [linkModal, setLinkModal] = useState<{
+    paymentCode: string;
+    contactName: string | null;
+  } | null>(null);
+  const [linkInstallments, setLinkInstallments] = useState<number>(1);
   // Inline edit states
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
   const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
@@ -690,13 +698,12 @@ export default function Payments() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 w-7 p-0 text-primary hover:text-primary/80 hover:bg-primary/10"
-                                title="Copier le lien personnalisé pour le paiement final"
+                                title="Générer le lien personnalisé pour le paiement final"
                                 onClick={() => {
-                                  const link = `${window.location.origin}/checkout?code=${p.payment_code}`;
-                                  navigator.clipboard.writeText(link);
-                                  toast({
-                                    title: "Lien copié",
-                                    description: "Le lien personnalisé a été copié dans le presse-papier.",
+                                  setLinkInstallments(1);
+                                  setLinkModal({
+                                    paymentCode: p.payment_code!,
+                                    contactName: p.contact_name,
                                   });
                                 }}
                               >
@@ -816,6 +823,93 @@ export default function Payments() {
         amount={invoiceModal?.amount ?? 0}
         paidAt={invoiceModal?.paidAt ?? null}
       />
+
+      {/* Modale "Lien personnalisé" — choix du nombre de mensualités pour
+          générer le lien checkout adapté à transmettre au client */}
+      <Dialog open={!!linkModal} onOpenChange={(o) => !o && setLinkModal(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Lien personnalisé de paiement final</DialogTitle>
+          </DialogHeader>
+          {linkModal && (() => {
+            const baseUrl = window.location.origin;
+            const path =
+              linkInstallments === 1
+                ? `/checkout?code=${linkModal.paymentCode}`
+                : `/checkout/${linkInstallments}?code=${linkModal.paymentCode}`;
+            const fullLink = `${baseUrl}${path}`;
+            return (
+              <div className="space-y-4">
+                {linkModal.contactName && (
+                  <p className="text-xs text-muted-foreground">
+                    Pour : <span className="font-medium text-foreground">{linkModal.contactName}</span>
+                  </p>
+                )}
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Plan de paiement
+                  </label>
+                  <Select
+                    value={String(linkInstallments)}
+                    onValueChange={(v) => setLinkInstallments(Number(v))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 fois (paiement comptant)</SelectItem>
+                      <SelectItem value="2">2 fois</SelectItem>
+                      <SelectItem value="3">3 fois</SelectItem>
+                      <SelectItem value="4">4 fois</SelectItem>
+                      <SelectItem value="5">5 fois</SelectItem>
+                      <SelectItem value="6">6 fois</SelectItem>
+                      <SelectItem value="7">7 fois</SelectItem>
+                      <SelectItem value="8">8 fois</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Lien à transmettre
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      readOnly
+                      value={fullLink}
+                      className="flex-1 px-3 py-2 text-xs font-mono rounded-md border border-border bg-muted/30 text-foreground select-all"
+                      onFocus={(e) => e.currentTarget.select()}
+                    />
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(fullLink);
+                        toast({
+                          title: "Lien copié",
+                          description: `Lien ${linkInstallments}x copié dans le presse-papier`,
+                        });
+                      }}
+                    >
+                      Copier
+                    </Button>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Ce lien identifie le client via son code paiement{" "}
+                  <span className="font-mono text-foreground">{linkModal.paymentCode}</span>.
+                  Son acompte sera automatiquement déduit du solde à régler.
+                  Le code promo <span className="font-mono">ALBARAKA20</span> reste utilisable
+                  par le client pour appliquer 20% de remise.
+                </p>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -319,6 +319,8 @@ export default function AcompteCheckout() {
               height: 80,
               objectFit: "contain",
               marginBottom: 16,
+              marginInline: "auto",
+              display: "block",
               filter: "drop-shadow(0 0 20px rgba(201,160,78,0.18))",
             }}
           />
