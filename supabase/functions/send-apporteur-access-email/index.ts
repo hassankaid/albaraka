@@ -21,8 +21,20 @@ const BRAND = {
   fromEmail: Deno.env.get("RESEND_FROM_EMAIL") || "AL BARAKA <noreply@albarakaecosysteme.com>",
 };
 
-function buildHtml(fullName: string, actionLink: string): string {
+type PassType = "al_baraka" | "liberty";
+
+function buildHtml(fullName: string, actionLink: string, passType: PassType = "al_baraka"): string {
   const firstName = (fullName || "").split(" ")[0] || "";
+  const isLiberty = passType === "liberty";
+  const productLabel = isLiberty ? "PASS LIBERTY" : "AL BARAKA";
+  const ecosystemLabel = isLiberty ? "Bienvenue dans le PASS LIBERTY" : "Félicitations d'avoir intégré <strong style=\"color:" + BRAND.gold + ";font-weight:normal;\">l'écosystème AL BARAKA</strong>";
+  const headerSubtitle = isLiberty ? "Pass Liberty" : "L'écosystème";
+  const preheader = isLiberty
+    ? "Ton compte est prêt. Active ton accès au PASS LIBERTY."
+    : "Ton compte est prêt. Active ton accès à la plateforme AL BARAKA.";
+  const titleHeading = isLiberty
+    ? "PASS LIBERTY"
+    : "AL BARAKA";
   // Structure validée mobile : double wrapper table + bgcolor partout.
   // Basé sur les conventions MJML/Litmus pour forcer un fond noir sur
   // Gmail iOS/Android + Apple Mail + Outlook mobile, même en mode clair.
@@ -34,7 +46,7 @@ function buildHtml(fullName: string, actionLink: string): string {
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="color-scheme" content="dark only" />
 <meta name="supported-color-schemes" content="dark only" />
-<title>Bienvenue dans l'écosystème AL BARAKA</title>
+<title>${isLiberty ? "Bienvenue dans le PASS LIBERTY" : "Bienvenue dans l'écosystème AL BARAKA"}</title>
 <!--[if mso]>
 <xml>
   <o:OfficeDocumentSettings>
@@ -64,7 +76,7 @@ function buildHtml(fullName: string, actionLink: string): string {
 <body class="bg-black" bgcolor="${BRAND.black}" style="margin:0;padding:0;width:100%;height:100%;background-color:${BRAND.black};font-family:Georgia,'Times New Roman',serif;color:${BRAND.textMain};">
   <!-- Hidden preheader -->
   <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:${BRAND.black};opacity:0;">
-    Ton compte est prêt. Active ton accès à la plateforme AL BARAKA.
+    ${preheader}
   </div>
   <!-- 100% width background wrapper -->
   <table role="presentation" class="bg-black" data-bg="black" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.black}" style="background-color:${BRAND.black};width:100%;border-collapse:collapse;">
@@ -76,8 +88,8 @@ function buildHtml(fullName: string, actionLink: string): string {
         <table role="presentation" class="container bg-card" data-bg="card" width="600" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.cardBg}" style="width:600px;max-width:600px;background-color:${BRAND.cardBg};border:1px solid ${BRAND.goldSoft};border-radius:12px;">
           <tr>
             <td class="bg-card px-mobile" data-bg="card" bgcolor="${BRAND.cardBg}" align="center" style="background-color:${BRAND.cardBg};padding:48px 32px 16px;">
-              <h1 style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:32px;color:${BRAND.gold};letter-spacing:6px;font-weight:normal;">AL BARAKA</h1>
-              <p style="margin:10px 0 0 0;color:${BRAND.textSecondary};font-size:11px;letter-spacing:3px;text-transform:uppercase;">L'écosystème</p>
+              <h1 style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:32px;color:${BRAND.gold};letter-spacing:6px;font-weight:normal;">${titleHeading}</h1>
+              <p style="margin:10px 0 0 0;color:${BRAND.textSecondary};font-size:11px;letter-spacing:3px;text-transform:uppercase;">${headerSubtitle}</p>
               <div style="width:60px;height:1px;background-color:${BRAND.gold};margin:24px auto 0 auto;line-height:1px;font-size:1px;">&nbsp;</div>
             </td>
           </tr>
@@ -87,10 +99,10 @@ function buildHtml(fullName: string, actionLink: string): string {
                 Bienvenue${firstName ? ` ${firstName}` : ""},
               </h2>
               <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
-                Félicitations d'avoir intégré <strong style="color:${BRAND.gold};font-weight:normal;">l'écosystème AL BARAKA</strong>.
+                ${ecosystemLabel}.
               </p>
               <p style="margin:0 0 28px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
-                Ton compte est désormais prêt. Clique sur le bouton ci-dessous pour activer ton accès à la plateforme et définir ton mot de passe.
+                Ton compte est désormais prêt. Clique sur le bouton ci-dessous pour activer ton accès${isLiberty ? " au " + productLabel : " à la plateforme"} et définir ton mot de passe.
               </p>
             </td>
           </tr>
@@ -206,6 +218,8 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const userIds: string[] = Array.isArray(body.user_ids) ? body.user_ids : [];
     const testMode: boolean = !!body.test_mode;
+    // pass_type : "al_baraka" (défaut) ou "liberty" — adapte le wording du mail
+    const passType: PassType = body.pass_type === "liberty" ? "liberty" : "al_baraka";
     if (userIds.length === 0) {
       return new Response(JSON.stringify({ error: "user_ids empty" }), {
         status: 400,
@@ -246,9 +260,11 @@ Deno.serve(async (req) => {
         parsed.searchParams.set("redirect_to", redirectTo);
         const actionLink = parsed.toString();
 
-        const html = buildHtml(profile.full_name || "", actionLink);
+        const html = buildHtml(profile.full_name || "", actionLink, passType);
         const toEmail = testMode ? BRAND.testEmail : profile.email;
-        const subject = "Bienvenue dans l'écosystème AL BARAKA";
+        const subject = passType === "liberty"
+          ? "Bienvenue dans le PASS LIBERTY"
+          : "Bienvenue dans l'écosystème AL BARAKA";
 
         console.log(`[send-access] to=${toEmail} (real=${profile.email}) testMode=${testMode} serviceRole=${isServiceRoleCall}`);
         await sendResend(toEmail, subject, html, resendKey);

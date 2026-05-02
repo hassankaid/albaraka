@@ -123,16 +123,41 @@ async function ensureBonCommandeOrder(
   metadata: Record<string, string>,
   ids: BonCommandeIds,
 ): Promise<void> {
-  if (metadata.source !== "bon_commande") return;
+  // 2 sources possibles : "bon_commande" (PASS AL BARAKA) ou "pass_liberty"
+  const source = metadata.source;
+  if (source !== "bon_commande" && source !== "pass_liberty") return;
+  const isLiberty = source === "pass_liberty";
+
+  // Configuration produit (paramétrée selon source)
+  const productCfg = isLiberty
+    ? {
+        productName: "PASS LIBERTY",
+        totalGross: 5000,
+        passType: "liberty" as const,
+        maxInstallments: 10,
+        logTag: "[liberty]",
+        sendOnboardingEmail: true,
+      }
+    : {
+        productName: "PASS AL BARAKA",
+        totalGross: 2500,
+        passType: "al_baraka" as const,
+        maxInstallments: 8,
+        logTag: "[bon_commande]",
+        sendOnboardingEmail: true,
+      };
 
   const email = String(metadata.customer_email || "").trim().toLowerCase();
   const fullName = String(metadata.customer_full_name || "").trim();
   if (!email || !fullName) {
-    console.error("[bon_commande] missing email/fullName in metadata", metadata);
+    console.error(`${productCfg.logTag} missing email/fullName in metadata`, metadata);
     return;
   }
 
-  const installments = Math.max(1, Math.min(8, Number(metadata.installments) || 1));
+  const installments = Math.max(
+    1,
+    Math.min(productCfg.maxInstallments, Number(metadata.installments) || 1),
+  );
   const discountPercent = Number(metadata.discount_percent) || 0;
   const couponCode = metadata.coupon_code || null;
 
@@ -253,26 +278,26 @@ async function ensureBonCommandeOrder(
 
   const contact = { id: contactId as string };
 
-  // ── Acompte : si le checkout a lookup un payment_code, l'acompte est
-  //    déjà déduit côté Stripe (payable_cents). On lie la vente principale
-  //    à la vente acompte via parent_sale_id pour le tracking admin.
+  // ── Acompte : applicable uniquement pour PASS AL BARAKA (le checkout
+  //    Liberty n'utilise pas le payment_code). Si le checkout a lookup un
+  //    payment_code, l'acompte est déjà déduit côté Stripe (payable_cents).
+  //    On lie la vente principale à la vente acompte via parent_sale_id.
   const payableCents = Number(metadata.payable_cents) || 0;
-  const acompteTotalCents = Number(metadata.acompte_total_cents) || 0;
-  const acompteSaleIds = (metadata.acompte_sale_ids || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const acompteSaleIds = isLiberty
+    ? []
+    : (metadata.acompte_sale_ids || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
 
-  // amount_ht de la vente principale = ce qui est PAYÉ via cette vente
-  // (acompte exclu — l'acompte a sa propre vente avec sa propre amount_ht).
-  // discount_amount = la remise appliquée sur le brut 2500 €.
-  const totalGross = 2500;
+  // amount_ht = ce qui est PAYÉ via cette vente.
+  // discount_amount = la remise appliquée sur le brut.
   const discountAmount =
-    Math.round(((totalGross * discountPercent) / 100) * 100) / 100;
+    Math.round(((productCfg.totalGross * discountPercent) / 100) * 100) / 100;
   const totalNet =
     payableCents > 0
       ? payableCents / 100
-      : totalGross - discountAmount; // fallback ancien flow
+      : productCfg.totalGross - discountAmount; // fallback
 
   // Lien vers le 1er acompte (le plus ancien si plusieurs cumulés)
   let parentSaleId: string | null = null;
@@ -292,7 +317,7 @@ async function ensureBonCommandeOrder(
     .insert({
       contact_id: contact.id,
       buyer_profile_id: profileId,
-      product: "PASS AL BARAKA",
+      product: productCfg.productName,
       amount_ht: totalNet,
       discount_amount: discountAmount,
       coupon_code: couponCode,
@@ -307,7 +332,7 @@ async function ensureBonCommandeOrder(
     .single();
 
   if (saleErr || !sale) {
-    console.error("[bon_commande] sale insert failed:", saleErr);
+    console.error(`${productCfg.logTag} sale insert failed:`, saleErr);
     throw saleErr ?? new Error("sale insert failed");
   }
 
@@ -328,55 +353,66 @@ async function ensureBonCommandeOrder(
 
   const { error: paymentsErr } = await supabase.from("payments").insert(rows);
   if (paymentsErr) {
-    console.error("[bon_commande] payments insert failed:", paymentsErr);
+    console.error(`${productCfg.logTag} payments insert failed:`, paymentsErr);
     throw paymentsErr;
   }
 
   await markFirstPaymentPaid(supabase, sale.id, ids);
 
-  // Grant PASS AL BARAKA to unlock parcours + formations via PassGuard.
-  // Idempotent: skip if an active pass already exists for this user.
+  // Grant pass (al_baraka ou liberty) pour débloquer parcours + formations
+  // via PassGuard. Idempotent: skip si un pass actif existe déjà.
   try {
     const { data: existingPass } = await supabase
       .from("user_passes")
       .select("id")
       .eq("user_id", profileId!)
-      .eq("pass_type", "al_baraka")
+      .eq("pass_type", productCfg.passType)
       .is("revoked_at", null)
       .limit(1);
     if (!existingPass || existingPass.length === 0) {
       await supabase.from("user_passes").insert({
         user_id: profileId,
-        pass_type: "al_baraka",
-        notes: "auto-granted on bon_commande payment",
+        pass_type: productCfg.passType,
+        notes: `auto-granted on ${source} payment`,
       });
-      console.log(`[bon_commande] pass al_baraka granted to profile=${profileId}`);
+      console.log(
+        `${productCfg.logTag} pass ${productCfg.passType} granted to profile=${profileId}`,
+      );
     }
   } catch (e) {
-    console.error("[bon_commande] grant pass failed:", e);
+    console.error(`${productCfg.logTag} grant pass failed:`, e);
   }
 
   console.log(
-    `[bon_commande] created profile=${profileId} sale=${sale.id} installments=${installments}`,
+    `${productCfg.logTag} created profile=${profileId} sale=${sale.id} installments=${installments}`,
   );
 
-  try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/send-apporteur-access-email`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ user_ids: [profileId] }),
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      console.error(`[bon_commande] access-email failed ${res.status}: ${text}`);
-    } else {
-      console.log(`[bon_commande] access-email sent to profile=${profileId}`);
+  // Email d'onboarding (création password + accès plateforme)
+  if (productCfg.sendOnboardingEmail) {
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/send-apporteur-access-email`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_ids: [profileId],
+            pass_type: productCfg.passType, // "al_baraka" ou "liberty"
+          }),
+        },
+      );
+      if (!res.ok) {
+        const text = await res.text();
+        console.error(`${productCfg.logTag} access-email failed ${res.status}: ${text}`);
+      } else {
+        console.log(`${productCfg.logTag} access-email sent to profile=${profileId}`);
+      }
+    } catch (e) {
+      console.error(`${productCfg.logTag} failed to invoke access-email:`, e);
     }
-  } catch (e) {
-    console.error("[bon_commande] failed to invoke access-email:", e);
   }
 }
 
@@ -631,8 +667,8 @@ async function handlePaymentIntentSucceeded(
     return;
   }
 
-  // Branche bon_commande (PASS AL BARAKA, 1x ou 2-8x)
-  if (metadata.source !== "bon_commande") return;
+  // Branche bon_commande (PASS AL BARAKA) OU pass_liberty (PASS LIBERTY)
+  if (metadata.source !== "bon_commande" && metadata.source !== "pass_liberty") return;
 
   await ensureBonCommandeOrder(supabase, metadata, {
     paymentIntentId: piId,

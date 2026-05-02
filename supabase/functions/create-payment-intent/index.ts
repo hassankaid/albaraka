@@ -26,12 +26,23 @@ const STRIPE_SECRET_KEY_TEST = Deno.env.get("STRIPE_SECRET_KEY_TEST");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// PASS AL BARAKA
 const TOTAL_AMOUNT_EUR = 2500;
 const PRODUCT_NAME = "PASS AL BARAKA";
 const PRODUCT_ID = "pass_al_baraka";
 
+// Acompte AL BARAKA
 const ACOMPTE_VALID_AMOUNTS = [50, 100, 150];
 const ACOMPTE_PRODUCT_NAME = "Acompte AL BARAKA";
+
+// PASS LIBERTY
+const LIBERTY_TOTAL_EUR = 5000;
+const LIBERTY_PRODUCT_NAME = "PASS LIBERTY";
+const LIBERTY_PRODUCT_ID = "pass_liberty";
+const LIBERTY_MAX_INSTALLMENTS = 10;
+// Code promo Liberty : ne s'applique QUE en paiement comptant (1x).
+// Sur 2-10x mensualités, le coupon est ignoré côté serveur.
+const LIBERTY_COUPON_1X_ONLY = "LIBERTY2000";
 
 function flattenParams(params: Record<string, unknown>): URLSearchParams {
   const out = new URLSearchParams();
@@ -109,8 +120,12 @@ Deno.serve(async (req) => {
 
   try {
     const input = await req.json().catch(() => ({}));
-    const productType: "pass_al_baraka" | "acompte" =
-      input.product_type === "acompte" ? "acompte" : "pass_al_baraka";
+    const productType: "pass_al_baraka" | "acompte" | "pass_liberty" =
+      input.product_type === "acompte"
+        ? "acompte"
+        : input.product_type === "pass_liberty"
+          ? "pass_liberty"
+          : "pass_al_baraka";
     const isTestMode = !!input.test_mode;
     const customer = (input.customer || {}) as Record<string, string>;
 
@@ -195,6 +210,215 @@ Deno.serve(async (req) => {
           intent_type: "payment",
           product_type: "acompte",
           amount_cents: acompteCents,
+          test_mode: isTestMode,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // MODE 3 : PASS LIBERTY (5000 €, 1-10x, coupon LIBERTY2000 only en 1x)
+    // ════════════════════════════════════════════════════════════════════
+    if (productType === "pass_liberty") {
+      const libInstallments = Number(input.installments);
+      if (
+        !Number.isInteger(libInstallments) ||
+        libInstallments < 1 ||
+        libInstallments > LIBERTY_MAX_INSTALLMENTS
+      ) {
+        return new Response(
+          JSON.stringify({
+            error: `installments doit être un entier entre 1 et ${LIBERTY_MAX_INSTALLMENTS}`,
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const libCouponCode: string | undefined =
+        typeof input.coupon_code === "string" && input.coupon_code.trim()
+          ? input.coupon_code.trim().toUpperCase()
+          : undefined;
+
+      // Validation coupon — LIBERTY2000 ne s'applique QUE en 1x
+      let libDiscountPercent = 0;
+      let libCouponApplied: string | null = null;
+      if (libCouponCode) {
+        const isLibertyExclusive = libCouponCode === LIBERTY_COUPON_1X_ONLY;
+        if (isLibertyExclusive && libInstallments !== 1) {
+          // On n'applique pas le coupon mais on ne bloque pas le paiement.
+          // La page front affiche déjà un message si le coupon est invalide.
+        } else {
+          const { data: validation } = await supabase.rpc("validate_coupon", {
+            p_code: libCouponCode,
+          });
+          if (validation?.valid) {
+            libDiscountPercent = validation.discount_percent;
+            libCouponApplied = validation.code;
+          }
+        }
+      }
+
+      const libTotalCents = LIBERTY_TOTAL_EUR * 100;
+      const libPayableCents = Math.round(
+        (libTotalCents * (100 - libDiscountPercent)) / 100,
+      );
+
+      if (libPayableCents <= 0) {
+        return new Response(
+          JSON.stringify({ error: "Montant à payer nul" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const libMonthlyCents = Math.round(libPayableCents / libInstallments);
+
+      const libMetadata: Record<string, string> = {
+        installments: String(libInstallments),
+        coupon_code: libCouponApplied || "",
+        discount_percent: String(libDiscountPercent),
+        product: LIBERTY_PRODUCT_NAME,
+        product_type: "pass_liberty",
+        source: "pass_liberty",
+        test_mode: isTestMode ? "true" : "false",
+        customer_email: email,
+        customer_full_name: fullName,
+        customer_phone: String(customer.phone || ""),
+        customer_address: String(customer.address || ""),
+        customer_postal_code: String(customer.postal_code || ""),
+        customer_city: String(customer.city || ""),
+        customer_country: String(customer.country || ""),
+        payable_cents: String(libPayableCents),
+        total_brut_cents: String(libTotalCents),
+      };
+
+      if (libInstallments === 1) {
+        const pi = await stripeFetch<{ id: string; client_secret: string }>(
+          apiKey,
+          "/payment_intents",
+          {
+            amount: libPayableCents,
+            currency: "eur",
+            receipt_email: email,
+            metadata: libMetadata,
+            description: `${LIBERTY_PRODUCT_NAME} — Paiement en 1 fois`,
+            "payment_method_types[0]": "card",
+            "payment_method_options[card][request_three_d_secure]": "automatic",
+          },
+        );
+        return new Response(
+          JSON.stringify({
+            client_secret: pi.client_secret,
+            intent_id: pi.id,
+            intent_type: "payment",
+            product_type: "pass_liberty",
+            amount_cents: libPayableCents,
+            discount_percent: libDiscountPercent,
+            installments: libInstallments,
+            test_mode: isTestMode,
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Subscription Liberty (2-10x) — pas de coupon Stripe (calcul net côté serveur)
+      const libSearch = await stripeFetch<{ data: Array<{ id: string }> }>(
+        apiKey,
+        `/customers/search?query=${encodeURIComponent(`email:"${email}"`)}`,
+        {},
+        "GET",
+      ).catch(() => ({ data: [] as Array<{ id: string }> }));
+
+      let libCustomerId: string;
+      if (libSearch.data?.[0]?.id) {
+        libCustomerId = libSearch.data[0].id;
+        await stripeFetch(apiKey, `/customers/${libCustomerId}`, {
+          name: fullName,
+          phone: String(customer.phone || ""),
+          "address[line1]": String(customer.address || ""),
+          "address[postal_code]": String(customer.postal_code || ""),
+          "address[city]": String(customer.city || ""),
+          "address[country]": String(customer.country || ""),
+          metadata: libMetadata,
+        });
+      } else {
+        const created = await stripeFetch<{ id: string }>(apiKey, "/customers", {
+          email,
+          name: fullName,
+          phone: String(customer.phone || ""),
+          "address[line1]": String(customer.address || ""),
+          "address[postal_code]": String(customer.postal_code || ""),
+          "address[city]": String(customer.city || ""),
+          "address[country]": String(customer.country || ""),
+          metadata: libMetadata,
+        });
+        libCustomerId = created.id;
+      }
+
+      const libCancelDate = new Date();
+      libCancelDate.setMonth(libCancelDate.getMonth() + libInstallments);
+      libCancelDate.setDate(libCancelDate.getDate() - 1);
+      const libCancelAt = Math.floor(libCancelDate.getTime() / 1000);
+
+      const libProductId = await ensureStripeProduct(
+        apiKey,
+        LIBERTY_PRODUCT_ID,
+        LIBERTY_PRODUCT_NAME,
+      );
+
+      const libSubParams: Record<string, unknown> = {
+        customer: libCustomerId,
+        "items[0][price_data][currency]": "eur",
+        "items[0][price_data][unit_amount]": libMonthlyCents,
+        "items[0][price_data][recurring][interval]": "month",
+        "items[0][price_data][product]": libProductId,
+        payment_behavior: "default_incomplete",
+        "payment_settings[save_default_payment_method]": "on_subscription",
+        "payment_settings[payment_method_types][0]": "card",
+        "payment_settings[payment_method_options][card][request_three_d_secure]":
+          "automatic",
+        cancel_at: libCancelAt,
+        description: `${LIBERTY_PRODUCT_NAME} — ${libInstallments} mensualités`,
+        "expand[0]": "latest_invoice.payment_intent",
+        metadata: libMetadata,
+      };
+
+      const libSub = await stripeFetch<{
+        id: string;
+        latest_invoice?: { payment_intent?: { id: string; client_secret: string } };
+      }>(apiKey, "/subscriptions", libSubParams);
+
+      const libPi = libSub.latest_invoice?.payment_intent;
+      if (libPi?.id) {
+        try {
+          const piMeta = { ...libMetadata, stripe_subscription_id: libSub.id };
+          await stripeFetch(apiKey, `/payment_intents/${libPi.id}`, { metadata: piMeta });
+        } catch (e) {
+          console.error("Failed to patch Liberty PI metadata:", e);
+        }
+      }
+
+      if (!libPi?.client_secret) {
+        return new Response(
+          JSON.stringify({
+            error: "Liberty subscription créée mais pas de client_secret",
+            subscription_id: libSub.id,
+          }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          client_secret: libPi.client_secret,
+          intent_id: libPi.id,
+          intent_type: "subscription",
+          product_type: "pass_liberty",
+          subscription_id: libSub.id,
+          customer_id: libCustomerId,
+          amount_cents: libMonthlyCents,
+          payable_cents: libPayableCents,
+          discount_percent: libDiscountPercent,
+          installments: libInstallments,
           test_mode: isTestMode,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
