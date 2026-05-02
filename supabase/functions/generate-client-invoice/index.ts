@@ -421,6 +421,8 @@ Deno.serve(async (req) => {
 
     if (!payment_id) return new Response(JSON.stringify({ error: "payment_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+    console.log("[generate-client-invoice] start", { payment_id, regenerate, send_email });
+
     // 1. Récupère payment + sale + contact
     const { data: payment, error: payErr } = await supabase
       .from("payments")
@@ -492,34 +494,68 @@ Deno.serve(async (req) => {
 
     // 4. Génère PDF si pas encore présent ou si regenerate
     if (!invoiceRow.html_path || regenerate) {
-      const pdfBytes = await generateInvoicePdf({
-        invoiceNumber,
-        paidAt: payment.paid_at,
-        amount: Number(payment.amount),
-        paymentNumber: payment.payment_number,
-        totalPayments: payment.total_payments,
-        product: sale?.product || "PASS AL BARAKA",
-        saleType: sale?.sale_type || null,
-        paymentCode: contact?.payment_code || null,
-        client: {
-          name: clientName,
-          email: clientEmail || null,
-          address: buyerProfile?.address || null,
-          postal_code: buyerProfile?.postal_code || null,
-          city: buyerProfile?.city || null,
-          country: buyerProfile?.country || null,
-        },
-      });
+      // Wrap PDF generation to surface the EXACT failing stage in logs.
+      // Le bulk download a montré ~6 échecs sur 116 sans message clair côté
+      // accès. On distingue maintenant : pdf_gen, storage_upload, db_update.
+      let pdfBytes: Uint8Array;
+      try {
+        pdfBytes = await generateInvoicePdf({
+          invoiceNumber,
+          paidAt: payment.paid_at,
+          amount: Number(payment.amount),
+          paymentNumber: payment.payment_number,
+          totalPayments: payment.total_payments,
+          product: sale?.product || "PASS AL BARAKA",
+          saleType: sale?.sale_type || null,
+          paymentCode: contact?.payment_code || null,
+          client: {
+            name: clientName,
+            email: clientEmail || null,
+            address: buyerProfile?.address || null,
+            postal_code: buyerProfile?.postal_code || null,
+            city: buyerProfile?.city || null,
+            country: buyerProfile?.country || null,
+          },
+        });
+      } catch (pdfErr: any) {
+        console.error("PDF generation failed for payment", payment_id, "invoice", invoiceNumber, pdfErr?.message || pdfErr, pdfErr?.stack);
+        return new Response(JSON.stringify({
+          error: "PDF generation failed",
+          stage: "pdf_gen",
+          payment_id,
+          invoice_number: invoiceNumber,
+          detail: pdfErr?.message || String(pdfErr),
+        }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
 
       // Upload Storage
       const { error: uploadErr } = await supabase.storage.from("invoices").upload(pdfPath, pdfBytes, {
         contentType: "application/pdf",
         upsert: true,
       });
-      if (uploadErr) return new Response(JSON.stringify({ error: "Storage upload failed", detail: uploadErr }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (uploadErr) {
+        console.error("Storage upload failed for payment", payment_id, "path", pdfPath, uploadErr);
+        return new Response(JSON.stringify({
+          error: "Storage upload failed",
+          stage: "storage_upload",
+          payment_id,
+          invoice_number: invoiceNumber,
+          path: pdfPath,
+          detail: uploadErr,
+        }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
 
       // Update DB
-      await supabase.from("client_invoices").update({ html_path: pdfPath }).eq("id", invoiceRow.id);
+      const { error: updErr } = await supabase.from("client_invoices").update({ html_path: pdfPath }).eq("id", invoiceRow.id);
+      if (updErr) {
+        console.error("DB update failed for payment", payment_id, updErr);
+        return new Response(JSON.stringify({
+          error: "DB update failed",
+          stage: "db_update",
+          payment_id,
+          detail: updErr,
+        }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       invoiceRow.html_path = pdfPath;
     }
 
