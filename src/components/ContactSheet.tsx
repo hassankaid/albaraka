@@ -5,8 +5,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Card, CardContent } from "@/components/ui/card";
-import { RefreshCw, UserCheck, MessageSquare, UserPlus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RefreshCw, UserCheck, MessageSquare, UserPlus, ClipboardList } from "lucide-react";
 import { formatDateTime, formatDateOnly } from "@/lib/formatDate";
+import { QUIZ_QUESTIONS } from "@/lib/quizScoringDefinition";
+import { getQuizCategoryBadgeClass, getQuizCategoryEmoji, getQuizCategoryLabel } from "@/lib/leadConfig";
 
 interface ContactDetail {
   id: string;
@@ -21,6 +24,15 @@ interface TimelineEvent {
   id: string;
   date: string;
   data: any;
+}
+
+interface QuizResponseRow {
+  lead_id: string;
+  funnel_slug: string;
+  score: number;
+  category: string;
+  answers: Record<string, string>;
+  funnel_name?: string;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -82,6 +94,8 @@ export default function ContactSheet({
   const [contact, setContact] = useState<ContactDetail | null>(null);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(false);
+  const [quizResponsesByLead, setQuizResponsesByLead] = useState<Map<string, QuizResponseRow>>(new Map());
+  const [openQuizForLeadId, setOpenQuizForLeadId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!contactId) return;
@@ -98,6 +112,27 @@ export default function ContactSheet({
 
     const leadIds = leadsRes.data?.map((l) => l.id).filter(Boolean) as string[] || [];
     const callIds = callsRes.data?.map((c) => c.id).filter(Boolean) as string[] || [];
+
+    // Quiz Scoring : récupère les réponses + nom du tunnel pour les leads
+    // issus du tunnel "quiz_scoring".
+    const quizResponses = new Map<string, QuizResponseRow>();
+    if (leadIds.length > 0) {
+      const { data: quizRows } = await supabase
+        .from("funnel_quiz_responses")
+        .select("lead_id, funnel_slug, score, category, answers, quiz_funnels:funnel_slug(name)")
+        .in("lead_id", leadIds);
+      for (const row of (quizRows || []) as any[]) {
+        quizResponses.set(row.lead_id, {
+          lead_id: row.lead_id,
+          funnel_slug: row.funnel_slug,
+          score: row.score,
+          category: row.category,
+          answers: row.answers || {},
+          funnel_name: row.quiz_funnels?.name,
+        });
+      }
+    }
+    setQuizResponsesByLead(quizResponses);
 
     // Fetch both lead_activities and call_activities in parallel
     const [leadActivitiesRes, callActivitiesRes] = await Promise.all([
@@ -244,7 +279,7 @@ export default function ContactSheet({
 
                       <Card className="flex-1 border-border/50 bg-card/50">
                         <CardContent className="p-3 space-y-1.5">
-                          {event.type === "lead" && <LeadEvent data={event.data} />}
+                          {event.type === "lead" && <LeadEvent data={event.data} quizResponse={quizResponsesByLead.get(event.id)} onShowQuiz={() => setOpenQuizForLeadId(event.id)} />}
                           {event.type === "call" && <CallEvent data={event.data} userTz={userTz} contact={contact} />}
                           {event.type === "lead_activity" && <LeadActivityEvent data={event.data} userTz={userTz} />}
                           {event.type === "call_activity" && <CallActivityEvent data={event.data} userTz={userTz} />}
@@ -262,6 +297,11 @@ export default function ContactSheet({
           </>
         )}
       </SheetContent>
+      <QuizAnswersDialog
+        open={openQuizForLeadId !== null}
+        onOpenChange={(v) => !v && setOpenQuizForLeadId(null)}
+        response={openQuizForLeadId ? quizResponsesByLead.get(openQuizForLeadId) : undefined}
+      />
     </Sheet>
   );
 }
@@ -307,7 +347,7 @@ function TimelineDot({ type, action }: { type: string; action?: string }) {
 }
 
 /* ─── Lead Event ─── */
-function LeadEvent({ data }: { data: any }) {
+function LeadEvent({ data, quizResponse, onShowQuiz }: { data: any; quizResponse?: QuizResponseRow; onShowQuiz?: () => void }) {
   return (
     <>
       <div className="flex items-center gap-2">
@@ -320,6 +360,11 @@ function LeadEvent({ data }: { data: any }) {
             {STATUS_LABELS[data.status] || data.status}
           </Badge>
         )}
+        {quizResponse && (
+          <Badge variant="outline" className={`text-xs ${getQuizCategoryBadgeClass(quizResponse.category)}`}>
+            {getQuizCategoryEmoji(quizResponse.category)} {getQuizCategoryLabel(quizResponse.category)} · {quizResponse.score}/70
+          </Badge>
+        )}
       </div>
       {data.apporteur_name && (
         <p className="text-xs text-muted-foreground">Apporté par {data.apporteur_name}</p>
@@ -329,7 +374,75 @@ function LeadEvent({ data }: { data: any }) {
         {data.raw_email && <p className="text-xs text-muted-foreground">Email saisi : {data.raw_email}</p>}
         {data.raw_phone && <p className="text-xs text-muted-foreground">Tél saisi : {data.raw_phone}</p>}
       </div>
+      {quizResponse && (
+        <div className="mt-2 pt-2 border-t border-border/50 flex items-center justify-between gap-2">
+          <p className="text-[11px] text-muted-foreground">
+            Quiz Scoring{quizResponse.funnel_name ? ` · ${quizResponse.funnel_name}` : ""}
+          </p>
+          <button
+            type="button"
+            onClick={onShowQuiz}
+            className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+          >
+            <ClipboardList className="h-3 w-3" />
+            Voir les 7 réponses
+          </button>
+        </div>
+      )}
     </>
+  );
+}
+
+/* ─── Dialog : réponses au Quiz Scoring ─── */
+function QuizAnswersDialog({
+  open,
+  onOpenChange,
+  response,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  response: QuizResponseRow | undefined;
+}) {
+  if (!response) return null;
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <span>Réponses au Quiz Scoring</span>
+            <Badge variant="outline" className={`text-xs ${getQuizCategoryBadgeClass(response.category)}`}>
+              {getQuizCategoryEmoji(response.category)} {getQuizCategoryLabel(response.category)} · {response.score}/70
+            </Badge>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          {response.funnel_name && (
+            <p className="text-xs text-muted-foreground">Tunnel : {response.funnel_name}</p>
+          )}
+          <div className="space-y-3">
+            {QUIZ_QUESTIONS.map((q, idx) => {
+              const code = response.answers[q.id];
+              const option = q.options.find((o) => o.code === code);
+              return (
+                <div key={q.id} className="rounded-md border border-border/60 p-3">
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">
+                    Question {idx + 1} · {q.title}
+                  </p>
+                  {option ? (
+                    <p className="text-sm text-foreground flex items-start justify-between gap-3">
+                      <span>{option.label}</span>
+                      <span className="text-xs text-primary shrink-0">+{option.score} pts</span>
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">Pas de réponse</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

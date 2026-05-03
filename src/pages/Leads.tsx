@@ -39,6 +39,8 @@ import {
   leadSourceConfig,
   getSourceBadgeClass,
   getSourceLabel,
+  getQuizCategoryBadgeClass,
+  getQuizCategoryEmoji,
 } from "@/lib/leadConfig";
 type LeadEnriched = Tables<"leads_enriched">;
 
@@ -874,11 +876,18 @@ export default function Leads() {
                     </TableCell>
                     {/* Source */}
                     <TableCell>
-                      {lead.source && (
-                        <Badge variant="outline" className={`text-[10px] leading-tight ${getSourceBadgeClass(lead.source, lead.source_detail)}`}>
-                          {getSourceLabel(lead.source, lead.source_detail)}
-                        </Badge>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {lead.source && (
+                          <Badge variant="outline" className={`text-[10px] leading-tight w-fit ${getSourceBadgeClass(lead.source, lead.source_detail)}`}>
+                            {getSourceLabel(lead.source, lead.source_detail)}
+                          </Badge>
+                        )}
+                        {(lead as any).quiz_category && typeof (lead as any).quiz_score === "number" && (
+                          <Badge variant="outline" className={`text-[10px] leading-tight w-fit ${getQuizCategoryBadgeClass((lead as any).quiz_category)}`} title={`Score Quiz Scoring : ${(lead as any).quiz_score}/70`}>
+                            {getQuizCategoryEmoji((lead as any).quiz_category)} {(lead as any).quiz_score}/70
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     {/* Apporteur */}
                     <TableCell>

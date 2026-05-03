@@ -69,6 +69,7 @@ import MyCertificates from "./pages/training/MyCertificates";
 import AdminCertificates from "./pages/admin/training/AdminCertificates";
 import VerifyCertificate from "./pages/public/VerifyCertificate";
 import LeadQuiz from "./pages/public/lead-quiz/LeadQuiz";
+import QuizFunnel from "./pages/public/quiz-funnel/QuizFunnel";
 import CoachingCalendar from "./pages/coaching/CoachingCalendar";
 import { PassGuard } from "./components/PassGuard";
 import { FeatureGate } from "./components/FeatureGate";
@@ -86,6 +87,7 @@ import ParcoursEditor from "./pages/admin/parcours/ParcoursEditor";
 import ParcoursChapitreEditor from "./pages/admin/parcours/ParcoursChapitreEditor";
 import AnnouncementDetail from "./pages/announcements/AnnouncementDetail";
 import AdminQuizLead from "./pages/admin/quiz-lead/AdminQuizLead";
+import AdminQuizFunnels from "./pages/admin/quiz-funnels/AdminQuizFunnels";
 
 const queryClient = new QueryClient();
 
@@ -104,6 +106,7 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify/:number" element={<VerifyCertificate />} />
               <Route path="/quiz/:slug" element={<LeadQuiz />} />
+              <Route path="/quiz-funnel" element={<QuizFunnel />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/checkout/:installments" element={<Checkout />} />
               <Route path="/merci" element={<MerciPage />} />
@@ -129,6 +132,7 @@ const App = () => (
                   <Route path="/admin/team" element={<AdminTeam />} />
                   <Route path="/admin/announcements" element={<AdminAnnouncements />} />
                   <Route path="/admin/quiz-lead" element={<AdminQuizLead />} />
+                  <Route path="/admin/quiz-funnels" element={<AdminQuizFunnels />} />
                   <Route path="/admin/invitations" element={<Navigate to="/admin/training/access" replace />} />
                   <Route path="/admin/invitations/campaign" element={<CampaignTracking />} />
                   <Route path="/admin/webhooks/calendly" element={<AdminCalendlyWebhooks />} />
