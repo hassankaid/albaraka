@@ -381,19 +381,35 @@ export default function Payments() {
             .maybeSingle();
 
           if (existing?.html_path) {
+            // Cas 1 : facture complète, on l'utilise telle quelle.
             invoicePathsByPaymentId.set(p.id, {
               invoiceNumber: existing.invoice_number,
               htmlPath: existing.html_path,
             });
           } else {
-            // Génération via edge function (send_email: false pour ne pas
-            // re-spammer le client)
+            // Cas 2 : pas de facture du tout (existing === null).
+            // Cas 3 : ligne client_invoices créée mais html_path NULL → orpheline
+            //         (échec PDF sur un précédent run). On force la régénération.
+            // Dans les 2 cas on appelle generate-client-invoice avec send_email:
+            // false pour ne pas re-spammer. Pour le cas 3 on passe regenerate:
+            // true pour expliciter l'intention et permettre à l'edge function
+            // de logger qu'on est dans un retry d'orpheline.
+            const isOrphan = !!existing && !existing.html_path;
             const { data, error } = await (supabase as any).functions.invoke(
               "generate-client-invoice",
-              { body: { payment_id: p.id, send_email: false } },
+              {
+                body: {
+                  payment_id: p.id,
+                  send_email: false,
+                  ...(isOrphan ? { regenerate: true } : {}),
+                },
+              },
             );
             if (error) {
-              console.error("generate-client-invoice error for", p.id, error);
+              console.error(
+                `generate-client-invoice error for ${p.id} (orphan=${isOrphan})`,
+                error,
+              );
               failedGen.push(p.id);
             } else if (data?.invoice?.invoice_number && data?.invoice?.html_path) {
               invoicePathsByPaymentId.set(p.id, {
@@ -401,7 +417,10 @@ export default function Payments() {
                 htmlPath: data.invoice.html_path,
               });
             } else if (data?.error) {
-              console.error("generate-client-invoice failed for", p.id, data.error);
+              console.error(
+                `generate-client-invoice failed for ${p.id} (orphan=${isOrphan})`,
+                data.error,
+              );
               failedGen.push(p.id);
             }
           }
