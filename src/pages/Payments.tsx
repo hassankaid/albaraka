@@ -184,6 +184,7 @@ export default function Payments() {
     totalAmount: 0,
     loading: false,
   });
+  const [bulkForceRegen, setBulkForceRegen] = useState(false);
   const [bulkDownloading, setBulkDownloading] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{
     phase: "idle" | "generating" | "downloading";
@@ -380,7 +381,9 @@ export default function Payments() {
             .eq("payment_id", p.id)
             .maybeSingle();
 
-          if (existing?.html_path) {
+          // Si "Forcer la régénération" est coché, on régénère TOUT, même les
+          // factures déjà complètes (utile après un changement de template PDF).
+          if (existing?.html_path && !bulkForceRegen) {
             // Cas 1 : facture complète, on l'utilise telle quelle.
             invoicePathsByPaymentId.set(p.id, {
               invoiceNumber: existing.invoice_number,
@@ -389,25 +392,25 @@ export default function Payments() {
           } else {
             // Cas 2 : pas de facture du tout (existing === null).
             // Cas 3 : ligne client_invoices créée mais html_path NULL → orpheline
-            //         (échec PDF sur un précédent run). On force la régénération.
-            // Dans les 2 cas on appelle generate-client-invoice avec send_email:
-            // false pour ne pas re-spammer. Pour le cas 3 on passe regenerate:
-            // true pour expliciter l'intention et permettre à l'edge function
-            // de logger qu'on est dans un retry d'orpheline.
+            //         (échec PDF sur un précédent run).
+            // Cas 4 : bulkForceRegen activé → régénère tout (même les rows OK).
+            // Dans tous les cas on appelle generate-client-invoice avec send_email:
+            // false. Pour les cas 3 et 4 on passe regenerate: true.
             const isOrphan = !!existing && !existing.html_path;
+            const shouldRegenerate = isOrphan || bulkForceRegen;
             const { data, error } = await (supabase as any).functions.invoke(
               "generate-client-invoice",
               {
                 body: {
                   payment_id: p.id,
                   send_email: false,
-                  ...(isOrphan ? { regenerate: true } : {}),
+                  ...(shouldRegenerate ? { regenerate: true } : {}),
                 },
               },
             );
             if (error) {
               console.error(
-                `generate-client-invoice error for ${p.id} (orphan=${isOrphan})`,
+                `generate-client-invoice error for ${p.id} (orphan=${isOrphan}, force=${bulkForceRegen})`,
                 error,
               );
               failedGen.push(p.id);
@@ -418,7 +421,7 @@ export default function Payments() {
               });
             } else if (data?.error) {
               console.error(
-                `generate-client-invoice failed for ${p.id} (orphan=${isOrphan})`,
+                `generate-client-invoice failed for ${p.id} (orphan=${isOrphan}, force=${bulkForceRegen})`,
                 data.error,
               );
               failedGen.push(p.id);
@@ -1224,6 +1227,29 @@ export default function Payments() {
                   )}
                 </>
               )}
+
+              {/* Toggle : forcer la régénération de toutes les factures du mois,
+                  même celles déjà disponibles. Utile après changement du
+                  template PDF (ex: nouvel alignement, nouvelle police). */}
+              <div className="flex items-start gap-2 pt-2 border-t border-border/40">
+                <input
+                  type="checkbox"
+                  id="bulk-force-regen"
+                  checked={bulkForceRegen}
+                  onChange={(e) => setBulkForceRegen(e.target.checked)}
+                  disabled={bulkDownloading}
+                  className="mt-0.5 h-4 w-4 cursor-pointer accent-primary"
+                />
+                <label
+                  htmlFor="bulk-force-regen"
+                  className="text-[11px] leading-relaxed text-muted-foreground cursor-pointer"
+                >
+                  <span className="text-foreground font-medium">Forcer la régénération</span>{" "}
+                  de toutes les factures (même celles déjà disponibles).
+                  À cocher après un changement du template PDF.
+                  Le numéro de facture est conservé. Plus lent.
+                </label>
+              </div>
             </div>
 
             {bulkDownloading && bulkProgress.total > 0 && (
