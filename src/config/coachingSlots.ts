@@ -37,8 +37,8 @@ export const COACHING_SLOTS: CoachingSlot[] = [
   },
   {
     id: "creation-contenus",
-    day: "Mercredi",
-    hour: 14,
+    day: "Vendredi",
+    hour: 19,
     minute: 0,
     durationMinutes: 90,
     title: "Créa de contenus",
