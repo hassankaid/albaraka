@@ -24,6 +24,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { PDFDocument, rgb, StandardFonts, type PDFFont, type PDFPage } from "https://esm.sh/pdf-lib@1.17.1";
+import { buildInvoiceEmailHtml, sendInvoiceEmail } from "./email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -307,127 +308,6 @@ async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Array> {
   return await doc.save();
 }
 
-// ===== Email HTML =====
-function buildEmailHtml(params: {
-  clientName: string;
-  invoiceNumber: string;
-  amount: number;
-  paidAt: string;
-  product: string;
-  paymentNumber: number | null;
-  totalPayments: number | null;
-  saleType: string | null;
-  paymentCode: string | null;
-}): string {
-  const prenom = firstName(params.clientName);
-  const isAcompte = params.saleType === "acompte";
-  const mensInfo = !isAcompte && params.paymentNumber && params.totalPayments
-    ? `(mensualité ${params.paymentNumber}/${params.totalPayments})`
-    : "";
-
-  // Section "Code paiement personnel" uniquement pour les factures d'acompte
-  const codeBlock = isAcompte && params.paymentCode
-    ? `
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 24px 0;">
-                <tr>
-                  <td style="background-color:rgba(212,175,55,0.08);border:1px solid ${BRAND.gold};border-radius:10px;padding:20px 24px;">
-                    <p style="margin:0 0 6px 0;font-size:11px;color:${BRAND.gold};letter-spacing:2px;text-transform:uppercase;font-weight:bold;">Ton code paiement personnel</p>
-                    <p style="margin:0 0 8px 0;font-family:'Courier New',monospace;font-size:28px;color:${BRAND.gold};letter-spacing:4px;">${escapeHtml(params.paymentCode)}</p>
-                    <p style="margin:0;font-size:13px;line-height:1.6;color:${BRAND.textMain};">Ce code te sera demandé lorsque ton conseiller te transmettra le lien pour finaliser ton PASS AL BARAKA. <strong style="color:${BRAND.gold};font-weight:normal;">Ton acompte sera automatiquement déduit du solde à régler.</strong></p>
-                  </td>
-                </tr>
-              </table>`
-    : "";
-
-  return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="https://www.w3.org/1999/xhtml" lang="fr">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="color-scheme" content="dark only" />
-<meta name="supported-color-schemes" content="dark only" />
-<title>Ta facture ${escapeHtml(params.invoiceNumber)} — AL BARAKA</title>
-<style type="text/css">
-  :root { color-scheme: dark only; supported-color-schemes: dark only; }
-  html, body { margin:0 !important; padding:0 !important; width:100% !important; background-color:${BRAND.black} !important; }
-  body, table, td, div, p, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
-  table, td { border-collapse:collapse !important; }
-  .bg-black { background-color:${BRAND.black} !important; }
-  .bg-card { background-color:${BRAND.cardBg} !important; }
-  @media screen and (max-width: 600px) {
-    .container { width:100% !important; max-width:100% !important; }
-    .px-mobile { padding-left:24px !important; padding-right:24px !important; }
-  }
-</style>
-</head>
-<body class="bg-black" bgcolor="${BRAND.black}" style="margin:0;padding:0;width:100%;background-color:${BRAND.black};font-family:Georgia,'Times New Roman',serif;color:${BRAND.textMain};">
-  <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:${BRAND.black};opacity:0;">
-    Ta facture ${escapeHtml(params.invoiceNumber)} est en pièce jointe.
-  </div>
-  <table role="presentation" class="bg-black" data-bg="black" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.black}" style="background-color:${BRAND.black};width:100%;">
-    <tr>
-      <td class="bg-black" data-bg="black" bgcolor="${BRAND.black}" align="center" valign="top" style="background-color:${BRAND.black};padding:40px 16px;">
-        <table role="presentation" class="container bg-card" data-bg="card" width="600" cellspacing="0" cellpadding="0" border="0" bgcolor="${BRAND.cardBg}" style="width:600px;max-width:600px;background-color:${BRAND.cardBg};border:1px solid ${BRAND.goldSoft};border-radius:12px;">
-          <tr>
-            <td class="bg-card px-mobile" data-bg="card" bgcolor="${BRAND.cardBg}" align="center" style="background-color:${BRAND.cardBg};padding:48px 32px 16px;">
-              <h1 style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:32px;color:${BRAND.gold};letter-spacing:6px;font-weight:normal;">AL BARAKA</h1>
-              <p style="margin:10px 0 0 0;color:${BRAND.textSecondary};font-size:11px;letter-spacing:3px;text-transform:uppercase;">L'écosystème</p>
-              <div style="width:60px;height:1px;background-color:${BRAND.gold};margin:24px auto 0 auto;line-height:1px;font-size:1px;">&nbsp;</div>
-            </td>
-          </tr>
-          <tr>
-            <td class="bg-card px-mobile" data-bg="card" bgcolor="${BRAND.cardBg}" style="background-color:${BRAND.cardBg};padding:32px 40px 8px;">
-              <h2 style="margin:0 0 20px 0;font-size:22px;color:${BRAND.textMain};font-weight:normal;">
-                As salam alaykoum${prenom ? ` ${escapeHtml(prenom)}` : ""},
-              </h2>
-              <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">Baraka Allahou fik pour ta confiance.</p>
-              <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">Nous avons bien reçu ${isAcompte ? "ton" : "ton paiement de"} <strong style="color:${BRAND.gold};font-weight:normal;">${fmtEur(params.amount)}</strong> ${isAcompte ? "d'acompte" : mensInfo} pour ${isAcompte ? "réserver ton PASS AL BARAKA" : `le <strong style="color:${BRAND.gold};font-weight:normal;">${escapeHtml(params.product)}</strong>`}, encaissé le ${fmtDate(params.paidAt)}.</p>
-              <p style="margin:0 0 28px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">Tu trouveras ta facture <strong style="color:${BRAND.gold};font-weight:normal;">${escapeHtml(params.invoiceNumber)}</strong> en pièce jointe (PDF).</p>
-              ${codeBlock}
-              <p style="margin:0 0 28px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};font-style:italic;">Qu'Allah ﷻ te bénisse et te facilite dans ton parcours.</p>
-              <p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:${BRAND.textSecondary};">Wa salam alaykoum,</p>
-              <p style="margin:0;font-size:14px;line-height:1.6;color:${BRAND.textMain};"><strong style="color:${BRAND.gold};font-weight:normal;">L'équipe AL BARAKA</strong></p>
-            </td>
-          </tr>
-          <tr><td class="bg-card" data-bg="card" bgcolor="${BRAND.cardBg}" style="background-color:${BRAND.cardBg};padding:8px 0 32px;"></td></tr>
-          <tr>
-            <td class="bg-card" data-bg="card" bgcolor="${BRAND.cardBg}" align="center" style="background-color:${BRAND.cardBg};padding:20px 32px;border-top:1px solid ${BRAND.goldSoft};">
-              <p style="margin:0 0 4px 0;font-size:11px;color:${BRAND.textSecondary};letter-spacing:0.5px;">Facture émise par <strong style="color:${BRAND.textMain};font-weight:normal;">ETHICARENA LLC</strong> (Dubai, UAE)</p>
-              <p style="margin:0;font-size:11px;color:${BRAND.textSecondary};letter-spacing:0.5px;">© AL BARAKA — <a href="${BRAND.domain}" style="color:${BRAND.gold};text-decoration:none;">${BRAND.domainLabel}</a></p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-}
-
-async function sendInvoiceEmail(params: {
-  to: string;
-  subject: string;
-  html: string;
-  attachmentBase64: string;
-  attachmentFilename: string;
-  apiKey: string;
-}) {
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${params.apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: RESEND_FROM,
-      to: params.to,
-      subject: params.subject,
-      html: params.html,
-      attachments: [{ filename: params.attachmentFilename, content: params.attachmentBase64 }],
-    }),
-  });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Resend ${res.status}: ${body}`);
-  }
-}
 
 // ===== Main handler =====
 Deno.serve(async (req) => {
@@ -648,7 +528,7 @@ Deno.serve(async (req) => {
       const toEmail = email_to_override || clientEmail;
       if (!toEmail) return new Response(JSON.stringify({ error: "No email to send to" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-      const emailHtml = buildEmailHtml({
+      const emailHtml = buildInvoiceEmailHtml({
         clientName,
         invoiceNumber,
         amount: Number(payment.amount),
@@ -668,6 +548,7 @@ Deno.serve(async (req) => {
         attachmentBase64: base64,
         attachmentFilename: `${invoiceNumber}.pdf`,
         apiKey: RESEND_API_KEY,
+        fromOverride: RESEND_FROM,
       });
 
       if (!email_to_override) {
