@@ -1,17 +1,26 @@
-// generate-client-invoice v4 — Génération PDF côté Deno + email Resend.
+// generate-client-invoice v12 — Génération PDF côté Deno + email Resend.
+//
+// v12 : enrichissement des coordonnées client + bloc TVA explicite
+//   - Cascade fallback : sale.buyer_profile_id → match profile par email
+//     du contact → contact seul. Permet de récupérer adresse + tel pour
+//     les anciennes ventes (avant les nouveaux liens checkout).
+//   - Téléphone du client affiché dans le PDF (sous l'email).
+//   - Bloc TVA explicite : Sous-total HT / TVA (0%) / Total avant le total.
+//   - Mention en footer : "TVA 0% — Société établie aux Émirats arabes unis".
+//   - Lors d'une regenerate, les snapshots BDD client_* sont aussi mis à jour.
 //
 // Workflow (1 seul appel) :
 //   1. Auth : CEO (anon JWT) OU service role (appelé par stripe-webhook).
-//   2. Récupère payment + sale + contact + buyer profile.
+//   2. Récupère payment + sale + contact + buyer profile (cascade fallback).
 //   3. Idempotent : si facture existe avec PDF, retourne (sauf regenerate).
 //   4. Génère un numéro séquentiel via RPC next_client_invoice_number.
 //   5. Génère le PDF avec pdf-lib (rendering serveur, branding AL BARAKA).
 //   6. Upload PDF dans Storage `invoices/clients/{contact_id}/{number}.pdf`.
-//   7. Insert/update DB row.
+//   7. Insert/update DB row (snapshot client mis à jour si regenerate).
 //   8. Si send_email = true : email Resend avec PDF en pièce jointe.
 //
 // Auto-trigger : appelé par stripe-webhook (1ère mensualité + invoice.paid)
-// et par le front (CEO marquage manuel paid).
+// et par le front (CEO marquage manuel paid + bulk download mensuel).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { PDFDocument, rgb, StandardFonts, type PDFFont, type PDFPage } from "https://esm.sh/pdf-lib@1.17.1";
@@ -97,6 +106,7 @@ interface InvoicePdfData {
   client: {
     name: string;
     email: string | null;
+    phone: string | null;
     address: string | null;
     postal_code: string | null;
     city: string | null;
@@ -185,7 +195,13 @@ async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Array> {
 
   drawText(page, `${ISSUER.city}, ${ISSUER.country}`, colLeftX, y, { size: 9, font: helv, color: gray });
   if (data.client.email) drawText(page, data.client.email, colRightX, y, { size: 9, font: helv, color: gray });
-  y -= 40;
+  y -= 12;
+
+  // Téléphone du client (sous l'email) — utile pour la compta
+  if (data.client.phone) {
+    drawText(page, data.client.phone, colRightX, y, { size: 9, font: helv, color: gray });
+  }
+  y -= 28;
 
   // Bandeau "Code paiement personnel" — uniquement pour les factures d'acompte.
   // Visible et bien identifié pour que le client puisse le retrouver et que
@@ -247,7 +263,21 @@ async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Array> {
 
   y -= 40;
   page.drawRectangle({ x: margin, y, width: width - 2 * margin, height: 1, color: grayBorder });
-  y -= 8;
+  y -= 18;
+
+  // Sous-total HT (= amount, car TVA non applicable société hors UE)
+  drawText(page, "Sous-total HT", colDescX, y, { size: 10, font: helv, color: gray });
+  const htStr = fmtEur(data.amount);
+  const htStrWidth = helv.widthOfTextAtSize(htStr, 10);
+  drawText(page, htStr, colAmountX - htStrWidth, y, { size: 10, font: helv, color: dark });
+  y -= 16;
+
+  // TVA (0%) — visible explicitement pour la conformité comptable
+  drawText(page, "TVA (0%)", colDescX, y, { size: 10, font: helv, color: gray });
+  const tvaStr = fmtEur(0);
+  const tvaStrWidth = helv.widthOfTextAtSize(tvaStr, 10);
+  drawText(page, tvaStr, colAmountX - tvaStrWidth, y, { size: 10, font: helv, color: dark });
+  y -= 14;
 
   // Total row
   page.drawRectangle({ x: margin, y: y - 22, width: width - 2 * margin, height: 30, color: goldLight });
@@ -257,7 +287,7 @@ async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Array> {
   drawText(page, totalStr, colAmountX - totalStrWidth, y - 14, { size: 13, font: helvBold, color: gold });
 
   // ── Footer ──
-  const footerY = 60;
+  const footerY = 72; // Légèrement remonté pour laisser place à la mention TVA
   page.drawRectangle({ x: margin, y: footerY + 30, width: width - 2 * margin, height: 1, color: grayBorder });
   const ecosysText = "AL BARAKA - ECOSYSTEME BY ETHICARENA";
   const ecosysWidth = helvBold.widthOfTextAtSize(ecosysText, 9);
@@ -265,9 +295,14 @@ async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Array> {
   const issuerText = `Facture emise par ${ISSUER.name} (${ISSUER.city}, ${ISSUER.country})`;
   const issuerWidth = helv.widthOfTextAtSize(issuerText, 8);
   drawText(page, issuerText, (width - issuerWidth) / 2, footerY, { size: 8, font: helv, color: gray });
+  // Mention legale TVA — societe hors UE (Emirats arabes unis), donc pas
+  // d'application de TVA. On l'explicite pour la comptabilite du client.
+  const tvaLegalText = "TVA 0% - Societe etablie aux Emirats arabes unis";
+  const tvaLegalWidth = helv.widthOfTextAtSize(tvaLegalText, 8);
+  drawText(page, tvaLegalText, (width - tvaLegalWidth) / 2, footerY - 12, { size: 8, font: helv, color: gray });
   const thanksText = "Document genere automatiquement - Merci pour votre confiance.";
   const thanksWidth = helv.widthOfTextAtSize(thanksText, 8);
-  drawText(page, thanksText, (width - thanksWidth) / 2, footerY - 12, { size: 8, font: helv, color: gray });
+  drawText(page, thanksText, (width - thanksWidth) / 2, footerY - 24, { size: 8, font: helv, color: gray });
 
   return await doc.save();
 }
@@ -438,17 +473,47 @@ Deno.serve(async (req) => {
     const contactId = contact?.id || sale?.contact_id || payment.contact_id;
     const saleId = sale?.id || payment.sale_id;
 
-    // Buyer profile
+    // ─── Récupération des coordonnées client (cascade fallback) ────────
+    // Priorité 1 : sale.buyer_profile_id (rempli par les nouveaux liens checkout)
+    // Priorité 2 : profile dont l'email matche celui du contact (pour les
+    //              anciennes ventes — la plupart des acheteurs ont un profile
+    //              plateforme avec leur adresse complète)
+    // Priorité 3 : juste les infos contact (full_name, email, phone) — minimal
+    //              si vraiment aucun profile trouvé
+    //
+    // On récupère également le téléphone (profiles.phone OU contacts.phone_normalized)
+    // pour l'afficher sur le PDF.
     let buyerProfile: any = null;
+
+    // P1 : via buyer_profile_id direct
     if (sale?.buyer_profile_id) {
       const { data } = await supabase.from("profiles")
-        .select("full_name, email, address, postal_code, city, country")
+        .select("full_name, email, phone, address, postal_code, city, country")
         .eq("id", sale.buyer_profile_id).single();
       buyerProfile = data;
     }
 
+    // P2 : si rien trouvé en P1, on cherche un profile par email du contact
+    if (!buyerProfile && contact?.email) {
+      const { data } = await supabase.from("profiles")
+        .select("full_name, email, phone, address, postal_code, city, country")
+        .ilike("email", contact.email)
+        .limit(1)
+        .maybeSingle();
+      if (data) buyerProfile = data;
+    }
+
+    // Récupère le contact complet pour avoir aussi son phone_normalized
+    const { data: contactFull } = contact?.id
+      ? await supabase.from("contacts")
+          .select("phone_normalized")
+          .eq("id", contact.id)
+          .maybeSingle()
+      : { data: null };
+
     const clientName = (buyerProfile?.full_name || contact?.full_name || "Client").toString().trim();
     const clientEmail = (buyerProfile?.email || contact?.email || "").toString().trim();
+    const clientPhone = (buyerProfile?.phone || contactFull?.phone_normalized || "").toString().trim() || null;
 
     // 2. Idempotence : facture existe ?
     const { data: existing } = await supabase.from("client_invoices").select("*").eq("payment_id", payment_id).maybeSingle();
@@ -511,6 +576,7 @@ Deno.serve(async (req) => {
           client: {
             name: clientName,
             email: clientEmail || null,
+            phone: clientPhone,
             address: buyerProfile?.address || null,
             postal_code: buyerProfile?.postal_code || null,
             city: buyerProfile?.city || null,
@@ -546,7 +612,17 @@ Deno.serve(async (req) => {
       }
 
       // Update DB
-      const { error: updErr } = await supabase.from("client_invoices").update({ html_path: pdfPath }).eq("id", invoiceRow.id);
+      // Update html_path + snapshot des coordonnées client (au cas où on
+      // regenere et qu'on a trouve de nouvelles infos via la cascade fallback).
+      const { error: updErr } = await supabase.from("client_invoices").update({
+        html_path: pdfPath,
+        client_name: clientName,
+        client_email: clientEmail || null,
+        client_address: buyerProfile?.address || null,
+        client_postal_code: buyerProfile?.postal_code || null,
+        client_city: buyerProfile?.city || null,
+        client_country: buyerProfile?.country || null,
+      }).eq("id", invoiceRow.id);
       if (updErr) {
         console.error("DB update failed for payment", payment_id, updErr);
         return new Response(JSON.stringify({
