@@ -9,9 +9,13 @@ interface PassGuardProps {
   children: ReactNode;
   /** Allow staff (CEO + coachs) without a pass — they need to manage sessions. */
   allowStaff?: boolean;
+  /** Allow collaborateur (sans pass, sans is_coach). Utile pour les pages
+   *  Scripts/Rôle-Play/Quiz qui doivent rester accessibles à tous les
+   *  collaborateurs ainsi qu'aux apporteurs avec pass. */
+  allowCollab?: boolean;
 }
 
-export function PassGuard({ children, allowStaff = true }: PassGuardProps) {
+export function PassGuard({ children, allowStaff = true, allowCollab = false }: PassGuardProps) {
   const { profile, isLoading: authLoading } = useAuth();
   const { hasAnyPass, isLoading } = useUserPass();
 
@@ -26,8 +30,10 @@ export function PassGuard({ children, allowStaff = true }: PassGuardProps) {
 
   const isStaff =
     allowStaff && !!profile && (profile.role === "ceo" || profile.is_coach === true);
+  const isAllowedCollab =
+    allowCollab && profile?.role === "collaborateur";
 
-  if (!hasAnyPass && !isStaff) {
+  if (!hasAnyPass && !isStaff && !isAllowedCollab) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[60vh]">
         <Card className="max-w-lg w-full">
@@ -39,7 +45,7 @@ export function PassGuard({ children, allowStaff = true }: PassGuardProps) {
           </CardHeader>
           <CardContent className="text-center text-sm text-muted-foreground space-y-2">
             <p>
-              Cet espace coaching est réservé aux membres disposant du{" "}
+              Cet espace est réservé aux membres disposant du{" "}
               <strong>Pass Al Baraka</strong> ou du <strong>Pass Liberty</strong>.
             </p>
             <p>

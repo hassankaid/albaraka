@@ -17,6 +17,9 @@ interface NavItem {
   coachOnly?: boolean;
   apporteurOnly?: boolean;
   passOrStaff?: boolean;
+  /** Affiche pour CEO/collab toujours, et pour apporteur uniquement s'il a un pass.
+   *  Différent de passOrStaff (qui exige aussi le pass pour collab). */
+  staffOrApporteurWithPass?: boolean;
 }
 
 const workingNavItems: NavItem[] = [
@@ -51,9 +54,11 @@ const adminNavItems: NavItem[] = [
 
 const trainingNavItems: NavItem[] = [
   { title: "Formation", path: "/training", icon: GraduationCap, roles: ["ceo", "collaborateur"] },
-  { title: "Scripts", path: "/training/scripts", icon: MessageSquare, roles: ["ceo", "collaborateur"] },
-  { title: "Rôle-Play", path: "/training/role-play", icon: Bot, roles: ["ceo", "collaborateur"] },
-  { title: "Quiz", path: "/training/quiz", icon: TrendingUp, roles: ["ceo", "collaborateur"] },
+  // Scripts / Rôle-Play / Quiz : ouverts à CEO/collab toujours, et aux apporteurs
+  // (purs ou is_also_apporteur) avec pass AL BARAKA ou Liberty.
+  { title: "Scripts", path: "/training/scripts", icon: MessageSquare, roles: ["ceo", "collaborateur", "apporteur"], staffOrApporteurWithPass: true },
+  { title: "Rôle-Play", path: "/training/role-play", icon: Bot, roles: ["ceo", "collaborateur", "apporteur"], staffOrApporteurWithPass: true },
+  { title: "Quiz", path: "/training/quiz", icon: TrendingUp, roles: ["ceo", "collaborateur", "apporteur"], staffOrApporteurWithPass: true },
   { title: "Suivi Élèves", path: "/admin/training/students", icon: UsersRound, roles: ["ceo"] },
   { title: "Accès & Pass", path: "/admin/training/access", icon: Ticket, roles: ["ceo"] },
   { title: "Gestion", path: "/admin/training/manage", icon: Settings2, roles: ["ceo"] },
@@ -150,6 +155,10 @@ export default function DashboardLayout() {
       if (item.coachOnly) return profile?.is_coach || isCeo;
       if (item.apporteurOnly) return isApporteurLike || isCeo;
       if (item.passOrStaff) return hasAnyPass || profile?.is_coach || isCeo;
+      // CEO/collab passent toujours, apporteur (pur ou hybride) doit avoir un pass.
+      if (item.staffOrApporteurWithPass) {
+        return userRole === "ceo" || userRole === "collaborateur" || hasAnyPass;
+      }
       return true;
     });
 

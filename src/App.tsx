@@ -159,7 +159,6 @@ const App = () => (
                   <Route path="/admin/training/access" element={<AdminTrainingAccess />} />
                   <Route path="/admin/training/students/:userId" element={<StudentDetailPage />} />
                   <Route path="/admin/training/certificates" element={<AdminCertificates />} />
-                  <Route path="/training/scripts" element={<Scripts />} />
                   <Route path="/training/scripts/setting" element={<Navigate to="/training/scripts" replace />} />
                   <Route path="/training/scripts/closing" element={<Navigate to="/training/scripts" replace />} />
                 </Route>
@@ -177,9 +176,13 @@ const App = () => (
                   <Route path="/announcements/:id" element={<AnnouncementDetail />} />
                   <Route path="/training" element={<TrainingList />} />
                   <Route path="/training/certificats" element={<MyCertificates />} />
-                  <Route path="/training/role-play" element={<RolePlay />} />
-                  <Route path="/training/quiz" element={<QuizList />} />
-                  <Route path="/training/quiz/:id" element={<QuizPage />} />
+                  {/* Scripts / Rôle-Play / Quiz : ouverts à CEO/collab toujours,
+                      et aux apporteurs disposant d'un pass AL BARAKA ou Liberty.
+                      PassGuard avec allowCollab pour ne pas bloquer les collab simples. */}
+                  <Route path="/training/scripts" element={<PassGuard allowCollab><Scripts /></PassGuard>} />
+                  <Route path="/training/role-play" element={<PassGuard allowCollab><RolePlay /></PassGuard>} />
+                  <Route path="/training/quiz" element={<PassGuard allowCollab><QuizList /></PassGuard>} />
+                  <Route path="/training/quiz/:id" element={<PassGuard allowCollab><QuizPage /></PassGuard>} />
                   <Route path="/training/:slug" element={<FormationDetail />} />
                   <Route path="/training/:slug/chapitre/:chapitreId" element={<ChapterViewer />} />
                   <Route path="/mon-coaching" element={<MonCoaching />} />
