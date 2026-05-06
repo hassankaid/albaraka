@@ -484,7 +484,9 @@ export function LandingPhase({
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// FORM (prénom + nom + email)
+// FORM (prénom + nom + email + téléphone)
+// On capture toutes les coordonnées en une seule étape : à la soumission,
+// l'edge function crée la fiche contact ET le lead CRM directement.
 // ──────────────────────────────────────────────────────────────────────
 
 export function FormPhase({
@@ -492,11 +494,13 @@ export function FormPhase({
   firstName,
   lastName,
   email,
+  phone,
   errors,
   submitting,
   onChangeFirstName,
   onChangeLastName,
   onChangeEmail,
+  onChangePhone,
   onSubmit,
   canSubmit,
 }: {
@@ -504,14 +508,17 @@ export function FormPhase({
   firstName: string;
   lastName: string;
   email: string;
-  errors: Partial<Record<"firstName" | "lastName" | "email", string>>;
+  phone: string;
+  errors: Partial<Record<"firstName" | "lastName" | "email" | "phone", string>>;
   submitting: boolean;
   onChangeFirstName: (v: string) => void;
   onChangeLastName: (v: string) => void;
   onChangeEmail: (v: string) => void;
+  onChangePhone: (v: string) => void;
   onSubmit: () => void;
   canSubmit: boolean;
 }) {
+  const phoneValid = phone && isValidPhoneNumber(phone);
   return (
     <div className="alb-q-fade">
       <div className="mb-8 text-center">
@@ -552,6 +559,42 @@ export function FormPhase({
           type="email"
           autoComplete="email"
         />
+
+        {/* Téléphone — composant PhoneInput stylé pour le tunnel public */}
+        <div className="space-y-1.5">
+          <label className="block text-[12.5px] font-medium uppercase tracking-wider text-[#f4ecd8]/60">
+            Numéro de téléphone
+          </label>
+          <div className={`alb-phone ${errors.phone ? "has-error" : ""}`}>
+            <PhoneInput
+              international
+              defaultCountry="FR"
+              labels={frLocale}
+              countrySelectComponent={CountrySelect}
+              value={phone}
+              onChange={(v) => onChangePhone(v ?? "")}
+              placeholder="6 12 34 56 78"
+              disabled={submitting}
+            />
+          </div>
+          {errors.phone && (
+            <div className="flex items-start gap-1.5 text-[12px] text-red-400">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0" aria-hidden>
+                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              {errors.phone}
+            </div>
+          )}
+          {!errors.phone && phone && phoneValid && (
+            <div className="flex items-center gap-1.5 text-[12px] text-emerald-400">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Numéro valide
+            </div>
+          )}
+        </div>
+
         <div className="pt-3">
           <QuizCTAButton type="submit" disabled={!canSubmit || submitting}>
             {submitting ? "Un instant…" : intro.form_cta}

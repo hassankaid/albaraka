@@ -1,12 +1,23 @@
 // QuizLinkCard — section affichée dans le dashboard apporteur (/my-space)
-// pour configurer son lien de prospection quiz et consulter ses stats funnel.
+// pour gérer son lien de prospection quiz et consulter ses stats funnel.
 // Accès : CEO, OU détenteur d'un pass AL BARAKA actif, OU whitelist manuelle
 // via la feature `quiz_lead_magnet` (back-door exceptions).
+//
+// Modèle :
+//   - À l'inscription/1ère visite, un owner est auto-créé via la RPC
+//     `ensure_quiz_owner_for_current_user` :
+//     slug = "prenom-XXXXXX" auto-généré (verrouillé)
+//     display_name = premier token du full_name (verrouillé)
+//     display_role = "Membre AL BARAKA" (verrouillé)
+//     whatsapp_phone = NULL, is_active = FALSE
+//   - L'utilisateur valide son numéro WhatsApp → le lien devient actif.
+//   - Seul le numéro WhatsApp peut être modifié ensuite.
+//   - Les apporteurs déjà actifs (AVANT la migration) gardent leur slug
+//     custom + display_name + display_role inchangés.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,13 +26,11 @@ import { useFeatureUnlocks } from "@/hooks/useFeatureUnlock";
 import { useUserPass } from "@/hooks/useUserPass";
 import { useToast } from "@/hooks/use-toast";
 import { getPublicAppOrigin } from "@/lib/impersonation";
-import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
-import "react-phone-number-input/style.css";
-import { Copy, Check, ExternalLink, Sparkles, Pencil, Save, X, Link as LinkIcon, Eye, Mail, CheckCircle2, Phone as PhoneIcon, MessageCircle, Loader2 } from "lucide-react";
-
-// ──────────────────────────────────────────────────────────────────────
-// Types
-// ──────────────────────────────────────────────────────────────────────
+import { PhoneInputField, isValidPhoneNumber } from "@/components/ui/PhoneInputField";
+import {
+  Copy, Check, ExternalLink, Sparkles, Save, X, Link as LinkIcon,
+  Eye, MessageCircle, Loader2, Phone as PhoneIcon, ShieldCheck, Lock,
+} from "lucide-react";
 
 interface QuizOwnerRow {
   id: string;
@@ -29,49 +38,21 @@ interface QuizOwnerRow {
   slug: string;
   display_name: string;
   display_role: string;
-  whatsapp_phone: string;
+  whatsapp_phone: string | null;
   is_active: boolean;
   total_views: number | null;
 }
 
 interface FunnelStats {
   total_views: number;
-  email_captured: number;
-  quiz_completed: number;
-  phone_captured: number;
-  whatsapp_clicked: number;
-}
-
-// ──────────────────────────────────────────────────────────────────────
-// Helpers
-// ──────────────────────────────────────────────────────────────────────
-
-const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$|^[a-z0-9]{3,30}$/;
-
-function proposeSlug(fullName: string | null | undefined, userId: string): string {
-  const base =
-    (fullName ?? "")
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 22) || "apporteur";
-  const suffix = userId.replace(/[^a-z0-9]/g, "").slice(0, 5);
-  const candidate = `${base}-${suffix}`;
-  // Trim éventuel dépassement
-  return candidate.slice(0, 30).replace(/-+$/, "");
+  info_captured: number;     // au moins prénom + email + tél laissés (= toutes submissions)
+  quiz_completed: number;    // quiz fini
+  whatsapp_clicked: number;  // a cliqué sur le bouton WhatsApp
 }
 
 function buildPublicUrl(slug: string): string {
-  // Toujours utiliser l'origine primaire (plateforme.albarakaecosysteme.com)
-  // même en mode impersonation — pour ne jamais partager un lien en view.*
   return `${getPublicAppOrigin()}/quiz/${slug}`;
 }
-
-// ──────────────────────────────────────────────────────────────────────
-// Component
-// ──────────────────────────────────────────────────────────────────────
 
 export default function QuizLinkCard() {
   const { profile } = useAuth();
@@ -81,7 +62,6 @@ export default function QuizLinkCard() {
 
   const isCeo = profile?.role === "ceo";
   const isWhitelisted = has("quiz_lead_magnet");
-  // Accès : CEO, ou pass AL BARAKA actif, ou whitelist manuelle (back-door)
   const canAccess = isCeo || hasAlBaraka || isWhitelisted;
   const accessLoading = featureLoading || passLoading;
 
@@ -90,49 +70,57 @@ export default function QuizLinkCard() {
   const [stats, setStats] = useState<FunnelStats | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Mode édition (nouvel owner ou édition)
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
+  // Mode édition WhatsApp (uniquement)
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [savingPhone, setSavingPhone] = useState(false);
+  const [phoneDraft, setPhoneDraft] = useState<string | undefined>("");
 
-  // Form state
-  const [slug, setSlug] = useState("");
-  const [slugChecking, setSlugChecking] = useState(false);
-  const [slugError, setSlugError] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState("");
-  const [displayRole, setDisplayRole] = useState("Membre AL BARAKA");
-  const [whatsappPhone, setWhatsappPhone] = useState<string | undefined>("");
-
-  // ─── Fetch owner + stats ───
+  // ─── Fetch / auto-provision owner + stats ───
   const fetchAll = useCallback(async () => {
     if (!profile) return;
     setLoading(true);
     try {
-      const { data: ownerRow } = await supabase
-        .from("lead_quiz_owners")
-        .select("id, user_id, slug, display_name, display_role, whatsapp_phone, is_active, total_views")
-        .eq("user_id", profile.id)
-        .maybeSingle();
+      // 1. Auto-provisionne via RPC (idempotent)
+      const { data: ensured, error: ensureErr } = await (supabase.rpc as any)(
+        "ensure_quiz_owner_for_current_user"
+      );
+      if (ensureErr) {
+        console.error("[QuizLinkCard] ensure_quiz_owner failed", ensureErr);
+        toast({
+          title: "Impossible de charger ton lien",
+          description: ensureErr.message,
+          variant: "destructive",
+        });
+        setOwner(null);
+        return;
+      }
+      // La RPC retourne un row (table function). Selon Supabase, c'est soit
+      // l'objet direct, soit un tableau d'1 row.
+      const row: QuizOwnerRow | null = Array.isArray(ensured)
+        ? (ensured[0] ?? null)
+        : ((ensured as QuizOwnerRow) ?? null);
+      setOwner(row);
 
-      setOwner(ownerRow ?? null);
-
-      if (ownerRow) {
-        // Stats funnel : on fait un fetch simple de toutes les submissions et on compte côté client
+      if (row) {
+        // 2. Stats funnel (3 étapes simplifiées)
         const { data: subs } = await supabase
           .from("lead_quiz_submissions")
           .select("status")
-          .eq("owner_id", ownerRow.id);
+          .eq("owner_id", row.id);
         const s: FunnelStats = {
-          total_views: ownerRow.total_views ?? 0,
-          email_captured: 0,
+          total_views: row.total_views ?? 0,
+          info_captured: 0,
           quiz_completed: 0,
-          phone_captured: 0,
           whatsapp_clicked: 0,
         };
-        for (const row of subs ?? []) {
-          s.email_captured++;
-          const st = row.status as string;
-          if (st === "quiz_completed" || st === "phone_captured" || st === "whatsapp_clicked") s.quiz_completed++;
-          if (st === "phone_captured" || st === "whatsapp_clicked") s.phone_captured++;
+        for (const sub of subs ?? []) {
+          // Toutes les submissions ont au moins l'email capturé (donc info partielle).
+          // Avec le nouveau flow, prénom + email + tel sont tous demandés au début.
+          s.info_captured++;
+          const st = sub.status as string;
+          if (st === "quiz_completed" || st === "phone_captured" || st === "whatsapp_clicked") {
+            s.quiz_completed++;
+          }
           if (st === "whatsapp_clicked") s.whatsapp_clicked++;
         }
         setStats(s);
@@ -142,7 +130,7 @@ export default function QuizLinkCard() {
     } finally {
       setLoading(false);
     }
-  }, [profile]);
+  }, [profile, toast]);
 
   useEffect(() => {
     if (!canAccess) {
@@ -152,88 +140,46 @@ export default function QuizLinkCard() {
     fetchAll();
   }, [canAccess, fetchAll]);
 
-  // ─── Préremplissage du form pour création ───
+  // ─── Pré-remplit le draft phone à l'ouverture du mode édition ───
   useEffect(() => {
-    if (!owner && profile && editing) {
-      setSlug((prev) => prev || proposeSlug(profile.full_name, profile.id));
-      setDisplayName((prev) => prev || (profile.full_name ?? "").split(" ")[0] || "Apporteur");
-      setDisplayRole((prev) => prev || "Membre AL BARAKA");
+    if (editingPhone && owner) {
+      setPhoneDraft(owner.whatsapp_phone ?? "");
     }
-    if (owner && editing) {
-      setSlug(owner.slug);
-      setDisplayName(owner.display_name);
-      setDisplayRole(owner.display_role);
-      setWhatsappPhone(owner.whatsapp_phone);
-    }
-  }, [editing, owner, profile]);
+  }, [editingPhone, owner]);
 
-  // ─── Vérification d'unicité du slug (debounced) ───
-  useEffect(() => {
-    if (!editing || owner) return; // inutile si édition (slug verrouillé)
-    const trimmed = slug.trim().toLowerCase();
-    setSlugError(null);
-    if (!trimmed) return;
-    if (!SLUG_REGEX.test(trimmed)) {
-      setSlugError("3 à 30 caractères, uniquement lettres minuscules, chiffres et tirets");
-      return;
-    }
-    setSlugChecking(true);
-    const t = setTimeout(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.rpc as any)("is_quiz_slug_available", { p_slug: trimmed });
-      if (!error && data === false) {
-        setSlugError("Ce lien est déjà utilisé, choisis-en un autre");
-      }
-      setSlugChecking(false);
-    }, 400);
-    return () => clearTimeout(t);
-  }, [slug, editing, owner]);
-
-  // ─── Validation form ───
-  const canSave =
-    displayName.trim().length >= 2 &&
-    displayRole.trim().length >= 2 &&
-    !!whatsappPhone &&
-    isValidPhoneNumber(whatsappPhone) &&
-    (owner ? true : !!slug && !slugError && !slugChecking) &&
-    !saving;
-
-  // ─── Save ───
-  const handleSave = async () => {
-    if (!profile || !canSave) return;
-    setSaving(true);
+  // ─── Save phone (active aussi le lien si pas encore actif) ───
+  const handleSavePhone = async () => {
+    if (!owner || !phoneDraft || !isValidPhoneNumber(phoneDraft)) return;
+    setSavingPhone(true);
     try {
-      if (!owner) {
-        // CREATE
-        const { error } = await supabase.from("lead_quiz_owners").insert({
-          user_id: profile.id,
-          slug: slug.trim().toLowerCase(),
-          display_name: displayName.trim(),
-          display_role: displayRole.trim(),
-          whatsapp_phone: whatsappPhone!,
-          is_active: true,
-        });
-        if (error) throw error;
-        toast({ title: "Ton lien est actif 🎉", description: "Tu peux maintenant le partager." });
-      } else {
-        // UPDATE (slug verrouillé)
-        const { error } = await supabase
-          .from("lead_quiz_owners")
-          .update({
-            display_name: displayName.trim(),
-            display_role: displayRole.trim(),
-            whatsapp_phone: whatsappPhone!,
-          })
-          .eq("id", owner.id);
-        if (error) throw error;
-        toast({ title: "Infos mises à jour" });
+      const updates: Record<string, unknown> = {
+        whatsapp_phone: phoneDraft,
+      };
+      // Si le lien n'était pas encore actif, on l'active maintenant
+      if (!owner.is_active) {
+        updates.is_active = true;
       }
-      setEditing(false);
+      const { error } = await supabase
+        .from("lead_quiz_owners")
+        .update(updates)
+        .eq("id", owner.id);
+      if (error) throw error;
+      toast({
+        title: owner.is_active ? "Numéro mis à jour" : "Ton lien est actif 🎉",
+        description: owner.is_active
+          ? undefined
+          : "Tu peux maintenant le partager.",
+      });
+      setEditingPhone(false);
       await fetchAll();
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message ?? "Impossible d'enregistrer", variant: "destructive" });
+      toast({
+        title: "Erreur",
+        description: e?.message ?? "Impossible d'enregistrer",
+        variant: "destructive",
+      });
     } finally {
-      setSaving(false);
+      setSavingPhone(false);
     }
   };
 
@@ -252,7 +198,6 @@ export default function QuizLinkCard() {
 
   // ─── Rendu ───
 
-  // Gated : pas d'accès → on n'affiche rien du tout (section invisible)
   if (accessLoading) {
     return (
       <Card className="border-border/50">
@@ -265,6 +210,40 @@ export default function QuizLinkCard() {
   }
   if (!canAccess) return null;
 
+  // ── Loading skeleton ──
+  if (loading) {
+    return (
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-gold-400" />
+            Mon lien de prospection quiz
+          </h3>
+        </div>
+        <Card className="border-border/50">
+          <CardContent className="p-6">
+            <Skeleton className="h-6 w-2/3 mb-3" />
+            <Skeleton className="h-10 w-full" />
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
+
+  if (!owner) {
+    return (
+      <section className="space-y-4">
+        <Card className="border-red-500/30 bg-red-500/5">
+          <CardContent className="p-4 text-sm text-red-300">
+            Impossible de charger ton lien. Réessaye dans un instant.
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
+
+  const needsSetup = !owner.is_active || !owner.whatsapp_phone;
+
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
@@ -275,186 +254,182 @@ export default function QuizLinkCard() {
         </h3>
       </div>
 
-      {loading ? (
-        <Card className="border-border/50">
-          <CardContent className="p-6">
-            <Skeleton className="h-6 w-2/3 mb-3" />
-            <Skeleton className="h-10 w-full" />
-          </CardContent>
-        </Card>
-      ) : !owner && !editing ? (
-        // ─── Setup initial ───
-        <Card className="border-border/50 bg-gradient-to-br from-gold-500/5 to-gold-600/5">
-          <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-foreground mb-1 flex items-center gap-2">
-                <LinkIcon className="h-4 w-4 text-gold-400" />
-                Active ton lien de quiz personnalisé
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                Partage un lien unique sur tes réseaux. Chaque prospect qui complète le quiz devient automatiquement un de tes leads.
-              </p>
-            </div>
-            <Button onClick={() => setEditing(true)} className="gradient-primary text-primary-foreground gap-2 shrink-0">
-              <Sparkles className="h-4 w-4" />
-              Configurer mon lien
-            </Button>
-          </CardContent>
-        </Card>
-      ) : editing ? (
-        // ─── Form création / édition ───
-        <Card className="border-border/50">
-          <CardContent className="p-6 space-y-5">
-            <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-foreground">{owner ? "Modifier mes infos" : "Configurer mon lien"}</h4>
-              <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={saving}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Slug */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground flex items-center justify-between">
-                <span>Mon identifiant de lien</span>
-                {owner && <span className="text-xs text-muted-foreground italic">Verrouillé après activation</span>}
-              </label>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground whitespace-nowrap">/quiz/</span>
-                <Input
-                  value={slug}
-                  onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-                  placeholder="ex: youssef"
-                  disabled={!!owner || saving}
-                  className="bg-background"
-                />
-                {slugChecking && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+      {needsSetup ? (
+        // ─── État 1 : Setup WhatsApp obligatoire avant activation ──────
+        <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-amber-600/5">
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="rounded-full bg-amber-500/15 p-2 mt-0.5 shrink-0">
+                <PhoneIcon className="h-4 w-4 text-amber-300" />
               </div>
-              {slugError && <p className="text-xs text-red-400">⚠️ {slugError}</p>}
-              {!slugError && slug && !slugChecking && !owner && SLUG_REGEX.test(slug.trim()) && (
-                <p className="text-xs text-emerald-400">✓ Identifiant disponible</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Ton lien final : <span className="text-foreground">{buildPublicUrl(slug || "ton-slug")}</span>
-              </p>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold text-foreground mb-1">
+                  Une dernière étape : valide ton numéro WhatsApp
+                </h4>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Ton lien personnel <code className="text-xs bg-muted/40 px-1.5 py-0.5 rounded">{owner.slug}</code> est prêt.
+                  Avant de le partager, indique le numéro WhatsApp sur lequel tes prospects te contacteront à la fin du quiz.
+                </p>
+              </div>
             </div>
 
-            {/* Display name */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Prénom affiché au prospect</label>
-              <Input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Ex : Youssef"
-                disabled={saving}
-                className="bg-background"
-                maxLength={40}
-              />
-              <p className="text-xs text-muted-foreground">
-                C'est ce que le prospect verra : "Pour t'inscrire, écris à <b>{displayName || "…"}</b>"
-              </p>
-            </div>
-
-            {/* Display role */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Mon titre / rôle</label>
-              <Input
-                value={displayRole}
-                onChange={(e) => setDisplayRole(e.target.value)}
-                placeholder="Ex : Coach AL BARAKA"
-                disabled={saving}
-                className="bg-background"
-                maxLength={60}
-              />
-            </div>
-
-            {/* WhatsApp */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Mon numéro WhatsApp</label>
-              <PhoneInput
-                international
+            <div className="space-y-2 pt-2">
+              <label htmlFor="qlc-phone" className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                <PhoneIcon className="h-3.5 w-3.5" />
+                Mon numéro WhatsApp
+              </label>
+              <PhoneInputField
+                id="qlc-phone"
+                value={phoneDraft}
+                onChange={setPhoneDraft}
                 defaultCountry="FR"
-                value={whatsappPhone}
-                onChange={setWhatsappPhone}
                 placeholder="Ex : 6 12 34 56 78"
-                disabled={saving}
+                disabled={savingPhone}
               />
               <p className="text-xs text-muted-foreground">
                 Le prospect cliquera sur un bouton qui ouvrira WhatsApp avec un message pré-rempli vers ce numéro.
               </p>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setEditing(false)} disabled={saving}>
+            <Button
+              onClick={async () => {
+                if (!phoneDraft || !isValidPhoneNumber(phoneDraft)) return;
+                await handleSavePhone();
+              }}
+              disabled={savingPhone || !phoneDraft || !isValidPhoneNumber(phoneDraft)}
+              className="gradient-primary text-primary-foreground gap-2 w-full sm:w-auto"
+            >
+              {savingPhone ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              Activer mon lien
+            </Button>
+          </CardContent>
+        </Card>
+      ) : editingPhone ? (
+        // ─── État 2 : Édition du numéro WhatsApp uniquement ──────
+        <Card className="border-border/50">
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-foreground flex items-center gap-2">
+                <PhoneIcon className="h-4 w-4" />
+                Modifier mon numéro WhatsApp
+              </h4>
+              <Button variant="ghost" size="sm" onClick={() => setEditingPhone(false)} disabled={savingPhone}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Champs verrouillés (lecture seule) */}
+            <div className="space-y-3 rounded-md border border-border/50 bg-muted/20 p-3">
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                <Lock className="h-3 w-3" />
+                Verrouillé
+              </div>
+              <ReadOnlyRow label="Lien" value={owner.slug} />
+              <ReadOnlyRow label="Prénom affiché" value={owner.display_name} />
+              <ReadOnlyRow label="Rôle affiché" value={owner.display_role} />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="qlc-phone-edit" className="text-sm font-medium text-foreground">
+                Mon numéro WhatsApp
+              </label>
+              <PhoneInputField
+                id="qlc-phone-edit"
+                value={phoneDraft}
+                onChange={setPhoneDraft}
+                defaultCountry="FR"
+                placeholder="Ex : 6 12 34 56 78"
+                disabled={savingPhone}
+              />
+              <p className="text-xs text-muted-foreground">
+                Numéro actuel : <code className="text-foreground">{owner.whatsapp_phone}</code>
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => setEditingPhone(false)} disabled={savingPhone}>
                 Annuler
               </Button>
-              <Button onClick={handleSave} disabled={!canSave} className="gradient-primary text-primary-foreground gap-2">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                {owner ? "Enregistrer" : "Activer mon lien"}
+              <Button
+                onClick={handleSavePhone}
+                disabled={savingPhone || !phoneDraft || !isValidPhoneNumber(phoneDraft)}
+                className="gap-2"
+              >
+                {savingPhone ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Enregistrer
               </Button>
             </div>
           </CardContent>
         </Card>
       ) : (
-        // ─── Vue active du lien ───
-        owner && (
-          <div className="space-y-3">
-            <Card className="border-gold-500/20 bg-gradient-to-br from-gold-500/5 to-gold-600/5">
-              <CardContent className="p-5 space-y-4">
-                <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <LinkIcon className="h-4 w-4 text-gold-400" />
-                      <span className="text-xs uppercase tracking-wider text-muted-foreground">Ton lien public</span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <code className="text-[14px] font-mono text-foreground bg-background/60 px-3 py-1.5 rounded-md border border-border/40 break-all">
-                        {publicUrl}
-                      </code>
-                    </div>
+        // ─── État 3 : Vue active ──────
+        <div className="space-y-3">
+          <Card className="border-gold-500/20 bg-gradient-to-br from-gold-500/5 to-gold-600/5">
+            <CardContent className="p-5 space-y-4">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <LinkIcon className="h-4 w-4 text-gold-400" />
+                    <span className="text-xs uppercase tracking-wider text-muted-foreground">Ton lien public</span>
+                    <Badge className="text-[9px] bg-emerald-500/15 border-emerald-500/30 text-emerald-300 gap-1">
+                      <ShieldCheck className="h-2.5 w-2.5" />
+                      Actif
+                    </Badge>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5">
-                      {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-                      {copied ? "Copié" : "Copier"}
-                    </Button>
-                    <Button variant="outline" size="sm" asChild className="gap-1.5">
-                      <a href={publicUrl} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        Ouvrir
-                      </a>
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setEditing(true)} className="gap-1.5">
-                      <Pencil className="h-3.5 w-3.5" />
-                      Modifier
-                    </Button>
-                  </div>
+                  <code className="text-[14px] font-mono text-foreground bg-background/60 px-3 py-1.5 rounded-md border border-border/40 break-all inline-block">
+                    {publicUrl}
+                  </code>
                 </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
-                  <MiniStat icon={<Mail className="h-3.5 w-3.5" />} label="Emails capturés" value={stats?.email_captured ?? 0} />
-                  <MiniStat icon={<CheckCircle2 className="h-3.5 w-3.5" />} label="Quiz terminés" value={stats?.quiz_completed ?? 0} />
-                  <MiniStat icon={<PhoneIcon className="h-3.5 w-3.5" />} label="Téléphones" value={stats?.phone_captured ?? 0} accent />
-                  <MiniStat icon={<MessageCircle className="h-3.5 w-3.5" />} label="Clics WhatsApp" value={stats?.whatsapp_clicked ?? 0} />
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5">
+                    {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copied ? "Copié" : "Copier"}
+                  </Button>
+                  <Button variant="outline" size="sm" asChild className="gap-1.5">
+                    <a href={publicUrl} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Ouvrir
+                    </a>
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setEditingPhone(true)} className="gap-1.5">
+                    <PhoneIcon className="h-3.5 w-3.5" />
+                    Modifier mon WhatsApp
+                  </Button>
                 </div>
+              </div>
 
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
-                  <Eye className="h-3 w-3" />
-                  {stats?.total_views ?? 0} visite{(stats?.total_views ?? 0) > 1 ? "s" : ""} au total sur ton lien
-                </div>
-              </CardContent>
-            </Card>
+              <div className="grid grid-cols-3 gap-2 pt-2">
+                <MiniStat label="Coordonnées laissées" value={stats?.info_captured ?? 0} />
+                <MiniStat label="Quiz terminés" value={stats?.quiz_completed ?? 0} />
+                <MiniStat label="Clics WhatsApp" value={stats?.whatsapp_clicked ?? 0} accent />
+              </div>
 
-            <p className="text-xs text-muted-foreground italic">
-              💡 Les leads qui laissent leur téléphone apparaissent automatiquement dans tes leads ci-dessus (source "Apporteur&nbsp;- Quiz").
-            </p>
-          </div>
-        )
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
+                <Eye className="h-3 w-3" />
+                {stats?.total_views ?? 0} visite{(stats?.total_views ?? 0) > 1 ? "s" : ""} au total sur ton lien
+              </div>
+            </CardContent>
+          </Card>
+
+          <p className="text-xs text-muted-foreground italic">
+            💡 Les leads qui complètent le quiz apparaissent automatiquement dans tes leads ci-dessus (source "Apporteur&nbsp;- Quiz").
+          </p>
+        </div>
       )}
     </section>
   );
 }
 
-function MiniStat({ icon, label, value, accent = false }: { icon: React.ReactNode; label: string; value: number; accent?: boolean }) {
+function ReadOnlyRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline gap-2 text-sm">
+      <span className="text-[11px] uppercase tracking-wider text-muted-foreground shrink-0 w-28">{label}</span>
+      <span className="text-foreground font-medium truncate">{value}</span>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, accent = false }: { label: string; value: number; accent?: boolean }) {
   return (
     <div
       className={`rounded-lg border px-3 py-2 ${
@@ -463,11 +438,13 @@ function MiniStat({ icon, label, value, accent = false }: { icon: React.ReactNod
           : "border-border/50 bg-background/40"
       }`}
     >
-      <div className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-wider text-muted-foreground">
-        {icon}
+      <div className="text-[10.5px] uppercase tracking-wider text-muted-foreground">
         {label}
       </div>
       <div className={`text-lg font-bold mt-0.5 ${accent ? "text-gold-300" : "text-foreground"}`}>{value}</div>
     </div>
   );
 }
+
+// Re-export pour rétrocompat (au cas où un autre composant l'importait)
+export { isValidPhoneNumber };

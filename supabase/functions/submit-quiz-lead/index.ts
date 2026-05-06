@@ -189,22 +189,37 @@ async function handleView(supabase: any, body: any) {
   return json({ ok: true });
 }
 
-// ─── email_captured : crée la submission ───
+// ─── email_captured : crée la submission + (si phone fourni) le lead CRM ───
+//
+// Nouveau flow (front actuel) : phone est envoyé dès la première soumission,
+// donc on crée immédiatement la fiche contact + le lead CRM en une seule
+// opération. La submission est insérée avec status='phone_captured'.
+//
+// Ancien flow (rétrocompat) : phone absent, on crée juste la fiche contact
+// + la submission avec status='email_captured'. Le lead CRM sera créé plus
+// tard par handlePhoneCaptured.
 async function handleEmailCaptured(supabase: any, body: any, req: Request) {
   const slug = (body?.slug as string | undefined)?.toLowerCase();
   const firstName = normalizeName(body?.first_name as string);
   const lastName = normalizeName(body?.last_name as string);
   const email = normalizeEmail(body?.email as string);
+  const rawPhone = body?.phone as string | undefined;
 
   if (!slug || !isValidSlug(slug)) return json({ error: "invalid_slug" }, 400);
   if (!firstName || firstName.length < 2) return json({ error: "invalid_first_name" }, 400);
   if (!lastName || lastName.length < 2) return json({ error: "invalid_last_name" }, 400);
   if (!email || !isValidEmail(email)) return json({ error: "invalid_email" }, 400);
 
-  // Résoudre le propriétaire
+  // Phone optionnel (nouveau flow l'envoie, rétrocompat le permet absent)
+  let phoneE164: string | null = null;
+  if (rawPhone && isValidPhone(rawPhone)) {
+    phoneE164 = formatPhoneE164(rawPhone);
+  }
+
+  // Résoudre le propriétaire (avec user_id et display_name pour le lead CRM)
   const { data: owner, error: ownerError } = await supabase
     .from("lead_quiz_owners")
-    .select("id, is_active")
+    .select("id, user_id, slug, display_name, is_active")
     .eq("slug", slug)
     .maybeSingle();
 
@@ -219,18 +234,52 @@ async function handleEmailCaptured(supabase: any, body: any, req: Request) {
     .maybeSingle();
   const configVersion = config?.version ?? 1;
 
-  // Créer la fiche contact dès maintenant (même sans téléphone)
+  // Crée la fiche contact (avec phone si dispo)
   const fullNameUpper = `${firstName} ${lastName}`.toUpperCase();
   const { data: contactId, error: contactError } = await supabase.rpc("find_or_create_contact", {
     p_email: email,
-    p_phone: null,
+    p_phone: phoneE164,
     p_full_name: fullNameUpper,
   });
   if (contactError) throw contactError;
 
-  // Créer la submission
+  // Si phone fourni : crée le lead CRM directement (plus besoin d'attendre
+  // une 2e étape comme dans l'ancien flow phone_captured).
+  let leadId: string | null = null;
+  if (phoneE164) {
+    const sourceDetail = `quiz:${owner.slug}`;
+    const { data: lead, error: leadErr } = await supabase
+      .from("leads")
+      .insert({
+        contact_id: contactId,
+        source: "apporteur_quiz",
+        source_detail: sourceDetail,
+        apporteur_id: owner.user_id,
+        apporteur_source: "quiz",
+        apporteur_source_detail: owner.slug,
+        status: "a_qualifier",
+        raw_full_name: fullNameUpper,
+        raw_email: email,
+        raw_phone: phoneE164,
+        notes: `Lead issu du quiz apporteur de ${owner.display_name} (/quiz/${owner.slug}).`,
+      })
+      .select("id")
+      .single();
+    if (leadErr) throw leadErr;
+    leadId = lead.id;
+
+    await supabase.from("lead_activities").insert({
+      lead_id: leadId,
+      user_id: owner.user_id,
+      action: "created",
+      note: `Créé via le quiz apporteur (/quiz/${owner.slug}). Coordonnées complètes capturées dès le départ.`,
+    });
+  }
+
+  // Crée la submission (avec phone et lead_id si dispo)
   const userAgent = req.headers.get("user-agent") ?? null;
   const referrer = (body?.referrer as string | undefined) ?? null;
+  const nowIso = new Date().toISOString();
 
   const { data: submission, error: subError } = await supabase
     .from("lead_quiz_submissions")
@@ -240,8 +289,11 @@ async function handleEmailCaptured(supabase: any, body: any, req: Request) {
       first_name: firstName,
       last_name: lastName,
       email,
-      status: "email_captured",
+      phone: phoneE164,
+      status: phoneE164 ? "phone_captured" : "email_captured",
       contact_id: contactId,
+      lead_id: leadId,
+      phone_captured_at: phoneE164 ? nowIso : null,
       user_agent: userAgent?.substring(0, 500) ?? null,
       referrer: referrer?.substring(0, 500) ?? null,
     })
@@ -250,7 +302,11 @@ async function handleEmailCaptured(supabase: any, body: any, req: Request) {
 
   if (subError) throw subError;
 
-  return json({ submission_id: submission.id });
+  return json({
+    submission_id: submission.id,
+    lead_id: leadId,
+    contact_id: contactId,
+  });
 }
 
 // ─── quiz_progress : update incrémental de la submission ───
@@ -274,7 +330,11 @@ async function handleQuizProgress(supabase: any, body: any) {
 
   if (!existing) return json({ error: "submission_not_found" }, 404);
 
-  if (existing.status === "email_captured") {
+  // Le status initial peut être "email_captured" (ancien flow) ou
+  // "phone_captured" (nouveau flow où tel est capturé dès le formulaire).
+  // Dans les deux cas, dès la première question répondue, on passe à
+  // quiz_in_progress pour suivre la progression.
+  if (existing.status === "email_captured" || existing.status === "phone_captured") {
     updates.status = "quiz_in_progress";
     updates.quiz_started_at = new Date().toISOString();
   }

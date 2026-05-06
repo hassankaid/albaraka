@@ -46,8 +46,11 @@ export async function submitEmailCapture(params: {
   first_name: string;
   last_name: string;
   email: string;
+  /** Phone facultatif côté API (rétrocompat). Le nouveau flow l'envoie
+   *  systématiquement et l'edge function créera le lead CRM directement. */
+  phone?: string | null;
   referrer?: string | null;
-}): Promise<{ submission_id: string }> {
+}): Promise<{ submission_id: string; lead_id?: string; contact_id?: string }> {
   return callFn({ action: "email_captured", ...params });
 }
 

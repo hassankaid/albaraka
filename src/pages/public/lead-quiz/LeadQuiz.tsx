@@ -345,25 +345,36 @@ export default function LeadQuiz() {
     const fn = state.firstName.trim();
     const ln = state.lastName.trim();
     const em = state.email.trim();
+    const ph = state.phone.trim();
     if (fn.length < 2) errors.firstName = "Prénom trop court";
     if (ln.length < 2) errors.lastName = "Nom trop court";
     const ec = validateEmail(em);
     if (!ec.valid) errors.email = ec.error ?? "Email invalide";
+    const pc = validatePhone(ph);
+    if (!pc.valid) errors.phone = pc.error ?? "Numéro invalide";
     if (Object.keys(errors).length > 0) {
       dispatch({ type: "SET_FORM_ERRORS", errors });
       return;
     }
     dispatch({ type: "SET_SUBMITTING_FORM", value: true });
     try {
+      // Le nouveau flow envoie le téléphone dès la 1ère soumission. L'edge
+      // function va créer simultanément la fiche contact ET le lead CRM
+      // (au lieu d'attendre une 2e étape de capture du téléphone à la fin).
       const { submission_id } = await submitEmailCapture({
         slug: slugLower,
         first_name: fn,
         last_name: ln,
         email: em,
+        phone: ph,
         referrer: document.referrer || null,
       });
       dispatch({ type: "SET_SUBMISSION_ID", id: submission_id });
       storeSubmission(slugLower, submission_id);
+      // Le téléphone étant capturé dès maintenant, on passe `phoneCaptured`
+      // à true tout de suite — ça permettra de skipper la phase `phone` à
+      // la fin du quiz et d'aller directement à `conference`.
+      dispatch({ type: "MARK_PHONE_CAPTURED" });
       dispatch({ type: "SET_PHASE", phase: "intro" });
     } catch (e: any) {
       dispatch({
@@ -511,12 +522,14 @@ export default function LeadQuiz() {
     state.phase === "rhetorical" ||
     state.phase === "orientation";
 
-  // Phone
+  // Validation du form initial (prénom + nom + email + téléphone)
   const emailCheck = validateEmail(state.email);
+  const phoneCheckForm = state.phone.trim() ? validatePhone(state.phone) : { valid: false, error: null };
   const canSubmitForm =
     state.firstName.trim().length >= 2 &&
     state.lastName.trim().length >= 2 &&
-    emailCheck.valid;
+    emailCheck.valid &&
+    phoneCheckForm.valid;
 
   const phoneCheck = state.phone.trim() ? validatePhone(state.phone) : { valid: false, error: null };
   const canSubmitPhone = phoneCheck.valid;
@@ -625,7 +638,7 @@ export default function LeadQuiz() {
     );
   }
 
-  // Form
+  // Form (prénom + nom + email + téléphone — le tel est demandé au début)
   if (state.phase === "form") {
     return (
       <QuizFrame>
@@ -634,12 +647,14 @@ export default function LeadQuiz() {
           firstName={state.firstName}
           lastName={state.lastName}
           email={state.email}
+          phone={state.phone}
           errors={state.formErrors}
           submitting={state.submittingForm}
           canSubmit={canSubmitForm}
           onChangeFirstName={(v) => dispatch({ type: "SET_FORM_FIELD", field: "firstName", value: v })}
           onChangeLastName={(v) => dispatch({ type: "SET_FORM_FIELD", field: "lastName", value: v })}
           onChangeEmail={(v) => dispatch({ type: "SET_FORM_FIELD", field: "email", value: v })}
+          onChangePhone={(v) => dispatch({ type: "SET_FORM_FIELD", field: "phone", value: v })}
           onSubmit={handleFormSubmit}
         />
       </QuizFrame>
@@ -667,19 +682,24 @@ export default function LeadQuiz() {
   // Result
   if (state.phase === "result" && state.resultProfile) {
     const prof = profilesMap[state.resultProfile];
+    // Nouveau flow : le téléphone est capturé dès le formulaire initial,
+    // donc on saute la phase "phone" et on va directement à "conference".
+    // Ancien flow (sessions reprises depuis localStorage 72h, ou rétrocompat) :
+    // on garde l'ancien comportement → passe par la phase "phone".
+    const nextPhase: QuizPhase = state.phoneCaptured ? "conference" : "phone";
     return (
       <QuizFrame glowColor={`${prof.color}15`}>
         <ResultPhase
           profile={prof}
           firstName={state.firstName}
           email={state.email}
-          onContinue={() => dispatch({ type: "SET_PHASE", phase: "phone" })}
+          onContinue={() => dispatch({ type: "SET_PHASE", phase: nextPhase })}
         />
       </QuizFrame>
     );
   }
 
-  // Phone capture
+  // Phone capture (rétrocompat : ancien flow uniquement)
   if (state.phase === "phone") {
     return (
       <QuizFrame>
