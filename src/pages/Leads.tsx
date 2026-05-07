@@ -388,7 +388,7 @@ export default function Leads() {
     a_affecter: leads.filter((l) =>
       !l.assigned_to
       && !l.recycled_at
-      && !["call_booke", "close", "perdu"].includes(l.status || "")
+      && !["call_booke", "renvoi_pole_vente", "close", "perdu"].includes(l.status || "")
     ).length,
     a_recycler: leads.filter((l) => isRecycled(l)).length,
     call_booke: scopedLeads.filter((l) => l.status === "call_booke").length,
@@ -404,7 +404,7 @@ export default function Leads() {
       result = leads.filter((l) =>
         !l.assigned_to
         && !l.recycled_at
-        && !["call_booke", "close", "perdu"].includes(l.status || "")
+        && !["call_booke", "renvoi_pole_vente", "close", "perdu"].includes(l.status || "")
       );
     } else if (tab === "a_recycler") {
       // Logical "À recycler" queue: unassigned leads with recycled_at set
@@ -949,7 +949,7 @@ export default function Leads() {
                               ))}
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      ) : !lead.has_active_call && !lead.recycled_at && !["call_booke", "close", "perdu"].includes(lead.status || "") && (isCeo || user?.collaborateur_level === "confirme") ? (
+                      ) : !lead.has_active_call && !lead.recycled_at && !["call_booke", "renvoi_pole_vente", "close", "perdu"].includes(lead.status || "") && (isCeo || user?.collaborateur_level === "confirme") ? (
                         <Button size="sm" variant="outline" onClick={() => handleAssignToMe(lead.id!, lead.status)} className="gap-1 text-[11px] h-7 px-2">
                           <UserPlus className="h-3 w-3" />
                           M'affecter

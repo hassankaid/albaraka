@@ -74,6 +74,7 @@ export const leadStatusConfig: Record<string, { label: string; color: string }> 
   a_relancer: { label: "À relancer", color: "yellow" },
   perdu: { label: "Perdu", color: "red" },
   call_booke: { label: "Call booké", color: "purple" },
+  renvoi_pole_vente: { label: "Renvoi Pôle Vente", color: "cyan" },
   close: { label: "Close", color: "emerald" },
   // Legacy
   nouveau: { label: "Nouveau", color: "gray" },
@@ -100,6 +101,7 @@ export const LEAD_MANUAL_STATUSES = [
   "pas_qualifie",
   "a_relancer",
   "perdu",
+  "renvoi_pole_vente",
   "close",
 ] as const;
 
