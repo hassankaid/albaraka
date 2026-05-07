@@ -238,19 +238,26 @@ serve(async (req) => {
     if (contactError) throw contactError
     archivedContactId = contactId
 
-    const tenSecondsAgo = new Date(Date.now() - 10000).toISOString()
+    // Fenêtre de dédoublonnage 24h sur (contact_id, source_detail).
+    // Étendue depuis 10s → 24h car Systeme.io fan-out parfois plusieurs
+    // events pour une même action utilisateur (opt-in confirm, tag added,
+    // double opt-in, etc.) qui arrivent à plusieurs minutes d'écart.
+    // Au-delà de 24h, on considère que c'est un vrai re-engagement.
+    const dayAgo = new Date(Date.now() - 86_400_000).toISOString()
     const { data: recentLead } = await supabase
       .from('leads')
       .select('id')
       .eq('contact_id', contactId)
       .eq('source_detail', source)
-      .gte('created_at', tenSecondsAgo)
-      .single()
+      .gte('created_at', dayAgo)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
     if (recentLead) {
       archivedLeadId = recentLead.id
       return new Response(
-        JSON.stringify({ success: true, message: 'Doublon technique ignoré', lead_id: recentLead.id }),
+        JSON.stringify({ success: true, message: 'Doublon technique ignoré (fenêtre 24h)', lead_id: recentLead.id }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
