@@ -1,4 +1,23 @@
-// generate-client-invoice v12 — Génération PDF côté Deno + email Resend.
+// generate-client-invoice v16 — Génération PDF côté Deno + email Resend.
+//
+// v16 : adresses en MAJUSCULES (style normes postales)
+//   - address, postal_code, city, country sont systématiquement normalisés
+//     en UPPERCASE avant rendering PDF et avant snapshot BDD.
+//   - Cohérence visuelle sur toutes les factures + facilité comptable.
+//
+// v15 : préservation du snapshot manuel si la cascade ne trouve rien
+//   - Quand on régénère, on ne blank plus client_address/postal/city/country
+//     si la cascade ne donne rien : on conserve les valeurs déjà en BDD.
+//     Permet de stocker des adresses récupérées via Stripe lookup
+//     directement dans client_invoices (sans profile correspondant).
+//
+// v14 : cascade fallback élargie au nom complet
+//   - Ajout d'un niveau P3 : si pas de match par buyer_profile_id ni par email,
+//     on tente un match strict par full_name normalisé (case-insensitive).
+//     Match retenu uniquement si EXACTEMENT 1 profile correspond, pour éviter
+//     les faux positifs sur les homonymes.
+//   - Permet de récupérer l'adresse pour les clients dont l'email facture
+//     diffère de l'email profile (ex: SANA NASSER, AMELLE ARRIOUI, etc.).
 //
 // v12 : enrichissement des coordonnées client + bloc TVA explicite
 //   - Cascade fallback : sale.buyer_profile_id → match profile par email
@@ -76,6 +95,14 @@ function fmtEur(n: number): string {
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-FR");
+}
+
+// v16 : normalise les champs d'adresse en MAJUSCULES (style normes postales).
+// Utilisé pour address, postal_code, city, country avant rendering PDF + snapshot.
+function toUpperOrNull(s: string | null | undefined): string | null {
+  if (!s) return null;
+  const t = String(s).trim();
+  return t ? t.toUpperCase() : null;
 }
 
 // pdf-lib avec WinAnsi ne supporte pas tous les unicodes (ex: ﷻ). On sanitize.
@@ -358,7 +385,13 @@ Deno.serve(async (req) => {
     // Priorité 2 : profile dont l'email matche celui du contact (pour les
     //              anciennes ventes — la plupart des acheteurs ont un profile
     //              plateforme avec leur adresse complète)
-    // Priorité 3 : juste les infos contact (full_name, email, phone) — minimal
+    // Priorité 3 : profile dont le full_name matche EXACTEMENT (case-insensitive)
+    //              celui du contact, et un seul match → certains clients ont
+    //              utilisé un email pour acheter et un autre pour leur compte
+    //              plateforme (ex: SANA NASSER : facture shirine21@hotmail.com,
+    //              profile shirine21.mi@gmail.com). Match uniquement si 1 seul
+    //              résultat pour éviter les faux positifs sur homonymes.
+    // Priorité 4 : juste les infos contact (full_name, email, phone) — minimal
     //              si vraiment aucun profile trouvé
     //
     // On récupère également le téléphone (profiles.phone OU contacts.phone_normalized)
@@ -381,6 +414,23 @@ Deno.serve(async (req) => {
         .limit(1)
         .maybeSingle();
       if (data) buyerProfile = data;
+    }
+
+    // P3 : si rien trouvé en P2, match par nom complet exact (case-insensitive).
+    //      On normalise les espaces (trim + 1 espace simple) et on n'accepte
+    //      le résultat QUE s'il y a exactement 1 profile correspondant — sinon
+    //      on risque de prendre l'adresse d'un homonyme.
+    if (!buyerProfile && contact?.full_name) {
+      const normName = String(contact.full_name).trim().replace(/\s+/g, " ");
+      if (normName.length >= 3) {
+        const { data: nameMatches } = await supabase.from("profiles")
+          .select("full_name, email, phone, address, postal_code, city, country")
+          .ilike("full_name", normName)
+          .limit(2);
+        if (nameMatches && nameMatches.length === 1) {
+          buyerProfile = nameMatches[0];
+        }
+      }
     }
 
     // Récupère le contact complet pour avoir aussi son phone_normalized
@@ -413,6 +463,7 @@ Deno.serve(async (req) => {
       pdfPath = `clients/${contactId}/${invoiceNumber}.pdf`;
 
       // Insert row sans pdf_path (sera updaté après upload)
+      // v16 : adresses snapshot en MAJUSCULES dès l'insertion.
       const { data: inserted, error: insErr } = await supabase.from("client_invoices").insert({
         invoice_number: invoiceNumber,
         payment_id,
@@ -420,10 +471,10 @@ Deno.serve(async (req) => {
         contact_id: contactId,
         client_name: clientName,
         client_email: clientEmail || null,
-        client_address: buyerProfile?.address || null,
-        client_postal_code: buyerProfile?.postal_code || null,
-        client_city: buyerProfile?.city || null,
-        client_country: buyerProfile?.country || null,
+        client_address: toUpperOrNull(buyerProfile?.address),
+        client_postal_code: toUpperOrNull(buyerProfile?.postal_code),
+        client_city: toUpperOrNull(buyerProfile?.city),
+        client_country: toUpperOrNull(buyerProfile?.country),
         amount: Number(payment.amount),
         payment_number: payment.payment_number,
         total_payments: payment.total_payments,
@@ -439,9 +490,15 @@ Deno.serve(async (req) => {
 
     // 4. Génère PDF si pas encore présent ou si regenerate
     if (!invoiceRow.html_path || regenerate) {
+      // v15: pour les valeurs adresse, on préserve le snapshot existant si
+      // la cascade ne trouve rien — permet d'injecter des adresses via
+      // Stripe lookup directement dans client_invoices.
+      // v16: tout est forcé en MAJUSCULES avant rendering + écriture BDD.
+      const finalAddress = toUpperOrNull(buyerProfile?.address || existing?.client_address);
+      const finalPostal = toUpperOrNull(buyerProfile?.postal_code || existing?.client_postal_code);
+      const finalCity = toUpperOrNull(buyerProfile?.city || existing?.client_city);
+      const finalCountry = toUpperOrNull(buyerProfile?.country || existing?.client_country);
       // Wrap PDF generation to surface the EXACT failing stage in logs.
-      // Le bulk download a montré ~6 échecs sur 116 sans message clair côté
-      // accès. On distingue maintenant : pdf_gen, storage_upload, db_update.
       let pdfBytes: Uint8Array;
       try {
         pdfBytes = await generateInvoicePdf({
@@ -457,10 +514,10 @@ Deno.serve(async (req) => {
             name: clientName,
             email: clientEmail || null,
             phone: clientPhone,
-            address: buyerProfile?.address || null,
-            postal_code: buyerProfile?.postal_code || null,
-            city: buyerProfile?.city || null,
-            country: buyerProfile?.country || null,
+            address: finalAddress,
+            postal_code: finalPostal,
+            city: finalCity,
+            country: finalCountry,
           },
         });
       } catch (pdfErr: any) {
@@ -494,14 +551,15 @@ Deno.serve(async (req) => {
       // Update DB
       // Update html_path + snapshot des coordonnées client (au cas où on
       // regenere et qu'on a trouve de nouvelles infos via la cascade fallback).
+      // v15: on utilise les valeurs finales (cascade OU snapshot existant).
       const { error: updErr } = await supabase.from("client_invoices").update({
         html_path: pdfPath,
         client_name: clientName,
         client_email: clientEmail || null,
-        client_address: buyerProfile?.address || null,
-        client_postal_code: buyerProfile?.postal_code || null,
-        client_city: buyerProfile?.city || null,
-        client_country: buyerProfile?.country || null,
+        client_address: finalAddress,
+        client_postal_code: finalPostal,
+        client_city: finalCity,
+        client_country: finalCountry,
       }).eq("id", invoiceRow.id);
       if (updErr) {
         console.error("DB update failed for payment", payment_id, updErr);
