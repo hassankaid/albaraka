@@ -628,7 +628,9 @@ export default function ReschedulePaymentsModal({
                   />
                 </PopoverContent>
               </Popover>
-              <p className="text-[10px] text-muted-foreground">Mensualité tous les mois à compter de cette date.</p>
+              <p className="text-[10px] text-muted-foreground">
+                Date estimée. Les vraies dates s'aligneront sur le jour où le client autorise sa carte via le lien.
+              </p>
             </div>
           </div>
 

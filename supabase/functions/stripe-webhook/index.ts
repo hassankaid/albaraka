@@ -645,7 +645,11 @@ async function handleCheckoutCompleted(
  *      (pour que les invoice.paid suivants puissent les retrouver).
  *   2. Marquer la 1re mensualité comme paid (paid_at, stripe_payment_intent_id,
  *      stripe_invoice_id).
- *   3. Déclencher la génération de la facture client.
+ *   3. Réaligner les due_date des mensualités pending restantes sur la date
+ *      RÉELLE de la 1re autorisation client (= aujourd'hui), parce que Stripe
+ *      va prélever tous les mois à cette date-là (pas à la date estimée saisie
+ *      par le CEO dans le wizard).
+ *   4. Déclencher la génération de la facture client.
  *
  * Idempotent : si déjà fait (1re pending est déjà paid), no-op.
  */
@@ -711,9 +715,16 @@ async function ensureRebillFirstPaid(
     return;
   }
 
+  const today = todayISO();
+  const todayDate = new Date(today);
+
   const patch: Record<string, unknown> = {
     status: "paid",
-    paid_at: todayISO(),
+    paid_at: today,
+    // due_date alignée à la date réelle de paiement (au lieu de la date
+    // estimée par le CEO). Couvre le cas client paie quelques jours après
+    // la création du lien.
+    due_date: today,
   };
   if (ids.paymentIntentId) patch.stripe_payment_intent_id = ids.paymentIntentId;
   if (ids.invoiceId) patch.stripe_invoice_id = ids.invoiceId;
@@ -728,7 +739,33 @@ async function ensureRebillFirstPaid(
     return;
   }
 
-  // 3) Update sale.payment_status = 'in_progress' (au cas où elle serait restée
+  // 3) Réaligne les due_date des pending restants sur today + N mois.
+  // Stripe va prélever chaque mois à la date d'aujourd'hui (date d'autorisation
+  // du client), donc nos due_date BDD doivent suivre cette même cadence — pas
+  // celle estimée par le CEO au moment du replan.
+  const { data: remainingPendings } = await supabase
+    .from("payments")
+    .select("id, payment_number")
+    .eq("sale_id", saleId)
+    .eq("status", "pending")
+    .order("payment_number", { ascending: true });
+
+  if (remainingPendings && remainingPendings.length > 0) {
+    let monthOffset = 1;
+    for (const p of remainingPendings) {
+      const newDue = addMonthsISO(todayDate, monthOffset);
+      await supabase
+        .from("payments")
+        .update({ due_date: newDue })
+        .eq("id", p.id);
+      monthOffset++;
+    }
+    console.log(
+      `[rebill] realigned ${remainingPendings.length} pending due_date on today=${today}`,
+    );
+  }
+
+  // 4) Update sale.payment_status = 'in_progress' (au cas où elle serait restée
   // en 'lost' ou 'pending' si le wizard a planté entre-deux).
   await supabase
     .from("sales")
