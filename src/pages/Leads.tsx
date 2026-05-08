@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -18,7 +18,9 @@ import { Calendar } from "@/components/ui/calendar";
 import type { DateRange } from "react-day-picker";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+} from "@/components/ui/command";
 import {
   Users, UserPlus, RefreshCw, Search, Phone, Inbox, ChevronDown, Instagram, Pencil, Eye, Info, Copy,
   ChevronLeft, ChevronRight, PartyPopper, CheckSquare, UserMinus, CalendarRange, Recycle,
@@ -62,6 +64,108 @@ const dateToYMD = (d: Date): string => {
 const isRecycled = (l: Pick<LeadEnriched, "assigned_to" | "recycled_at">): boolean =>
   !l.assigned_to && !!l.recycled_at;
 
+// ─────────────────────────────────────────────────────────────────
+// Combobox d'affectation : liste searchable d'utilisateurs (CEO,
+// collaborateurs, apporteurs) groupée par rôle. Utilisé partout où
+// le CEO ou un délégué can_assign_leads choisit à qui affecter
+// un lead (réassign, "Affecter" sur recyclé, bulk assign).
+// ─────────────────────────────────────────────────────────────────
+type Assignee = {
+  id: string;
+  full_name: string;
+  role: string;
+  collaborateur_level: string | null;
+};
+
+const ROLE_BADGE_LABEL = (a: Assignee): string => {
+  if (a.role === "ceo") return "CEO";
+  if (a.role === "apporteur") return "Apporteur";
+  if (a.collaborateur_level === "confirme") return "Collab confirmé";
+  if (a.collaborateur_level === "intermediaire") return "Collab intermédiaire";
+  return "Collab";
+};
+
+const ROLE_BADGE_CLASS = (role: string): string => {
+  if (role === "ceo") return "bg-amber-500/15 text-amber-300 border-amber-500/20";
+  if (role === "apporteur") return "bg-cyan-500/15 text-cyan-300 border-cyan-500/20";
+  return "bg-blue-500/15 text-blue-300 border-blue-500/20";
+};
+
+const ROLE_GROUP_ORDER: { key: string; label: string }[] = [
+  { key: "ceo", label: "CEO" },
+  { key: "collab_confirme", label: "Collaborateurs confirmés" },
+  { key: "collab_intermediaire", label: "Collaborateurs intermédiaires" },
+  { key: "apporteur", label: "Apporteurs" },
+];
+
+function groupKeyOf(a: Assignee): string {
+  if (a.role === "ceo") return "ceo";
+  if (a.role === "apporteur") return "apporteur";
+  if (a.collaborateur_level === "intermediaire") return "collab_intermediaire";
+  return "collab_confirme";
+}
+
+interface AssigneeComboboxProps {
+  assignees: Assignee[];
+  onSelect: (id: string) => void;
+  triggerNode: ReactNode;
+  excludeId?: string | null; // ne propose pas le user déjà assigné
+  align?: "start" | "center" | "end";
+  searchPlaceholder?: string;
+}
+
+function AssigneeCombobox({
+  assignees,
+  onSelect,
+  triggerNode,
+  excludeId,
+  align = "start",
+  searchPlaceholder = "Rechercher...",
+}: AssigneeComboboxProps) {
+  const [open, setOpen] = useState(false);
+  const filtered = excludeId ? assignees.filter((a) => a.id !== excludeId) : assignees;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>{triggerNode}</PopoverTrigger>
+      <PopoverContent className="w-[280px] p-0" align={align}>
+        <Command>
+          <CommandInput placeholder={searchPlaceholder} className="h-9" />
+          <CommandList>
+            <CommandEmpty>Aucun résultat.</CommandEmpty>
+            {ROLE_GROUP_ORDER.map((group) => {
+              const items = filtered.filter((a) => groupKeyOf(a) === group.key);
+              if (items.length === 0) return null;
+              return (
+                <CommandGroup key={group.key} heading={group.label}>
+                  {items.map((a) => (
+                    <CommandItem
+                      key={a.id}
+                      value={`${a.full_name} ${ROLE_BADGE_LABEL(a)}`}
+                      onSelect={() => {
+                        onSelect(a.id);
+                        setOpen(false);
+                      }}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      <span className="truncate">{a.full_name}</span>
+                      <Badge
+                        variant="outline"
+                        className={`text-[9px] leading-tight shrink-0 ${ROLE_BADGE_CLASS(a.role)}`}
+                      >
+                        {ROLE_BADGE_LABEL(a)}
+                      </Badge>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              );
+            })}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 const COLLAB_CONFIRME_TABS = [
   { value: "a_affecter", label: "À affecter" },
   { value: "mes_leads", label: "Mes leads" },
@@ -96,8 +200,23 @@ export default function Leads() {
   const ADS_SOURCES = ["vsl_a", "vsl_b", "webi", "instagram_ads", "whatsapp_ads"];
   const [sourceFilter, setSourceFilter] = useState<string[]>(ADS_SOURCES);
   const [search, setSearch] = useState("");
-  const [collaborateurs, setCollaborateurs] = useState<{ id: string; full_name: string; collaborateur_level: string | null }[]>([]);
-  const [apporteurs, setApporteurs] = useState<{ id: string; full_name: string }[]>([]);
+  // Liste fusionnée des "assignables" : CEO + collaborateurs (tous niveaux)
+  // + apporteurs actifs. Sert à la fois au dropdown d'affectation (CEO + délégués
+  // peuvent affecter à n'importe qui) et aux filtres dérivés (collabs/apporteurs).
+  const [assignables, setAssignables] = useState<{
+    id: string;
+    full_name: string;
+    role: string;
+    collaborateur_level: string | null;
+  }[]>([]);
+  const collaborateurs = useMemo(
+    () => assignables.filter((a) => a.role !== "apporteur"),
+    [assignables]
+  );
+  const apporteurs = useMemo(
+    () => assignables.filter((a) => a.role === "apporteur"),
+    [assignables]
+  );
   const [collabFilter, setCollabFilter] = useState("all");
   const [apporteurFilter, setApporteurFilter] = useState("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
@@ -143,29 +262,32 @@ export default function Leads() {
     setLoading(false);
   }, []);
 
-  const fetchCollaborateurs = useCallback(async () => {
+  // Charge en une seule requête tous les utilisateurs susceptibles d'être
+  // affectés à un lead (CEO + collabs + apporteurs actifs). Le tri par nom
+  // facilite la recherche dans le combobox.
+  const fetchAssignables = useCallback(async () => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, full_name, collaborateur_level")
-      .in("role", ["ceo", "collaborateur"]);
-    if (data) setCollaborateurs(data);
-  }, []);
-
-  const fetchApporteurs = useCallback(async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .eq("role", "apporteur")
+      .select("id, full_name, role, collaborateur_level, is_active")
+      .in("role", ["ceo", "collaborateur", "apporteur"])
       .eq("is_active", true)
       .order("full_name");
-    if (data) setApporteurs(data);
+    if (data) {
+      setAssignables(
+        data.map((p) => ({
+          id: p.id,
+          full_name: p.full_name,
+          role: p.role,
+          collaborateur_level: p.collaborateur_level,
+        }))
+      );
+    }
   }, []);
 
   useEffect(() => {
     fetchLeads();
-    fetchCollaborateurs();
-    fetchApporteurs();
-  }, [fetchLeads, fetchCollaborateurs, fetchApporteurs]);
+    fetchAssignables();
+  }, [fetchLeads, fetchAssignables]);
 
   useEffect(() => {
     const channel = supabase
@@ -284,12 +406,12 @@ export default function Leads() {
       .filter((l) => ids.includes(l.id!) && l.assigned_to && l.assigned_to !== newUserId)
       .map((l) => ({ id: l.id!, assignedToName: l.assigned_to_name || null }));
 
-    const targetCollab = collaborateurs.find((c) => c.id === newUserId);
+    const targetCollab = assignables.find((a) => a.id === newUserId);
 
     if (alreadyAssigned.length > 0) {
       setBulkConfirm({
         targetUserId: newUserId,
-        targetName: targetCollab?.full_name || "Collaborateur",
+        targetName: targetCollab?.full_name || "Setter",
         allIds: ids,
         alreadyAssigned,
       });
@@ -368,13 +490,18 @@ export default function Leads() {
   };
 
   const isCeo = user?.role === "ceo";
+  // Délégation d'affectation : CEO ou collaborateur avec can_assign_leads = true
+  // (cf. fonction SQL can_assign_leads_now). Donne les mêmes pouvoirs d'affectation
+  // que le CEO sur la liste leads, sans pour autant donner les autres droits CEO.
+  const canAssign = isCeo || user?.can_assign_leads === true;
 
-  // Scoped leads: collaborateurs only see their own (except "À affecter")
+  // Scoped leads: les délégués d'affectation (CEO + can_assign_leads) voient
+  // tous les leads ; les autres collaborateurs ne voient que les leurs.
   const scopedLeads = useMemo(() => {
-    if (isCeo) return leads;
+    if (canAssign) return leads;
     if (!user) return [];
     return leads.filter(l => l.assigned_to === user.id);
-  }, [leads, user, isCeo]);
+  }, [leads, user, canAssign]);
 
   // Counts
   const myLeadsCount = useMemo(() => {
@@ -547,7 +674,7 @@ export default function Leads() {
       {/* Tabs + search row */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center bg-card border border-border rounded-lg p-0.5">
-          {(isCeo
+          {(canAssign
             ? CEO_TABS
             : isIntermediaire
               ? COLLAB_INTERMEDIAIRE_TABS
@@ -702,7 +829,7 @@ export default function Leads() {
           </SelectContent>
         </Select>
 
-        {isCeo && (
+        {canAssign && (
           <>
             <Select value={collabFilter} onValueChange={setCollabFilter}>
               <SelectTrigger className="w-[150px] h-7 text-xs bg-card">
@@ -758,27 +885,23 @@ export default function Leads() {
       ) : (
         <>
           {/* Bulk action bar */}
-          {isCeo && selectedIds.size > 0 && (
+          {canAssign && selectedIds.size > 0 && (
             <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20">
               <CheckSquare className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-foreground">{selectedIds.size} lead{selectedIds.size > 1 ? "s" : ""} sélectionné{selectedIds.size > 1 ? "s" : ""}</span>
               {tab === "a_recycler" ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                <AssigneeCombobox
+                  assignees={assignables}
+                  onSelect={handleBulkAssign}
+                  searchPlaceholder="Rechercher un setter..."
+                  triggerNode={
                     <Button size="sm" className="gap-1.5 text-xs" disabled={bulkAssigning}>
                       <UserPlus className="h-3.5 w-3.5" />
                       Affecter en masse
                       <ChevronDown className="h-3 w-3" />
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    {collaborateurs.map((c) => (
-                      <DropdownMenuItem key={c.id} onClick={() => handleBulkAssign(c.id)}>
-                        {c.full_name}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  }
+                />
               ) : (
                 <Button
                   size="sm"
@@ -800,7 +923,7 @@ export default function Leads() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
-                  {isCeo && (
+                  {canAssign && (
                     <TableHead className="w-[40px]">
                       <input
                         type="checkbox"
@@ -829,7 +952,7 @@ export default function Leads() {
               <TableBody>
                 {paginatedLeads.map((lead) => (
                   <TableRow key={lead.id} className={`border-border hover:bg-secondary/50 transition-colors ${selectedIds.has(lead.id!) ? "bg-primary/5" : ""}`}>
-                    {isCeo && (
+                    {canAssign && (
                       <TableCell>
                         <input
                           type="checkbox"
@@ -904,51 +1027,73 @@ export default function Leads() {
                     {/* Setter */}
                     <TableCell>
                       {lead.assigned_to ? (
-                        (lead.assigned_to === user?.id || user?.role === "ceo") ? (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
+                        (lead.assigned_to === user?.id || canAssign) ? (
+                          // Combobox de réassign avec option "Libérer" en plus
+                          <Popover>
+                            <PopoverTrigger asChild>
                               <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground h-auto p-0">
                                 {lead.assigned_to_name || "Assigné"}
                                 <ChevronDown className="h-3 w-3" />
                               </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start">
-                              {collaborateurs
-                                .filter((c) => c.id !== lead.assigned_to)
-                                .map((c) => (
-                                  <DropdownMenuItem key={c.id} onClick={() => handleReassign(lead.id!, lead.assigned_to, c.id, lead.status)}>
-                                    {c.full_name}
-                                  </DropdownMenuItem>
-                                ))}
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onClick={() => handleRelease(lead.id!, lead.assigned_to_name, lead.assigned_to)}
-                              >
-                                <UserMinus className="h-3.5 w-3.5 mr-2" />
-                                Libérer
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[280px] p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder="Rechercher..." className="h-9" />
+                                <CommandList>
+                                  <CommandEmpty>Aucun résultat.</CommandEmpty>
+                                  {ROLE_GROUP_ORDER.map((group) => {
+                                    const items = assignables.filter(
+                                      (a) => groupKeyOf(a) === group.key && a.id !== lead.assigned_to
+                                    );
+                                    if (items.length === 0) return null;
+                                    return (
+                                      <CommandGroup key={group.key} heading={group.label}>
+                                        {items.map((a) => (
+                                          <CommandItem
+                                            key={a.id}
+                                            value={`${a.full_name} ${ROLE_BADGE_LABEL(a)}`}
+                                            onSelect={() => handleReassign(lead.id!, lead.assigned_to, a.id, lead.status)}
+                                            className="flex items-center justify-between gap-2"
+                                          >
+                                            <span className="truncate">{a.full_name}</span>
+                                            <Badge variant="outline" className={`text-[9px] leading-tight shrink-0 ${ROLE_BADGE_CLASS(a.role)}`}>
+                                              {ROLE_BADGE_LABEL(a)}
+                                            </Badge>
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    );
+                                  })}
+                                  <CommandGroup heading="Action">
+                                    <CommandItem
+                                      value="liberer libérer"
+                                      onSelect={() => handleRelease(lead.id!, lead.assigned_to_name, lead.assigned_to)}
+                                      className="text-destructive"
+                                    >
+                                      <UserMinus className="h-3.5 w-3.5 mr-2" />
+                                      Libérer (désaffecter)
+                                    </CommandItem>
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
                         ) : (
                           <span className="text-xs text-foreground">{lead.assigned_to_name}</span>
                         )
-                      ) : isRecycled(lead) && isCeo ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+                      ) : isRecycled(lead) && canAssign ? (
+                        <AssigneeCombobox
+                          assignees={assignables}
+                          onSelect={(id) => handleReassign(lead.id!, null, id, lead.status)}
+                          searchPlaceholder="Rechercher un setter..."
+                          triggerNode={
                             <Button size="sm" variant="outline" className="gap-1 text-[11px] h-7 px-2">
                               <UserPlus className="h-3 w-3" />
                               Affecter
                               <ChevronDown className="h-3 w-3" />
                             </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start">
-                            {collaborateurs.map((c) => (
-                                <DropdownMenuItem key={c.id} onClick={() => handleReassign(lead.id!, null, c.id, lead.status)}>
-                                  {c.full_name}
-                                </DropdownMenuItem>
-                              ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                          }
+                        />
                       ) : !lead.has_active_call && !lead.recycled_at && !["call_booke", "renvoi_pole_vente", "close", "perdu"].includes(lead.status || "") && (isCeo || user?.collaborateur_level === "confirme") ? (
                         <Button size="sm" variant="outline" onClick={() => handleAssignToMe(lead.id!, lead.status)} className="gap-1 text-[11px] h-7 px-2">
                           <UserPlus className="h-3 w-3" />
@@ -991,7 +1136,7 @@ export default function Leads() {
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
                         )}
-                        {isCeo && !isRecycled(lead) && (
+                        {canAssign && !isRecycled(lead) && (
                           <Button
                             variant="ghost"
                             size="icon"

@@ -121,12 +121,16 @@ export default function ApporteurLeads() {
     }
   }
 
+  // Récupère les leads de l'apporteur :
+  //  - apporteur_id = moi (les leads que J'AI apportés)
+  //  - assigned_to = moi (les leads que le CEO/admin M'A AFFECTÉS pour traitement)
+  // Permet aux apporteurs de recevoir des leads à traiter comme un collaborateur intermédiaire.
   const fetchLeads = useCallback(async () => {
     if (!profile) return;
     const { data } = await supabase
       .from("leads_enriched")
       .select("*")
-      .eq("apporteur_id", profile.id)
+      .or(`apporteur_id.eq.${profile.id},assigned_to.eq.${profile.id}`)
       .order("created_at", { ascending: false });
     setLeads(data || []);
     setLoading(false);
@@ -285,12 +289,21 @@ export default function ApporteurLeads() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((lead) => (
+                {filtered.map((lead) => {
+                  const isAssignedToMe = lead.assigned_to === profile?.id && lead.apporteur_id !== profile?.id;
+                  return (
                   <TableRow key={lead.id} className="border-border hover:bg-secondary/50 transition-colors">
                     <TableCell>
-                      <div>
-                        <p className="font-semibold text-foreground">{lead.contact_full_name || "—"}</p>
-                        {lead.contact_email && <p className="text-xs text-muted-foreground">{lead.contact_email}</p>}
+                      <div className="flex items-start gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-foreground">{lead.contact_full_name || "—"}</p>
+                          {lead.contact_email && <p className="text-xs text-muted-foreground">{lead.contact_email}</p>}
+                        </div>
+                        {isAssignedToMe && (
+                          <Badge variant="outline" className="text-[9px] leading-tight shrink-0 bg-cyan-500/15 text-cyan-300 border-cyan-500/20" title="Lead que le CEO/admin t'a affecté pour traitement">
+                            Affecté à moi
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-foreground">{lead.contact_phone || "—"}</TableCell>
@@ -325,14 +338,17 @@ export default function ApporteurLeads() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </Card>
 
           {/* Mobile */}
           <div className="space-y-3 md:hidden">
-            {filtered.map((lead) => (
+            {filtered.map((lead) => {
+              const isAssignedToMe = lead.assigned_to === profile?.id && lead.apporteur_id !== profile?.id;
+              return (
               <Card
                 key={lead.id}
                 className="border-border/50 cursor-pointer hover:border-primary/40 transition-colors"
@@ -341,7 +357,14 @@ export default function ApporteurLeads() {
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="font-semibold text-foreground">{lead.contact_full_name || "—"}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="font-semibold text-foreground">{lead.contact_full_name || "—"}</p>
+                        {isAssignedToMe && (
+                          <Badge variant="outline" className="text-[9px] leading-tight bg-cyan-500/15 text-cyan-300 border-cyan-500/20">
+                            Affecté à moi
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground truncate">{lead.contact_phone}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -365,7 +388,8 @@ export default function ApporteurLeads() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         </>
       )}

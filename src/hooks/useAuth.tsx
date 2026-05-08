@@ -11,6 +11,7 @@ interface Profile {
   phone: string | null;
   is_also_apporteur: boolean | null;
   can_add_instagram_leads: boolean | null;
+  can_assign_leads: boolean | null;
   avatar_url: string | null;
   timezone: string | null;
   onboarding_completed: boolean | null;
@@ -50,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, email, full_name, role, phone, is_also_apporteur, can_add_instagram_leads, avatar_url, timezone, onboarding_completed, collaborateur_level, is_active, is_coach, address, postal_code, city, country, siret, bank_rib_url, bank_details, early_access, origin, discord_joined_at, welcome_video_completed_at")
+      .select("id, email, full_name, role, phone, is_also_apporteur, can_add_instagram_leads, can_assign_leads, avatar_url, timezone, onboarding_completed, collaborateur_level, is_active, is_coach, address, postal_code, city, country, siret, bank_rib_url, bank_details, early_access, origin, discord_joined_at, welcome_video_completed_at")
       .eq("id", userId)
       .maybeSingle();
     setProfile(data);

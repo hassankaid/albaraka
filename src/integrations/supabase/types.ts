@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json
+          id: string
+          performed_by: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json
+          id?: string
+          performed_by?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          performed_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_audit_log_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_audit_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activity_daily_kpis: {
         Row: {
           ai_feedback: string | null
@@ -317,6 +359,27 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       apporteur_invoices: {
         Row: {
           apporteur_id: string
@@ -443,6 +506,7 @@ export type Database = {
           canceled_by: string | null
           cancellation_reason: string | null
           closer_notes: string | null
+          conference_date: string | null
           contact_id: string | null
           created_at: string | null
           duration_minutes: number | null
@@ -466,6 +530,7 @@ export type Database = {
           canceled_by?: string | null
           cancellation_reason?: string | null
           closer_notes?: string | null
+          conference_date?: string | null
           contact_id?: string | null
           created_at?: string | null
           duration_minutes?: number | null
@@ -489,6 +554,7 @@ export type Database = {
           canceled_by?: string | null
           cancellation_reason?: string | null
           closer_notes?: string | null
+          conference_date?: string | null
           contact_id?: string | null
           created_at?: string | null
           duration_minutes?: number | null
@@ -680,6 +746,116 @@ export type Database = {
             columns: ["chapitre_id"]
             isOneToOne: false
             referencedRelation: "formation_chapitres"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_invoices: {
+        Row: {
+          amount: number
+          client_address: string | null
+          client_city: string | null
+          client_country: string | null
+          client_email: string | null
+          client_name: string
+          client_postal_code: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          email_sent_at: string | null
+          email_sent_to: string | null
+          html_path: string | null
+          id: string
+          invoice_number: string
+          last_attempt_at: string | null
+          last_error: string | null
+          paid_at: string
+          payment_id: string
+          payment_number: number | null
+          pdf_url: string | null
+          product: string | null
+          sale_id: string | null
+          total_payments: number | null
+        }
+        Insert: {
+          amount: number
+          client_address?: string | null
+          client_city?: string | null
+          client_country?: string | null
+          client_email?: string | null
+          client_name: string
+          client_postal_code?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          email_sent_at?: string | null
+          email_sent_to?: string | null
+          html_path?: string | null
+          id?: string
+          invoice_number: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          paid_at: string
+          payment_id: string
+          payment_number?: number | null
+          pdf_url?: string | null
+          product?: string | null
+          sale_id?: string | null
+          total_payments?: number | null
+        }
+        Update: {
+          amount?: number
+          client_address?: string | null
+          client_city?: string | null
+          client_country?: string | null
+          client_email?: string | null
+          client_name?: string
+          client_postal_code?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          email_sent_at?: string | null
+          email_sent_to?: string | null
+          html_path?: string | null
+          id?: string
+          invoice_number?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          paid_at?: string
+          payment_id?: string
+          payment_number?: number | null
+          pdf_url?: string | null
+          product?: string | null
+          sale_id?: string | null
+          total_payments?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_invoices_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_invoices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_invoices_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_invoices_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
             referencedColumns: ["id"]
           },
         ]
@@ -1362,6 +1538,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          payment_code: string | null
           phone_normalized: string | null
           phone_original: string | null
           updated_at: string | null
@@ -1371,6 +1548,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          payment_code?: string | null
           phone_normalized?: string | null
           phone_original?: string | null
           updated_at?: string | null
@@ -1380,9 +1558,31 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          payment_code?: string | null
           phone_normalized?: string | null
           phone_original?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      contacts_phone_backup_20260418: {
+        Row: {
+          backup_at: string | null
+          id: string | null
+          phone_normalized: string | null
+          phone_original: string | null
+        }
+        Insert: {
+          backup_at?: string | null
+          id?: string | null
+          phone_normalized?: string | null
+          phone_original?: string | null
+        }
+        Update: {
+          backup_at?: string | null
+          id?: string | null
+          phone_normalized?: string | null
+          phone_original?: string | null
         }
         Relationships: []
       }
@@ -1450,6 +1650,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      coupons: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          discount_percent: number
+          expires_at: string | null
+          id: string
+          max_redemptions: number | null
+          stripe_coupon_id: string | null
+          times_redeemed: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          discount_percent: number
+          expires_at?: string | null
+          id?: string
+          max_redemptions?: number | null
+          stripe_coupon_id?: string | null
+          times_redeemed?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          discount_percent?: number
+          expires_at?: string | null
+          id?: string
+          max_redemptions?: number | null
+          stripe_coupon_id?: string | null
+          times_redeemed?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       fixed_charges: {
         Row: {
@@ -1737,6 +1976,129 @@ export type Database = {
         }
         Relationships: []
       }
+      funnel_quiz_responses: {
+        Row: {
+          answers: Json
+          category: string
+          created_at: string
+          funnel_slug: string
+          id: string
+          lead_id: string
+          score: number
+        }
+        Insert: {
+          answers: Json
+          category: string
+          created_at?: string
+          funnel_slug: string
+          id?: string
+          lead_id: string
+          score: number
+        }
+        Update: {
+          answers?: Json
+          category?: string
+          created_at?: string
+          funnel_slug?: string
+          id?: string
+          lead_id?: string
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funnel_quiz_responses_funnel_slug_fkey"
+            columns: ["funnel_slug"]
+            isOneToOne: false
+            referencedRelation: "quiz_funnels"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "funnel_quiz_responses_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funnel_quiz_responses_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invitation_campaign_runs: {
+        Row: {
+          failed: number
+          finished_at: string | null
+          id: string
+          processed: number
+          sent: number
+          started_at: string
+          triggered_by: string
+        }
+        Insert: {
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          processed?: number
+          sent?: number
+          started_at?: string
+          triggered_by?: string
+        }
+        Update: {
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          processed?: number
+          sent?: number
+          started_at?: string
+          triggered_by?: string
+        }
+        Relationships: []
+      }
+      invitation_campaigns: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          planned_date: string
+          planned_time: string
+          sent_at: string | null
+          user_id: string
+          wave_number: number
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          planned_date: string
+          planned_time?: string
+          sent_at?: string | null
+          user_id: string
+          wave_number: number
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          planned_date?: string
+          planned_time?: string
+          sent_at?: string | null
+          user_id?: string
+          wave_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitation_campaigns_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_lines: {
         Row: {
           client_name: string
@@ -1853,6 +2215,214 @@ export type Database = {
           },
         ]
       }
+      lead_quiz_configs: {
+        Row: {
+          conference: Json
+          created_at: string
+          id: string
+          intro: Json
+          is_active: boolean
+          landing: Json
+          orientation_question: Json
+          profiles: Json
+          questions: Json
+          updated_at: string
+          version: number
+          whatsapp_message: string
+        }
+        Insert: {
+          conference?: Json
+          created_at?: string
+          id?: string
+          intro?: Json
+          is_active?: boolean
+          landing?: Json
+          orientation_question: Json
+          profiles: Json
+          questions: Json
+          updated_at?: string
+          version: number
+          whatsapp_message?: string
+        }
+        Update: {
+          conference?: Json
+          created_at?: string
+          id?: string
+          intro?: Json
+          is_active?: boolean
+          landing?: Json
+          orientation_question?: Json
+          profiles?: Json
+          questions?: Json
+          updated_at?: string
+          version?: number
+          whatsapp_message?: string
+        }
+        Relationships: []
+      }
+      lead_quiz_owners: {
+        Row: {
+          created_at: string
+          display_name: string
+          display_role: string
+          id: string
+          is_active: boolean
+          slug: string
+          total_views: number
+          updated_at: string
+          user_id: string
+          whatsapp_phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          display_role?: string
+          id?: string
+          is_active?: boolean
+          slug: string
+          total_views?: number
+          updated_at?: string
+          user_id: string
+          whatsapp_phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          display_role?: string
+          id?: string
+          is_active?: boolean
+          slug?: string
+          total_views?: number
+          updated_at?: string
+          user_id?: string
+          whatsapp_phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_quiz_owners_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_quiz_submissions: {
+        Row: {
+          answers: Json
+          config_version: number
+          contact_id: string | null
+          created_at: string
+          email: string
+          email_captured_at: string
+          first_name: string
+          id: string
+          ip_country: string | null
+          last_name: string
+          last_question_reached: string | null
+          last_seen_at: string
+          lead_id: string | null
+          orientation_choice: string | null
+          owner_id: string
+          phone: string | null
+          phone_captured_at: string | null
+          profile: string | null
+          quiz_completed_at: string | null
+          quiz_started_at: string | null
+          referrer: string | null
+          scores: Json | null
+          status: string
+          updated_at: string
+          user_agent: string | null
+          whatsapp_clicked_at: string | null
+        }
+        Insert: {
+          answers?: Json
+          config_version: number
+          contact_id?: string | null
+          created_at?: string
+          email: string
+          email_captured_at?: string
+          first_name: string
+          id?: string
+          ip_country?: string | null
+          last_name: string
+          last_question_reached?: string | null
+          last_seen_at?: string
+          lead_id?: string | null
+          orientation_choice?: string | null
+          owner_id: string
+          phone?: string | null
+          phone_captured_at?: string | null
+          profile?: string | null
+          quiz_completed_at?: string | null
+          quiz_started_at?: string | null
+          referrer?: string | null
+          scores?: Json | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          whatsapp_clicked_at?: string | null
+        }
+        Update: {
+          answers?: Json
+          config_version?: number
+          contact_id?: string | null
+          created_at?: string
+          email?: string
+          email_captured_at?: string
+          first_name?: string
+          id?: string
+          ip_country?: string | null
+          last_name?: string
+          last_question_reached?: string | null
+          last_seen_at?: string
+          lead_id?: string | null
+          orientation_choice?: string | null
+          owner_id?: string
+          phone?: string | null
+          phone_captured_at?: string | null
+          profile?: string | null
+          quiz_completed_at?: string | null
+          quiz_started_at?: string | null
+          referrer?: string | null
+          scores?: Json | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          whatsapp_clicked_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_quiz_submissions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_quiz_submissions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_quiz_submissions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_quiz_submissions_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "lead_quiz_owners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_tags: {
         Row: {
           created_at: string
@@ -1910,10 +2480,13 @@ export type Database = {
           assigned_at: string | null
           assigned_to: string | null
           call_type: string | null
+          conference_date: string | null
           contact_id: string | null
           created_at: string | null
           id: string
           notes: string | null
+          quiz_category: string | null
+          quiz_score: number | null
           raw_email: string | null
           raw_full_name: string | null
           raw_phone: string | null
@@ -1936,10 +2509,13 @@ export type Database = {
           assigned_at?: string | null
           assigned_to?: string | null
           call_type?: string | null
+          conference_date?: string | null
           contact_id?: string | null
           created_at?: string | null
           id?: string
           notes?: string | null
+          quiz_category?: string | null
+          quiz_score?: number | null
           raw_email?: string | null
           raw_full_name?: string | null
           raw_phone?: string | null
@@ -1962,10 +2538,13 @@ export type Database = {
           assigned_at?: string | null
           assigned_to?: string | null
           call_type?: string | null
+          conference_date?: string | null
           contact_id?: string | null
           created_at?: string | null
           id?: string
           notes?: string | null
+          quiz_category?: string | null
+          quiz_score?: number | null
           raw_email?: string | null
           raw_full_name?: string | null
           raw_phone?: string | null
@@ -2004,6 +2583,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      leads_phone_backup_20260418: {
+        Row: {
+          backup_at: string | null
+          id: string | null
+          raw_phone: string | null
+        }
+        Insert: {
+          backup_at?: string | null
+          id?: string | null
+          raw_phone?: string | null
+        }
+        Update: {
+          backup_at?: string | null
+          id?: string | null
+          raw_phone?: string | null
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -2425,6 +3022,61 @@ export type Database = {
           },
         ]
       }
+      payment_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          payment_id: string | null
+          sale_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          payment_id?: string | null
+          sale_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          payment_id?: string | null
+          sale_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_audit_log_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_audit_log_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -2438,6 +3090,9 @@ export type Database = {
           payment_number: number
           sale_id: string | null
           status: string
+          stripe_invoice_id: string | null
+          stripe_payment_intent_id: string | null
+          stripe_subscription_id: string | null
           total_payments: number
           updated_at: string | null
         }
@@ -2453,6 +3108,9 @@ export type Database = {
           payment_number: number
           sale_id?: string | null
           status?: string
+          stripe_invoice_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_subscription_id?: string | null
           total_payments: number
           updated_at?: string | null
         }
@@ -2468,6 +3126,9 @@ export type Database = {
           payment_number?: number
           sale_id?: string | null
           status?: string
+          stripe_invoice_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_subscription_id?: string | null
           total_payments?: number
           updated_at?: string | null
         }
@@ -2499,10 +3160,13 @@ export type Database = {
           bank_rib_url: string | null
           calendly_email: string | null
           can_add_instagram_leads: boolean | null
+          can_assign_leads: boolean
           city: string | null
           collaborateur_level: string | null
           country: string | null
           created_at: string | null
+          discord_joined_at: string | null
+          early_access: boolean
           email: string
           fixed_salary: number | null
           fixed_salary_active: boolean
@@ -2513,12 +3177,14 @@ export type Database = {
           is_coach: boolean | null
           last_access_sent_at: string | null
           onboarding_completed: boolean
+          origin: string
           phone: string | null
           postal_code: string | null
           role: string
           siret: string | null
           timezone: string | null
           updated_at: string | null
+          welcome_video_completed_at: string | null
         }
         Insert: {
           access_opened_at?: string | null
@@ -2530,10 +3196,13 @@ export type Database = {
           bank_rib_url?: string | null
           calendly_email?: string | null
           can_add_instagram_leads?: boolean | null
+          can_assign_leads?: boolean
           city?: string | null
           collaborateur_level?: string | null
           country?: string | null
           created_at?: string | null
+          discord_joined_at?: string | null
+          early_access?: boolean
           email: string
           fixed_salary?: number | null
           fixed_salary_active?: boolean
@@ -2544,12 +3213,14 @@ export type Database = {
           is_coach?: boolean | null
           last_access_sent_at?: string | null
           onboarding_completed?: boolean
+          origin?: string
           phone?: string | null
           postal_code?: string | null
           role?: string
           siret?: string | null
           timezone?: string | null
           updated_at?: string | null
+          welcome_video_completed_at?: string | null
         }
         Update: {
           access_opened_at?: string | null
@@ -2561,10 +3232,13 @@ export type Database = {
           bank_rib_url?: string | null
           calendly_email?: string | null
           can_add_instagram_leads?: boolean | null
+          can_assign_leads?: boolean
           city?: string | null
           collaborateur_level?: string | null
           country?: string | null
           created_at?: string | null
+          discord_joined_at?: string | null
+          early_access?: boolean
           email?: string
           fixed_salary?: number | null
           fixed_salary_active?: boolean
@@ -2575,12 +3249,14 @@ export type Database = {
           is_coach?: boolean | null
           last_access_sent_at?: string | null
           onboarding_completed?: boolean
+          origin?: string
           phone?: string | null
           postal_code?: string | null
           role?: string
           siret?: string | null
           timezone?: string | null
           updated_at?: string | null
+          welcome_video_completed_at?: string | null
         }
         Relationships: []
       }
@@ -2702,6 +3378,33 @@ export type Database = {
           },
         ]
       }
+      quiz_funnels: {
+        Row: {
+          active: boolean
+          created_at: string
+          name: string
+          slug: string
+          thank_you_url: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          name: string
+          slug: string
+          thank_you_url: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          name?: string
+          slug?: string
+          thank_you_url?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       quiz_questions: {
         Row: {
           contexte: string | null
@@ -2749,8 +3452,54 @@ export type Database = {
           },
         ]
       }
+      quiz_questions_backup_20260417: {
+        Row: {
+          backup_at: string | null
+          contexte: string | null
+          correct_index: number | null
+          created_at: string | null
+          explication: string | null
+          id: string | null
+          options: Json | null
+          ordre: number | null
+          question: string | null
+          quiz_id: string | null
+          quiz_titre: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          backup_at?: string | null
+          contexte?: string | null
+          correct_index?: number | null
+          created_at?: string | null
+          explication?: string | null
+          id?: string | null
+          options?: Json | null
+          ordre?: number | null
+          question?: string | null
+          quiz_id?: string | null
+          quiz_titre?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          backup_at?: string | null
+          contexte?: string | null
+          correct_index?: number | null
+          created_at?: string | null
+          explication?: string | null
+          id?: string | null
+          options?: Json | null
+          ordre?: number | null
+          question?: string | null
+          quiz_id?: string | null
+          quiz_titre?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       quizzes: {
         Row: {
+          chapitre_id: string | null
           created_at: string | null
           description: string | null
           formation_id: string | null
@@ -2762,6 +3511,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          chapitre_id?: string | null
           created_at?: string | null
           description?: string | null
           formation_id?: string | null
@@ -2773,6 +3523,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          chapitre_id?: string | null
           created_at?: string | null
           description?: string | null
           formation_id?: string | null
@@ -2784,6 +3535,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "quizzes_chapitre_id_fkey"
+            columns: ["chapitre_id"]
+            isOneToOne: false
+            referencedRelation: "formation_chapitres"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "quizzes_formation_id_fkey"
             columns: ["formation_id"]
@@ -2841,10 +3599,14 @@ export type Database = {
       sales: {
         Row: {
           amount_ht: number
+          buyer_profile_id: string | null
           call_id: string | null
           closed_by: string | null
+          conference_date: string | null
           contact_id: string
+          coupon_code: string | null
           created_at: string | null
+          discount_amount: number | null
           id: string
           lead_id: string | null
           mensualites: number | null
@@ -2853,14 +3615,19 @@ export type Database = {
           product: string
           sale_type: string | null
           sold_at: string | null
+          stripe_session_id: string | null
           systeme_io_order_id: string | null
         }
         Insert: {
           amount_ht: number
+          buyer_profile_id?: string | null
           call_id?: string | null
           closed_by?: string | null
+          conference_date?: string | null
           contact_id: string
+          coupon_code?: string | null
           created_at?: string | null
+          discount_amount?: number | null
           id?: string
           lead_id?: string | null
           mensualites?: number | null
@@ -2869,14 +3636,19 @@ export type Database = {
           product: string
           sale_type?: string | null
           sold_at?: string | null
+          stripe_session_id?: string | null
           systeme_io_order_id?: string | null
         }
         Update: {
           amount_ht?: number
+          buyer_profile_id?: string | null
           call_id?: string | null
           closed_by?: string | null
+          conference_date?: string | null
           contact_id?: string
+          coupon_code?: string | null
           created_at?: string | null
+          discount_amount?: number | null
           id?: string
           lead_id?: string | null
           mensualites?: number | null
@@ -2885,9 +3657,17 @@ export type Database = {
           product?: string
           sale_type?: string | null
           sold_at?: string | null
+          stripe_session_id?: string | null
           systeme_io_order_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sales_buyer_profile_id_fkey"
+            columns: ["buyer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sales_call_id_fkey"
             columns: ["call_id"]
@@ -3266,6 +4046,119 @@ export type Database = {
           },
         ]
       }
+      webhook_failures: {
+        Row: {
+          created_call_id: string | null
+          error_message: string | null
+          error_stack: string | null
+          headers: Json | null
+          id: string
+          notes: string | null
+          payload: Json
+          received_at: string
+          replay_error: string | null
+          replay_status: string | null
+          replayed_at: string | null
+          replayed_by: string | null
+          resolved_at: string | null
+          source: string
+          status_code: number | null
+        }
+        Insert: {
+          created_call_id?: string | null
+          error_message?: string | null
+          error_stack?: string | null
+          headers?: Json | null
+          id?: string
+          notes?: string | null
+          payload: Json
+          received_at?: string
+          replay_error?: string | null
+          replay_status?: string | null
+          replayed_at?: string | null
+          replayed_by?: string | null
+          resolved_at?: string | null
+          source: string
+          status_code?: number | null
+        }
+        Update: {
+          created_call_id?: string | null
+          error_message?: string | null
+          error_stack?: string | null
+          headers?: Json | null
+          id?: string
+          notes?: string | null
+          payload?: Json
+          received_at?: string
+          replay_error?: string | null
+          replay_status?: string | null
+          replayed_at?: string | null
+          replayed_by?: string | null
+          resolved_at?: string | null
+          source?: string
+          status_code?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_failures_replayed_by_fkey"
+            columns: ["replayed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_systeme_io_payloads: {
+        Row: {
+          contact_id: string | null
+          id: number
+          lead_id: string | null
+          parse_notes: string | null
+          payload: Json
+          received_at: string
+          source: string | null
+          source_url: string | null
+          systeme_io_id: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          contact_id?: string | null
+          id?: number
+          lead_id?: string | null
+          parse_notes?: string | null
+          payload: Json
+          received_at?: string
+          source?: string | null
+          source_url?: string | null
+          systeme_io_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          contact_id?: string | null
+          id?: number
+          lead_id?: string | null
+          parse_notes?: string | null
+          payload?: Json
+          received_at?: string
+          source?: string | null
+          source_url?: string | null
+          systeme_io_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       activity_weekly_totals: {
@@ -3405,6 +4298,8 @@ export type Database = {
           has_active_call: boolean | null
           id: string | null
           notes: string | null
+          quiz_category: string | null
+          quiz_score: number | null
           raw_email: string | null
           raw_full_name: string | null
           raw_phone: string | null
@@ -3461,14 +4356,73 @@ export type Database = {
       }
     }
     Functions: {
+      add_payment_admin: {
+        Args: { p_amount: number; p_due_date: string; p_sale_id: string }
+        Returns: {
+          amount: number
+          contact_id: string | null
+          created_at: string | null
+          due_date: string
+          id: string
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          payment_number: number
+          sale_id: string | null
+          status: string
+          stripe_invoice_id: string | null
+          stripe_payment_intent_id: string | null
+          stripe_subscription_id: string | null
+          total_payments: number
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "payments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_cleanup_user: { Args: { p_user_id: string }; Returns: undefined }
+      apporteur_update_lead_status: {
+        Args: { p_lead_id: string; p_new_status: string; p_note?: string }
+        Returns: Json
+      }
       calculate_session_global_score: {
         Args: { p_session_id: string }
         Returns: number
       }
+      can_assign_leads_now: { Args: never; Returns: boolean }
       compute_sale_payment_status: {
         Args: { p_sale_id: string }
         Returns: string
       }
+      create_client_invoice: {
+        Args: { p_payment_id: string }
+        Returns: {
+          amount: number
+          client_address: string
+          client_city: string
+          client_country: string
+          client_email: string
+          client_name: string
+          client_postal_code: string
+          contact_id: string
+          id: string
+          invoice_number: string
+          paid_at: string
+          payment_id: string
+          payment_number: number
+          product: string
+          sale_id: string
+          total_payments: number
+        }[]
+      }
+      delete_payment_admin: {
+        Args: { p_payment_id: string }
+        Returns: undefined
+      }
+      delete_sale_admin: { Args: { p_sale_id: string }; Returns: undefined }
       duplicate_formation: { Args: { p_formation_id: string }; Returns: string }
       enqueue_activity_reminders: { Args: never; Returns: number }
       ensure_coaching_occurrence: {
@@ -3480,8 +4434,34 @@ export type Database = {
         }
         Returns: string
       }
+      ensure_quiz_owner_for_current_user: {
+        Args: never
+        Returns: {
+          created_at: string
+          display_name: string
+          display_role: string
+          id: string
+          is_active: boolean
+          slug: string
+          total_views: number
+          updated_at: string
+          user_id: string
+          whatsapp_phone: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "lead_quiz_owners"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       find_or_create_contact: {
         Args: { p_email: string; p_full_name?: string; p_phone: string }
+        Returns: string
+      }
+      generate_payment_code: { Args: { p_contact_id: string }; Returns: string }
+      generate_quiz_owner_slug: {
+        Args: { p_full_name: string }
         Returns: string
       }
       get_chapter_navigation: {
@@ -3501,6 +4481,40 @@ export type Database = {
         Args: { p_formation_id: string; p_user_id: string }
         Returns: number
       }
+      get_locked_chapitres: {
+        Args: { p_formation_id: string; p_user_id: string }
+        Returns: {
+          blocker_chapitre_id: string
+          blocker_quiz_id: string
+          blocker_quiz_titre: string
+          chapitre_id: string
+        }[]
+      }
+      get_missing_formation_quizzes: {
+        Args: { p_formation_id: string; p_user_id: string }
+        Returns: {
+          chapitre_id: string
+          chapitre_ordre: number
+          chapitre_titre: string
+          module_id: string
+          module_ordre: number
+          module_titre: string
+          quiz_id: string
+          quiz_titre: string
+          quiz_type: string
+        }[]
+      }
+      get_user_access_timeline: {
+        Args: { p_user_id: string }
+        Returns: {
+          details: Json
+          event_at: string
+          event_type: string
+          performed_by_name: string
+          subtitle: string
+          title: string
+        }[]
+      }
       get_user_role: { Args: never; Returns: string }
       has_formation_enrollment: {
         Args: { p_formation_id: string; p_user_id: string }
@@ -3508,6 +4522,23 @@ export type Database = {
       }
       import_quiz_from_json: { Args: { p_payload: Json }; Returns: string }
       is_ceo: { Args: { p_user_id: string }; Returns: boolean }
+      is_quiz_slug_available: { Args: { p_slug: string }; Returns: boolean }
+      lookup_payment_code: {
+        Args: { p_code: string }
+        Returns: {
+          acompte_count: number
+          acompte_first_at: string
+          acompte_total: number
+          contact_id: string
+          email: string
+          full_name: string
+          phone: string
+        }[]
+      }
+      manual_recycle_leads: {
+        Args: { p_lead_ids: string[]; p_reason?: string }
+        Returns: Json
+      }
       move_chapitre: {
         Args: {
           p_chapitre_id: string
@@ -3516,14 +4547,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      next_client_invoice_number: {
+        Args: { p_month: number; p_year: number }
+        Returns: string
+      }
       next_organisation_plan_version: {
         Args: { p_user_id: string }
         Returns: number
       }
+      next_sunday_noon_paris_after: { Args: { p_ts: string }; Returns: string }
       nextval_certificate_seq: { Args: never; Returns: number }
+      normalize_phone: { Args: { p_raw: string }; Returns: string }
       normalize_phone_e164: { Args: { phone: string }; Returns: string }
       parcours_next_chapitre: {
         Args: { p_parcours_id: string; p_user_id: string }
+        Returns: string
+      }
+      prev_or_current_sunday_noon_paris: {
+        Args: { p_ts: string }
         Returns: string
       }
       rebalance_commission_group: {
@@ -3533,6 +4574,15 @@ export type Database = {
           p_role: string
           p_sale_id: string
         }
+        Returns: undefined
+      }
+      recalculate_remaining_payments: {
+        Args: { p_new_remaining_count: number; p_sale_id: string }
+        Returns: undefined
+      }
+      record_discord_join: { Args: never; Returns: string }
+      recycle_lead_by_setter: {
+        Args: { p_lead_id: string; p_new_status: string; p_reason: string }
         Returns: undefined
       }
       reorder_chapitres: { Args: { p_updates: Json }; Returns: undefined }
@@ -3569,11 +4619,55 @@ export type Database = {
         Args: { p_chapitre_id: string; p_completed: boolean }
         Returns: boolean
       }
+      set_client_invoice_pdf_path: {
+        Args: { p_invoice_id: string; p_pdf_path: string }
+        Returns: undefined
+      }
+      shuffle_quiz_options: {
+        Args: { p_correct_index: number; p_options: Json }
+        Returns: {
+          new_correct_index: number
+          shuffled_options: Json
+        }[]
+      }
       unlock_formation_from_parcours: {
         Args: { p_formation_id: string }
         Returns: string
       }
+      update_payment_admin: {
+        Args: {
+          p_amount?: number
+          p_due_date?: string
+          p_notes?: string
+          p_payment_id: string
+        }
+        Returns: {
+          amount: number
+          contact_id: string | null
+          created_at: string | null
+          due_date: string
+          id: string
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          payment_number: number
+          sale_id: string | null
+          status: string
+          stripe_invoice_id: string | null
+          stripe_payment_intent_id: string | null
+          stripe_subscription_id: string | null
+          total_payments: number
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "payments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       user_active_pass_level: { Args: { p_user_id: string }; Returns: string }
+      validate_coupon: { Args: { p_code: string }; Returns: Json }
     }
     Enums: {
       group_session_status: "scheduled" | "live" | "completed" | "cancelled"
