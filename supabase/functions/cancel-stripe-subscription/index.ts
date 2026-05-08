@@ -32,32 +32,68 @@ function json(data: unknown, status = 200) {
 
 // Tente DELETE /v1/subscriptions/{id} avec les 2 clés (live d'abord, test en
 // fallback). Retourne {data, mode} si succès, throw sinon.
-async function cancelSubscription(subscriptionId: string): Promise<{ data: any; mode: "live" | "test" }> {
-  const tryKey = async (apiKey: string): Promise<{ ok: boolean; data: any; status: number }> => {
-    const res = await fetch(`https://api.stripe.com/v1/subscriptions/${subscriptionId}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-    const text = await res.text();
-    let data: any;
-    try { data = text ? JSON.parse(text) : {}; } catch { data = { _raw: text }; }
-    return { ok: res.ok, data, status: res.status };
-  };
+async function stripeCall(
+  apiKey: string,
+  path: string,
+  method: "GET" | "DELETE" = "GET",
+): Promise<{ ok: boolean; data: any; status: number }> {
+  const res = await fetch(`https://api.stripe.com/v1${path}`, {
+    method,
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  const text = await res.text();
+  let data: any;
+  try { data = text ? JSON.parse(text) : {}; } catch { data = { _raw: text }; }
+  return { ok: res.ok, data, status: res.status };
+}
 
+async function cancelSubscription(subscriptionId: string): Promise<{ data: any; mode: "live" | "test" }> {
   if (STRIPE_SECRET_KEY_LIVE) {
-    const r = await tryKey(STRIPE_SECRET_KEY_LIVE);
+    const r = await stripeCall(STRIPE_SECRET_KEY_LIVE, `/subscriptions/${subscriptionId}`, "DELETE");
     if (r.ok) return { data: r.data, mode: "live" };
-    // Si la sub n'existe pas en live (404), tenter test
     if (r.status !== 404) throw new Error(`Stripe live: ${r.status} ${JSON.stringify(r.data)}`);
   }
-
   if (STRIPE_SECRET_KEY_TEST) {
-    const r = await tryKey(STRIPE_SECRET_KEY_TEST);
+    const r = await stripeCall(STRIPE_SECRET_KEY_TEST, `/subscriptions/${subscriptionId}`, "DELETE");
     if (r.ok) return { data: r.data, mode: "test" };
     throw new Error(`Stripe test: ${r.status} ${JSON.stringify(r.data)}`);
   }
-
   throw new Error("No Stripe API key configured");
+}
+
+// Fallback pour les ventes Systeme.io : Systeme.io utilise Stripe en backend, donc
+// la subscription existe côté Stripe même si on ne stocke pas son ID en BDD.
+// On retrouve le customer Stripe par email puis on cherche une sub active/past_due.
+async function findStripeSubByEmail(email: string): Promise<{ subscriptionId: string; mode: "live" | "test"; customerId: string } | null> {
+  const tryKey = async (apiKey: string, mode: "live" | "test") => {
+    const safeEmail = email.replace(/'/g, "\\'");
+    const search = await stripeCall(apiKey, `/customers/search?query=${encodeURIComponent(`email:'${safeEmail}'`)}&limit=10`);
+    if (!search.ok) return null;
+    const customers = search.data?.data || [];
+    for (const cust of customers) {
+      const subs = await stripeCall(apiKey, `/subscriptions?customer=${cust.id}&status=all&limit=20`);
+      if (!subs.ok) continue;
+      // Cherche une sub annulable : active, past_due, unpaid, trialing
+      // (canceled / incomplete / ended ne servent à rien)
+      const cancellableStatuses = new Set(["active", "past_due", "unpaid", "trialing"]);
+      const candidates = (subs.data?.data || []).filter((s: any) => cancellableStatuses.has(s.status));
+      if (candidates.length > 0) {
+        // Prend la plus récente (created max)
+        const best = candidates.sort((a: any, b: any) => (b.created || 0) - (a.created || 0))[0];
+        return { subscriptionId: best.id, mode, customerId: cust.id };
+      }
+    }
+    return null;
+  };
+  if (STRIPE_SECRET_KEY_LIVE) {
+    const r = await tryKey(STRIPE_SECRET_KEY_LIVE, "live");
+    if (r) return r;
+  }
+  if (STRIPE_SECRET_KEY_TEST) {
+    const r = await tryKey(STRIPE_SECRET_KEY_TEST, "test");
+    if (r) return r;
+  }
+  return null;
 }
 
 serve(async (req) => {
@@ -88,6 +124,8 @@ serve(async (req) => {
 
     // ── Récupère la subscription Stripe attachée à la vente ──
     // Toutes les mensualités d'une même vente partagent le même sub_id.
+    // Pour les ventes Systeme.io (anciennes), pas de stripe_subscription_id en BDD :
+    // on fait un fallback en cherchant le customer Stripe par email.
     const { data: payments, error: paymentsErr } = await supabase
       .from("payments")
       .select("id, status, stripe_subscription_id, payment_number, amount")
@@ -100,19 +138,41 @@ serve(async (req) => {
         .filter((s): s is string => !!s)
     ));
 
-    if (subscriptionIds.length === 0) {
-      return json({ error: "no_subscription", message: "Aucune subscription Stripe attachée à cette vente." }, 400);
-    }
+    let subId: string | null = null;
+    let subMode: "live" | "test" | null = null;
+    let usedFallback = false;
 
-    if (subscriptionIds.length > 1) {
+    if (subscriptionIds.length === 1) {
+      subId = subscriptionIds[0];
+    } else if (subscriptionIds.length > 1) {
       return json({
         error: "multiple_subscriptions",
         message: "Plusieurs subscriptions distinctes attachées à cette vente. Inattendu.",
         subscriptions: subscriptionIds,
       }, 400);
+    } else {
+      // Pas de sub_id en BDD : tente le fallback Systeme.io via email
+      const { data: sale } = await supabase.from("sales").select("contact_id, systeme_io_order_id").eq("id", saleId).single();
+      if (!sale?.contact_id) return json({ error: "sale_not_found" }, 404);
+
+      const { data: contact } = await supabase.from("contacts").select("email").eq("id", sale.contact_id).single();
+      if (!contact?.email) {
+        return json({ error: "no_subscription", message: "Aucune subscription Stripe attachée à cette vente, et le contact n'a pas d'email pour le fallback." }, 400);
+      }
+
+      const found = await findStripeSubByEmail(contact.email);
+      if (!found) {
+        return json({
+          error: "no_subscription",
+          message: `Aucune subscription Stripe trouvée pour ${contact.email} (live + test). Vente Systeme.io non liée à Stripe ?`,
+          systeme_io_order_id: sale.systeme_io_order_id,
+        }, 404);
+      }
+      subId = found.subscriptionId;
+      subMode = found.mode;
+      usedFallback = true;
     }
 
-    const subId = subscriptionIds[0];
     const pendingPaymentIds = (payments || [])
       .filter((p) => p.status === "pending")
       .map((p) => p.id);
@@ -127,7 +187,7 @@ serve(async (req) => {
     // ── Annule la subscription côté Stripe ──
     let cancelResult: { data: any; mode: "live" | "test" };
     try {
-      cancelResult = await cancelSubscription(subId);
+      cancelResult = await cancelSubscription(subId!);
     } catch (e: any) {
       return json({
         error: "stripe_cancel_failed",
@@ -138,7 +198,8 @@ serve(async (req) => {
 
     // ── Marque les paiements pending comme 'lost' ──
     const cancelledAtIso = new Date().toISOString();
-    const note = `Subscription Stripe ${subId} annulée le ${cancelledAtIso.slice(0, 10)} (CEO ${user.email}). Mode: ${cancelResult.mode}.`;
+    const sourceLabel = usedFallback ? "Systeme.io→Stripe (fallback email)" : "Stripe natif";
+    const note = `Subscription Stripe ${subId} annulée le ${cancelledAtIso.slice(0, 10)} (CEO ${user.email}). Source: ${sourceLabel}. Mode: ${cancelResult.mode}.`;
     const { error: updErr, count } = await supabase
       .from("payments")
       .update({
@@ -169,6 +230,7 @@ serve(async (req) => {
       cancelled_at: cancelledAtIso,
       payments_marked_lost: count ?? pendingPaymentIds.length,
       sale_id: saleId,
+      used_systemeio_fallback: usedFallback,
     });
   } catch (err: any) {
     console.error("[cancel-stripe-subscription] error", err);

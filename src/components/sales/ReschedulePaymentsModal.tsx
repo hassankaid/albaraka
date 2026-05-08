@@ -9,12 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import {
   CalendarIcon, AlertTriangle, CheckCircle2, Loader2, ArrowRight, RotateCcw,
-  CreditCard, ExternalLink,
+  CreditCard,
 } from "lucide-react";
 import { format, addMonths } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -106,12 +105,14 @@ export default function ReschedulePaymentsModal({
     [pendingPayments]
   );
 
-  // Détection de la source pour l'étape 1 (stop des prélèvements automatiques)
+  // Détection de la source pour l'étape 1 (stop des prélèvements automatiques).
+  // Systeme.io utilise Stripe en backend, donc même les ventes Systeme.io ont une
+  // sub Stripe annulable via l'API (l'edge function fait le fallback automatique
+  // par lookup email). On peut donc tout faire en 1 clic, peu importe la source.
   const stripeSubId = pendingPayments.find((p) => p.stripe_subscription_id)?.stripe_subscription_id ?? null;
-  const hasStripeSub = !!stripeSubId;
-  // Systeme.io n'est pris en compte que si pas de sub Stripe (priorité Stripe)
-  const hasSystemeIo = !!systemeIoOrderId && !hasStripeSub;
-  const needsStopStep = hasStripeSub || hasSystemeIo;
+  const hasStripeSubInDb = !!stripeSubId;
+  const hasSystemeIo = !!systemeIoOrderId && !hasStripeSubInDb;
+  const needsStopStep = hasStripeSubInDb || hasSystemeIo;
 
   // ── Inputs ──
   const [targetAmount, setTargetAmount] = useState<string>("");
@@ -124,16 +125,10 @@ export default function ReschedulePaymentsModal({
   });
   const [saving, setSaving] = useState(false);
 
-  // ── Étape 1 : Stop des prélèvements ──
-  // Pour Systeme.io : checkbox manuelle (pas d'API publique pour cancel auto).
-  // Pour Stripe : sera annulée automatiquement à la confirmation finale.
-  const [systemeIoConfirmed, setSystemeIoConfirmed] = useState(false);
-
   // ── Reset à l'ouverture ──
   useEffect(() => {
     if (open) {
       setTargetAmount("");
-      setSystemeIoConfirmed(false);
       const firstPending = [...pendingPayments].sort(
         (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
       )[0];
@@ -152,10 +147,7 @@ export default function ReschedulePaymentsModal({
   const planTotalRounded = Math.round(planTotal * 100) / 100;
   const remainingRounded = Math.round(remaining * 100) / 100;
   const totalsMatch = Math.abs(planTotalRounded - remainingRounded) < 0.01;
-  // Étape 1 satisfaite ? Stripe = auto-annulé au confirm (toujours OK).
-  // Systeme.io = checkbox doit être cochée. Aucune sub = direct OK.
-  const step1Ok = !hasSystemeIo || systemeIoConfirmed;
-  const canConfirm = step1Ok && plan.payments.length > 0 && totalsMatch && !saving;
+  const canConfirm = plan.payments.length > 0 && totalsMatch && !saving;
 
   // ── Soumission ──
   async function handleConfirm() {
@@ -163,18 +155,21 @@ export default function ReschedulePaymentsModal({
     setSaving(true);
     try {
       // ── ÉTAPE 1 : Stop des prélèvements auto ──
-      // Stripe : on appelle l'edge function qui annule la sub côté Stripe
-      // (et marque les pending comme 'lost' en BDD). Pour Systeme.io,
-      // on assume que Sidali a déjà annulé manuellement (checkbox cochée).
-      if (hasStripeSub) {
+      // Stripe natif OU Systeme.io : l'edge function gère les 2 cas. Elle annule
+      // la sub côté Stripe (avec fallback automatique par lookup email pour les
+      // ventes Systeme.io qui n'ont pas de stripe_subscription_id en BDD), et
+      // marque les pending comme 'lost'. Si pas de sub trouvée du tout (ex:
+      // virement manuel pur), on continue : pas d'annulation à faire.
+      if (needsStopStep) {
         const { data: cancelData, error: cancelError } = await supabase.functions.invoke(
           "cancel-stripe-subscription",
           { body: { sale_id: saleId } }
         );
         if (cancelError) throw new Error(`Stripe : ${cancelError.message}`);
         const result = cancelData as { ok?: boolean; error?: string; message?: string };
-        // Tolérant : si la sub était déjà annulée ailleurs, on continue quand même.
-        if (!result?.ok && result?.error !== "no_pending_payments") {
+        // Tolérant : si la sub était déjà annulée OU jamais trouvée, on continue.
+        const tolerableErrors = new Set(["no_pending_payments", "no_subscription"]);
+        if (!result?.ok && (!result?.error || !tolerableErrors.has(result.error))) {
           throw new Error(`Stripe : ${result?.message || result?.error || "annulation échouée"}`);
         }
       }
@@ -303,51 +298,28 @@ export default function ReschedulePaymentsModal({
               <h4 className="text-sm font-semibold text-foreground">Stopper les prélèvements automatiques</h4>
             </div>
 
-            {hasStripeSub && (
-              <div className="rounded-md border border-blue-500/30 bg-blue-500/5 p-3 space-y-1.5">
-                <div className="flex items-start gap-2">
-                  <CreditCard className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
-                  <div className="text-xs text-foreground/90">
-                    <strong className="text-blue-300">Subscription Stripe</strong> · <code className="text-[10px] font-mono">{stripeSubId}</code>
-                    <p className="mt-1 text-foreground/70">
-                      La subscription sera <strong>automatiquement annulée</strong> au moment où tu confirmeras le nouveau plan ci-dessous.
-                      Aucune action manuelle requise de ton côté.
-                    </p>
-                  </div>
+            <div className="rounded-md border border-blue-500/30 bg-blue-500/5 p-3 space-y-1.5">
+              <div className="flex items-start gap-2">
+                <CreditCard className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-foreground/90">
+                  {hasStripeSubInDb ? (
+                    <>
+                      <strong className="text-blue-300">Subscription Stripe</strong> · <code className="text-[10px] font-mono">{stripeSubId}</code>
+                    </>
+                  ) : (
+                    <>
+                      <strong className="text-blue-300">Vente Systeme.io</strong> · order <code className="text-[10px] font-mono">#{systemeIoOrderId}</code>
+                      <span className="text-muted-foreground ml-1">(géré par Stripe en backend)</span>
+                    </>
+                  )}
+                  <p className="mt-1 text-foreground/70">
+                    La subscription Stripe sera <strong>automatiquement annulée</strong> au moment où tu confirmeras le nouveau plan ci-dessous.
+                    Aucune action manuelle requise de ton côté
+                    {!hasStripeSubInDb && " (l'annulation passe par l'API Stripe via lookup email, indépendamment de Systeme.io)"}.
+                  </p>
                 </div>
               </div>
-            )}
-
-            {hasSystemeIo && (
-              <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 space-y-2.5">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-                  <div className="text-xs text-foreground/90 space-y-1.5">
-                    <div>
-                      <strong className="text-amber-300">Vente Systeme.io — annulation manuelle requise</strong>
-                    </div>
-                    <p className="text-foreground/80">
-                      L'API publique Systeme.io n'expose pas l'annulation de subscription, donc tu dois le faire <strong>manuellement</strong> avant de replanifier ici (sinon Systeme.io continuera à prélever l'ancien montant).
-                    </p>
-                    <ol className="list-decimal pl-5 space-y-0.5 text-foreground/80">
-                      <li>Ouvre <a href="https://dashboard.systeme.io/" target="_blank" rel="noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">dashboard.systeme.io <ExternalLink className="h-2.5 w-2.5" /></a></li>
-                      <li>Cherche l'order <code className="text-[10px] font-mono bg-card/50 px-1 rounded">#{systemeIoOrderId}</code></li>
-                      <li>Annule la subscription / le plan récurrent</li>
-                    </ol>
-                  </div>
-                </div>
-                <label className="flex items-start gap-2 cursor-pointer">
-                  <Checkbox
-                    checked={systemeIoConfirmed}
-                    onCheckedChange={(v) => setSystemeIoConfirmed(v === true)}
-                    className="mt-0.5"
-                  />
-                  <span className="text-xs text-foreground/90">
-                    Confirmé : j'ai bien <strong>annulé l'order n° {systemeIoOrderId}</strong> dans Systeme.io.
-                  </span>
-                </label>
-              </div>
-            )}
+            </div>
           </div>
         )}
 
