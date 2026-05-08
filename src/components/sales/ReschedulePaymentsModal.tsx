@@ -281,7 +281,7 @@ export default function ReschedulePaymentsModal({
           <div className="rounded-md border border-yellow-500/30 bg-yellow-500/5 p-2.5">
             <div className="text-[10px] uppercase tracking-wider text-yellow-400 font-medium">À étaler</div>
             <div className="text-base font-bold text-yellow-300 mt-0.5">{remaining.toLocaleString("fr-FR")} €</div>
-            <div className="text-[10px] text-muted-foreground">{pendingPayments.length} pending actuels</div>
+            <div className="text-[10px] text-muted-foreground">{pendingPayments.length} mensualité{pendingPayments.length > 1 ? "s" : ""} à reprogrammer</div>
           </div>
           <div className="rounded-md border border-border/50 bg-card/50 p-2.5">
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Total vente</div>

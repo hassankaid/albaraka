@@ -271,8 +271,14 @@ export default function SaleDetailModal({
   }
 
   // ─── Replanification du plan de paiement ───────────────────────────
+  // On considère comme "à reprogrammer" tous les paiements non encore encaissés :
+  // pending (pas encore prélevés) + lost (annulés via Stop, mais on peut les
+  // reprogrammer en cas de renégociation avec le client). Les paid restent acquis.
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
-  const pendingPayments = payments.filter((p) => p.status === "pending");
+  const unsettledPayments = payments.filter((p) => p.status === "pending" || p.status === "lost");
+  const totalUnsettled = unsettledPayments.reduce((s, p) => s + Number(p.amount), 0);
+  // Bouton visible dès qu'il reste à payer quelque chose
+  const canReschedule = totalUnsettled > 0.01;
 
   // ─── Suppression complète de la vente (CEO) ─────────────────────────
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -430,13 +436,13 @@ export default function SaleDetailModal({
             <h4 className="text-sm font-semibold text-foreground">Échéancier</h4>
             {isCeo && (
               <div className="flex items-center gap-2">
-                {pendingPayments.length > 0 && (
+                {canReschedule && (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setRescheduleOpen(true)}
                     className="gap-1.5"
-                    title="Annule la subscription en cours (Stripe ou Systeme.io) et redéfinit le plan des mensualités restantes"
+                    title="Redéfinit le plan des mensualités non encore encaissées (pending + lost). Annule la subscription Stripe encore active si applicable."
                   >
                     <RotateCcw className="h-3.5 w-3.5" /> Modifier le plan
                   </Button>
@@ -741,7 +747,7 @@ export default function SaleDetailModal({
           saleProduct={saleProduct}
           contactName={contactName || "—"}
           systemeIoOrderId={systemeIoOrderId}
-          pendingPayments={pendingPayments.map((p) => ({
+          pendingPayments={unsettledPayments.map((p) => ({
             id: p.id,
             payment_number: p.payment_number,
             amount: p.amount,
