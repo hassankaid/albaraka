@@ -1100,32 +1100,55 @@ export default function Leads() {
                           <span className="text-xs text-foreground">{lead.assigned_to_name}</span>
                         )
                       ) : isRecycled(lead) && canAssign ? (
-                        <AssigneeCombobox
-                          assignees={assignables}
-                          onSelect={(id) => handleReassign(lead.id!, null, id, lead.status)}
-                          searchPlaceholder="Rechercher un setter..."
-                          triggerNode={
-                            <Button size="sm" variant="outline" className="gap-1 text-[11px] h-7 px-2">
-                              <UserPlus className="h-3 w-3" />
-                              Affecter
-                              <ChevronDown className="h-3 w-3" />
-                            </Button>
-                          }
-                        />
+                        // Admins sur lead recyclé : M'affecter rapide + Affecter à autre via combobox
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAssignToMe(lead.id!, lead.status)}
+                            className="gap-1 text-[11px] h-7 px-2"
+                            title="M'affecter ce lead"
+                          >
+                            <UserPlus className="h-3 w-3" />
+                            Moi
+                          </Button>
+                          <AssigneeCombobox
+                            assignees={assignables.filter((a) => a.id !== user?.id)}
+                            onSelect={(id) => handleReassign(lead.id!, null, id, lead.status)}
+                            searchPlaceholder="Rechercher un setter..."
+                            triggerNode={
+                              <Button size="sm" variant="outline" className="gap-1 text-[11px] h-7 px-2" title="Affecter à quelqu'un d'autre">
+                                Autre
+                                <ChevronDown className="h-3 w-3" />
+                              </Button>
+                            }
+                          />
+                        </div>
                       ) : !lead.has_active_call && !lead.recycled_at && !["call_booke", "renvoi_pole_vente", "close", "perdu"].includes(lead.status || "") && canAssign ? (
-                        // Admins (CEO/Sabrina) : combobox pour affecter à n'importe qui
-                        <AssigneeCombobox
-                          assignees={assignables}
-                          onSelect={(id) => handleReassign(lead.id!, null, id, lead.status)}
-                          searchPlaceholder="Rechercher un setter..."
-                          triggerNode={
-                            <Button size="sm" variant="outline" className="gap-1 text-[11px] h-7 px-2">
-                              <UserPlus className="h-3 w-3" />
-                              Affecter
-                              <ChevronDown className="h-3 w-3" />
-                            </Button>
-                          }
-                        />
+                        // Admins sur lead à affecter : M'affecter rapide + Affecter à autre via combobox
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAssignToMe(lead.id!, lead.status)}
+                            className="gap-1 text-[11px] h-7 px-2"
+                            title="M'affecter ce lead"
+                          >
+                            <UserPlus className="h-3 w-3" />
+                            Moi
+                          </Button>
+                          <AssigneeCombobox
+                            assignees={assignables.filter((a) => a.id !== user?.id)}
+                            onSelect={(id) => handleReassign(lead.id!, null, id, lead.status)}
+                            searchPlaceholder="Rechercher un setter..."
+                            triggerNode={
+                              <Button size="sm" variant="outline" className="gap-1 text-[11px] h-7 px-2" title="Affecter à quelqu'un d'autre">
+                                Autre
+                                <ChevronDown className="h-3 w-3" />
+                              </Button>
+                            }
+                          />
+                        </div>
                       ) : !lead.has_active_call && !lead.recycled_at && !["call_booke", "renvoi_pole_vente", "close", "perdu"].includes(lead.status || "") && user?.collaborateur_level === "confirme" ? (
                         // Collaborateurs confirmés (non-canAssign) : "M'affecter" rapide
                         <Button size="sm" variant="outline" onClick={() => handleAssignToMe(lead.id!, lead.status)} className="gap-1 text-[11px] h-7 px-2">
