@@ -123,17 +123,30 @@ function AssigneeCombobox({
   searchPlaceholder = "Rechercher...",
 }: AssigneeComboboxProps) {
   const [open, setOpen] = useState(false);
-  const filtered = excludeId ? assignees.filter((a) => a.id !== excludeId) : assignees;
+  // Tri alphabétique global (ignore les groupes pour ordonner) puis on regroupe par rôle.
+  // Garantit que dans chaque groupe, les noms sont en A→Z.
+  const sorted = [...(excludeId ? assignees.filter((a) => a.id !== excludeId) : assignees)]
+    .sort((a, b) => a.full_name.localeCompare(b.full_name, "fr", { sensitivity: "base" }));
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{triggerNode}</PopoverTrigger>
-      <PopoverContent className="w-[280px] p-0" align={align}>
+      {/*
+        collisionPadding évite que le popover ne se colle exactement au bord
+        de l'écran, et la max-height dynamique (--radix-popper-available-height)
+        garantit que le popover ne dépasse jamais en haut/bas de l'écran.
+      */}
+      <PopoverContent
+        className="w-[280px] p-0"
+        align={align}
+        collisionPadding={12}
+        style={{ maxHeight: "var(--radix-popper-available-height)" }}
+      >
         <Command>
           <CommandInput placeholder={searchPlaceholder} className="h-9" />
-          <CommandList>
+          <CommandList className="max-h-[calc(var(--radix-popper-available-height)-3rem)]">
             <CommandEmpty>Aucun résultat.</CommandEmpty>
             {ROLE_GROUP_ORDER.map((group) => {
-              const items = filtered.filter((a) => groupKeyOf(a) === group.key);
+              const items = sorted.filter((a) => groupKeyOf(a) === group.key);
               if (items.length === 0) return null;
               return (
                 <CommandGroup key={group.key} heading={group.label}>
@@ -1036,15 +1049,20 @@ export default function Leads() {
                                 <ChevronDown className="h-3 w-3" />
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-[280px] p-0" align="start">
+                            <PopoverContent
+                              className="w-[280px] p-0"
+                              align="start"
+                              collisionPadding={12}
+                              style={{ maxHeight: "var(--radix-popper-available-height)" }}
+                            >
                               <Command>
                                 <CommandInput placeholder="Rechercher..." className="h-9" />
-                                <CommandList>
+                                <CommandList className="max-h-[calc(var(--radix-popper-available-height)-3rem)]">
                                   <CommandEmpty>Aucun résultat.</CommandEmpty>
                                   {ROLE_GROUP_ORDER.map((group) => {
-                                    const items = assignables.filter(
-                                      (a) => groupKeyOf(a) === group.key && a.id !== lead.assigned_to
-                                    );
+                                    const items = [...assignables]
+                                      .filter((a) => groupKeyOf(a) === group.key && a.id !== lead.assigned_to)
+                                      .sort((a, b) => a.full_name.localeCompare(b.full_name, "fr", { sensitivity: "base" }));
                                     if (items.length === 0) return null;
                                     return (
                                       <CommandGroup key={group.key} heading={group.label}>
@@ -1094,7 +1112,22 @@ export default function Leads() {
                             </Button>
                           }
                         />
-                      ) : !lead.has_active_call && !lead.recycled_at && !["call_booke", "renvoi_pole_vente", "close", "perdu"].includes(lead.status || "") && (isCeo || user?.collaborateur_level === "confirme") ? (
+                      ) : !lead.has_active_call && !lead.recycled_at && !["call_booke", "renvoi_pole_vente", "close", "perdu"].includes(lead.status || "") && canAssign ? (
+                        // Admins (CEO/Sabrina) : combobox pour affecter à n'importe qui
+                        <AssigneeCombobox
+                          assignees={assignables}
+                          onSelect={(id) => handleReassign(lead.id!, null, id, lead.status)}
+                          searchPlaceholder="Rechercher un setter..."
+                          triggerNode={
+                            <Button size="sm" variant="outline" className="gap-1 text-[11px] h-7 px-2">
+                              <UserPlus className="h-3 w-3" />
+                              Affecter
+                              <ChevronDown className="h-3 w-3" />
+                            </Button>
+                          }
+                        />
+                      ) : !lead.has_active_call && !lead.recycled_at && !["call_booke", "renvoi_pole_vente", "close", "perdu"].includes(lead.status || "") && user?.collaborateur_level === "confirme" ? (
+                        // Collaborateurs confirmés (non-canAssign) : "M'affecter" rapide
                         <Button size="sm" variant="outline" onClick={() => handleAssignToMe(lead.id!, lead.status)} className="gap-1 text-[11px] h-7 px-2">
                           <UserPlus className="h-3 w-3" />
                           M'affecter
