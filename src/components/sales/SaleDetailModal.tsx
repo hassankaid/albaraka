@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Check, RefreshCw, Trash2, Plus, CalendarIcon, Pencil, X, Save, AlertTriangle, Loader2 } from "lucide-react";
+import { Check, RefreshCw, Trash2, Plus, CalendarIcon, Pencil, X, Save, AlertTriangle, Loader2, CreditCard, Ban, TrendingUp, CalendarClock } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -30,6 +30,8 @@ interface Payment {
   paid_at: string | null;
   status: string;
   payment_method: string | null;
+  stripe_subscription_id: string | null;
+  stripe_payment_intent_id: string | null;
 }
 
 interface SaleDetailModalProps {
@@ -81,7 +83,7 @@ export default function SaleDetailModal({
     setLoading(true);
     const { data } = await supabase
       .from("payments")
-      .select("id, payment_number, total_payments, amount, due_date, paid_at, status, payment_method")
+      .select("id, payment_number, total_payments, amount, due_date, paid_at, status, payment_method, stripe_subscription_id, stripe_payment_intent_id")
       .eq("sale_id", saleId)
       .order("payment_number", { ascending: true });
     setPayments(data || []);
@@ -209,6 +211,49 @@ export default function SaleDetailModal({
 
   const totalPaid = payments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
   const totalPending = payments.filter((p) => p.status === "pending").reduce((s, p) => s + p.amount, 0);
+  const totalLost = payments.filter((p) => p.status === "lost" || p.status === "cancelled").reduce((s, p) => s + p.amount, 0);
+  const totalAll = payments.reduce((s, p) => s + p.amount, 0);
+  const nbPaid = payments.filter((p) => p.status === "paid").length;
+  const nbTotal = payments.length;
+  const progressPct = nbTotal > 0 ? Math.round((nbPaid / nbTotal) * 100) : 0;
+
+  // Prochaine échéance (1er paiement pending par due_date)
+  const nextPending = payments
+    .filter((p) => p.status === "pending")
+    .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
+
+  // ─── Subscription Stripe : détection & annulation ──────────────────
+  // Toutes les mensualités d'une même vente partagent le même sub_id (Nx).
+  // Pour le 1x, c'est un PaymentIntent (pas de sub) → rien à annuler.
+  const stripeSubscriptionId = payments.find((p) => p.stripe_subscription_id)?.stripe_subscription_id ?? null;
+  const pendingCount = payments.filter((p) => p.status === "pending").length;
+  const canCancelStripe = !!stripeSubscriptionId && pendingCount > 0;
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  async function handleCancelStripe() {
+    if (!saleId || !stripeSubscriptionId) return;
+    setCancelling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cancel-stripe-subscription", {
+        body: { sale_id: saleId },
+      });
+      if (error) throw new Error(error.message);
+      const result = data as { ok?: boolean; payments_marked_lost?: number; subscription_id?: string; message?: string; error?: string };
+      if (!result?.ok) throw new Error(result?.message || result?.error || "Annulation échouée");
+      toast({
+        title: "Subscription annulée ✓",
+        description: `${result.payments_marked_lost} paiement(s) marqué(s) Perdu. Plus aucun prélèvement Stripe.`,
+      });
+      setCancelOpen(false);
+      fetchPayments();
+      onUpdated();
+    } catch (e: any) {
+      toast({ title: "Erreur d'annulation", description: e?.message || "Réessaie ou annule depuis le dashboard Stripe", variant: "destructive" });
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   // ─── Suppression complète de la vente (CEO) ─────────────────────────
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -251,13 +296,103 @@ export default function SaleDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{saleProduct} — {contactName || "—"}</DialogTitle>
-          <DialogDescription>
-            Montant HT : {saleAmountHt.toLocaleString("fr-FR")} € · Encaissé : {totalPaid.toLocaleString("fr-FR")} € · Restant : {totalPending.toLocaleString("fr-FR")} €
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-1">
+          <DialogTitle className="text-xl">{saleProduct}</DialogTitle>
+          <DialogDescription className="text-sm">
+            {contactName || "—"}
           </DialogDescription>
         </DialogHeader>
+
+        {/* ── Summary cards : Total / Encaissé / Restant / Prochaine ───── */}
+        {nbTotal > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="rounded-lg border border-border/50 bg-card/50 p-3">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Total</div>
+              <div className="text-lg font-bold text-foreground mt-1">{totalAll.toLocaleString("fr-FR")} €</div>
+              <div className="text-[10px] text-muted-foreground">{nbTotal} mensualité{nbTotal > 1 ? "s" : ""}</div>
+            </div>
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
+              <div className="text-[10px] uppercase tracking-wider text-emerald-400 font-medium flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" /> Encaissé
+              </div>
+              <div className="text-lg font-bold text-emerald-300 mt-1">{totalPaid.toLocaleString("fr-FR")} €</div>
+              <div className="text-[10px] text-muted-foreground">{nbPaid}/{nbTotal} payés ({progressPct}%)</div>
+            </div>
+            <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3">
+              <div className="text-[10px] uppercase tracking-wider text-yellow-400 font-medium">Restant</div>
+              <div className="text-lg font-bold text-yellow-300 mt-1">{totalPending.toLocaleString("fr-FR")} €</div>
+              <div className="text-[10px] text-muted-foreground">{pendingCount} en attente</div>
+            </div>
+            <div className="rounded-lg border border-border/50 bg-card/50 p-3">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1">
+                <CalendarClock className="h-3 w-3" /> Prochaine échéance
+              </div>
+              <div className="text-base font-semibold text-foreground mt-1">
+                {nextPending ? formatDateOnly(nextPending.due_date, userTz) : "—"}
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                {nextPending ? `${nextPending.amount.toLocaleString("fr-FR")} €` : "Tous payés / annulés"}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Progress bar visuelle ────────────────────────────────────── */}
+        {nbTotal > 0 && (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+              <span>Progression</span>
+              <span className="font-medium">{nbPaid} / {nbTotal} mensualités</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ── Encart Subscription Stripe (si applicable) ───────────────── */}
+        {stripeSubscriptionId && (
+          <div className={`rounded-lg border p-3 space-y-2 ${
+            canCancelStripe
+              ? "border-blue-500/30 bg-blue-500/5"
+              : "border-border/50 bg-secondary/30"
+          }`}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-2 min-w-0">
+                <CreditCard className={`h-4 w-4 mt-0.5 shrink-0 ${canCancelStripe ? "text-blue-400" : "text-muted-foreground"}`} />
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-foreground">
+                    {canCancelStripe ? "Paiement automatique Stripe actif" : "Subscription Stripe (clôturée)"}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">
+                    {canCancelStripe ? (
+                      <>
+                        {pendingCount} prélèvement{pendingCount > 1 ? "s" : ""} à venir · <code className="text-[10px] font-mono">{stripeSubscriptionId}</code>
+                      </>
+                    ) : (
+                      <>Tous les paiements sont passés ou annulés · <code className="text-[10px] font-mono">{stripeSubscriptionId}</code></>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {isCeo && canCancelStripe && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs h-8 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive shrink-0"
+                  onClick={() => setCancelOpen(true)}
+                >
+                  <Ban className="h-3.5 w-3.5" />
+                  Stopper les prélèvements
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
 
         <Separator />
 
@@ -554,6 +689,63 @@ export default function SaleDetailModal({
           </>
         )}
       </DialogContent>
+
+      {/* Confirmation d'annulation Stripe */}
+      <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Ban className="h-5 w-5 text-destructive" />
+              Stopper les prélèvements Stripe ?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <p>
+                  <strong>{saleProduct}</strong> — {contactName || "—"}
+                </p>
+
+                <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 space-y-1.5">
+                  <p className="text-xs font-medium text-amber-300 uppercase tracking-wider">
+                    Impact côté Stripe
+                  </p>
+                  <p className="text-xs text-foreground/90">
+                    La subscription <code className="text-[10px] font-mono">{stripeSubscriptionId}</code> sera annulée immédiatement.
+                    <br />
+                    <strong>{pendingCount} prélèvement{pendingCount > 1 ? "s" : ""}</strong> futur{pendingCount > 1 ? "s" : ""} ({totalPending.toLocaleString("fr-FR")} €) ne ser{pendingCount > 1 ? "ont" : "a"} pas effectué{pendingCount > 1 ? "s" : ""}.
+                  </p>
+                </div>
+
+                <div className="rounded-md border border-border/50 bg-secondary/30 p-3 space-y-1.5">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Impact côté plateforme
+                  </p>
+                  <ul className="text-xs space-y-0.5 list-disc pl-5 text-foreground/80">
+                    <li><strong>{pendingCount}</strong> paiement(s) pending → marqué(s) <strong className="text-destructive">Perdu</strong></li>
+                    <li>Vente passée en statut <strong className="text-destructive">Perdu</strong></li>
+                    <li>Les <strong>{nbPaid}</strong> paiement(s) déjà encaissé(s) ({totalPaid.toLocaleString("fr-FR")} €) restent acquis</li>
+                  </ul>
+                </div>
+
+                <p className="text-xs text-muted-foreground italic">
+                  Cette action est définitive. Tu peux toujours réactiver une vente à la main si besoin (en repassant un paiement à pending).
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelling}>Annuler</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              onClick={handleCancelStripe}
+              disabled={cancelling}
+            >
+              {cancelling && <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />}
+              <Ban className="h-3.5 w-3.5 mr-2" />
+              Confirmer l'annulation
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Confirmation de suppression complète */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
