@@ -637,6 +637,111 @@ async function handleCheckoutCompleted(
   await ensureBonCommandeOrder(supabase, enriched, ids);
 }
 
+/**
+ * REBILL : la 1re mensualité du nouveau plan vient d'être payée. La vente
+ * existe déjà (créée auparavant), les pending payments existent déjà (réécrits
+ * par le wizard ReschedulePaymentsModal). Il faut :
+ *   1. Attacher le nouveau stripe_subscription_id à TOUS les pending de la vente
+ *      (pour que les invoice.paid suivants puissent les retrouver).
+ *   2. Marquer la 1re mensualité comme paid (paid_at, stripe_payment_intent_id,
+ *      stripe_invoice_id).
+ *   3. Déclencher la génération de la facture client.
+ *
+ * Idempotent : si déjà fait (1re pending est déjà paid), no-op.
+ */
+async function ensureRebillFirstPaid(
+  supabase: SupabaseClient,
+  metadata: Record<string, string>,
+  ids: BonCommandeIds,
+): Promise<void> {
+  if (metadata.source !== "rebill") return;
+
+  const saleId = metadata.rebill_sale_id;
+  if (!saleId) {
+    console.error("[rebill] missing rebill_sale_id in metadata");
+    return;
+  }
+
+  // Idempotency : si la 1re pending de la vente est déjà paid avec le même
+  // PI ou la même invoice, no-op.
+  if (ids.paymentIntentId) {
+    const { data: alreadyPaid } = await supabase
+      .from("payments")
+      .select("id")
+      .eq("stripe_payment_intent_id", ids.paymentIntentId)
+      .eq("status", "paid")
+      .maybeSingle();
+    if (alreadyPaid) {
+      console.log(`[rebill] PI ${ids.paymentIntentId} already marked paid, skip`);
+      return;
+    }
+  }
+
+  // 1) Attache le nouveau sub_id à TOUS les pending (et late) de la vente.
+  if (ids.subscriptionId) {
+    const { error: attachErr } = await supabase
+      .from("payments")
+      .update({ stripe_subscription_id: ids.subscriptionId })
+      .eq("sale_id", saleId)
+      .in("status", ["pending", "late"]);
+    if (attachErr) {
+      console.error("[rebill] failed to attach sub_id to pendings:", attachErr);
+    } else {
+      console.log(
+        `[rebill] attached sub=${ids.subscriptionId} to pending payments of sale=${saleId}`,
+      );
+    }
+  }
+
+  // 2) Marque la 1re pending (par payment_number, fallback due_date) comme paid.
+  const { data: firstPending } = await supabase
+    .from("payments")
+    .select("id, payment_number")
+    .eq("sale_id", saleId)
+    .eq("status", "pending")
+    .order("payment_number", { ascending: true })
+    .order("due_date", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (!firstPending) {
+    console.warn(
+      `[rebill] no pending payment found for sale=${saleId}, can't mark paid`,
+    );
+    return;
+  }
+
+  const patch: Record<string, unknown> = {
+    status: "paid",
+    paid_at: todayISO(),
+  };
+  if (ids.paymentIntentId) patch.stripe_payment_intent_id = ids.paymentIntentId;
+  if (ids.invoiceId) patch.stripe_invoice_id = ids.invoiceId;
+  if (ids.subscriptionId) patch.stripe_subscription_id = ids.subscriptionId;
+
+  const { error: paidErr } = await supabase
+    .from("payments")
+    .update(patch)
+    .eq("id", firstPending.id);
+  if (paidErr) {
+    console.error("[rebill] failed to mark first pending paid:", paidErr);
+    return;
+  }
+
+  // 3) Update sale.payment_status = 'in_progress' (au cas où elle serait restée
+  // en 'lost' ou 'pending' si le wizard a planté entre-deux).
+  await supabase
+    .from("sales")
+    .update({ payment_status: "in_progress" })
+    .eq("id", saleId);
+
+  console.log(
+    `[rebill] sale=${saleId} payment ${firstPending.id} (#${firstPending.payment_number}) marked paid via rebill`,
+  );
+
+  triggerClientInvoice(firstPending.id);
+}
+
 async function handlePaymentIntentSucceeded(
   supabase: SupabaseClient,
   pi: Record<string, unknown>,
@@ -660,6 +765,18 @@ async function handlePaymentIntentSucceeded(
   // Branche acompte : paiement one-shot 50/100/150 €
   if (metadata.source === "acompte") {
     await ensureAcompteOrder(supabase, metadata, {
+      paymentIntentId: piId,
+      subscriptionId,
+      invoiceId,
+    });
+    return;
+  }
+
+  // Branche rebill : nouveau plan de paiement après modification.
+  // Pas de création de vente : on attache le nouveau sub_id aux pending
+  // existants et on marque la 1re comme paid.
+  if (metadata.source === "rebill") {
+    await ensureRebillFirstPaid(supabase, metadata, {
       paymentIntentId: piId,
       subscriptionId,
       invoiceId,

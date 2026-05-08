@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import {
   CalendarIcon, AlertTriangle, CheckCircle2, Loader2, ArrowRight, RotateCcw,
-  CreditCard,
+  CreditCard, Link2, Copy, Mail, MessageCircle, ExternalLink, Sparkles,
 } from "lucide-react";
 import { format, addMonths } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -43,12 +43,18 @@ interface ReschedulePaymentsModalProps {
 }
 
 // ─── Calcul du nouveau plan ─────────────────────────────────────────
-// Approche : N mensualités d'un montant aussi proche que possible (écart de 1
-// centime maximum entre les plus grosses et les plus petites). Les premières
-// mensualités absorbent les centimes "en trop" pour atteindre exactement le
-// total restant — pas de mensualité d'ajustement bizarre à la fin.
+// Approche : N mensualités égales (montant baseCents). On regroupe TOUT le reste
+// de la division (extraCents, max N-1 cents) sur la 1re mensualité — le client
+// paie un peu plus aujourd'hui et toutes les suivantes sont identiques.
 //
-// Exemple : 1666.66 € / 11 → baseCents=15151, extraCents=5 → 5×151,52 + 6×151,51
+// Pourquoi sur la 1re et pas distribué : ça permet à Stripe Subscription de
+// facturer un prix unitaire récurrent FIXE (= baseCents) + un ajustement
+// one-shot (= extraCents) sur la 1re facture, pour un match au centime près
+// avec la BDD. Distribuer les centimes (1 ou 2 mensualités à +1 cent au milieu)
+// rendrait impossible un alignement Stripe ↔ BDD parfait.
+//
+// Exemple : 1666.66 € / 11 → baseCents=15151, extraCents=5
+//   → 1re mensualité 151,56 € + 10 mensualités 151,51 € (somme = 1666,66 €)
 function computeNewPlan(remaining: number, count: number, startDate: Date): {
   payments: { amount: number; due_date: string }[];
   warnings: string[];
@@ -68,9 +74,8 @@ function computeNewPlan(remaining: number, count: number, startDate: Date): {
 
   const payments: { amount: number; due_date: string }[] = [];
   for (let i = 0; i < count; i++) {
-    // Les `extraCents` premières mensualités font 1 centime de plus pour
-    // absorber le reste de la division. Garantit somme totale exacte.
-    const cents = i < extraCents ? baseCents + 1 : baseCents;
+    // Tous les extras sur la 1re mensualité, le reste à baseCents fixe.
+    const cents = i === 0 ? baseCents + extraCents : baseCents;
     payments.push({
       amount: cents / 100,
       due_date: format(addMonths(startDate, i), "yyyy-MM-dd"),
@@ -123,6 +128,19 @@ export default function ReschedulePaymentsModal({
   });
   const [saving, setSaving] = useState(false);
 
+  // ── Étape 3 : Lien de re-paiement client ──
+  type SuccessInfo = {
+    rebillUrl: string;
+    rebillToken: string;
+    installments: number;
+    todayCharge: number;
+    monthlyAmount: number | null;
+    payableTotal: number;
+  };
+  const [successInfo, setSuccessInfo] = useState<SuccessInfo | null>(null);
+  const [generatingLink, setGeneratingLink] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   // ── Reset à l'ouverture ──
   useEffect(() => {
     if (open) {
@@ -132,6 +150,9 @@ export default function ReschedulePaymentsModal({
         (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
       )[0];
       setStartDate(firstPending ? new Date(firstPending.due_date) : addMonths(new Date(), 1));
+      // reset success state
+      setSuccessInfo(null);
+      setCopied(false);
     }
   }, [open, pendingPayments]);
 
@@ -240,11 +261,54 @@ export default function ReschedulePaymentsModal({
       //    Comme on vient de créer de nouveaux pending, la vente repasse à 'in_progress'.
       await supabase.from("sales").update({ payment_status: "in_progress" }).eq("id", saleId);
 
+      // 7. Génère (ou récupère) le rebill_token pour pouvoir transmettre un lien
+      //    de re-paiement au client. L'edge function create-payment-intent
+      //    s'appuie sur ce token pour reconstruire la subscription.
+      setGeneratingLink(true);
+      const { data: tokenData, error: tokenErr } = await supabase.rpc(
+        "generate_rebill_token",
+        { p_sale_id: saleId },
+      );
+      if (tokenErr || !tokenData) {
+        // Le replan a réussi : on n'échoue PAS la transaction. On affiche un
+        // toast d'erreur et on laisse le wizard ouvert avec un message
+        // de fallback (le CEO pourra retenter via le bouton "Modifier le
+        // plan" → le replan sera idempotent et générera le token).
+        console.error("[rebill] generate_rebill_token failed", tokenErr);
+        toast({
+          title: "Plan replanifié ✓ (lien client à générer manuellement)",
+          description:
+            "Le plan est en place mais la génération du lien client a échoué. Réouvre le wizard pour réessayer.",
+          variant: "destructive",
+        });
+        onOpenChange(false);
+        onSuccess();
+        return;
+      }
+
+      const rebillToken = String(tokenData);
+      const rebillUrl = `${window.location.origin}/rebill/${rebillToken}`;
+
+      // Calcule todayCharge et monthlyAmount pour l'affichage du panneau succès
+      const firstAmount = plan.payments[0]?.amount ?? 0;
+      const restAmounts = plan.payments.slice(1);
+      const restAvg = restAmounts.length > 0
+        ? Math.round((restAmounts.reduce((s, p) => s + p.amount, 0) / restAmounts.length) * 100) / 100
+        : null;
+
+      setSuccessInfo({
+        rebillUrl,
+        rebillToken,
+        installments: plan.payments.length,
+        todayCharge: firstAmount,
+        monthlyAmount: restAvg,
+        payableTotal: planTotalRounded,
+      });
+
       toast({
         title: "Plan replanifié ✓",
-        description: `${plan.payments.length} nouvelle(s) mensualité(s) créée(s) pour un total de ${planTotalRounded.toLocaleString("fr-FR")} €.`,
+        description: `${plan.payments.length} mensualité(s) — total ${planTotalRounded.toLocaleString("fr-FR")} €. Lien client prêt.`,
       });
-      onOpenChange(false);
       onSuccess();
     } catch (e: any) {
       console.error(e);
@@ -255,7 +319,175 @@ export default function ReschedulePaymentsModal({
       });
     } finally {
       setSaving(false);
+      setGeneratingLink(false);
     }
+  }
+
+  // ── Helpers étape succès ──
+  function handleCopyLink() {
+    if (!successInfo) return;
+    navigator.clipboard.writeText(successInfo.rebillUrl).then(
+      () => {
+        setCopied(true);
+        toast({ title: "Lien copié", description: "Tu peux le coller dans WhatsApp, Telegram, SMS, email…" });
+        setTimeout(() => setCopied(false), 2500);
+      },
+      () => {
+        toast({
+          title: "Copie impossible",
+          description: "Sélectionne le lien manuellement et copie-le.",
+          variant: "destructive",
+        });
+      }
+    );
+  }
+
+  function handleEmailLink() {
+    if (!successInfo) return;
+    const subject = encodeURIComponent(
+      `Lien de paiement ${saleProduct} — Solde restant`,
+    );
+    const body = encodeURIComponent(
+      `Bonjour ${contactName},\n\n` +
+        `Voici le lien sécurisé pour régler le solde de votre plan ${saleProduct} :\n\n` +
+        `${successInfo.rebillUrl}\n\n` +
+        `Solde total : ${successInfo.payableTotal.toLocaleString("fr-FR")} €` +
+        (successInfo.installments > 1 && successInfo.monthlyAmount
+          ? ` (${successInfo.installments} mensualités)`
+          : "") +
+        `.\n\n` +
+        `Le paiement est sécurisé par Stripe (3D Secure).\n\n` +
+        `Bien à vous,\nL'équipe AL BARAKA`,
+    );
+    window.open(`mailto:?subject=${subject}&body=${body}`, "_blank");
+  }
+
+  function handleWhatsAppLink() {
+    if (!successInfo) return;
+    const text = encodeURIComponent(
+      `Bonjour ${contactName.split(" ")[0]} 👋\n\n` +
+        `Voici votre lien de paiement sécurisé pour solder votre plan ${saleProduct} :\n\n` +
+        `${successInfo.rebillUrl}\n\n` +
+        `Total : ${successInfo.payableTotal.toLocaleString("fr-FR")} €` +
+        (successInfo.installments > 1
+          ? ` en ${successInfo.installments} mensualités`
+          : ` en 1 fois`) +
+        `.`,
+    );
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+  }
+
+  // ── Vue succès : plan replanifié + lien rebill généré ──
+  if (successInfo) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-emerald-400" />
+              Plan replanifié — Lien client prêt
+            </DialogTitle>
+            <DialogDescription>
+              Transmets ce lien à <strong>{contactName}</strong> pour qu'il puisse re-autoriser le paiement.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Récap du plan */}
+          <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Solde à régler</span>
+              <span className="font-bold text-emerald-300 tabular-nums">
+                {successInfo.payableTotal.toLocaleString("fr-FR")} €
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Mensualités</span>
+              <span className="font-medium text-foreground">
+                {successInfo.installments === 1
+                  ? "1 paiement (comptant)"
+                  : `${successInfo.installments} mensualités`}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">À débiter aujourd'hui</span>
+              <span className="font-medium text-foreground tabular-nums">
+                {successInfo.todayCharge.toFixed(2).replace(".", ",")} €
+              </span>
+            </div>
+            {successInfo.installments > 1 && successInfo.monthlyAmount && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Puis × {successInfo.installments - 1} mois</span>
+                <span className="font-medium text-foreground tabular-nums">
+                  {successInfo.monthlyAmount.toFixed(2).replace(".", ",")} €
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Lien à copier */}
+          <div className="space-y-2">
+            <Label className="text-xs flex items-center gap-1.5">
+              <Link2 className="h-3.5 w-3.5 text-primary" />
+              Lien de paiement client
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                readOnly
+                value={successInfo.rebillUrl}
+                onClick={(e) => (e.currentTarget as HTMLInputElement).select()}
+                className="text-xs font-mono h-9"
+              />
+              <Button
+                size="sm"
+                variant={copied ? "default" : "outline"}
+                onClick={handleCopyLink}
+                className="gap-1.5 shrink-0"
+              >
+                {copied ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? "Copié" : "Copier"}
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Token <code className="font-mono">{successInfo.rebillToken}</code> — toujours valable, reflète le solde courant.
+              Si tu refais une modification du plan, le même lien continue de fonctionner avec le nouveau solde.
+            </p>
+          </div>
+
+          {/* Actions de partage */}
+          <div className="grid grid-cols-3 gap-2">
+            <Button variant="outline" size="sm" onClick={handleEmailLink} className="gap-1.5 h-9 text-xs">
+              <Mail className="h-3.5 w-3.5" />
+              Email
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleWhatsAppLink} className="gap-1.5 h-9 text-xs">
+              <MessageCircle className="h-3.5 w-3.5" />
+              WhatsApp
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(successInfo.rebillUrl, "_blank")}
+              className="gap-1.5 h-9 text-xs"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Tester
+            </Button>
+          </div>
+
+          <div className="rounded-md border border-blue-500/20 bg-blue-500/5 p-2.5 text-[11px] text-foreground/80">
+            <strong className="text-blue-300">Étape suivante :</strong> dès que le client paiera via ce lien,
+            la 1re mensualité sera marquée payée automatiquement et la nouvelle subscription Stripe sera attachée
+            aux suivantes (relances mensuelles auto).
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => onOpenChange(false)}>
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
   }
 
   return (
@@ -457,7 +689,9 @@ export default function ReschedulePaymentsModal({
             className="gap-2"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Replanifier {plan.payments.length > 0 ? `(${plan.payments.length} mensualité${plan.payments.length > 1 ? "s" : ""})` : ""}
+            {generatingLink
+              ? "Génération du lien…"
+              : `Replanifier${plan.payments.length > 0 ? ` (${plan.payments.length} mensualité${plan.payments.length > 1 ? "s" : ""})` : ""}`}
           </Button>
         </DialogFooter>
       </DialogContent>

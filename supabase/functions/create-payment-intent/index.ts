@@ -1,12 +1,19 @@
 // create-payment-intent
 //
-// 2 modes :
+// Modes :
 //   1. product_type = "pass_al_baraka" (défaut) : flow PASS AL BARAKA classique
 //      avec installments 1-8. Optionnellement, si `payment_code` fourni, lookup
 //      du contact + acomptes payés et déduction du solde à payer.
 //   2. product_type = "acompte" : paiement one-shot de 50/100/150 € sans accès,
 //      sans plan de paiement, sans coupon. La facture sera envoyée par email,
 //      le contact recevra un payment_code à utiliser sur le checkout principal.
+//   3. product_type = "pass_liberty" : flow PASS LIBERTY (5000 €, 1-10x).
+//   4. product_type = "rebill" : nouveau plan de paiement pour une vente
+//      existante après modification (wizard "Modifier le plan"). On lit les
+//      mensualités pending de la vente et on crée un PaymentIntent (1x) ou
+//      une Subscription (Nx). Le webhook attache ensuite le sub_id aux
+//      pending et marque la 1re mensualité paid. PAS de création de vente,
+//      PAS de profile, PAS d'onboarding (la vente existe déjà).
 //
 // Important : quand un acompte est appliqué OU qu'un coupon est appliqué, on
 // calcule nous-même le solde net côté serveur et on envoie le montant final
@@ -43,6 +50,13 @@ const LIBERTY_MAX_INSTALLMENTS = 10;
 // Code promo Liberty : ne s'applique QUE en paiement comptant (1x).
 // Sur 2-10x mensualités, le coupon est ignoré côté serveur.
 const LIBERTY_COUPON_1X_ONLY = "LIBERTY2000";
+
+// REBILL : Stripe product générique pour les nouvelles subs après modification
+// d'un plan de paiement. Conserve un product_id distinct pour ne pas mélanger
+// avec les ventes initiales pass_al_baraka / pass_liberty.
+const REBILL_PRODUCT_ID = "rebill_plan";
+const REBILL_PRODUCT_NAME = "Solde restant — Plan modifié";
+const REBILL_MAX_INSTALLMENTS = 12;
 
 function flattenParams(params: Record<string, unknown>): URLSearchParams {
   const out = new URLSearchParams();
@@ -120,12 +134,14 @@ Deno.serve(async (req) => {
 
   try {
     const input = await req.json().catch(() => ({}));
-    const productType: "pass_al_baraka" | "acompte" | "pass_liberty" =
+    const productType: "pass_al_baraka" | "acompte" | "pass_liberty" | "rebill" =
       input.product_type === "acompte"
         ? "acompte"
         : input.product_type === "pass_liberty"
           ? "pass_liberty"
-          : "pass_al_baraka";
+          : input.product_type === "rebill"
+            ? "rebill"
+            : "pass_al_baraka";
     const isTestMode = !!input.test_mode;
     const customer = (input.customer || {}) as Record<string, string>;
 
@@ -419,6 +435,292 @@ Deno.serve(async (req) => {
           payable_cents: libPayableCents,
           discount_percent: libDiscountPercent,
           installments: libInstallments,
+          test_mode: isTestMode,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // MODE 4 : REBILL (re-paiement après modification du plan)
+    //
+    // Le client a déjà une vente avec des mensualités pending. La précédente
+    // sub Stripe a été annulée par le wizard "Modifier le plan". On crée
+    // ici une nouvelle sub (ou un PI 1x) que le webhook attachera ensuite
+    // aux pending existants.
+    // ════════════════════════════════════════════════════════════════════
+    if (productType === "rebill") {
+      const rebillToken = String(input.rebill_token || "").trim().toUpperCase();
+      if (!rebillToken) {
+        return new Response(
+          JSON.stringify({ error: "rebill_token requis" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Lookup : valide le token + récupère sale_id, contact_id et solde
+      const { data: lookupRows, error: lookupErr } = await supabase.rpc(
+        "lookup_rebill_token",
+        { p_token: rebillToken },
+      );
+      if (lookupErr) {
+        console.error("[rebill] lookup_rebill_token failed:", lookupErr);
+        return new Response(
+          JSON.stringify({ error: "lookup_failed", message: lookupErr.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      const row = Array.isArray(lookupRows) && lookupRows.length > 0 ? lookupRows[0] : null;
+      if (!row || !row.is_valid) {
+        return new Response(
+          JSON.stringify({
+            error: "rebill_token_invalid",
+            reason: row?.reason || "unknown",
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const saleId: string = row.sale_id;
+      const contactId: string = row.contact_id;
+      const productLabel: string = row.product || REBILL_PRODUCT_NAME;
+      const payableTotalEur = Number(row.payable_total);
+      const installmentsCount = Number(row.installments_count);
+      if (
+        !Number.isFinite(payableTotalEur) ||
+        payableTotalEur < 0.01 ||
+        !Number.isInteger(installmentsCount) ||
+        installmentsCount < 1 ||
+        installmentsCount > REBILL_MAX_INSTALLMENTS
+      ) {
+        return new Response(
+          JSON.stringify({
+            error: "rebill_invalid_amount",
+            payable_total: payableTotalEur,
+            installments_count: installmentsCount,
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Source de vérité côté serveur : on relit les pending de la vente
+      // pour obtenir le montant exact (la RPC peut arrondir au cent près
+      // dans monthly_amount, mais payable_total est la somme exacte).
+      const payableTotalCents = Math.round(payableTotalEur * 100);
+      // La 1re mensualité est facturée immédiatement = exactement le montant
+      // de la 1re ligne pending (pour que le webhook puisse marquer paid
+      // sans erreur d'arrondi). On la lit directement.
+      const { data: firstPending, error: pendingErr } = await supabase
+        .from("payments")
+        .select("id, amount, payment_number, due_date")
+        .eq("sale_id", saleId)
+        .eq("status", "pending")
+        .order("payment_number", { ascending: true })
+        .order("due_date", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (pendingErr || !firstPending) {
+        return new Response(
+          JSON.stringify({
+            error: "rebill_no_pending",
+            message: "Aucune mensualité pending trouvée pour cette vente.",
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      const firstAmountCents = Math.round(Number(firstPending.amount) * 100);
+
+      const rebillMetadata: Record<string, string> = {
+        product: productLabel,
+        product_type: "rebill",
+        source: "rebill",
+        rebill_token: rebillToken,
+        rebill_sale_id: saleId,
+        rebill_contact_id: contactId,
+        installments: String(installmentsCount),
+        test_mode: isTestMode ? "true" : "false",
+        customer_email: email,
+        customer_full_name: fullName,
+        customer_phone: String(customer.phone || ""),
+        customer_address: String(customer.address || ""),
+        customer_postal_code: String(customer.postal_code || ""),
+        customer_city: String(customer.city || ""),
+        customer_country: String(customer.country || ""),
+        payable_cents: String(payableTotalCents),
+        first_payment_cents: String(firstAmountCents),
+      };
+
+      // 1x → PaymentIntent unique (montant total = 1re mensualité = solde)
+      if (installmentsCount === 1) {
+        const pi = await stripeFetch<{ id: string; client_secret: string }>(
+          apiKey,
+          "/payment_intents",
+          {
+            amount: firstAmountCents,
+            currency: "eur",
+            receipt_email: email,
+            metadata: rebillMetadata,
+            description: `${productLabel} — Solde restant (1 fois)`,
+            "payment_method_types[0]": "card",
+            "payment_method_options[card][request_three_d_secure]": "automatic",
+          },
+        );
+        return new Response(
+          JSON.stringify({
+            client_secret: pi.client_secret,
+            intent_id: pi.id,
+            intent_type: "payment",
+            product_type: "rebill",
+            amount_cents: firstAmountCents,
+            payable_cents: payableTotalCents,
+            installments: installmentsCount,
+            test_mode: isTestMode,
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Nx → Subscription Stripe.
+      //
+      // Le wizard ReschedulePaymentsModal applique un algo "1re mensualité
+      // absorbe les centimes restants, suivantes égales à baseCents". Donc :
+      //   payable_total = (baseCents + extraCents) + (N-1) × baseCents
+      //                 = N × baseCents + extraCents
+      //   firstAmountCents = baseCents + extraCents
+      //   remainingCents   = (N-1) × baseCents
+      //
+      // On configure la Subscription avec :
+      //   unit_amount récurrent = baseCents (les N invoices)
+      //   add_invoice_items[0]  = extraCents (one-shot sur la 1re invoice)
+      // → Invoice 1 facture exactement firstAmountCents ; les suivantes baseCents.
+      // → Total Stripe = total BDD au centime près.
+      const remainingCents = payableTotalCents - firstAmountCents;
+      const restMonthlyCents = Math.round(remainingCents / (installmentsCount - 1));
+
+      // Lookup customer Stripe
+      const rebillSearch = await stripeFetch<{ data: Array<{ id: string }> }>(
+        apiKey,
+        `/customers/search?query=${encodeURIComponent(`email:"${email}"`)}`,
+        {},
+        "GET",
+      ).catch(() => ({ data: [] as Array<{ id: string }> }));
+
+      let rebillCustomerId: string;
+      if (rebillSearch.data?.[0]?.id) {
+        rebillCustomerId = rebillSearch.data[0].id;
+        await stripeFetch(apiKey, `/customers/${rebillCustomerId}`, {
+          name: fullName,
+          phone: String(customer.phone || ""),
+          "address[line1]": String(customer.address || ""),
+          "address[postal_code]": String(customer.postal_code || ""),
+          "address[city]": String(customer.city || ""),
+          "address[country]": String(customer.country || ""),
+          metadata: rebillMetadata,
+        });
+      } else {
+        const created = await stripeFetch<{ id: string }>(apiKey, "/customers", {
+          email,
+          name: fullName,
+          phone: String(customer.phone || ""),
+          "address[line1]": String(customer.address || ""),
+          "address[postal_code]": String(customer.postal_code || ""),
+          "address[city]": String(customer.city || ""),
+          "address[country]": String(customer.country || ""),
+          metadata: rebillMetadata,
+        });
+        rebillCustomerId = created.id;
+      }
+
+      // cancel_at = today + N mois - 1 jour pour que Stripe stoppe la sub
+      // automatiquement après la dernière mensualité.
+      const rebillCancelDate = new Date();
+      rebillCancelDate.setMonth(rebillCancelDate.getMonth() + installmentsCount);
+      rebillCancelDate.setDate(rebillCancelDate.getDate() - 1);
+      const rebillCancelAt = Math.floor(rebillCancelDate.getTime() / 1000);
+
+      const rebillProductId = await ensureStripeProduct(
+        apiKey,
+        REBILL_PRODUCT_ID,
+        REBILL_PRODUCT_NAME,
+      );
+
+      // Subscription avec un prix variable : on utilise add_invoice_items pour
+      // facturer la 1re mensualité au montant exact, puis les invoices
+      // récurrentes seront au montant moyen (qui sera ré-écrit en BDD côté
+      // webhook depuis le payments.amount stocké). Note : Stripe ne supporte
+      // pas un montant différent pour la 1re facture native. On accepte donc
+      // que Stripe puisse facturer ~1 cent de plus/moins sur certaines
+      // invoices : le webhook se base sur `payments.amount` stocké pour
+      // déterminer ce qui est dû et marqué paid (Stripe encaisse, BDD trace).
+      const rebillSubParams: Record<string, unknown> = {
+        customer: rebillCustomerId,
+        "items[0][price_data][currency]": "eur",
+        "items[0][price_data][unit_amount]": restMonthlyCents,
+        "items[0][price_data][recurring][interval]": "month",
+        "items[0][price_data][product]": rebillProductId,
+        payment_behavior: "default_incomplete",
+        "payment_settings[save_default_payment_method]": "on_subscription",
+        "payment_settings[payment_method_types][0]": "card",
+        "payment_settings[payment_method_options][card][request_three_d_secure]":
+          "automatic",
+        cancel_at: rebillCancelAt,
+        description: `${productLabel} — Solde restant (${installmentsCount} mensualités)`,
+        "expand[0]": "latest_invoice.payment_intent",
+        metadata: rebillMetadata,
+      };
+
+      // Ajustement one-shot de la 1re facture pour atteindre exactement
+      // firstAmountCents. Garantit Stripe == BDD au centime près grâce à
+      // l'algo "first-payment-absorbs-extras" du wizard ReschedulePayments.
+      const adjustmentCents = firstAmountCents - restMonthlyCents;
+      if (adjustmentCents > 0) {
+        rebillSubParams["add_invoice_items[0][price_data][currency]"] = "eur";
+        rebillSubParams["add_invoice_items[0][price_data][product]"] = rebillProductId;
+        rebillSubParams["add_invoice_items[0][price_data][unit_amount]"] = adjustmentCents;
+        rebillSubParams["add_invoice_items[0][quantity]"] = 1;
+      }
+      // Si adjustmentCents < 0 (ne peut survenir qu'avec d'anciens pending
+      // pré-algo) : on ne corrige pas — le wizard remet de toute façon les
+      // pending au format "first absorbs extras" avant l'émission du token.
+
+      const rebillSub = await stripeFetch<{
+        id: string;
+        latest_invoice?: { payment_intent?: { id: string; client_secret: string } };
+      }>(apiKey, "/subscriptions", rebillSubParams);
+
+      const rebillPi = rebillSub.latest_invoice?.payment_intent;
+      if (rebillPi?.id) {
+        try {
+          const piMeta = { ...rebillMetadata, stripe_subscription_id: rebillSub.id };
+          await stripeFetch(apiKey, `/payment_intents/${rebillPi.id}`, {
+            metadata: piMeta,
+          });
+        } catch (e) {
+          console.error("Failed to patch rebill PI metadata:", e);
+        }
+      }
+
+      if (!rebillPi?.client_secret) {
+        return new Response(
+          JSON.stringify({
+            error: "rebill subscription créée mais pas de client_secret",
+            subscription_id: rebillSub.id,
+          }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          client_secret: rebillPi.client_secret,
+          intent_id: rebillPi.id,
+          intent_type: "subscription",
+          product_type: "rebill",
+          subscription_id: rebillSub.id,
+          customer_id: rebillCustomerId,
+          amount_cents: firstAmountCents, // 1re mensualité (facturée tout de suite)
+          payable_cents: payableTotalCents, // solde total
+          installments: installmentsCount,
           test_mode: isTestMode,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
