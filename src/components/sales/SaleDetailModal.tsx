@@ -3,18 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Check, RefreshCw, Trash2, Plus, CalendarIcon, Pencil, X, Save, AlertTriangle, Loader2, CreditCard, Ban, TrendingUp, CalendarClock, RotateCcw } from "lucide-react";
+import { Check, RefreshCw, Trash2, Plus, CalendarIcon, Pencil, X, Save, AlertTriangle, Loader2, CreditCard, Ban, TrendingUp, CalendarClock, RotateCcw, Link2, Copy, Mail, MessageCircle, ExternalLink, CheckCircle2 } from "lucide-react";
 import ReschedulePaymentsModal from "./ReschedulePaymentsModal";
 import { formatDateOnly } from "@/lib/formatDate";
 import { format } from "date-fns";
@@ -82,12 +83,17 @@ export default function SaleDetailModal({
   const fetchPayments = useCallback(async () => {
     if (!saleId) return;
     setLoading(true);
-    const { data } = await supabase
-      .from("payments")
-      .select("id, payment_number, total_payments, amount, due_date, paid_at, status, payment_method, stripe_subscription_id, stripe_payment_intent_id")
-      .eq("sale_id", saleId)
-      .order("payment_number", { ascending: true });
-    setPayments(data || []);
+    const [{ data: paymentsData }, { data: saleMeta }] = await Promise.all([
+      supabase
+        .from("payments")
+        .select("id, payment_number, total_payments, amount, due_date, paid_at, status, payment_method, stripe_subscription_id, stripe_payment_intent_id")
+        .eq("sale_id", saleId)
+        .order("payment_number", { ascending: true }),
+      supabase.from("sales").select("systeme_io_order_id, rebill_token").eq("id", saleId).single(),
+    ]);
+    setPayments(paymentsData || []);
+    setSystemeIoOrderId(saleMeta?.systeme_io_order_id ?? null);
+    setRebillToken((saleMeta as { rebill_token?: string | null })?.rebill_token ?? null);
     setLoading(false);
   }, [saleId]);
 
@@ -223,15 +229,15 @@ export default function SaleDetailModal({
     .filter((p) => p.status === "pending")
     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
 
-  // Récupère le systeme_io_order_id de la vente (utile pour détecter les ventes
-  // Systeme.io, dont la subscription Stripe sous-jacente est annulable via lookup
-  // email par l'edge function cancel-stripe-subscription).
+  // Métadonnées vente : systeme_io_order_id + rebill_token (alimentés par
+  // fetchPayments). Le rebill_token est nul tant que le CEO n'a pas replanifié
+  // (le wizard ReschedulePaymentsModal le génère). Une fois généré, il
+  // persiste : un même token reflète toujours le solde courant.
   const [systemeIoOrderId, setSystemeIoOrderId] = useState<string | null>(null);
-  useEffect(() => {
-    if (!saleId || !open) return;
-    supabase.from("sales").select("systeme_io_order_id").eq("id", saleId).single()
-      .then(({ data }) => setSystemeIoOrderId(data?.systeme_io_order_id ?? null));
-  }, [saleId, open]);
+  const [rebillToken, setRebillToken] = useState<string | null>(null);
+  const [rebillDialogOpen, setRebillDialogOpen] = useState(false);
+  const [rebillCopied, setRebillCopied] = useState(false);
+  const rebillUrl = rebillToken ? `${window.location.origin}/rebill/${rebillToken}` : null;
 
   // ─── Subscription récurrente : détection & annulation ──────────────
   // Cas natif Stripe (Nx via les nouveaux liens) : sub_id stocké en BDD sur les payments.
@@ -455,7 +461,21 @@ export default function SaleDetailModal({
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h4 className="text-sm font-semibold text-foreground">Échéancier</h4>
             {isCeo && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Bouton "Lien client" : visible dès qu'un rebill_token existe ET
+                    qu'il y a encore des mensualités à payer. Ouvre la modale de
+                    partage (copy/email/whatsapp). */}
+                {rebillToken && pendingCount > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setRebillCopied(false); setRebillDialogOpen(true); }}
+                    className="gap-1.5 border-emerald-500/40 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-300"
+                    title="Récupère le lien à transmettre au client pour qu'il finalise le paiement du solde restant."
+                  >
+                    <Link2 className="h-3.5 w-3.5" /> Lien client
+                  </Button>
+                )}
                 {canReschedule && (
                   <Button
                     variant="outline"
@@ -783,6 +803,139 @@ export default function SaleDetailModal({
           }}
         />
       )}
+
+      {/* Lien client (rebill) — ouvert depuis le bouton "Lien client" de l'échéancier.
+          Affiche le même panneau que celui montré juste après un replan, en
+          permanence dès qu'un rebill_token existe sur la vente. */}
+      <Dialog open={rebillDialogOpen} onOpenChange={setRebillDialogOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="h-5 w-5 text-emerald-400" />
+              Lien de paiement client
+            </DialogTitle>
+            <DialogDescription>
+              Transmets ce lien à <strong>{contactName || "ce client"}</strong> pour qu'il finalise le paiement du solde restant.
+            </DialogDescription>
+          </DialogHeader>
+
+          {rebillUrl && (
+            <>
+              {/* Récap rapide */}
+              <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Solde à régler</span>
+                  <span className="font-bold text-emerald-300 tabular-nums">
+                    {totalPending.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Mensualités à payer</span>
+                  <span className="font-medium text-foreground">
+                    {pendingCount === 1 ? "1 paiement" : `${pendingCount} mensualités`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Lien à copier */}
+              <div className="space-y-2">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <Link2 className="h-3.5 w-3.5 text-primary" />
+                  URL sécurisée
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    readOnly
+                    value={rebillUrl}
+                    onClick={(e) => (e.currentTarget as HTMLInputElement).select()}
+                    className="text-xs font-mono h-9"
+                  />
+                  <Button
+                    size="sm"
+                    variant={rebillCopied ? "default" : "outline"}
+                    onClick={() => {
+                      navigator.clipboard.writeText(rebillUrl).then(
+                        () => {
+                          setRebillCopied(true);
+                          toast({ title: "Lien copié", description: "Tu peux le coller dans WhatsApp, email, SMS…" });
+                          setTimeout(() => setRebillCopied(false), 2500);
+                        },
+                        () => toast({ title: "Copie impossible", description: "Sélectionne le lien manuellement.", variant: "destructive" })
+                      );
+                    }}
+                    className="gap-1.5 shrink-0"
+                  >
+                    {rebillCopied ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    {rebillCopied ? "Copié" : "Copier"}
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Token <code className="font-mono">{rebillToken}</code> — toujours valable, reflète le solde courant.
+                </p>
+              </div>
+
+              {/* Actions de partage */}
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const subject = encodeURIComponent(`Lien de paiement ${saleProduct} — Solde restant`);
+                    const body = encodeURIComponent(
+                      `Bonjour ${contactName || ""},\n\n` +
+                        `Voici le lien sécurisé pour régler le solde de votre plan ${saleProduct} :\n\n` +
+                        `${rebillUrl}\n\n` +
+                        `Solde total : ${totalPending.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` +
+                        (pendingCount > 1 ? ` (${pendingCount} mensualités)` : "") +
+                        `.\n\nLe paiement est sécurisé par Stripe (3D Secure).\n\nBien à vous,\nL'équipe AL BARAKA`,
+                    );
+                    window.open(`mailto:?subject=${subject}&body=${body}`, "_blank");
+                  }}
+                  className="gap-1.5 h-9 text-xs"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  Email
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const firstName = (contactName || "").split(" ")[0];
+                    const text = encodeURIComponent(
+                      `Bonjour ${firstName} 👋\n\n` +
+                        `Voici votre lien de paiement sécurisé pour solder votre plan ${saleProduct} :\n\n` +
+                        `${rebillUrl}\n\n` +
+                        `Total : ${totalPending.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` +
+                        (pendingCount > 1 ? ` en ${pendingCount} mensualités` : ` en 1 fois`) +
+                        `.`,
+                    );
+                    window.open(`https://wa.me/?text=${text}`, "_blank");
+                  }}
+                  className="gap-1.5 h-9 text-xs"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  WhatsApp
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(rebillUrl, "_blank")}
+                  className="gap-1.5 h-9 text-xs"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Tester
+                </Button>
+              </div>
+            </>
+          )}
+
+          <DialogFooter>
+            <Button onClick={() => setRebillDialogOpen(false)}>
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Confirmation d'annulation Stripe */}
       <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
