@@ -115,10 +115,15 @@ export default function QuizLinkCard() {
         };
         for (const sub of subs ?? []) {
           // Toutes les submissions ont au moins l'email capturé (donc info partielle).
-          // Avec le nouveau flow, prénom + email + tel sont tous demandés au début.
+          // Avec le nouveau flow (refonte 06/05/2026), prénom + email + tel sont
+          // demandés dès le formulaire initial → le statut passe directement à
+          // 'phone_captured' AVANT que le quiz ne commence. Donc 'phone_captured'
+          // signifie maintenant "coordonnées laissées", pas "quiz fini".
+          // Seuls quiz_completed (= quiz fini) et whatsapp_clicked (= a cliqué
+          // sur WhatsApp à la fin) prouvent que le quiz a été terminé.
           s.info_captured++;
           const st = sub.status as string;
-          if (st === "quiz_completed" || st === "phone_captured" || st === "whatsapp_clicked") {
+          if (st === "quiz_completed" || st === "whatsapp_clicked") {
             s.quiz_completed++;
           }
           if (st === "whatsapp_clicked") s.whatsapp_clicked++;

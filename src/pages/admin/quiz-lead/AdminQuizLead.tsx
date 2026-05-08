@@ -135,10 +135,14 @@ export default function AdminQuizLead() {
     // L'ancien KPI "phoneCaptured" séparé n'a plus de sens en première mesure
     // (car toutes les nouvelles submissions ont un tel) → on le garde quand
     // même pour suivre la rétrocompat des anciennes submissions email_captured.
+    // Note refonte 06/05/2026 : 'phone_captured' = coordonnées laissées (le tel
+    // est demandé au début), pas "quiz fini". Donc on l'exclut des compteurs
+    // quizInProgress et quizCompleted — ces compteurs reflètent réellement la
+    // progression dans le quiz lui-même.
     const s = {
       infoCaptured: submissions.length,
-      quizInProgress: submissions.filter((x) => ["quiz_in_progress", "quiz_completed", "phone_captured", "whatsapp_clicked"].includes(x.status)).length,
-      quizCompleted: submissions.filter((x) => ["quiz_completed", "phone_captured", "whatsapp_clicked"].includes(x.status)).length,
+      quizInProgress: submissions.filter((x) => ["quiz_in_progress", "quiz_completed", "whatsapp_clicked"].includes(x.status)).length,
+      quizCompleted: submissions.filter((x) => ["quiz_completed", "whatsapp_clicked"].includes(x.status)).length,
       whatsappClicked: submissions.filter((x) => x.status === "whatsapp_clicked").length,
       // Rétrocompat : combien de submissions avec lead CRM créé (avec tel renseigné)
       withLead: submissions.filter((x) => !!x.lead_id).length,
@@ -165,7 +169,7 @@ export default function AdminQuizLead() {
       if (!entry) continue;
       // "Coordonnées" = toute submission (à minima email + nouveaux : email+tel)
       entry.coords++;
-      if (["quiz_completed", "phone_captured", "whatsapp_clicked"].includes(s.status)) entry.quizDone++;
+      if (["quiz_completed", "whatsapp_clicked"].includes(s.status)) entry.quizDone++;
       if (s.status === "whatsapp_clicked") entry.whatsapp++;
     }
     return Array.from(map.values())
