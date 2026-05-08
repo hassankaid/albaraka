@@ -47,15 +47,42 @@ async function stripeCall(
   return { ok: res.ok, data, status: res.status };
 }
 
-async function cancelSubscription(subscriptionId: string): Promise<{ data: any; mode: "live" | "test" }> {
+// Vérifie si la sub est déjà annulée (idempotence). Stripe DELETE
+// sur une sub déjà canceled renvoie une erreur — on lit donc d'abord
+// l'état pour décider si on appelle DELETE ou si on rapporte succès.
+async function tryCancelOrAlreadyCanceled(
+  apiKey: string,
+  subscriptionId: string,
+): Promise<{ ok: boolean; status: number; data: any; alreadyCanceled?: boolean }> {
+  // 1) GET pour voir si elle existe et son statut
+  const getRes = await stripeCall(apiKey, `/subscriptions/${subscriptionId}`, "GET");
+  if (!getRes.ok) {
+    // Pas trouvée avec cette clé (404) ou autre erreur : on fait remonter tel quel
+    return getRes;
+  }
+  const subStatus = String(getRes.data?.status || "");
+  // Statuts "déjà terminés" Stripe : pas de DELETE nécessaire
+  const terminatedStatuses = new Set(["canceled", "incomplete_expired", "ended"]);
+  if (terminatedStatuses.has(subStatus)) {
+    return { ok: true, status: 200, data: getRes.data, alreadyCanceled: true };
+  }
+  // 2) DELETE puisqu'elle est encore active/past_due/etc.
+  return stripeCall(apiKey, `/subscriptions/${subscriptionId}`, "DELETE");
+}
+
+async function cancelSubscription(subscriptionId: string): Promise<{ data: any; mode: "live" | "test"; alreadyCanceled?: boolean }> {
   if (STRIPE_SECRET_KEY_LIVE) {
-    const r = await stripeCall(STRIPE_SECRET_KEY_LIVE, `/subscriptions/${subscriptionId}`, "DELETE");
-    if (r.ok) return { data: r.data, mode: "live" };
+    const r = await tryCancelOrAlreadyCanceled(STRIPE_SECRET_KEY_LIVE, subscriptionId);
+    if (r.ok) return { data: r.data, mode: "live", alreadyCanceled: r.alreadyCanceled };
     if (r.status !== 404) throw new Error(`Stripe live: ${r.status} ${JSON.stringify(r.data)}`);
   }
   if (STRIPE_SECRET_KEY_TEST) {
-    const r = await stripeCall(STRIPE_SECRET_KEY_TEST, `/subscriptions/${subscriptionId}`, "DELETE");
-    if (r.ok) return { data: r.data, mode: "test" };
+    const r = await tryCancelOrAlreadyCanceled(STRIPE_SECRET_KEY_TEST, subscriptionId);
+    if (r.ok) return { data: r.data, mode: "test", alreadyCanceled: r.alreadyCanceled };
+    if (r.status === 404) {
+      // Sub introuvable des 2 côtés : on remonte 404 plutôt que d'erreur générique
+      throw new Error(`Stripe: subscription not found (live + test) ${subscriptionId}`);
+    }
     throw new Error(`Stripe test: ${r.status} ${JSON.stringify(r.data)}`);
   }
   throw new Error("No Stripe API key configured");
@@ -122,56 +149,12 @@ serve(async (req) => {
     const saleId = body?.sale_id as string | undefined;
     if (!saleId) return json({ error: "sale_id_required" }, 400);
 
-    // ── Récupère la subscription Stripe attachée à la vente ──
-    // Toutes les mensualités d'une même vente partagent le même sub_id.
-    // Pour les ventes Systeme.io (anciennes), pas de stripe_subscription_id en BDD :
-    // on fait un fallback en cherchant le customer Stripe par email.
+    // ── Récupère les payments de la vente ──
     const { data: payments, error: paymentsErr } = await supabase
       .from("payments")
       .select("id, status, stripe_subscription_id, payment_number, amount")
       .eq("sale_id", saleId);
     if (paymentsErr) throw paymentsErr;
-
-    const subscriptionIds = Array.from(new Set(
-      (payments || [])
-        .map((p) => p.stripe_subscription_id)
-        .filter((s): s is string => !!s)
-    ));
-
-    let subId: string | null = null;
-    let subMode: "live" | "test" | null = null;
-    let usedFallback = false;
-
-    if (subscriptionIds.length === 1) {
-      subId = subscriptionIds[0];
-    } else if (subscriptionIds.length > 1) {
-      return json({
-        error: "multiple_subscriptions",
-        message: "Plusieurs subscriptions distinctes attachées à cette vente. Inattendu.",
-        subscriptions: subscriptionIds,
-      }, 400);
-    } else {
-      // Pas de sub_id en BDD : tente le fallback Systeme.io via email
-      const { data: sale } = await supabase.from("sales").select("contact_id, systeme_io_order_id").eq("id", saleId).single();
-      if (!sale?.contact_id) return json({ error: "sale_not_found" }, 404);
-
-      const { data: contact } = await supabase.from("contacts").select("email").eq("id", sale.contact_id).single();
-      if (!contact?.email) {
-        return json({ error: "no_subscription", message: "Aucune subscription Stripe attachée à cette vente, et le contact n'a pas d'email pour le fallback." }, 400);
-      }
-
-      const found = await findStripeSubByEmail(contact.email);
-      if (!found) {
-        return json({
-          error: "no_subscription",
-          message: `Aucune subscription Stripe trouvée pour ${contact.email} (live + test). Vente Systeme.io non liée à Stripe ?`,
-          systeme_io_order_id: sale.systeme_io_order_id,
-        }, 404);
-      }
-      subId = found.subscriptionId;
-      subMode = found.mode;
-      usedFallback = true;
-    }
 
     const pendingPaymentIds = (payments || [])
       .filter((p) => p.status === "pending")
@@ -184,22 +167,104 @@ serve(async (req) => {
       }, 400);
     }
 
-    // ── Annule la subscription côté Stripe ──
-    let cancelResult: { data: any; mode: "live" | "test" };
-    try {
-      cancelResult = await cancelSubscription(subId!);
-    } catch (e: any) {
+    // ── Identifie la subscription à annuler ──
+    // On regarde UNIQUEMENT les pending pour ne pas tenter d'annuler une
+    // ancienne sub déjà terminée attachée à des paiements paid (ex: après
+    // un replan, le payment paid garde l'ancien sub_id, mais les nouveaux
+    // pending n'en ont pas — il ne faut PAS retoucher l'ancien sub).
+    const subscriptionIds = Array.from(new Set(
+      (payments || [])
+        .filter((p) => p.status === "pending")
+        .map((p) => p.stripe_subscription_id)
+        .filter((s): s is string => !!s)
+    ));
+
+    let subId: string | null = null;
+    let usedFallback = false;
+    let stripeMode: "live" | "test" | null = null;
+    let alreadyCanceled = false;
+
+    if (subscriptionIds.length === 1) {
+      subId = subscriptionIds[0];
+    } else if (subscriptionIds.length > 1) {
       return json({
-        error: "stripe_cancel_failed",
-        message: `Annulation Stripe échouée : ${e?.message || String(e)}`,
-        subscription_id: subId,
-      }, 502);
+        error: "multiple_subscriptions",
+        message: "Plusieurs subscriptions distinctes attachées aux pending. Inattendu.",
+        subscriptions: subscriptionIds,
+      }, 400);
+    } else {
+      // Pas de sub_id sur les pending. Deux scénarios :
+      //   1. Vente Systeme.io legacy → fallback par email
+      //   2. Post-replan : nouveaux pending sans sub_id encore (la nouvelle sub
+      //      sera créée quand le client paiera via le lien rebill). Dans ce cas
+      //      on ne cherche PAS via email (risque d'annuler la mauvaise sub d'un
+      //      autre business du customer). On marque juste les pending lost.
+      const { data: sale } = await supabase
+        .from("sales")
+        .select("contact_id, systeme_io_order_id")
+        .eq("id", saleId)
+        .single();
+      if (!sale?.contact_id) return json({ error: "sale_not_found" }, 404);
+
+      const isSystemeIoLegacy = !!sale.systeme_io_order_id;
+      if (isSystemeIoLegacy) {
+        const { data: contact } = await supabase
+          .from("contacts")
+          .select("email")
+          .eq("id", sale.contact_id)
+          .single();
+        if (!contact?.email) {
+          return json({
+            error: "no_subscription",
+            message: "Vente Systeme.io sans email contact — impossible de retrouver la sub.",
+          }, 400);
+        }
+        const found = await findStripeSubByEmail(contact.email);
+        if (found) {
+          subId = found.subscriptionId;
+          stripeMode = found.mode;
+          usedFallback = true;
+        }
+        // Si fallback échoue : on continue quand même (subId reste null) pour
+        // marquer les pending lost. La vente Systeme.io a peut-être déjà été
+        // annulée manuellement.
+      }
+      // Sinon : pas de fallback (post-replan, vente manuelle, etc.). On marque
+      // juste les pending lost sans toucher à Stripe.
+    }
+
+    // ── Annule la subscription Stripe (si on en a une) ──
+    let cancelMode: "live" | "test" | null = stripeMode;
+    if (subId) {
+      try {
+        const cancelResult = await cancelSubscription(subId);
+        cancelMode = cancelResult.mode;
+        alreadyCanceled = !!cancelResult.alreadyCanceled;
+      } catch (e: any) {
+        return json({
+          error: "stripe_cancel_failed",
+          message: `Annulation Stripe échouée : ${e?.message || String(e)}`,
+          subscription_id: subId,
+        }, 502);
+      }
     }
 
     // ── Marque les paiements pending comme 'lost' ──
     const cancelledAtIso = new Date().toISOString();
-    const sourceLabel = usedFallback ? "Systeme.io→Stripe (fallback email)" : "Stripe natif";
-    const note = `Subscription Stripe ${subId} annulée le ${cancelledAtIso.slice(0, 10)} (CEO ${user.email}). Source: ${sourceLabel}. Mode: ${cancelResult.mode}.`;
+    const sourceLabel = usedFallback
+      ? "Systeme.io→Stripe (fallback email)"
+      : subId
+        ? "Stripe natif"
+        : "Pas de subscription Stripe (manuel ou post-replan)";
+    const noteParts = [
+      subId ? `Subscription Stripe ${subId}` : "Pending",
+      `${alreadyCanceled ? "déjà annulée" : "annulée"} le ${cancelledAtIso.slice(0, 10)}`,
+      `(CEO ${user.email})`,
+      `Source: ${sourceLabel}`,
+      cancelMode ? `Mode: ${cancelMode}` : null,
+    ].filter(Boolean);
+    const note = noteParts.join(". ") + ".";
+
     const { error: updErr, count } = await supabase
       .from("payments")
       .update({
@@ -211,22 +276,13 @@ serve(async (req) => {
     if (updErr) throw updErr;
 
     // ── Met à jour le payment_status de la vente ──
-    // Si la vente a au moins 1 paiement payé, on la marque 'lost' (paiement
-    // partiel acquis, mais la vente est "perdue" dans son ensemble).
-    // Recompute via la fonction existante si elle existe, sinon manual.
-    const { data: paid } = await supabase
-      .from("payments")
-      .select("id")
-      .eq("sale_id", saleId)
-      .eq("status", "paid")
-      .limit(1);
-    const newSaleStatus = (paid && paid.length > 0) ? "lost" : "lost"; // toujours lost dans ce flow
-    await supabase.from("sales").update({ payment_status: newSaleStatus }).eq("id", saleId);
+    await supabase.from("sales").update({ payment_status: "lost" }).eq("id", saleId);
 
     return json({
       ok: true,
       subscription_id: subId,
-      stripe_mode: cancelResult.mode,
+      stripe_mode: cancelMode,
+      stripe_already_canceled: alreadyCanceled,
       cancelled_at: cancelledAtIso,
       payments_marked_lost: count ?? pendingPaymentIds.length,
       sale_id: saleId,

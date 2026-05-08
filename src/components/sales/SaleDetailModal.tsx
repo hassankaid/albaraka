@@ -253,12 +253,32 @@ export default function SaleDetailModal({
       const { data, error } = await supabase.functions.invoke("cancel-stripe-subscription", {
         body: { sale_id: saleId },
       });
-      if (error) throw new Error(error.message);
-      const result = data as { ok?: boolean; payments_marked_lost?: number; subscription_id?: string; message?: string; error?: string };
+
+      // supabase.functions.invoke met `error` dès qu'on a un 4xx/5xx. On lit
+      // alors le body JSON via context (Response) pour récupérer le message
+      // métier et l'afficher correctement.
+      let result: { ok?: boolean; payments_marked_lost?: number; subscription_id?: string; message?: string; error?: string; stripe_already_canceled?: boolean } | null = null;
+      if (error) {
+        const ctx = (error as { context?: Response }).context;
+        if (ctx && typeof ctx.json === "function") {
+          try { result = await ctx.json(); } catch { result = null; }
+        }
+        if (!result) throw new Error(error.message || "Erreur réseau");
+      } else {
+        result = data as typeof result;
+      }
+
       if (!result?.ok) throw new Error(result?.message || result?.error || "Annulation échouée");
+
+      const subDesc = result.subscription_id
+        ? (result.stripe_already_canceled
+            ? `Sub Stripe déjà annulée. ${result.payments_marked_lost} paiement(s) marqué(s) Perdu.`
+            : `${result.payments_marked_lost} paiement(s) marqué(s) Perdu. Plus aucun prélèvement Stripe.`)
+        : `${result.payments_marked_lost} paiement(s) marqué(s) Perdu (pas de subscription Stripe active).`;
+
       toast({
-        title: "Subscription annulée ✓",
-        description: `${result.payments_marked_lost} paiement(s) marqué(s) Perdu. Plus aucun prélèvement Stripe.`,
+        title: "Prélèvements stoppés ✓",
+        description: subDesc,
       });
       setCancelOpen(false);
       fetchPayments();
