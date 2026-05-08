@@ -183,15 +183,39 @@ export default function ReschedulePaymentsModal({
       // ventes Systeme.io qui n'ont pas de stripe_subscription_id en BDD), et
       // marque les pending comme 'lost'. Si pas de sub trouvée du tout (ex:
       // virement manuel pur), on continue : pas d'annulation à faire.
+      //
+      // Cas tolérés (la sub était déjà annulée précédemment ou jamais trouvée) :
+      //   - no_pending_payments : tous les pending sont déjà 'lost' (re-replan)
+      //   - no_subscription      : pas de sub côté Stripe ni Systeme.io
+      // L'edge function renvoie ces cas en HTTP 4xx avec body JSON {error,message}.
+      // supabase.functions.invoke met `error` (FunctionsHttpError) sur tout 4xx,
+      // donc on lit le body via `error.context` (Response) pour extraire le code.
       if (needsStopStep) {
+        const tolerableErrors = new Set(["no_pending_payments", "no_subscription"]);
         const { data: cancelData, error: cancelError } = await supabase.functions.invoke(
           "cancel-stripe-subscription",
           { body: { sale_id: saleId } }
         );
-        if (cancelError) throw new Error(`Stripe : ${cancelError.message}`);
-        const result = cancelData as { ok?: boolean; error?: string; message?: string };
-        // Tolérant : si la sub était déjà annulée OU jamais trouvée, on continue.
-        const tolerableErrors = new Set(["no_pending_payments", "no_subscription"]);
+
+        let result: { ok?: boolean; error?: string; message?: string } | null = null;
+        if (cancelError) {
+          // Tente de récupérer le body JSON de la réponse 4xx
+          const ctx = (cancelError as { context?: Response }).context;
+          if (ctx && typeof ctx.json === "function") {
+            try {
+              result = await ctx.json();
+            } catch {
+              result = null;
+            }
+          }
+          if (!result) {
+            // Erreur réseau ou body non-JSON : on remonte l'erreur brute
+            throw new Error(`Stripe : ${cancelError.message || "annulation échouée"}`);
+          }
+        } else {
+          result = cancelData as { ok?: boolean; error?: string; message?: string };
+        }
+
         if (!result?.ok && (!result?.error || !tolerableErrors.has(result.error))) {
           throw new Error(`Stripe : ${result?.message || result?.error || "annulation échouée"}`);
         }
