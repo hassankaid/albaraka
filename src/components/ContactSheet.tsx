@@ -333,6 +333,9 @@ function TimelineDot({ type, action }: { type: string; action?: string }) {
     } else if (action === "note_added") {
       className = "bg-yellow-500/20 border-yellow-500/40";
       icon = "📝";
+    } else if (action === "apporteur_source_change") {
+      className = "bg-violet-500/20 border-violet-500/40";
+      icon = "🏷️";
     } else {
       className = "bg-cyan-500/20 border-cyan-500/40";
       icon = "🔄";
@@ -525,6 +528,24 @@ function LeadActivityEvent({ data, userTz }: { data: any; userTz: string }) {
         <div>
           <p className="text-sm text-foreground">Lead recyclé</p>
           {data.note && <p className="text-xs text-muted-foreground italic mt-1">{data.note}</p>}
+        </div>
+      </div>
+    );
+  }
+
+  if (data.action === "apporteur_source_change") {
+    return (
+      <div className="flex items-start gap-2">
+        <RefreshCw className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm text-foreground">
+            Source du lead modifiée par l'apporteur :{" "}
+            <code className="text-[11px] bg-violet-500/10 px-1 py-0.5 rounded">{data.old_value || "—"}</code>
+            {" → "}
+            <code className="text-[11px] bg-violet-500/10 px-1 py-0.5 rounded">{data.new_value || "—"}</code>
+          </p>
+          {data.note && <p className="text-xs text-muted-foreground italic mt-1">{data.note}</p>}
+          <span className="text-xs text-muted-foreground">par {userName}</span>
         </div>
       </div>
     );

@@ -76,15 +76,31 @@ export default function ApporteurLeads() {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Edit-status modal state
+  // Edit modal state (statut + source).
+  // La modification de source n'est proposée QUE pour les leads que l'apporteur
+  // a apportés lui-même (lead.apporteur_id === profile.id) — pas pour ceux qui
+  // lui ont été simplement affectés (assigned_to). Trace dans lead_activities.
   const [editLead, setEditLead] = useState<LeadEnriched | null>(null);
   const [editStatus, setEditStatus] = useState("");
+  const [editSource, setEditSource] = useState("");
+  const [editSourceDetail, setEditSourceDetail] = useState("");
   const [editNote, setEditNote] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+
+  // Le caller peut-il modifier la source ? Oui ssi il EST l'apporteur du lead.
+  const canEditSource = !!editLead && editLead.apporteur_id === profile?.id;
 
   function openEditModal(lead: LeadEnriched) {
     setEditLead(lead);
     setEditStatus(lead.status || "a_qualifier");
+    // Pré-remplit la source depuis l'état actuel du lead. La colonne `source`
+    // contient la valeur préfixée "apporteur_xxx" pour les leads apporteurs.
+    // Si le lead a été créé via un autre canal (ex : import), la source peut
+    // ne pas matcher la whitelist : on tombe alors sur le placeholder.
+    const currentSource = lead.source || "";
+    const isInWhitelist = APPORTEUR_SOURCES.some((s) => s.value === currentSource);
+    setEditSource(isInWhitelist ? currentSource : "");
+    setEditSourceDetail(lead.source_detail || "");
     setEditNote("");
   }
 
@@ -92,28 +108,63 @@ export default function ApporteurLeads() {
     if (!editLead || !editLead.id) return;
     setEditSaving(true);
     try {
-      const { data, error } = await (supabase as any).rpc("apporteur_update_lead_status", {
-        p_lead_id: editLead.id,
-        p_new_status: editStatus,
-        p_note: editNote.trim() || null,
-      });
-      if (error) throw new Error(error.message);
-      const result = data as { ok: boolean; changed: boolean; recycled?: boolean };
-      toast({
-        title: result?.changed ? "Statut mis à jour" : "Aucun changement",
-        description: !result?.changed
-          ? "Le statut était déjà identique."
-          : result?.recycled
-            ? "Statut modifié et lead recyclé (commercial retiré, retour au pot « À recycler »)."
-            : "Le statut du lead a bien été modifié.",
-      });
+      // 1) Statut (tous les apporteurs/collaborateurs peuvent l'éditer pour
+      //    leurs propres leads OU ceux qui leur sont affectés)
+      const { data: statusData, error: statusErr } = await (supabase as any).rpc(
+        "apporteur_update_lead_status",
+        {
+          p_lead_id: editLead.id,
+          p_new_status: editStatus,
+          p_note: editNote.trim() || null,
+        },
+      );
+      if (statusErr) throw new Error(statusErr.message);
+      const statusResult = statusData as { ok: boolean; changed: boolean; recycled?: boolean };
+
+      // 2) Source — seulement si l'apporteur est le propriétaire du lead ET
+      //    qu'il a sélectionné une source valide.
+      let sourceChanged = false;
+      if (canEditSource && editSource) {
+        const { data: srcData, error: srcErr } = await (supabase as any).rpc(
+          "apporteur_update_lead_source",
+          {
+            p_lead_id: editLead.id,
+            p_source: editSource,
+            p_source_detail: editSource === "apporteur_autre" ? (editSourceDetail.trim() || null) : null,
+            p_note: null, // la note est déjà passée au statut, on évite le doublon
+          },
+        );
+        if (srcErr) throw new Error(srcErr.message);
+        const srcResult = srcData as { ok: boolean; changed: boolean };
+        sourceChanged = !!srcResult?.changed;
+      }
+
+      // Toast récapitulatif
+      const parts: string[] = [];
+      if (statusResult?.changed) {
+        parts.push(statusResult.recycled ? "statut modifié + lead recyclé" : "statut modifié");
+      }
+      if (sourceChanged) parts.push("source modifiée");
+
+      if (parts.length === 0) {
+        toast({
+          title: "Aucun changement",
+          description: "Tout était déjà identique.",
+        });
+      } else {
+        toast({
+          title: "Lead mis à jour",
+          description: parts.join(" + ") + ".",
+        });
+      }
+
       setEditLead(null);
       setEditNote("");
       await fetchLeads();
     } catch (err: any) {
       toast({
         title: "Erreur",
-        description: err?.message || "Impossible de modifier le statut",
+        description: err?.message || "Impossible de modifier le lead",
         variant: "destructive",
       });
     } finally {
@@ -331,7 +382,7 @@ export default function ApporteurLeads() {
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0"
-                        title="Modifier le statut"
+                        title="Modifier le statut (et la source si tu as apporté ce lead)"
                         onClick={() => openEditModal(lead)}
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -460,13 +511,17 @@ export default function ApporteurLeads() {
         </DialogContent>
       </Dialog>
 
-      {/* Modale "Modifier le statut" — pour rectifier en cas d'oubli ou
-          d'erreur du collaborateur. RPC apporteur_update_lead_status filtre
-          côté serveur (whitelist statuts + propriété du lead). */}
+      {/* Modale "Modifier le lead" — pour rectifier statut et/ou source en cas
+          d'oubli ou d'erreur. La modification de source n'est proposée que pour
+          les leads que l'apporteur a apportés lui-même (apporteur_id === moi).
+          Les RPCs apporteur_update_lead_status et apporteur_update_lead_source
+          filtrent côté serveur (whitelist + ownership). */}
       <Dialog open={!!editLead} onOpenChange={(o) => { if (!o) setEditLead(null); }}>
         <DialogContent className="bg-card border-border max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-foreground">Modifier le statut</DialogTitle>
+            <DialogTitle className="text-foreground">
+              {canEditSource ? "Modifier le lead" : "Modifier le statut"}
+            </DialogTitle>
           </DialogHeader>
           {editLead && (
             <div className="space-y-4 py-2">
@@ -477,12 +532,22 @@ export default function ApporteurLeads() {
                 {editLead.contact_email && (
                   <p className="text-xs text-muted-foreground">{editLead.contact_email}</p>
                 )}
-                <div className="mt-2 flex items-center gap-2 text-xs">
-                  <span className="text-muted-foreground">Statut actuel :</span>
-                  {editLead.status && (
-                    <Badge variant="outline" className={`text-xs ${LEAD_STATUS_COLORS[editLead.status] || ""}`}>
-                      {LEAD_STATUS_LABELS[editLead.status] || editLead.status}
-                    </Badge>
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-muted-foreground">Statut :</span>
+                    {editLead.status && (
+                      <Badge variant="outline" className={`text-xs ${LEAD_STATUS_COLORS[editLead.status] || ""}`}>
+                        {LEAD_STATUS_LABELS[editLead.status] || editLead.status}
+                      </Badge>
+                    )}
+                  </div>
+                  {editLead.source && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground">Source :</span>
+                      <Badge variant="outline" className={`text-xs ${getSourceBadgeClass(editLead.source, editLead.source_detail)}`}>
+                        {getSourceLabel(editLead.source, editLead.source_detail)}
+                      </Badge>
+                    </div>
                   )}
                 </div>
               </div>
@@ -502,6 +567,40 @@ export default function ApporteurLeads() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Modification de source — uniquement pour les leads apportés
+                  par l'apporteur lui-même. */}
+              {canEditSource && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">
+                      Source du lead{" "}
+                      <span className="text-xs text-muted-foreground font-normal">(modifiable car tu as apporté ce lead)</span>
+                    </label>
+                    <Select value={editSource} onValueChange={setEditSource}>
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="Sélectionner une source" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {APPORTEUR_SOURCES.map((s) => (
+                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {editSource === "apporteur_autre" && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Précisez la source *</label>
+                      <Input
+                        value={editSourceDetail}
+                        onChange={(e) => setEditSourceDetail(e.target.value)}
+                        placeholder="Ex : bouche-à-oreille, événement..."
+                        className="bg-background"
+                      />
+                    </div>
+                  )}
+                </>
+              )}
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">
@@ -525,8 +624,8 @@ export default function ApporteurLeads() {
               )}
 
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                La modification est tracée dans l'historique du lead avec votre nom.
-                Le commercial concerné verra le changement.
+                Toute modification (statut ou source) est tracée dans l'historique du lead avec votre nom.
+                {canEditSource && " Les changements de source sont visibles par les admins."}
               </p>
             </div>
           )}
@@ -537,7 +636,11 @@ export default function ApporteurLeads() {
             <Button
               type="button"
               onClick={handleSaveEdit}
-              disabled={editSaving || !editStatus}
+              disabled={
+                editSaving
+                || !editStatus
+                || (canEditSource && editSource === "apporteur_autre" && !editSourceDetail.trim())
+              }
               className="gradient-primary text-primary-foreground"
             >
               {editSaving && <RefreshCw className="h-4 w-4 animate-spin mr-2" />}
