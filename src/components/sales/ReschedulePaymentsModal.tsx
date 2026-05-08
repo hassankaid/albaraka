@@ -9,10 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import {
   CalendarIcon, AlertTriangle, CheckCircle2, Loader2, ArrowRight, RotateCcw,
+  CreditCard, ExternalLink,
 } from "lucide-react";
 import { format, addMonths } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -35,6 +37,9 @@ interface ReschedulePaymentsModalProps {
   pendingPayments: PendingPayment[];
   paidCount: number;
   paidTotal: number;
+  /** Si renseigné, la vente vient de Systeme.io et nécessite une annulation
+   *  manuelle dans leur dashboard avant la replanification. */
+  systemeIoOrderId?: string | null;
   onSuccess: () => void;
 }
 
@@ -92,7 +97,7 @@ function computeNewPlan(remaining: number, targetAmount: number, startDate: Date
 
 export default function ReschedulePaymentsModal({
   open, onOpenChange, saleId, saleProduct, contactName,
-  pendingPayments, paidCount, paidTotal, onSuccess,
+  pendingPayments, paidCount, paidTotal, systemeIoOrderId, onSuccess,
 }: ReschedulePaymentsModalProps) {
   const { toast } = useToast();
 
@@ -101,7 +106,12 @@ export default function ReschedulePaymentsModal({
     [pendingPayments]
   );
 
-  const hasStripeSub = pendingPayments.some((p) => p.stripe_subscription_id);
+  // Détection de la source pour l'étape 1 (stop des prélèvements automatiques)
+  const stripeSubId = pendingPayments.find((p) => p.stripe_subscription_id)?.stripe_subscription_id ?? null;
+  const hasStripeSub = !!stripeSubId;
+  // Systeme.io n'est pris en compte que si pas de sub Stripe (priorité Stripe)
+  const hasSystemeIo = !!systemeIoOrderId && !hasStripeSub;
+  const needsStopStep = hasStripeSub || hasSystemeIo;
 
   // ── Inputs ──
   const [targetAmount, setTargetAmount] = useState<string>("");
@@ -114,10 +124,16 @@ export default function ReschedulePaymentsModal({
   });
   const [saving, setSaving] = useState(false);
 
+  // ── Étape 1 : Stop des prélèvements ──
+  // Pour Systeme.io : checkbox manuelle (pas d'API publique pour cancel auto).
+  // Pour Stripe : sera annulée automatiquement à la confirmation finale.
+  const [systemeIoConfirmed, setSystemeIoConfirmed] = useState(false);
+
   // ── Reset à l'ouverture ──
   useEffect(() => {
     if (open) {
       setTargetAmount("");
+      setSystemeIoConfirmed(false);
       const firstPending = [...pendingPayments].sort(
         (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
       )[0];
@@ -136,13 +152,33 @@ export default function ReschedulePaymentsModal({
   const planTotalRounded = Math.round(planTotal * 100) / 100;
   const remainingRounded = Math.round(remaining * 100) / 100;
   const totalsMatch = Math.abs(planTotalRounded - remainingRounded) < 0.01;
-  const canConfirm = plan.payments.length > 0 && totalsMatch && !saving;
+  // Étape 1 satisfaite ? Stripe = auto-annulé au confirm (toujours OK).
+  // Systeme.io = checkbox doit être cochée. Aucune sub = direct OK.
+  const step1Ok = !hasSystemeIo || systemeIoConfirmed;
+  const canConfirm = step1Ok && plan.payments.length > 0 && totalsMatch && !saving;
 
   // ── Soumission ──
   async function handleConfirm() {
     if (!canConfirm) return;
     setSaving(true);
     try {
+      // ── ÉTAPE 1 : Stop des prélèvements auto ──
+      // Stripe : on appelle l'edge function qui annule la sub côté Stripe
+      // (et marque les pending comme 'lost' en BDD). Pour Systeme.io,
+      // on assume que Sidali a déjà annulé manuellement (checkbox cochée).
+      if (hasStripeSub) {
+        const { data: cancelData, error: cancelError } = await supabase.functions.invoke(
+          "cancel-stripe-subscription",
+          { body: { sale_id: saleId } }
+        );
+        if (cancelError) throw new Error(`Stripe : ${cancelError.message}`);
+        const result = cancelData as { ok?: boolean; error?: string; message?: string };
+        // Tolérant : si la sub était déjà annulée ailleurs, on continue quand même.
+        if (!result?.ok && result?.error !== "no_pending_payments") {
+          throw new Error(`Stripe : ${result?.message || result?.error || "annulation échouée"}`);
+        }
+      }
+
       // 1. Récupère les commissions des paiements pending pour les recréer à l'identique
       const pendingIds = pendingPayments.map((p) => p.id);
       const { data: oldCommissions } = await supabase
@@ -203,6 +239,10 @@ export default function ReschedulePaymentsModal({
         nextPaymentNumber++;
       }
 
+      // 6. Le sale.payment_status a peut-être été mis à 'lost' par cancel-stripe-subscription.
+      //    Comme on vient de créer de nouveaux pending, la vente repasse à 'in_progress'.
+      await supabase.from("sales").update({ payment_status: "in_progress" }).eq("id", saleId);
+
       toast({
         title: "Plan replanifié ✓",
         description: `${plan.payments.length} nouvelle(s) mensualité(s) créée(s) pour un total de ${planTotalRounded.toLocaleString("fr-FR")} €.`,
@@ -227,7 +267,7 @@ export default function ReschedulePaymentsModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <RotateCcw className="h-5 w-5 text-primary" />
-            Replanifier le plan de paiement
+            Modifier le plan de paiement
           </DialogTitle>
           <DialogDescription>
             <strong>{saleProduct}</strong> — {contactName}
@@ -255,21 +295,70 @@ export default function ReschedulePaymentsModal({
           </div>
         </div>
 
-        {hasStripeSub && (
-          <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
-            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-            <div className="text-foreground/90">
-              <strong className="text-amber-300">Subscription Stripe active</strong> — Les paiements pending sont liés à une subscription Stripe.
-              Replanifier ici **ne suffira pas** : il faut aussi <strong>annuler la subscription Stripe</strong> (bouton « Stopper les prélèvements » dans la modale principale) pour que Stripe arrête de prélever les anciens montants.
-              Le client devra ensuite recevoir un nouveau lien de paiement pour le nouveau plan.
+        {/* ── ÉTAPE 1 : Stop des prélèvements automatiques ────────────── */}
+        {needsStopStep && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">1</div>
+              <h4 className="text-sm font-semibold text-foreground">Stopper les prélèvements automatiques</h4>
             </div>
+
+            {hasStripeSub && (
+              <div className="rounded-md border border-blue-500/30 bg-blue-500/5 p-3 space-y-1.5">
+                <div className="flex items-start gap-2">
+                  <CreditCard className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
+                  <div className="text-xs text-foreground/90">
+                    <strong className="text-blue-300">Subscription Stripe</strong> · <code className="text-[10px] font-mono">{stripeSubId}</code>
+                    <p className="mt-1 text-foreground/70">
+                      La subscription sera <strong>automatiquement annulée</strong> au moment où tu confirmeras le nouveau plan ci-dessous.
+                      Aucune action manuelle requise de ton côté.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {hasSystemeIo && (
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 space-y-2.5">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                  <div className="text-xs text-foreground/90 space-y-1.5">
+                    <div>
+                      <strong className="text-amber-300">Vente Systeme.io — annulation manuelle requise</strong>
+                    </div>
+                    <p className="text-foreground/80">
+                      L'API publique Systeme.io n'expose pas l'annulation de subscription, donc tu dois le faire <strong>manuellement</strong> avant de replanifier ici (sinon Systeme.io continuera à prélever l'ancien montant).
+                    </p>
+                    <ol className="list-decimal pl-5 space-y-0.5 text-foreground/80">
+                      <li>Ouvre <a href="https://dashboard.systeme.io/" target="_blank" rel="noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">dashboard.systeme.io <ExternalLink className="h-2.5 w-2.5" /></a></li>
+                      <li>Cherche l'order <code className="text-[10px] font-mono bg-card/50 px-1 rounded">#{systemeIoOrderId}</code></li>
+                      <li>Annule la subscription / le plan récurrent</li>
+                    </ol>
+                  </div>
+                </div>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={systemeIoConfirmed}
+                    onCheckedChange={(v) => setSystemeIoConfirmed(v === true)}
+                    className="mt-0.5"
+                  />
+                  <span className="text-xs text-foreground/90">
+                    Confirmé : j'ai bien <strong>annulé l'order n° {systemeIoOrderId}</strong> dans Systeme.io.
+                  </span>
+                </label>
+              </div>
+            )}
           </div>
         )}
 
         <Separator />
 
-        {/* Inputs */}
-        <div className="space-y-4">
+        {/* ── ÉTAPE 2 : Définir le nouveau plan ───────────────────────── */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">{needsStopStep ? "2" : "1"}</div>
+            <h4 className="text-sm font-semibold text-foreground">Définir le nouveau plan de paiement</h4>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="target-amount" className="text-xs">Nouveau montant mensuel (€)</Label>

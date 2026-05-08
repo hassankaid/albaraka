@@ -260,6 +260,15 @@ export default function SaleDetailModal({
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const pendingPayments = payments.filter((p) => p.status === "pending");
 
+  // Récupère le systeme_io_order_id de la vente pour savoir si elle vient
+  // de Systeme.io (auquel cas annulation manuelle requise dans leur dashboard).
+  const [systemeIoOrderId, setSystemeIoOrderId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!saleId || !open) return;
+    supabase.from("sales").select("systeme_io_order_id").eq("id", saleId).single()
+      .then(({ data }) => setSystemeIoOrderId(data?.systeme_io_order_id ?? null));
+  }, [saleId, open]);
+
   // ─── Suppression complète de la vente (CEO) ─────────────────────────
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const deleteSale = useDeleteSaleAdmin();
@@ -412,9 +421,9 @@ export default function SaleDetailModal({
                     size="sm"
                     onClick={() => setRescheduleOpen(true)}
                     className="gap-1.5"
-                    title="Recalculer le plan de paiement à partir des mensualités restantes"
+                    title="Annule la subscription en cours (Stripe ou Systeme.io) et redéfinit le plan des mensualités restantes"
                   >
-                    <RotateCcw className="h-3.5 w-3.5" /> Replanifier
+                    <RotateCcw className="h-3.5 w-3.5" /> Modifier le plan
                   </Button>
                 )}
                 <Button variant="outline" size="sm" onClick={() => setAddingNew(true)} disabled={addingNew}>
@@ -708,7 +717,7 @@ export default function SaleDetailModal({
         )}
       </DialogContent>
 
-      {/* Wizard Replanifier le plan */}
+      {/* Wizard Modifier le plan */}
       {saleId && (
         <ReschedulePaymentsModal
           open={rescheduleOpen}
@@ -716,6 +725,7 @@ export default function SaleDetailModal({
           saleId={saleId}
           saleProduct={saleProduct}
           contactName={contactName || "—"}
+          systemeIoOrderId={systemeIoOrderId}
           pendingPayments={pendingPayments.map((p) => ({
             id: p.id,
             payment_number: p.payment_number,
