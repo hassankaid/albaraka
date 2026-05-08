@@ -43,55 +43,54 @@ interface ReschedulePaymentsModalProps {
 }
 
 // ─── Calcul du nouveau plan ─────────────────────────────────────────
-// Garantit que la somme des nouvelles mensualités = restant exact (au centime près).
-// Stratégie : N-1 paiements ronds au montant cible, dernier paiement ajusté.
-function computeNewPlan(remaining: number, targetAmount: number, startDate: Date): {
+// Approche : N mensualités d'un montant aussi proche que possible (écart de 1
+// centime maximum entre les plus grosses et les plus petites). Les premières
+// mensualités absorbent les centimes "en trop" pour atteindre exactement le
+// total restant — pas de mensualité d'ajustement bizarre à la fin.
+//
+// Exemple : 1666.66 € / 11 → baseCents=15151, extraCents=5 → 5×151,52 + 6×151,51
+function computeNewPlan(remaining: number, count: number, startDate: Date): {
   payments: { amount: number; due_date: string }[];
   warnings: string[];
 } {
   const warnings: string[] = [];
-  if (targetAmount <= 0) return { payments: [], warnings: ["Montant invalide"] };
+  if (!Number.isInteger(count) || count <= 0) return { payments: [], warnings: ["Nombre de mensualités invalide"] };
   if (remaining <= 0) return { payments: [], warnings: ["Aucun montant restant à étaler"] };
 
-  // Arrondis BDD-friendly (2 décimales)
-  const round2 = (n: number) => Math.round(n * 100) / 100;
-  const remCents = Math.round(remaining * 100);
-  const tgtCents = Math.round(targetAmount * 100);
+  const totalCents = Math.round(remaining * 100);
+  const baseCents = Math.floor(totalCents / count);
+  const extraCents = totalCents - baseCents * count; // 0 à count-1
 
-  if (tgtCents > remCents) {
-    return {
-      payments: [{ amount: round2(remaining), due_date: format(startDate, "yyyy-MM-dd") }],
-      warnings: [`Le montant cible (${targetAmount} €) est supérieur au restant (${remaining.toFixed(2)} €). Plan réduit à 1 paiement de ${remaining.toFixed(2)} €.`],
-    };
+  if (baseCents === 0) {
+    warnings.push(`Trop de mensualités (${count}) pour le montant restant (${remaining.toFixed(2)} €). Réduis le nombre.`);
+    return { payments: [], warnings };
   }
 
-  const fullCount = Math.floor(remCents / tgtCents);
-  const adjustmentCents = remCents - fullCount * tgtCents;
   const payments: { amount: number; due_date: string }[] = [];
-
-  for (let i = 0; i < fullCount; i++) {
+  for (let i = 0; i < count; i++) {
+    // Les `extraCents` premières mensualités font 1 centime de plus pour
+    // absorber le reste de la division. Garantit somme totale exacte.
+    const cents = i < extraCents ? baseCents + 1 : baseCents;
     payments.push({
-      amount: round2(targetAmount),
+      amount: cents / 100,
       due_date: format(addMonths(startDate, i), "yyyy-MM-dd"),
     });
   }
 
-  if (adjustmentCents > 0) {
-    payments.push({
-      amount: round2(adjustmentCents / 100),
-      due_date: format(addMonths(startDate, fullCount), "yyyy-MM-dd"),
-    });
-  }
-
-  // Warning si le dernier paiement est très petit (< 10% du target)
-  const lastAmt = payments[payments.length - 1]?.amount ?? 0;
-  if (payments.length > 1 && lastAmt < targetAmount * 0.1) {
-    warnings.push(
-      `La dernière mensualité (${lastAmt.toFixed(2)} €) est très petite. Tu peux soit la fusionner avec l'avant-dernière, soit garder telle quelle.`
-    );
-  }
-
   return { payments, warnings };
+}
+
+// Pour l'affichage : groupe les paiements par montant identique consécutifs
+function groupConsecutiveByAmount(
+  payments: { amount: number; due_date: string }[]
+): { amount: number; count: number }[] {
+  const groups: { amount: number; count: number }[] = [];
+  for (const p of payments) {
+    const last = groups[groups.length - 1];
+    if (last && last.amount === p.amount) last.count++;
+    else groups.push({ amount: p.amount, count: 1 });
+  }
+  return groups;
 }
 
 export default function ReschedulePaymentsModal({
@@ -115,9 +114,8 @@ export default function ReschedulePaymentsModal({
   const needsStopStep = hasStripeSubInDb || hasSystemeIo;
 
   // ── Inputs ──
-  const [targetAmount, setTargetAmount] = useState<string>("");
+  const [count, setCount] = useState<string>("");
   const [startDate, setStartDate] = useState<Date>(() => {
-    // Default : la date du premier pending (ou 1 mois après aujourd'hui si aucun pending)
     const firstPending = [...pendingPayments].sort(
       (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
     )[0];
@@ -128,7 +126,8 @@ export default function ReschedulePaymentsModal({
   // ── Reset à l'ouverture ──
   useEffect(() => {
     if (open) {
-      setTargetAmount("");
+      // Pré-remplit avec le nombre de pending actuels (utile : par défaut on garde le même nombre)
+      setCount(pendingPayments.length > 0 ? String(pendingPayments.length) : "");
       const firstPending = [...pendingPayments].sort(
         (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
       )[0];
@@ -138,10 +137,13 @@ export default function ReschedulePaymentsModal({
 
   // ── Plan calculé ──
   const plan = useMemo(() => {
-    const target = parseFloat(targetAmount.replace(",", "."));
-    if (isNaN(target) || target <= 0) return { payments: [], warnings: [] };
-    return computeNewPlan(remaining, target, startDate);
-  }, [targetAmount, startDate, remaining]);
+    const n = parseInt(count, 10);
+    if (isNaN(n) || n <= 0) return { payments: [], warnings: [] };
+    return computeNewPlan(remaining, n, startDate);
+  }, [count, startDate, remaining]);
+
+  // Aperçu groupé : "5 × 151,52 € + 6 × 151,51 €"
+  const planGroups = useMemo(() => groupConsecutiveByAmount(plan.payments), [plan.payments]);
 
   const planTotal = plan.payments.reduce((s, p) => s + p.amount, 0);
   const planTotalRounded = Math.round(planTotal * 100) / 100;
@@ -333,17 +335,23 @@ export default function ReschedulePaymentsModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="target-amount" className="text-xs">Nouveau montant mensuel (€)</Label>
+              <Label htmlFor="count" className="text-xs">Nombre de mensualités</Label>
               <Input
-                id="target-amount"
+                id="count"
                 type="number"
-                inputMode="decimal"
-                step="0.01"
-                placeholder="ex : 150"
-                value={targetAmount}
-                onChange={(e) => setTargetAmount(e.target.value)}
+                inputMode="numeric"
+                min="1"
+                step="1"
+                placeholder="ex : 11"
+                value={count}
+                onChange={(e) => setCount(e.target.value)}
                 className="h-9"
               />
+              {plan.payments.length > 0 && (
+                <p className="text-[10px] text-muted-foreground">
+                  Mensualités lissées : ~{(remainingRounded / plan.payments.length).toFixed(2)} € chacune
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Date de la 1ère nouvelle échéance</Label>
@@ -364,6 +372,7 @@ export default function ReschedulePaymentsModal({
                   />
                 </PopoverContent>
               </Popover>
+              <p className="text-[10px] text-muted-foreground">Mensualité tous les mois à compter de cette date.</p>
             </div>
           </div>
 
@@ -380,27 +389,30 @@ export default function ReschedulePaymentsModal({
                 </Badge>
               </div>
 
+              {/* Résumé groupé : "5 × 151,52 € + 6 × 151,51 €" */}
+              <div className="text-xs text-muted-foreground">
+                {planGroups.map((g, i) => (
+                  <span key={i}>
+                    {i > 0 && " + "}
+                    <span className="text-foreground font-medium">{g.count} × {g.amount.toFixed(2).replace(".", ",")} €</span>
+                  </span>
+                ))}
+              </div>
+
+              {/* Tableau détaillé */}
               <div className="space-y-1 max-h-[200px] overflow-y-auto">
                 {plan.payments.map((p, i) => {
                   const newNumber = paidCount + i + 1;
                   const newTotal = paidCount + plan.payments.length;
-                  const isAdjustment = i === plan.payments.length - 1 && p.amount !== parseFloat(targetAmount.replace(",", "."));
                   return (
                     <div key={i} className="flex items-center justify-between text-xs px-2 py-1.5 rounded bg-card/50">
                       <div className="flex items-center gap-2">
                         <span className="text-muted-foreground tabular-nums w-12 shrink-0">M{newNumber}/{newTotal}</span>
                         <span className="text-foreground/70">{format(new Date(p.due_date), "dd/MM/yyyy")}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`font-semibold tabular-nums ${isAdjustment ? "text-amber-300" : "text-foreground"}`}>
-                          {p.amount.toFixed(2)} €
-                        </span>
-                        {isAdjustment && (
-                          <Badge variant="outline" className="text-[9px] bg-amber-500/15 text-amber-300 border-amber-500/30">
-                            ajustement
-                          </Badge>
-                        )}
-                      </div>
+                      <span className="font-semibold tabular-nums text-foreground">
+                        {p.amount.toFixed(2)} €
+                      </span>
                     </div>
                   );
                 })}
@@ -428,9 +440,9 @@ export default function ReschedulePaymentsModal({
           )}
 
           {/* État vide */}
-          {plan.payments.length === 0 && targetAmount && (
+          {plan.payments.length === 0 && count && (
             <div className="text-xs text-muted-foreground italic">
-              Saisis un montant valide pour voir l'aperçu du plan.
+              Saisis un nombre de mensualités valide pour voir l'aperçu du plan.
             </div>
           )}
         </div>
