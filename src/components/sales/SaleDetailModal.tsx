@@ -14,7 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Check, RefreshCw, Trash2, Plus, CalendarIcon, Pencil, X, Save, AlertTriangle, Loader2, CreditCard, Ban, TrendingUp, CalendarClock } from "lucide-react";
+import { Check, RefreshCw, Trash2, Plus, CalendarIcon, Pencil, X, Save, AlertTriangle, Loader2, CreditCard, Ban, TrendingUp, CalendarClock, RotateCcw } from "lucide-react";
+import ReschedulePaymentsModal from "./ReschedulePaymentsModal";
 import { formatDateOnly } from "@/lib/formatDate";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -255,6 +256,10 @@ export default function SaleDetailModal({
     }
   }
 
+  // ─── Replanification du plan de paiement ───────────────────────────
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const pendingPayments = payments.filter((p) => p.status === "pending");
+
   // ─── Suppression complète de la vente (CEO) ─────────────────────────
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const deleteSale = useDeleteSaleAdmin();
@@ -397,12 +402,25 @@ export default function SaleDetailModal({
         <Separator />
 
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <h4 className="text-sm font-semibold text-foreground">Échéancier</h4>
             {isCeo && (
-              <Button variant="outline" size="sm" onClick={() => setAddingNew(true)} disabled={addingNew}>
-                <Plus className="h-4 w-4 mr-1" /> Ajouter
-              </Button>
+              <div className="flex items-center gap-2">
+                {pendingPayments.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRescheduleOpen(true)}
+                    className="gap-1.5"
+                    title="Recalculer le plan de paiement à partir des mensualités restantes"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" /> Replanifier
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" onClick={() => setAddingNew(true)} disabled={addingNew}>
+                  <Plus className="h-4 w-4 mr-1" /> Ajouter
+                </Button>
+              </div>
             )}
           </div>
 
@@ -689,6 +707,31 @@ export default function SaleDetailModal({
           </>
         )}
       </DialogContent>
+
+      {/* Wizard Replanifier le plan */}
+      {saleId && (
+        <ReschedulePaymentsModal
+          open={rescheduleOpen}
+          onOpenChange={setRescheduleOpen}
+          saleId={saleId}
+          saleProduct={saleProduct}
+          contactName={contactName || "—"}
+          pendingPayments={pendingPayments.map((p) => ({
+            id: p.id,
+            payment_number: p.payment_number,
+            amount: p.amount,
+            due_date: p.due_date,
+            status: p.status,
+            stripe_subscription_id: p.stripe_subscription_id,
+          }))}
+          paidCount={nbPaid}
+          paidTotal={totalPaid}
+          onSuccess={() => {
+            fetchPayments();
+            onUpdated();
+          }}
+        />
+      )}
 
       {/* Confirmation d'annulation Stripe */}
       <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
