@@ -223,17 +223,31 @@ export default function SaleDetailModal({
     .filter((p) => p.status === "pending")
     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
 
-  // ─── Subscription Stripe : détection & annulation ──────────────────
-  // Toutes les mensualités d'une même vente partagent le même sub_id (Nx).
-  // Pour le 1x, c'est un PaymentIntent (pas de sub) → rien à annuler.
+  // Récupère le systeme_io_order_id de la vente (utile pour détecter les ventes
+  // Systeme.io, dont la subscription Stripe sous-jacente est annulable via lookup
+  // email par l'edge function cancel-stripe-subscription).
+  const [systemeIoOrderId, setSystemeIoOrderId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!saleId || !open) return;
+    supabase.from("sales").select("systeme_io_order_id").eq("id", saleId).single()
+      .then(({ data }) => setSystemeIoOrderId(data?.systeme_io_order_id ?? null));
+  }, [saleId, open]);
+
+  // ─── Subscription récurrente : détection & annulation ──────────────
+  // Cas natif Stripe (Nx via les nouveaux liens) : sub_id stocké en BDD sur les payments.
+  // Cas Systeme.io : pas de sub_id en BDD, mais l'edge function fait un lookup
+  // automatique par email du contact (Systeme.io utilise Stripe en backend).
+  // Le bouton est donc proposé dans les 2 cas tant qu'il y a au moins 1 pending.
   const stripeSubscriptionId = payments.find((p) => p.stripe_subscription_id)?.stripe_subscription_id ?? null;
   const pendingCount = payments.filter((p) => p.status === "pending").length;
-  const canCancelStripe = !!stripeSubscriptionId && pendingCount > 0;
+  const hasStripeSubInDb = !!stripeSubscriptionId;
+  const isSystemeIoSale = !!systemeIoOrderId && !hasStripeSubInDb;
+  const canCancelStripe = (hasStripeSubInDb || isSystemeIoSale) && pendingCount > 0;
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
   async function handleCancelStripe() {
-    if (!saleId || !stripeSubscriptionId) return;
+    if (!saleId || !canCancelStripe) return;
     setCancelling(true);
     try {
       const { data, error } = await supabase.functions.invoke("cancel-stripe-subscription", {
@@ -259,15 +273,6 @@ export default function SaleDetailModal({
   // ─── Replanification du plan de paiement ───────────────────────────
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const pendingPayments = payments.filter((p) => p.status === "pending");
-
-  // Récupère le systeme_io_order_id de la vente pour savoir si elle vient
-  // de Systeme.io (auquel cas annulation manuelle requise dans leur dashboard).
-  const [systemeIoOrderId, setSystemeIoOrderId] = useState<string | null>(null);
-  useEffect(() => {
-    if (!saleId || !open) return;
-    supabase.from("sales").select("systeme_io_order_id").eq("id", saleId).single()
-      .then(({ data }) => setSystemeIoOrderId(data?.systeme_io_order_id ?? null));
-  }, [saleId, open]);
 
   // ─── Suppression complète de la vente (CEO) ─────────────────────────
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -368,8 +373,8 @@ export default function SaleDetailModal({
           </div>
         )}
 
-        {/* ── Encart Subscription Stripe (si applicable) ───────────────── */}
-        {stripeSubscriptionId && (
+        {/* ── Encart Subscription récurrente (Stripe natif ou Systeme.io) ── */}
+        {(stripeSubscriptionId || isSystemeIoSale) && (
           <div className={`rounded-lg border p-3 space-y-2 ${
             canCancelStripe
               ? "border-blue-500/30 bg-blue-500/5"
@@ -380,15 +385,25 @@ export default function SaleDetailModal({
                 <CreditCard className={`h-4 w-4 mt-0.5 shrink-0 ${canCancelStripe ? "text-blue-400" : "text-muted-foreground"}`} />
                 <div className="min-w-0">
                   <div className="text-xs font-semibold text-foreground">
-                    {canCancelStripe ? "Paiement automatique Stripe actif" : "Subscription Stripe (clôturée)"}
+                    {canCancelStripe
+                      ? (hasStripeSubInDb ? "Paiement automatique Stripe actif" : "Vente Systeme.io — paiement auto via Stripe")
+                      : "Subscription clôturée"}
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-0.5">
                     {canCancelStripe ? (
-                      <>
-                        {pendingCount} prélèvement{pendingCount > 1 ? "s" : ""} à venir · <code className="text-[10px] font-mono">{stripeSubscriptionId}</code>
-                      </>
+                      hasStripeSubInDb ? (
+                        <>
+                          {pendingCount} prélèvement{pendingCount > 1 ? "s" : ""} à venir · <code className="text-[10px] font-mono">{stripeSubscriptionId}</code>
+                        </>
+                      ) : (
+                        <>
+                          {pendingCount} prélèvement{pendingCount > 1 ? "s" : ""} à venir · order Systeme.io <code className="text-[10px] font-mono">#{systemeIoOrderId}</code> (sub Stripe sous-jacente)
+                        </>
+                      )
                     ) : (
-                      <>Tous les paiements sont passés ou annulés · <code className="text-[10px] font-mono">{stripeSubscriptionId}</code></>
+                      hasStripeSubInDb
+                        ? <>Tous les paiements sont passés ou annulés · <code className="text-[10px] font-mono">{stripeSubscriptionId}</code></>
+                        : <>Tous les paiements sont passés ou annulés · order <code className="text-[10px] font-mono">#{systemeIoOrderId}</code></>
                     )}
                   </div>
                 </div>
@@ -762,7 +777,11 @@ export default function SaleDetailModal({
                     Impact côté Stripe
                   </p>
                   <p className="text-xs text-foreground/90">
-                    La subscription <code className="text-[10px] font-mono">{stripeSubscriptionId}</code> sera annulée immédiatement.
+                    {hasStripeSubInDb ? (
+                      <>La subscription <code className="text-[10px] font-mono">{stripeSubscriptionId}</code> sera annulée immédiatement.</>
+                    ) : (
+                      <>La subscription Stripe liée à <strong>{contactName || "ce client"}</strong> (vente Systeme.io order <code className="text-[10px] font-mono">#{systemeIoOrderId}</code>) sera retrouvée par lookup email puis annulée immédiatement.</>
+                    )}
                     <br />
                     <strong>{pendingCount} prélèvement{pendingCount > 1 ? "s" : ""}</strong> futur{pendingCount > 1 ? "s" : ""} ({totalPending.toLocaleString("fr-FR")} €) ne ser{pendingCount > 1 ? "ont" : "a"} pas effectué{pendingCount > 1 ? "s" : ""}.
                   </p>
