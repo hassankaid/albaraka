@@ -483,6 +483,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "call_activities_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["contact_call_id"]
+          },
+          {
             foreignKeyName: "call_activities_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -587,6 +594,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "calls_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "calls_rescheduled_from_fkey"
             columns: ["rescheduled_from"]
             isOneToOne: false
@@ -599,6 +613,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "calls_enriched"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_rescheduled_from_fkey"
+            columns: ["rescheduled_from"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["contact_call_id"]
           },
         ]
       }
@@ -2127,6 +2148,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "lead_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "lead_activities_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -2328,6 +2356,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "lead_quiz_submissions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "lead_quiz_submissions_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
@@ -2374,6 +2409,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_tags_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
             referencedColumns: ["id"]
           },
         ]
@@ -3559,6 +3601,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sales_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["contact_call_id"]
+          },
+          {
             foreignKeyName: "sales_closed_by_fkey"
             columns: ["closed_by"]
             isOneToOne: false
@@ -3577,6 +3626,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
             referencedColumns: ["id"]
           },
           {
@@ -4098,6 +4154,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "calls_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "calls_rescheduled_from_fkey"
             columns: ["rescheduled_from"]
             isOneToOne: false
@@ -4111,6 +4174,13 @@ export type Database = {
             referencedRelation: "calls_enriched"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "calls_rescheduled_from_fkey"
+            columns: ["rescheduled_from"]
+            isOneToOne: false
+            referencedRelation: "leads_enriched"
+            referencedColumns: ["contact_call_id"]
+          },
         ]
       }
       contact_timeline: {
@@ -4123,6 +4193,71 @@ export type Database = {
           event_type: string | null
         }
         Relationships: []
+      }
+      leads_enriched: {
+        Row: {
+          apporteur_id: string | null
+          apporteur_name: string | null
+          assigned_at: string | null
+          assigned_to: string | null
+          assigned_to_name: string | null
+          call_type: string | null
+          contact_call_assigned_to: string | null
+          contact_call_assigned_to_name: string | null
+          contact_call_event_type: string | null
+          contact_call_id: string | null
+          contact_call_scheduled_at: string | null
+          contact_call_status: string | null
+          contact_email: string | null
+          contact_full_name: string | null
+          contact_id: string | null
+          contact_phone: string | null
+          created_at: string | null
+          has_active_call: boolean | null
+          id: string | null
+          notes: string | null
+          raw_email: string | null
+          raw_full_name: string | null
+          raw_phone: string | null
+          recycled_at: string | null
+          source: string | null
+          source_detail: string | null
+          source_label: string | null
+          status: string | null
+          status_label: string | null
+          systeme_io_id: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calls_assigned_to_fkey"
+            columns: ["contact_call_assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_apporteur_id_fkey"
+            columns: ["apporteur_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       public_certificates_view: {
         Row: {
