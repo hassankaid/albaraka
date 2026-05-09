@@ -138,41 +138,6 @@ export function getLeadStatusListForLevel(
   return LEAD_STATUS_LIST;
 }
 
-// ── Quiz Scoring (catégories) ──
-
-const QUIZ_CATEGORY_BADGES: Record<string, string> = {
-  chaud:      "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  tiede:      "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  froid:      "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  hors_cible: "bg-red-500/20 text-red-300 border-red-500/30",
-};
-
-const QUIZ_CATEGORY_EMOJIS: Record<string, string> = {
-  chaud:      "🟢",
-  tiede:      "🟡",
-  froid:      "🟠",
-  hors_cible: "🔴",
-};
-
-const QUIZ_CATEGORY_LABELS: Record<string, string> = {
-  chaud:      "Lead chaud",
-  tiede:      "Lead tiède",
-  froid:      "Lead froid",
-  hors_cible: "Hors cible",
-};
-
-export function getQuizCategoryBadgeClass(category: string): string {
-  return QUIZ_CATEGORY_BADGES[category] || COLOR_CLASSES.gray;
-}
-
-export function getQuizCategoryEmoji(category: string): string {
-  return QUIZ_CATEGORY_EMOJIS[category] || "";
-}
-
-export function getQuizCategoryLabel(category: string): string {
-  return QUIZ_CATEGORY_LABELS[category] || category;
-}
-
 // Source filter options for dropdowns
 export const SOURCE_FILTER_OPTIONS = [
   { value: "all", label: "Tous" },

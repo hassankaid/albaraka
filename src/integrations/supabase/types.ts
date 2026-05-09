@@ -483,13 +483,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "call_activities_call_id_fkey"
-            columns: ["call_id"]
-            isOneToOne: false
-            referencedRelation: "leads_enriched"
-            referencedColumns: ["contact_call_id"]
-          },
-          {
             foreignKeyName: "call_activities_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -594,13 +587,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "calls_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads_enriched"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "calls_rescheduled_from_fkey"
             columns: ["rescheduled_from"]
             isOneToOne: false
@@ -613,13 +599,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "calls_enriched"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "calls_rescheduled_from_fkey"
-            columns: ["rescheduled_from"]
-            isOneToOne: false
-            referencedRelation: "leads_enriched"
-            referencedColumns: ["contact_call_id"]
           },
         ]
       }
@@ -1976,58 +1955,6 @@ export type Database = {
         }
         Relationships: []
       }
-      funnel_quiz_responses: {
-        Row: {
-          answers: Json
-          category: string
-          created_at: string
-          funnel_slug: string
-          id: string
-          lead_id: string
-          score: number
-        }
-        Insert: {
-          answers: Json
-          category: string
-          created_at?: string
-          funnel_slug: string
-          id?: string
-          lead_id: string
-          score: number
-        }
-        Update: {
-          answers?: Json
-          category?: string
-          created_at?: string
-          funnel_slug?: string
-          id?: string
-          lead_id?: string
-          score?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "funnel_quiz_responses_funnel_slug_fkey"
-            columns: ["funnel_slug"]
-            isOneToOne: false
-            referencedRelation: "quiz_funnels"
-            referencedColumns: ["slug"]
-          },
-          {
-            foreignKeyName: "funnel_quiz_responses_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "funnel_quiz_responses_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads_enriched"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       invitation_campaign_runs: {
         Row: {
           failed: number
@@ -2197,13 +2124,6 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lead_activities_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads_enriched"
             referencedColumns: ["id"]
           },
           {
@@ -2408,13 +2328,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "lead_quiz_submissions_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads_enriched"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "lead_quiz_submissions_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
@@ -2463,13 +2376,6 @@ export type Database = {
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "lead_tags_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads_enriched"
-            referencedColumns: ["id"]
-          },
         ]
       }
       leads: {
@@ -2485,8 +2391,6 @@ export type Database = {
           created_at: string | null
           id: string
           notes: string | null
-          quiz_category: string | null
-          quiz_score: number | null
           raw_email: string | null
           raw_full_name: string | null
           raw_phone: string | null
@@ -2514,8 +2418,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           notes?: string | null
-          quiz_category?: string | null
-          quiz_score?: number | null
           raw_email?: string | null
           raw_full_name?: string | null
           raw_phone?: string | null
@@ -2543,8 +2445,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           notes?: string | null
-          quiz_category?: string | null
-          quiz_score?: number | null
           raw_email?: string | null
           raw_full_name?: string | null
           raw_phone?: string | null
@@ -3378,33 +3278,6 @@ export type Database = {
           },
         ]
       }
-      quiz_funnels: {
-        Row: {
-          active: boolean
-          created_at: string
-          name: string
-          slug: string
-          thank_you_url: string
-          updated_at: string
-        }
-        Insert: {
-          active?: boolean
-          created_at?: string
-          name: string
-          slug: string
-          thank_you_url: string
-          updated_at?: string
-        }
-        Update: {
-          active?: boolean
-          created_at?: string
-          name?: string
-          slug?: string
-          thank_you_url?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       quiz_questions: {
         Row: {
           contexte: string | null
@@ -3613,6 +3486,7 @@ export type Database = {
           parent_sale_id: string | null
           payment_status: string | null
           product: string
+          rebill_token: string | null
           sale_type: string | null
           sold_at: string | null
           stripe_session_id: string | null
@@ -3634,6 +3508,7 @@ export type Database = {
           parent_sale_id?: string | null
           payment_status?: string | null
           product: string
+          rebill_token?: string | null
           sale_type?: string | null
           sold_at?: string | null
           stripe_session_id?: string | null
@@ -3655,6 +3530,7 @@ export type Database = {
           parent_sale_id?: string | null
           payment_status?: string | null
           product?: string
+          rebill_token?: string | null
           sale_type?: string | null
           sold_at?: string | null
           stripe_session_id?: string | null
@@ -3683,13 +3559,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "sales_call_id_fkey"
-            columns: ["call_id"]
-            isOneToOne: false
-            referencedRelation: "leads_enriched"
-            referencedColumns: ["contact_call_id"]
-          },
-          {
             foreignKeyName: "sales_closed_by_fkey"
             columns: ["closed_by"]
             isOneToOne: false
@@ -3708,13 +3577,6 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sales_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads_enriched"
             referencedColumns: ["id"]
           },
           {
@@ -4236,13 +4098,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "calls_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads_enriched"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "calls_rescheduled_from_fkey"
             columns: ["rescheduled_from"]
             isOneToOne: false
@@ -4256,13 +4111,6 @@ export type Database = {
             referencedRelation: "calls_enriched"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "calls_rescheduled_from_fkey"
-            columns: ["rescheduled_from"]
-            isOneToOne: false
-            referencedRelation: "leads_enriched"
-            referencedColumns: ["contact_call_id"]
-          },
         ]
       }
       contact_timeline: {
@@ -4275,73 +4123,6 @@ export type Database = {
           event_type: string | null
         }
         Relationships: []
-      }
-      leads_enriched: {
-        Row: {
-          apporteur_id: string | null
-          apporteur_name: string | null
-          assigned_at: string | null
-          assigned_to: string | null
-          assigned_to_name: string | null
-          call_type: string | null
-          contact_call_assigned_to: string | null
-          contact_call_assigned_to_name: string | null
-          contact_call_event_type: string | null
-          contact_call_id: string | null
-          contact_call_scheduled_at: string | null
-          contact_call_status: string | null
-          contact_email: string | null
-          contact_full_name: string | null
-          contact_id: string | null
-          contact_phone: string | null
-          created_at: string | null
-          has_active_call: boolean | null
-          id: string | null
-          notes: string | null
-          quiz_category: string | null
-          quiz_score: number | null
-          raw_email: string | null
-          raw_full_name: string | null
-          raw_phone: string | null
-          recycled_at: string | null
-          source: string | null
-          source_detail: string | null
-          source_label: string | null
-          status: string | null
-          status_label: string | null
-          systeme_io_id: string | null
-          updated_at: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "calls_assigned_to_fkey"
-            columns: ["contact_call_assigned_to"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_apporteur_id_fkey"
-            columns: ["apporteur_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       public_certificates_view: {
         Row: {
@@ -4384,6 +4165,15 @@ export type Database = {
         }
       }
       admin_cleanup_user: { Args: { p_user_id: string }; Returns: undefined }
+      apporteur_update_lead_source: {
+        Args: {
+          p_lead_id: string
+          p_note?: string
+          p_source: string
+          p_source_detail?: string
+        }
+        Returns: Json
+      }
       apporteur_update_lead_status: {
         Args: { p_lead_id: string; p_new_status: string; p_note?: string }
         Returns: Json
@@ -4464,6 +4254,7 @@ export type Database = {
         Args: { p_full_name: string }
         Returns: string
       }
+      generate_rebill_token: { Args: { p_sale_id: string }; Returns: string }
       get_chapter_navigation: {
         Args: { p_chapitre_id: string }
         Returns: {
@@ -4533,6 +4324,22 @@ export type Database = {
           email: string
           full_name: string
           phone: string
+        }[]
+      }
+      lookup_rebill_token: {
+        Args: { p_token: string }
+        Returns: {
+          contact_id: string
+          email: string
+          full_name: string
+          installments_count: number
+          is_valid: boolean
+          monthly_amount: number
+          payable_total: number
+          phone: string
+          product: string
+          reason: string
+          sale_id: string
         }[]
       }
       manual_recycle_leads: {
