@@ -71,6 +71,9 @@ import AdminCertificates from "./pages/admin/training/AdminCertificates";
 import VerifyCertificate from "./pages/public/VerifyCertificate";
 import LeadQuiz from "./pages/public/lead-quiz/LeadQuiz";
 import Echo from "./pages/public/Echo";
+import ScoringStart from "./pages/public/scoring/ScoringStart";
+import ScoringQuiz from "./pages/public/scoring/ScoringQuiz";
+import AdminLeadScoring from "./pages/admin/lead-scoring/AdminLeadScoring";
 import CoachingCalendar from "./pages/coaching/CoachingCalendar";
 import { PassGuard } from "./components/PassGuard";
 import { FeatureGate } from "./components/FeatureGate";
@@ -107,6 +110,8 @@ const App = () => (
               <Route path="/verify/:number" element={<VerifyCertificate />} />
               <Route path="/quiz/:slug" element={<LeadQuiz />} />
               <Route path="/echo" element={<Echo />} />
+              <Route path="/scoring/start" element={<ScoringStart />} />
+              <Route path="/scoring/quiz" element={<ScoringQuiz />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/checkout/:installments" element={<Checkout />} />
               <Route path="/merci" element={<MerciPage />} />
@@ -133,6 +138,7 @@ const App = () => (
                   <Route path="/admin/team" element={<AdminTeam />} />
                   <Route path="/admin/announcements" element={<AdminAnnouncements />} />
                   <Route path="/admin/quiz-lead" element={<AdminQuizLead />} />
+                  <Route path="/admin/lead-scoring" element={<AdminLeadScoring />} />
                   <Route path="/admin/invitations" element={<Navigate to="/admin/training/access" replace />} />
                   <Route path="/admin/invitations/campaign" element={<CampaignTracking />} />
                   <Route path="/admin/webhooks/calendly" element={<AdminCalendlyWebhooks />} />

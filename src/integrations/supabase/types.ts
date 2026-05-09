@@ -2371,6 +2371,75 @@ export type Database = {
           },
         ]
       }
+      lead_scoring_responses: {
+        Row: {
+          answers: Json
+          category: string
+          client_ip: string | null
+          completed_at: string
+          contact_email: string
+          contact_first_name: string | null
+          contact_last_name: string | null
+          contact_phone: string | null
+          created_at: string
+          flags: string[]
+          funnel_slug: string
+          id: string
+          pending_token_id: string | null
+          score: number
+          user_agent: string | null
+        }
+        Insert: {
+          answers: Json
+          category: string
+          client_ip?: string | null
+          completed_at?: string
+          contact_email: string
+          contact_first_name?: string | null
+          contact_last_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          flags?: string[]
+          funnel_slug: string
+          id?: string
+          pending_token_id?: string | null
+          score: number
+          user_agent?: string | null
+        }
+        Update: {
+          answers?: Json
+          category?: string
+          client_ip?: string | null
+          completed_at?: string
+          contact_email?: string
+          contact_first_name?: string | null
+          contact_last_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          flags?: string[]
+          funnel_slug?: string
+          id?: string
+          pending_token_id?: string | null
+          score?: number
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_scoring_responses_funnel_slug_fkey"
+            columns: ["funnel_slug"]
+            isOneToOne: false
+            referencedRelation: "quiz_funnel_configs"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "lead_scoring_responses_pending_token_id_fkey"
+            columns: ["pending_token_id"]
+            isOneToOne: false
+            referencedRelation: "pending_scoring_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_tags: {
         Row: {
           created_at: string
@@ -3091,6 +3160,62 @@ export type Database = {
           },
         ]
       }
+      pending_scoring_tokens: {
+        Row: {
+          client_ip: string | null
+          consumed: boolean
+          consumed_at: string | null
+          contact_email: string
+          contact_first_name: string | null
+          contact_last_name: string | null
+          contact_phone: string | null
+          created_at: string
+          expires_at: string
+          funnel_slug: string
+          id: string
+          systemio_contact_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          client_ip?: string | null
+          consumed?: boolean
+          consumed_at?: string | null
+          contact_email: string
+          contact_first_name?: string | null
+          contact_last_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          expires_at?: string
+          funnel_slug: string
+          id?: string
+          systemio_contact_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          client_ip?: string | null
+          consumed?: boolean
+          consumed_at?: string | null
+          contact_email?: string
+          contact_first_name?: string | null
+          contact_last_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          expires_at?: string
+          funnel_slug?: string
+          id?: string
+          systemio_contact_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_scoring_tokens_funnel_slug_fkey"
+            columns: ["funnel_slug"]
+            isOneToOne: false
+            referencedRelation: "quiz_funnel_configs"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           access_opened_at: string | null
@@ -3319,6 +3444,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      quiz_funnel_configs: {
+        Row: {
+          active: boolean
+          created_at: string
+          name: string
+          slug: string
+          thank_you_url: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          name: string
+          slug: string
+          thank_you_url: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          name?: string
+          slug?: string
+          thank_you_url?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       quiz_questions: {
         Row: {
