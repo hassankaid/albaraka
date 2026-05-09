@@ -229,6 +229,22 @@ export default function RebillCheckout() {
   const testMode = searchParams.get("test") === "1";
   const token = (params.token || "").trim().toUpperCase();
 
+  // Démarrage différé : ?start=YYYY-MM-DD. Si présent et strictement futur,
+  // on bascule en mode "autoriser la carte aujourd'hui, 1er débit à cette
+  // date" (Stripe trial_end). Sinon : mode immédiat. Le backend revalide.
+  const startAtParam = (() => {
+    const raw = searchParams.get("start") || "";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
+    // Considère "future" si > aujourd'hui (jour calendaire).
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const sel = new Date(`${raw}T12:00:00`);
+    sel.setHours(0, 0, 0, 0);
+    if (sel.getTime() <= today.getTime()) return null;
+    return raw;
+  })();
+  const isDeferred = !!startAtParam;
+
   const [lookup, setLookup] = useState<RebillLookup | null>(null);
   const [lookupLoading, setLookupLoading] = useState(true);
 
@@ -276,8 +292,16 @@ export default function RebillCheckout() {
 
   const elementsOptions = useMemo(
     () => ({
-      mode: (installmentsCount === 1 ? "payment" : "subscription") as "payment" | "subscription",
-      amount: Math.max(Math.round(payableTotal * 100), 100),
+      // Mode différé (start_at futur) → SetupIntent : on collecte juste la
+      // carte sans débit immédiat. Stripe Elements ne demande PAS d'amount
+      // en mode "setup" (et ignore "currency" au sens "amount").
+      mode: (isDeferred
+        ? "setup"
+        : installmentsCount === 1
+          ? "payment"
+          : "subscription") as "payment" | "subscription" | "setup",
+      // En mode setup, l'amount est ignoré, mais on le laisse pour les autres modes.
+      ...(isDeferred ? {} : { amount: Math.max(Math.round(payableTotal * 100), 100) }),
       currency: "eur",
       paymentMethodTypes: ["card"] as string[],
       appearance: {
@@ -320,7 +344,7 @@ export default function RebillCheckout() {
         },
       },
     }),
-    [installmentsCount, payableTotal],
+    [installmentsCount, payableTotal, isDeferred],
   );
 
   // ─── Erreurs ────────────────────────────────────────────────────────
@@ -431,10 +455,36 @@ export default function RebillCheckout() {
               lineHeight: 1.5,
             }}
           >
-            {installmentsCount === 1
-              ? "Paiement en 1 fois pour solder votre plan."
-              : `${installmentsCount} mensualités pour solder votre plan.`}
+            {isDeferred
+              ? `Aucun prélèvement aujourd'hui. ${installmentsCount} mensualité${installmentsCount > 1 ? "s" : ""} à venir.`
+              : installmentsCount === 1
+                ? "Paiement en 1 fois pour solder votre plan."
+                : `${installmentsCount} mensualités pour solder votre plan.`}
           </p>
+          {isDeferred && startAtParam && (
+            <div
+              style={{
+                marginTop: 14,
+                display: "inline-block",
+                padding: "8px 14px",
+                borderRadius: 999,
+                border: `1px solid ${THEME.goldLine}`,
+                background: "rgba(201,160,78,0.08)",
+                color: THEME.goldBright,
+                fontSize: 12,
+                letterSpacing: "0.04em",
+              }}
+            >
+              📅 1er prélèvement le{" "}
+              <strong>
+                {new Date(`${startAtParam}T12:00:00`).toLocaleDateString("fr-FR", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </strong>
+            </div>
+          )}
         </div>
 
         <Elements stripe={stripePromise} options={elementsOptions}>
@@ -442,6 +492,7 @@ export default function RebillCheckout() {
             token={token}
             testMode={testMode}
             lookup={lookup}
+            startAt={startAtParam}
           />
         </Elements>
 
@@ -507,11 +558,21 @@ function RebillForm({
   token,
   testMode,
   lookup,
+  startAt,
 }: {
   token: string;
   testMode: boolean;
   lookup: RebillLookup;
+  startAt: string | null;
 }) {
+  const isDeferred = !!startAt;
+  const startAtFormatted = startAt
+    ? new Date(`${startAt}T12:00:00`).toLocaleDateString("fr-FR", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : null;
   const stripe = useStripe();
   const elements = useElements();
 
@@ -581,15 +642,17 @@ function RebillForm({
       const { data, error: invokeError } = await supabase.functions.invoke<{
         client_secret: string;
         intent_id: string;
-        intent_type: "payment" | "subscription";
+        intent_type: "payment" | "subscription" | "setup";
         amount_cents: number;
         installments: number;
+        start_at?: string | null;
         error?: string;
       }>("create-payment-intent", {
         body: {
           product_type: "rebill",
           rebill_token: token,
           test_mode: testMode,
+          ...(startAt ? { start_at: startAt } : {}),
           customer: {
             email: billing.email.trim().toLowerCase(),
             full_name: fullName,
@@ -602,39 +665,63 @@ function RebillForm({
         },
       });
 
-      if (invokeError || !data?.client_secret) {
-        const msg = data?.error || invokeError?.message || "Impossible de créer le paiement";
+      // En cas d'erreur 4xx, supabase.functions.invoke met `error` mais on
+      // veut lire le body JSON pour récupérer le message métier (start_at
+      // invalide, etc).
+      let result = data ?? null;
+      if (invokeError) {
+        const ctx = (invokeError as { context?: Response }).context;
+        if (ctx && typeof ctx.json === "function") {
+          try { result = await ctx.json(); } catch { /* keep null */ }
+        }
+      }
+      if (!result?.client_secret) {
+        const msg = result?.error || invokeError?.message || "Impossible de créer le paiement";
         toast.error(msg);
         setSubmitting(false);
         return;
       }
 
-      const returnUrl = `${window.location.origin}/merci${testMode ? "?test=1&rebill=1" : "?rebill=1"}`;
-      const { error: confirmErr } = await stripe.confirmPayment({
-        elements,
-        clientSecret: data.client_secret,
-        confirmParams: {
-          return_url: returnUrl,
-          payment_method_data: {
-            billing_details: {
-              name: fullName,
-              email: billing.email.trim().toLowerCase(),
-              phone: billing.phone.trim(),
-              address: {
-                line1: billing.address.trim(),
-                line2: "",
-                postal_code: billing.postal_code.trim(),
-                city: billing.city.trim(),
-                state: "",
-                country: billing.country.trim(),
-              },
-            },
-          },
-        },
-      });
+      const returnUrl = `${window.location.origin}/merci${testMode ? "?test=1&rebill=1" : "?rebill=1"}${
+        startAt ? `&start=${startAt}` : ""
+      }`;
 
-      if (confirmErr) {
-        toast.error(confirmErr.message || "Paiement refusé");
+      const billingDetails = {
+        name: fullName,
+        email: billing.email.trim().toLowerCase(),
+        phone: billing.phone.trim(),
+        address: {
+          line1: billing.address.trim(),
+          line2: "",
+          postal_code: billing.postal_code.trim(),
+          city: billing.city.trim(),
+          state: "",
+          country: billing.country.trim(),
+        },
+      };
+
+      // Mode différé → SetupIntent (autorisation seule, pas de débit) ;
+      // Mode immédiat → PaymentIntent (débit instantané ou Nx).
+      const confirmRes = result.intent_type === "setup"
+        ? await stripe.confirmSetup({
+            elements,
+            clientSecret: result.client_secret,
+            confirmParams: {
+              return_url: returnUrl,
+              payment_method_data: { billing_details: billingDetails },
+            },
+          })
+        : await stripe.confirmPayment({
+            elements,
+            clientSecret: result.client_secret,
+            confirmParams: {
+              return_url: returnUrl,
+              payment_method_data: { billing_details: billingDetails },
+            },
+          });
+
+      if (confirmRes.error) {
+        toast.error(confirmRes.error.message || "Paiement refusé");
         setSubmitting(false);
       }
     } catch (e) {
@@ -711,19 +798,40 @@ function RebillForm({
             <span style={{ color: THEME.creamMuted }}>Solde total</span>
             <strong style={{ color: THEME.goldBright }}>{formatEur(lookup.payable_total)}</strong>
           </div>
-          {installmentsCount > 1 && (
+          {isDeferred ? (
             <>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                 <span style={{ color: THEME.creamMuted }}>Aujourd'hui</span>
+                <strong style={{ color: "#7CD992" }}>0,00 €</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                <span style={{ color: THEME.creamMuted }}>1er prélèvement le {startAtFormatted}</span>
                 <strong>{formatEur(todayCharge)}</strong>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: THEME.creamMuted }}>
-                  Puis {installmentsCount - 1} × tous les mois
-                </span>
-                <strong>{formatEur(monthlyAmount)}</strong>
-              </div>
+              {installmentsCount > 1 && (
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: THEME.creamMuted }}>
+                    Puis {installmentsCount - 1} × tous les mois
+                  </span>
+                  <strong>{formatEur(monthlyAmount)}</strong>
+                </div>
+              )}
             </>
+          ) : (
+            installmentsCount > 1 && (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ color: THEME.creamMuted }}>Aujourd'hui</span>
+                  <strong>{formatEur(todayCharge)}</strong>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: THEME.creamMuted }}>
+                    Puis {installmentsCount - 1} × tous les mois
+                  </span>
+                  <strong>{formatEur(monthlyAmount)}</strong>
+                </div>
+              </>
+            )
           )}
         </div>
 
@@ -843,7 +951,21 @@ function RebillForm({
             style={{ marginTop: 2, accentColor: THEME.gold }}
           />
           <span>
-            {installmentsCount === 1 ? (
+            {isDeferred ? (
+              <>
+                J'autorise l'enregistrement de ma carte aujourd'hui sans prélèvement immédiat.
+                Le 1er prélèvement de{" "}
+                <strong style={{ color: THEME.goldBright }}>{formatEur(todayCharge)}</strong> aura
+                lieu le <strong style={{ color: THEME.goldBright }}>{startAtFormatted}</strong>
+                {installmentsCount > 1 ? (
+                  <>
+                    , puis {installmentsCount - 1} prélèvement{installmentsCount > 2 ? "s" : ""} mensuel{installmentsCount > 2 ? "s" : ""} de{" "}
+                    <strong style={{ color: THEME.goldBright }}>{formatEur(monthlyAmount)}</strong>
+                  </>
+                ) : null}
+                {" "}pour solder mon plan {lookup.product || "AL BARAKA"}.
+              </>
+            ) : installmentsCount === 1 ? (
               <>
                 J'autorise le débit unique de{" "}
                 <strong style={{ color: THEME.goldBright }}>{formatEur(todayCharge)}</strong> pour
@@ -879,7 +1001,11 @@ function RebillForm({
             boxShadow: "0 10px 25px rgba(201,160,78,0.25)",
           }}
         >
-          {submitting ? "Traitement…" : `Payer ${formatEur(todayCharge)}`}
+          {submitting
+            ? "Traitement…"
+            : isDeferred
+              ? "Autoriser ma carte"
+              : `Payer ${formatEur(todayCharge)}`}
         </button>
       </div>
     </form>

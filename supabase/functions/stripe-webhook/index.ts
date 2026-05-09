@@ -8,6 +8,8 @@ const corsHeaders = {
 
 const STRIPE_WEBHOOK_SECRET_LIVE = Deno.env.get("STRIPE_WEBHOOK_SECRET");
 const STRIPE_WEBHOOK_SECRET_TEST = Deno.env.get("STRIPE_WEBHOOK_SECRET_TEST");
+const STRIPE_SECRET_KEY_LIVE = Deno.env.get("STRIPE_SECRET_KEY") || "";
+const STRIPE_SECRET_KEY_TEST = Deno.env.get("STRIPE_SECRET_KEY_TEST") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -779,6 +781,170 @@ async function ensureRebillFirstPaid(
   triggerClientInvoice(firstPending.id);
 }
 
+/**
+ * REBILL — DÉMARRAGE DIFFÉRÉ (trial_end futur)
+ *
+ * Quand le CEO génère un lien rebill avec `?start=YYYY-MM-DD` futur, le client
+ * autorise sa carte aujourd'hui via SetupIntent + la sub Stripe est créée en
+ * status="trialing" avec trial_end. AUCUN payment_intent.succeeded ne sera émis
+ * tant que trial_end n'est pas atteint.
+ *
+ * À la création serveur de la sub, Stripe émet `customer.subscription.created`.
+ * On écoute cet event ICI pour :
+ *   1. Détecter le mode trial (rebill + trial_end futur)
+ *   2. Attacher le nouveau sub_id à TOUS les pending de la vente
+ *   3. Réaligner les due_date des pending sur trial_end (1re = trial_end,
+ *      2e = trial_end+1mois, etc.)
+ *   4. NE PAS marquer la 1re paid (elle le sera quand `invoice.paid` arrivera
+ *      à trial_end via handleInvoicePaid existant)
+ *
+ * Idempotent : si le sub_id est déjà attaché aux pending, on log et on quitte.
+ */
+async function handleSubscriptionCreated(
+  supabase: SupabaseClient,
+  sub: Record<string, unknown>,
+): Promise<void> {
+  const metadata = (sub.metadata as Record<string, string>) || {};
+  if (metadata.source !== "rebill") return;
+
+  const saleId = metadata.rebill_sale_id;
+  if (!saleId) {
+    console.error("[rebill/sub.created] missing rebill_sale_id in metadata");
+    return;
+  }
+
+  const subscriptionId = typeof sub.id === "string" ? sub.id : null;
+  if (!subscriptionId) {
+    console.error("[rebill/sub.created] subscription has no id");
+    return;
+  }
+
+  // Détection du mode trial : trial_end est un unix timestamp dans le futur.
+  const trialEndUnix =
+    typeof sub.trial_end === "number" && sub.trial_end > Math.floor(Date.now() / 1000)
+      ? sub.trial_end
+      : null;
+
+  if (!trialEndUnix) {
+    // Pas en mode trial → mode immédiat. handlePaymentIntentSucceeded fera son
+    // travail à la confirmation client (PI succeeded). On no-op ici pour ne pas
+    // dupliquer la logique.
+    return;
+  }
+
+  // ── Idempotency : si la sub est déjà attachée aux pending de la vente, no-op
+  const { data: alreadyAttached } = await supabase
+    .from("payments")
+    .select("id")
+    .eq("sale_id", saleId)
+    .eq("stripe_subscription_id", subscriptionId)
+    .limit(1);
+  if (alreadyAttached && alreadyAttached.length > 0) {
+    console.log(
+      `[rebill/sub.created] sub=${subscriptionId} already attached to sale=${saleId}, skip`,
+    );
+    return;
+  }
+
+  // 1) Attache le sub_id à tous les pending/late de la vente.
+  const { error: attachErr } = await supabase
+    .from("payments")
+    .update({ stripe_subscription_id: subscriptionId })
+    .eq("sale_id", saleId)
+    .in("status", ["pending", "late"]);
+  if (attachErr) {
+    console.error("[rebill/sub.created] failed to attach sub_id:", attachErr);
+    return;
+  }
+
+  // 2) Réaligne les due_date des pending sur trial_end.
+  // 1re pending = trial_end, 2e = trial_end+1mois, etc.
+  const { data: pendings } = await supabase
+    .from("payments")
+    .select("id, payment_number")
+    .eq("sale_id", saleId)
+    .in("status", ["pending", "late"])
+    .order("payment_number", { ascending: true })
+    .order("due_date", { ascending: true });
+
+  if (pendings && pendings.length > 0) {
+    const trialEndDate = new Date(trialEndUnix * 1000);
+    const trialEndIso = trialEndDate.toISOString().slice(0, 10);
+    let monthOffset = 0;
+    for (const p of pendings) {
+      const newDue = monthOffset === 0 ? trialEndIso : addMonthsISO(trialEndDate, monthOffset);
+      await supabase.from("payments").update({ due_date: newDue }).eq("id", p.id);
+      monthOffset++;
+    }
+    console.log(
+      `[rebill/sub.created] sale=${saleId} sub=${subscriptionId} trial_end=${trialEndIso} ` +
+        `attached + realigned ${pendings.length} pending due_date`,
+    );
+  }
+}
+
+/**
+ * REBILL — DÉMARRAGE DIFFÉRÉ : SETUP INTENT CONFIRMÉ
+ *
+ * Quand le client a autorisé sa carte via le SetupIntent (mode trial), Stripe
+ * émet `setup_intent.succeeded`. La PaymentMethod est désormais attachée au
+ * customer, MAIS Stripe n'attache PAS automatiquement cette PM comme
+ * default_payment_method sur la subscription en trial. Sans ce patch, la 1re
+ * invoice à trial_end serait émise sans méthode de paiement et la sub passerait
+ * en past_due. On fait donc l'attach explicitement ici.
+ *
+ * Idempotent : si la sub a déjà default_payment_method = cette PM, no-op (le
+ * PATCH Stripe est lui-même idempotent).
+ */
+async function handleSetupIntentSucceeded(
+  si: Record<string, unknown>,
+  apiKey: string,
+): Promise<void> {
+  const metadata = (si.metadata as Record<string, string>) || {};
+  if (metadata.source !== "rebill") return;
+
+  const subscriptionId = metadata.stripe_subscription_id;
+  const paymentMethodId =
+    typeof si.payment_method === "string"
+      ? si.payment_method
+      : extractId(si.payment_method);
+
+  if (!subscriptionId || !paymentMethodId) {
+    console.warn(
+      `[rebill/si.succeeded] missing sub_id (${subscriptionId}) or pm_id (${paymentMethodId})`,
+    );
+    return;
+  }
+
+  try {
+    // PATCH subscription.default_payment_method via Stripe API.
+    // Pas besoin du SDK : un POST x-www-form-urlencoded suffit.
+    const body = new URLSearchParams({
+      default_payment_method: paymentMethodId,
+    }).toString();
+    const res = await fetch(`https://api.stripe.com/v1/subscriptions/${subscriptionId}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(
+        `[rebill/si.succeeded] failed to attach default_pm to sub=${subscriptionId}: ${res.status} ${text}`,
+      );
+      return;
+    }
+    console.log(
+      `[rebill/si.succeeded] attached default_pm=${paymentMethodId} to sub=${subscriptionId}`,
+    );
+  } catch (err) {
+    console.error("[rebill/si.succeeded] fatal:", err);
+  }
+}
+
 async function handlePaymentIntentSucceeded(
   supabase: SupabaseClient,
   pi: Record<string, unknown>,
@@ -975,6 +1141,28 @@ Deno.serve(async (req) => {
         case "payment_intent.succeeded":
           await handlePaymentIntentSucceeded(supabase, event.data.object);
           break;
+
+        case "customer.subscription.created":
+          // Spécifique au mode rebill différé (trial_end futur). Le mode immédiat
+          // n'a pas besoin de cet event — il est géré via payment_intent.succeeded.
+          await handleSubscriptionCreated(supabase, event.data.object);
+          break;
+
+        case "setup_intent.succeeded": {
+          // Spécifique au mode rebill différé : attache la PM autorisée comme
+          // default sur la sub trialing pour que la 1re invoice à trial_end
+          // débite correctement. Sans ça → past_due. Sélectionne la clé Stripe
+          // selon event.livemode (true = live, false = test).
+          const apiKey = event.livemode ? STRIPE_SECRET_KEY_LIVE : STRIPE_SECRET_KEY_TEST;
+          if (!apiKey) {
+            console.error(
+              `[setup_intent.succeeded] no Stripe ${event.livemode ? "live" : "test"} key configured`,
+            );
+            break;
+          }
+          await handleSetupIntentSucceeded(event.data.object, apiKey);
+          break;
+        }
 
         case "invoice.paid":
         case "invoice.payment_succeeded":

@@ -458,6 +458,43 @@ Deno.serve(async (req) => {
         );
       }
 
+      // ── start_at (démarrage différé) ─────────────────────────────────
+      // Optionnel : date ISO YYYY-MM-DD. Si futur, on autorise la carte
+      // aujourd'hui (SetupIntent via subscription trialing) et le 1er débit
+      // se fait à trial_end. Stripe : trial_end + proration_behavior:none
+      // sur la sub. NB : non supporté en paiement 1x (cf. validation plus bas).
+      const startAtRaw =
+        typeof input.start_at === "string" && input.start_at.trim()
+          ? input.start_at.trim()
+          : null;
+      let startAtUnix: number | null = null;
+      let startAtIsoDate: string | null = null;
+      if (startAtRaw) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(startAtRaw)) {
+          return new Response(
+            JSON.stringify({ error: "start_at_format_invalid", message: "Format attendu : YYYY-MM-DD" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+        // On vise midi UTC pour éviter tout décalage de fuseau horaire
+        // (Stripe accepte n'importe quelle heure de la journée pour trial_end).
+        const startDate = new Date(`${startAtRaw}T12:00:00Z`);
+        const nowMs = Date.now();
+        if (Number.isNaN(startDate.getTime())) {
+          return new Response(
+            JSON.stringify({ error: "start_at_invalid_date" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+        // On considère "futur" si trial_end est au moins 1h dans le futur
+        // (sinon Stripe le traitera comme immédiat de toute façon).
+        if (startDate.getTime() > nowMs + 60 * 60 * 1000) {
+          startAtUnix = Math.floor(startDate.getTime() / 1000);
+          startAtIsoDate = startAtRaw;
+        }
+        // Sinon (date ≤ today) : on ignore silencieusement, mode immédiat.
+      }
+
       // Lookup : valide le token + récupère sale_id, contact_id et solde
       const { data: lookupRows, error: lookupErr } = await supabase.rpc(
         "lookup_rebill_token",
@@ -550,8 +587,21 @@ Deno.serve(async (req) => {
         first_payment_cents: String(firstAmountCents),
       };
 
-      // 1x → PaymentIntent unique (montant total = 1re mensualité = solde)
+      // 1x → PaymentIntent unique (montant total = 1re mensualité = solde).
+      // Le démarrage différé n'est pas supporté en 1x : un PaymentIntent ne
+      // peut pas être différé. (À implémenter via SetupIntent + subscription
+      // trialing 1-cycle plus tard si besoin.)
       if (installmentsCount === 1) {
+        if (startAtUnix) {
+          return new Response(
+            JSON.stringify({
+              error: "start_at_unsupported_for_single_payment",
+              message:
+                "Le démarrage différé n'est pas supporté en paiement 1x. Utilisez un plan ≥ 2 mensualités ou un démarrage immédiat.",
+            }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
         const pi = await stripeFetch<{ id: string; client_secret: string }>(
           apiKey,
           "/payment_intents",
@@ -669,6 +719,33 @@ Deno.serve(async (req) => {
         metadata: rebillMetadata,
       };
 
+      // ── Démarrage différé (start_at futur) ──────────────────────────
+      // Stripe :
+      //   trial_end          → date du 1er débit (autorise la carte aujourd'hui)
+      //   proration_behavior → 'none' pour ne pas calculer de prorata sur l'add_invoice_item
+      // Pendant le trial, la sub est en status="trialing", AUCUN prélèvement.
+      // À trial_end, Stripe émet automatiquement la 1re invoice (qui inclura
+      // l'add_invoice_items[0] one-shot s'il y en a un) et débite la carte
+      // enregistrée. Le client confirme aujourd'hui un SetupIntent (3DS) au
+      // lieu d'un PaymentIntent — d'où l'expand sur pending_setup_intent
+      // ci-dessous, conditionnel.
+      const isDeferredStart = !!(startAtUnix && startAtIsoDate);
+      if (isDeferredStart) {
+        rebillSubParams.trial_end = startAtUnix;
+        rebillSubParams.proration_behavior = "none";
+        rebillMetadata.start_at = startAtIsoDate as string;
+        rebillMetadata.start_at_unix = String(startAtUnix);
+        // Décale aussi cancel_at : trial_end + N mois - 1 jour (au lieu de
+        // today + N mois - 1 jour) sinon la sub se ferait annuler avant
+        // d'avoir débité toutes les mensualités.
+        const cancelDateDeferred = new Date((startAtUnix as number) * 1000);
+        cancelDateDeferred.setMonth(cancelDateDeferred.getMonth() + installmentsCount);
+        cancelDateDeferred.setDate(cancelDateDeferred.getDate() - 1);
+        rebillSubParams.cancel_at = Math.floor(cancelDateDeferred.getTime() / 1000);
+        // Expand le SetupIntent au lieu du PaymentIntent (pas d'invoice immédiate)
+        rebillSubParams["expand[0]"] = "pending_setup_intent";
+      }
+
       // Ajustement one-shot de la 1re facture pour atteindre exactement
       // firstAmountCents. Garantit Stripe == BDD au centime près grâce à
       // l'algo "first-payment-absorbs-extras" du wizard ReschedulePayments.
@@ -686,25 +763,35 @@ Deno.serve(async (req) => {
       const rebillSub = await stripeFetch<{
         id: string;
         latest_invoice?: { payment_intent?: { id: string; client_secret: string } };
+        pending_setup_intent?: { id: string; client_secret: string } | null;
       }>(apiKey, "/subscriptions", rebillSubParams);
 
-      const rebillPi = rebillSub.latest_invoice?.payment_intent;
-      if (rebillPi?.id) {
+      // Mode trial : on a un SetupIntent (autorisation carte)
+      // Mode immédiat : on a un PaymentIntent (1re mensualité débitée tout de suite)
+      const rebillSi = isDeferredStart ? rebillSub.pending_setup_intent : null;
+      const rebillPi = !isDeferredStart ? rebillSub.latest_invoice?.payment_intent : null;
+      const intentId = rebillSi?.id || rebillPi?.id || null;
+      const clientSecret = rebillSi?.client_secret || rebillPi?.client_secret || null;
+      const intentType: "payment" | "setup" = rebillSi ? "setup" : "payment";
+
+      if (intentId) {
         try {
-          const piMeta = { ...rebillMetadata, stripe_subscription_id: rebillSub.id };
-          await stripeFetch(apiKey, `/payment_intents/${rebillPi.id}`, {
-            metadata: piMeta,
-          });
+          const intentMeta = { ...rebillMetadata, stripe_subscription_id: rebillSub.id };
+          const path = intentType === "setup"
+            ? `/setup_intents/${intentId}`
+            : `/payment_intents/${intentId}`;
+          await stripeFetch(apiKey, path, { metadata: intentMeta });
         } catch (e) {
-          console.error("Failed to patch rebill PI metadata:", e);
+          console.error(`Failed to patch rebill ${intentType} metadata:`, e);
         }
       }
 
-      if (!rebillPi?.client_secret) {
+      if (!clientSecret) {
         return new Response(
           JSON.stringify({
             error: "rebill subscription créée mais pas de client_secret",
             subscription_id: rebillSub.id,
+            mode: isDeferredStart ? "deferred" : "immediate",
           }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
@@ -712,15 +799,18 @@ Deno.serve(async (req) => {
 
       return new Response(
         JSON.stringify({
-          client_secret: rebillPi.client_secret,
-          intent_id: rebillPi.id,
-          intent_type: "subscription",
+          client_secret: clientSecret,
+          intent_id: intentId,
+          // "subscription" historiquement = PaymentIntent issu d'une sub.
+          // "setup" = SetupIntent (mode différé).
+          intent_type: intentType === "setup" ? "setup" : "subscription",
           product_type: "rebill",
           subscription_id: rebillSub.id,
           customer_id: rebillCustomerId,
-          amount_cents: firstAmountCents, // 1re mensualité (facturée tout de suite)
+          amount_cents: firstAmountCents, // 1re mensualité (facturée à start_at en mode différé, sinon tout de suite)
           payable_cents: payableTotalCents, // solde total
           installments: installmentsCount,
+          start_at: startAtIsoDate, // null si mode immédiat
           test_mode: isTestMode,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },

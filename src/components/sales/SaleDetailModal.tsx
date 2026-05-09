@@ -237,7 +237,57 @@ export default function SaleDetailModal({
   const [rebillToken, setRebillToken] = useState<string | null>(null);
   const [rebillDialogOpen, setRebillDialogOpen] = useState(false);
   const [rebillCopied, setRebillCopied] = useState(false);
-  const rebillUrl = rebillToken ? `${window.location.origin}/rebill/${rebillToken}` : null;
+
+  // Démarrage différé du rebill — état local de la modale "Lien client".
+  // Si la date sélectionnée est ≥ today+1, on ajoute `?start=YYYY-MM-DD` à
+  // l'URL → le client autorise sa carte aujourd'hui, le 1er débit aura lieu
+  // à cette date (Stripe trial_end). Default = due_date de la 1re pending.
+  const [rebillStartDate, setRebillStartDate] = useState<Date | undefined>(undefined);
+  const [rebillStartPickerOpen, setRebillStartPickerOpen] = useState(false);
+  // Quand on ouvre la modale, default sur la due_date de la 1re pending
+  useEffect(() => {
+    if (!rebillDialogOpen) return;
+    if (rebillStartDate) return; // déjà set par l'utilisateur, ne pas écraser
+    const firstPending = payments
+      .filter((p) => p.status === "pending")
+      .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
+    if (firstPending) {
+      const d = new Date(firstPending.due_date);
+      // Si la due_date est dans le passé ou aujourd'hui, on garde "today" =
+      // mode immédiat (pas de start_at dans l'URL).
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      d.setHours(0, 0, 0, 0);
+      if (d.getTime() > today.getTime()) {
+        setRebillStartDate(d);
+      } else {
+        setRebillStartDate(today);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rebillDialogOpen]);
+
+  // Construit l'URL : avec ?start=… si la date sélectionnée est strictement
+  // future (≥ today+1), sinon URL "nue" = mode immédiat.
+  const rebillUrl = (() => {
+    if (!rebillToken) return null;
+    const base = `${window.location.origin}/rebill/${rebillToken}`;
+    if (!rebillStartDate) return base;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const sel = new Date(rebillStartDate);
+    sel.setHours(0, 0, 0, 0);
+    if (sel.getTime() <= today.getTime()) return base;
+    return `${base}?start=${format(sel, "yyyy-MM-dd")}`;
+  })();
+  const isDeferredRebill = (() => {
+    if (!rebillStartDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const sel = new Date(rebillStartDate);
+    sel.setHours(0, 0, 0, 0);
+    return sel.getTime() > today.getTime();
+  })();
 
   // ─── Subscription récurrente : détection & annulation ──────────────
   // Cas natif Stripe (Nx via les nouveaux liens) : sub_id stocké en BDD sur les payments.
@@ -837,6 +887,64 @@ export default function SaleDetailModal({
                 </div>
               </div>
 
+              {/* Date de démarrage des prélèvements (Stripe trial_end).
+                  ≤ today → URL "nue" = débit immédiat à l'autorisation.
+                  ≥ today+1 → ?start=YYYY-MM-DD = autorisation aujourd'hui,
+                  1er débit à cette date.
+                  ⚠ Désactivé en 1x (le backend rejette : un PaymentIntent ne
+                  peut pas être différé). */}
+              {pendingCount >= 2 && (
+                <div className="rounded-md border border-amber-500/20 bg-amber-500/5 p-3 space-y-2">
+                  <Label className="text-xs flex items-center gap-1.5">
+                    <CalendarClock className="h-3.5 w-3.5 text-amber-300" />
+                    Démarrer les prélèvements le
+                  </Label>
+                  <Popover open={rebillStartPickerOpen} onOpenChange={setRebillStartPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start text-left font-normal h-9"
+                      >
+                        <CalendarIcon className="h-3.5 w-3.5 mr-2" />
+                        {rebillStartDate
+                          ? format(rebillStartDate, "EEEE d MMMM yyyy", { locale: fr })
+                          : "Aujourd'hui (débit immédiat)"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={rebillStartDate}
+                        onSelect={(d) => {
+                          if (d) setRebillStartDate(d);
+                          setRebillStartPickerOpen(false);
+                        }}
+                        disabled={(d) => {
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          return d < today;
+                        }}
+                        initialFocus
+                        locale={fr}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    {isDeferredRebill ? (
+                      <>
+                        ✅ Le client autorisera sa carte aujourd'hui. <strong>Aucun prélèvement immédiat.</strong>{" "}
+                        Le 1er débit ({(payments.find((p) => p.status === "pending")?.amount ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €) aura lieu le{" "}
+                        <strong className="text-amber-300">{format(rebillStartDate as Date, "d MMMM yyyy", { locale: fr })}</strong>,
+                        puis chaque mois à cette date.
+                      </>
+                    ) : (
+                      <>Mode <strong>immédiat</strong> : le client est débité à l'autorisation de la carte.</>
+                    )}
+                  </p>
+                </div>
+              )}
+
               {/* Lien à copier */}
               <div className="space-y-2">
                 <Label className="text-xs flex items-center gap-1.5">
@@ -880,11 +988,17 @@ export default function SaleDetailModal({
                   variant="outline"
                   size="sm"
                   onClick={() => {
+                    const startStr = isDeferredRebill && rebillStartDate
+                      ? format(rebillStartDate, "d MMMM yyyy", { locale: fr })
+                      : null;
                     const subject = encodeURIComponent(`Lien de paiement ${saleProduct} — Solde restant`);
                     const body = encodeURIComponent(
                       `Bonjour ${contactName || ""},\n\n` +
-                        `Voici le lien sécurisé pour régler le solde de votre plan ${saleProduct} :\n\n` +
+                        `Voici le lien sécurisé pour configurer le paiement du solde de votre plan ${saleProduct} :\n\n` +
                         `${rebillUrl}\n\n` +
+                        (startStr
+                          ? `✅ Aucun prélèvement aujourd'hui — le 1er prélèvement aura lieu le ${startStr}, puis chaque mois à cette date jusqu'à solder le plan.\n\n`
+                          : "") +
                         `Solde total : ${totalPending.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` +
                         (pendingCount > 1 ? ` (${pendingCount} mensualités)` : "") +
                         `.\n\nLe paiement est sécurisé par Stripe (3D Secure).\n\nBien à vous,\nL'équipe AL BARAKA`,
@@ -901,10 +1015,16 @@ export default function SaleDetailModal({
                   size="sm"
                   onClick={() => {
                     const firstName = (contactName || "").split(" ")[0];
+                    const startStr = isDeferredRebill && rebillStartDate
+                      ? format(rebillStartDate, "d MMMM yyyy", { locale: fr })
+                      : null;
                     const text = encodeURIComponent(
                       `Bonjour ${firstName} 👋\n\n` +
-                        `Voici votre lien de paiement sécurisé pour solder votre plan ${saleProduct} :\n\n` +
+                        `Voici votre lien de paiement sécurisé pour le solde de votre plan ${saleProduct} :\n\n` +
                         `${rebillUrl}\n\n` +
+                        (startStr
+                          ? `✅ Aucun prélèvement aujourd'hui — 1er prélèvement le ${startStr}, puis chaque mois à cette date.\n\n`
+                          : "") +
                         `Total : ${totalPending.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` +
                         (pendingCount > 1 ? ` en ${pendingCount} mensualités` : ` en 1 fois`) +
                         `.`,
