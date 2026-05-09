@@ -70,6 +70,7 @@ import MyCertificates from "./pages/training/MyCertificates";
 import AdminCertificates from "./pages/admin/training/AdminCertificates";
 import VerifyCertificate from "./pages/public/VerifyCertificate";
 import LeadQuiz from "./pages/public/lead-quiz/LeadQuiz";
+import Echo from "./pages/public/Echo";
 import CoachingCalendar from "./pages/coaching/CoachingCalendar";
 import { PassGuard } from "./components/PassGuard";
 import { FeatureGate } from "./components/FeatureGate";
@@ -105,6 +106,7 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify/:number" element={<VerifyCertificate />} />
               <Route path="/quiz/:slug" element={<LeadQuiz />} />
+              <Route path="/echo" element={<Echo />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/checkout/:installments" element={<Checkout />} />
               <Route path="/merci" element={<MerciPage />} />
