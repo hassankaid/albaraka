@@ -70,38 +70,43 @@ Deno.serve(async (req) => {
       return json({ error: "funnel_not_found_or_inactive", funnel: funnelSlug }, 404);
     }
 
-    // ── Match : token le plus ancien NON consommé, non expiré, matchant
-    //    funnel + IP + UA. On utilise l'ordre FIFO pour le edge case "même
-    //    IP/UA pour 2 leads" : 1er arrivé prend le 1er token créé.
-    let matchedToken: any = null;
-    if (clientIp && userAgent) {
-      const { data: candidates } = await supabase
-        .from("pending_scoring_tokens")
-        .select("id, contact_email, contact_first_name, contact_last_name, contact_phone, systemio_contact_id, created_at")
-        .eq("funnel_slug", funnelSlug)
-        .eq("client_ip", clientIp)
-        .eq("user_agent", userAgent)
-        .eq("consumed", false)
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: true })
-        .limit(1);
-      matchedToken = candidates?.[0] || null;
-    }
+    // ── Stratégie de matching ──
+    // Découverte : Systemio envoie le webhook depuis SES serveurs (IP
+    // 185.236.142.x, User-Agent "Symfony"), pas depuis le navigateur du
+    // lead. Matching IP+UA strict est donc impossible — on tomberait
+    // toujours en orphelin.
+    //
+    // Pour la phase test (volume très faible, ~1 lead à la fois), on
+    // utilise un matching FIFO par recency : prendre le pending_token le
+    // plus ancien NON consommé du funnel, créé dans les 5 dernières
+    // minutes. Race-safe via consume atomique. Quand on aura plus de
+    // volume, on pourra brancher l'API Systemio pour identifier le lead
+    // exact via son email (celui que Systemio passe dans le webhook).
+    //
+    // Métadonnées clientIp/userAgent du visiteur : juste loggées pour
+    // debug futur.
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: candidates } = await supabase
+      .from("pending_scoring_tokens")
+      .select("id, contact_email, contact_first_name, contact_last_name, contact_phone, systemio_contact_id, created_at, client_ip, user_agent")
+      .eq("funnel_slug", funnelSlug)
+      .eq("consumed", false)
+      .gt("expires_at", new Date().toISOString())
+      .gt("created_at", fiveMinAgo)
+      .order("created_at", { ascending: true })
+      .limit(1);
+    const matchedToken: any = candidates?.[0] || null;
 
-    // ── Fallback : si pas de match avec IP+UA strict, on tente IP seule
-    //    (User-Agent peut subtilement varier entre Systemio et notre page,
-    //    ex. Mobile Safari, mises à jour navigateur, etc.)
-    if (!matchedToken && clientIp) {
-      const { data: candidates } = await supabase
-        .from("pending_scoring_tokens")
-        .select("id, contact_email, contact_first_name, contact_last_name, contact_phone, systemio_contact_id, created_at")
-        .eq("funnel_slug", funnelSlug)
-        .eq("client_ip", clientIp)
-        .eq("consumed", false)
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: true })
-        .limit(1);
-      matchedToken = candidates?.[0] || null;
+    if (matchedToken) {
+      console.log(
+        `[match-scoring-token] candidate token=${matchedToken.id} email=${matchedToken.contact_email} ` +
+        `webhook_ip=${matchedToken.client_ip} visitor_ip=${clientIp ?? "—"}`,
+      );
+    } else {
+      console.log(
+        `[match-scoring-token] no candidate for funnel=${funnelSlug} visitor_ip=${clientIp ?? "—"} ` +
+        `ua=${userAgent?.slice(0, 40) ?? "—"}`,
+      );
     }
 
     // ── Pas de match : la page transitoire poll, on lui dit de réessayer

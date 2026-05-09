@@ -95,6 +95,11 @@ Deno.serve(async (req) => {
       return json({ error: "invalid_json" }, 400);
     }
 
+    // DEBUG : on logge le payload complet pendant la phase test pour pouvoir
+    // ajuster le mapping de champs (first_name, phone, etc.) selon ce que
+    // Systemio envoie réellement. À retirer plus tard.
+    console.log("[webhook-scoring-test] PAYLOAD:", JSON.stringify(payload));
+
     // ── Extraction des champs (tolérant à plusieurs formats Systemio) ──
     const email = pickString(
       payload,
