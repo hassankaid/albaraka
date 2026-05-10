@@ -177,6 +177,21 @@ export default function ReschedulePaymentsModal({
     if (!canConfirm) return;
     setSaving(true);
     try {
+      // Récupère le contact_id de la vente — sera réutilisé sur tous les
+      // nouveaux pending payments insérés ci-dessous, pour que /admin/payments
+      // affiche correctement le nom/email/téléphone de l'acheteur (sans ce
+      // rattachement explicite, payments.contact_id reste NULL et la jointure
+      // côté UI ne trouve rien).
+      const { data: saleRow, error: saleErr } = await supabase
+        .from("sales")
+        .select("contact_id")
+        .eq("id", saleId)
+        .single();
+      if (saleErr || !saleRow?.contact_id) {
+        throw new Error("Impossible de retrouver le contact lié à cette vente.");
+      }
+      const saleContactId = saleRow.contact_id;
+
       // ── ÉTAPE 1 : Stop des prélèvements auto ──
       // Stripe natif OU Systeme.io : l'edge function gère les 2 cas. Elle annule
       // la sub côté Stripe (avec fallback automatique par lookup email pour les
@@ -252,6 +267,7 @@ export default function ReschedulePaymentsModal({
           .from("payments")
           .insert({
             sale_id: saleId,
+            contact_id: saleContactId,
             amount: p.amount,
             due_date: p.due_date,
             status: "pending",

@@ -191,8 +191,16 @@ export default function SaleDetailModal({
     const maxNum = payments.length > 0 ? Math.max(...payments.map((p) => p.payment_number)) : 0;
     const newTotal = payments.length + 1;
 
+    // Récupère contact_id de la vente pour qu'il soit rattaché au nouveau
+    // payment (sinon /admin/payments n'affiche ni nom ni email).
+    const { data: saleRow } = await supabase
+      .from("sales")
+      .select("contact_id")
+      .eq("id", saleId)
+      .single();
     const { error } = await supabase.from("payments").insert({
       sale_id: saleId,
+      contact_id: saleRow?.contact_id ?? null,
       amount: parseFloat(newPayment.amount),
       due_date: format(newPayment.dueDate, "yyyy-MM-dd"),
       status: newPayment.status,
