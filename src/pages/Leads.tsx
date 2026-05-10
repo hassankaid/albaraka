@@ -42,7 +42,27 @@ import {
   getSourceBadgeClass,
   getSourceLabel,
 } from "@/lib/leadConfig";
-type LeadEnriched = Tables<"leads_enriched">;
+import {
+  CATEGORY_LABELS as SCORING_CATEGORY_LABELS,
+  CATEGORY_BADGES as SCORING_CATEGORY_BADGES,
+  CATEGORY_EMOJIS as SCORING_CATEGORY_EMOJIS,
+  type Category as ScoringCategory,
+} from "@/lib/leadScoring";
+// Vue leads_enriched étendue avec les colonnes scoring (quiz_*) et any_call_*.
+// Les types Supabase régénérés ne reflètent pas encore ces colonnes — on type-
+// cast côté usage. À synchroniser avec types.ts à la prochaine régénération.
+type LeadEnriched = Tables<"leads_enriched"> & {
+  quiz_filled?: boolean | null;
+  quiz_score?: number | null;
+  quiz_category?: ScoringCategory | null;
+  quiz_completed_at?: string | null;
+  quiz_flags?: string[] | null;
+  quiz_answers?: Record<string, string> | null;
+  any_call_id?: string | null;
+  any_call_scheduled_at?: string | null;
+  any_call_status?: string | null;
+  has_any_call?: boolean | null;
+};
 
 // Convert a Date picked on the calendar (browser-local interpretation)
 // to a YYYY-MM-DD string based on its visible day parts — this is the day the user clicked.
@@ -953,6 +973,8 @@ export default function Leads() {
                   )}
                   <TableHead className="w-[220px]">Contact</TableHead>
                   <TableHead>Source</TableHead>
+                  <TableHead className="w-[150px]">Scoring</TableHead>
+                  <TableHead className="w-[40px] text-center" title="Le lead a réservé un appel Calendly de lui-même">📞</TableHead>
                   <TableHead>Apporteur</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead className="w-[140px]">Setter</TableHead>
@@ -1017,6 +1039,58 @@ export default function Leads() {
                           </Badge>
                         )}
                       </div>
+                    </TableCell>
+                    {/* Scoring : badge catégorie + score si quiz rempli */}
+                    <TableCell>
+                      {lead.quiz_filled && lead.quiz_category ? (
+                        <div className="flex flex-col gap-0.5">
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] leading-tight w-fit ${SCORING_CATEGORY_BADGES[lead.quiz_category]}`}
+                            title={`Quiz rempli le ${lead.quiz_completed_at ? new Date(lead.quiz_completed_at).toLocaleDateString("fr-FR") : "—"}${
+                              lead.quiz_flags && lead.quiz_flags.length > 0
+                                ? ` — Alertes : ${lead.quiz_flags.join(", ")}`
+                                : ""
+                            }`}
+                          >
+                            {SCORING_CATEGORY_EMOJIS[lead.quiz_category]} {SCORING_CATEGORY_LABELS[lead.quiz_category]}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground">
+                            {lead.quiz_score ?? "?"}/70
+                            {lead.quiz_flags && lead.quiz_flags.length > 0 ? (
+                              <span className="ml-1 text-amber-400 font-medium">
+                                ⚠ {lead.quiz_flags.length}
+                              </span>
+                            ) : null}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground italic">Quiz non rempli</span>
+                      )}
+                    </TableCell>
+                    {/* Call autonome : icône 📞 si le lead a déjà réservé un Calendly */}
+                    <TableCell className="text-center">
+                      {lead.has_any_call ? (
+                        <Phone
+                          className="h-3.5 w-3.5 inline text-emerald-400"
+                          aria-label="Le lead a réservé un appel"
+                          /* On laisse hover natif via title car Tooltip exige un wrapper */
+                          {...(lead.any_call_scheduled_at
+                            ? {
+                                title: `Calendly réservé pour le ${new Date(
+                                  lead.any_call_scheduled_at,
+                                ).toLocaleString("fr-FR", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}`,
+                              }
+                            : { title: "Le lead a réservé un appel Calendly" })}
+                        />
+                      ) : (
+                        <span className="text-muted-foreground/40 text-[10px]">—</span>
+                      )}
                     </TableCell>
                     {/* Apporteur */}
                     <TableCell>

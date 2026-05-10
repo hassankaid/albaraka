@@ -5,8 +5,28 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Card, CardContent } from "@/components/ui/card";
-import { RefreshCw, UserCheck, MessageSquare, UserPlus } from "lucide-react";
+import { RefreshCw, UserCheck, MessageSquare, UserPlus, Sparkles, AlertTriangle } from "lucide-react";
 import { formatDateTime, formatDateOnly } from "@/lib/formatDate";
+import {
+  QUIZ_QUESTIONS,
+  CATEGORY_LABELS as SCORING_CATEGORY_LABELS,
+  CATEGORY_BADGES as SCORING_CATEGORY_BADGES,
+  CATEGORY_EMOJIS as SCORING_CATEGORY_EMOJIS,
+  CATEGORY_DETAILS as SCORING_CATEGORY_DETAILS,
+  FLAG_LABELS as SCORING_FLAG_LABELS,
+  type Category as ScoringCategory,
+} from "@/lib/leadScoring";
+
+interface ScoringResponse {
+  id: string;
+  funnel_slug: string;
+  score: number;
+  category: ScoringCategory;
+  flags: string[] | null;
+  answers: Record<string, string>;
+  completed_at: string | null;
+  created_at: string;
+}
 
 interface ContactDetail {
   id: string;
@@ -81,6 +101,7 @@ export default function ContactSheet({
   const userTz = authProfile?.timezone || "Europe/Paris";
   const [contact, setContact] = useState<ContactDetail | null>(null);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
+  const [scoring, setScoring] = useState<ScoringResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -95,6 +116,23 @@ export default function ContactSheet({
     ]);
 
     if (contactRes.data) setContact(contactRes.data);
+
+    // ── Scoring : dernière réponse au quiz pour cet email ───────────
+    setScoring(null);
+    const contactEmail = contactRes.data?.email?.toLowerCase().trim() || null;
+    if (contactEmail) {
+      const { data: scoringData } = await supabase
+        .from("lead_scoring_responses")
+        .select("id, funnel_slug, score, category, flags, answers, completed_at, created_at")
+        .ilike("contact_email", contactEmail)
+        .order("completed_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (scoringData) {
+        setScoring(scoringData as ScoringResponse);
+      }
+    }
 
     const leadIds = leadsRes.data?.map((l) => l.id).filter(Boolean) as string[] || [];
     const callIds = callsRes.data?.map((c) => c.id).filter(Boolean) as string[] || [];
@@ -228,6 +266,87 @@ export default function ContactSheet({
             </SheetHeader>
 
             <div className="border-b border-border" />
+
+            {/* ── Diagnostic Quiz (Lead Scoring) ─────────────────────── */}
+            {scoring && (
+              <div className="py-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-semibold text-foreground">Diagnostic Quiz</h3>
+                </div>
+
+                {/* Récap : catégorie, score, date */}
+                <div className="rounded-md border border-border/50 bg-secondary/30 p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <Badge
+                      variant="outline"
+                      className={`text-xs ${SCORING_CATEGORY_BADGES[scoring.category]}`}
+                    >
+                      {SCORING_CATEGORY_EMOJIS[scoring.category]} {SCORING_CATEGORY_LABELS[scoring.category]}
+                    </Badge>
+                    <span className="text-xs font-mono tabular-nums text-foreground">
+                      {scoring.score}/70 pts
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground italic leading-relaxed">
+                    {SCORING_CATEGORY_DETAILS[scoring.category]}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Quiz rempli le{" "}
+                    {scoring.completed_at
+                      ? formatDateTime(scoring.completed_at, userTz)
+                      : formatDateTime(scoring.created_at, userTz)}
+                    {" — funnel: "}
+                    <code className="font-mono text-[10px]">{scoring.funnel_slug}</code>
+                  </p>
+                </div>
+
+                {/* Alertes setter */}
+                {scoring.flags && scoring.flags.length > 0 && (
+                  <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-300" />
+                      <span className="text-xs font-medium text-amber-300 uppercase tracking-wider">
+                        Alertes setter ({scoring.flags.length})
+                      </span>
+                    </div>
+                    <ul className="space-y-1">
+                      {scoring.flags.map((flag) => (
+                        <li key={flag} className="text-xs text-foreground/90">
+                          • {SCORING_FLAG_LABELS[flag] || flag}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Réponses détaillées */}
+                <details className="rounded-md border border-border/50 bg-secondary/20 group">
+                  <summary className="cursor-pointer text-xs font-medium text-foreground p-3 flex items-center justify-between">
+                    <span>Voir les 7 réponses du lead</span>
+                    <span className="text-muted-foreground group-open:rotate-180 transition-transform">▾</span>
+                  </summary>
+                  <div className="px-3 pb-3 pt-0 space-y-3">
+                    {QUIZ_QUESTIONS.map((q, idx) => {
+                      const code = scoring.answers?.[q.id];
+                      const opt = q.options.find((o) => o.code === code);
+                      return (
+                        <div key={q.id} className="space-y-1">
+                          <p className="text-[11px] text-muted-foreground leading-snug">
+                            <span className="font-medium text-foreground">Q{idx + 1}. {q.title} —</span> {q.prompt}
+                          </p>
+                          <p className="text-xs text-foreground pl-4 border-l-2 border-primary/40">
+                            {opt ? `${opt.label}` : <span className="text-muted-foreground italic">— pas de réponse —</span>}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </details>
+              </div>
+            )}
+
+            {scoring && <div className="border-b border-border" />}
 
             {/* Timeline */}
             <div className="py-4">

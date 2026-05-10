@@ -287,8 +287,98 @@ serve(async (req) => {
 
     console.log('Lead créé:', lead.id, '| UTM:', utm)
 
+    // ============================================================
+    // SCORING : si le funnel Systemio est référencé dans
+    // quiz_funnel_configs (active=true), on crée un pending_scoring_token
+    // qui sera consommé par /scoring/start (page transitoire après la
+    // soumission du formulaire de capture). Match par URL exacte de la
+    // page de capture (data.source_url du payload). Non-bloquant : si
+    // ça échoue, le lead est quand même créé.
+    // ============================================================
+    let scoringFunnelSlug: string | null = null
+    let scoringTokenId: string | null = null
+    try {
+      const captureUrl: string | null =
+        (typeof payload?.data?.source_url === 'string' && payload.data.source_url.trim()) || null
+
+      if (captureUrl) {
+        // Normalisation pour le match : trim + suppression du trailing slash.
+        // Compare en lowercase, mais on stocke la valeur originale.
+        const normalizedCapture = captureUrl.replace(/\/+$/, '').trim().toLowerCase()
+
+        const { data: funnels } = await supabase
+          .from('quiz_funnel_configs')
+          .select('slug, name, systemio_capture_url')
+          .eq('active', true)
+          .not('systemio_capture_url', 'is', null)
+
+        const matchedFunnel = (funnels || []).find((f: { systemio_capture_url: string | null }) => {
+          if (!f.systemio_capture_url) return false
+          const normalizedRow = f.systemio_capture_url.replace(/\/+$/, '').trim().toLowerCase()
+          return normalizedRow === normalizedCapture
+        }) as { slug: string; name: string } | undefined
+
+        if (matchedFunnel) {
+          scoringFunnelSlug = matchedFunnel.slug
+
+          // Récupération des champs contact pour le pending_token
+          const firstName = contact.fields?.first_name ?? null
+          const lastName = contact.fields?.last_name ?? null
+          const phoneRaw = contact.fields?.phone_number ?? contact.fields?.phone ?? null
+          const leadIp = contact.ip ?? null
+
+          // Headers utiles uniquement à des fins de debug futur (pas pour
+          // le matching) : Systemio webhooks viennent de leur infra (185.236.x).
+          const userAgent = req.headers.get('user-agent')
+          const reqIp =
+            req.headers.get('cf-connecting-ip') ??
+            req.headers.get('x-real-ip') ??
+            (req.headers.get('x-forwarded-for') || '').split(',')[0]?.trim() ??
+            null
+
+          const { data: tokenRow, error: tokenErr } = await supabase
+            .from('pending_scoring_tokens')
+            .insert({
+              funnel_slug: matchedFunnel.slug,
+              contact_email: email,
+              contact_first_name: firstName,
+              contact_last_name: lastName,
+              contact_phone: phoneRaw,
+              systemio_contact_id: systemeIoId,
+              client_ip: leadIp || reqIp,
+              user_agent: userAgent,
+              raw_webhook_payload: payload,
+            })
+            .select('id')
+            .single()
+
+          if (tokenErr) {
+            console.error('[scoring] pending_token insert failed:', tokenErr)
+          } else {
+            scoringTokenId = tokenRow?.id ?? null
+            console.log(`[scoring] token=${scoringTokenId} funnel=${matchedFunnel.slug} email=${email}`)
+          }
+        } else {
+          console.log(`[scoring] no funnel match for source_url=${captureUrl}`)
+        }
+      }
+    } catch (scoringErr) {
+      // Erreur de scoring isolée : on log mais on n'interrompt pas le flow.
+      // Le lead est créé, c'est l'essentiel.
+      console.error('[scoring] non-blocking error:', scoringErr)
+    }
+
     return new Response(
-      JSON.stringify({ success: true, contact_id: contactId, lead_id: lead.id, source, utm, parse_notes: notes }),
+      JSON.stringify({
+        success: true,
+        contact_id: contactId,
+        lead_id: lead.id,
+        source,
+        utm,
+        parse_notes: notes,
+        scoring_funnel: scoringFunnelSlug,
+        scoring_token: scoringTokenId,
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
