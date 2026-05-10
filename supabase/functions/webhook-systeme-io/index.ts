@@ -291,21 +291,38 @@ serve(async (req) => {
     // SCORING : si le funnel Systemio est référencé dans
     // quiz_funnel_configs (active=true), on crée un pending_scoring_token
     // qui sera consommé par /scoring/start (page transitoire après la
-    // soumission du formulaire de capture). Match par URL exacte de la
-    // page de capture (data.source_url du payload). Non-bloquant : si
-    // ça échoue, le lead est quand même créé.
+    // soumission du formulaire de capture).
+    //
+    // Match par HOST + PATH UNIQUEMENT (on ignore la query string), parce
+    // que Meta/Insta ajoutent systématiquement des tracking params au
+    // moment du clic publicitaire :
+    //   data.source_url = "https://go.albarakaecosysteme.com/inscription-…?fbclid=…&utm_source=fb&…"
+    //   config row       = "https://go.albarakaecosysteme.com/inscription-…"
+    // → comparer mot pour mot raterait 100% des leads issus de pubs.
+    //
+    // Non-bloquant : si ça échoue, le lead est quand même créé.
     // ============================================================
+    function captureKey(rawUrl: string | null | undefined): string | null {
+      if (!rawUrl) return null
+      try {
+        const u = new URL(rawUrl)
+        const host = u.host.toLowerCase()
+        const path = u.pathname.replace(/\/+$/, '').toLowerCase()
+        return `${host}${path}`
+      } catch {
+        return null
+      }
+    }
+
     let scoringFunnelSlug: string | null = null
     let scoringTokenId: string | null = null
     try {
       const captureUrl: string | null =
         (typeof payload?.data?.source_url === 'string' && payload.data.source_url.trim()) || null
 
-      if (captureUrl) {
-        // Normalisation pour le match : trim + suppression du trailing slash.
-        // Compare en lowercase, mais on stocke la valeur originale.
-        const normalizedCapture = captureUrl.replace(/\/+$/, '').trim().toLowerCase()
+      const captureKeyValue = captureKey(captureUrl)
 
+      if (captureKeyValue) {
         const { data: funnels } = await supabase
           .from('quiz_funnel_configs')
           .select('slug, name, systemio_capture_url')
@@ -313,9 +330,8 @@ serve(async (req) => {
           .not('systemio_capture_url', 'is', null)
 
         const matchedFunnel = (funnels || []).find((f: { systemio_capture_url: string | null }) => {
-          if (!f.systemio_capture_url) return false
-          const normalizedRow = f.systemio_capture_url.replace(/\/+$/, '').trim().toLowerCase()
-          return normalizedRow === normalizedCapture
+          const rowKey = captureKey(f.systemio_capture_url)
+          return rowKey !== null && rowKey === captureKeyValue
         }) as { slug: string; name: string } | undefined
 
         if (matchedFunnel) {
@@ -359,7 +375,7 @@ serve(async (req) => {
             console.log(`[scoring] token=${scoringTokenId} funnel=${matchedFunnel.slug} email=${email}`)
           }
         } else {
-          console.log(`[scoring] no funnel match for source_url=${captureUrl}`)
+          console.log(`[scoring] no funnel match for capture_key=${captureKeyValue} (source_url=${captureUrl})`)
         }
       }
     } catch (scoringErr) {
