@@ -1,5 +1,7 @@
 export type QuestionType = "text" | "textarea" | "select" | "multi";
 
+export type BrandMode = "pass" | "liberty";
+
 export interface Question {
   id: string;
   label: string;
@@ -16,6 +18,42 @@ export interface BrandSection {
   subtitle: string;
   questions: Question[];
 }
+
+// ─── SECTION OFFRE (mode Liberty uniquement) ──────────────────────────
+// Vient s'insérer après "Histoire" dans le parcours Liberty (qui a sa
+// propre offre à promouvoir vs les apporteurs Pass qui poussent l'écosystème).
+export const OFFER_SECTION: BrandSection = {
+  id: "offre",
+  icon: "💰",
+  title: "Ton Offre",
+  subtitle: "Ce que tu vends",
+  questions: [
+    { id: "offre_nom", label: "Nom de ton offre", type: "text", placeholder: "Ex : Méthode Phoenix, Pap'o Top, Coaching Hijab Pro..." },
+    {
+      id: "offre_niche",
+      label: "Ton domaine / ta niche (décris avec tes mots)",
+      type: "textarea",
+      placeholder: "Ex : J'aide les papas musulmans débordés à perdre du poids sans frustration alimentaire, Accompagnement des femmes musulmanes en reconversion professionnelle...",
+    },
+    { id: "offre_desc", label: "Décris ton offre en 2-3 phrases (comme à un(e) ami(e))", type: "textarea", placeholder: "Le format, la durée, le suivi, ce qui est inclus..." },
+    { id: "offre_probleme", label: "Quel problème ton offre résout-elle ?", type: "textarea", placeholder: "La douleur principale de ta cible que tu adresses..." },
+    { id: "offre_transfo", label: "Quelle transformation promets-tu ?", type: "textarea", placeholder: "Ex : -10kg en 90 jours, lancer son activité en 3 mois, retrouver confiance en 6 semaines..." },
+    {
+      id: "offre_prix",
+      label: "Prix de ton offre",
+      type: "select",
+      options: ["Gratuit / Lead magnet", "1-50€", "50-200€", "200-500€", "500-1000€", "1000€+", "Pas encore fixé"],
+    },
+    {
+      id: "offre_acces",
+      label: "Comment ta cible accède à ton offre ?",
+      type: "select",
+      options: ["Page de vente / Tunnel", "Appel découverte (Calendly)", "DM Instagram", "WhatsApp", "Formulaire d'inscription", "Pas encore défini"],
+    },
+    { id: "offre_unique", label: "Qu'est-ce qui te rend unique ? (ta méthode, ton angle)", type: "textarea", placeholder: "Pourquoi ils devraient acheter chez TOI plutôt que chez un autre..." },
+    { id: "offre_preuves", label: "Résultats / témoignages que tu peux mettre en avant", type: "textarea", placeholder: "Ex : Mohamed a perdu 10kg en 3 mois, ou 'Je n'ai pas encore de témoignages' (c'est OK)" },
+  ],
+};
 
 export const BRAND_SECTIONS: BrandSection[] = [
   {
@@ -217,8 +255,27 @@ export const BRAND_SECTIONS: BrandSection[] = [
 
 export type BrandAnswers = Record<string, string | string[]>;
 
-export function countAnsweredQuestions(answers: BrandAnswers): number {
+// Retourne les sections selon le mode :
+//   - pass    : 6 sections classiques
+//   - liberty : 7 sections (OFFER_SECTION insérée après "histoire")
+export function getSections(mode: BrandMode): BrandSection[] {
+  if (mode === "liberty") {
+    const idx = BRAND_SECTIONS.findIndex((s) => s.id === "histoire");
+    const insertAt = idx >= 0 ? idx + 1 : 2;
+    return [
+      ...BRAND_SECTIONS.slice(0, insertAt),
+      OFFER_SECTION,
+      ...BRAND_SECTIONS.slice(insertAt),
+    ];
+  }
+  return BRAND_SECTIONS;
+}
+
+export function countAnsweredQuestions(answers: BrandAnswers, mode: BrandMode = "pass"): number {
+  const sections = getSections(mode);
+  const validIds = new Set(sections.flatMap((s) => s.questions.map((q) => q.id)));
   return Object.keys(answers).filter((k) => {
+    if (!validIds.has(k)) return false;
     const v = answers[k];
     if (Array.isArray(v)) return v.length > 0;
     if (typeof v === "string") return v.trim().length > 0;
@@ -226,6 +283,12 @@ export function countAnsweredQuestions(answers: BrandAnswers): number {
   }).length;
 }
 
-export function totalQuestions(): number {
-  return BRAND_SECTIONS.reduce((acc, s) => acc + s.questions.length, 0);
+export function totalQuestions(mode: BrandMode = "pass"): number {
+  return getSections(mode).reduce((acc, s) => acc + s.questions.length, 0);
+}
+
+// Détermine si le questionnaire est "complet" (toutes les questions
+// requises pour ce mode ont une réponse). Sert à débloquer les étapes 2/3.
+export function isQuestionnaireComplete(answers: BrandAnswers, mode: BrandMode): boolean {
+  return countAnsweredQuestions(answers, mode) >= totalQuestions(mode);
 }

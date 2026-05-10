@@ -81,7 +81,8 @@ import SharedLayout from "./components/SharedLayout";
 import ParcoursView from "./pages/parcours/ParcoursView";
 import ParcoursChapitreDetail from "./pages/parcours/ParcoursChapitreDetail";
 import OrganisationPage from "./pages/working/organisation/OrganisationPage";
-import ContentStudio from "./pages/working/ContentStudio";
+import ContentGenerator from "./pages/working/ContentGenerator";
+import PersonalBrandPage from "./pages/working/personal-brand/PersonalBrandPage";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import AdminAnnouncements from "./pages/admin/announcements/AdminAnnouncements";
 import AdminCalendlyWebhooks from "./pages/admin/webhooks/AdminCalendlyWebhooks";
@@ -198,8 +199,8 @@ const App = () => (
                   <Route path="/parcours/:slug/chapitre/:chapitreId" element={<PassGuard><ParcoursChapitreDetail /></PassGuard>} />
                   <Route path="/working/activity" element={<FeatureGate feature="working_activity"><MyActivity /></FeatureGate>} />
                   <Route path="/working/organisation" element={<FeatureGate feature="quiz_organisation"><OrganisationPage /></FeatureGate>} />
-                  <Route path="/working/personal-brand" element={<Navigate to="/working/content?tab=personal-brand" replace />} />
-                  <Route path="/working/content" element={<PassGuard><ContentStudio /></PassGuard>} />
+                  <Route path="/working/personal-brand" element={<PassGuard><PersonalBrandPage /></PassGuard>} />
+                  <Route path="/working/content" element={<PassGuard><ContentGenerator /></PassGuard>} />
                   <Route path="/working/contents" element={<PassGuard><MyContents /></PassGuard>} />
                   <Route path="/working/agent" element={<PassGuard><AgentIA /></PassGuard>} />
                 </Route>

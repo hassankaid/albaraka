@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, ArrowRight, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { BRAND_SECTIONS, countAnsweredQuestions, totalQuestions, type BrandAnswers } from "../lib/sections";
+import { getSections, countAnsweredQuestions, totalQuestions, type BrandAnswers, type BrandMode } from "../lib/sections";
 import { QuestionBlock } from "./QuestionBlock";
 
 interface Props {
   answers: BrandAnswers;
+  mode: BrandMode;
   onChange: (id: string, value: string | string[]) => void;
   currentSection: number;
   setCurrentSection: (n: number) => void;
@@ -18,13 +19,14 @@ interface Props {
 }
 
 export function Questionnaire({
-  answers, onChange, currentSection, setCurrentSection, onFinish, onBackToRecap, finishing,
+  answers, mode, onChange, currentSection, setCurrentSection, onFinish, onBackToRecap, finishing,
 }: Props) {
   const topRef = useRef<HTMLDivElement>(null);
-  const section = BRAND_SECTIONS[currentSection];
-  const total = totalQuestions();
-  const answered = countAnsweredQuestions(answers);
-  const isLast = currentSection === BRAND_SECTIONS.length - 1;
+  const sections = getSections(mode);
+  const section = sections[currentSection];
+  const total = totalQuestions(mode);
+  const answered = countAnsweredQuestions(answers, mode);
+  const isLast = currentSection === sections.length - 1;
 
   const scrollTop = () => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   const goNext = () => {
@@ -70,7 +72,7 @@ export function Questionnaire({
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-        {BRAND_SECTIONS.map((s, i) => {
+        {sections.map((s, i) => {
           const active = i === currentSection;
           const done = s.questions.every((q) => {
             const v = answers[q.id];
