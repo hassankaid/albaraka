@@ -668,17 +668,29 @@ async function ensureRebillFirstPaid(
     return;
   }
 
-  // Idempotency : si la 1re pending de la vente est déjà paid avec le même
-  // PI ou la même invoice, no-op.
-  if (ids.paymentIntentId) {
-    const { data: alreadyPaid } = await supabase
+  // ── Idempotency étendue : check par PI ET par invoice ──────────────
+  // Stripe peut envoyer plusieurs fois le même event (retry ou parallèle PI+
+  // invoice quasi-simultanés). Si l'un de ces IDs est déjà attaché à un
+  // payment de la vente, c'est qu'on l'a déjà traité → skip.
+  if (ids.paymentIntentId || ids.invoiceId) {
+    let q = supabase
       .from("payments")
-      .select("id")
-      .eq("stripe_payment_intent_id", ids.paymentIntentId)
-      .eq("status", "paid")
-      .maybeSingle();
-    if (alreadyPaid) {
-      console.log(`[rebill] PI ${ids.paymentIntentId} already marked paid, skip`);
+      .select("id, payment_number, status")
+      .eq("sale_id", saleId);
+    if (ids.paymentIntentId && ids.invoiceId) {
+      q = q.or(
+        `stripe_payment_intent_id.eq.${ids.paymentIntentId},stripe_invoice_id.eq.${ids.invoiceId}`,
+      );
+    } else if (ids.paymentIntentId) {
+      q = q.eq("stripe_payment_intent_id", ids.paymentIntentId);
+    } else if (ids.invoiceId) {
+      q = q.eq("stripe_invoice_id", ids.invoiceId);
+    }
+    const { data: existing } = await q.maybeSingle();
+    if (existing) {
+      console.log(
+        `[rebill] PI/invoice already attached to payment #${existing.payment_number} (${existing.status}), skip`,
+      );
       return;
     }
   }
@@ -732,12 +744,37 @@ async function ensureRebillFirstPaid(
   if (ids.invoiceId) patch.stripe_invoice_id = ids.invoiceId;
   if (ids.subscriptionId) patch.stripe_subscription_id = ids.subscriptionId;
 
-  const { error: paidErr } = await supabase
+  // UPDATE atomique :
+  //   - .eq("status", "pending") garantit qu'on ne réécrit pas une ligne
+  //     déjà passée à paid par un autre webhook parallèle.
+  //   - L'UNIQUE INDEX partiel sur stripe_payment_intent_id et
+  //     stripe_invoice_id (migration payments_unique_stripe_ids_to_prevent_
+  //     double_marking) rejette toute 2e tentative d'attacher les mêmes
+  //     IDs Stripe à une ligne différente → race-safe par construction.
+  const { data: updated, error: paidErr } = await supabase
     .from("payments")
     .update(patch)
-    .eq("id", firstPending.id);
+    .eq("id", firstPending.id)
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle();
   if (paidErr) {
+    // Code 23505 = violation unique constraint (stripe_payment_intent_id
+    // ou stripe_invoice_id déjà attaché à un autre payment).
+    // → un webhook parallèle a déjà fait le job, on skip silencieusement.
+    if ((paidErr as { code?: string }).code === "23505") {
+      console.log(
+        `[rebill] unique violation on Stripe IDs (race detected), already processed, skip`,
+      );
+      return;
+    }
     console.error("[rebill] failed to mark first pending paid:", paidErr);
+    return;
+  }
+  if (!updated) {
+    // 0 rows affected : la ligne n'est plus pending (un autre webhook
+    // l'a marquée paid entre notre SELECT et notre UPDATE). Race détectée.
+    console.log(`[rebill] payment ${firstPending.id} no longer pending (race), skip`);
     return;
   }
 
@@ -1018,13 +1055,26 @@ async function handleInvoicePaid(
 
   if (!subscriptionId || !invoiceId) return;
 
-  // Idempotency: if this invoice is already recorded, skip
-  const { data: already } = await supabase
+  // Idempotency étendue : check par invoice_id ET par PI (Stripe peut envoyer
+  // 2 events distincts portant les mêmes IDs sur des lignes pending différentes).
+  let idempQ = supabase
     .from("payments")
-    .select("id")
-    .eq("stripe_invoice_id", invoiceId)
-    .maybeSingle();
-  if (already) return;
+    .select("id, payment_number, status")
+    .eq("stripe_subscription_id", subscriptionId);
+  if (paymentIntentId) {
+    idempQ = idempQ.or(
+      `stripe_invoice_id.eq.${invoiceId},stripe_payment_intent_id.eq.${paymentIntentId}`,
+    );
+  } else {
+    idempQ = idempQ.eq("stripe_invoice_id", invoiceId);
+  }
+  const { data: already } = await idempQ.maybeSingle();
+  if (already) {
+    console.log(
+      `[invoice.paid] invoice/PI already attached to payment #${already.payment_number} (${already.status}), skip`,
+    );
+    return;
+  }
 
   // Find oldest unpaid payment (pending OR late) for this subscription.
   // Inclure "late" permet aux retries Stripe de récupérer une échéance
@@ -1045,7 +1095,12 @@ async function handleInvoicePaid(
     return;
   }
 
-  await supabase
+  // UPDATE atomique :
+  //   - .in("status", ["pending","late"]) garantit qu'on ne réécrit pas
+  //     une ligne déjà paid par un autre webhook parallèle.
+  //   - L'UNIQUE INDEX sur stripe_payment_intent_id / stripe_invoice_id
+  //     rejette toute 2e tentative d'attacher ces IDs ailleurs (race-safe).
+  const { data: updated, error: updErr } = await supabase
     .from("payments")
     .update({
       status: "paid",
@@ -1053,7 +1108,26 @@ async function handleInvoicePaid(
       stripe_invoice_id: invoiceId,
       stripe_payment_intent_id: paymentIntentId,
     })
-    .eq("id", target.id);
+    .eq("id", target.id)
+    .in("status", ["pending", "late"])
+    .select("id")
+    .maybeSingle();
+  if (updErr) {
+    if ((updErr as { code?: string }).code === "23505") {
+      console.log(
+        `[invoice.paid] unique violation on Stripe IDs (race detected), already processed, skip`,
+      );
+      return;
+    }
+    console.error("[invoice.paid] update failed:", updErr);
+    return;
+  }
+  if (!updated) {
+    console.log(
+      `[invoice.paid] payment ${target.id} no longer pending/late (race), skip`,
+    );
+    return;
+  }
 
   console.log(`[invoice.paid] payment ${target.id} (#${target.payment_number}) marked paid`);
 
