@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { QUIZ_QUESTIONS } from "@/lib/leadScoring";
+import { META_PIXEL_CONTACT_KEY, trackQuizPageAsLead } from "@/lib/metaPixel";
 import logo from "@/assets/al-baraka-logo-v2.png";
 import { Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 
@@ -50,6 +51,35 @@ export default function ScoringQuiz() {
   const currentQ = QUIZ_QUESTIONS[currentIdx];
   const allAnswered = QUIZ_QUESTIONS.every((q) => answers[q.id]);
   const progress = useMemo(() => Math.round(((currentIdx) / total) * 100), [currentIdx, total]);
+
+  // ─── Meta Pixel : conversion "Lead" + Advanced Matching ─────────────
+  // Déclenché UNE FOIS au mount (pas à chaque question, ce serait n'importe
+  // quoi côté Meta Ads). Lit les infos contact transmises par ScoringStart
+  // via sessionStorage pour faire de l'Advanced Matching (email/prénom/
+  // nom/téléphone hashés SHA-256 → Meta améliore son matching cross-device).
+  // Si pas d'infos (ex: mode orphan, refresh manuel de la page, sessionStorage
+  // bloqué), on track quand même Lead sans Advanced Matching.
+  useEffect(() => {
+    if (!funnel) return;
+    let contact: {
+      email?: string | null;
+      first_name?: string | null;
+      last_name?: string | null;
+      phone?: string | null;
+    } = {};
+    try {
+      const raw = sessionStorage.getItem(META_PIXEL_CONTACT_KEY);
+      if (raw) contact = JSON.parse(raw);
+    } catch {
+      /* sessionStorage indispo ou JSON corrompu → on track sans matching */
+    }
+    trackQuizPageAsLead({
+      email: contact.email,
+      firstName: contact.first_name,
+      lastName: contact.last_name,
+      phone: contact.phone,
+    });
+  }, [funnel]);
 
   // Si aucun funnel, on bloque tout
   if (!funnel) {

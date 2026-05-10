@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/al-baraka-logo-v2.png";
+import { META_PIXEL_CONTACT_KEY } from "@/lib/metaPixel";
 
 const THEME = {
   bg: "#0A0A0A",
@@ -95,6 +96,26 @@ export default function ScoringStart() {
 
         if (data && (data as any).matched === true) {
           const ok = data as Extract<MatchResponse, { matched: true }>;
+          // Stocke les infos contact en sessionStorage pour que ScoringQuiz
+          // les lise et les utilise dans Meta Pixel Advanced Matching (hashées
+          // côté client en SHA-256 avant envoi à Meta). Scope onglet, expirée
+          // à la fermeture du tab. Pas dans l'URL pour ne pas exposer email/
+          // téléphone en clair dans les logs.
+          if (ok.contact) {
+            try {
+              sessionStorage.setItem(
+                META_PIXEL_CONTACT_KEY,
+                JSON.stringify({
+                  email: ok.contact.email ?? null,
+                  first_name: ok.contact.first_name ?? null,
+                  last_name: ok.contact.last_name ?? null,
+                  phone: ok.contact.phone ?? null,
+                }),
+              );
+            } catch {
+              /* sessionStorage indispo (mode privé strict) → tant pis */
+            }
+          }
           // Match trouvé → redirige immédiatement vers le quiz
           navigate(
             `/scoring/quiz?funnel=${encodeURIComponent(funnel)}&token=${encodeURIComponent(ok.token)}`,
