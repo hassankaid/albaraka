@@ -71,6 +71,18 @@ export default function PersonalBrandPage() {
     return "studio";
   }, [modeLoading, brandQuery.isLoading, resolvedMode, answers, brandQuery.data, forceQuestionnaire]);
 
+  // ⚠️ IMPORTANT : tous les hooks doivent être appelés AVANT les early returns.
+  // resolvedMode peut être null/"needs-selection" tant qu'on est en loading/select.
+  // On fallback en "pass" pour les calculs de hooks pour ne pas casser les
+  // règles des hooks (Rules of Hooks). Les valeurs ne sont pas utilisées tant
+  // que la vue n'est pas "studio" de toute façon.
+  const safeMode: BrandMode =
+    resolvedMode === "pass" || resolvedMode === "liberty" ? resolvedMode : "pass";
+  const promptText = useMemo(
+    () => buildFullPrompt(answers, safeMode),
+    [answers, safeMode],
+  );
+
   const handleSelectMode = (m: BrandMode) => setMode(m);
 
   const handleAnswerChange = (id: string, value: string | string[]) => {
@@ -203,7 +215,6 @@ export default function PersonalBrandPage() {
   const profiles = (row?.generated_profiles as any[]) ?? [];
   const step1Confirmed = !!row?.step1_confirmed_at;
   const step2Confirmed = !!row?.step2_confirmed_at;
-  const promptText = useMemo(() => buildFullPrompt(answers, mode), [answers, mode]);
   const weeks = weeksQuery.data ?? [];
 
   // Détection migration : questionnaire incomplet alors qu'il y a déjà des profils générés
