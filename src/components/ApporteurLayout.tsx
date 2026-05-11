@@ -22,6 +22,7 @@ interface NavItem {
 const workingNavItems: NavItem[] = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp },
   { title: "Mon Organisation", path: "/working/organisation", icon: CalendarDays },
+  { title: "Personal Brand", path: "/working/personal-brand", icon: Sparkles, passRequired: true },
   { title: "Générateur de Contenu", path: "/working/content", icon: Wand2, passRequired: true },
   { title: "Mes Contenus", path: "/working/contents", icon: Library, passRequired: true },
   { title: "Agent IA", path: "/working/agent", icon: Bot, passRequired: true },
@@ -57,6 +58,7 @@ const pageTitles: Record<string, string> = {
   "/mon-coaching": "Historique",
   "/working/activity": "Mon Activité",
   "/working/organisation": "Mon Organisation",
+  "/working/personal-brand": "Personal Brand",
   "/working/content": "Générateur de Contenu",
   "/working/contents": "Mes Contenus",
   "/working/agent": "Agent IA",
