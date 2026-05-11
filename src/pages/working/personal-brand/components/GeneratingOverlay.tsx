@@ -54,7 +54,7 @@ export function GeneratingOverlay() {
           </div>
           <div className="space-y-2">
             <h3 className="font-heading text-xl text-foreground">
-              L'IA prépare ta fiche Personal Brand
+              L'IA écrit tes 10 profils Instagram
             </h3>
             <p className="text-sm text-muted-foreground">
               ~30 secondes. Ne ferme pas cette fenêtre.

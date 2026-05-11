@@ -131,6 +131,16 @@ export const BRAND_SECTIONS: BrandSection[] = [
       { id: "valeurs", label: "Quelles valeurs veux-tu transmettre ? (choisis les 3 principales)", type: "multi", options: ["Éthique / Halal", "Liberté financière", "Excellence / Travail acharné", "Famille", "Foi / Spiritualité", "Authenticité", "Entraide communautaire", "Ambition", "Discipline", "Impact positif"] },
       { id: "sujets_eviter", label: "Y a-t-il des sujets que tu veux absolument éviter ?", type: "textarea", placeholder: "Ex : Politique, sujets trop personnels, musique, mixité..." },
       { id: "modele", label: "Cite 2-3 créateurs qui t'inspirent (même hors de ta niche)", type: "textarea", placeholder: "Ex : Iman Gadzhi, Hormozi, un influenceur musulman..." },
+      {
+        id: "ton_contenu",
+        label: "Quel ton dominant veux-tu pour tes contenus ?",
+        type: "select",
+        options: [
+          "Émotionnel — Histoires et émotions (anecdotes, confessions, vécu)",
+          "Éducatif — Démos, tutos, mythes à casser (curiosité, faits)",
+          "Sensible — Connexion et douceur (sans choc ni provocation)",
+        ],
+      },
     ],
   },
   {

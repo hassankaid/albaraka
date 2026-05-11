@@ -59,8 +59,9 @@ export function Questionnaire({
       )}
 
       <p className="text-sm text-muted-foreground">
-        Réponds à chaque question avec honnêteté. À la fin, tu auras tes profils
-        Instagram uniques + un prompt pour créer 30 scripts de Reels et 1 an d'idées de stories.
+        Réponds à chaque question avec honnêteté. Plus tu donnes de contexte,
+        plus tes profils Instagram, ton prompt et tes 4 semaines de contenu
+        seront uniques et fidèles à toi.
       </p>
 
       <div className="space-y-1.5">
@@ -135,7 +136,7 @@ export function Questionnaire({
         >
           {isLast ? <Sparkles className="h-4 w-4" /> : null}
           {isLast
-            ? (finishing ? "L'IA écrit tes profils..." : "Générer ma fiche Personal Brand")
+            ? (finishing ? "L'IA écrit tes profils..." : "Générer mes 10 profils Instagram")
             : "Suivant"}
           {!isLast && <ArrowRight className="h-4 w-4" />}
         </Button>
@@ -151,7 +152,7 @@ export function Questionnaire({
             className="gap-2 text-primary hover:text-primary"
           >
             <Sparkles className="h-4 w-4" />
-            {finishing ? "L'IA écrit tes profils..." : "Générer ma fiche maintenant"}
+            {finishing ? "L'IA écrit tes profils..." : "Générer mes profils maintenant"}
           </Button>
           <p className="text-[11px] text-muted-foreground italic">
             Pas besoin de tout remplir — plus tu donnes de contexte, plus les profils sont précis.

@@ -203,9 +203,6 @@ ${foi ? `→ ${foi}` : ""}
 → Sujets à éviter : ${g(a, "sujets_eviter") || "aucun"}`;
 }
 
-// Alias rétro-compat : l'ancien code peut encore l'appeler.
-export const buildContentPrompt = (a: BrandAnswers) => buildFullPrompt(a, "pass");
-
 // ─── ÉTAPE 3 : prompts JSON pour scripts + stories de la semaine ────────
 // Reçoit le prompt copié par l'utilisateur (Étape 2) en "brief de base"
 // et y ajoute les instructions hebdomadaires.
