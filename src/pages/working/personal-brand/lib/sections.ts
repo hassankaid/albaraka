@@ -19,6 +19,31 @@ export interface BrandSection {
   questions: Question[];
 }
 
+// ─── SECTION IDENTITÉ — variante LIBERTY ──────────────────────────────
+// Selon le doc Sidali, l'identité Liberty diffère de Pass sur 2 points :
+//   1. Pas de question "compétences à monétiser" (le membre Liberty a déjà
+//      son offre, il n'est pas en train de chercher quoi monétiser).
+//   2. Libellé de "pourquoi" adapté : "Pourquoi tu as lancé ton activité ?"
+//      au lieu de "Pourquoi te lancer dans le digital ?".
+const IDENTITE_LIBERTY: BrandSection = {
+  id: "identite",
+  icon: "✦",
+  title: "Ton Identité",
+  subtitle: "Qui es-tu vraiment ?",
+  questions: [
+    { id: "prenom", label: "Ton prénom", type: "text", placeholder: "Ex : Yassine, Amira..." },
+    { id: "age", label: "Ton âge", type: "select", options: ["18-20 ans", "21-24 ans", "25-29 ans", "30-35 ans", "35+ ans"] },
+    { id: "situation", label: "Ta situation actuelle", type: "select", options: ["Étudiant(e)", "Salarié(e)", "En recherche d'emploi", "Freelance / Indépendant(e)", "Entrepreneur(e)", "En reconversion"] },
+    { id: "objectif_revenu", label: "Ton objectif de revenu mensuel à 6 mois", type: "select", options: ["500-1000€", "1000-2000€", "2000-3000€", "3000-5000€", "5000-10000€", "10000€+"] },
+    {
+      id: "pourquoi",
+      label: "Pourquoi tu as lancé ton activité ? (Ta motivation profonde)",
+      type: "textarea",
+      placeholder: "Ex : Vivre de ce que j'aime, aider ma communauté, être libre de mon temps...",
+    },
+  ],
+};
+
 // ─── SECTION OFFRE (mode Liberty uniquement) ──────────────────────────
 // Vient s'insérer après "Histoire" dans le parcours Liberty (qui a sa
 // propre offre à promouvoir vs les apporteurs Pass qui poussent l'écosystème).
@@ -266,16 +291,21 @@ export const BRAND_SECTIONS: BrandSection[] = [
 export type BrandAnswers = Record<string, string | string[]>;
 
 // Retourne les sections selon le mode :
-//   - pass    : 6 sections classiques
-//   - liberty : 7 sections (OFFER_SECTION insérée après "histoire")
+//   - pass    : 6 sections classiques (identité avec "compétences", CTA tunnel)
+//   - liberty : 7 sections, identité allégée (pas de question compétences,
+//               libellé "pourquoi" adapté) + section Offre insérée après "Histoire"
 export function getSections(mode: BrandMode): BrandSection[] {
   if (mode === "liberty") {
-    const idx = BRAND_SECTIONS.findIndex((s) => s.id === "histoire");
-    const insertAt = idx >= 0 ? idx + 1 : 2;
+    // On remplace la section identité par sa variante Liberty
+    // et on insère la section Offre après "Histoire".
+    const rest = BRAND_SECTIONS.slice(1); // toutes sauf identite (la première)
+    const idxHistoire = rest.findIndex((s) => s.id === "histoire");
+    const insertAt = idxHistoire >= 0 ? idxHistoire + 1 : 1;
     return [
-      ...BRAND_SECTIONS.slice(0, insertAt),
+      IDENTITE_LIBERTY,
+      ...rest.slice(0, insertAt),
       OFFER_SECTION,
-      ...BRAND_SECTIONS.slice(insertAt),
+      ...rest.slice(insertAt),
     ];
   }
   return BRAND_SECTIONS;
