@@ -268,7 +268,7 @@ function WeekContent({
       {isPublished && (
         <p className="text-sm text-center text-emerald-500 flex items-center justify-center gap-1.5">
           <CheckCircle2 className="h-4 w-4" />
-          Semaine {weekRow.week_num} publiée — {weekRow.week_num < 4 ? "suivante débloquée" : "bravo, mois terminé !"}
+          Semaine {weekRow.week_num} publiée — {weekRow.week_num < 4 ? "suivante débloquée" : "bravo, cycle terminé !"}
         </p>
       )}
 
@@ -311,7 +311,7 @@ function WeekContent({
             {confirming && <Loader2 className="h-4 w-4 animate-spin" />}
             {weekRow.week_num < 4
               ? `Valider et débloquer la semaine ${weekRow.week_num + 1}`
-              : "Valider — j'ai bouclé mon mois"}
+              : "Valider — j'ai bouclé mon cycle"}
           </Button>
         </div>
       )}

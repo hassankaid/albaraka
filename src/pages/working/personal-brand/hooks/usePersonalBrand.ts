@@ -29,6 +29,8 @@ export interface PersonalBrandRow {
   step2_confirmed_at: string | null;
   topics_history: string[];
   started_at: string | null;
+  current_cycle_id: string | null;
+  current_cycle_started_at: string | null;
   updated_at: string;
   created_at: string;
 }
@@ -55,18 +57,14 @@ export interface PersonalBrandWeekRow {
   id: string;
   user_id: string;
   mode: BrandMode;
-  month: string;
+  cycle_id: string;
+  cycle_started_at: string;
   week_num: 1 | 2 | 3 | 4;
   theme: string;
   scripts: WeeklyScript[];
   stories: WeeklyStoryDay[];
   generated_at: string;
   published_at: string | null;
-}
-
-// ───── HELPERS ─────────────────────────────────────────────────────────
-function currentMonth(): string {
-  return new Date().toISOString().slice(0, 7); // "YYYY-MM"
 }
 
 async function callClaude(prompt: string): Promise<string> {
@@ -118,19 +116,21 @@ export function usePersonalBrand() {
   });
 }
 
-export function useBrandWeeks(month?: string) {
+// Récupère les semaines du cycle en cours (current_cycle_id sur user_personal_brand).
+// Si pas de cycle en cours → liste vide.
+export function useBrandWeeks(cycleId: string | null | undefined) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
-  const m = month ?? currentMonth();
   return useQuery({
-    queryKey: ["personal-brand-weeks", userId, m],
-    enabled: !!userId,
+    queryKey: ["personal-brand-weeks", userId, cycleId],
+    enabled: !!userId && !!cycleId,
     queryFn: async (): Promise<PersonalBrandWeekRow[]> => {
+      if (!cycleId) return [];
       const { data, error } = await supabase
         .from("personal_brand_weeks")
         .select("*")
         .eq("user_id", userId!)
-        .eq("month", m)
+        .eq("cycle_id", cycleId)
         .order("week_num", { ascending: true });
       if (error) throw error;
       return (data ?? []) as unknown as PersonalBrandWeekRow[];
@@ -224,7 +224,11 @@ export function useConfirmStep(step: 1 | 2) {
   });
 }
 
-// Étape 3 : génération d'une semaine
+// Étape 3 : génération d'une semaine.
+// - Si pas de cycle en cours (ou cycle terminé) → démarre un nouveau cycle
+//   en générant un UUID et en sauvegardant current_cycle_id +
+//   current_cycle_started_at sur user_personal_brand.
+// - Si cycle déjà en cours → on génère dans ce cycle existant.
 export function useGenerateWeek() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -234,10 +238,23 @@ export function useGenerateWeek() {
       mode: BrandMode;
       basePrompt: string;
       topicsHistory: string[];
+      currentCycleId: string | null;     // null si pas de cycle en cours
+      currentCycleStartedAt: string | null;
     }): Promise<PersonalBrandWeekRow> => {
       if (!user) throw new Error("Not authenticated");
-      const month = currentMonth();
       const weekCfg = WEEKS.find((w) => w.num === params.weekNum)!;
+
+      // Si nouveau cycle (week_num = 1 et pas de cycle actif OU cycle existant
+      // mais on génère une semaine d'un autre cycle) → on génère un nouvel ID.
+      // Sinon on utilise le cycle existant.
+      const isStartingNewCycle =
+        params.weekNum === 1 && !params.currentCycleId;
+      const cycleId = isStartingNewCycle
+        ? crypto.randomUUID()
+        : (params.currentCycleId ?? crypto.randomUUID());
+      const cycleStartedAt = isStartingNewCycle
+        ? new Date().toISOString()
+        : (params.currentCycleStartedAt ?? new Date().toISOString());
 
       const ctx: WeeklyContext = {
         weekNum: params.weekNum,
@@ -259,38 +276,51 @@ export function useGenerateWeek() {
         (raw) => parseJsonArrayLenient<WeeklyStoryDay>(raw),
       );
 
-      // Insert / upsert la ligne week
+      // Insert / upsert la ligne week (clé : user, cycle, week_num)
       const { data: row, error } = await supabase
         .from("personal_brand_weeks")
         .upsert(
           {
             user_id: user.id,
             mode: params.mode,
-            month,
+            cycle_id: cycleId,
+            cycle_started_at: cycleStartedAt,
             week_num: params.weekNum,
             theme: weekCfg.theme,
             scripts: scripts as any,
             stories: stories as any,
             generated_at: new Date().toISOString(),
           },
-          { onConflict: "user_id,mode,month,week_num" },
+          { onConflict: "user_id,cycle_id,week_num" },
         )
         .select("*")
         .single();
       if (error) throw error;
 
       // Mise à jour anti-répétition : extraire les titres et les ajouter
-      // dans topics_history (cumulé sur tous les mois).
+      // dans topics_history (cumulé sur tous les cycles).
+      // Si c'est un nouveau cycle, persister aussi current_cycle_id +
+      // current_cycle_started_at sur user_personal_brand.
       const newTopics = scripts
         .map((s: WeeklyScript) => s.title)
         .filter((t): t is string => typeof t === "string" && t.length > 0);
-      if (newTopics.length > 0) {
-        const updated = Array.from(
-          new Set([...(params.topicsHistory || []), ...newTopics]),
-        );
+      const updatedTopics =
+        newTopics.length > 0
+          ? Array.from(new Set([...(params.topicsHistory || []), ...newTopics]))
+          : null;
+
+      const userUpdate: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+      if (updatedTopics) userUpdate.topics_history = updatedTopics as any;
+      if (isStartingNewCycle) {
+        userUpdate.current_cycle_id = cycleId;
+        userUpdate.current_cycle_started_at = cycleStartedAt;
+      }
+      if (Object.keys(userUpdate).length > 1) {
         await supabase
           .from("user_personal_brand")
-          .update({ topics_history: updated as any, updated_at: new Date().toISOString() })
+          .update(userUpdate)
           .eq("user_id", user.id);
       }
 
@@ -299,6 +329,34 @@ export function useGenerateWeek() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["personal-brand-weeks"] });
       queryClient.invalidateQueries({ queryKey: ["personal-brand"] });
+    },
+  });
+}
+
+// Démarrage explicite d'un nouveau cycle (quand le précédent est terminé
+// et que l'élève re-confirme étape 1 + étape 2). Reset current_cycle_id
+// à null pour que la prochaine génération de S1 crée un nouveau cycle.
+export function useStartNewCycle() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("user_personal_brand")
+        .update({
+          current_cycle_id: null,
+          current_cycle_started_at: null,
+          step1_confirmed_at: null,
+          step2_confirmed_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["personal-brand"] });
+      queryClient.invalidateQueries({ queryKey: ["personal-brand-weeks"] });
     },
   });
 }

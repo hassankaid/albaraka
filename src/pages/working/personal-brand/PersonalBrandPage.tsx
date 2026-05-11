@@ -18,6 +18,7 @@ import {
   useConfirmStep,
   useGenerateWeek,
   useConfirmWeekPublished,
+  useStartNewCycle,
 } from "./hooks/usePersonalBrand";
 import { useBrandMode } from "./hooks/useBrandMode";
 import {
@@ -40,12 +41,15 @@ export default function PersonalBrandPage() {
   const confirmStep2 = useConfirmStep(2);
   const generateWeekMutation = useGenerateWeek();
   const confirmWeekMutation = useConfirmWeekPublished();
+  const startNewCycleMutation = useStartNewCycle();
 
   const [answers, setAnswers] = useState<BrandAnswers>({});
   const [currentSection, setCurrentSection] = useState(0);
   const [forceQuestionnaire, setForceQuestionnaire] = useState(false);
 
-  const weeksQuery = useBrandWeeks();
+  // Récupère les semaines du cycle en cours uniquement
+  const currentCycleId = brandQuery.data?.current_cycle_id ?? null;
+  const weeksQuery = useBrandWeeks(currentCycleId);
 
   // Init des réponses depuis la BDD
   useEffect(() => {
@@ -157,6 +161,8 @@ export default function PersonalBrandPage() {
         mode: resolvedMode as BrandMode,
         basePrompt: params.basePrompt,
         topicsHistory: (brandQuery.data?.topics_history as string[]) ?? [],
+        currentCycleId: brandQuery.data?.current_cycle_id ?? null,
+        currentCycleStartedAt: brandQuery.data?.current_cycle_started_at ?? null,
       });
       toast.success(`Semaine ${params.weekNum} générée ✦`);
     } catch (e: any) {
@@ -213,27 +219,41 @@ export default function PersonalBrandPage() {
 
   // view === "studio"
   const profiles = (row?.generated_profiles as any[]) ?? [];
-
-  // ── Confirmations mensuelles ────────────────────────────────────────
-  // Selon le doc Sidali, les étapes 1 et 2 doivent être re-confirmées à
-  // chaque nouveau mois calendaire. Rationnel : la stratégie est cyclique
-  // sur 4 semaines = 1 mois → à chaque cycle, on force l'élève à re-vérifier
-  // que son profil Instagram est toujours configuré et que son prompt est
-  // toujours pertinent. Implémentation : on compare le mois du timestamp
-  // de confirmation avec le mois courant.
-  const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
-  const confirmedMonth = (ts: string | null | undefined): string | null =>
-    ts ? ts.slice(0, 7) : null;
-  const step1Confirmed = confirmedMonth(row?.step1_confirmed_at) === currentMonth;
-  const step2Confirmed = confirmedMonth(row?.step2_confirmed_at) === currentMonth;
-  // Est-ce un "nouveau mois" (l'élève a déjà confirmé un mois précédent mais
-  // pas le mois courant) → afficher un bandeau d'invitation à re-confirmer.
-  const isNewMonthForStep1 =
-    !!row?.step1_confirmed_at && !step1Confirmed;
-  const isNewMonthForStep2 =
-    !!row?.step2_confirmed_at && !step2Confirmed;
-
   const weeks = weeksQuery.data ?? [];
+
+  // ── Confirmations par cycle de 4 semaines glissant ──────────────────
+  // Au lieu d'un mois calendaire strict, on raisonne en CYCLES. Un cycle
+  // démarre quand l'élève (re-)confirme étapes 1+2 puis génère sa S1
+  // (= current_cycle_id et current_cycle_started_at créés à ce moment).
+  // Il se termine quand la S4 est publiée.
+  //
+  // Une étape est "validée pour le cycle en cours" si la confirmation a
+  // eu lieu APRÈS le début du cycle (current_cycle_started_at). Sinon :
+  // - Pas de cycle en cours du tout → première fois OU cycle précédent
+  //   terminé → checkboxes affichées normalement
+  // - Cycle en cours + confirmation antérieure au cycle → checkbox affichée
+  //   en mode "re-confirme pour ce nouveau cycle"
+  const cycleStartedAt = row?.current_cycle_started_at ?? null;
+  const isAfterCycleStart = (ts: string | null | undefined): boolean => {
+    if (!ts) return false;
+    if (!cycleStartedAt) return !!ts; // pas de cycle = on prend la dernière confirmation
+    return new Date(ts).getTime() >= new Date(cycleStartedAt).getTime();
+  };
+  const step1Confirmed = isAfterCycleStart(row?.step1_confirmed_at);
+  const step2Confirmed = isAfterCycleStart(row?.step2_confirmed_at);
+
+  // "Nouveau cycle à démarrer" : le précédent cycle est terminé (4 semaines
+  // toutes publiées) → on doit re-confirmer 1+2 pour démarrer le suivant.
+  const allFourPublished =
+    weeks.length === 4 && weeks.every((w) => !!w.published_at);
+  const cycleCompleted = !!cycleStartedAt && allFourPublished;
+
+  // Est-ce qu'on doit afficher le bandeau "Nouveau cycle, re-confirme" ?
+  // Oui si : le cycle est terminé, ou bien step1/step2 sont en attente
+  // de re-confirmation pour ce cycle alors que l'élève en a déjà confirmé
+  // un par le passé.
+  const isNewCycleForStep1 = !step1Confirmed && !!row?.step1_confirmed_at;
+  const isNewCycleForStep2 = !step2Confirmed && !!row?.step2_confirmed_at;
 
   // Détection migration : questionnaire incomplet alors qu'il y a déjà des profils générés
   const isMigrating =
@@ -277,20 +297,50 @@ export default function PersonalBrandPage() {
         </div>
       )}
 
-      {/* Bandeau nouveau mois : invite à re-confirmer étapes 1 et 2 */}
-      {!isMigrating && (isNewMonthForStep1 || isNewMonthForStep2) && (
+      {/* Bandeau cycle terminé : invite à démarrer un nouveau cycle de 4 semaines */}
+      {!isMigrating && cycleCompleted && (
+        <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/[0.05] p-4 flex items-start gap-3">
+          <div className="h-9 w-9 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
+            <Repeat className="h-4 w-4 text-emerald-500" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground">
+              🎉 Cycle de 4 semaines terminé — bravo !
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Démarre ton prochain cycle quand tu es prêt(e). Tu devras
+              re-confirmer rapidement ton profil et ton prompt avant la
+              nouvelle Semaine 1.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => startNewCycleMutation.mutate()}
+            disabled={startNewCycleMutation.isPending}
+            className="shrink-0 gap-2"
+          >
+            {startNewCycleMutation.isPending && (
+              <span className="h-3 w-3 animate-spin border-2 border-current border-t-transparent rounded-full" />
+            )}
+            Démarrer un nouveau cycle
+          </Button>
+        </div>
+      )}
+
+      {/* Bandeau nouveau cycle : invite à re-confirmer étapes 1 et 2 */}
+      {!isMigrating && !cycleCompleted && (isNewCycleForStep1 || isNewCycleForStep2) && (
         <div className="rounded-lg border border-primary/30 bg-primary/[0.05] p-4 flex items-start gap-3">
           <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
             <Repeat className="h-4 w-4 text-primary" />
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium text-foreground">
-              Nouveau mois — re-confirme rapidement avant de générer ton premier
-              contenu.
+              Nouveau cycle — re-confirme rapidement avant de générer ta
+              Semaine 1.
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
               Profil Instagram toujours configuré ? Prompt toujours d'actualité ?
-              Coche pour ce mois (30 secondes).
+              Coche pour ce cycle (30 secondes).
             </p>
           </div>
         </div>
@@ -324,8 +374,8 @@ export default function PersonalBrandPage() {
       {/* Étapes */}
       <Step1Profiles
         profiles={profiles}
-        confirmedForCurrentMonth={step1Confirmed}
-        isNewMonth={isNewMonthForStep1}
+        confirmedForCurrentCycle={step1Confirmed}
+        isNewCycle={isNewCycleForStep1}
         onRegenerate={handleRegenerateProfiles}
         onConfirm={handleConfirmStep1}
         regenerating={generateProfilesMutation.isPending}
@@ -335,8 +385,8 @@ export default function PersonalBrandPage() {
       <Step2Prompt
         promptText={promptText}
         unlocked={step1Confirmed}
-        confirmedForCurrentMonth={step2Confirmed}
-        isNewMonth={isNewMonthForStep2}
+        confirmedForCurrentCycle={step2Confirmed}
+        isNewCycle={isNewCycleForStep2}
         onConfirm={handleConfirmStep2}
         confirming={confirmStep2.isPending}
       />

@@ -8,8 +8,8 @@ import { CopyButton } from "./CopyButton";
 interface Props {
   promptText: string;
   unlocked: boolean;
-  confirmedForCurrentMonth: boolean;
-  isNewMonth: boolean;
+  confirmedForCurrentCycle: boolean;
+  isNewCycle: boolean;
   onConfirm: () => void;
   confirming: boolean;
 }
@@ -17,13 +17,13 @@ interface Props {
 export default function Step2Prompt({
   promptText,
   unlocked,
-  confirmedForCurrentMonth,
-  isNewMonth,
+  confirmedForCurrentCycle,
+  isNewCycle,
   onConfirm,
   confirming,
 }: Props) {
-  const [checked, setChecked] = useState(confirmedForCurrentMonth);
-  const isConfirmed = confirmedForCurrentMonth;
+  const [checked, setChecked] = useState(confirmedForCurrentCycle);
+  const isConfirmed = confirmedForCurrentCycle;
 
   if (!unlocked) {
     return (
@@ -86,8 +86,8 @@ export default function Step2Prompt({
                 className="mt-0.5"
               />
               <span className="text-sm text-foreground leading-relaxed">
-                {isNewMonth
-                  ? "Mon prompt est toujours pertinent pour mon cycle de ce mois."
+                {isNewCycle
+                  ? "Mon prompt est toujours pertinent pour ce nouveau cycle."
                   : "J'ai copié mon prompt et je le garde quelque part de sûr."}
               </span>
             </label>
@@ -97,7 +97,7 @@ export default function Step2Prompt({
               className="w-full gap-2"
             >
               {confirming && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isNewMonth ? "Confirmer pour ce mois" : "Valider et débloquer l'étape 3"}
+              {isNewCycle ? "Confirmer pour ce cycle" : "Valider et débloquer l'étape 3"}
             </Button>
           </div>
         )}

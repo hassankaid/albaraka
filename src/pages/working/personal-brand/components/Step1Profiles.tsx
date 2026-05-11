@@ -8,8 +8,8 @@ import type { GeneratedProfile } from "../hooks/usePersonalBrand";
 
 interface Props {
   profiles: GeneratedProfile[];
-  confirmedForCurrentMonth: boolean;
-  isNewMonth: boolean;
+  confirmedForCurrentCycle: boolean;
+  isNewCycle: boolean;
   onRegenerate: () => void;
   onConfirm: () => void;
   regenerating: boolean;
@@ -18,15 +18,15 @@ interface Props {
 
 export default function Step1Profiles({
   profiles,
-  confirmedForCurrentMonth,
-  isNewMonth,
+  confirmedForCurrentCycle,
+  isNewCycle,
   onRegenerate,
   onConfirm,
   regenerating,
   confirming,
 }: Props) {
-  const [checked, setChecked] = useState(confirmedForCurrentMonth);
-  const isConfirmed = confirmedForCurrentMonth;
+  const [checked, setChecked] = useState(confirmedForCurrentCycle);
+  const isConfirmed = confirmedForCurrentCycle;
 
   return (
     <Card id="step-1" className="border-primary/30 bg-primary/[0.03]">
@@ -87,8 +87,8 @@ export default function Step1Profiles({
                   className="mt-0.5"
                 />
                 <span className="text-sm text-foreground leading-relaxed">
-                  {isNewMonth
-                    ? "Mon profil Instagram est toujours à jour pour ce nouveau mois."
+                  {isNewCycle
+                    ? "Mon profil Instagram est toujours à jour pour ce nouveau cycle."
                     : "J'ai configuré mon profil Instagram (et/ou TikTok) avec l'un de ces 10 profils — ou un mix qui me ressemble."}
                 </span>
               </label>
@@ -98,7 +98,7 @@ export default function Step1Profiles({
                 className="w-full gap-2"
               >
                 {confirming && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isNewMonth ? "Confirmer pour ce mois" : "Valider et débloquer l'étape 2"}
+                {isNewCycle ? "Confirmer pour ce cycle" : "Valider et débloquer l'étape 2"}
               </Button>
             </div>
           </>
