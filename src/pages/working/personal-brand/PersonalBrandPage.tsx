@@ -213,8 +213,26 @@ export default function PersonalBrandPage() {
 
   // view === "studio"
   const profiles = (row?.generated_profiles as any[]) ?? [];
-  const step1Confirmed = !!row?.step1_confirmed_at;
-  const step2Confirmed = !!row?.step2_confirmed_at;
+
+  // ── Confirmations mensuelles ────────────────────────────────────────
+  // Selon le doc Sidali, les étapes 1 et 2 doivent être re-confirmées à
+  // chaque nouveau mois calendaire. Rationnel : la stratégie est cyclique
+  // sur 4 semaines = 1 mois → à chaque cycle, on force l'élève à re-vérifier
+  // que son profil Instagram est toujours configuré et que son prompt est
+  // toujours pertinent. Implémentation : on compare le mois du timestamp
+  // de confirmation avec le mois courant.
+  const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+  const confirmedMonth = (ts: string | null | undefined): string | null =>
+    ts ? ts.slice(0, 7) : null;
+  const step1Confirmed = confirmedMonth(row?.step1_confirmed_at) === currentMonth;
+  const step2Confirmed = confirmedMonth(row?.step2_confirmed_at) === currentMonth;
+  // Est-ce un "nouveau mois" (l'élève a déjà confirmé un mois précédent mais
+  // pas le mois courant) → afficher un bandeau d'invitation à re-confirmer.
+  const isNewMonthForStep1 =
+    !!row?.step1_confirmed_at && !step1Confirmed;
+  const isNewMonthForStep2 =
+    !!row?.step2_confirmed_at && !step2Confirmed;
+
   const weeks = weeksQuery.data ?? [];
 
   // Détection migration : questionnaire incomplet alors qu'il y a déjà des profils générés
@@ -259,6 +277,25 @@ export default function PersonalBrandPage() {
         </div>
       )}
 
+      {/* Bandeau nouveau mois : invite à re-confirmer étapes 1 et 2 */}
+      {!isMigrating && (isNewMonthForStep1 || isNewMonthForStep2) && (
+        <div className="rounded-lg border border-primary/30 bg-primary/[0.05] p-4 flex items-start gap-3">
+          <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+            <Repeat className="h-4 w-4 text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground">
+              Nouveau mois — re-confirme rapidement avant de générer ton premier
+              contenu.
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Profil Instagram toujours configuré ? Prompt toujours d'actualité ?
+              Coche pour ce mois (30 secondes).
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Action bar */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <Button
@@ -287,7 +324,8 @@ export default function PersonalBrandPage() {
       {/* Étapes */}
       <Step1Profiles
         profiles={profiles}
-        confirmedAt={row?.step1_confirmed_at ?? null}
+        confirmedForCurrentMonth={step1Confirmed}
+        isNewMonth={isNewMonthForStep1}
         onRegenerate={handleRegenerateProfiles}
         onConfirm={handleConfirmStep1}
         regenerating={generateProfilesMutation.isPending}
@@ -297,7 +335,8 @@ export default function PersonalBrandPage() {
       <Step2Prompt
         promptText={promptText}
         unlocked={step1Confirmed}
-        confirmedAt={row?.step2_confirmed_at ?? null}
+        confirmedForCurrentMonth={step2Confirmed}
+        isNewMonth={isNewMonthForStep2}
         onConfirm={handleConfirmStep2}
         confirming={confirmStep2.isPending}
       />

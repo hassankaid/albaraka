@@ -8,7 +8,8 @@ import { CopyButton } from "./CopyButton";
 interface Props {
   promptText: string;
   unlocked: boolean;
-  confirmedAt: string | null;
+  confirmedForCurrentMonth: boolean;
+  isNewMonth: boolean;
   onConfirm: () => void;
   confirming: boolean;
 }
@@ -16,12 +17,13 @@ interface Props {
 export default function Step2Prompt({
   promptText,
   unlocked,
-  confirmedAt,
+  confirmedForCurrentMonth,
+  isNewMonth,
   onConfirm,
   confirming,
 }: Props) {
-  const [checked, setChecked] = useState(!!confirmedAt);
-  const isConfirmed = !!confirmedAt;
+  const [checked, setChecked] = useState(confirmedForCurrentMonth);
+  const isConfirmed = confirmedForCurrentMonth;
 
   if (!unlocked) {
     return (
@@ -84,7 +86,9 @@ export default function Step2Prompt({
                 className="mt-0.5"
               />
               <span className="text-sm text-foreground leading-relaxed">
-                J'ai copié mon prompt et je le garde quelque part de sûr.
+                {isNewMonth
+                  ? "Mon prompt est toujours pertinent pour mon cycle de ce mois."
+                  : "J'ai copié mon prompt et je le garde quelque part de sûr."}
               </span>
             </label>
             <Button
@@ -93,7 +97,7 @@ export default function Step2Prompt({
               className="w-full gap-2"
             >
               {confirming && <Loader2 className="h-4 w-4 animate-spin" />}
-              Valider et débloquer l'étape 3
+              {isNewMonth ? "Confirmer pour ce mois" : "Valider et débloquer l'étape 3"}
             </Button>
           </div>
         )}
