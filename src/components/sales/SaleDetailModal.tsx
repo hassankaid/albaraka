@@ -15,8 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Check, RefreshCw, Trash2, Plus, CalendarIcon, Pencil, X, Save, AlertTriangle, Loader2, CreditCard, Ban, TrendingUp, CalendarClock, RotateCcw, Link2, Copy, Mail, MessageCircle, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Check, RefreshCw, Trash2, Plus, CalendarIcon, Pencil, X, Save, AlertTriangle, Loader2, CreditCard, Ban, TrendingUp, CalendarClock, RotateCcw, Link2, Copy, Mail, MessageCircle, ExternalLink, CheckCircle2, Calculator } from "lucide-react";
 import ReschedulePaymentsModal from "./ReschedulePaymentsModal";
+import AdjustTotalAmountModal from "./AdjustTotalAmountModal";
 import { formatDateOnly } from "@/lib/formatDate";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -364,6 +365,13 @@ export default function SaleDetailModal({
   // Bouton visible dès qu'il reste à payer quelque chose
   const canReschedule = totalUnsettled > 0.01;
 
+  // ─── Ajustement du montant total (sans annuler la sub Stripe) ──────
+  // Visible dès qu'il y a au moins 1 mensualité pending. Ne nécessite pas
+  // forcément une sub Stripe (peut juste mettre à jour la BDD pour les
+  // ventes Systeme.io ou virement). CEO uniquement (cf. gate plus bas).
+  const [adjustTotalOpen, setAdjustTotalOpen] = useState(false);
+  const canAdjustTotal = pendingCount > 0;
+
   // ─── Suppression complète de la vente (CEO) ─────────────────────────
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const deleteSale = useDeleteSaleAdmin();
@@ -543,6 +551,17 @@ export default function SaleDetailModal({
                     title="Redéfinit le plan des mensualités non encore encaissées (pending + lost). Annule la subscription Stripe encore active si applicable."
                   >
                     <RotateCcw className="h-3.5 w-3.5" /> Modifier le plan
+                  </Button>
+                )}
+                {canAdjustTotal && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAdjustTotalOpen(true)}
+                    className="gap-1.5"
+                    title="Modifie le total HT de la vente sans annuler la subscription Stripe. Les futures mensualités s'ajustent automatiquement, le client n'a rien à refaire."
+                  >
+                    <Calculator className="h-3.5 w-3.5" /> Ajuster le total
                   </Button>
                 )}
                 <Button variant="outline" size="sm" onClick={() => setAddingNew(true)} disabled={addingNew}>
@@ -855,6 +874,29 @@ export default function SaleDetailModal({
           }))}
           paidCount={nbPaid}
           paidTotal={totalPaid}
+          onSuccess={() => {
+            fetchPayments();
+            onUpdated();
+          }}
+        />
+      )}
+
+      {/* Ajuster le montant total — modifie le total HT sans annuler la
+          subscription Stripe. Les futures mensualités s'ajustent
+          automatiquement, le client n'a rien à refaire. */}
+      {saleId && (
+        <AdjustTotalAmountModal
+          open={adjustTotalOpen}
+          onOpenChange={setAdjustTotalOpen}
+          saleId={saleId}
+          saleProduct={saleProduct}
+          currentTotalHt={saleAmountHt}
+          payments={payments.map((p) => ({
+            id: p.id,
+            payment_number: p.payment_number,
+            amount: p.amount,
+            status: p.status,
+          }))}
           onSuccess={() => {
             fetchPayments();
             onUpdated();
