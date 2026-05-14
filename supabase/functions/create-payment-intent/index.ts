@@ -134,14 +134,21 @@ Deno.serve(async (req) => {
 
   try {
     const input = await req.json().catch(() => ({}));
-    const productType: "pass_al_baraka" | "acompte" | "pass_liberty" | "rebill" =
+    const productType:
+      | "pass_al_baraka"
+      | "acompte"
+      | "pass_liberty"
+      | "rebill"
+      | "custom_link" =
       input.product_type === "acompte"
         ? "acompte"
         : input.product_type === "pass_liberty"
           ? "pass_liberty"
           : input.product_type === "rebill"
             ? "rebill"
-            : "pass_al_baraka";
+            : input.product_type === "custom_link"
+              ? "custom_link"
+              : "pass_al_baraka";
     const isTestMode = !!input.test_mode;
     const customer = (input.customer || {}) as Record<string, string>;
 
@@ -811,6 +818,269 @@ Deno.serve(async (req) => {
           payable_cents: payableTotalCents, // solde total
           installments: installmentsCount,
           start_at: startAtIsoDate, // null si mode immédiat
+          test_mode: isTestMode,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // MODE 5 : CUSTOM_LINK — lien de paiement sur mesure (table payment_links)
+    //
+    // Produit / montant / échéancier libres définis par le CEO. Aucune vente
+    // n'existe encore : c'est le webhook (ensureCustomLinkOrder) qui crée la
+    // sale + les payments au paiement réussi. Ici on ne crée que l'objet
+    // Stripe : PaymentIntent (1x immédiat) ou Subscription (Nx, ou tout cas
+    // différé y compris 1x → Subscription trialing + SetupIntent).
+    // ════════════════════════════════════════════════════════════════════
+    if (productType === "custom_link") {
+      const linkToken = String(input.payment_link_token || "").trim().toUpperCase();
+      if (!linkToken) {
+        return new Response(
+          JSON.stringify({ error: "payment_link_token requis" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const { data: linkRows, error: linkErr } = await supabase.rpc(
+        "lookup_payment_link",
+        { p_token: linkToken },
+      );
+      if (linkErr) {
+        console.error("[custom_link] lookup_payment_link failed:", linkErr);
+        return new Response(
+          JSON.stringify({ error: "lookup_failed", message: linkErr.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      const link = Array.isArray(linkRows) && linkRows.length > 0 ? linkRows[0] : null;
+      if (!link || !link.is_valid) {
+        return new Response(
+          JSON.stringify({ error: "payment_link_invalid", reason: link?.reason || "unknown" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const productLabel: string = String(link.product_label);
+      const totalEur = Number(link.total_amount);
+      const installmentsCount = Number(link.installments_count);
+      const CUSTOM_MAX_INSTALLMENTS = 24;
+      if (
+        !Number.isFinite(totalEur) ||
+        totalEur < 0.01 ||
+        !Number.isInteger(installmentsCount) ||
+        installmentsCount < 1 ||
+        installmentsCount > CUSTOM_MAX_INSTALLMENTS
+      ) {
+        return new Response(
+          JSON.stringify({
+            error: "custom_link_invalid_amount",
+            total: totalEur,
+            installments: installmentsCount,
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Démarrage différé : la date vient du lien (deferred_start_date).
+      let startAtUnix: number | null = null;
+      let startAtIsoDate: string | null = null;
+      if (link.deferred_start_date) {
+        const startDate = new Date(`${String(link.deferred_start_date)}T12:00:00Z`);
+        if (
+          !Number.isNaN(startDate.getTime()) &&
+          startDate.getTime() > Date.now() + 60 * 60 * 1000
+        ) {
+          startAtUnix = Math.floor(startDate.getTime() / 1000);
+          startAtIsoDate = String(link.deferred_start_date);
+        }
+      }
+      const isDeferredStart = !!(startAtUnix && startAtIsoDate);
+
+      // Répartition : la 1re mensualité absorbe les centimes restants.
+      const customTotalCents = Math.round(totalEur * 100);
+      const customBaseCents = Math.floor(customTotalCents / installmentsCount);
+      const customExtraCents = customTotalCents - customBaseCents * installmentsCount;
+      const customFirstCents = customBaseCents + customExtraCents;
+
+      const customMetadata: Record<string, string> = {
+        product: productLabel,
+        product_type: "custom_link",
+        source: "custom_link",
+        payment_link_token: linkToken,
+        payment_link_id: String(link.link_id),
+        installments: String(installmentsCount),
+        total_cents: String(customTotalCents),
+        first_payment_cents: String(customFirstCents),
+        test_mode: isTestMode ? "true" : "false",
+        customer_email: email,
+        customer_full_name: fullName,
+        customer_phone: String(customer.phone || ""),
+        customer_address: String(customer.address || ""),
+        customer_postal_code: String(customer.postal_code || ""),
+        customer_city: String(customer.city || ""),
+        customer_country: String(customer.country || ""),
+      };
+      if (isDeferredStart) {
+        customMetadata.start_at = startAtIsoDate as string;
+        customMetadata.start_at_unix = String(startAtUnix);
+      }
+
+      // ── Cas 1 : paiement unique immédiat → PaymentIntent ──
+      if (installmentsCount === 1 && !isDeferredStart) {
+        const pi = await stripeFetch<{ id: string; client_secret: string }>(
+          apiKey,
+          "/payment_intents",
+          {
+            amount: customTotalCents,
+            currency: "eur",
+            receipt_email: email,
+            metadata: customMetadata,
+            description: `${productLabel} (paiement unique)`,
+            "payment_method_types[0]": "card",
+            "payment_method_options[card][request_three_d_secure]": "automatic",
+          },
+        );
+        return new Response(
+          JSON.stringify({
+            client_secret: pi.client_secret,
+            intent_id: pi.id,
+            intent_type: "payment",
+            product_type: "custom_link",
+            amount_cents: customTotalCents,
+            installments: 1,
+            test_mode: isTestMode,
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // ── Cas 2 : Subscription (Nx immédiat, ou tout cas différé) ──
+      const customSearch = await stripeFetch<{ data: Array<{ id: string }> }>(
+        apiKey,
+        `/customers/search?query=${encodeURIComponent(`email:"${email}"`)}`,
+        {},
+        "GET",
+      ).catch(() => ({ data: [] as Array<{ id: string }> }));
+
+      let customCustomerId: string;
+      if (customSearch.data?.[0]?.id) {
+        customCustomerId = customSearch.data[0].id;
+        await stripeFetch(apiKey, `/customers/${customCustomerId}`, {
+          name: fullName,
+          phone: String(customer.phone || ""),
+          "address[line1]": String(customer.address || ""),
+          "address[postal_code]": String(customer.postal_code || ""),
+          "address[city]": String(customer.city || ""),
+          "address[country]": String(customer.country || ""),
+          metadata: customMetadata,
+        });
+      } else {
+        const created = await stripeFetch<{ id: string }>(apiKey, "/customers", {
+          email,
+          name: fullName,
+          phone: String(customer.phone || ""),
+          "address[line1]": String(customer.address || ""),
+          "address[postal_code]": String(customer.postal_code || ""),
+          "address[city]": String(customer.city || ""),
+          "address[country]": String(customer.country || ""),
+          metadata: customMetadata,
+        });
+        customCustomerId = created.id;
+      }
+
+      const customProductId = await ensureStripeProduct(
+        apiKey,
+        "custom_link_plan",
+        "Paiement sur mesure AL BARAKA",
+      );
+
+      // unit_amount récurrent = baseCents ; la 1re facture est majorée de
+      // extraCents via add_invoice_items → Stripe == BDD au centime près.
+      const customSubParams: Record<string, unknown> = {
+        customer: customCustomerId,
+        "items[0][price_data][currency]": "eur",
+        "items[0][price_data][unit_amount]": customBaseCents,
+        "items[0][price_data][recurring][interval]": "month",
+        "items[0][price_data][product]": customProductId,
+        payment_behavior: "default_incomplete",
+        "payment_settings[save_default_payment_method]": "on_subscription",
+        "payment_settings[payment_method_types][0]": "card",
+        "payment_settings[payment_method_options][card][request_three_d_secure]":
+          "automatic",
+        description: `${productLabel} (${installmentsCount} mensualité${installmentsCount > 1 ? "s" : ""})`,
+        "expand[0]": "latest_invoice.payment_intent",
+        metadata: customMetadata,
+      };
+
+      // cancel_at = (date de départ) + N mois - 1 jour, pour que Stripe
+      // stoppe la sub après la dernière mensualité.
+      const customCancelBase = isDeferredStart
+        ? new Date((startAtUnix as number) * 1000)
+        : new Date();
+      customCancelBase.setMonth(customCancelBase.getMonth() + installmentsCount);
+      customCancelBase.setDate(customCancelBase.getDate() - 1);
+      customSubParams.cancel_at = Math.floor(customCancelBase.getTime() / 1000);
+
+      if (isDeferredStart) {
+        customSubParams.trial_end = startAtUnix;
+        customSubParams.proration_behavior = "none";
+        customSubParams["expand[0]"] = "pending_setup_intent";
+      }
+
+      if (customExtraCents > 0) {
+        customSubParams["add_invoice_items[0][price_data][currency]"] = "eur";
+        customSubParams["add_invoice_items[0][price_data][product]"] = customProductId;
+        customSubParams["add_invoice_items[0][price_data][unit_amount]"] = customExtraCents;
+        customSubParams["add_invoice_items[0][quantity]"] = 1;
+      }
+
+      const customSub = await stripeFetch<{
+        id: string;
+        latest_invoice?: { payment_intent?: { id: string; client_secret: string } };
+        pending_setup_intent?: { id: string; client_secret: string } | null;
+      }>(apiKey, "/subscriptions", customSubParams);
+
+      const customSi = isDeferredStart ? customSub.pending_setup_intent : null;
+      const customPi = !isDeferredStart ? customSub.latest_invoice?.payment_intent : null;
+      const customIntentId = customSi?.id || customPi?.id || null;
+      const customClientSecret = customSi?.client_secret || customPi?.client_secret || null;
+      const customIntentType: "setup" | "subscription" = customSi ? "setup" : "subscription";
+
+      if (customIntentId) {
+        try {
+          const intentMeta = { ...customMetadata, stripe_subscription_id: customSub.id };
+          const path = customIntentType === "setup"
+            ? `/setup_intents/${customIntentId}`
+            : `/payment_intents/${customIntentId}`;
+          await stripeFetch(apiKey, path, { metadata: intentMeta });
+        } catch (e) {
+          console.error(`[custom_link] failed to patch ${customIntentType} metadata:`, e);
+        }
+      }
+
+      if (!customClientSecret) {
+        return new Response(
+          JSON.stringify({
+            error: "custom_link subscription créée mais pas de client_secret",
+            subscription_id: customSub.id,
+          }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          client_secret: customClientSecret,
+          intent_id: customIntentId,
+          intent_type: customIntentType,
+          product_type: "custom_link",
+          subscription_id: customSub.id,
+          customer_id: customCustomerId,
+          amount_cents: customFirstCents,
+          total_cents: customTotalCents,
+          installments: installmentsCount,
+          start_at: startAtIsoDate,
           test_mode: isTestMode,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },

@@ -472,6 +472,210 @@ function triggerClientInvoice(payment_id: string): void {
 }
 
 /**
+ * CUSTOM_LINK — création idempotente de contact + sale + N payments depuis
+ * un lien de paiement sur mesure (table payment_links).
+ *
+ * Aucune vente n'existe avant le paiement : c'est cette fonction qui crée
+ * tout au moment du paiement réussi. Appelée :
+ *   - depuis handlePaymentIntentSucceeded (mode immédiat) → markFirstPaid=true
+ *   - depuis handleCustomLinkSubscriptionCreated (mode différé, trial) →
+ *     markFirstPaid=false (rien n'est encore débité), baseDate=trial_end.
+ *
+ * Idempotent : si le payment_link a déjà un sale_id, ou si une sale existe
+ * déjà pour les stripe ids, on ne recrée rien.
+ */
+async function ensureCustomLinkOrder(
+  supabase: SupabaseClient,
+  metadata: Record<string, string>,
+  ids: BonCommandeIds,
+  opts: { markFirstPaid: boolean; baseDate?: Date },
+): Promise<void> {
+  if (metadata.source !== "custom_link") return;
+
+  const linkId = metadata.payment_link_id;
+  if (!linkId) {
+    console.error("[custom_link] missing payment_link_id in metadata");
+    return;
+  }
+
+  const email = String(metadata.customer_email || "").trim().toLowerCase();
+  const fullName = String(metadata.customer_full_name || "").trim();
+  if (!email || !fullName) {
+    console.error("[custom_link] missing email/fullName in metadata", metadata);
+    return;
+  }
+
+  const productLabel = String(metadata.product || "Paiement sur mesure");
+  const installments = Math.max(1, Number(metadata.installments) || 1);
+  const totalCents = Number(metadata.total_cents) || 0;
+  const firstPaymentCents = Number(metadata.first_payment_cents) || 0;
+  if (totalCents < 1 || firstPaymentCents < 1) {
+    console.error("[custom_link] invalid amounts in metadata", metadata);
+    return;
+  }
+
+  // ── Idempotency 1 : le lien a-t-il déjà une vente ? ──
+  const { data: linkRow } = await supabase
+    .from("payment_links")
+    .select("id, status, sale_id")
+    .eq("id", linkId)
+    .maybeSingle();
+  if (linkRow?.sale_id) {
+    if (opts.markFirstPaid) {
+      await markFirstPaymentPaid(supabase, linkRow.sale_id, ids);
+    }
+    console.log(`[custom_link] sale already exists for link=${linkId}, idempotent`);
+    return;
+  }
+
+  // ── Idempotency 2 : une vente existe-t-elle déjà via les stripe ids ? ──
+  let existingSaleId: string | null = null;
+  if (ids.subscriptionId) {
+    const { data } = await supabase
+      .from("payments")
+      .select("sale_id")
+      .eq("stripe_subscription_id", ids.subscriptionId)
+      .limit(1);
+    if (data && data.length > 0) existingSaleId = data[0].sale_id;
+  }
+  if (!existingSaleId && ids.paymentIntentId) {
+    const { data } = await supabase
+      .from("payments")
+      .select("sale_id")
+      .eq("stripe_payment_intent_id", ids.paymentIntentId)
+      .limit(1);
+    if (data && data.length > 0) existingSaleId = data[0].sale_id;
+  }
+  if (existingSaleId) {
+    if (opts.markFirstPaid) {
+      await markFirstPaymentPaid(supabase, existingSaleId, ids);
+    }
+    await supabase
+      .from("payment_links")
+      .update({
+        status: "paid",
+        sale_id: existingSaleId,
+        paid_at: new Date().toISOString(),
+      })
+      .eq("id", linkId)
+      .neq("status", "paid");
+    console.log(`[custom_link] sale ${existingSaleId} already created, link backfilled`);
+    return;
+  }
+
+  // ── Contact ──
+  const { data: contactId, error: contactErr } = await supabase.rpc(
+    "find_or_create_contact",
+    {
+      p_email: email,
+      p_phone: metadata.customer_phone || "",
+      p_full_name: fullName || null,
+    },
+  );
+  if (contactErr || !contactId) {
+    console.error("[custom_link] find_or_create_contact failed:", contactErr);
+    throw contactErr ?? new Error("find_or_create_contact returned null");
+  }
+
+  // ── Vente ──
+  const { data: sale, error: saleErr } = await supabase
+    .from("sales")
+    .insert({
+      contact_id: contactId,
+      product: productLabel,
+      amount_ht: totalCents / 100,
+      discount_amount: 0,
+      mensualites: installments,
+      sale_type: "custom_link",
+      payment_status: "pending",
+      sold_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+  if (saleErr || !sale) {
+    console.error("[custom_link] sale insert failed:", saleErr);
+    throw saleErr ?? new Error("sale insert failed");
+  }
+
+  // ── Échéances ──
+  // 1re mensualité = first_payment_cents (absorbe les centimes), suivantes
+  // égales. Cohérent avec le calcul de create-payment-intent.
+  const restMonthlyCents =
+    installments > 1
+      ? Math.round((totalCents - firstPaymentCents) / (installments - 1))
+      : 0;
+  const baseDate = opts.baseDate ?? new Date();
+  const rows = Array.from({ length: installments }, (_, i) => ({
+    sale_id: sale.id,
+    contact_id: contactId,
+    payment_number: i + 1,
+    total_payments: installments,
+    amount: (i === 0 ? firstPaymentCents : restMonthlyCents) / 100,
+    due_date: addMonthsISO(baseDate, i),
+    status: "pending" as const,
+    payment_method: "stripe",
+    stripe_subscription_id: ids.subscriptionId || null,
+  }));
+  const { error: paymentsErr } = await supabase.from("payments").insert(rows);
+  if (paymentsErr) {
+    console.error("[custom_link] payments insert failed:", paymentsErr);
+    throw paymentsErr;
+  }
+
+  // ── 1re échéance payée (mode immédiat uniquement) ──
+  if (opts.markFirstPaid) {
+    await markFirstPaymentPaid(supabase, sale.id, ids);
+  }
+
+  // ── Bascule le lien en "payé" ──
+  await supabase
+    .from("payment_links")
+    .update({
+      status: "paid",
+      sale_id: sale.id,
+      paid_at: new Date().toISOString(),
+    })
+    .eq("id", linkId);
+
+  console.log(
+    `[custom_link] created sale=${sale.id} contact=${contactId} installments=${installments} markFirstPaid=${opts.markFirstPaid}`,
+  );
+}
+
+/**
+ * CUSTOM_LINK — démarrage différé : la subscription est créée en mode trial.
+ * À sa création, on crée la vente + les payments (tous pending) calés sur
+ * trial_end. Rien n'est marqué paid (aucun débit avant trial_end). Les
+ * échéances seront ensuite auto-marquées par handleInvoicePaid (générique).
+ */
+async function handleCustomLinkSubscriptionCreated(
+  supabase: SupabaseClient,
+  sub: Record<string, unknown>,
+  metadata: Record<string, string>,
+): Promise<void> {
+  const subscriptionId = typeof sub.id === "string" ? sub.id : null;
+  if (!subscriptionId) {
+    console.error("[custom_link/sub.created] subscription has no id");
+    return;
+  }
+
+  // Mode immédiat (pas de trial) : la vente est créée via
+  // payment_intent.succeeded → no-op ici pour ne pas dupliquer.
+  const trialEndUnix =
+    typeof sub.trial_end === "number" && sub.trial_end > Math.floor(Date.now() / 1000)
+      ? sub.trial_end
+      : null;
+  if (!trialEndUnix) return;
+
+  await ensureCustomLinkOrder(
+    supabase,
+    metadata,
+    { subscriptionId },
+    { markFirstPaid: false, baseDate: new Date(trialEndUnix * 1000) },
+  );
+}
+
+/**
  * Idempotent creation of contact + sale (sale_type=acompte) + payment from
  * an acompte PaymentIntent. Generates a payment_code on the contact (or
  * reuses existing). Triggers the client invoice. NO access grant, NO
@@ -842,6 +1046,13 @@ async function handleSubscriptionCreated(
   sub: Record<string, unknown>,
 ): Promise<void> {
   const metadata = (sub.metadata as Record<string, string>) || {};
+
+  // Branche custom_link : lien sur mesure en démarrage différé.
+  if (metadata.source === "custom_link") {
+    await handleCustomLinkSubscriptionCreated(supabase, sub, metadata);
+    return;
+  }
+
   if (metadata.source !== "rebill") return;
 
   const saleId = metadata.rebill_sale_id;
@@ -938,7 +1149,10 @@ async function handleSetupIntentSucceeded(
   apiKey: string,
 ): Promise<void> {
   const metadata = (si.metadata as Record<string, string>) || {};
-  if (metadata.source !== "rebill") return;
+  // Mode différé : rebill ET custom_link utilisent un SetupIntent + sub trialing.
+  // Dans les deux cas, il faut attacher la PM autorisée comme default sur la
+  // sub pour que la 1re invoice à trial_end débite correctement.
+  if (metadata.source !== "rebill" && metadata.source !== "custom_link") return;
 
   const subscriptionId = metadata.stripe_subscription_id;
   const paymentMethodId =
@@ -1021,6 +1235,18 @@ async function handlePaymentIntentSucceeded(
       subscriptionId,
       invoiceId,
     });
+    return;
+  }
+
+  // Branche custom_link : lien de paiement sur mesure (mode immédiat).
+  // Crée la vente + le plan de paiement et marque la 1re échéance payée.
+  if (metadata.source === "custom_link") {
+    await ensureCustomLinkOrder(
+      supabase,
+      metadata,
+      { paymentIntentId: piId, subscriptionId, invoiceId },
+      { markFirstPaid: true },
+    );
     return;
   }
 

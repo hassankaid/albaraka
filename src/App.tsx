@@ -15,6 +15,7 @@ import MerciAcomptePage from "./pages/checkout/MerciAcomptePage";
 import LibertyCheckout from "./pages/checkout/LibertyCheckout";
 import MerciLibertyPage from "./pages/checkout/MerciLibertyPage";
 import RebillCheckout from "./pages/checkout/RebillCheckout";
+import PaymentLinkCheckout from "./pages/checkout/PaymentLinkCheckout";
 import DashboardLayout from "./components/DashboardLayout";
 import ApporteurLayout from "./components/ApporteurLayout";
 import Dashboard from "./pages/Dashboard";
@@ -87,6 +88,7 @@ import PersonalBrandPage from "./pages/working/personal-brand/PersonalBrandPage"
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import AdminAnnouncements from "./pages/admin/announcements/AdminAnnouncements";
 import AdminCalendlyWebhooks from "./pages/admin/webhooks/AdminCalendlyWebhooks";
+import AdminPaymentLinks from "./pages/admin/payment-links/AdminPaymentLinks";
 import CampaignTracking from "./pages/admin/invitations/CampaignTracking";
 import AdminParcoursList from "./pages/admin/parcours/AdminParcoursList";
 import ParcoursEditor from "./pages/admin/parcours/ParcoursEditor";
@@ -123,6 +125,7 @@ const App = () => (
               <Route path="/liberty/:installments" element={<LibertyCheckout />} />
               <Route path="/merci-liberty" element={<MerciLibertyPage />} />
               <Route path="/rebill/:token" element={<RebillCheckout />} />
+              <Route path="/pay/:token" element={<PaymentLinkCheckout />} />
               <Route element={<ProtectedRoute />}>
                 {/* Onboarding (no layout) */}
                 <Route path="/onboarding" element={<ApporteurOnboarding />} />
@@ -137,6 +140,7 @@ const App = () => (
                   <Route path="/my-commissions" element={<MyCommissions />} />
                   <Route path="/admin/invoices" element={<AdminInvoices />} />
                   <Route path="/admin/commissions" element={<AdminCommissions />} />
+                  <Route path="/admin/payment-links" element={<AdminPaymentLinks />} />
                   <Route path="/admin/team" element={<AdminTeam />} />
                   <Route path="/admin/announcements" element={<AdminAnnouncements />} />
                   <Route path="/admin/quiz-lead" element={<AdminQuizLead />} />
