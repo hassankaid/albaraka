@@ -35,11 +35,11 @@ export default function Step2Prompt({
               2
             </span>
             <h2 className="font-heading text-xl text-muted-foreground">
-              Ton prompt personnalisé
+              Ton brief personnalisé
             </h2>
           </div>
           <p className="text-xs text-muted-foreground pl-7">
-            Valide d'abord l'étape 1 pour débloquer ton prompt sur mesure.
+            Valide d'abord l'étape 1 pour débloquer ton brief sur mesure.
           </p>
         </CardContent>
       </Card>
@@ -54,7 +54,7 @@ export default function Step2Prompt({
             <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
               2
             </span>
-            <h2 className="font-heading text-xl text-foreground">Ton prompt personnalisé</h2>
+            <h2 className="font-heading text-xl text-foreground">Ton brief personnalisé</h2>
             {isConfirmed && (
               <span className="ml-auto inline-flex items-center gap-1 text-xs text-emerald-500">
                 <CheckCircle2 className="h-3.5 w-3.5" /> Validé
@@ -62,8 +62,9 @@ export default function Step2Prompt({
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            Voici ton brief complet — la matière première de toutes tes
-            semaines à venir. Copie-le et garde-le précieusement.
+            Voici ce que la plateforme a compris de toi. Elle s'en sert
+            automatiquement pour générer tout ton contenu à l'étape 3 —
+            aucun outil externe (Claude, ChatGPT…) nécessaire.
           </p>
         </div>
 
@@ -74,7 +75,11 @@ export default function Step2Prompt({
         </div>
 
         <div className="flex justify-center">
-          <CopyButton text={promptText} label="Copier le prompt complet" />
+          <CopyButton
+            text={promptText}
+            label="Copier mon brief (optionnel)"
+            variant="ghost"
+          />
         </div>
 
         {!isConfirmed && (
@@ -87,8 +92,8 @@ export default function Step2Prompt({
               />
               <span className="text-sm text-foreground leading-relaxed">
                 {isNewCycle
-                  ? "Mon prompt est toujours pertinent pour ce nouveau cycle."
-                  : "J'ai copié mon prompt et je le garde quelque part de sûr."}
+                  ? "Mon brief est toujours d'actualité pour ce nouveau cycle."
+                  : "Mon brief me correspond."}
               </span>
             </label>
             <Button

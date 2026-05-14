@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Lock,
@@ -195,8 +194,6 @@ function WeekGenerator({
   onGenerate: (params: { weekNum: 1 | 2 | 3 | 4; basePrompt: string }) => Promise<void>;
   generating: boolean;
 }) {
-  const [pastedPrompt, setPastedPrompt] = useState(basePromptDefault);
-
   return (
     <div className="space-y-3">
       <div className="rounded-lg border border-border p-4 space-y-1.5">
@@ -205,21 +202,14 @@ function WeekGenerator({
         </p>
         <p className="text-sm text-foreground">{weekDesc}</p>
         <p className="text-xs text-muted-foreground">
-          Colle ici ton prompt (ou laisse celui pré-rempli depuis l'étape 2) et lance la génération.
+          La plateforme génère tes 7 scripts + 21 stories à partir de ton
+          brief personnalisé. Aucun outil externe, rien à copier-coller.
         </p>
       </div>
 
-      <Textarea
-        value={pastedPrompt}
-        onChange={(e) => setPastedPrompt(e.target.value)}
-        rows={4}
-        placeholder="Colle ici le prompt copié à l'étape 2..."
-        className="font-mono text-[11px]"
-      />
-
       <Button
-        onClick={() => onGenerate({ weekNum, basePrompt: pastedPrompt })}
-        disabled={!pastedPrompt.trim() || generating}
+        onClick={() => onGenerate({ weekNum, basePrompt: basePromptDefault })}
+        disabled={!basePromptDefault.trim() || generating}
         className="w-full gap-2"
       >
         {generating ? (
