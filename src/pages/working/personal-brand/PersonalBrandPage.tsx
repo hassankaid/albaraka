@@ -33,15 +33,25 @@ import { buildFullPrompt } from "./lib/buildPrompts";
 type View = "loading" | "select-mode" | "questionnaire" | "studio";
 
 export default function PersonalBrandPage() {
-  const brandQuery = usePersonalBrand();
   const { mode: resolvedMode, isLoading: modeLoading, setMode, canSwitch } = useBrandMode();
+
+  // Mode "sûr" pour les hooks/calculs : tant que le mode n'est pas résolu
+  // (chargement ou écran de sélection) on retombe sur "pass" — ces valeurs
+  // ne sont pas utilisées tant que la vue n'est pas "questionnaire"/"studio".
+  const safeMode: BrandMode =
+    resolvedMode === "pass" || resolvedMode === "liberty" ? resolvedMode : "pass";
+  // La query user_personal_brand ne se déclenche que sur un vrai mode résolu.
+  const brandModeForQuery: BrandMode | null =
+    resolvedMode === "pass" || resolvedMode === "liberty" ? resolvedMode : null;
+
+  const brandQuery = usePersonalBrand(brandModeForQuery);
   const saveMutation = useSaveBrand();
   const generateProfilesMutation = useGenerateProfiles();
-  const confirmStep1 = useConfirmStep(1);
-  const confirmStep2 = useConfirmStep(2);
+  const confirmStep1 = useConfirmStep(1, safeMode);
+  const confirmStep2 = useConfirmStep(2, safeMode);
   const generateWeekMutation = useGenerateWeek();
   const confirmWeekMutation = useConfirmWeekPublished();
-  const startNewCycleMutation = useStartNewCycle();
+  const startNewCycleMutation = useStartNewCycle(safeMode);
 
   const [answers, setAnswers] = useState<BrandAnswers>({});
   const [currentSection, setCurrentSection] = useState(0);
@@ -51,12 +61,19 @@ export default function PersonalBrandPage() {
   const currentCycleId = brandQuery.data?.current_cycle_id ?? null;
   const weeksQuery = useBrandWeeks(currentCycleId);
 
-  // Init des réponses depuis la BDD
+  // Init des réponses depuis la BDD. Chaque mode a sa propre ligne : au
+  // changement de mode on réinitialise (réponses vides si le mode n'a pas
+  // encore d'espace créé).
   useEffect(() => {
     if (brandQuery.isLoading) return;
-    const row = brandQuery.data;
-    if (row?.answers) setAnswers(row.answers as BrandAnswers);
+    setAnswers((brandQuery.data?.answers as BrandAnswers) ?? {});
   }, [brandQuery.isLoading, brandQuery.data]);
+
+  // Au changement de mode (bascule Pass ⇄ Liberty), on repart d'une UI propre.
+  useEffect(() => {
+    setForceQuestionnaire(false);
+    setCurrentSection(0);
+  }, [resolvedMode]);
 
   // Détermine la vue actuelle
   const view = useMemo<View>(() => {
@@ -75,13 +92,7 @@ export default function PersonalBrandPage() {
     return "studio";
   }, [modeLoading, brandQuery.isLoading, resolvedMode, answers, brandQuery.data, forceQuestionnaire]);
 
-  // ⚠️ IMPORTANT : tous les hooks doivent être appelés AVANT les early returns.
-  // resolvedMode peut être null/"needs-selection" tant qu'on est en loading/select.
-  // On fallback en "pass" pour les calculs de hooks pour ne pas casser les
-  // règles des hooks (Rules of Hooks). Les valeurs ne sont pas utilisées tant
-  // que la vue n'est pas "studio" de toute façon.
-  const safeMode: BrandMode =
-    resolvedMode === "pass" || resolvedMode === "liberty" ? resolvedMode : "pass";
+  // promptText : le brief complet dérivé des réponses (recalculé à la volée).
   const promptText = useMemo(
     () => buildFullPrompt(answers, safeMode),
     [answers, safeMode],

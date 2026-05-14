@@ -98,17 +98,22 @@ async function callClaudeWithRetry<T>(
 }
 
 // ───── QUERIES ─────────────────────────────────────────────────────────
-export function usePersonalBrand() {
+// Une ligne user_personal_brand par (user_id, mode) : un membre Liberty peut
+// avoir deux espaces indépendants (mode "pass" + mode "liberty"). Le hook
+// prend donc le mode courant en paramètre ; il reste inerte tant que le mode
+// n'est pas résolu (null).
+export function usePersonalBrand(mode: BrandMode | null) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   return useQuery({
-    queryKey: ["personal-brand", userId],
-    enabled: !!userId,
+    queryKey: ["personal-brand", userId, mode],
+    enabled: !!userId && !!mode,
     queryFn: async (): Promise<PersonalBrandRow | null> => {
       const { data, error } = await supabase
         .from("user_personal_brand")
         .select("*")
         .eq("user_id", userId!)
+        .eq("mode", mode!)
         .maybeSingle();
       if (error) throw error;
       return (data as unknown as PersonalBrandRow) ?? null;
@@ -152,7 +157,7 @@ export function useSaveBrand() {
           mode: params.mode,
           updated_at: new Date().toISOString(),
         },
-        { onConflict: "user_id" },
+        { onConflict: "user_id,mode" },
       );
       if (error) throw error;
     },
@@ -190,7 +195,7 @@ export function useGenerateProfiles() {
           profiles_generated_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
-        { onConflict: "user_id" },
+        { onConflict: "user_id,mode" },
       );
 
       return profiles;
@@ -201,8 +206,8 @@ export function useGenerateProfiles() {
   });
 }
 
-// Confirmation étape 1 (profil Instagram configuré côté lead)
-export function useConfirmStep(step: 1 | 2) {
+// Confirmation étape 1 / 2 — ciblée sur la ligne (user_id, mode) courante.
+export function useConfirmStep(step: 1 | 2, mode: BrandMode) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   return useMutation({
@@ -215,7 +220,8 @@ export function useConfirmStep(step: 1 | 2) {
           [col]: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .eq("mode", mode);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -321,7 +327,8 @@ export function useGenerateWeek() {
         await supabase
           .from("user_personal_brand")
           .update(userUpdate)
-          .eq("user_id", user.id);
+          .eq("user_id", user.id)
+          .eq("mode", params.mode);
       }
 
       return row as unknown as PersonalBrandWeekRow;
@@ -336,7 +343,8 @@ export function useGenerateWeek() {
 // Démarrage explicite d'un nouveau cycle (quand le précédent est terminé
 // et que l'élève re-confirme étape 1 + étape 2). Reset current_cycle_id
 // à null pour que la prochaine génération de S1 crée un nouveau cycle.
-export function useStartNewCycle() {
+// Ciblé sur la ligne (user_id, mode) courante.
+export function useStartNewCycle(mode: BrandMode) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   return useMutation({
@@ -351,7 +359,8 @@ export function useStartNewCycle() {
           step2_confirmed_at: null,
           updated_at: new Date().toISOString(),
         })
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .eq("mode", mode);
       if (error) throw error;
     },
     onSuccess: () => {

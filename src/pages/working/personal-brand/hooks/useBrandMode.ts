@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPass } from "@/hooks/useUserPass";
-import { usePersonalBrand } from "./usePersonalBrand";
 import type { BrandMode } from "../lib/sections";
 
 const LOCALSTORAGE_KEY = "personal-brand-mode-override";
@@ -9,15 +8,18 @@ const LOCALSTORAGE_KEY = "personal-brand-mode-override";
 /**
  * Détermine le mode (pass / liberty) de l'utilisateur pour Personal Brand.
  *
- * Règles :
- *   - Mode déjà stocké en BDD (user_personal_brand.mode) → on l'utilise
- *   - Sinon, déduit du pass : liberty si user_passes.pass_type='liberty',
- *     al_baraka → pass.
- *   - CEO et collaborateurs avec les 2 passes ou sans pass → choix manuel
- *     (LOCALSTORAGE_KEY) avec page de sélection.
- *   - Retourne `null` tant que la BDD/passes chargent (loading).
- *   - Retourne `"needs-selection"` si l'utilisateur n'a pas de mode défini
- *     et peut choisir (CEO/collab avec les 2 passes).
+ * Règles d'accès :
+ *   - Membre AL BARAKA seul → uniquement le mode "pass". Pas de bascule.
+ *   - Membre Liberty → les DEUX modes : son personal brand Liberty ET celui
+ *     AL BARAKA. Chaque mode a sa propre ligne en BDD (PK = user_id, mode),
+ *     donc deux espaces totalement indépendants. Défaut : "liberty".
+ *   - CEO / collaborateur → les deux modes aussi (pour tester), avec écran
+ *     de sélection au premier passage.
+ *   - Le mode courant est mémorisé dans le localStorage (`LOCALSTORAGE_KEY`)
+ *     et n'est validé que s'il fait partie des modes accessibles.
+ *
+ * Retourne `null` pendant le chargement des passes, `"needs-selection"` si
+ * l'utilisateur peut choisir mais n'a encore rien choisi.
  */
 export type ResolvedBrandMode = BrandMode | "needs-selection" | null;
 
@@ -29,7 +31,6 @@ export function useBrandMode(): {
 } {
   const { profile } = useAuth();
   const { hasAlBaraka, hasLiberty, isLoading: passLoading } = useUserPass();
-  const brandQuery = usePersonalBrand();
 
   const isCeoOrCollab = profile?.role === "ceo" || profile?.role === "collaborateur";
 
@@ -57,27 +58,34 @@ export function useBrandMode(): {
     setOverride(m);
   };
 
-  if (passLoading || brandQuery.isLoading) {
+  if (passLoading) {
     return { mode: null, isLoading: true, setMode, canSwitch: false };
   }
 
-  // 1) Si la BDD a déjà un mode persisté, on l'utilise.
-  // (Sauf si CEO/collab a explicitement basculé via override.)
-  const storedMode = (brandQuery.data?.mode as BrandMode | null) ?? null;
+  // Modes accessibles selon le profil :
+  //   - "liberty" : membre Liberty ou staff
+  //   - "pass"    : membre AL BARAKA, OU membre Liberty (qui peut aussi
+  //                 dérouler le personal brand AL BARAKA), OU staff
+  const canAccessLiberty = isCeoOrCollab || hasLiberty;
+  const canAccessPass = isCeoOrCollab || hasAlBaraka || hasLiberty;
 
-  // 2) Sinon, on déduit selon le pass.
-  let resolved: BrandMode | null = override ?? storedMode;
+  // Mode courant : on part de l'override localStorage, qu'on invalide s'il
+  // pointe vers un mode non autorisé. Sinon on déduit du profil.
+  let resolved: BrandMode | null = override;
+  if (resolved === "liberty" && !canAccessLiberty) resolved = null;
+  if (resolved === "pass" && !canAccessPass) resolved = null;
 
   if (!resolved) {
-    if (hasLiberty && !hasAlBaraka) resolved = "liberty";
-    else if (hasAlBaraka && !hasLiberty) resolved = "pass";
-    else if (hasLiberty && hasAlBaraka) resolved = null; // 2 passes → choix
-    else if (isCeoOrCollab) resolved = null; // CEO sans pass → choix
-    // sans pass + non CEO : PassGuard bloque, on n'arrive pas ici
+    if (isCeoOrCollab) resolved = null;                  // staff → écran de choix
+    else if (hasLiberty && hasAlBaraka) resolved = null; // 2 passes → écran de choix
+    else if (hasLiberty) resolved = "liberty";           // membre Liberty → défaut Liberty
+    else if (hasAlBaraka) resolved = "pass";             // membre AL BARAKA → pass
+    // sans pass + non staff : PassGuard bloque en amont, on n'arrive pas ici
   }
 
-  // CEO/collab peut toujours switcher de mode (utile pour tester les 2 vues)
-  const canSwitch = isCeoOrCollab || (hasLiberty && hasAlBaraka);
+  // Peut basculer entre les deux espaces uniquement si les deux lui sont
+  // accessibles (vrai pour Liberty et staff, faux pour AL BARAKA seul).
+  const canSwitch = canAccessPass && canAccessLiberty;
 
   return {
     mode: resolved ?? "needs-selection",
