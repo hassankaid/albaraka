@@ -20,21 +20,22 @@ import {
   useAttendanceLeaderboard,
   type ExpectedOccurrence,
 } from "@/hooks/useAdminCoachingReplays";
-import { COACHING_SLOTS } from "@/config/coachingSlots";
+import { useCoachingSlots } from "@/hooks/useCoachingSlots";
 
 export default function AdminCoachingReplays() {
   const { data: occurrences, isLoading } = useRecentOccurrences(12);
   const { data: leaderboard } = useAttendanceLeaderboard(30);
+  const { data: coachingSlots } = useCoachingSlots();
 
   const slotStats = useMemo(() => {
-    if (!occurrences) return [];
-    return COACHING_SLOTS.map((slot) => {
-      const slotOccs = occurrences.filter((o) => o.slot.id === slot.id);
+    if (!occurrences || !coachingSlots) return [];
+    return coachingSlots.map((slot) => {
+      const slotOccs = occurrences.filter((o) => o.slot?.id === slot.id);
       const totalAttendance = slotOccs.reduce((sum, o) => sum + o.attendanceCount, 0);
       const avg = slotOccs.length > 0 ? Math.round(totalAttendance / slotOccs.length) : 0;
       return { slot, avg, total: slotOccs.length };
     });
-  }, [occurrences]);
+  }, [occurrences, coachingSlots]);
 
   return (
     <div className="space-y-6">

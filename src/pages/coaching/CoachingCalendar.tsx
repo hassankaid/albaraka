@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Clock, User } from "lucide-react";
-import { COACHING_SLOTS, ZOOM_COACHING, type CoachingSlot, type DayName } from "@/config/coachingSlots";
+import { ZOOM_COACHING, type CoachingSlot, type DayName } from "@/config/coachingSlots";
 import {
   currentWeekOccurrences,
   formatParisTime,
@@ -14,6 +14,7 @@ import {
 } from "@/lib/coaching-slots";
 import { computeJoinPhase } from "@/lib/coaching-window";
 import { useLogAttendance } from "@/hooks/useCoachingTracking";
+import { useCoachingSlots } from "@/hooks/useCoachingSlots";
 import { ReplaysSection } from "@/components/coaching-calendar/ReplaysSection";
 import { MyCoachingStatsCard } from "@/components/coaching-calendar/MyCoachingStatsCard";
 
@@ -31,13 +32,17 @@ const WEEK_DAYS: DayName[] = [
 export default function CoachingCalendar() {
   const [now, setNow] = useState(() => new Date());
   const logAttendance = useLogAttendance();
+  const { data: coachingSlots, isLoading: slotsLoading } = useCoachingSlots();
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(id);
   }, []);
 
-  const sessions = currentWeekOccurrences(COACHING_SLOTS, now);
+  const sessions = useMemo(
+    () => currentWeekOccurrences(coachingSlots ?? [], now),
+    [coachingSlots, now],
+  );
 
   function handleConnect(slot: CoachingSlot, startedAt: Date) {
     logAttendance.mutate({ slot, startedAt });
@@ -67,6 +72,21 @@ export default function CoachingCalendar() {
 
   const weekStart = weekDates[0];
   const weekEnd = weekDates[6];
+
+  // Chargement des créneaux depuis la DB — court (staleTime 5 min) mais on
+  // évite d'afficher une grille vide pendant le premier fetch.
+  if (slotsLoading) {
+    return (
+      <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+        <div className="h-8 w-64 bg-muted/40 rounded animate-pulse mb-6" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
+          {WEEK_DAYS.map((d) => (
+            <div key={d} className="h-[240px] bg-muted/20 rounded-lg animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">

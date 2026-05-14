@@ -1,12 +1,13 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, Users, Wrench, Calendar, PlayCircle } from "lucide-react";
+import { LayoutDashboard, Users, Wrench, Calendar, PlayCircle, CalendarClock } from "lucide-react";
 import AdminCoachingDashboard from "@/components/admin-coaching/AdminCoachingDashboard";
 import AdminCoachingCoachs from "@/components/admin-coaching/AdminCoachingCoachs";
 import AdminCoachingBuilder from "@/components/admin-coaching/AdminCoachingBuilder";
 import AdminCoachingSessions from "@/components/admin-coaching/AdminCoachingSessions";
 import AdminCoachingReplays from "@/components/admin-coaching/AdminCoachingReplays";
+import AdminCoachingWeeklySlots from "@/components/admin-coaching/AdminCoachingWeeklySlots";
 
 export default function AdminCoaching() {
   const { profile } = useAuth();
@@ -27,10 +28,14 @@ export default function AdminCoaching() {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid grid-cols-5 w-full max-w-3xl">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full max-w-4xl">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <LayoutDashboard className="h-4 w-4" />
             Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="weekly-slots" className="flex items-center gap-2">
+            <CalendarClock className="h-4 w-4" />
+            Coachings hebdo
           </TabsTrigger>
           <TabsTrigger value="coachs" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
@@ -52,6 +57,10 @@ export default function AdminCoaching() {
 
         <TabsContent value="dashboard">
           <AdminCoachingDashboard />
+        </TabsContent>
+
+        <TabsContent value="weekly-slots">
+          <AdminCoachingWeeklySlots />
         </TabsContent>
 
         <TabsContent value="coachs">

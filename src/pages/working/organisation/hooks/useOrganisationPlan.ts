@@ -3,13 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPass } from "@/hooks/useUserPass";
 import type { WeekPlan, Answers, CoachingSlot } from "../lib/generatePlanning";
-import { COACHING_SLOTS } from "@/config/coachingSlots";
+import { fetchActiveCoachingSlots } from "@/hooks/useCoachingSlots";
 
+// Charge les créneaux de coaching depuis la DB (table coaching_weekly_slots)
+// et les transforme au format attendu par le générateur de planning.
+// Le planning d'organisation reflète ainsi tout changement de jour/heure
+// décidé par l'admin.
 export function useCoachingSlots() {
   return useQuery({
     queryKey: ["organisation", "coaching-slots"],
-    queryFn: async (): Promise<CoachingSlot[]> =>
-      COACHING_SLOTS.map((s) => ({
+    queryFn: async (): Promise<CoachingSlot[]> => {
+      const slots = await fetchActiveCoachingSlots();
+      return slots.map((s) => ({
         id: s.id,
         day: s.day,
         h: s.hour,
@@ -17,7 +22,8 @@ export function useCoachingSlots() {
         dur: s.durationMinutes,
         label: `🎓 ${s.title}`,
         desc: `Coach : ${s.coach}`,
-      })),
+      }));
+    },
   });
 }
 

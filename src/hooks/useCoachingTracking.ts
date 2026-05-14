@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { COACHING_SLOTS, type CoachingSlot } from "@/config/coachingSlots";
+import { type CoachingSlot } from "@/config/coachingSlots";
+import { fetchActiveCoachingSlots } from "@/hooks/useCoachingSlots";
 
 export interface CoachingOccurrenceRow {
   id: string;
@@ -93,16 +94,19 @@ export function useAvailableReplays() {
     queryFn: async (): Promise<AvailableReplay[]> => {
       const now = new Date();
       const thirtyDaysAgoIso = new Date(now.getTime() - 30 * 86_400_000).toISOString();
-      const { data, error } = await supabase
-        .from("coaching_occurrences")
-        .select("*")
-        .not("replay_url", "is", null)
-        .gte("started_at", thirtyDaysAgoIso)
-        .order("started_at", { ascending: false });
+      const [{ data, error }, slots] = await Promise.all([
+        supabase
+          .from("coaching_occurrences")
+          .select("*")
+          .not("replay_url", "is", null)
+          .gte("started_at", thirtyDaysAgoIso)
+          .order("started_at", { ascending: false }),
+        fetchActiveCoachingSlots(),
+      ]);
       if (error) throw error;
       return ((data ?? []) as CoachingOccurrenceRow[]).map((row) => ({
         ...row,
-        slot: COACHING_SLOTS.find((s) => s.id === row.slot_id) ?? null,
+        slot: slots.find((s) => s.id === row.slot_id) ?? null,
       }));
     },
   });
@@ -164,7 +168,7 @@ export function useMyCoachingStats(periodDays: number = 30) {
     enabled: !!userId,
     queryFn: async (): Promise<MyCoachingStats> => {
       const since = new Date(Date.now() - periodDays * 86_400_000).toISOString();
-      const [{ data: attRows, error: attErr }, { data: viewRows, error: viewErr }] =
+      const [{ data: attRows, error: attErr }, { data: viewRows, error: viewErr }, slots] =
         await Promise.all([
           supabase
             .from("coaching_attendance")
@@ -176,10 +180,11 @@ export function useMyCoachingStats(periodDays: number = 30) {
             .select("occurrence:coaching_occurrences!inner(started_at)")
             .eq("user_id", userId!)
             .gte("occurrence.started_at", since),
+          fetchActiveCoachingSlots(),
         ]);
       if (attErr) throw attErr;
       if (viewErr) throw viewErr;
-      const eligibleCount = countPastOccurrencesInWindow(COACHING_SLOTS, periodDays);
+      const eligibleCount = countPastOccurrencesInWindow(slots, periodDays);
       const attendedCount = (attRows ?? []).length;
       const replayViewsCount = (viewRows ?? []).length;
       const attendanceRate =

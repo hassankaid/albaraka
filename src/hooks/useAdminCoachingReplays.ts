@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { COACHING_SLOTS, type CoachingSlot } from "@/config/coachingSlots";
+import { type CoachingSlot } from "@/config/coachingSlots";
+import { fetchActiveCoachingSlots } from "@/hooks/useCoachingSlots";
 import type { CoachingOccurrenceRow } from "@/hooks/useCoachingTracking";
 
 const DAYS_ORDER = [
@@ -88,6 +89,7 @@ export function useRecentOccurrences(weeksBack: number = 52) {
         { data: occurrences, error: occErr },
         { data: attendance, error: attErr },
         { data: views, error: vwErr },
+        slots,
       ] = await Promise.all([
         supabase
           .from("coaching_occurrences")
@@ -102,6 +104,7 @@ export function useRecentOccurrences(weeksBack: number = 52) {
           .from("coaching_replay_views")
           .select("occurrence_id")
           .gte("viewed_at", since.toISOString()),
+        fetchActiveCoachingSlots(),
       ]);
       if (occErr) throw occErr;
       if (attErr) throw attErr;
@@ -124,7 +127,7 @@ export function useRecentOccurrences(weeksBack: number = 52) {
       const todayParis = parisYMD(now);
       const [yy, mm, dd] = todayParis.split("-").map(Number);
 
-      for (const slot of COACHING_SLOTS) {
+      for (const slot of slots) {
         const targetDow = DAYS_ORDER.indexOf(slot.day);
         const todayDow = new Date(Date.UTC(yy, mm - 1, dd)).getUTCDay();
         let offset = (todayDow - targetDow + 7) % 7;
@@ -219,6 +222,7 @@ export function useAttendanceLeaderboard(periodDays: number = 30) {
         { data: passes, error: passErr },
         { data: attendance, error: attErr },
         { data: views, error: vwErr },
+        slots,
       ] = await Promise.all([
         supabase
           .from("profiles")
@@ -233,6 +237,7 @@ export function useAttendanceLeaderboard(periodDays: number = 30) {
           .from("coaching_replay_views")
           .select("user_id, occurrence:coaching_occurrences!inner(started_at)")
           .gte("occurrence.started_at", since),
+        fetchActiveCoachingSlots(),
       ]);
       if (pErr) throw pErr;
       if (passErr) throw passErr;
@@ -259,7 +264,7 @@ export function useAttendanceLeaderboard(periodDays: number = 30) {
         viewsByUser.set(v.user_id, (viewsByUser.get(v.user_id) ?? 0) + 1);
       }
 
-      const eligibleCount = countPastOccurrencesClient(periodDays);
+      const eligibleCount = countPastOccurrencesClient(slots, periodDays);
 
       const rows: LeaderboardRow[] = [];
       for (const p of (profiles ?? []) as any[]) {
@@ -287,10 +292,14 @@ export function useAttendanceLeaderboard(periodDays: number = 30) {
   });
 }
 
-function countPastOccurrencesClient(days: number, now: Date = new Date()): number {
+function countPastOccurrencesClient(
+  slots: CoachingSlot[],
+  days: number,
+  now: Date = new Date(),
+): number {
   const sinceMs = now.getTime() - days * 86_400_000;
   let count = 0;
-  for (const slot of COACHING_SLOTS) {
+  for (const slot of slots) {
     const targetDow = DAYS_ORDER.indexOf(slot.day);
     for (let back = 0; back <= days + 7; back++) {
       const candidate = new Date(now.getTime() - back * 86_400_000);
