@@ -973,7 +973,7 @@ export default function Leads() {
                   )}
                   <TableHead className="w-[220px]">Contact</TableHead>
                   <TableHead>Source</TableHead>
-                  <TableHead className="w-[150px]">Scoring</TableHead>
+                  <TableHead className="w-[150px]">{isCeo ? "Scoring" : "Quiz"}</TableHead>
                   <TableHead className="w-[40px] text-center" title="Le lead a réservé un appel Calendly de lui-même">📞</TableHead>
                   <TableHead>Apporteur</TableHead>
                   <TableHead>Statut</TableHead>
@@ -1040,30 +1040,54 @@ export default function Leads() {
                         )}
                       </div>
                     </TableCell>
-                    {/* Scoring : badge catégorie + score si quiz rempli */}
+                    {/* Scoring / Quiz : contenu adapté au rôle.
+                          - CEO : catégorie tiède/chaud/froid + score numérique + alertes
+                          - Collab / apporteur : indicateur "rempli ou non" + alertes
+                            (score et catégorie volontairement masqués — éléments
+                            d'évaluation interne réservés au CEO). */}
                     <TableCell>
                       {lead.quiz_filled && lead.quiz_category ? (
-                        <div className="flex flex-col gap-0.5">
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] leading-tight w-fit ${SCORING_CATEGORY_BADGES[lead.quiz_category]}`}
-                            title={`Quiz rempli le ${lead.quiz_completed_at ? new Date(lead.quiz_completed_at).toLocaleDateString("fr-FR") : "—"}${
-                              lead.quiz_flags && lead.quiz_flags.length > 0
-                                ? ` — Alertes : ${lead.quiz_flags.join(", ")}`
-                                : ""
-                            }`}
-                          >
-                            {SCORING_CATEGORY_EMOJIS[lead.quiz_category]} {SCORING_CATEGORY_LABELS[lead.quiz_category]}
-                          </Badge>
-                          <span className="text-[10px] text-muted-foreground">
-                            {lead.quiz_score ?? "?"}/70
+                        isCeo ? (
+                          <div className="flex flex-col gap-0.5">
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] leading-tight w-fit ${SCORING_CATEGORY_BADGES[lead.quiz_category]}`}
+                              title={`Quiz rempli le ${lead.quiz_completed_at ? new Date(lead.quiz_completed_at).toLocaleDateString("fr-FR") : "—"}${
+                                lead.quiz_flags && lead.quiz_flags.length > 0
+                                  ? ` — Alertes : ${lead.quiz_flags.join(", ")}`
+                                  : ""
+                              }`}
+                            >
+                              {SCORING_CATEGORY_EMOJIS[lead.quiz_category]} {SCORING_CATEGORY_LABELS[lead.quiz_category]}
+                            </Badge>
+                            <span className="text-[10px] text-muted-foreground">
+                              {lead.quiz_score ?? "?"}/70
+                              {lead.quiz_flags && lead.quiz_flags.length > 0 ? (
+                                <span className="ml-1 text-amber-400 font-medium">
+                                  ⚠ {lead.quiz_flags.length}
+                                </span>
+                              ) : null}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-0.5">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] leading-tight w-fit bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                              title={`Quiz rempli le ${lead.quiz_completed_at ? new Date(lead.quiz_completed_at).toLocaleDateString("fr-FR") : "—"}`}
+                            >
+                              ✓ Quiz rempli
+                            </Badge>
                             {lead.quiz_flags && lead.quiz_flags.length > 0 ? (
-                              <span className="ml-1 text-amber-400 font-medium">
-                                ⚠ {lead.quiz_flags.length}
+                              <span
+                                className="text-[10px] text-amber-400 font-medium"
+                                title={`Alertes setter : ${lead.quiz_flags.join(", ")}`}
+                              >
+                                ⚠ {lead.quiz_flags.length} alerte{lead.quiz_flags.length > 1 ? "s" : ""}
                               </span>
                             ) : null}
-                          </span>
-                        </div>
+                          </div>
+                        )
                       ) : (
                         <span className="text-[10px] text-muted-foreground italic">Quiz non rempli</span>
                       )}
