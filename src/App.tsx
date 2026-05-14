@@ -77,6 +77,7 @@ import AdminLeadScoring from "./pages/admin/lead-scoring/AdminLeadScoring";
 import CoachingCalendar from "./pages/coaching/CoachingCalendar";
 import { PassGuard } from "./components/PassGuard";
 import { FeatureGate } from "./components/FeatureGate";
+import { CeoOnlyGuard } from "./components/CeoOnlyGuard";
 import SharedLayout from "./components/SharedLayout";
 import ParcoursView from "./pages/parcours/ParcoursView";
 import ParcoursChapitreDetail from "./pages/parcours/ParcoursChapitreDetail";
@@ -200,8 +201,11 @@ const App = () => (
                   <Route path="/working/activity" element={<FeatureGate feature="working_activity"><MyActivity /></FeatureGate>} />
                   <Route path="/working/organisation" element={<FeatureGate feature="quiz_organisation"><OrganisationPage /></FeatureGate>} />
                   <Route path="/working/personal-brand" element={<PassGuard><PersonalBrandPage /></PassGuard>} />
-                  <Route path="/working/content" element={<PassGuard><ContentGenerator /></PassGuard>} />
-                  <Route path="/working/contents" element={<PassGuard><MyContents /></PassGuard>} />
+                  {/* Générateur de Contenu + Mes Contenus : temporairement
+                      réservés au CEO (demande Sidali — 14/05/2026). Les
+                      non-CEO sont redirigés vers /working/personal-brand. */}
+                  <Route path="/working/content" element={<CeoOnlyGuard><ContentGenerator /></CeoOnlyGuard>} />
+                  <Route path="/working/contents" element={<CeoOnlyGuard><MyContents /></CeoOnlyGuard>} />
                   <Route path="/working/agent" element={<PassGuard><AgentIA /></PassGuard>} />
                 </Route>
               </Route>
