@@ -231,7 +231,7 @@ export default function PersonalBrandPage() {
               className="gap-2 text-xs"
             >
               <Repeat className="h-3.5 w-3.5" />
-              Basculer en mode {mode === "pass" ? "Liberty" : "Pass"}
+              Basculer en mode {mode === "pass" ? "Liberty" : "AL BARAKA"}
             </Button>
           </div>
         )}
@@ -399,7 +399,7 @@ export default function PersonalBrandPage() {
             onClick={() => setMode(mode === "pass" ? "liberty" : "pass")}
             className="gap-2 text-xs"
           >
-            <Repeat className="h-3.5 w-3.5" /> Basculer en mode {mode === "pass" ? "Liberty" : "Pass"}
+            <Repeat className="h-3.5 w-3.5" /> Basculer en mode {mode === "pass" ? "Liberty" : "AL BARAKA"}
           </Button>
         )}
       </div>
