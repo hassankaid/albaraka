@@ -267,7 +267,11 @@ export default function ContactSheet({
 
             <div className="border-b border-border" />
 
-            {/* ── Diagnostic Quiz (Lead Scoring) ─────────────────────── */}
+            {/* ── Diagnostic Quiz (Lead Scoring) ───────────────────────
+                  Score + catégorie (tiède/chaud/froid) sont réservés au CEO :
+                  ce sont des éléments d'évaluation interne. Les collaborateurs
+                  et apporteurs voient seulement la date de remplissage, les
+                  alertes setter et les 7 réponses du lead. */}
             {scoring && (
               <div className="py-4 space-y-3">
                 <div className="flex items-center gap-2">
@@ -275,29 +279,37 @@ export default function ContactSheet({
                   <h3 className="text-sm font-semibold text-foreground">Diagnostic Quiz</h3>
                 </div>
 
-                {/* Récap : catégorie, score, date */}
+                {/* Récap : catégorie + score (CEO uniquement), date toujours visible */}
                 <div className="rounded-md border border-border/50 bg-secondary/30 p-3 space-y-2">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <Badge
-                      variant="outline"
-                      className={`text-xs ${SCORING_CATEGORY_BADGES[scoring.category]}`}
-                    >
-                      {SCORING_CATEGORY_EMOJIS[scoring.category]} {SCORING_CATEGORY_LABELS[scoring.category]}
-                    </Badge>
-                    <span className="text-xs font-mono tabular-nums text-foreground">
-                      {scoring.score}/70 pts
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground italic leading-relaxed">
-                    {SCORING_CATEGORY_DETAILS[scoring.category]}
-                  </p>
+                  {authProfile?.role === "ceo" && (
+                    <>
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${SCORING_CATEGORY_BADGES[scoring.category]}`}
+                        >
+                          {SCORING_CATEGORY_EMOJIS[scoring.category]} {SCORING_CATEGORY_LABELS[scoring.category]}
+                        </Badge>
+                        <span className="text-xs font-mono tabular-nums text-foreground">
+                          {scoring.score}/70 pts
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground italic leading-relaxed">
+                        {SCORING_CATEGORY_DETAILS[scoring.category]}
+                      </p>
+                    </>
+                  )}
                   <p className="text-[10px] text-muted-foreground">
                     Quiz rempli le{" "}
                     {scoring.completed_at
                       ? formatDateTime(scoring.completed_at, userTz)
                       : formatDateTime(scoring.created_at, userTz)}
-                    {" — funnel: "}
-                    <code className="font-mono text-[10px]">{scoring.funnel_slug}</code>
+                    {authProfile?.role === "ceo" && (
+                      <>
+                        {" — funnel: "}
+                        <code className="font-mono text-[10px]">{scoring.funnel_slug}</code>
+                      </>
+                    )}
                   </p>
                 </div>
 

@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Users, UserPlus, RefreshCw, Search, Pencil, Sparkles, Inbox } from "lucide-react";
+import { Users, UserPlus, RefreshCw, Search, Pencil, Sparkles, Inbox, ClipboardList } from "lucide-react";
+import LeadScoringPanel from "@/components/leads/LeadScoringPanel";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -107,6 +108,10 @@ export default function ApporteurLeads() {
   // La modification de source n'est proposée QUE pour les leads que l'apporteur
   // a apportés lui-même (lead.apporteur_id === profile.id) — pas pour ceux qui
   // lui ont été simplement affectés (assigned_to). Trace dans lead_activities.
+  // Mini-modale "Diagnostic Quiz" pour consulter les réponses scoring du lead
+  // depuis l'interface apporteur (lecture seule, sans score ni catégorie).
+  const [scoringLead, setScoringLead] = useState<LeadEnriched | null>(null);
+
   const [editLead, setEditLead] = useState<LeadEnriched | null>(null);
   const [editStatus, setEditStatus] = useState("");
   const [editSource, setEditSource] = useState("");
@@ -531,19 +536,30 @@ export default function ApporteurLeads() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        title={
-                          isMineButAssignedElsewhere
-                            ? `Lead en cours de traitement par ${lead.assigned_to_name ?? "un autre collab"} — tu peux uniquement corriger la source`
-                            : "Modifier le statut (et la source si tu as apporté ce lead)"
-                        }
-                        onClick={() => openEditModal(lead)}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
+                      <div className="flex items-center gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          title="Voir le diagnostic Quiz (réponses + alertes du lead)"
+                          onClick={() => setScoringLead(lead)}
+                        >
+                          <ClipboardList className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          title={
+                            isMineButAssignedElsewhere
+                              ? `Lead en cours de traitement par ${lead.assigned_to_name ?? "un autre collab"} — tu peux uniquement corriger la source`
+                              : "Modifier le statut (et la source si tu as apporté ce lead)"
+                          }
+                          onClick={() => openEditModal(lead)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                   );
@@ -575,12 +591,20 @@ export default function ApporteurLeads() {
                       </div>
                       <p className="text-xs text-muted-foreground truncate">{lead.contact_phone}</p>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
                       {lead.status && (
                         <Badge variant="outline" className={`text-xs ${LEAD_STATUS_COLORS[lead.status] || ""}`}>
                           {LEAD_STATUS_LABELS[lead.status] || lead.status}
                         </Badge>
                       )}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setScoringLead(lead); }}
+                        className="h-6 w-6 inline-flex items-center justify-center rounded hover:bg-secondary/70 transition-colors"
+                        title="Voir le diagnostic Quiz"
+                      >
+                        <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
                       <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                   </div>
@@ -853,6 +877,33 @@ export default function ApporteurLeads() {
                 Enregistrer
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Mini-modale "Diagnostic Quiz" : affiche les réponses + alertes setter
+          du lead pour aider l'apporteur à préparer son appel.
+          Score et catégorie (tiède/chaud/froid) sont masqués — c'est de
+          l'évaluation interne réservée au CEO. */}
+      <Dialog open={!!scoringLead} onOpenChange={(o) => { if (!o) setScoringLead(null); }}>
+        <DialogContent className="bg-card border-border max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">
+              Diagnostic Quiz — {scoringLead?.contact_full_name || "lead"}
+            </DialogTitle>
+          </DialogHeader>
+          {scoringLead && (
+            <div className="py-1">
+              <LeadScoringPanel
+                email={scoringLead.contact_email}
+                showScoreAndCategory={false}
+              />
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setScoringLead(null)}>
+              Fermer
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
