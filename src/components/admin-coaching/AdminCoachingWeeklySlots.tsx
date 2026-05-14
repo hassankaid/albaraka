@@ -1,16 +1,17 @@
 // AdminCoachingWeeklySlots — éditeur des 4 coachings hebdomadaires.
 //
 // Permet au CEO de modifier, pour chaque créneau récurrent :
-//   - le coach assigné
-//   - le jour de la semaine
-//   - l'heure et les minutes de début
-//   - la durée
+//   - le jour, l'heure, les minutes, la durée
 //   - le titre et l'emoji
+//   - le thème de coaching rattaché (coach_types)
+//   - le coach — qui est en réalité le coach du THÈME (coach_types.
+//     assigned_coach_id). Le modifier ici le change AUSSI pour le coaching
+//     individuel du même thème : une seule source de vérité, pas de double
+//     saisie.
 //   - l'activation (afficher/masquer le créneau dans le calendrier)
 //
-// Source de vérité : table coaching_weekly_slots. Toute modification est
-// immédiatement répercutée sur le calendrier de tous les utilisateurs
-// (le calendrier lit la même table via useCoachingSlots).
+// Toute modification est répercutée immédiatement sur le calendrier de tous
+// les utilisateurs.
 
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,11 +34,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { CalendarClock, Pencil, Loader2, User, Clock } from "lucide-react";
+import { CalendarClock, Pencil, Loader2, User, Clock, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   useAdminCoachingSlots,
   useUpdateCoachingSlot,
+  useAssignCoachToTheme,
+  useCoachOptions,
+  useCoachThemes,
   type AdminCoachingSlot,
 } from "@/hooks/useCoachingSlots";
 import type { DayName } from "@/config/coachingSlots";
@@ -53,6 +57,7 @@ const DAYS: DayName[] = [
 ];
 
 const DURATION_OPTIONS = [30, 45, 60, 75, 90, 105, 120, 150, 180];
+const UNLINKED = "__none__";
 
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
@@ -78,8 +83,9 @@ export default function AdminCoachingWeeklySlots() {
           Coachings de la semaine
         </h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Modifie le coach, le jour ou l'horaire d'un créneau. Les changements
-          sont appliqués immédiatement sur le calendrier de tous les membres.
+          Modifie le coach, le jour ou l'horaire d'un créneau. Le coach est
+          partagé avec le coaching individuel du même thème — un seul endroit
+          à changer.
         </p>
       </div>
 
@@ -95,11 +101,22 @@ export default function AdminCoachingWeeklySlots() {
                   <span className="text-xl">{slot.emoji}</span>
                   <div className="min-w-0">
                     <p className="font-semibold text-foreground truncate">{slot.title}</p>
-                    {!slot.isActive && (
-                      <Badge variant="outline" className="mt-0.5 text-[10px] bg-muted text-muted-foreground">
-                        Masqué du calendrier
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      {slot.coachTypeLabel ? (
+                        <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">
+                          Thème : {slot.coachTypeLabel}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-300 border-amber-500/30">
+                          Aucun thème rattaché
+                        </Badge>
+                      )}
+                      {!slot.isActive && (
+                        <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground">
+                          Masqué du calendrier
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <Button
@@ -116,7 +133,9 @@ export default function AdminCoachingWeeklySlots() {
               <div className="space-y-1.5 text-sm">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <User className="h-3.5 w-3.5 shrink-0" />
-                  <span className="text-foreground font-medium">{slot.coach}</span>
+                  <span className="text-foreground font-medium">
+                    {slot.coach || <span className="text-muted-foreground italic">Aucun coach</span>}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Clock className="h-3.5 w-3.5 shrink-0" />
@@ -132,10 +151,7 @@ export default function AdminCoachingWeeklySlots() {
       </div>
 
       {editing && (
-        <EditSlotModal
-          slot={editing}
-          onClose={() => setEditing(null)}
-        />
+        <EditSlotModal slot={editing} onClose={() => setEditing(null)} />
       )}
     </div>
   );
@@ -149,15 +165,31 @@ interface EditSlotModalProps {
 function EditSlotModal({ slot, onClose }: EditSlotModalProps) {
   const { toast } = useToast();
   const updateSlot = useUpdateCoachingSlot();
+  const assignCoach = useAssignCoachToTheme();
+  const { data: coachOptions } = useCoachOptions();
+  const { data: themes } = useCoachThemes();
 
   const [day, setDay] = useState<DayName>(slot.day);
   const [hour, setHour] = useState<string>(String(slot.hour));
   const [minute, setMinute] = useState<string>(String(slot.minute));
   const [durationMinutes, setDurationMinutes] = useState<string>(String(slot.durationMinutes));
   const [title, setTitle] = useState(slot.title);
-  const [coach, setCoach] = useState(slot.coach);
   const [emoji, setEmoji] = useState(slot.emoji ?? "");
   const [isActive, setIsActive] = useState(slot.isActive);
+  const [coachTypeId, setCoachTypeId] = useState<string>(slot.coachTypeId ?? UNLINKED);
+
+  // Coach courant du thème sélectionné (source de vérité = coach_types).
+  const selectedTheme = themes?.find((t) => t.id === coachTypeId);
+  const [coachId, setCoachId] = useState<string>(
+    selectedTheme?.assignedCoachId ?? "",
+  );
+
+  // Quand on change de thème, on aligne le coach affiché sur celui du thème.
+  function handleThemeChange(newThemeId: string) {
+    setCoachTypeId(newThemeId);
+    const t = themes?.find((th) => th.id === newThemeId);
+    setCoachId(t?.assignedCoachId ?? "");
+  }
 
   const hourNum = parseInt(hour, 10);
   const minuteNum = parseInt(minute, 10);
@@ -167,12 +199,15 @@ function EditSlotModal({ slot, onClose }: EditSlotModalProps) {
     Number.isInteger(hourNum) && hourNum >= 0 && hourNum <= 23 &&
     Number.isInteger(minuteNum) && minuteNum >= 0 && minuteNum <= 59 &&
     Number.isInteger(durationNum) && durationNum > 0 &&
-    title.trim().length > 0 &&
-    coach.trim().length > 0;
+    title.trim().length > 0;
+
+  const isPending = updateSlot.isPending || assignCoach.isPending;
+  const effectiveCoachTypeId = coachTypeId === UNLINKED ? null : coachTypeId;
 
   async function handleSave() {
     if (!valid) return;
     try {
+      // 1) Planning du créneau (+ rattachement au thème)
       await updateSlot.mutateAsync({
         id: slot.id,
         day,
@@ -180,13 +215,28 @@ function EditSlotModal({ slot, onClose }: EditSlotModalProps) {
         minute: minuteNum,
         durationMinutes: durationNum,
         title: title.trim(),
-        coach: coach.trim(),
         emoji: emoji.trim() || null,
         isActive,
+        coachTypeId: effectiveCoachTypeId,
       });
+
+      // 2) Coach du thème — uniquement si un thème est rattaché ET que le
+      //    coach a changé. Met à jour coach_types.assigned_coach_id, donc
+      //    répercuté aussi sur le coaching individuel.
+      if (effectiveCoachTypeId) {
+        const originalCoachId = selectedTheme?.assignedCoachId ?? "";
+        const newCoachId = coachId || null;
+        if ((newCoachId ?? "") !== originalCoachId) {
+          await assignCoach.mutateAsync({
+            coachTypeId: effectiveCoachTypeId,
+            coachId: newCoachId,
+          });
+        }
+      }
+
       toast({
         title: "Créneau mis à jour",
-        description: `${title.trim()} — ${day} à ${hourNum}h${pad2(minuteNum)}, coach ${coach.trim()}.`,
+        description: `${title.trim()} — ${day} à ${hourNum}h${pad2(minuteNum)}.`,
       });
       onClose();
     } catch (e: any) {
@@ -224,15 +274,49 @@ function EditSlotModal({ slot, onClose }: EditSlotModalProps) {
             </div>
           </div>
 
-          {/* Coach */}
+          {/* Thème de coaching */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">Thème de coaching</Label>
+            <Select value={coachTypeId} onValueChange={handleThemeChange}>
+              <SelectTrigger className="bg-background">
+                <SelectValue placeholder="Sélectionner un thème" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={UNLINKED}>— Aucun thème —</SelectItem>
+                {(themes ?? []).map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Coach — modifie coach_types.assigned_coach_id du thème */}
           <div className="space-y-1.5">
             <Label className="text-xs">Coach</Label>
-            <Input
-              value={coach}
-              onChange={(e) => setCoach(e.target.value)}
-              placeholder="Ex : Sabrina"
-              className="bg-background"
-            />
+            <Select
+              value={coachId}
+              onValueChange={setCoachId}
+              disabled={!effectiveCoachTypeId}
+            >
+              <SelectTrigger className="bg-background disabled:opacity-50">
+                <SelectValue placeholder={effectiveCoachTypeId ? "Sélectionner un coach" : "Rattache d'abord un thème"} />
+              </SelectTrigger>
+              <SelectContent>
+                {(coachOptions ?? []).map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.fullName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {effectiveCoachTypeId && (
+              <div className="flex items-start gap-1.5 text-[10.5px] text-muted-foreground leading-snug pt-0.5">
+                <Info className="h-3 w-3 shrink-0 mt-0.5" />
+                <span>
+                  Ce coach est partagé avec le coaching individuel du thème
+                  «&nbsp;{selectedTheme?.label}&nbsp;». Le modifier ici le change
+                  aussi dans l'onglet «&nbsp;Coachs&nbsp;».
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Jour */}
@@ -304,21 +388,17 @@ function EditSlotModal({ slot, onClose }: EditSlotModalProps) {
 
           {!valid && (
             <p className="text-xs text-destructive">
-              Vérifie les champs : heure 0-23, minute 0-59, titre et coach obligatoires.
+              Vérifie les champs : heure 0-23, minute 0-59, titre obligatoire.
             </p>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={updateSlot.isPending}>
+          <Button variant="outline" onClick={onClose} disabled={isPending}>
             Annuler
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={!valid || updateSlot.isPending}
-            className="gap-2"
-          >
-            {updateSlot.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+          <Button onClick={handleSave} disabled={!valid || isPending} className="gap-2">
+            {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             Enregistrer
           </Button>
         </DialogFooter>
