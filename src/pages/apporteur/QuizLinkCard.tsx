@@ -45,8 +45,13 @@ interface QuizOwnerRow {
 
 interface FunnelStats {
   total_views: number;
-  info_captured: number;     // au moins prénom + email + tél laissés (= toutes submissions)
-  quiz_completed: number;    // quiz fini
+  // Depuis la refonte du flow (06/05/2026) : toute submission a forcément
+  // prénom + nom + email + téléphone (coordonnées complètes). Les anciennes
+  // submissions partielles ont été purgées (migration du 14/05/2026).
+  // → Toutes les submissions présentes = des leads CRM réels.
+  coords_complete: number;   // total submissions (= leads créés)
+  juste_coords: number;      // ont laissé leurs coords mais n'ont pas commencé le quiz
+  quiz_completed: number;    // quiz terminé (peu importe si WhatsApp cliqué après)
   whatsapp_clicked: number;  // a cliqué sur le bouton WhatsApp
 }
 
@@ -109,23 +114,26 @@ export default function QuizLinkCard() {
           .eq("owner_id", row.id);
         const s: FunnelStats = {
           total_views: row.total_views ?? 0,
-          info_captured: 0,
+          coords_complete: 0,
+          juste_coords: 0,
           quiz_completed: 0,
           whatsapp_clicked: 0,
         };
+        // Sémantique post-refonte 14/05/2026 :
+        // - Toutes les submissions ont des coordonnées complètes (prénom +
+        //   nom + email + tel) — sinon l'edge function rejette le payload
+        //   et la submission n'est jamais créée.
+        // - Chaque submission présente = un lead CRM réel.
+        // - On répartit ensuite par état d'avancement dans le funnel :
+        //   phone_captured = coords laissées mais quiz pas commencé
+        //   quiz_in_progress = quiz commencé mais pas fini
+        //   quiz_completed = quiz fini (peut-être cliqué WhatsApp après)
+        //   whatsapp_clicked = a cliqué le bouton final
         for (const sub of subs ?? []) {
-          // Toutes les submissions ont au moins l'email capturé (donc info partielle).
-          // Avec le nouveau flow (refonte 06/05/2026), prénom + email + tel sont
-          // demandés dès le formulaire initial → le statut passe directement à
-          // 'phone_captured' AVANT que le quiz ne commence. Donc 'phone_captured'
-          // signifie maintenant "coordonnées laissées", pas "quiz fini".
-          // Seuls quiz_completed (= quiz fini) et whatsapp_clicked (= a cliqué
-          // sur WhatsApp à la fin) prouvent que le quiz a été terminé.
-          s.info_captured++;
+          s.coords_complete++;
           const st = sub.status as string;
-          if (st === "quiz_completed" || st === "whatsapp_clicked") {
-            s.quiz_completed++;
-          }
+          if (st === "phone_captured") s.juste_coords++;
+          if (st === "quiz_completed" || st === "whatsapp_clicked") s.quiz_completed++;
           if (st === "whatsapp_clicked") s.whatsapp_clicked++;
         }
         setStats(s);
@@ -403,10 +411,28 @@ export default function QuizLinkCard() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 pt-2">
-                <MiniStat label="Coordonnées laissées" value={stats?.info_captured ?? 0} />
-                <MiniStat label="Quiz terminés" value={stats?.quiz_completed ?? 0} />
-                <MiniStat label="Clics WhatsApp" value={stats?.whatsapp_clicked ?? 0} accent />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2">
+                <MiniStat
+                  label="Leads générés"
+                  value={stats?.coords_complete ?? 0}
+                  hint="Coordonnées complètes : prénom + nom + email + téléphone."
+                />
+                <MiniStat
+                  label="Sans quiz"
+                  value={stats?.juste_coords ?? 0}
+                  hint="Ont laissé leurs coordonnées mais n'ont pas commencé le quiz."
+                />
+                <MiniStat
+                  label="Quiz terminés"
+                  value={stats?.quiz_completed ?? 0}
+                  hint="Ont terminé le quiz jusqu'au bout."
+                />
+                <MiniStat
+                  label="Clics WhatsApp"
+                  value={stats?.whatsapp_clicked ?? 0}
+                  hint="Ont cliqué le bouton WhatsApp à la fin du quiz."
+                  accent
+                />
               </div>
 
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
@@ -434,7 +460,17 @@ function ReadOnlyRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function MiniStat({ label, value, accent = false }: { label: string; value: number; accent?: boolean }) {
+function MiniStat({
+  label,
+  value,
+  accent = false,
+  hint,
+}: {
+  label: string;
+  value: number;
+  accent?: boolean;
+  hint?: string;
+}) {
   return (
     <div
       className={`rounded-lg border px-3 py-2 ${
@@ -442,6 +478,7 @@ function MiniStat({ label, value, accent = false }: { label: string; value: numb
           ? "border-gold-500/30 bg-gold-500/10"
           : "border-border/50 bg-background/40"
       }`}
+      title={hint}
     >
       <div className="text-[10.5px] uppercase tracking-wider text-muted-foreground">
         {label}

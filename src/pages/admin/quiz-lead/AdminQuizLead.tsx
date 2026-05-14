@@ -129,23 +129,18 @@ export default function AdminQuizLead() {
   const totalViews = useMemo(() => owners.reduce((s, o) => s + (o.total_views ?? 0), 0), [owners]);
 
   const stats = useMemo(() => {
-    // Nouveau flow : prénom + email + tel sont capturés en une fois au début.
-    // Donc "infoCaptured" = toutes les submissions (toutes ont au moins email,
-    // les nouvelles ont aussi le tel).
-    // L'ancien KPI "phoneCaptured" séparé n'a plus de sens en première mesure
-    // (car toutes les nouvelles submissions ont un tel) → on le garde quand
-    // même pour suivre la rétrocompat des anciennes submissions email_captured.
-    // Note refonte 06/05/2026 : 'phone_captured' = coordonnées laissées (le tel
-    // est demandé au début), pas "quiz fini". Donc on l'exclut des compteurs
-    // quizInProgress et quizCompleted — ces compteurs reflètent réellement la
-    // progression dans le quiz lui-même.
+    // Sémantique post-refonte 14/05/2026 :
+    // - Toute submission présente = coordonnées complètes (prénom + nom +
+    //   email + téléphone) + lead CRM créé. Les anciennes submissions
+    //   orphelines ont été purgées et l'edge function refuse désormais
+    //   tout payload sans téléphone valide.
+    // - On compte donc les 4 étapes du funnel sans doubles comptes ambigus.
     const s = {
-      infoCaptured: submissions.length,
-      quizInProgress: submissions.filter((x) => ["quiz_in_progress", "quiz_completed", "whatsapp_clicked"].includes(x.status)).length,
+      coordsComplete: submissions.length,                                                              // = leads générés
+      justeCoords: submissions.filter((x) => x.status === "phone_captured").length,                    // n'ont pas commencé le quiz
+      quizInProgress: submissions.filter((x) => x.status === "quiz_in_progress").length,                // ont commencé, pas fini
       quizCompleted: submissions.filter((x) => ["quiz_completed", "whatsapp_clicked"].includes(x.status)).length,
       whatsappClicked: submissions.filter((x) => x.status === "whatsapp_clicked").length,
-      // Rétrocompat : combien de submissions avec lead CRM créé (avec tel renseigné)
-      withLead: submissions.filter((x) => !!x.lead_id).length,
     };
     return s;
   }, [submissions]);
@@ -229,15 +224,15 @@ export default function AdminQuizLead() {
             <StatsSkeleton />
           ) : (
             <>
-              {/* KPI cards — funnel simplifié à 3 étapes (le tel est capturé
-                  dès le formulaire initial, donc "Coordonnées" = "Tels".
-                  La colonne "Avec lead CRM" reflète le nb de leads créés) */}
+              {/* KPI cards — chaque submission a coordonnées complètes (prénom +
+                  nom + email + tel) et un lead CRM associé. Le funnel
+                  reflète ensuite la progression dans le quiz lui-même. */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <KpiCard icon={<Eye />} label="Visites" value={totalViews} color="text-slate-300" />
-                <KpiCard icon={<Mail />} label="Coordonnées" value={stats.infoCaptured} color="text-blue-300" accent />
+                <KpiCard icon={<Phone />} label="Leads générés" value={stats.coordsComplete} color="text-emerald-300" accent />
+                <KpiCard icon={<Mail />} label="Sans quiz" value={stats.justeCoords} color="text-amber-300" />
                 <KpiCard icon={<CheckCircle2 />} label="Quiz terminés" value={stats.quizCompleted} color="text-violet-300" />
                 <KpiCard icon={<MessageCircle />} label="Clics WhatsApp" value={stats.whatsappClicked} color="text-green-300" />
-                <KpiCard icon={<Phone />} label="Avec lead CRM" value={stats.withLead} color="text-emerald-300" />
               </div>
 
               {/* Funnel */}
@@ -247,8 +242,8 @@ export default function AdminQuizLead() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <FunnelRow label="Visites sur un lien" value={totalViews} max={totalViews} color="#64748b" />
-                  <FunnelRow label="Coordonnées laissées" value={stats.infoCaptured} max={totalViews} color="#3b82f6" accent />
-                  <FunnelRow label="Quiz démarrés" value={stats.quizInProgress} max={totalViews} color="#f59e0b" />
+                  <FunnelRow label="Leads générés" value={stats.coordsComplete} max={totalViews} color="#10b981" accent />
+                  <FunnelRow label="Quiz démarrés" value={stats.quizInProgress + stats.quizCompleted} max={totalViews} color="#f59e0b" />
                   <FunnelRow label="Quiz terminés" value={stats.quizCompleted} max={totalViews} color="#8b5cf6" />
                   <FunnelRow label="Clics WhatsApp" value={stats.whatsappClicked} max={totalViews} color="#25D366" />
                 </CardContent>
