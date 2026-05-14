@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Users, UserPlus, RefreshCw, Search, Pencil } from "lucide-react";
+import { Users, UserPlus, RefreshCw, Search, Pencil, MessageSquare, Inbox } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -57,6 +58,15 @@ const APPORTEUR_EDITABLE_STATUSES = [
 // Identique à INSTANT_RECYCLE_STATUSES côté ProcessLeadModal.
 const RECYCLE_TRIGGER_STATUSES = new Set(["pas_de_reponse", "pas_de_reponse_post_conference"]);
 
+// Deux vues distinctes sur les leads de l'apporteur :
+//  - "quiz"      : leads opt-in via son funnel quiz personnel (apporteur_id=moi ET source='apporteur_quiz').
+//                  C'est l'output direct de son lien /quiz/<slug>.
+//  - "a_traiter" : leads que le CEO/admin lui a affectés pour les traiter (assigned_to=moi).
+// Les leads apportés via un autre canal apporteur (TikTok, Instagram, etc.)
+// restent visibles via "a_traiter" s'ils lui sont assignés. Sinon le wording
+// "Mes leads quiz" reste fidèle à la promesse (= funnel quiz uniquement).
+type LeadTab = "quiz" | "a_traiter";
+
 export default function ApporteurLeads() {
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -65,6 +75,7 @@ export default function ApporteurLeads() {
   const [formOpen, setFormOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState<LeadTab>("quiz");
 
   // Form state
   const [fullName, setFullName] = useState("");
@@ -253,7 +264,16 @@ export default function ApporteurLeads() {
     setSaving(false);
   };
 
-  const filtered = leads.filter((l) => {
+  // Découpe les leads par onglet AVANT d'appliquer recherche + filtre statut,
+  // pour que les compteurs reflètent toujours le périmètre brut de l'onglet.
+  const quizLeads = leads.filter(
+    (l) => l.apporteur_id === profile?.id && l.source === "apporteur_quiz"
+  );
+  const aTraiterLeads = leads.filter((l) => l.assigned_to === profile?.id);
+
+  const activeLeads = activeTab === "quiz" ? quizLeads : aTraiterLeads;
+
+  const filtered = activeLeads.filter((l) => {
     if (statusFilter !== "all" && l.status !== statusFilter) return false;
     if (search) {
       const q = search.toLowerCase();
@@ -284,13 +304,35 @@ export default function ApporteurLeads() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Mes Leads</h2>
-          <p className="text-sm text-muted-foreground">{leads.length} lead{leads.length > 1 ? "s" : ""} au total</p>
+          <p className="text-sm text-muted-foreground">
+            {quizLeads.length} via mon quiz · {aTraiterLeads.length} à traiter
+          </p>
         </div>
         <Button onClick={() => setFormOpen(true)} className="gradient-primary text-primary-foreground gap-2">
           <UserPlus className="h-4 w-4" />
           Ajouter un lead
         </Button>
       </div>
+
+      {/* Onglets : "Mes leads quiz" vs "Mes leads à traiter" */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as LeadTab)}>
+        <TabsList className="bg-card border border-border/60">
+          <TabsTrigger value="quiz" className="gap-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
+            <MessageSquare className="h-3.5 w-3.5" />
+            Mes leads quiz
+            <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 h-4 bg-background/60">
+              {quizLeads.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="a_traiter" className="gap-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
+            <Inbox className="h-3.5 w-3.5" />
+            Mes leads à traiter
+            <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 h-4 bg-background/60">
+              {aTraiterLeads.length}
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
@@ -320,8 +362,29 @@ export default function ApporteurLeads() {
         <Card className="border-border/50">
           <CardContent className="p-8 text-center">
             <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-foreground font-medium">Aucun lead trouvé</p>
-            <p className="text-sm text-muted-foreground mt-1">Ajoutez votre premier lead pour commencer.</p>
+            {activeTab === "quiz" ? (
+              <>
+                <p className="text-foreground font-medium">
+                  {quizLeads.length === 0 ? "Aucun lead via ton quiz pour l'instant" : "Aucun lead ne correspond à ta recherche"}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {quizLeads.length === 0
+                    ? "Partage ton lien /quiz/<ton-slug> pour générer tes premiers leads."
+                    : "Essaie de retirer le filtre statut ou la recherche."}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-foreground font-medium">
+                  {aTraiterLeads.length === 0 ? "Aucun lead à traiter pour l'instant" : "Aucun lead ne correspond à ta recherche"}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {aTraiterLeads.length === 0
+                    ? "Le CEO/admin ne t'a affecté aucun lead pour l'instant."
+                    : "Essaie de retirer le filtre statut ou la recherche."}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       ) : (
