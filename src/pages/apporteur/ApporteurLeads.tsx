@@ -114,8 +114,25 @@ export default function ApporteurLeads() {
   const [editNote, setEditNote] = useState("");
   const [editSaving, setEditSaving] = useState(false);
 
-  // Le caller peut-il modifier la source ? Oui ssi il EST l'apporteur du lead.
+  // Le caller peut-il modifier la SOURCE ? Oui ssi il EST l'apporteur du lead.
+  // C'est sa donnée à lui (il l'a saisie au départ), donc il peut la corriger
+  // même si le lead est en cours de traitement par un autre collab.
   const canEditSource = !!editLead && editLead.apporteur_id === profile?.id;
+
+  // Le caller peut-il modifier le STATUT ? Oui dans 2 cas :
+  //  1) Le lead lui est assigné (assigned_to=moi) → il est en charge du traitement
+  //  2) Le lead n'est encore assigné à personne (assigned_to=NULL) ET il en est
+  //     l'apporteur → pas de risque de double saisie.
+  // Sinon (lead assigné à quelqu'un d'autre), édition du statut bloquée pour
+  // éviter d'écraser le travail du collab qui traite le lead.
+  const canEditStatus = !!editLead && (
+    editLead.assigned_to === profile?.id ||
+    (editLead.assigned_to === null && editLead.apporteur_id === profile?.id)
+  );
+
+  // Nom du collab/admin actuellement en charge du lead (pour afficher dans la
+  // colonne "Assigné à" et dans la modale en mode "double saisie bloquée").
+  const editLeadAssignee = editLead?.assigned_to_name ?? null;
 
   function openEditModal(lead: LeadEnriched) {
     setEditLead(lead);
@@ -135,21 +152,27 @@ export default function ApporteurLeads() {
     if (!editLead || !editLead.id) return;
     setEditSaving(true);
     try {
-      // 1) Statut (tous les apporteurs/collaborateurs peuvent l'éditer pour
-      //    leurs propres leads OU ceux qui leur sont affectés)
-      const { data: statusData, error: statusErr } = await (supabase as any).rpc(
-        "apporteur_update_lead_status",
-        {
-          p_lead_id: editLead.id,
-          p_new_status: editStatus,
-          p_note: editNote.trim() || null,
-        },
-      );
-      if (statusErr) throw new Error(statusErr.message);
-      const statusResult = statusData as { ok: boolean; changed: boolean; recycled?: boolean };
+      // 1) Statut — uniquement si le caller a le droit de l'éditer.
+      //    Empêche la double saisie : si le lead est assigné à un autre
+      //    collab, l'apporteur ne peut PAS toucher au statut (l'assigné le
+      //    pilote). Cf. canEditStatus.
+      let statusResult: { ok: boolean; changed: boolean; recycled?: boolean } | null = null;
+      if (canEditStatus) {
+        const { data: statusData, error: statusErr } = await (supabase as any).rpc(
+          "apporteur_update_lead_status",
+          {
+            p_lead_id: editLead.id,
+            p_new_status: editStatus,
+            p_note: editNote.trim() || null,
+          },
+        );
+        if (statusErr) throw new Error(statusErr.message);
+        statusResult = statusData as { ok: boolean; changed: boolean; recycled?: boolean };
+      }
 
       // 2) Source — seulement si l'apporteur est le propriétaire du lead ET
-      //    qu'il a sélectionné une source valide.
+      //    qu'il a sélectionné une source valide. Reste autorisé même si le
+      //    lead est assigné ailleurs (c'est sa propre donnée d'apporteur).
       let sourceChanged = false;
       if (canEditSource && editSource) {
         const { data: srcData, error: srcErr } = await (supabase as any).rpc(
@@ -158,7 +181,7 @@ export default function ApporteurLeads() {
             p_lead_id: editLead.id,
             p_source: editSource,
             p_source_detail: editSource === "apporteur_autre" ? (editSourceDetail.trim() || null) : null,
-            p_note: null, // la note est déjà passée au statut, on évite le doublon
+            p_note: !canEditStatus && editNote.trim() ? editNote.trim() : null,
           },
         );
         if (srcErr) throw new Error(srcErr.message);
@@ -448,6 +471,11 @@ export default function ApporteurLeads() {
                   <TableHead>Nom</TableHead>
                   <TableHead>Téléphone</TableHead>
                   <TableHead>Source</TableHead>
+                  {/* Colonne "Assigné à" uniquement dans l'onglet "Mes leads
+                      apportés" — utile pour savoir qui traite ce lead et
+                      éviter la double saisie. Dans "Mes leads à traiter",
+                      c'est toujours moi → colonne inutile. */}
+                  {activeTab === "apportes" && <TableHead>Assigné à</TableHead>}
                   <TableHead>Date</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead className="w-12"></TableHead>
@@ -456,6 +484,8 @@ export default function ApporteurLeads() {
               <TableBody>
                 {filtered.map((lead) => {
                   const isAssignedToMe = lead.assigned_to === profile?.id && lead.apporteur_id !== profile?.id;
+                  const isMineUnassigned = lead.apporteur_id === profile?.id && lead.assigned_to === null;
+                  const isMineButAssignedElsewhere = lead.apporteur_id === profile?.id && lead.assigned_to !== null && lead.assigned_to !== profile?.id;
                   return (
                   <TableRow key={lead.id} className="border-border hover:bg-secondary/50 transition-colors">
                     <TableCell>
@@ -479,6 +509,15 @@ export default function ApporteurLeads() {
                         </Badge>
                       )}
                     </TableCell>
+                    {activeTab === "apportes" && (
+                      <TableCell className="text-sm">
+                        {lead.assigned_to_name ? (
+                          <span className="text-foreground">{lead.assigned_to_name}</span>
+                        ) : (
+                          <span className="text-muted-foreground italic">Non assigné</span>
+                        )}
+                      </TableCell>
+                    )}
                     <TableCell className="text-sm text-muted-foreground">
                       {lead.created_at
                         ? formatDistanceToNow(new Date(lead.created_at), { addSuffix: true, locale: fr })
@@ -496,7 +535,11 @@ export default function ApporteurLeads() {
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0"
-                        title="Modifier le statut (et la source si tu as apporté ce lead)"
+                        title={
+                          isMineButAssignedElsewhere
+                            ? `Lead en cours de traitement par ${lead.assigned_to_name ?? "un autre collab"} — tu peux uniquement corriger la source`
+                            : "Modifier le statut (et la source si tu as apporté ce lead)"
+                        }
                         onClick={() => openEditModal(lead)}
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -541,7 +584,7 @@ export default function ApporteurLeads() {
                       <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground flex-wrap">
                     {lead.source && (
                       <Badge variant="outline" className={`text-xs ${getSourceBadgeClass(lead.source, lead.source_detail)}`}>
                         {getSourceLabel(lead.source, lead.source_detail)}
@@ -551,6 +594,15 @@ export default function ApporteurLeads() {
                       {lead.created_at ? formatDistanceToNow(new Date(lead.created_at), { addSuffix: true, locale: fr }) : ""}
                     </span>
                   </div>
+                  {/* Mobile : affiche "Assigné à" uniquement dans "Mes leads apportés" */}
+                  {activeTab === "apportes" && (
+                    <div className="mt-2 pt-2 border-t border-border/40 text-[11px] text-muted-foreground">
+                      Assigné à&nbsp;:{" "}
+                      <span className={lead.assigned_to_name ? "text-foreground font-medium" : "italic"}>
+                        {lead.assigned_to_name ?? "Non assigné"}
+                      </span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
               );
@@ -634,7 +686,13 @@ export default function ApporteurLeads() {
         <DialogContent className="bg-card border-border max-w-md">
           <DialogHeader>
             <DialogTitle className="text-foreground">
-              {canEditSource ? "Modifier le lead" : "Modifier le statut"}
+              {canEditStatus && canEditSource
+                ? "Modifier le lead"
+                : canEditStatus
+                  ? "Modifier le statut"
+                  : canEditSource
+                    ? "Corriger la source du lead"
+                    : "Détails du lead"}
             </DialogTitle>
           </DialogHeader>
           {editLead && (
@@ -664,12 +722,45 @@ export default function ApporteurLeads() {
                     </div>
                   )}
                 </div>
+                {/* Affiche l'assigné actuel — info clé pour comprendre qui
+                    pilote le statut. */}
+                <div className="mt-2 pt-2 border-t border-border/40 text-xs">
+                  <span className="text-muted-foreground">Assigné à :</span>{" "}
+                  <span className={editLeadAssignee ? "text-foreground font-medium" : "text-muted-foreground italic"}>
+                    {editLeadAssignee ?? "Non assigné"}
+                  </span>
+                </div>
               </div>
 
+              {/* Avertissement : on ne peut pas toucher au statut si le lead
+                  est en cours de traitement par quelqu'un d'autre. Évite la
+                  double saisie / l'écrasement du travail du collab assigné. */}
+              {!canEditStatus && (
+                <div className="rounded-md border border-amber-500/30 bg-amber-500/[0.06] p-3 text-xs leading-relaxed">
+                  <p className="text-amber-300 font-medium">
+                    Statut verrouillé
+                  </p>
+                  <p className="text-muted-foreground mt-1">
+                    Ce lead est en cours de traitement par{" "}
+                    <span className="text-foreground font-medium">
+                      {editLeadAssignee ?? "un autre collaborateur"}
+                    </span>
+                    . Pour éviter d'écraser son travail, tu ne peux pas
+                    modifier son statut.
+                    {canEditSource && " Tu peux uniquement corriger la source ci-dessous."}
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Nouveau statut</label>
-                <Select value={editStatus} onValueChange={setEditStatus}>
-                  <SelectTrigger className="bg-background">
+                <label className="text-sm font-medium text-foreground">
+                  Nouveau statut
+                  {!canEditStatus && (
+                    <span className="text-xs text-muted-foreground font-normal ml-2">(verrouillé)</span>
+                  )}
+                </label>
+                <Select value={editStatus} onValueChange={setEditStatus} disabled={!canEditStatus}>
+                  <SelectTrigger className="bg-background disabled:opacity-50 disabled:cursor-not-allowed">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -729,7 +820,7 @@ export default function ApporteurLeads() {
                 />
               </div>
 
-              {RECYCLE_TRIGGER_STATUSES.has(editStatus) && (
+              {canEditStatus && RECYCLE_TRIGGER_STATUSES.has(editStatus) && (
                 <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300 leading-relaxed">
                   ⚠️ Ce statut déclenche un <strong>recyclage automatique</strong> du lead :
                   le commercial actuellement assigné sera retiré et le lead retournera dans
@@ -745,21 +836,23 @@ export default function ApporteurLeads() {
           )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setEditLead(null)} disabled={editSaving}>
-              Annuler
+              {canEditStatus || canEditSource ? "Annuler" : "Fermer"}
             </Button>
-            <Button
-              type="button"
-              onClick={handleSaveEdit}
-              disabled={
-                editSaving
-                || !editStatus
-                || (canEditSource && editSource === "apporteur_autre" && !editSourceDetail.trim())
-              }
-              className="gradient-primary text-primary-foreground"
-            >
-              {editSaving && <RefreshCw className="h-4 w-4 animate-spin mr-2" />}
-              Enregistrer
-            </Button>
+            {(canEditStatus || canEditSource) && (
+              <Button
+                type="button"
+                onClick={handleSaveEdit}
+                disabled={
+                  editSaving
+                  || (canEditStatus && !editStatus)
+                  || (canEditSource && editSource === "apporteur_autre" && !editSourceDetail.trim())
+                }
+                className="gradient-primary text-primary-foreground"
+              >
+                {editSaving && <RefreshCw className="h-4 w-4 animate-spin mr-2" />}
+                Enregistrer
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
