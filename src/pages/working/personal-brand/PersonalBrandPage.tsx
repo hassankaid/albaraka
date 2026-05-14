@@ -212,7 +212,29 @@ export default function PersonalBrandPage() {
     const hasExistingProfiles =
       !!(row?.generated_profiles && (row.generated_profiles as any[]).length > 0);
     return (
-      <div className="max-w-2xl mx-auto p-4 md:p-6">
+      <div className="max-w-2xl mx-auto p-4 md:p-6 space-y-4">
+        {/* Barre d'espace : permet de basculer Pass ⇄ Liberty depuis le
+            questionnaire. Sans ça, choisir un mode encore vide laissait
+            l'utilisateur bloqué dans le questionnaire, sans porte de sortie. */}
+        {canSwitch && (
+          <div className="flex items-center justify-between flex-wrap gap-2 rounded-lg border border-border bg-card/50 px-3 py-2">
+            <span className="text-xs text-muted-foreground">
+              Espace :{" "}
+              <span className="font-medium text-foreground">
+                {mode === "liberty" ? "Liberty" : "Pass AL BARAKA"}
+              </span>
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMode(mode === "pass" ? "liberty" : "pass")}
+              className="gap-2 text-xs"
+            >
+              <Repeat className="h-3.5 w-3.5" />
+              Basculer en mode {mode === "pass" ? "Liberty" : "Pass"}
+            </Button>
+          </div>
+        )}
         <Questionnaire
           mode={mode}
           answers={answers}
