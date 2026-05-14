@@ -212,7 +212,7 @@ export default function PersonalBrandPage() {
     const hasExistingProfiles =
       !!(row?.generated_profiles && (row.generated_profiles as any[]).length > 0);
     return (
-      <div className="max-w-2xl mx-auto p-4 md:p-6 space-y-4">
+      <div className="max-w-3xl mx-auto p-4 md:p-6 space-y-4">
         {/* Barre d'espace : permet de basculer Pass ⇄ Liberty depuis le
             questionnaire. Sans ça, choisir un mode encore vide laissait
             l'utilisateur bloqué dans le questionnaire, sans porte de sortie. */}

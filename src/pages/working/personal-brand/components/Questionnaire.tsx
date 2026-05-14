@@ -1,8 +1,7 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight, Sparkles, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getSections, countAnsweredQuestions, totalQuestions, type BrandAnswers, type BrandMode } from "../lib/sections";
 import { QuestionBlock } from "./QuestionBlock";
@@ -22,11 +21,21 @@ export function Questionnaire({
   answers, mode, onChange, currentSection, setCurrentSection, onFinish, onBackToRecap, finishing,
 }: Props) {
   const topRef = useRef<HTMLDivElement>(null);
+  const activeStepRef = useRef<HTMLButtonElement>(null);
   const sections = getSections(mode);
   const section = sections[currentSection];
   const total = totalQuestions(mode);
   const answered = countAnsweredQuestions(answers, mode);
   const isLast = currentSection === sections.length - 1;
+  const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
+
+  // Une section est "terminée" quand toutes ses questions ont une réponse.
+  const isSectionDone = (idx: number) =>
+    sections[idx].questions.every((q) => {
+      const v = answers[q.id];
+      if (Array.isArray(v)) return v.length > 0;
+      return typeof v === "string" && v.trim().length > 0;
+    });
 
   const scrollTop = () => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   const goNext = () => {
@@ -39,6 +48,15 @@ export function Questionnaire({
     setCurrentSection(currentSection - 1);
     scrollTop();
   };
+
+  // Garde l'étape active visible dans le stepper (utile en scroll horizontal mobile).
+  useEffect(() => {
+    activeStepRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [currentSection]);
 
   return (
     <div className="space-y-6">
@@ -64,40 +82,75 @@ export function Questionnaire({
         seront uniques et fidèles à toi.
       </p>
 
-      <div className="space-y-1.5">
-        <div className="flex justify-between text-xs">
-          <span className="text-primary tracking-widest uppercase">Progression</span>
-          <span className="text-muted-foreground">{Math.round((answered / total) * 100)}%</span>
+      {/* ─── Parcours : stepper horizontal (homogène 6 ou 7 étapes) ─── */}
+      <div className="space-y-3 rounded-xl border border-border bg-card/40 p-4">
+        <div className="flex items-baseline justify-between">
+          <span className="text-xs tracking-[0.18em] uppercase text-primary">
+            Ton parcours
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {answered}/{total} questions · <span className="text-foreground font-medium">{pct}%</span>
+          </span>
         </div>
-        <Progress value={(answered / total) * 100} className="h-1.5" />
-      </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-        {sections.map((s, i) => {
-          const active = i === currentSection;
-          const done = s.questions.every((q) => {
-            const v = answers[q.id];
-            if (Array.isArray(v)) return v.length > 0;
-            return typeof v === "string" && v.trim().length > 0;
-          });
-          return (
-            <button
-              key={s.id}
-              onClick={() => { setCurrentSection(i); scrollTop(); }}
-              className={cn(
-                "flex flex-col items-center gap-1 px-2 py-3 rounded-lg border text-center transition-colors",
-                active
-                  ? "bg-primary/10 border-primary text-primary"
-                  : done
-                    ? "border-emerald-500/40 text-foreground hover:border-primary/60"
-                    : "border-border text-muted-foreground hover:border-primary/40"
-              )}
-            >
-              <span className="text-lg leading-none">{s.icon}</span>
-              <span className="text-[11px] font-medium leading-tight">{s.title}</span>
-            </button>
-          );
-        })}
+        <div className="overflow-x-auto pb-1">
+          <div
+            className="grid min-w-[40rem] gap-0"
+            style={{ gridTemplateColumns: `repeat(${sections.length}, minmax(0, 1fr))` }}
+          >
+            {sections.map((s, i) => {
+              const active = i === currentSection;
+              const done = isSectionDone(i);
+              const prevDone = i > 0 && isSectionDone(i - 1);
+              return (
+                <button
+                  key={s.id}
+                  ref={active ? activeStepRef : undefined}
+                  type="button"
+                  onClick={() => { setCurrentSection(i); scrollTop(); }}
+                  className="group flex flex-col items-center gap-1.5 px-1"
+                >
+                  {/* pastille + trait de liaison */}
+                  <div className="relative flex w-full items-center justify-center">
+                    {i > 0 && (
+                      <span
+                        className={cn(
+                          "absolute right-1/2 top-1/2 h-[2px] w-full -translate-y-1/2 transition-colors duration-300",
+                          prevDone ? "bg-primary" : "bg-border",
+                        )}
+                      />
+                    )}
+                    <span
+                      className={cn(
+                        "relative z-10 flex h-9 w-9 items-center justify-center rounded-full border text-base transition-all duration-300",
+                        active
+                          ? "border-primary bg-primary/15 text-primary ring-4 ring-primary/15"
+                          : done
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-card text-muted-foreground group-hover:border-primary/50",
+                      )}
+                    >
+                      {done && !active ? <Check className="h-4 w-4" /> : s.icon}
+                    </span>
+                  </div>
+                  {/* titre de l'étape */}
+                  <span
+                    className={cn(
+                      "text-center text-[10px] font-medium leading-tight transition-colors",
+                      active
+                        ? "text-primary"
+                        : done
+                          ? "text-foreground"
+                          : "text-muted-foreground group-hover:text-foreground/80",
+                    )}
+                  >
+                    {s.title}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       <Card>
