@@ -223,6 +223,15 @@ export default function Leads() {
   const userTz = user?.timezone || "Europe/Paris";
   const { toast } = useToast();
   const [leads, setLeads] = useState<LeadEnriched[]>([]);
+  // Index { contact_id -> { count, leads[] } } pour les contacts ayant >1
+  // fiche lead. Alimenté par la RPC SECURITY DEFINER get_contact_leads_index
+  // afin que même les collab intermédiaires (limités par RLS à leurs propres
+  // leads) voient le signal de doublon. Périmètre strict : id/date/statut/
+  // setter des autres fiches, rien de sensible. Cf. migration dédiée.
+  const [contactLeadsIndex, setContactLeadsIndex] = useState<Record<string, {
+    count: number;
+    leads: { id: string; created_at: string; status: string; setter_name: string | null }[];
+  }>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   // Les collaborateurs intermédiaires n'ont pas l'onglet "À affecter" (ils ne
@@ -294,6 +303,22 @@ export default function Leads() {
     }
 
     setLeads(allLeads);
+
+    // Fetch de l'index des contacts à fiches multiples (RPC scopée, bypasse
+    // RLS uniquement pour count + date/statut/setter). Permet aux collab
+    // intermédiaires de voir le signal de doublon sur leurs propres leads.
+    const contactIds = Array.from(
+      new Set(allLeads.map((l) => l.contact_id).filter(Boolean) as string[]),
+    );
+    if (contactIds.length > 0) {
+      const { data: indexData } = await (supabase as any).rpc("get_contact_leads_index", {
+        p_contact_ids: contactIds,
+      });
+      setContactLeadsIndex(indexData || {});
+    } else {
+      setContactLeadsIndex({});
+    }
+
     setLoading(false);
   }, []);
 
@@ -1008,6 +1033,35 @@ export default function Leads() {
                     <TableCell>
                       <div className="min-w-0">
                         <p className="font-semibold text-foreground text-sm truncate">{lead.raw_full_name || lead.contact_full_name || "—"}</p>
+                        {/* Badge "fiches multiples" : ce contact a plusieurs leads,
+                            certains peut-être traités par d'autres setters. Clic =
+                            ouvre la timeline complète du contact (ContactSheet). */}
+                        {(() => {
+                          if (!lead.contact_id) return null;
+                          const entry = contactLeadsIndex[lead.contact_id];
+                          if (!entry || entry.count <= 1) return null;
+                          const others = entry.leads.filter((sib) => sib.id !== lead.id);
+                          const tooltipLines = others.map((o) => {
+                            const d = new Date(o.created_at).toLocaleDateString("fr-FR");
+                            const status = LEAD_STATUS_LABELS[o.status] || o.status;
+                            const setter = o.setter_name ? ` (${o.setter_name})` : "";
+                            return `${d} → ${status}${setter}`;
+                          });
+                          const tooltip = `Ce contact a ${entry.count} fiches lead.\nClique pour voir l'historique complet.\n\nAutres fiches :\n${tooltipLines.join("\n")}`;
+                          return (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (lead.contact_id) setContactSheetId(lead.contact_id);
+                              }}
+                              title={tooltip}
+                              className="mt-0.5 inline-flex items-center gap-1 rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400 hover:bg-amber-500/20 transition-colors"
+                            >
+                              📑 {entry.count} fiches
+                            </button>
+                          );
+                        })()}
                         {lead.raw_email || lead.contact_email ? (
                           <p className="text-xs text-muted-foreground truncate">{lead.raw_email || lead.contact_email}</p>
                         ) : null}
