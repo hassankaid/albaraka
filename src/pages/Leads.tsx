@@ -62,6 +62,10 @@ type LeadEnriched = Tables<"leads_enriched"> & {
   any_call_scheduled_at?: string | null;
   any_call_status?: string | null;
   has_any_call?: boolean | null;
+  // Lead auto-libéré du pot apporteur vers le pool "À affecter" via le cron
+  // hebdomadaire (lundi 00h Europe/Paris). NULL = lead jamais passé par la
+  // bascule (== pas issu d'un apport, ou apport encore dans la semaine en cours).
+  auto_released_at?: string | null;
 };
 
 // Convert a Date picked on the calendar (browser-local interpretation)
@@ -1036,6 +1040,20 @@ export default function Leads() {
                         {lead.source && (
                           <Badge variant="outline" className={`text-[10px] leading-tight w-fit ${getSourceBadgeClass(lead.source, lead.source_detail)}`}>
                             {getSourceLabel(lead.source, lead.source_detail)}
+                          </Badge>
+                        )}
+                        {/* Marqueur "Libéré du pot apporteur" : le lead a été
+                            auto-libéré le lundi par le cron parce que son
+                            apporteur ne l'avait pas qualifié dans sa semaine.
+                            Aide les dispatchers à comprendre l'origine du lead
+                            dans la pile "À affecter". */}
+                        {lead.auto_released_at && !lead.assigned_to && (
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] leading-tight w-fit bg-amber-500/10 text-amber-400 border-amber-500/25"
+                            title={`Libéré du pot apporteur le ${new Date(lead.auto_released_at).toLocaleDateString("fr-FR")} (apporteur : ${lead.apporteur_name ?? "—"})`}
+                          >
+                            ↻ Libéré pot apporteur
                           </Badge>
                         )}
                       </div>
