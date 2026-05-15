@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { FormationCard } from "@/components/training/FormationCard";
-import { LockedFormationCard } from "@/components/training/LockedFormationCard";
+import { LockedFormationCard, type LockReason } from "@/components/training/LockedFormationCard";
 import { ParcoursBanner } from "@/components/training/ParcoursBanner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ export default function TrainingList() {
   const userId = profile?.id;
   const isCeo = profile?.role === "ceo";
 
-  const { hasAnyPass, passLevel } = useUserPass();
+  const { hasAnyPass, hasLiberty, passLevel } = useUserPass();
   const { data: comingSoonEnabled } = useAppSetting<boolean>("training_coming_soon_enabled");
   const showComingSoon = !!profile?.early_access && !isCeo && comingSoonEnabled === true;
   // CEO : AL BARAKA par défaut pour voir la structure ; sinon selon pass
@@ -40,7 +40,11 @@ export default function TrainingList() {
   const { data: certificates } = useMyCertificates();
   const certifiedFormationIds = new Set((certificates ?? []).map((c) => c.formation_id));
 
-  const [lockedModal, setLockedModal] = useState<{ titre: string; phaseLabel?: string } | null>(null);
+  const [lockedModal, setLockedModal] = useState<{
+    titre: string;
+    reason: LockReason;
+    phaseLabel?: string;
+  } | null>(null);
 
   // Construit un map formation_id → { phase_numero, phase_titre } depuis le parcours
   const formationUnlockMap = useMemo(() => {
@@ -62,7 +66,7 @@ export default function TrainingList() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("formations")
-        .select("id, slug, titre, description, couleur, cover_url, status, ordre")
+        .select("id, slug, titre, description, couleur, cover_url, status, ordre, access_mode")
         .order("ordre", { ascending: true });
       if (error) throw error;
       if (!data) return [];
@@ -230,10 +234,20 @@ export default function TrainingList() {
         {!isLoading && sortedFormations.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sortedFormations.map((f) => {
-              const isEnrolled = isCeo || enrollments.has(f.id);
-              const unlockInfo = formationUnlockMap.get(f.id);
-              if (!isEnrolled) {
-                const phaseLabel = unlockInfo
+              // Détermine si la formation est accessible et, sinon, pourquoi :
+              //   1. CEO → toujours accessible
+              //   2. access_mode 'free' → toujours accessible (auto-enroll trigger)
+              //   3. access_mode 'liberty_only' + pas de pass Liberty → verrouillée (Liberty only)
+              //   4. enrollment manquant → verrouillée (déblocage via le parcours)
+              const isLibertyLocked = f.access_mode === "liberty_only" && !hasLiberty;
+              const hasAccess = isCeo
+                || f.access_mode === "free"
+                || (!isLibertyLocked && enrollments.has(f.id));
+
+              if (!hasAccess) {
+                const reason: LockReason = isLibertyLocked ? "liberty_only" : "parcours";
+                const unlockInfo = formationUnlockMap.get(f.id);
+                const phaseLabel = reason === "parcours" && unlockInfo
                   ? `Phase ${unlockInfo.phaseNum} · ${unlockInfo.phaseTitre}`
                   : undefined;
                 return (
@@ -241,9 +255,10 @@ export default function TrainingList() {
                     key={f.id}
                     titre={f.titre}
                     cover_url={f.cover_url}
+                    lockReason={reason}
                     unlockPhaseLabel={phaseLabel}
                     onClickLocked={() =>
-                      setLockedModal({ titre: f.titre, phaseLabel })
+                      setLockedModal({ titre: f.titre, reason, phaseLabel })
                     }
                   />
                 );
@@ -274,27 +289,46 @@ export default function TrainingList() {
               Formation verrouillée
             </DialogTitle>
             <DialogDescription className="space-y-2 pt-2">
-              <span className="block">
-                <span className="font-medium text-foreground">{lockedModal?.titre}</span> se
-                débloque depuis ton parcours{lockedModal?.phaseLabel ? ` (${lockedModal.phaseLabel})` : ""}.
-              </span>
-              <span className="block">
-                Continue ton parcours pour y accéder au bon moment.
-              </span>
+              {lockedModal?.reason === "liberty_only" ? (
+                <>
+                  <span className="block">
+                    <span className="font-medium text-foreground">{lockedModal.titre}</span>{" "}
+                    fait partie du <strong className="text-amber-500">parcours Liberty</strong>.
+                  </span>
+                  <span className="block">
+                    Elle est accessible uniquement aux membres détenteurs du
+                    <strong> pass Liberty</strong>. Si tu souhaites évoluer vers cette
+                    formule, contacte ton référent AL BARAKA.
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="block">
+                    <span className="font-medium text-foreground">{lockedModal?.titre}</span> se
+                    débloque {lockedModal?.phaseLabel ? <>à la <strong>{lockedModal.phaseLabel}</strong></> : "plus loin"} de ton parcours.
+                  </span>
+                  <span className="block">
+                    Termine les étapes et formations précédentes du parcours
+                    pour y accéder.
+                  </span>
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" onClick={() => setLockedModal(null)}>Fermer</Button>
-            <Button
-              className="gap-2"
-              onClick={() => {
-                setLockedModal(null);
-                navigate(parcoursSlug ? `/parcours/${parcoursSlug}` : "/training");
-              }}
-            >
-              Ouvrir mon parcours
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+            {lockedModal?.reason === "parcours" && (
+              <Button
+                className="gap-2"
+                onClick={() => {
+                  setLockedModal(null);
+                  navigate(parcoursSlug ? `/parcours/${parcoursSlug}` : "/training");
+                }}
+              >
+                Ouvrir mon parcours
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
