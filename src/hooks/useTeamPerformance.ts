@@ -2,24 +2,16 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Hook qui agrège les 3 RPCs de l'onglet "Équipe" du dashboard CEO :
- *   - team_activity_stats       : nb leads touchés par membre dans la période
+ * Hook qui agrège 2 RPCs de l'onglet "Équipe" du dashboard CEO :
  *   - team_qualification_stats  : taux de qualification par membre
  *   - team_sales_rankings       : top setters / closers / apporteurs par ventes
  *
  * Les RPCs sont SECURITY DEFINER et gatées CEO côté SQL — un non-CEO
- * recevra une erreur 403. Le composant qui consomme ce hook doit donc
- * vérifier le rôle côté UI avant de l'appeler.
+ * recevra une erreur 403.
+ *
+ * Note : la RPC team_activity_stats existe toujours en base mais n'est
+ * plus exploitée côté UI (section retirée à la demande du CEO).
  */
-export interface TeamActivityRow {
-  user_id: string;
-  full_name: string;
-  role: string;
-  collaborateur_level: string | null;
-  nb_leads_handled: number;
-  nb_activities: number;
-}
-
 export interface TeamQualificationRow {
   user_id: string;
   full_name: string;
@@ -27,8 +19,7 @@ export interface TeamQualificationRow {
   collaborateur_level: string | null;
   nb_leads_handled: number;
   nb_inscrit_conf: number;
-  nb_call_booke: number;
-  /** Ratio entre 0 et 1 (à formater en % côté UI). */
+  /** Ratio entre 0 et 1 (à formater en % côté UI). nb_inscrit_conf / nb_leads_handled. */
   taux_qualif: number;
 }
 
@@ -55,18 +46,15 @@ export function useTeamPerformance({ from, to, enabled = true }: Params) {
     queryKey: ["team-performance", fromIso, toIso],
     enabled: enabled && !!fromIso && !!toIso,
     queryFn: async () => {
-      const [activityRes, qualifRes, rankingsRes] = await Promise.all([
-        (supabase as any).rpc("team_activity_stats", { p_from: fromIso, p_to: toIso }),
+      const [qualifRes, rankingsRes] = await Promise.all([
         (supabase as any).rpc("team_qualification_stats", { p_from: fromIso, p_to: toIso }),
         (supabase as any).rpc("team_sales_rankings", { p_from: fromIso, p_to: toIso }),
       ]);
-      if (activityRes.error) throw activityRes.error;
       if (qualifRes.error) throw qualifRes.error;
       if (rankingsRes.error) throw rankingsRes.error;
 
       const rankings = (rankingsRes.data ?? []) as TeamRankingRow[];
       return {
-        activity: (activityRes.data ?? []) as TeamActivityRow[],
         qualification: (qualifRes.data ?? []) as TeamQualificationRow[],
         rankings: {
           setter: rankings.filter((r) => r.role === "setter"),

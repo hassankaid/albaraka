@@ -7,7 +7,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Activity, Award, Crown, Loader2, Sparkles, Target, Trophy, Users,
+  Loader2, Sparkles, Target, Trophy, Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -86,58 +86,7 @@ export default function TeamTab() {
 
       {!isLoading && !isError && data && (
         <>
-          {/* ─── Section A — Activité ─────────────────────────────── */}
-          <Card>
-            <CardContent className="p-5 space-y-3">
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-primary" />
-                <h3 className="font-heading text-base text-foreground">Activité sur la période</h3>
-                <Badge variant="outline" className="ml-auto text-[10px]">
-                  {data.activity.length} membre{data.activity.length > 1 ? "s" : ""} actif{data.activity.length > 1 ? "s" : ""}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Nombre de leads touchés (changement de statut, note, appel…) par membre sur la période choisie.
-              </p>
-              {data.activity.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  Aucune activité sur la période.
-                </p>
-              ) : (
-                <div className="rounded-lg border border-border overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-border hover:bg-transparent">
-                        <TableHead>Membre</TableHead>
-                        <TableHead>Rôle</TableHead>
-                        <TableHead className="text-right">Leads touchés</TableHead>
-                        <TableHead className="text-right">Actions totales</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {data.activity.map((row) => {
-                        const rb = roleBadge(row.role, row.collaborateur_level);
-                        return (
-                          <TableRow key={row.user_id} className="border-border hover:bg-secondary/40">
-                            <TableCell className="font-medium text-foreground">{row.full_name}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={cn("text-[10px] leading-tight", rb.cls)}>
-                                {rb.label}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right font-bold text-foreground">{num(row.nb_leads_handled)}</TableCell>
-                            <TableCell className="text-right text-muted-foreground">{num(row.nb_activities)}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* ─── Section B — Qualification ────────────────────────── */}
+          {/* ─── Qualification ──────────────────────────────────── */}
           <Card>
             <CardContent className="p-5 space-y-3">
               <div className="flex items-center gap-2">
@@ -145,7 +94,7 @@ export default function TeamTab() {
                 <h3 className="font-heading text-base text-foreground">Qualification</h3>
               </div>
               <p className="text-xs text-muted-foreground">
-                Sur les leads touchés sur la période, combien sont passés en « inscrit conférence » ou « call booké » par ce membre. Le taux est la somme des deux divisée par les leads touchés.
+                Sur les leads que le membre a traités, combien il en a inscrits à la conférence. Le taux est le rapport inscrits conférence / leads traités.
               </p>
               {data.qualification.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
@@ -158,9 +107,8 @@ export default function TeamTab() {
                       <TableRow className="border-border hover:bg-transparent">
                         <TableHead>Membre</TableHead>
                         <TableHead>Rôle</TableHead>
-                        <TableHead className="text-right">Touchés</TableHead>
-                        <TableHead className="text-right">Inscrit conf</TableHead>
-                        <TableHead className="text-right">Call booké</TableHead>
+                        <TableHead className="text-right">Traités</TableHead>
+                        <TableHead className="text-right">Inscrit conférence</TableHead>
                         <TableHead className="text-right">Taux qualif</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -183,7 +131,6 @@ export default function TeamTab() {
                             </TableCell>
                             <TableCell className="text-right text-muted-foreground">{num(row.nb_leads_handled)}</TableCell>
                             <TableCell className="text-right text-foreground">{num(row.nb_inscrit_conf)}</TableCell>
-                            <TableCell className="text-right text-foreground">{num(row.nb_call_booke)}</TableCell>
                             <TableCell className={cn("text-right font-bold", tauxCls)}>{pct(tauxNum, 0)}</TableCell>
                           </TableRow>
                         );
@@ -195,7 +142,7 @@ export default function TeamTab() {
             </CardContent>
           </Card>
 
-          {/* ─── Section C — Classements ventes ───────────────────── */}
+          {/* ─── Classements ventes ─────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {(["setter", "closer", "apporteur"] as const).map((role) => (
               <RankingPodium key={role} role={role} rows={data.rankings[role]} />
