@@ -315,8 +315,15 @@ async function ensureBonCommandeOrder(
 
   // amount_ht = ce qui est PAYÉ via cette vente.
   // discount_amount = la remise appliquée sur le brut.
-  const discountAmount =
-    Math.round(((productCfg.totalGross * discountPercent) / 100) * 100) / 100;
+  //
+  // Sprint P (17/05/2026) : on lit en priorite `discount_cents` (envoye par
+  // create-payment-intent depuis Sprint P, supporte fixed_eur + percent).
+  // Fallback sur l'ancien calcul via `discount_percent` pour les ventes en
+  // cours pre-Sprint P (rétrocompat).
+  const discountCentsMeta = Number(metadata.discount_cents) || 0;
+  const discountAmount = discountCentsMeta > 0
+    ? discountCentsMeta / 100
+    : Math.round(((productCfg.totalGross * discountPercent) / 100) * 100) / 100;
   const totalNet =
     payableCents > 0
       ? payableCents / 100

@@ -77,6 +77,106 @@ function splitIntoInstallmentsCents(totalCents: number, installments: number): n
   return [...Array(installments - 1).fill(baseCents), lastCents];
 }
 
+/**
+ * Sprint P (17/05/2026) — Resolution unifiee d'un coupon avec targeting.
+ *
+ * Retourne le discount en cents quel que soit le type (percent OU fixed_eur),
+ * en respectant le targeting du coupon (applies_to_categories OR
+ * applies_to_offer_ids dans la categorie attendue).
+ *
+ * Returns { discountCents: 0, couponAppliedCode: null, discountPercent: 0 }
+ * si :
+ *   - couponCode vide
+ *   - coupon invalid/expired/max_redemptions
+ *   - targeting mismatch (coupon ne cible pas cette categorie)
+ *   - discount_type inconnu ou montant nul
+ *
+ * Sinon retourne le discount applique (capped a totalCents - 1 cent pour rester
+ * >= 1 centime a payer).
+ *
+ * `expectedCategory` : 'al_baraka' | 'liberty' | 'a_la_carte' | etc.
+ * Le helper interroge `offers` pour resoudre les offer_ids qui appartiennent
+ * a cette categorie, et accepte si l'un des offer_ids du coupon est dedans.
+ */
+async function resolveCouponDiscountCents(
+  supabase: ReturnType<typeof createClient>,
+  couponCode: string,
+  totalCents: number,
+  expectedCategory: string,
+  logTag = "[coupon]",
+): Promise<{
+  discountCents: number;
+  couponAppliedCode: string | null;
+  discountPercent: number;
+}> {
+  if (!couponCode) {
+    return { discountCents: 0, couponAppliedCode: null, discountPercent: 0 };
+  }
+
+  const { data: validation } = await supabase.rpc("validate_coupon", {
+    p_code: couponCode,
+  });
+  if (!validation?.valid) {
+    console.log(`${logTag} ${couponCode} invalid: ${validation?.reason ?? "unknown"}`);
+    return { discountCents: 0, couponAppliedCode: null, discountPercent: 0 };
+  }
+
+  // Check targeting
+  const cats = (validation.applies_to_categories ?? []) as string[];
+  const offerIds = (validation.applies_to_offer_ids ?? []) as string[];
+  const hasNoTargeting = cats.length === 0 && offerIds.length === 0;
+  const matchesCategory = cats.includes(expectedCategory);
+
+  let matchesOfferInCategory = false;
+  if (!hasNoTargeting && !matchesCategory && offerIds.length > 0) {
+    // Resoudre si l'un des offer_ids du coupon appartient a la category attendue
+    const { data: matchOffers } = await supabase
+      .from("offers")
+      .select("id")
+      .eq("category", expectedCategory)
+      .in("id", offerIds);
+    matchesOfferInCategory = (matchOffers?.length ?? 0) > 0;
+  }
+
+  if (!hasNoTargeting && !matchesCategory && !matchesOfferInCategory) {
+    console.log(
+      `${logTag} ${couponCode} found but targeting mismatch (cats=[${cats}], offerIds=${offerIds.length}, expected=${expectedCategory}), ignored`,
+    );
+    return { discountCents: 0, couponAppliedCode: null, discountPercent: 0 };
+  }
+
+  // Calcul du discount selon discount_type
+  let discountCents = 0;
+  let discountPercent = 0;
+  if (validation.discount_type === "percent" && validation.discount_percent) {
+    discountPercent = Number(validation.discount_percent);
+    discountCents = Math.round((totalCents * discountPercent) / 100);
+  } else if (validation.discount_type === "fixed_eur" && validation.discount_amount_eur) {
+    discountCents = Math.round(Number(validation.discount_amount_eur) * 100);
+  } else {
+    console.log(
+      `${logTag} ${couponCode} has unsupported discount_type=${validation.discount_type} or missing value, ignored`,
+    );
+    return { discountCents: 0, couponAppliedCode: null, discountPercent: 0 };
+  }
+
+  // Cap : au moins 1 centime a payer
+  discountCents = Math.max(0, Math.min(discountCents, Math.max(0, totalCents - 1)));
+
+  if (discountCents <= 0) {
+    return { discountCents: 0, couponAppliedCode: null, discountPercent: 0 };
+  }
+
+  console.log(
+    `${logTag} ${couponCode} applied: -${discountCents}c on ${totalCents}c (type=${validation.discount_type})`,
+  );
+  return {
+    discountCents,
+    couponAppliedCode: String(validation.code),
+    discountPercent,
+  };
+}
+
 function flattenParams(params: Record<string, unknown>): URLSearchParams {
   const out = new URLSearchParams();
   const walk = (value: unknown, prefix: string) => {
@@ -281,29 +381,35 @@ Deno.serve(async (req) => {
           ? input.coupon_code.trim().toUpperCase()
           : undefined;
 
-      // Validation coupon — LIBERTY2000 ne s'applique QUE en 1x
+      // Validation coupon (Sprint P : supporte fixed_eur + percent + targeting) ──
+      // Note : LIBERTY2000 (legacy) ne s'applique QUE en 1x (regle business
+      // historique). On garde le check explicite avant d'appeler le helper.
+      const libTotalCents = LIBERTY_TOTAL_EUR * 100;
       let libDiscountPercent = 0;
+      let libDiscountCents = 0;
       let libCouponApplied: string | null = null;
       if (libCouponCode) {
         const isLibertyExclusive = libCouponCode === LIBERTY_COUPON_1X_ONLY;
         if (isLibertyExclusive && libInstallments !== 1) {
-          // On n'applique pas le coupon mais on ne bloque pas le paiement.
-          // La page front affiche déjà un message si le coupon est invalide.
+          // LIBERTY2000 sur N>1 : on n'applique pas, on log mais on ne bloque pas
+          console.log(
+            `[pass_liberty/coupon] ${libCouponCode} non-eligible en ${libInstallments}x (1x only), ignored`,
+          );
         } else {
-          const { data: validation } = await supabase.rpc("validate_coupon", {
-            p_code: libCouponCode,
-          });
-          if (validation?.valid) {
-            libDiscountPercent = validation.discount_percent;
-            libCouponApplied = validation.code;
-          }
+          const libCouponResult = await resolveCouponDiscountCents(
+            supabase,
+            libCouponCode,
+            libTotalCents,
+            "liberty",
+            "[pass_liberty/coupon]",
+          );
+          libDiscountPercent = libCouponResult.discountPercent;
+          libDiscountCents = libCouponResult.discountCents;
+          libCouponApplied = libCouponResult.couponAppliedCode;
         }
       }
 
-      const libTotalCents = LIBERTY_TOTAL_EUR * 100;
-      const libPayableCents = Math.round(
-        (libTotalCents * (100 - libDiscountPercent)) / 100,
-      );
+      const libPayableCents = libTotalCents - libDiscountCents;
 
       if (libPayableCents <= 0) {
         return new Response(
@@ -325,7 +431,10 @@ Deno.serve(async (req) => {
       const libMetadata: Record<string, string> = {
         installments: String(libInstallments),
         coupon_code: libCouponApplied || "",
+        coupon_code_attempted: libCouponCode || "",
         discount_percent: String(libDiscountPercent),
+        // Sprint P : montant exact de la remise en cents (priorite cote webhook)
+        discount_cents: String(libDiscountCents),
         product: LIBERTY_PRODUCT_NAME,
         product_type: "pass_liberty",
         source: "pass_liberty",
@@ -1276,17 +1385,22 @@ Deno.serve(async (req) => {
         ? input.payment_code.trim().toUpperCase()
         : undefined;
 
-    // ── Résolution du coupon (tracking côté DB, on n'utilise plus l'API
-    //    coupon Stripe pour la subscription pour garder un calcul précis) ──
-    let discountPercent = 0;
-    if (couponCode) {
-      const { data: validation } = await supabase.rpc("validate_coupon", {
-        p_code: couponCode,
-      });
-      if (validation?.valid) {
-        discountPercent = validation.discount_percent;
-      }
-    }
+    // ── Résolution du coupon (Sprint P : supporte fixed_eur + percent + targeting) ──
+    // On utilise le helper unifie qui :
+    //   - check le targeting (category 'al_baraka' OU offer_id dans cette categorie)
+    //   - calcule le discount en cents quel que soit discount_type
+    //   - retourne 0 si pas applicable (silencieux, on log)
+    const passTotalCentsBrut = TOTAL_AMOUNT_EUR * 100;
+    const passCouponResult = await resolveCouponDiscountCents(
+      supabase,
+      couponCode || "",
+      passTotalCentsBrut,
+      "al_baraka",
+      "[pass_al_baraka/coupon]",
+    );
+    const discountPercent = passCouponResult.discountPercent;
+    const discountCentsResolved = passCouponResult.discountCents;
+    const couponAppliedCode = passCouponResult.couponAppliedCode;
 
     // ── Lookup payment_code → contact + total des acomptes payés ──────
     let acompteTotalCents = 0;
@@ -1313,11 +1427,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Calcul du solde à payer ──────────────────────────────────────
-    const totalCents = TOTAL_AMOUNT_EUR * 100;
-    const subtotalAfterDiscountCents = Math.round(
-      (totalCents * (100 - discountPercent)) / 100,
-    );
+    // ── Calcul du solde à payer (Sprint P : utilise discountCentsResolved
+    //     du helper, supporte fixed_eur + percent uniformément) ──
+    const totalCents = passTotalCentsBrut;
+    const subtotalAfterDiscountCents = totalCents - discountCentsResolved;
     const payableCents = Math.max(subtotalAfterDiscountCents - acompteTotalCents, 0);
 
     if (payableCents === 0) {
@@ -1344,8 +1457,12 @@ Deno.serve(async (req) => {
 
     const metadata: Record<string, string> = {
       installments: String(installments),
-      coupon_code: couponCode || "",
+      coupon_code: couponAppliedCode || "",
+      coupon_code_attempted: couponCode || "",
       discount_percent: String(discountPercent),
+      // Sprint P : montant exact de la remise en cents (priorite sur discount_percent
+      // cote webhook, supporte les coupons fixed_eur)
+      discount_cents: String(discountCentsResolved),
       product: PRODUCT_NAME,
       product_type: "pass_al_baraka",
       source: "bon_commande",
