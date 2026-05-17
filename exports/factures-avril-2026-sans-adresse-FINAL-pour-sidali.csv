@@ -1,0 +1,4 @@
+Numero facture;Nom client;Email;Telephone;Produit;Montant EUR;Date paiement;Methode paiement;Note
+FAC-2026-04-0101;ASMA CHEMAMI;chemamiasma4@gmail.com;+33782304752;BUSINESS DEVELOPPER;166.42;2026-04-24;STRIPE;Customer Stripe trouve mais sans adresse renseignee
+FAC-2026-04-0107;OMOROU AMADOU TOURE;otoure758@gmail.com;+33757405558;Acompte;50.00;2026-04-26;-;Aucun customer Stripe trouve avec cet email
+FAC-2026-04-0067;SOFIANE ALI MESSIAD;smessiad10@gmail.com;+33658588675;BUSINESS DEVELOPPER 3.0;500.00;2026-04-13;-;Aucun customer Stripe trouve avec cet email
