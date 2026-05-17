@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import logo from "@/assets/al-baraka-logo-v2.png";
 import { Lock, ShieldCheck, ChevronDown, AlertTriangle, Loader2 } from "lucide-react";
 import CheckoutCanvas from "./CheckoutCanvas";
-import { ScheduleBlock, formatEur, todayPlusISO } from "./ScheduleBlock";
+import { ScheduleBlock, formatEur, formatFrDate, todayPlusISO } from "./ScheduleBlock";
 
 const THEME = {
   bg: "#0A0A0A",
