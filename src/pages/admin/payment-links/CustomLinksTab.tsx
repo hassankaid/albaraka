@@ -18,6 +18,7 @@ import {
   useCancelPaymentLink,
   type PaymentLink,
 } from "@/hooks/usePaymentLinks";
+import { useOffers, type Offer } from "@/hooks/useOffers";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -56,7 +59,12 @@ import {
   ExternalLink,
   Ban,
   CheckCircle2,
+  Crown,
+  Sparkles,
+  GraduationCap,
+  KeyRound,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 function formatEur(n: number): string {
@@ -105,7 +113,28 @@ export default function CustomLinksTab() {
   const { profile: _profile } = useAuth();
   const { toast } = useToast();
   const { data: links, isLoading } = usePaymentLinks();
+  const { data: offers } = useOffers();
   const cancelLink = useCancelPaymentLink();
+
+  // Index offer.id → label pour rendu des grants_offer_id (Pass).
+  const offerById = useMemo(() => {
+    const m = new Map<string, Offer>();
+    for (const o of offers ?? []) m.set(o.id, o);
+    return m;
+  }, [offers]);
+
+  // Index formation.id → label via offer.formation_id (les formations a la
+  // carte sont liees 1-to-1 avec une offre). Pour les grants_formation_ids
+  // sans offre correspondante (improbable), on affiche "Formation #ID".
+  const formationLabelByFormationId = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const o of offers ?? []) {
+      if (o.category === "a_la_carte" && o.formation_id) {
+        m.set(o.formation_id, o.label);
+      }
+    }
+    return m;
+  }, [offers]);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
@@ -184,6 +213,11 @@ export default function CustomLinksTab() {
                     <TableCell>
                       <p className="font-medium text-foreground">{link.product_label}</p>
                       <code className="text-[10px] text-muted-foreground font-mono">{link.token}</code>
+                      <GrantsBadges
+                        link={link}
+                        offerById={offerById}
+                        formationLabelByFormationId={formationLabelByFormationId}
+                      />
                     </TableCell>
                     <TableCell className="font-medium tabular-nums">
                       {formatEur(Number(link.total_amount))}
@@ -284,6 +318,17 @@ function CreatePaymentLinkModal({
   const { toast } = useToast();
   const createLink = useCreatePaymentLink();
 
+  // Charge le catalogue d'offres pour le perimetre d'acces (pass + formations a la carte)
+  const offersQ = useOffers();
+  const passOffers = useMemo(
+    () => (offersQ.data ?? []).filter((o) => o.category === "al_baraka" || o.category === "liberty"),
+    [offersQ.data],
+  );
+  const formationOffers = useMemo(
+    () => (offersQ.data ?? []).filter((o) => o.category === "a_la_carte" && o.formation_id),
+    [offersQ.data],
+  );
+
   // Champs
   const [productLabel, setProductLabel] = useState("");
   const [totalStr, setTotalStr] = useState("");
@@ -296,6 +341,13 @@ function CreatePaymentLinkModal({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
+
+  // Perimetre d'acces (Sprint H)
+  // grantsPassOfferId : "none" | offer.id d'un Pass al_baraka ou liberty
+  // grantsFormationIds : liste d'offer.id de formations a la carte cochees
+  //   (on convertit en formation_ids au submit via offer.formation_id)
+  const [grantsPassOfferId, setGrantsPassOfferId] = useState<string>("none");
+  const [grantsCheckedFormationOfferIds, setGrantsCheckedFormationOfferIds] = useState<string[]>([]);
 
   // Résultat après création
   const [createdToken, setCreatedToken] = useState<string | null>(null);
@@ -341,6 +393,8 @@ function CreatePaymentLinkModal({
     setEmail("");
     setPhone("");
     setNotes("");
+    setGrantsPassOfferId("none");
+    setGrantsCheckedFormationOfferIds([]);
     setCreatedToken(null);
     setCopied(false);
   }
@@ -353,6 +407,12 @@ function CreatePaymentLinkModal({
   async function handleCreate() {
     if (!valid) return;
     try {
+      // Resolution grants : on convertit les offer.id de formation a la
+      // carte coches en formation_ids (UUID des formations a debloquer).
+      const grantsFormationIds = grantsCheckedFormationOfferIds
+        .map((offerId) => formationOffers.find((o) => o.id === offerId)?.formation_id)
+        .filter((id): id is string => !!id);
+
       const res = await createLink.mutateAsync({
         productLabel: productLabel.trim(),
         totalAmount: total,
@@ -362,6 +422,8 @@ function CreatePaymentLinkModal({
         prefilledEmail: recipientMode === "prefilled" ? email.trim() || null : null,
         prefilledPhone: recipientMode === "prefilled" ? phone.trim() || null : null,
         notes: notes.trim() || null,
+        grantsOfferId: grantsPassOfferId !== "none" ? grantsPassOfferId : null,
+        grantsFormationIds: grantsFormationIds.length > 0 ? grantsFormationIds : null,
       });
       setCreatedToken(res.token);
     } catch (e: any) {
@@ -372,6 +434,15 @@ function CreatePaymentLinkModal({
       });
     }
   }
+
+  function toggleFormation(offerId: string) {
+    setGrantsCheckedFormationOfferIds((prev) =>
+      prev.includes(offerId) ? prev.filter((x) => x !== offerId) : [...prev, offerId],
+    );
+  }
+
+  const grantsCount =
+    (grantsPassOfferId !== "none" ? 1 : 0) + grantsCheckedFormationOfferIds.length;
 
   async function copyCreated() {
     if (!createdToken) return;
@@ -386,7 +457,7 @@ function CreatePaymentLinkModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="bg-card border-border sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* ─── Écran "lien créé" ─── */}
         {createdToken ? (
           <>
@@ -550,6 +621,102 @@ function CreatePaymentLinkModal({
                 </div>
               )}
 
+              {/* ─── Périmètre d'accès (grants) ─── */}
+              <div className="space-y-2 rounded-md border border-primary/20 bg-primary/[0.03] p-3">
+                <div className="flex items-center gap-2">
+                  <KeyRound className="h-3.5 w-3.5 text-primary" />
+                  <Label className="text-xs font-medium">Périmètre d'accès après paiement</Label>
+                  {grantsCount > 0 && (
+                    <Badge variant="outline" className="ml-auto text-[10px] border-primary/40 text-primary">
+                      {grantsCount} {grantsCount > 1 ? "éléments" : "élément"}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-[10.5px] text-muted-foreground leading-relaxed">
+                  Définis ce que l'achat débloque pour le client.
+                  <strong className="text-foreground"> Aucune coche</strong> = simple encaissement,
+                  sans création de compte ni accès.
+                </p>
+
+                {/* Pass (radio exclusif, optionnel) */}
+                <div className="space-y-1.5 pt-1">
+                  <Label className="text-[10.5px] uppercase tracking-wide text-muted-foreground">
+                    Pass (1 maximum)
+                  </Label>
+                  <RadioGroup
+                    value={grantsPassOfferId}
+                    onValueChange={setGrantsPassOfferId}
+                    className="space-y-1"
+                  >
+                    <label className="flex items-center gap-2 py-1 px-2 rounded hover:bg-secondary/40 cursor-pointer">
+                      <RadioGroupItem value="none" id="grant-pass-none" />
+                      <span className="text-sm">Aucun pass</span>
+                    </label>
+                    {offersQ.isLoading ? (
+                      <div className="flex items-center justify-center py-2">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : (
+                      passOffers.map((o) => {
+                        const Icon = o.category === "al_baraka" ? Crown : Sparkles;
+                        const colorCls = o.category === "al_baraka" ? "text-amber-500" : "text-amber-400";
+                        return (
+                          <label
+                            key={o.id}
+                            className="flex items-center gap-2 py-1 px-2 rounded hover:bg-secondary/40 cursor-pointer"
+                          >
+                            <RadioGroupItem value={o.id} id={`grant-pass-${o.id}`} />
+                            <Icon className={cn("h-3.5 w-3.5 shrink-0", colorCls)} />
+                            <span className="text-sm">{o.label}</span>
+                            <span className="text-[10px] text-muted-foreground ml-auto">
+                              débloque le parcours
+                            </span>
+                          </label>
+                        );
+                      })
+                    )}
+                  </RadioGroup>
+                </div>
+
+                {/* Formations à la carte (checkbox multi-select) */}
+                <div className="space-y-1.5 pt-2">
+                  <Label className="text-[10.5px] uppercase tracking-wide text-muted-foreground">
+                    Formations à la carte
+                    {grantsCheckedFormationOfferIds.length > 0 && (
+                      <span className="ml-2 text-primary normal-case tracking-normal">
+                        ({grantsCheckedFormationOfferIds.length} sélectionnée
+                        {grantsCheckedFormationOfferIds.length > 1 ? "s" : ""})
+                      </span>
+                    )}
+                  </Label>
+                  <div className="rounded border border-border/60 bg-background/40 max-h-40 overflow-y-auto p-1.5 space-y-0.5">
+                    {offersQ.isLoading ? (
+                      <div className="flex items-center justify-center py-3">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : formationOffers.length === 0 ? (
+                      <p className="text-[11px] text-muted-foreground italic py-2 px-1">
+                        Aucune formation à la carte disponible.
+                      </p>
+                    ) : (
+                      formationOffers.map((o) => (
+                        <label
+                          key={o.id}
+                          className="flex items-center gap-2 py-1 px-2 rounded hover:bg-secondary/40 cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={grantsCheckedFormationOfferIds.includes(o.id)}
+                            onCheckedChange={() => toggleFormation(o.id)}
+                          />
+                          <GraduationCap className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+                          <span className="text-sm flex-1">{o.label}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Notes internes */}
               <div className="space-y-1.5">
                 <Label className="text-xs">Notes internes (optionnel)</Label>
@@ -618,5 +785,59 @@ function CreatePaymentLinkModal({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ─── Badges "Périmètre d'accès" affichés sous chaque ligne de la table ────
+function GrantsBadges({
+  link,
+  offerById,
+  formationLabelByFormationId,
+}: {
+  link: PaymentLink;
+  offerById: Map<string, Offer>;
+  formationLabelByFormationId: Map<string, string>;
+}) {
+  const passOffer = link.grants_offer_id ? offerById.get(link.grants_offer_id) : null;
+  const formationCount = link.grants_formation_ids?.length ?? 0;
+
+  if (!passOffer && formationCount === 0) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1 mt-1.5">
+      {passOffer && (
+        <Badge
+          variant="outline"
+          className={cn(
+            "text-[9.5px] gap-1 border-amber-500/40",
+            passOffer.category === "al_baraka"
+              ? "bg-amber-500/[0.06] text-amber-300"
+              : "bg-amber-400/[0.06] text-amber-300",
+          )}
+          title={`Donne accès au pass ${passOffer.label}`}
+        >
+          {passOffer.category === "al_baraka" ? (
+            <Crown className="h-2.5 w-2.5" />
+          ) : (
+            <Sparkles className="h-2.5 w-2.5" />
+          )}
+          {passOffer.label}
+        </Badge>
+      )}
+      {formationCount > 0 && (
+        <Badge
+          variant="outline"
+          className="text-[9.5px] gap-1 border-sky-500/40 bg-sky-500/[0.06] text-sky-300"
+          title={
+            link.grants_formation_ids
+              ?.map((fid) => formationLabelByFormationId.get(fid) || `Formation #${fid.slice(0, 8)}`)
+              .join(" · ")
+          }
+        >
+          <GraduationCap className="h-2.5 w-2.5" />
+          {formationCount} formation{formationCount > 1 ? "s" : ""}
+        </Badge>
+      )}
+    </div>
   );
 }

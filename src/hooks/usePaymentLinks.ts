@@ -27,6 +27,12 @@ export interface PaymentLink {
   paid_at: string | null;
   cancelled_at: string | null;
   notes: string | null;
+  /** Si non null, le paiement debloque le Pass correspondant (al_baraka / liberty). */
+  grants_offer_id: string | null;
+  /** Liste de formation_id a debloquer apres paiement (formations a la carte). */
+  grants_formation_ids: string[] | null;
+  /** TRUE pour les liens generes automatiquement (filtres de l'admin). */
+  auto_generated: boolean;
 }
 
 /** Liste les liens de paiement créés MANUELLEMENT par le CEO (plus récents
@@ -62,6 +68,10 @@ export interface CreatePaymentLinkInput {
   prefilledEmail?: string | null;
   prefilledPhone?: string | null;
   notes?: string | null;
+  /** Pass à débloquer après paiement (offer.id de catégorie al_baraka ou liberty). */
+  grantsOfferId?: string | null;
+  /** Formations à débloquer après paiement (multi-select, formation.id[]). */
+  grantsFormationIds?: string[] | null;
 }
 
 /** Crée un lien via la RPC create_payment_link (CEO uniquement, côté SQL). */
@@ -79,6 +89,11 @@ export function useCreatePaymentLink() {
         p_prefilled_email: input.prefilledEmail ?? null,
         p_prefilled_phone: input.prefilledPhone ?? null,
         p_notes: input.notes ?? null,
+        p_grants_offer_id: input.grantsOfferId ?? null,
+        p_grants_formation_ids:
+          input.grantsFormationIds && input.grantsFormationIds.length > 0
+            ? input.grantsFormationIds
+            : null,
       });
       if (error) throw error;
       return data as { id: string; token: string };

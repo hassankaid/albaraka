@@ -792,11 +792,50 @@ async function applyPaymentLinkGrants(
     }
   }
 
-  // ── Grants : Pass via offer (Sprint H futur) ──
+  // ── Grants : Pass via offer (Sprint H) ──
+  // Lit la categorie de l'offre liee : 'al_baraka' ou 'liberty' (validee par
+  // la RPC create_payment_link → garantie de ne jamais avoir 'a_la_carte' ici).
+  // Insert un user_pass idempotent : skip si le user a deja un pass actif du
+  // meme type. Pattern aligne avec ensureBonCommandeOrder lignes 366-386.
   if (grantsOfferId) {
-    console.warn(
-      `${logTag} grants_offer_id=${grantsOfferId} present but pass-grant via custom link n'est pas encore implemente (Sprint H).`,
-    );
+    try {
+      const { data: offerRow } = await supabase
+        .from("offers")
+        .select("category")
+        .eq("id", grantsOfferId)
+        .maybeSingle();
+      const cat = offerRow?.category as string | undefined;
+      if (cat === "al_baraka" || cat === "liberty") {
+        const passType = cat;
+        const { data: existingPass } = await supabase
+          .from("user_passes")
+          .select("id")
+          .eq("user_id", profileId)
+          .eq("pass_type", passType)
+          .is("revoked_at", null)
+          .limit(1);
+        if (!existingPass || existingPass.length === 0) {
+          const { error: passErr } = await supabase.from("user_passes").insert({
+            user_id: profileId,
+            pass_type: passType,
+            notes: `auto-granted via payment_link grants_offer_id sale=${saleId}`,
+          });
+          if (passErr) {
+            console.error(`${logTag} user_passes insert failed:`, passErr);
+          } else {
+            console.log(`${logTag} granted pass=${passType} to profile=${profileId}`);
+          }
+        } else {
+          console.log(`${logTag} pass=${passType} already active for profile=${profileId}, skip`);
+        }
+      } else {
+        console.warn(
+          `${logTag} grants_offer_id=${grantsOfferId} has unexpected category="${cat}", skipping pass grant`,
+        );
+      }
+    } catch (e) {
+      console.error(`${logTag} grants_offer_id processing failed:`, e);
+    }
   }
 
   // ── Email d'acces (createPassword + login) ──
