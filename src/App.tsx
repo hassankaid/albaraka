@@ -76,6 +76,11 @@ import Echo from "./pages/public/Echo";
 import ScoringStart from "./pages/public/scoring/ScoringStart";
 import ScoringQuiz from "./pages/public/scoring/ScoringQuiz";
 import AdminLeadScoring from "./pages/admin/lead-scoring/AdminLeadScoring";
+import RdvIntro from "./pages/public/rdv/RdvIntro";
+import RdvCoordonnees from "./pages/public/rdv/RdvCoordonnees";
+import RdvQuestions from "./pages/public/rdv/RdvQuestions";
+import RdvDisqualification from "./pages/public/rdv/RdvDisqualification";
+import RdvCalendly from "./pages/public/rdv/RdvCalendly";
 import CoachingCalendar from "./pages/coaching/CoachingCalendar";
 import { PassGuard } from "./components/PassGuard";
 import { FeatureGate } from "./components/FeatureGate";
@@ -117,6 +122,11 @@ const App = () => (
               <Route path="/echo" element={<Echo />} />
               <Route path="/scoring/start" element={<ScoringStart />} />
               <Route path="/scoring/quiz" element={<ScoringQuiz />} />
+              <Route path="/rdv" element={<RdvIntro />} />
+              <Route path="/rdv/coordonnees" element={<RdvCoordonnees />} />
+              <Route path="/rdv/questions" element={<RdvQuestions />} />
+              <Route path="/rdv/disqualification/:slug" element={<RdvDisqualification />} />
+              <Route path="/rdv/calendly" element={<RdvCalendly />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/checkout/:installments" element={<Checkout />} />
               <Route path="/merci" element={<MerciPage />} />
