@@ -21,7 +21,12 @@ import logo from "@/assets/al-baraka-logo-v2.png";
 import { Lock, ShieldCheck, CheckCircle2, Tag, X, ArrowRight, ChevronDown } from "lucide-react";
 import CheckoutCanvas from "./CheckoutCanvas";
 
-const TOTAL_EUR = 2500;
+// Prix officiel Pass AL BARAKA (table public.offers, slug 'al-baraka').
+// Modifiable depuis l'admin /admin/payment-links → onglet "Codes promo
+// & tarifs" → édition inline du prix. La constante ici reste source de
+// vérité de la page (la page ne lit pas la BDD pour rester légère et
+// sécurisée), à synchroniser manuellement si Sidali modifie le prix BDD.
+const TOTAL_EUR = 3000;
 
 const THEME = {
   bg: "#0A0A0A",
@@ -426,10 +431,14 @@ function PhoneCountrySelect({
 /* ------------------------------------------------------------------
  * Types
  * ------------------------------------------------------------------ */
+// Support des deux types de réduction :
+//   - 'percent'   → discount_percent (ex. -20%)
+//   - 'fixed_eur' → discount_amount_eur (ex. -1000€, cas du code AB1000)
 type CouponState =
   | { status: "idle" }
   | { status: "validating" }
-  | { status: "valid"; code: string; percent: number }
+  | { status: "valid"; code: string; discountType: "percent"; percent: number }
+  | { status: "valid"; code: string; discountType: "fixed_eur"; amountEur: number }
   | { status: "invalid"; reason: string };
 
 interface BillingFields {
@@ -617,8 +626,17 @@ export default function Checkout() {
   }, [publishableKey, missingKeyName]);
 
   const [coupon, setCoupon] = useState<CouponState>({ status: "idle" });
-  const discountPercent = coupon.status === "valid" ? coupon.percent : 0;
-  const totalAfterDiscount = Math.round((TOTAL_EUR * (100 - discountPercent)) / 100 * 100) / 100;
+  // Calcul du discount selon le type (percent ou fixed_eur)
+  const totalAfterDiscount = (() => {
+    if (coupon.status !== "valid") return TOTAL_EUR;
+    if (coupon.discountType === "percent") {
+      return Math.round((TOTAL_EUR * (100 - coupon.percent)) / 100 * 100) / 100;
+    }
+    // fixed_eur : on déduit le montant en € (jamais en dessous de 0)
+    return Math.max(0, Math.round((TOTAL_EUR - coupon.amountEur) * 100) / 100);
+  })();
+  // Compat affichage : pourcentage équivalent (utilisé par le panneau de prix)
+  const discountPercent = coupon.status === "valid" && coupon.discountType === "percent" ? coupon.percent : 0;
   // Solde réel à payer après déduction des acomptes
   const payableTotal = Math.max(totalAfterDiscount - acompteTotal, 0);
 
@@ -1014,6 +1032,7 @@ export default function Checkout() {
               prefilledFullName={acompteLookup?.full_name ?? null}
               prefilledPhone={acompteLookup?.phone ?? null}
               lookupLoading={lookupLoading}
+              urlPromoCode={(searchParams.get("promo") || "").trim().toUpperCase() || null}
             />
           </Elements>
         </div>
@@ -1038,6 +1057,8 @@ interface FormProps {
   prefilledFullName?: string | null;
   prefilledPhone?: string | null;
   lookupLoading?: boolean;
+  /** Code promo passé via l'URL `?promo=AB1000` — auto-appliqué au mount */
+  urlPromoCode?: string | null;
 }
 
 function CheckoutForm({
@@ -1053,6 +1074,7 @@ function CheckoutForm({
   prefilledFullName = null,
   prefilledPhone = null,
   lookupLoading = false,
+  urlPromoCode = null,
 }: FormProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -1100,8 +1122,20 @@ function CheckoutForm({
     setBilling((b) => ({ ...b, [k]: v }));
   }
 
-  async function onApplyCoupon() {
-    const code = couponInput.trim().toUpperCase();
+  // Auto-application du code promo passé via l'URL (?promo=AB1000).
+  // S'exécute une seule fois si urlPromoCode est défini et qu'aucun code
+  // n'a déjà été appliqué. Ouvre la section coupon pour visibilité.
+  useEffect(() => {
+    if (!urlPromoCode) return;
+    if (coupon.status !== "idle") return;
+    setCouponInput(urlPromoCode);
+    setCouponOpen(true);
+    void applyCouponCode(urlPromoCode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlPromoCode]);
+
+  async function applyCouponCode(rawCode: string) {
+    const code = rawCode.trim().toUpperCase();
     if (!code) return;
     setCoupon({ status: "validating" });
     const { data, error } = await supabase.rpc("validate_coupon", { p_code: code });
@@ -1110,14 +1144,34 @@ function CheckoutForm({
       toast.error("Erreur lors de la vérification du code");
       return;
     }
-    const v = data as { valid: boolean; code?: string; discount_percent?: number; reason?: string };
-    if (v?.valid && v.code && typeof v.discount_percent === "number") {
-      setCoupon({ status: "valid", code: v.code, percent: v.discount_percent });
-      toast.success(`Code ${v.code} appliqué — ${v.discount_percent}% de réduction`);
-    } else {
-      setCoupon({ status: "invalid", reason: v?.reason || "not_found" });
-      toast.error("Code promo invalide");
+    const v = data as {
+      valid: boolean;
+      code?: string;
+      discount_type?: "percent" | "fixed_eur";
+      discount_percent?: number | null;
+      discount_amount_eur?: number | null;
+      reason?: string;
+    };
+    if (v?.valid && v.code) {
+      if (v.discount_type === "fixed_eur" && typeof v.discount_amount_eur === "number") {
+        setCoupon({ status: "valid", code: v.code, discountType: "fixed_eur", amountEur: v.discount_amount_eur });
+        toast.success(`Code ${v.code} appliqué — −${v.discount_amount_eur}€`);
+        return;
+      }
+      // Par défaut / legacy : pourcentage
+      if (typeof v.discount_percent === "number" && v.discount_percent > 0) {
+        setCoupon({ status: "valid", code: v.code, discountType: "percent", percent: v.discount_percent });
+        toast.success(`Code ${v.code} appliqué — −${v.discount_percent}%`);
+        return;
+      }
     }
+    setCoupon({ status: "invalid", reason: v?.reason || "not_found" });
+    toast.error("Code promo invalide");
+  }
+
+  // Handler du bouton "Appliquer" du formulaire (utilise le couponInput courant)
+  async function onApplyCoupon() {
+    await applyCouponCode(couponInput);
   }
 
   function validateForm(): string | null {
@@ -1418,7 +1472,9 @@ function CheckoutForm({
                 <span style={{ fontSize: 13, color: THEME.cream, display: "inline-flex", alignItems: "center", gap: 8 }}>
                   <CheckCircle2 size={15} style={{ color: THEME.gold }} />
                   <strong style={{ fontWeight: 600 }}>{coupon.code}</strong>
-                  <span style={{ color: THEME.gold }}>−{coupon.percent}%</span>
+                  <span style={{ color: THEME.gold }}>
+                    {coupon.discountType === "percent" ? `−${coupon.percent}%` : `−${coupon.amountEur}€`}
+                  </span>
                 </span>
                 <button
                   type="button"
