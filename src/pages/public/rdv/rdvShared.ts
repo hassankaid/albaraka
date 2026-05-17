@@ -64,7 +64,7 @@ export const QUESTIONS: QuestionConfig[] = [
   {
     index: 4,
     title: "Souhaitez-vous sincèrement nous rejoindre et faire les causes ?",
-    yesLabel: "Oui, je veux m'engager",
+    yesLabel: "Oui, je veux faire les causes",
     noLabel: "Non, c'est de la curiosité",
     disqualSlug: "d",
   },
