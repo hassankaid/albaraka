@@ -17,7 +17,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, AlertTriangle, Copy, CheckCircle2, ExternalLink, Calendar, Video } from "lucide-react";
+import { Loader2, AlertTriangle, ExternalLink, Calendar, Video } from "lucide-react";
 
 /**
  * Sprint S3 (17/05/2026) — Detection du type d'URL pour adapter le rendu.
@@ -51,14 +51,17 @@ function getEmbedInfo(url: string): EmbedInfo {
     };
   }
 
-  // Vimeo : vimeo.com/123456789 ou vimeo.com/channels/.../123456789
-  const vmMatch = u.match(/vimeo\.com\/(?:[^/]+\/)*(\d{6,})/);
+  // Vimeo : vimeo.com/123456789 (public) ou vimeo.com/123456789/HASH (prive)
+  // Le hash est requis pour les videos privees avec lien (mode "Only people
+  // with private link"). On le capture pour le passer comme ?h=HASH a l'embed.
+  const vmMatch = u.match(/vimeo\.com\/(?:[^/]+\/)*(\d{6,})(?:\/([a-zA-Z0-9]+))?/);
   if (vmMatch) {
-    return {
-      embedUrl: `https://player.vimeo.com/video/${vmMatch[1]}`,
-      externalUrl: u,
-      provider: "vimeo",
-    };
+    const id = vmMatch[1];
+    const hash = vmMatch[2];
+    const embed = hash
+      ? `https://player.vimeo.com/video/${id}?h=${hash}`
+      : `https://player.vimeo.com/video/${id}`;
+    return { embedUrl: embed, externalUrl: u, provider: "vimeo" };
   }
 
   // Loom : loom.com/share/ID ou loom.com/embed/ID
@@ -94,13 +97,18 @@ const THEME = {
   textMute: "#6B6660",
 };
 
-const UNLOCK_RATIO = 0.9;
+// Sprint S4 (17/05/2026) : timer fixe au lieu d'un calcul base sur la duree
+// de la video (qui obligeait Sidali a saisir la duree manuellement). 5 min
+// est un compromis : suffisant pour empecher un prospect de zapper direct
+// au Calendly sans regarder, mais court pour ne pas frustrer un prospect
+// qui a deja vu la conf en live.
+const UNLOCK_DELAY_SEC = 5 * 60;
 
 interface ConferenceLookup {
   conference_date: string;
   replay_url: string | null;
-  replay_code: string | null;
-  video_duration_min: number;
+  replay_code: string | null;        // Sprint S4 : ignore cote frontend
+  video_duration_min: number;        // Sprint S4 : ignore cote frontend
   calendly_url: string | null;
   is_valid: boolean;
   reason: string | null;
@@ -179,8 +187,6 @@ export default function RedifConference() {
       ) : (
         <ReplayPage
           replayUrl={lookup.replay_url!}
-          replayCode={lookup.replay_code!}
-          videoDurationMin={lookup.video_duration_min}
           calendlyUrl={lookup.calendly_url!}
         />
       )}
@@ -457,24 +463,19 @@ function ThanksPage({ onContinue }: { onContinue: () => void }) {
 
 function ReplayPage({
   replayUrl,
-  replayCode,
-  videoDurationMin,
   calendlyUrl,
 }: {
   replayUrl: string;
-  replayCode: string;
-  videoDurationMin: number;
   calendlyUrl: string;
 }) {
   const startedAt = useRef<number>(Date.now());
   const [elapsedSec, setElapsedSec] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [copied, setCopied] = useState(false);
 
-  const totalSec = useMemo(() => Math.max(1, videoDurationMin * 60), [videoDurationMin]);
-  const unlockSec = useMemo(() => Math.floor(totalSec * UNLOCK_RATIO), [totalSec]);
-  const progressPct = Math.min(100, Math.round((elapsedSec / unlockSec) * 100));
-  const canFinish = elapsedSec >= unlockSec;
+  // Sprint S4 : timer fixe (UNLOCK_DELAY_SEC = 5 min) au lieu d'un calcul
+  // base sur la duree de la video (que Sidali n'a plus a saisir).
+  const progressPct = Math.min(100, Math.round((elapsedSec / UNLOCK_DELAY_SEC) * 100));
+  const canFinish = elapsedSec >= UNLOCK_DELAY_SEC;
   // Sprint S3 : detection du provider pour adapter le rendu video
   const embedInfo = useMemo(() => getEmbedInfo(replayUrl), [replayUrl]);
   const canEmbed = embedInfo.embedUrl !== null;
@@ -486,13 +487,6 @@ function ReplayPage({
     }, 1000);
     return () => window.clearInterval(id);
   }, []);
-
-  function copyCode() {
-    navigator.clipboard.writeText(replayCode).then(() => {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {});
-  }
 
   function mmss(sec: number): string {
     const m = Math.floor(sec / 60);
@@ -518,57 +512,6 @@ function ReplayPage({
         <span style={{ width: 24, height: 1, background: THEME.gold }} />
         Rediffusion
       </div>
-
-      {/* Bloc passcode */}
-      {replayCode && (
-        <div
-          style={{
-            background: THEME.bgCard,
-            border: `1px solid ${THEME.line}`,
-            borderRadius: 4,
-            padding: "16px 18px",
-            marginBottom: 16,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontSize: 10.5,
-                letterSpacing: "0.22em",
-                textTransform: "uppercase",
-                color: THEME.gold,
-                fontWeight: 600,
-                marginBottom: 4,
-              }}
-            >
-              Code d'accès Zoom
-            </div>
-            <div style={{ fontSize: 18, fontWeight: 600, color: THEME.text, fontFamily: "monospace" }}>
-              {replayCode}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={copyCode}
-            className="redif-btn-ghost"
-            style={{ flexShrink: 0 }}
-          >
-            {copied ? (
-              <>
-                <CheckCircle2 size={14} /> Copié
-              </>
-            ) : (
-              <>
-                <Copy size={14} /> Copier
-              </>
-            )}
-          </button>
-        </div>
-      )}
 
       {/* Zone video : embed natif (YouTube/Vimeo/Loom) OU placeholder externe (Zoom) */}
       <div
@@ -638,7 +581,7 @@ function ReplayPage({
         )}
       </div>
 
-      {/* Barre progression */}
+      {/* Barre progression (timer fixe 5 min, Sprint S4) */}
       <div style={{ marginBottom: 20 }}>
         <div
           style={{
@@ -653,9 +596,7 @@ function ReplayPage({
           }}
         >
           <span>Progression</span>
-          <span>
-            {mmss(elapsedSec)} / {mmss(unlockSec)} ({progressPct}%)
-          </span>
+          <span>{progressPct}%</span>
         </div>
         <div
           style={{
@@ -682,12 +623,16 @@ function ReplayPage({
         onClick={() => setShowConfirm(true)}
         className="redif-btn redif-btn-primary redif-btn-full"
       >
-        <span>{canFinish ? "J'ai terminé la rediffusion" : `Disponible dans ${mmss(Math.max(0, unlockSec - elapsedSec))}`}</span>
+        <span>
+          {canFinish
+            ? "J'ai terminé la rediffusion"
+            : `Disponible dans ${mmss(Math.max(0, UNLOCK_DELAY_SEC - elapsedSec))}`}
+        </span>
         {canFinish && <span className="redif-arrow">→</span>}
       </button>
 
       <p style={{ fontSize: 12, color: THEME.textMute, marginTop: 14, textAlign: "center" }}>
-        Le bouton se débloque automatiquement à {Math.round(UNLOCK_RATIO * 100)} % de la rediffusion.
+        Prenez le temps de visionner la rediffusion. Le bouton se débloque après quelques minutes.
       </p>
 
       {showConfirm && (

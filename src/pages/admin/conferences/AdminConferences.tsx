@@ -407,27 +407,23 @@ function ConferenceEditModal({
   saving: boolean;
 }) {
   const [replayUrl, setReplayUrl] = useState(conference.replay_url || "");
-  const [replayCode, setReplayCode] = useState(conference.replay_code || "");
-  const [duration, setDuration] = useState(String(conference.video_duration_min || 90));
   const [calendlyUrl, setCalendlyUrl] = useState(
     conference.calendly_url || "https://calendly.com/d/cvyb-4ts-83b/rediffusion-conference",
   );
 
   function handleSave() {
-    const dur = parseInt(duration, 10);
-    if (isNaN(dur) || dur <= 0) {
-      toast.error("La durée doit être un nombre positif");
-      return;
-    }
     if (!replayUrl.trim()) {
       toast.error("L'URL du replay est requise");
       return;
     }
+    // Sprint S4 (17/05/2026) : on n'envoie plus replay_code ni video_duration_min
+    // (champs supprimes de l'UI : timer fixe cote prospect, pas de code requis
+    // pour YouTube/Vimeo/Loom).
     onSave({
       id: conference.id,
       replay_url: replayUrl.trim(),
-      replay_code: replayCode.trim(),
-      video_duration_min: dur,
+      replay_code: "",
+      video_duration_min: 90,
       calendly_url: calendlyUrl.trim(),
     });
   }
@@ -457,35 +453,6 @@ function ConferenceEditModal({
               privilégie <strong>YouTube</strong> (en mode « non répertoriée »), <strong>Vimeo</strong> ou <strong>Loom</strong>.<br/>
               Avec <strong>Zoom</strong>, l'embed est bloqué (limite de leur sécurité) → la page affichera
               un bouton pour ouvrir Zoom dans un nouvel onglet. Le compteur continue de tourner.
-            </p>
-          </div>
-          <div>
-            <Label htmlFor="replay-code">
-              Code d'accès <span className="text-muted-foreground font-normal">(optionnel)</span>
-            </Label>
-            <Input
-              id="replay-code"
-              value={replayCode}
-              onChange={(e) => setReplayCode(e.target.value)}
-              placeholder="Uniquement si Zoom (ex : abc123)"
-              className="mt-1 font-mono"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Laisse vide pour YouTube / Vimeo / Loom (pas de code requis).
-            </p>
-          </div>
-          <div>
-            <Label htmlFor="duration">Durée de la vidéo (minutes)</Label>
-            <Input
-              id="duration"
-              type="number"
-              min="1"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              className="mt-1"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Le bouton « J'ai terminé » se débloquera après 90 % de cette durée (= {Math.round((parseInt(duration, 10) || 0) * 0.9)} min).
             </p>
           </div>
           <div>
