@@ -8,13 +8,14 @@
 // un onglet quand la page a été refondue en 3 onglets (catalogue / promos /
 // liens personnalisés). La garde CEO est désormais portée par le parent.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getPublicAppOrigin } from "@/lib/impersonation";
 import {
   usePaymentLinks,
   useCreatePaymentLink,
+  useUpdatePaymentLink,
   useCancelPaymentLink,
   type PaymentLink,
 } from "@/hooks/usePaymentLinks";
@@ -63,6 +64,7 @@ import {
   Sparkles,
   GraduationCap,
   KeyRound,
+  Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -137,6 +139,7 @@ export default function CustomLinksTab() {
   }, [offers]);
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingLink, setEditingLink] = useState<PaymentLink | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   async function copyLink(token: string) {
@@ -282,15 +285,26 @@ export default function CustomLinksTab() {
                           </a>
                         </Button>
                         {link.status === "active" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                            title="Annuler le lien"
-                            onClick={() => handleCancel(link)}
-                          >
-                            <Ban className="h-3.5 w-3.5" />
-                          </Button>
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              title="Modifier le lien (date, destinataire, périmètre…)"
+                              onClick={() => setEditingLink(link)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              title="Annuler le lien"
+                              onClick={() => handleCancel(link)}
+                            >
+                              <Ban className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
                         )}
                       </div>
                     </TableCell>
@@ -303,6 +317,10 @@ export default function CustomLinksTab() {
       )}
 
       <CreatePaymentLinkModal open={createOpen} onOpenChange={setCreateOpen} />
+      <EditPaymentLinkModal
+        link={editingLink}
+        onOpenChange={(open) => !open && setEditingLink(null)}
+      />
     </div>
   );
 }
@@ -783,6 +801,320 @@ function CreatePaymentLinkModal({
             </DialogFooter>
           </>
         )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Modale d'édition d'un lien existant ────────────────────────────────
+// Permet de modifier les champs "soft" (date différée, destinataire, notes,
+// périmètre d'accès) sans avoir à annuler + recréer le lien. Les champs
+// immuables (product_label, total_amount, installments_count) sont affichés
+// en read-only en haut de la modale pour rappeler le contexte.
+function EditPaymentLinkModal({
+  link,
+  onOpenChange,
+}: {
+  link: PaymentLink | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { toast } = useToast();
+  const updateLink = useUpdatePaymentLink();
+  const offersQ = useOffers();
+  const passOffers = useMemo(
+    () => (offersQ.data ?? []).filter((o) => o.category === "al_baraka" || o.category === "liberty"),
+    [offersQ.data],
+  );
+  const formationOffers = useMemo(
+    () => (offersQ.data ?? []).filter((o) => o.category === "a_la_carte" && o.formation_id),
+    [offersQ.data],
+  );
+  // Index formation_id → offer.id (pour pré-cocher depuis grants_formation_ids)
+  const offerIdByFormationId = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const o of formationOffers) if (o.formation_id) m.set(o.formation_id, o.id);
+    return m;
+  }, [formationOffers]);
+
+  const [hasDeferred, setHasDeferred] = useState(false);
+  const [deferredDate, setDeferredDate] = useState("");
+  const [recipientMode, setRecipientMode] = useState<"generic" | "prefilled">("generic");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [notes, setNotes] = useState("");
+  const [grantsPassOfferId, setGrantsPassOfferId] = useState<string>("none");
+  const [grantsCheckedFormationOfferIds, setGrantsCheckedFormationOfferIds] = useState<string[]>([]);
+
+  // Pré-remplit quand un nouveau lien est passé
+  useEffect(() => {
+    if (!link) return;
+    setHasDeferred(!!link.deferred_start_date);
+    setDeferredDate(link.deferred_start_date || "");
+    const hasRecipient =
+      !!(link.prefilled_full_name || link.prefilled_email || link.prefilled_phone);
+    setRecipientMode(hasRecipient ? "prefilled" : "generic");
+    setFullName(link.prefilled_full_name || "");
+    setEmail(link.prefilled_email || "");
+    setPhone(link.prefilled_phone || "");
+    setNotes(link.notes || "");
+    setGrantsPassOfferId(link.grants_offer_id || "none");
+    setGrantsCheckedFormationOfferIds(
+      (link.grants_formation_ids || [])
+        .map((fid) => offerIdByFormationId.get(fid))
+        .filter((id): id is string => !!id),
+    );
+  }, [link, offerIdByFormationId]);
+
+  const minDeferred = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  }, []);
+
+  function toggleFormation(offerId: string) {
+    setGrantsCheckedFormationOfferIds((prev) =>
+      prev.includes(offerId) ? prev.filter((x) => x !== offerId) : [...prev, offerId],
+    );
+  }
+
+  const errors: string[] = [];
+  if (hasDeferred && (!deferredDate || deferredDate < minDeferred))
+    errors.push("La date de démarrage différé doit être dans le futur.");
+  if (recipientMode === "prefilled" && !fullName.trim() && !email.trim())
+    errors.push("Renseigne au moins le nom ou l'email du destinataire.");
+  const valid = errors.length === 0;
+
+  const grantsCount =
+    (grantsPassOfferId !== "none" ? 1 : 0) + grantsCheckedFormationOfferIds.length;
+
+  async function handleSave() {
+    if (!link || !valid) return;
+    try {
+      const grantsFormationIds = grantsCheckedFormationOfferIds
+        .map((offerId) => formationOffers.find((o) => o.id === offerId)?.formation_id)
+        .filter((id): id is string => !!id);
+
+      await updateLink.mutateAsync({
+        id: link.id,
+        deferredStartDate: hasDeferred ? deferredDate : null,
+        prefilledFullName: recipientMode === "prefilled" ? fullName.trim() || null : null,
+        prefilledEmail: recipientMode === "prefilled" ? email.trim() || null : null,
+        prefilledPhone: recipientMode === "prefilled" ? phone.trim() || null : null,
+        notes: notes.trim() || null,
+        grantsOfferId: grantsPassOfferId !== "none" ? grantsPassOfferId : null,
+        grantsFormationIds: grantsFormationIds.length > 0 ? grantsFormationIds : null,
+      });
+      toast({ title: "Lien modifié" });
+      onOpenChange(false);
+    } catch (e: any) {
+      toast({
+        title: "Échec de la modification",
+        description: e?.message || "Réessaie ou contacte le support.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  if (!link) return null;
+
+  return (
+    <Dialog open={!!link} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-card border-border sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-foreground flex items-center gap-2">
+            <Pencil className="h-4 w-4 text-primary" />
+            Modifier le lien
+          </DialogTitle>
+        </DialogHeader>
+
+        {/* Read-only recap des champs immuables */}
+        <div className="rounded-md border border-border/60 bg-background/40 p-3 space-y-1">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Champs verrouillés (annuler + recréer pour les changer)
+          </p>
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
+            <span className="font-medium text-foreground">{link.product_label}</span>
+            <span className="text-muted-foreground">
+              {formatEur(Number(link.total_amount))}
+              {link.installments_count > 1 && ` · ${link.installments_count}× mensualités`}
+            </span>
+            <code className="text-[10px] text-muted-foreground font-mono">{link.token}</code>
+          </div>
+        </div>
+
+        <div className="space-y-4 py-1">
+          {/* Démarrage différé */}
+          <div className="rounded-md border border-border/60 bg-secondary/30 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">Démarrage différé</Label>
+              <Switch checked={hasDeferred} onCheckedChange={setHasDeferred} />
+            </div>
+            {hasDeferred && (
+              <>
+                <Input
+                  type="date"
+                  min={minDeferred}
+                  value={deferredDate}
+                  onChange={(e) => setDeferredDate(e.target.value)}
+                  className="bg-background"
+                />
+                <p className="text-[10.5px] text-muted-foreground">
+                  Le client autorise sa carte aujourd'hui ; le 1er prélèvement
+                  a lieu à cette date.
+                </p>
+              </>
+            )}
+          </div>
+
+          {/* Destinataire */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">Destinataire</Label>
+            <Select
+              value={recipientMode}
+              onValueChange={(v) => setRecipientMode(v as "generic" | "prefilled")}
+            >
+              <SelectTrigger className="bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="generic">Lien générique (le client saisit ses infos)</SelectItem>
+                <SelectItem value="prefilled">Pré-rempli pour un client précis</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {recipientMode === "prefilled" && (
+            <div className="space-y-2 rounded-md border border-border/60 bg-secondary/30 p-3">
+              <Input
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Nom complet"
+                className="bg-background"
+              />
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email"
+                className="bg-background"
+              />
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Téléphone"
+                className="bg-background"
+              />
+            </div>
+          )}
+
+          {/* Périmètre d'accès (identique à la modale Create) */}
+          <div className="space-y-2 rounded-md border border-primary/20 bg-primary/[0.03] p-3">
+            <div className="flex items-center gap-2">
+              <KeyRound className="h-3.5 w-3.5 text-primary" />
+              <Label className="text-xs font-medium">Périmètre d'accès après paiement</Label>
+              {grantsCount > 0 && (
+                <Badge variant="outline" className="ml-auto text-[10px] border-primary/40 text-primary">
+                  {grantsCount} {grantsCount > 1 ? "éléments" : "élément"}
+                </Badge>
+              )}
+            </div>
+
+            <div className="space-y-1.5 pt-1">
+              <Label className="text-[10.5px] uppercase tracking-wide text-muted-foreground">
+                Pass (1 maximum)
+              </Label>
+              <RadioGroup
+                value={grantsPassOfferId}
+                onValueChange={setGrantsPassOfferId}
+                className="space-y-1"
+              >
+                <label className="flex items-center gap-2 py-1 px-2 rounded hover:bg-secondary/40 cursor-pointer">
+                  <RadioGroupItem value="none" id="edit-grant-pass-none" />
+                  <span className="text-sm">Aucun pass</span>
+                </label>
+                {passOffers.map((o) => {
+                  const Icon = o.category === "al_baraka" ? Crown : Sparkles;
+                  const colorCls = o.category === "al_baraka" ? "text-amber-500" : "text-amber-400";
+                  return (
+                    <label
+                      key={o.id}
+                      className="flex items-center gap-2 py-1 px-2 rounded hover:bg-secondary/40 cursor-pointer"
+                    >
+                      <RadioGroupItem value={o.id} id={`edit-grant-pass-${o.id}`} />
+                      <Icon className={cn("h-3.5 w-3.5 shrink-0", colorCls)} />
+                      <span className="text-sm">{o.label}</span>
+                    </label>
+                  );
+                })}
+              </RadioGroup>
+            </div>
+
+            <div className="space-y-1.5 pt-2">
+              <Label className="text-[10.5px] uppercase tracking-wide text-muted-foreground">
+                Formations à la carte
+                {grantsCheckedFormationOfferIds.length > 0 && (
+                  <span className="ml-2 text-primary normal-case tracking-normal">
+                    ({grantsCheckedFormationOfferIds.length} sélectionnée
+                    {grantsCheckedFormationOfferIds.length > 1 ? "s" : ""})
+                  </span>
+                )}
+              </Label>
+              <div className="rounded border border-border/60 bg-background/40 max-h-40 overflow-y-auto p-1.5 space-y-0.5">
+                {formationOffers.map((o) => (
+                  <label
+                    key={o.id}
+                    className="flex items-center gap-2 py-1 px-2 rounded hover:bg-secondary/40 cursor-pointer"
+                  >
+                    <Checkbox
+                      checked={grantsCheckedFormationOfferIds.includes(o.id)}
+                      onCheckedChange={() => toggleFormation(o.id)}
+                    />
+                    <GraduationCap className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+                    <span className="text-sm flex-1">{o.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">Notes internes (optionnel)</Label>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Contexte, référence... (non visible par le client)"
+              className="bg-background"
+              rows={2}
+            />
+          </div>
+
+          {errors.length > 0 && (
+            <ul className="text-xs text-destructive space-y-0.5">
+              {errors.map((err) => (
+                <li key={err}>• {err}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={updateLink.isPending}
+          >
+            Annuler
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={!valid || updateLink.isPending}
+            className="gap-2"
+          >
+            {updateLink.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            Enregistrer
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

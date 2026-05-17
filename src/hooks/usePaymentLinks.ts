@@ -102,6 +102,47 @@ export function useCreatePaymentLink() {
   });
 }
 
+export interface UpdatePaymentLinkInput {
+  id: string;
+  /** Date du 1er prélèvement si démarrage différé (YYYY-MM-DD), null = annule. */
+  deferredStartDate?: string | null;
+  prefilledFullName?: string | null;
+  prefilledEmail?: string | null;
+  prefilledPhone?: string | null;
+  notes?: string | null;
+  /** Pass à débloquer (offer.id catégorie al_baraka/liberty), null = retire. */
+  grantsOfferId?: string | null;
+  /** Formations à débloquer (formation.id[]), [] = retire. */
+  grantsFormationIds?: string[] | null;
+}
+
+/** Modifie les champs "soft" d'un lien actif (date, destinataire, grants, notes).
+ *  Les champs immuables (product_label, total_amount, installments_count) ne
+ *  peuvent pas être modifiés via ce hook — annuler + recréer si besoin. */
+export function useUpdatePaymentLink() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: UpdatePaymentLinkInput) => {
+      const { data, error } = await supabase.rpc("update_payment_link" as any, {
+        p_id: input.id,
+        p_deferred_start_date: input.deferredStartDate ?? null,
+        p_prefilled_full_name: input.prefilledFullName ?? null,
+        p_prefilled_email: input.prefilledEmail ?? null,
+        p_prefilled_phone: input.prefilledPhone ?? null,
+        p_notes: input.notes ?? null,
+        p_grants_offer_id: input.grantsOfferId ?? null,
+        p_grants_formation_ids:
+          input.grantsFormationIds && input.grantsFormationIds.length > 0
+            ? input.grantsFormationIds
+            : null,
+      });
+      if (error) throw error;
+      return data as { success: boolean; id: string };
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["payment-links"] }),
+  });
+}
+
 /** Annule un lien (status → 'cancelled'). N'affecte pas une vente déjà créée. */
 export function useCancelPaymentLink() {
   const qc = useQueryClient();
