@@ -1215,18 +1215,48 @@ function CheckoutForm({
       return;
     }
     setCoupon({ status: "validating" });
-    const { data, error } = await supabase.rpc("validate_coupon", { p_code: code });
+    // Sprint P (17/05/2026) : passe p_expected_category='liberty' pour
+    // que la RPC verifie cote SQL que le coupon cible bien Liberty.
+    const { data, error } = await supabase.rpc("validate_coupon", {
+      p_code: code,
+      p_expected_category: "liberty",
+    });
     if (error) {
       setCoupon({ status: "invalid", reason: "error" });
       toast.error("Erreur lors de la vérification du code");
       return;
     }
-    const v = data as { valid: boolean; code?: string; discount_percent?: number; reason?: string };
-    if (v?.valid && v.code && typeof v.discount_percent === "number") {
-      setCoupon({ status: "valid", code: v.code, percent: v.discount_percent });
-      toast.success(`Code ${v.code} appliqué — ${v.discount_percent}% de réduction`);
+    const v = data as {
+      valid: boolean;
+      code?: string;
+      discount_type?: "percent" | "fixed_eur";
+      discount_percent?: number | null;
+      discount_amount_eur?: number | null;
+      reason?: string;
+    };
+    if (v?.valid && v.code) {
+      // Sprint P : support fixed_eur en plus de percent (toast informatif).
+      // Note : le state local LibertyCheckout ne gere encore que percent
+      // dans son rendu d'affichage de la remise. Pour LIBERTY1000 (fixed_eur),
+      // on calcule le percent equivalent sur le prix Liberty pour rester
+      // compatible avec l'UI existante. Le backend calcule de toute facon
+      // le vrai discount via le helper resolveCouponDiscountCents.
+      if (v.discount_type === "fixed_eur" && typeof v.discount_amount_eur === "number") {
+        const equivalentPercent = Math.round((v.discount_amount_eur / TOTAL_EUR) * 100);
+        setCoupon({ status: "valid", code: v.code, percent: equivalentPercent });
+        toast.success(`Code ${v.code} appliqué — −${v.discount_amount_eur}€`);
+        return;
+      }
+      if (typeof v.discount_percent === "number" && v.discount_percent > 0) {
+        setCoupon({ status: "valid", code: v.code, percent: v.discount_percent });
+        toast.success(`Code ${v.code} appliqué — ${v.discount_percent}% de réduction`);
+        return;
+      }
+    }
+    setCoupon({ status: "invalid", reason: v?.reason || "not_found" });
+    if (v?.reason === "targeting_mismatch") {
+      toast.error("Ce code promo n'est pas applicable au PASS LIBERTY");
     } else {
-      setCoupon({ status: "invalid", reason: v?.reason || "not_found" });
       toast.error("Code promo invalide");
     }
   }

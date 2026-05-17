@@ -1244,7 +1244,13 @@ function CheckoutForm({
     const code = rawCode.trim().toUpperCase();
     if (!code) return;
     setCoupon({ status: "validating" });
-    const { data, error } = await supabase.rpc("validate_coupon", { p_code: code });
+    // Sprint P (17/05/2026) : passe p_expected_category='al_baraka' pour
+    // que la RPC verifie cote SQL que le coupon cible bien AL BARAKA.
+    // Si targeting mismatch → retourne {valid:false, reason:'targeting_mismatch'}.
+    const { data, error } = await supabase.rpc("validate_coupon", {
+      p_code: code,
+      p_expected_category: "al_baraka",
+    });
     if (error) {
       setCoupon({ status: "invalid", reason: "error" });
       toast.error("Erreur lors de la vérification du code");
@@ -1272,7 +1278,11 @@ function CheckoutForm({
       }
     }
     setCoupon({ status: "invalid", reason: v?.reason || "not_found" });
-    toast.error("Code promo invalide");
+    if (v?.reason === "targeting_mismatch") {
+      toast.error("Ce code promo n'est pas applicable au PASS AL BARAKA");
+    } else {
+      toast.error("Code promo invalide");
+    }
   }
 
   // Handler du bouton "Appliquer" du formulaire (utilise le couponInput courant)

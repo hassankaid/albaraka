@@ -212,6 +212,11 @@ interface PaymentLinkLookup {
   prefilled_phone: string | null;
   is_valid: boolean;
   reason: string | null;
+  /** Sprint P : category attendue pour les coupons applicables a ce lien.
+   *  - 'al_baraka' / 'liberty' pour les Pass differes
+   *  - 'a_la_carte' pour les formations a la carte
+   *  - null pour les liens custom CEO classiques (aucun coupon n'est applique) */
+  expected_coupon_category: string | null;
 }
 
 // ─── Calcul de l'échéancier (logique unique, doit rester alignée avec
@@ -312,14 +317,25 @@ export default function PaymentLinkCheckout() {
   // Phase 1 : validation silencieuse cote client puis affichage du discount.
   // Source de verite finale = serveur (l'edge function reapplique la
   // validation et le targeting au moment du paiement).
+  //
+  // Sprint P (17/05/2026) : passe expected_coupon_category du lien pour que
+  // la RPC verifie cote SQL que le coupon est applicable a ce produit. Si le
+  // lien n'a pas de category attendue (lien CEO custom classique), on ne tente
+  // meme pas de valider (aucun coupon ne s'applique sur ce type de lien).
   useEffect(() => {
     if (!urlPromoCode || !lookup || !lookup.is_valid) return;
+    if (!lookup.expected_coupon_category) {
+      // Lien custom CEO classique : pas de coupon applicable
+      setCoupon({ status: "invalid", code: urlPromoCode, reason: "not_applicable_to_link" });
+      return;
+    }
     let cancelled = false;
     (async () => {
       setCoupon({ status: "validating" });
       try {
         const { data, error } = await supabase.rpc("validate_coupon" as any, {
           p_code: urlPromoCode,
+          p_expected_category: lookup.expected_coupon_category,
         });
         if (cancelled) return;
         if (error || !data || !data.valid) {
