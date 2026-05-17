@@ -29,7 +29,11 @@ export interface PaymentLink {
   notes: string | null;
 }
 
-/** Liste tous les liens de paiement, plus récents d'abord. */
+/** Liste les liens de paiement créés MANUELLEMENT par le CEO (plus récents
+ *  d'abord). Filtre `auto_generated=false` pour exclure les liens jetables
+ *  générés à la volée par /checkout/formation/:slug (qui polluent la liste
+ *  admin). Les ventes issues des liens auto-générés restent visibles dans
+ *  /sales — la liste admin ici ne sert qu'à gérer les liens custom CEO. */
 export function usePaymentLinks() {
   return useQuery({
     queryKey: ["payment-links"],
@@ -37,6 +41,7 @@ export function usePaymentLinks() {
       const { data, error } = await supabase
         .from("payment_links" as any)
         .select("*")
+        .eq("auto_generated", false)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as PaymentLink[];

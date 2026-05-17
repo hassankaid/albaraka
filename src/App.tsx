@@ -16,6 +16,7 @@ import LibertyCheckout from "./pages/checkout/LibertyCheckout";
 import MerciLibertyPage from "./pages/checkout/MerciLibertyPage";
 import RebillCheckout from "./pages/checkout/RebillCheckout";
 import PaymentLinkCheckout from "./pages/checkout/PaymentLinkCheckout";
+import FormationCheckout from "./pages/checkout/FormationCheckout";
 import DashboardLayout from "./components/DashboardLayout";
 import ApporteurLayout from "./components/ApporteurLayout";
 import Dashboard from "./pages/Dashboard";
@@ -126,6 +127,7 @@ const App = () => (
               <Route path="/merci-liberty" element={<MerciLibertyPage />} />
               <Route path="/rebill/:token" element={<RebillCheckout />} />
               <Route path="/pay/:token" element={<PaymentLinkCheckout />} />
+              <Route path="/checkout/formation/:slug" element={<FormationCheckout />} />
               <Route element={<ProtectedRoute />}>
                 {/* Onboarding (no layout) */}
                 <Route path="/onboarding" element={<ApporteurOnboarding />} />
