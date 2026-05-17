@@ -910,8 +910,13 @@ function PaymentLinkForm({
     transition: "border-color 0.15s, box-shadow 0.15s",
   };
 
-  const startDateFormatted = lookup.deferred_start_date
-    ? formatFrDate(lookup.deferred_start_date)
+  // ── Sync : la date affichee dans le form (label submit + phrase "1er
+  //         prelevement le X") doit suivre le client_chosen_start_date si
+  //         le user a modifie la date dans le picker ScheduleBlock. Sinon
+  //         retombe sur la date d'origine du lien.
+  const effectiveStartDateForDisplay = clientChosenStartDate || lookup.deferred_start_date;
+  const startDateFormatted = effectiveStartDateForDisplay
+    ? formatFrDate(effectiveStartDateForDisplay)
     : null;
   const ctaLabel = submitting
     ? "Traitement…"

@@ -3,7 +3,7 @@
 //
 // Affiche la liste exhaustive des prélèvements avec date + montant pour
 // chaque mensualité. En mode différé, propose au client de modifier la
-// date de démarrage (fenêtre [demain, today+180j]).
+// date de démarrage via un calendrier dropdown au design AL BARAKA (noir/or).
 //
 // Cas gérés :
 //   - 1× immédiat       → mini-rappel "Prélèvement aujourd'hui : X €"
@@ -11,10 +11,16 @@
 //   - 1× différé        → calendrier avec date du 1er prélèvement (modifiable)
 //   - N× différé        → calendrier complet (1re = date différée, suivantes +1m)
 //
+// IMPORTANT : computeInstallmentDates utilise addMonthsEOMAware pour les
+// fins de mois (31 mai → 30 juin, pas 1er juillet).
+//
 // Le composant ne gère QUE l'affichage. Le state clientChosenStartDate doit
 // être hoisté dans le parent qui pourra le passer en prop à create-payment-intent.
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Calendar as CalendarIcon, ChevronDown } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // ─── Thème (aligné PaymentLinkCheckout / Checkout AL BARAKA / Liberty) ─────
 const THEME = {
@@ -54,10 +60,43 @@ export function formatFrDateShort(iso: string): string {
 }
 
 /**
+ * Ajoute N mois a une date en respectant la regle "fin de mois colle a fin
+ * de mois". Implementation classique des recurrences mensuelles bancaires :
+ *   - Si la date de depart est le DERNIER jour de son mois (31 mai, 30 juin,
+ *     28/29 fev) → on snap aussi au dernier jour du mois cible.
+ *     Ex : 31 mai + 1m = 30 juin (pas 1er juillet)
+ *   - Sinon, on prend le meme numero de jour, mais cap au dernier jour du
+ *     mois cible si le numero n'existe pas (30 jan + 1m = 28/29 fev, pas 2 mar)
+ *   - On calcule TOUJOURS a partir de la date d'origine (pas du resultat
+ *     precedent), pour eviter la derive : 30 jan → 28 fev → 28 mar (incorrect),
+ *     au lieu de 30 jan → 28 fev → 30 mar (correct).
+ */
+function addMonthsEOMAware(start: Date, months: number): Date {
+  const startDay = start.getDate();
+  const startMonth = start.getMonth();
+  const startYear = start.getFullYear();
+  const lastDayOfStartMonth = new Date(startYear, startMonth + 1, 0).getDate();
+  const startIsEOM = startDay === lastDayOfStartMonth;
+
+  const targetTotal = startMonth + months;
+  const targetYear = startYear + Math.floor(targetTotal / 12);
+  const targetMonthMod = ((targetTotal % 12) + 12) % 12;
+  const lastDayOfTargetMonth = new Date(targetYear, targetMonthMod + 1, 0).getDate();
+
+  const targetDay = startIsEOM
+    ? lastDayOfTargetMonth
+    : Math.min(startDay, lastDayOfTargetMonth);
+
+  return new Date(targetYear, targetMonthMod, targetDay, 12, 0, 0);
+}
+
+/**
  * Calcule les dates de prélèvement de toutes les mensualités.
  * - Mode différé : démarre à startDateIso (date du lien ou choisie par le client).
  * - Mode immédiat : démarre aujourd'hui, +1 mois par mensualité.
  * Retourne un tableau de strings YYYY-MM-DD.
+ *
+ * Utilise addMonthsEOMAware pour gérer correctement les fins de mois.
  */
 export function computeInstallmentDates(
   startDateIso: string | null,
@@ -68,9 +107,13 @@ export function computeInstallmentDates(
     : new Date();
   const dates: string[] = [];
   for (let i = 0; i < count; i++) {
-    const d = new Date(start);
-    d.setMonth(d.getMonth() + i);
-    dates.push(d.toISOString().slice(0, 10));
+    const d = addMonthsEOMAware(start, i);
+    // toISOString().slice(0,10) ne marche que pour des dates UTC, on construit
+    // le YYYY-MM-DD manuellement pour eviter les decalages timezone
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    dates.push(`${y}-${m}-${dd}`);
   }
   return dates;
 }
@@ -186,23 +229,11 @@ export function ScheduleBlock({
           >
             Date de démarrage
           </div>
-          <input
-            type="date"
-            value={clientChosenStartDate || effectiveStartDateIso || ""}
-            min={minStartDate}
-            max={maxStartDate}
-            onChange={(e) => setClientChosenStartDate!(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "11px 14px",
-              borderRadius: 10,
-              border: `1px solid ${THEME.goldDim}`,
-              background: "rgba(255,255,255,0.02)",
-              color: THEME.cream,
-              fontSize: 14,
-              fontFamily: "inherit",
-              colorScheme: "dark",
-            }}
+          <DateDarkGoldPicker
+            valueIso={clientChosenStartDate || effectiveStartDateIso || ""}
+            onChangeIso={(d) => setClientChosenStartDate!(d)}
+            minIso={minStartDate!}
+            maxIso={maxStartDate!}
           />
           <div
             style={{
@@ -212,9 +243,8 @@ export function ScheduleBlock({
               lineHeight: 1.4,
             }}
           >
-            Vous pouvez modifier la date du 1<sup>er</sup> prélèvement (de
-            demain jusqu'à 6 mois). Aucun montant n'est débité aujourd'hui — votre
-            carte est seulement autorisée.
+            Aucun montant n'est débité aujourd'hui — votre carte est seulement
+            autorisée.
           </div>
         </div>
       )}
@@ -323,3 +353,126 @@ export function ScheduleBlock({
     </div>
   );
 }
+
+// ─── DateDarkGoldPicker — Calendar shadcn stylé AL BARAKA (noir/or) ───────
+// Wrapper qui présente un bouton au design checkout (noir + bordure or +
+// gold accent) et ouvre un Popover avec le Calendar shadcn dont les classes
+// sont overridées pour matcher le thème AL BARAKA (au lieu du thème global
+// shadcn par défaut qui jure avec le design noir/or premium du checkout).
+function DateDarkGoldPicker({
+  valueIso,
+  onChangeIso,
+  minIso,
+  maxIso,
+}: {
+  valueIso: string;
+  onChangeIso: (iso: string) => void;
+  minIso: string;
+  maxIso: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  // Convertit YYYY-MM-DD en Date a midi (eviter les decalages timezone)
+  const isoToDate = (iso: string): Date | undefined =>
+    iso ? new Date(`${iso}T12:00:00`) : undefined;
+
+  // Convertit Date en YYYY-MM-DD (en utilisant l'heure locale)
+  const dateToIso = (d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${dd}`;
+  };
+
+  const selectedDate = isoToDate(valueIso);
+  const minDate = isoToDate(minIso)!;
+  const maxDate = isoToDate(maxIso)!;
+
+  const displayLabel = valueIso ? formatFrDate(valueIso) : "Choisir une date";
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          style={{
+            width: "100%",
+            padding: "11px 14px",
+            borderRadius: 10,
+            border: `1px solid ${THEME.goldDim}`,
+            background: "rgba(255,255,255,0.02)",
+            color: THEME.cream,
+            fontSize: 14,
+            fontFamily: "inherit",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+            cursor: "pointer",
+            transition: "border-color 0.15s, box-shadow 0.15s",
+          }}
+        >
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+            <CalendarIcon size={16} style={{ color: THEME.gold }} />
+            <span>{displayLabel}</span>
+          </span>
+          <ChevronDown size={14} style={{ color: THEME.creamDim }} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="p-0 border-0"
+        style={{
+          background: "#0A0A0A",
+          border: `1px solid ${THEME.goldLine}`,
+          boxShadow: "0 30px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,160,78,0.1)",
+          borderRadius: 12,
+        }}
+      >
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={(d) => {
+            if (d) {
+              onChangeIso(dateToIso(d));
+              setOpen(false);
+            }
+          }}
+          disabled={(d) => d < minDate || d > maxDate}
+          defaultMonth={selectedDate}
+          initialFocus
+          weekStartsOn={1}
+          className="p-3"
+          classNames={{
+            months: "flex flex-col",
+            month: "space-y-3",
+            caption: "flex justify-center pt-1 relative items-center text-[#F5F1E6]",
+            caption_label: "text-sm font-medium capitalize",
+            nav: "space-x-1 flex items-center",
+            nav_button:
+              "h-7 w-7 bg-transparent p-0 opacity-70 hover:opacity-100 hover:bg-[rgba(201,160,78,0.1)] rounded-md text-[#C9A04E]",
+            nav_button_previous: "absolute left-1",
+            nav_button_next: "absolute right-1",
+            table: "w-full border-collapse space-y-1",
+            head_row: "flex",
+            head_cell:
+              "text-[rgba(245,241,230,0.5)] rounded-md w-8 font-normal text-[0.72rem] uppercase",
+            row: "flex w-full mt-1",
+            cell: "h-8 w-8 text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
+            day:
+              "h-8 w-8 p-0 font-normal text-[#F5F1E6] hover:bg-[rgba(201,160,78,0.12)] rounded-md transition-colors",
+            day_range_end: "day-range-end",
+            day_selected:
+              "bg-[#C9A04E] text-[#0A0A0A] font-semibold hover:bg-[#E4C57A] hover:text-[#0A0A0A] focus:bg-[#C9A04E] focus:text-[#0A0A0A]",
+            day_today: "border border-[rgba(201,160,78,0.5)] text-[#E4C57A]",
+            day_outside: "text-[rgba(245,241,230,0.25)] opacity-50",
+            day_disabled: "text-[rgba(245,241,230,0.2)] opacity-40 cursor-not-allowed",
+            day_range_middle: "aria-selected:bg-[rgba(201,160,78,0.15)] aria-selected:text-[#F5F1E6]",
+            day_hidden: "invisible",
+          }}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
