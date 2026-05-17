@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, Library, CalendarDays, Wand2, Megaphone, Ticket, Map, Webhook, Link2 } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, Library, CalendarDays, Wand2, Megaphone, Ticket, Map, Webhook, Link2, Video } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -53,6 +53,7 @@ const adminNavItems: NavItem[] = [
   { title: "Lead Scoring", path: "/admin/lead-scoring", icon: Sparkles, roles: ["ceo"] },
   { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"] },
   { title: "Liens de paiement", path: "/admin/payment-links", icon: Link2, roles: ["ceo"] },
+  { title: "Conférences", path: "/admin/conferences", icon: Video, roles: ["ceo"] },
   { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
   { title: "Agent IA", path: "/admin/agent-knowledge", icon: Bot, roles: ["ceo"] },
@@ -97,6 +98,7 @@ const pageTitles: Record<string, string> = {
   "/admin/invoices": "Factures Apporteurs",
   "/admin/commissions": "Commissions",
   "/admin/payment-links": "Liens de paiement",
+  "/admin/conferences": "Conférences",
   "/admin/data": "Gestion des données",
   "/admin/scripts": "Gestion des scripts",
   "/admin/role-play": "Gestion Rôle-Play",

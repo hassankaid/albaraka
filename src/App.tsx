@@ -76,6 +76,8 @@ import Echo from "./pages/public/Echo";
 import ScoringStart from "./pages/public/scoring/ScoringStart";
 import ScoringQuiz from "./pages/public/scoring/ScoringQuiz";
 import AdminLeadScoring from "./pages/admin/lead-scoring/AdminLeadScoring";
+import RedifConference from "./pages/public/redif/RedifConference";
+import AdminConferences from "./pages/admin/conferences/AdminConferences";
 import RdvIntro from "./pages/public/rdv/RdvIntro";
 import RdvCoordonnees from "./pages/public/rdv/RdvCoordonnees";
 import RdvQuestions from "./pages/public/rdv/RdvQuestions";
@@ -127,6 +129,7 @@ const App = () => (
               <Route path="/rdv/questions" element={<RdvQuestions />} />
               <Route path="/rdv/disqualification/:slug" element={<RdvDisqualification />} />
               <Route path="/rdv/calendly" element={<RdvCalendly />} />
+              <Route path="/redif/:token" element={<RedifConference />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/checkout/:installments" element={<Checkout />} />
               <Route path="/merci" element={<MerciPage />} />
@@ -153,6 +156,7 @@ const App = () => (
                   <Route path="/admin/invoices" element={<AdminInvoices />} />
                   <Route path="/admin/commissions" element={<AdminCommissions />} />
                   <Route path="/admin/payment-links" element={<AdminPaymentLinks />} />
+                  <Route path="/admin/conferences" element={<AdminConferences />} />
                   <Route path="/admin/team" element={<AdminTeam />} />
                   <Route path="/admin/announcements" element={<AdminAnnouncements />} />
                   <Route path="/admin/quiz-lead" element={<AdminQuizLead />} />
