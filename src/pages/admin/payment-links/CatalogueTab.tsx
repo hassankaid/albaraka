@@ -65,7 +65,7 @@ type LinkVariant = "direct" | "deferred";
 
 type LinkBuildOptions = {
   offer: Offer;
-  installments: number;       // ignoré pour a_la_carte (toujours 1)
+  installments: number;       // utilise par toutes les categories depuis Sprint S2
   testMode: boolean;
   startDate?: Date | null;    // si défini → variante "deferred"
 };
@@ -73,8 +73,9 @@ type LinkBuildOptions = {
 function buildOfferPath(offer: Offer, installments: number): string {
   if (offer.category === "al_baraka") return `/checkout/${installments}`;
   if (offer.category === "liberty") return `/liberty/${installments}`;
-  // a_la_carte → /checkout/formation/<slug>, paiement one-shot
-  return `/checkout/formation/${offer.slug}`;
+  // a_la_carte → /checkout/formation/<slug>/<N> (Sprint S2 17/05/2026 :
+  // le nombre de mensualites est defini par l'URL, plus d'ecran de choix).
+  return `/checkout/formation/${offer.slug}/${installments}`;
 }
 
 function buildUrl({ offer, installments, testMode, startDate }: LinkBuildOptions): string {
