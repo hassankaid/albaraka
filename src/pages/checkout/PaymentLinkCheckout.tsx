@@ -23,7 +23,7 @@ import "react-phone-number-input/style.css";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import logo from "@/assets/al-baraka-logo-v2.png";
-import { Lock, ShieldCheck, ChevronDown, AlertTriangle, Loader2 } from "lucide-react";
+import { Lock, ShieldCheck, ChevronDown, AlertTriangle, Loader2, Tag, CheckCircle2, X } from "lucide-react";
 import CheckoutCanvas from "./CheckoutCanvas";
 import { ScheduleBlock, formatEur, formatFrDate, todayPlusISO } from "./ScheduleBlock";
 
@@ -283,6 +283,12 @@ export default function PaymentLinkCheckout() {
   const [lookup, setLookup] = useState<PaymentLinkLookup | null>(null);
   const [lookupLoading, setLookupLoading] = useState(true);
   const [coupon, setCoupon] = useState<CouponState>({ status: "none" });
+  // Sprint P part 3 (17/05/2026) : champ coupon manuel sur /pay/<token>.
+  // Avant : coupon UNIQUEMENT auto-applique depuis ?promo=URL (Phase 1).
+  // Maintenant : champ input ouvrable + bouton "Appliquer" comme sur les
+  // checkouts directs (Checkout.tsx et LibertyCheckout.tsx).
+  const [couponInput, setCouponInput] = useState("");
+  const [couponOpen, setCouponOpen] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -313,8 +319,7 @@ export default function PaymentLinkCheckout() {
     };
   }, [token]);
 
-  // ── Validation du code promo (?promo=XXX) ──
-  // Phase 1 : validation silencieuse cote client puis affichage du discount.
+  // ── Validation du code promo ──
   // Source de verite finale = serveur (l'edge function reapplique la
   // validation et le targeting au moment du paiement).
   //
@@ -322,63 +327,72 @@ export default function PaymentLinkCheckout() {
   // la RPC verifie cote SQL que le coupon est applicable a ce produit. Si le
   // lien n'a pas de category attendue (lien CEO custom classique), on ne tente
   // meme pas de valider (aucun coupon ne s'applique sur ce type de lien).
-  useEffect(() => {
-    if (!urlPromoCode || !lookup || !lookup.is_valid) return;
+  //
+  // Sprint P part 3 : extraite en fonction reutilisable. Appelee soit
+  // automatiquement depuis ?promo=URL, soit manuellement via le bouton
+  // "Appliquer" (cf. onApplyCoupon).
+  async function applyCouponCode(rawCode: string, opts?: { showToast?: boolean }) {
+    const code = rawCode.trim().toUpperCase();
+    if (!code || !lookup || !lookup.is_valid) return;
     if (!lookup.expected_coupon_category) {
-      // Lien custom CEO classique : pas de coupon applicable
-      setCoupon({ status: "invalid", code: urlPromoCode, reason: "not_applicable_to_link" });
+      setCoupon({ status: "invalid", code, reason: "not_applicable_to_link" });
+      if (opts?.showToast) {
+        toast.error("Aucun code promo n'est applicable à ce lien.");
+      }
       return;
     }
-    let cancelled = false;
-    (async () => {
-      setCoupon({ status: "validating" });
-      try {
-        const { data, error } = await supabase.rpc("validate_coupon" as any, {
-          p_code: urlPromoCode,
-          p_expected_category: lookup.expected_coupon_category,
-        });
-        if (cancelled) return;
-        if (error || !data || !data.valid) {
-          setCoupon({
-            status: "invalid",
-            code: urlPromoCode,
-            reason: data?.reason || error?.message || "unknown",
-          });
-          return;
+    setCoupon({ status: "validating" });
+    try {
+      const { data, error } = await supabase.rpc("validate_coupon" as any, {
+        p_code: code,
+        p_expected_category: lookup.expected_coupon_category,
+      });
+      if (error || !data || !data.valid) {
+        const reason = data?.reason || error?.message || "unknown";
+        setCoupon({ status: "invalid", code, reason });
+        if (opts?.showToast) {
+          if (reason === "targeting_mismatch") {
+            toast.error(`Ce code n'est pas applicable à ce produit (${lookup.product_label}).`);
+          } else if (reason === "expired") {
+            toast.error("Ce code promo est expiré.");
+          } else if (reason === "max_redemptions_reached") {
+            toast.error("Ce code promo a atteint son nombre maximal d'utilisations.");
+          } else {
+            toast.error("Code promo invalide.");
+          }
         }
-        const total = Number(lookup.total_amount);
-        if (data.discount_type === "percent") {
-          const percent = Number(data.discount_percent) || 0;
-          const discountEur = Math.round((total * percent) / 100 * 100) / 100;
-          setCoupon({
-            status: "applied",
-            code: String(data.code),
-            discountType: "percent",
-            percent,
-            discountEur,
-          });
-        } else if (data.discount_type === "fixed_eur") {
-          const amountEur = Number(data.discount_amount_eur) || 0;
-          // Cap au total - 0.01 pour rester > 0
-          const discountEur = Math.min(amountEur, Math.max(0.01, total - 0.01));
-          setCoupon({
-            status: "applied",
-            code: String(data.code),
-            discountType: "fixed_eur",
-            amountEur,
-            discountEur,
-          });
-        }
-      } catch (e) {
-        if (cancelled) return;
-        console.error("[PaymentLinkCheckout] coupon validation error:", e);
-        setCoupon({ status: "invalid", code: urlPromoCode, reason: "error" });
+        return;
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+      const total = Number(lookup.total_amount);
+      if (data.discount_type === "percent") {
+        const percent = Number(data.discount_percent) || 0;
+        const discountEur = Math.round((total * percent) / 100 * 100) / 100;
+        setCoupon({ status: "applied", code: String(data.code), discountType: "percent", percent, discountEur });
+        if (opts?.showToast) toast.success(`Code ${data.code} appliqué — −${percent}%`);
+      } else if (data.discount_type === "fixed_eur") {
+        const amountEur = Number(data.discount_amount_eur) || 0;
+        const discountEur = Math.min(amountEur, Math.max(0.01, total - 0.01));
+        setCoupon({ status: "applied", code: String(data.code), discountType: "fixed_eur", amountEur, discountEur });
+        if (opts?.showToast) toast.success(`Code ${data.code} appliqué — −${amountEur}€`);
+      }
+    } catch (e) {
+      console.error("[PaymentLinkCheckout] coupon validation error:", e);
+      setCoupon({ status: "invalid", code, reason: "error" });
+      if (opts?.showToast) toast.error("Erreur lors de la vérification du code");
+    }
+  }
+
+  // Auto-application depuis ?promo= URL (silencieux, sans toast)
+  useEffect(() => {
+    if (!urlPromoCode || !lookup || !lookup.is_valid) return;
+    void applyCouponCode(urlPromoCode, { showToast: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlPromoCode, lookup]);
+
+  // Handler du bouton "Appliquer" (avec toast pour feedback utilisateur)
+  async function onApplyCoupon() {
+    await applyCouponCode(couponInput, { showToast: true });
+  }
 
   // Discount applique (0 si pas de coupon ou coupon invalide)
   const discountEur = coupon.status === "applied" ? coupon.discountEur : 0;
@@ -617,6 +631,118 @@ export default function PaymentLinkCheckout() {
               Code {coupon.code} invalide
             </div>
           )}
+
+          {/* Sprint P part 3 (17/05/2026) : champ coupon manuel.
+              Affiche uniquement si le lien accepte des coupons
+              (expected_coupon_category non null = Pass differe ou formation).
+              Pour les liens CEO custom classiques, on n'affiche rien. */}
+          {lookup.expected_coupon_category && (
+            <div style={{ marginTop: 18 }}>
+              {coupon.status === "applied" ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCoupon({ status: "none" });
+                    setCouponInput("");
+                    setCouponOpen(false);
+                  }}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: THEME.creamMuted,
+                    fontSize: 11.5,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: 0,
+                    fontFamily: "inherit",
+                  }}
+                >
+                  <X size={12} /> Retirer le code
+                </button>
+              ) : !couponOpen ? (
+                <button
+                  type="button"
+                  onClick={() => setCouponOpen(true)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: THEME.gold,
+                    fontSize: 12.5,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: 0,
+                    fontFamily: "inherit",
+                    textDecoration: "underline",
+                    textUnderlineOffset: 3,
+                  }}
+                >
+                  <Tag size={13} style={{ opacity: 0.8 }} />
+                  J'ai un code promo
+                </button>
+              ) : (
+                <div
+                  style={{
+                    display: "inline-flex",
+                    gap: 8,
+                    alignItems: "stretch",
+                    maxWidth: 360,
+                    width: "100%",
+                  }}
+                >
+                  <input
+                    type="text"
+                    placeholder="Entrez votre code"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void onApplyCoupon();
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "9px 12px",
+                      borderRadius: 8,
+                      background: "rgba(255,255,255,0.04)",
+                      border: `1px solid ${THEME.goldLine}`,
+                      color: THEME.cream,
+                      fontSize: 13,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                      outline: "none",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={onApplyCoupon}
+                    disabled={coupon.status === "validating" || !couponInput.trim()}
+                    style={{
+                      padding: "9px 16px",
+                      borderRadius: 8,
+                      background: THEME.gold,
+                      color: "#0A0A0A",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      letterSpacing: "0.04em",
+                      cursor: coupon.status === "validating" || !couponInput.trim() ? "not-allowed" : "pointer",
+                      border: "none",
+                      opacity: coupon.status === "validating" || !couponInput.trim() ? 0.5 : 1,
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {coupon.status === "validating" ? "…" : "APPLIQUER"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           <p
             style={{
               fontSize: 13,
