@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import {
   Elements,
@@ -559,6 +559,53 @@ export default function Checkout() {
       ? parsedInstallments
       : 1;
 
+  // ── Mode différé (Sprint L) ─────────────────────────────────────────────
+  // Si l'URL contient ?start=YYYY-MM-DD, on bascule sur le flow /pay/<token>
+  // (qui supporte parfaitement le mode différé via Sprint K) via la RPC
+  // create_pass_payment_link. Cela évite de dupliquer toute la logique
+  // différée dans Checkout.tsx (gros refactor edge function + webhook).
+  //
+  // Le client voit brièvement un loader puis arrive sur /pay/<token> avec
+  // le calendrier complet (toutes les dates) + date picker éditable.
+  const navigate = useNavigate();
+  const startParam = searchParams.get("start");
+  const isDeferredRequest =
+    !!startParam && /^\d{4}-\d{2}-\d{2}$/.test(startParam);
+  const deferredRedirectRef = useRef(false);
+  const [deferredRedirecting, setDeferredRedirecting] = useState(isDeferredRequest);
+  const [deferredError, setDeferredError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isDeferredRequest || deferredRedirectRef.current) return;
+    deferredRedirectRef.current = true;
+    (async () => {
+      try {
+        const { data, error: rpcErr } = await supabase.rpc(
+          "create_pass_payment_link" as any,
+          {
+            p_pass_slug: "al-baraka",
+            p_installments: installments,
+            p_deferred_start: startParam,
+          },
+        );
+        if (rpcErr) throw rpcErr;
+        const result = data as { success?: boolean; token?: string; error?: string };
+        if (result?.success && result.token) {
+          const target = `/pay/${result.token}${testMode ? "?test=1" : ""}`;
+          navigate(target, { replace: true });
+        } else {
+          console.error("[checkout-defer] RPC error:", result);
+          setDeferredError(result?.error || "rpc_failed");
+          setDeferredRedirecting(false);
+        }
+      } catch (e: any) {
+        console.error("[checkout-defer] fatal:", e);
+        setDeferredError(e?.message || "unexpected_error");
+        setDeferredRedirecting(false);
+      }
+    })();
+  }, [isDeferredRequest, installments, startParam, testMode, navigate]);
+
   // Lookup payment_code (acompte déjà versé) si le lien personnalisé contient
   // ?code=ALB-XXXXXX. On affiche un bandeau "Acompte déjà versé" et on déduit
   // automatiquement le montant des acomptes du solde à régler.
@@ -702,6 +749,65 @@ export default function Checkout() {
     }),
     [installments, payableTotal],
   );
+
+  // ── Mode différé : si redirect en cours, on affiche un loader propre ────
+  // (early return APRÈS tous les hooks, pour respecter les règles React)
+  if (deferredRedirecting) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: THEME.bg,
+          color: THEME.cream,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          padding: 24,
+          fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
+        }}
+      >
+        <img src={logo} alt="AL BARAKA" style={{ width: 64, height: 64, marginBottom: 20, opacity: 0.9 }} />
+        <div style={{ fontSize: 14, color: THEME.creamMuted, marginBottom: 8, letterSpacing: "0.1em" }}>
+          Pass AL BARAKA — {installments} mensualités
+        </div>
+        <div style={{ fontSize: 22, color: THEME.cream, fontFamily: "'Cormorant Garamond', serif", marginBottom: 14 }}>
+          Préparation du paiement différé…
+        </div>
+        <div style={{ fontSize: 13, color: THEME.creamMuted }}>
+          Redirection vers le tunnel sécurisé dans un instant.
+        </div>
+      </div>
+    );
+  }
+  if (deferredError) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: THEME.bg,
+          color: THEME.cream,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          padding: 24,
+          textAlign: "center",
+          fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
+        }}
+      >
+        <div style={{ fontSize: 22, color: "#fca5a5", marginBottom: 14, fontFamily: "'Cormorant Garamond', serif" }}>
+          Impossible de préparer le paiement différé
+        </div>
+        <div style={{ fontSize: 13, color: THEME.creamMuted, marginBottom: 8 }}>
+          Code d'erreur : <code style={{ color: "#fcd34d" }}>{deferredError}</code>
+        </div>
+        <div style={{ fontSize: 12, color: THEME.creamDim }}>
+          Contactez le support ou utilisez le lien sans la date différée.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
