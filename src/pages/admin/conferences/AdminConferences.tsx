@@ -92,7 +92,7 @@ export default function AdminConferences() {
       let q = supabase
         .from("conferences" as any)
         .select("*")
-        .order("conference_date", { ascending: false });
+        .order("conference_date", { ascending: true });
       if (statusFilter !== "all") {
         q = q.eq("status", statusFilter);
       }
@@ -101,6 +101,27 @@ export default function AdminConferences() {
       return (data as unknown as Conference[]) || [];
     },
   });
+
+  // Sprint S2 (17/05/2026) : split en 2 sections
+  //   - À venir : conference_date >= today, triées ASC (plus proche en haut)
+  //   - Passées : conference_date < today, triées DESC (plus récente du passé en haut)
+  // La conf du jour (ex: 17/05) reste dans "À venir" tant qu'on est le 17/05.
+  const { upcoming, past } = useMemo(() => {
+    if (!conferences) return { upcoming: [] as Conference[], past: [] as Conference[] };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const upcoming: Conference[] = [];
+    const past: Conference[] = [];
+    for (const c of conferences) {
+      const d = new Date(c.conference_date + "T12:00:00Z");
+      if (d.getTime() >= today.getTime()) upcoming.push(c);
+      else past.push(c);
+    }
+    // upcoming est deja trie ASC (plus proche en haut) car requete ASC
+    // past doit etre inverse pour avoir le plus recent en haut
+    past.reverse();
+    return { upcoming, past };
+  }, [conferences]);
 
   const updateMutation = useMutation({
     mutationFn: async (input: {
@@ -180,96 +201,80 @@ export default function AdminConferences() {
         <StatCard label="Archivées" value={counts.archived} icon={Archive} variant="muted" />
       </div>
 
-      {/* Filtre + liste */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Liste des conférences</CardTitle>
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes</SelectItem>
-              <SelectItem value="scheduled">En attente</SelectItem>
-              <SelectItem value="ready">Prêtes</SelectItem>
-              <SelectItem value="archived">Archivées</SelectItem>
-            </SelectContent>
-          </Select>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <p className="text-muted-foreground text-sm">Chargement…</p>
-          ) : !conferences || conferences.length === 0 ? (
-            <p className="text-muted-foreground text-sm">Aucune conférence ne correspond au filtre.</p>
-          ) : (
-            <div className="space-y-2">
-              {conferences.map((conf) => {
-                const statusCfg = STATUS_LABELS[conf.status];
-                const StatusIcon = statusCfg.icon;
-                const past = isPast(conf.conference_date);
-                const isReady = conf.status === "ready";
-                return (
-                  <div
-                    key={conf.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/40 transition-colors"
-                  >
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className="flex flex-col items-center justify-center w-16 h-16 rounded-md bg-muted/60 flex-shrink-0">
-                        <Calendar className="size-4 text-muted-foreground mb-1" />
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                          {new Date(conf.conference_date + "T12:00:00Z").toLocaleDateString("fr-FR", { month: "short" })}
-                        </span>
-                        <span className="text-sm font-bold leading-none">
-                          {new Date(conf.conference_date + "T12:00:00Z").getDate()}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium capitalize">{formatConferenceDate(conf.conference_date)}</div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
-                          <code className="bg-muted px-1.5 py-0.5 rounded">{conf.token}</code>
-                          {conf.replay_url && (
-                            <span className="inline-flex items-center gap-1">
-                              <Video className="size-3" />
-                              <span className="truncate max-w-[200px]">Replay configuré</span>
-                            </span>
-                          )}
-                          {!past && (
-                            <Badge variant="outline" className="text-[10px]">À venir</Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <Badge variant={statusCfg.variant} className="gap-1">
-                        <StatusIcon className="size-3" />
-                        {statusCfg.label}
-                      </Badge>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setEditingConf(conf)}
-                      >
-                        <Settings2 className="size-4 mr-1.5" />
-                        Configurer
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={isReady ? "default" : "outline"}
-                        disabled={!isReady}
-                        onClick={() => copyLink(conf.token)}
-                        title={isReady ? "Copier le lien à partager" : "Renseignez d'abord le replay pour activer le partage"}
-                      >
-                        <Copy className="size-4 mr-1.5" />
-                        Copier le lien
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+      {/* Filtre global */}
+      <div className="flex justify-end">
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toutes</SelectItem>
+            <SelectItem value="scheduled">En attente</SelectItem>
+            <SelectItem value="ready">Prêtes</SelectItem>
+            <SelectItem value="archived">Archivées</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-6 text-muted-foreground text-sm">Chargement…</CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Section "À venir" */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="size-5 text-primary" />
+                À venir
+                <span className="text-sm font-normal text-muted-foreground">({upcoming.length})</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {upcoming.length === 0 ? (
+                <p className="text-muted-foreground text-sm">Aucune conférence à venir{statusFilter !== "all" ? " avec ce statut" : ""}.</p>
+              ) : (
+                <div className="space-y-2">
+                  {upcoming.map((conf) => (
+                    <ConferenceRow
+                      key={conf.id}
+                      conference={conf}
+                      onConfigure={setEditingConf}
+                      onCopy={copyLink}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Section "Passées" */}
+          {past.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-muted-foreground">
+                  <Archive className="size-5" />
+                  Passées
+                  <span className="text-sm font-normal text-muted-foreground">({past.length})</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {past.map((conf) => (
+                    <ConferenceRow
+                      key={conf.id}
+                      conference={conf}
+                      onConfigure={setEditingConf}
+                      onCopy={copyLink}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+        </>
+      )}
 
       {/* Modal de configuration */}
       {editingConf && (
@@ -281,6 +286,71 @@ export default function AdminConferences() {
           saving={updateMutation.isPending}
         />
       )}
+    </div>
+  );
+}
+
+function ConferenceRow({
+  conference,
+  onConfigure,
+  onCopy,
+}: {
+  conference: Conference;
+  onConfigure: (c: Conference) => void;
+  onCopy: (token: string) => void;
+}) {
+  const statusCfg = STATUS_LABELS[conference.status];
+  const StatusIcon = statusCfg.icon;
+  const past = isPast(conference.conference_date);
+  const isReady = conference.status === "ready";
+  return (
+    <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/40 transition-colors">
+      <div className="flex items-center gap-4 flex-1 min-w-0">
+        <div className="flex flex-col items-center justify-center w-16 h-16 rounded-md bg-muted/60 flex-shrink-0">
+          <Calendar className="size-4 text-muted-foreground mb-1" />
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+            {new Date(conference.conference_date + "T12:00:00Z").toLocaleDateString("fr-FR", { month: "short" })}
+          </span>
+          <span className="text-sm font-bold leading-none">
+            {new Date(conference.conference_date + "T12:00:00Z").getDate()}
+          </span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-medium capitalize">{formatConferenceDate(conference.conference_date)}</div>
+          <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+            <code className="bg-muted px-1.5 py-0.5 rounded">{conference.token}</code>
+            {conference.replay_url && (
+              <span className="inline-flex items-center gap-1">
+                <Video className="size-3" />
+                <span className="truncate max-w-[200px]">Replay configuré</span>
+              </span>
+            )}
+            {!past && (
+              <Badge variant="outline" className="text-[10px]">À venir</Badge>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <Badge variant={statusCfg.variant} className="gap-1">
+          <StatusIcon className="size-3" />
+          {statusCfg.label}
+        </Badge>
+        <Button size="sm" variant="outline" onClick={() => onConfigure(conference)}>
+          <Settings2 className="size-4 mr-1.5" />
+          Configurer
+        </Button>
+        <Button
+          size="sm"
+          variant={isReady ? "default" : "outline"}
+          disabled={!isReady}
+          onClick={() => onCopy(conference.token)}
+          title={isReady ? "Copier le lien à partager" : "Renseignez d'abord le replay pour activer le partage"}
+        >
+          <Copy className="size-4 mr-1.5" />
+          Copier le lien
+        </Button>
+      </div>
     </div>
   );
 }

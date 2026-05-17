@@ -141,6 +141,7 @@ const App = () => (
               <Route path="/rebill/:token" element={<RebillCheckout />} />
               <Route path="/pay/:token" element={<PaymentLinkCheckout />} />
               <Route path="/checkout/formation/:slug" element={<FormationCheckout />} />
+              <Route path="/checkout/formation/:slug/:installments" element={<FormationCheckout />} />
               <Route element={<ProtectedRoute />}>
                 {/* Onboarding (no layout) */}
                 <Route path="/onboarding" element={<ApporteurOnboarding />} />
