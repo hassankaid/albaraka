@@ -95,6 +95,27 @@ function addMonthsISO(base: Date, months: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Découpe un montant total en N mensualités EXACTES où la DERNIÈRE absorbe
+ * les centimes de l'arrondi. Garantit que la somme est rigoureusement égale
+ * au total en centimes.
+ *
+ * Exemple : splitIntoInstallmentsCents(200000, 7)
+ *   = [28571, 28571, 28571, 28571, 28571, 28571, 28574]  (= 200000)
+ *   = 6 × 285.71€ + 1 × 285.74€
+ *
+ * La dernière mensualité est toujours ≥ aux N-1 premières (de 0 à N-1
+ * centimes max). Cohérent avec la convention "dernière absorbe extras"
+ * actée par Hassan + Sidali le 17/05/2026.
+ */
+function splitIntoInstallmentsCents(totalCents: number, installments: number): number[] {
+  if (installments < 1) return [];
+  if (installments === 1) return [totalCents];
+  const baseCents = Math.floor(totalCents / installments);
+  const lastCents = totalCents - baseCents * (installments - 1);
+  return [...Array(installments - 1).fill(baseCents), lastCents];
+}
+
 function extractId(field: unknown): string | null {
   if (!field) return null;
   if (typeof field === "string") return field;
@@ -338,15 +359,21 @@ async function ensureBonCommandeOrder(
     throw saleErr ?? new Error("sale insert failed");
   }
 
-  const perInstallment = Math.round((totalNet / installments) * 100) / 100;
+  // Decoupage exact "derniere absorbe les centimes" (cf. Sprint O — 17/05/2026).
+  // Garantit sum(amount) == amount_ht au centime pres. La derniere mensualite
+  // est ≥ aux N-1 premieres (de 0 a N-1 centimes max). Cote Stripe, le
+  // Subscription Schedule cree par create-payment-intent emet bien des
+  // invoices alignees (phase 1 a baseCents x N-1, phase 2 a lastCents x 1).
+  const totalCentsBon = Math.round(totalNet * 100);
+  const breakdownCents = splitIntoInstallmentsCents(totalCentsBon, installments);
   const today = new Date();
 
-  const rows = Array.from({ length: installments }, (_, i) => ({
+  const rows = breakdownCents.map((cents, i) => ({
     sale_id: sale.id,
     contact_id: contact.id,
     payment_number: i + 1,
     total_payments: installments,
-    amount: perInstallment,
+    amount: cents / 100,
     due_date: addMonthsISO(today, i),
     status: "pending" as const,
     payment_method: "stripe",
@@ -599,19 +626,21 @@ async function ensureCustomLinkOrder(
   }
 
   // ── Échéances ──
-  // 1re mensualité = first_payment_cents (absorbe les centimes), suivantes
-  // égales. Cohérent avec le calcul de create-payment-intent.
-  const restMonthlyCents =
-    installments > 1
-      ? Math.round((totalCents - firstPaymentCents) / (installments - 1))
-      : 0;
+  // Sprint O (17/05/2026) : algo "DERNIERE absorbe les centimes" (au lieu de
+  // l'ancien "1re absorbe"). Garantit sum(payments) == total_cents pile et
+  // cohérence avec le Subscription Schedule cote create-payment-intent qui
+  // emet phase 1 (N-1 invoices a baseCents) + phase 2 (1 invoice a lastCents).
+  //
+  // Note retrocompat : firstPaymentCents reste dans la metadata pour les
+  // anciennes ventes en cours (logique aucun impact ici, on n'utilise plus).
+  const breakdownCents = splitIntoInstallmentsCents(totalCents, installments);
   const baseDate = opts.baseDate ?? new Date();
-  const rows = Array.from({ length: installments }, (_, i) => ({
+  const rows = breakdownCents.map((cents, i) => ({
     sale_id: sale.id,
     contact_id: contactId,
     payment_number: i + 1,
     total_payments: installments,
-    amount: (i === 0 ? firstPaymentCents : restMonthlyCents) / 100,
+    amount: cents / 100,
     due_date: addMonthsISO(baseDate, i),
     status: "pending" as const,
     payment_method: "stripe",
@@ -1588,6 +1617,140 @@ async function handleInvoicePaid(
   triggerClientInvoice(target.id);
 }
 
+/**
+ * Sprint O (17/05/2026) — Ajustement automatique de la DERNIERE invoice pour
+ * que Stripe encaisse EXACTEMENT le total prevu (au lieu d'avoir +/- 0.03€
+ * d'ecart du a l'arrondi des invoices recurrentes).
+ *
+ * Mecanique :
+ *   1. create-payment-intent stocke dans la sub.metadata :
+ *        - installments_total (ex: 7)
+ *        - base_payment_cents (ex: 28571 = montant emis par chaque invoice)
+ *        - last_payment_cents (ex: 28574 = montant attendu de la derniere)
+ *   2. Stripe Subscription emet baseCents x N invoices
+ *   3. A chaque invoice.paid : on compte les payments paid en BDD pour cette sub
+ *   4. Si count == installments_total - 1 (l'avant-derniere vient d'etre payee)
+ *      -> POST /invoice_items avec adjustment = lastCents - baseCents
+ *      -> Stripe ajoute automatiquement cet item a la PROCHAINE invoice (= la
+ *         derniere) -> facture finale = baseCents + adjustment = lastCents
+ *
+ * Idempotence via tag metadata sur l'invoice_item (sprint_o_last_adjust).
+ *
+ * Skip silencieux si sub pre-Sprint O (pas de metadata installments_total).
+ */
+async function maybeAdjustLastInvoiceForSubscription(
+  supabase: SupabaseClient,
+  invoice: Record<string, unknown>,
+  apiKey: string,
+): Promise<void> {
+  if (!apiKey) return;
+  const subscriptionId = extractId(invoice.subscription);
+  const customerId = extractId(invoice.customer);
+  if (!subscriptionId || !customerId) return;
+
+  try {
+    // 1. Recuperer la metadata de la sub
+    const subRes = await fetch(
+      `https://api.stripe.com/v1/subscriptions/${subscriptionId}`,
+      { method: "GET", headers: { Authorization: `Bearer ${apiKey}` } },
+    );
+    if (!subRes.ok) {
+      console.warn(
+        `[sprint-o/adjust] failed to fetch sub ${subscriptionId}: ${subRes.status}`,
+      );
+      return;
+    }
+    const sub = await subRes.json() as { metadata?: Record<string, string> };
+    const meta = sub.metadata || {};
+    const installmentsTotal = Number(meta.installments_total || 0);
+    const baseCents = Number(meta.base_payment_cents || 0);
+    const lastCents = Number(meta.last_payment_cents || 0);
+
+    if (!installmentsTotal || installmentsTotal < 2 || !baseCents || !lastCents) {
+      // Sub pre-Sprint O (pas de metadata) ou plan 1x -> rien a faire
+      return;
+    }
+
+    const adjustment = lastCents - baseCents;
+    if (adjustment <= 0) {
+      // Cas rare : total parfaitement divisible (ex: 1000€ en 5×) -> aucun ajustement
+      return;
+    }
+
+    // 2. Compter les payments paid pour cette sub (incl. celui qu'on vient de marquer)
+    const { count } = await supabase
+      .from("payments")
+      .select("id", { count: "exact", head: true })
+      .eq("stripe_subscription_id", subscriptionId)
+      .eq("status", "paid");
+
+    const paidCount = count || 0;
+    if (paidCount !== installmentsTotal - 1) {
+      console.log(
+        `[sprint-o/adjust] sub ${subscriptionId}: paid=${paidCount}/${installmentsTotal}, no adjustment yet`,
+      );
+      return;
+    }
+
+    // 3. Idempotence : verifier qu'on n'a pas deja cree l'invoice_item
+    //    On liste les invoice_items pending pour ce customer.
+    const listRes = await fetch(
+      `https://api.stripe.com/v1/invoiceitems?customer=${customerId}&pending=true&limit=20`,
+      { method: "GET", headers: { Authorization: `Bearer ${apiKey}` } },
+    );
+    if (listRes.ok) {
+      const list = await listRes.json() as {
+        data?: Array<{
+          metadata?: Record<string, string>;
+          subscription?: string;
+        }>;
+      };
+      const alreadyExists = (list.data || []).some(
+        (item) =>
+          item.subscription === subscriptionId &&
+          item.metadata?.sprint_o_last_adjust === "1",
+      );
+      if (alreadyExists) {
+        console.log(
+          `[sprint-o/adjust] sub ${subscriptionId}: invoice_item already exists, skip`,
+        );
+        return;
+      }
+    }
+
+    // 4. Creer l'invoice_item pour la prochaine (= derniere) invoice
+    const body = new URLSearchParams();
+    body.set("customer", customerId);
+    body.set("subscription", subscriptionId);
+    body.set("currency", "eur");
+    body.set("unit_amount", String(adjustment));
+    body.set("quantity", "1");
+    body.set("description", "Ajustement final");
+    body.set("metadata[sprint_o_last_adjust]", "1");
+
+    const createRes = await fetch("https://api.stripe.com/v1/invoiceitems", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: body.toString(),
+    });
+    if (!createRes.ok) {
+      const text = await createRes.text();
+      console.error(
+        `[sprint-o/adjust] failed to POST invoiceitem for sub ${subscriptionId}: ${createRes.status} ${text}`,
+      );
+      return;
+    }
+    console.log(
+      `[sprint-o/adjust] sub ${subscriptionId}: invoice_item +${adjustment}c queued for next (last) invoice`,
+    );
+  } catch (e) {
+    console.error("[sprint-o/adjust] unexpected error:", e);
+  }
+}
+
 async function handleInvoiceFailed(
   supabase: SupabaseClient,
   obj: Record<string, unknown>,
@@ -1692,9 +1855,23 @@ Deno.serve(async (req) => {
         }
 
         case "invoice.paid":
-        case "invoice.payment_succeeded":
+        case "invoice.payment_succeeded": {
           await handleInvoicePaid(supabase, event.data.object);
+          // Sprint O (17/05/2026) : si on vient de payer l'avant-derniere
+          // invoice d'une sub avec metadata Sprint O, ajoute un invoice_item
+          // a la prochaine (= derniere) invoice pour que Stripe encaisse le
+          // total exact (ajustement de qq centimes). Skip silencieusement si
+          // sub pre-Sprint O ou si ce n'est pas l'avant-derniere.
+          const apiKeyForAdjust = event.livemode ? STRIPE_SECRET_KEY_LIVE : STRIPE_SECRET_KEY_TEST;
+          if (apiKeyForAdjust) {
+            await maybeAdjustLastInvoiceForSubscription(
+              supabase,
+              event.data.object,
+              apiKeyForAdjust,
+            );
+          }
           break;
+        }
 
         case "invoice.payment_failed":
         case "charge.failed":

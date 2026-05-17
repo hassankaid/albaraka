@@ -58,6 +58,25 @@ const REBILL_PRODUCT_ID = "rebill_plan";
 const REBILL_PRODUCT_NAME = "Solde restant — Plan modifié";
 const REBILL_MAX_INSTALLMENTS = 12;
 
+/**
+ * Découpe un montant total en N mensualités EXACTES où la DERNIÈRE absorbe
+ * les centimes de l'arrondi. Garantit que la somme = total en centimes.
+ *
+ * Exemple : splitIntoInstallmentsCents(200000, 7)
+ *   = [28571, 28571, 28571, 28571, 28571, 28571, 28574]  (= 200000)
+ *   = 6 × 285.71€ + 1 × 285.74€
+ *
+ * La dernière est toujours ≥ aux N-1 premières (0 à N-1 centimes max).
+ * Convention "dernière absorbe extras" actée Hassan+Sidali le 17/05/2026.
+ */
+function splitIntoInstallmentsCents(totalCents: number, installments: number): number[] {
+  if (installments < 1) return [];
+  if (installments === 1) return [totalCents];
+  const baseCents = Math.floor(totalCents / installments);
+  const lastCents = totalCents - baseCents * (installments - 1);
+  return [...Array(installments - 1).fill(baseCents), lastCents];
+}
+
 function flattenParams(params: Record<string, unknown>): URLSearchParams {
   const out = new URLSearchParams();
   const walk = (value: unknown, prefix: string) => {
@@ -293,7 +312,15 @@ Deno.serve(async (req) => {
         );
       }
 
-      const libMonthlyCents = Math.round(libPayableCents / libInstallments);
+      // Sprint O (17/05/2026) : breakdown "derniere absorbe" -> baseCents = floor
+      const libBreakdown = splitIntoInstallmentsCents(libPayableCents, libInstallments);
+      const libBaseCents = libInstallments > 1 ? libBreakdown[0] : libPayableCents;
+      const libLastCents = libBreakdown[libBreakdown.length - 1];
+      // Note : libMonthlyCents = libBaseCents (= ce que Stripe Subscription
+      // emet a chaque invoice). La derniere invoice sera ajustee par le
+      // webhook stripe-webhook a la reception de l'avant-derniere
+      // invoice.payment_succeeded via POST /invoice_items.
+      const libMonthlyCents = libBaseCents;
 
       const libMetadata: Record<string, string> = {
         installments: String(libInstallments),
@@ -312,6 +339,10 @@ Deno.serve(async (req) => {
         customer_country: String(customer.country || ""),
         payable_cents: String(libPayableCents),
         total_brut_cents: String(libTotalCents),
+        // Metadata Sprint O pour ajustement derniere invoice (cf. webhook)
+        installments_total: String(libInstallments),
+        base_payment_cents: String(libBaseCents),
+        last_payment_cents: String(libLastCents),
       };
 
       if (libInstallments === 1) {
@@ -572,7 +603,25 @@ Deno.serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      const firstAmountCents = Math.round(Number(firstPending.amount) * 100);
+      // Sprint O (17/05/2026) : breakdown "DERNIERE absorbe" pour rebill aussi.
+      // baseCents = floor(total/N), lastCents = total - base*(N-1)
+      // Stripe Subscription emet baseCents par invoice, l'ajustement sur la
+      // derniere invoice est ajoute par le webhook via POST /invoice_items.
+      //
+      // Note importante : si les rows pending en BDD (cree par le wizard
+      // ReschedulePaymentsModal) ont encore l'ancien algo "1re absorbe",
+      // le webhook ensureBonCommandeOrder recalcule le breakdown lors de
+      // la creation de la sale -> coherence garantie. Pour le rebill, les
+      // pending existent DEJA -> le wizard frontend doit etre mis a jour
+      // (TODO Sprint O suite) pour generer les pending avec "derniere absorbe".
+      const rebillBreakdown = splitIntoInstallmentsCents(payableTotalCents, installmentsCount);
+      const rebillBaseCents = installmentsCount > 1 ? rebillBreakdown[0] : payableTotalCents;
+      const rebillLastCents = rebillBreakdown[rebillBreakdown.length - 1];
+      // 1re mensualité Stripe = baseCents (ancien : firstPending.amount).
+      // Si le wizard frontend n'a pas encore ete mis a jour, firstPending.amount
+      // peut differer de baseCents -> on prefere baseCents pour cohérence avec
+      // le breakdown + Stripe Subscription.
+      const firstAmountCents = rebillBaseCents;
 
       const rebillMetadata: Record<string, string> = {
         product: productLabel,
@@ -592,6 +641,10 @@ Deno.serve(async (req) => {
         customer_country: String(customer.country || ""),
         payable_cents: String(payableTotalCents),
         first_payment_cents: String(firstAmountCents),
+        // Metadata Sprint O pour ajustement derniere invoice (cf. webhook)
+        installments_total: String(installmentsCount),
+        base_payment_cents: String(rebillBaseCents),
+        last_payment_cents: String(rebillLastCents),
       };
 
       // 1x → PaymentIntent unique (montant total = 1re mensualité = solde).
@@ -639,20 +692,13 @@ Deno.serve(async (req) => {
 
       // Nx → Subscription Stripe.
       //
-      // Le wizard ReschedulePaymentsModal applique un algo "1re mensualité
-      // absorbe les centimes restants, suivantes égales à baseCents". Donc :
-      //   payable_total = (baseCents + extraCents) + (N-1) × baseCents
-      //                 = N × baseCents + extraCents
-      //   firstAmountCents = baseCents + extraCents
-      //   remainingCents   = (N-1) × baseCents
-      //
-      // On configure la Subscription avec :
-      //   unit_amount récurrent = baseCents (les N invoices)
-      //   add_invoice_items[0]  = extraCents (one-shot sur la 1re invoice)
-      // → Invoice 1 facture exactement firstAmountCents ; les suivantes baseCents.
-      // → Total Stripe = total BDD au centime près.
-      const remainingCents = payableTotalCents - firstAmountCents;
-      const restMonthlyCents = Math.round(remainingCents / (installmentsCount - 1));
+      // Sprint O (17/05/2026) : algo "DERNIERE absorbe les centimes".
+      // Stripe Subscription emet baseCents par invoice. L'ajustement de la
+      // derniere invoice (= lastCents - baseCents) est ajoute par le webhook
+      // a la reception de l'avant-derniere invoice.payment_succeeded via
+      // POST /invoice_items?customer=...&subscription=...
+      // -> Total Stripe = N x baseCents + adjustment = payableTotalCents EXACT
+      const restMonthlyCents = rebillBaseCents;
 
       // Lookup customer Stripe
       const rebillSearch = await stripeFetch<{ data: Array<{ id: string }> }>(
@@ -753,19 +799,10 @@ Deno.serve(async (req) => {
         rebillSubParams["expand[0]"] = "pending_setup_intent";
       }
 
-      // Ajustement one-shot de la 1re facture pour atteindre exactement
-      // firstAmountCents. Garantit Stripe == BDD au centime près grâce à
-      // l'algo "first-payment-absorbs-extras" du wizard ReschedulePayments.
-      const adjustmentCents = firstAmountCents - restMonthlyCents;
-      if (adjustmentCents > 0) {
-        rebillSubParams["add_invoice_items[0][price_data][currency]"] = "eur";
-        rebillSubParams["add_invoice_items[0][price_data][product]"] = rebillProductId;
-        rebillSubParams["add_invoice_items[0][price_data][unit_amount]"] = adjustmentCents;
-        rebillSubParams["add_invoice_items[0][quantity]"] = 1;
-      }
-      // Si adjustmentCents < 0 (ne peut survenir qu'avec d'anciens pending
-      // pré-algo) : on ne corrige pas — le wizard remet de toute façon les
-      // pending au format "first absorbs extras" avant l'émission du token.
+      // Sprint O (17/05/2026) : SUPPRIME add_invoice_items qui mettait
+      // l'adjustment sur la 1re facture. Desormais les centimes vont sur la
+      // DERNIERE facture via POST /invoice_items declenche par le webhook
+      // (cf. metadata installments_total + last_payment_cents).
 
       const rebillSub = await stripeFetch<{
         id: string;
@@ -1007,9 +1044,17 @@ Deno.serve(async (req) => {
       // customTotalCents = total net APRES coupon (si applique).
       const customTotalCentsBrut = Math.round(totalEur * 100);
       const customTotalCents = customTotalCentsBrut - customDiscountCents;
-      const customBaseCents = Math.floor(customTotalCents / installmentsCount);
-      const customExtraCents = customTotalCents - customBaseCents * installmentsCount;
-      const customFirstCents = customBaseCents + customExtraCents;
+      // Sprint O (17/05/2026) : breakdown "DERNIERE absorbe" (au lieu de "1re").
+      // baseCents = floor(total/N), lastCents = total - base*(N-1)
+      // -> Stripe Subscription emet baseCents x N invoices ; la derniere
+      // invoice est ajustee par le webhook a la reception de l'avant-derniere
+      // invoice.payment_succeeded via POST /invoice_items (+adjustment cents).
+      const customBreakdown = splitIntoInstallmentsCents(customTotalCents, installmentsCount);
+      const customBaseCents = installmentsCount > 1 ? customBreakdown[0] : customTotalCents;
+      const customLastCents = customBreakdown[customBreakdown.length - 1];
+      // ANCIEN "1re absorbe" : customFirstCents = customBaseCents + customExtraCents
+      // SPRINT O : 1re mensualité = baseCents (les centimes vont sur la derniere)
+      const customFirstCents = customBaseCents;
 
       const customMetadata: Record<string, string> = {
         product: productLabel,
@@ -1019,6 +1064,9 @@ Deno.serve(async (req) => {
         payment_link_id: String(link.link_id),
         installments: String(installmentsCount),
         total_cents: String(customTotalCents),
+        // first_payment_cents legacy : maintenu pour retrocompat (webhook
+        // ensureCustomLinkOrder n'en depend plus depuis Sprint O mais ancienne
+        // metadata peut subsister sur ventes en cours)
         first_payment_cents: String(customFirstCents),
         test_mode: isTestMode ? "true" : "false",
         customer_email: email,
@@ -1031,6 +1079,10 @@ Deno.serve(async (req) => {
         coupon_code: customCouponApplied || "",
         discount_cents: String(customDiscountCents),
         total_brut_cents: String(customTotalCentsBrut),
+        // Metadata Sprint O pour ajustement derniere invoice (cf. webhook)
+        installments_total: String(installmentsCount),
+        base_payment_cents: String(customBaseCents),
+        last_payment_cents: String(customLastCents),
       };
       if (isDeferredStart) {
         customMetadata.start_at = startAtIsoDate as string;
@@ -1143,12 +1195,10 @@ Deno.serve(async (req) => {
         customSubParams["expand[0]"] = "pending_setup_intent";
       }
 
-      if (customExtraCents > 0) {
-        customSubParams["add_invoice_items[0][price_data][currency]"] = "eur";
-        customSubParams["add_invoice_items[0][price_data][product]"] = customProductId;
-        customSubParams["add_invoice_items[0][price_data][unit_amount]"] = customExtraCents;
-        customSubParams["add_invoice_items[0][quantity]"] = 1;
-      }
+      // Sprint O (17/05/2026) : SUPPRIME add_invoice_items qui mettait les extras
+      // sur la 1re facture. Desormais, les centimes vont sur la DERNIERE facture
+      // via POST /invoice_items declenche par le webhook a l'avant-derniere
+      // invoice.payment_succeeded (cf. metadata installments_total + last_payment_cents).
 
       const customSub = await stripeFetch<{
         id: string;
@@ -1282,8 +1332,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Pour la subscription : prix unitaire = payable / installments
-    const monthlyCents = Math.round(payableCents / installments);
+    // Sprint O (17/05/2026) : breakdown "derniere absorbe les centimes"
+    // baseCents = floor(payable / N), lastCents = payable - base*(N-1)
+    // -> Stripe Subscription emet baseCents par invoice ; la derniere invoice
+    // est ajustee par le webhook a la reception de l'avant-derniere
+    // invoice.payment_succeeded via POST /invoice_items.
+    const passBreakdown = splitIntoInstallmentsCents(payableCents, installments);
+    const passBaseCents = installments > 1 ? passBreakdown[0] : payableCents;
+    const passLastCents = passBreakdown[passBreakdown.length - 1];
+    const monthlyCents = passBaseCents;
 
     const metadata: Record<string, string> = {
       installments: String(installments),
@@ -1306,6 +1363,10 @@ Deno.serve(async (req) => {
       acompte_sale_ids: acompteSaleIds.join(","),
       payable_cents: String(payableCents),
       total_brut_cents: String(totalCents),
+      // Metadata Sprint O pour ajustement derniere invoice (cf. webhook)
+      installments_total: String(installments),
+      base_payment_cents: String(passBaseCents),
+      last_payment_cents: String(passLastCents),
     };
 
     if (installments === 1) {
