@@ -121,7 +121,6 @@ function PricingSection({ offers }: { offers: Offer[] }) {
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead>Offre</TableHead>
                 <TableHead>Catégorie</TableHead>
-                <TableHead>Mensualités</TableHead>
                 <TableHead className="text-right">Prix HT</TableHead>
                 <TableHead className="w-[120px]"></TableHead>
               </TableRow>
@@ -132,9 +131,6 @@ function PricingSection({ offers }: { offers: Offer[] }) {
                   <TableCell className="font-medium text-foreground">{o.label}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-[10px]">{CATEGORY_LABEL[o.category]}</Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {o.min_installments_count}× à {o.max_installments_count}×
                   </TableCell>
                   <TableCell className="text-right">
                     {editingId === o.id ? (
