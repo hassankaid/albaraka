@@ -152,10 +152,16 @@ async function ensureBonCommandeOrder(
   const isLiberty = source === "pass_liberty";
 
   // Configuration produit (paramétrée selon source)
+  // Sprint Q (17/05/2026) : totalGross lu en priorite depuis metadata Stripe
+  // (`total_brut_cents` envoye par create-payment-intent qui lit la table offers).
+  // Fallback hardcoded au prix actuel du catalog au cas ou la metadata manque
+  // (vieilles ventes pre-Sprint Q).
+  const metaTotalBrutCents = Number(metadata.total_brut_cents) || 0;
+  const totalGrossFromMeta = metaTotalBrutCents > 0 ? metaTotalBrutCents / 100 : null;
   const productCfg = isLiberty
     ? {
         productName: "PASS LIBERTY",
-        totalGross: 5000,
+        totalGross: totalGrossFromMeta ?? 5000,
         passType: "liberty" as const,
         maxInstallments: 10,
         logTag: "[liberty]",
@@ -163,7 +169,7 @@ async function ensureBonCommandeOrder(
       }
     : {
         productName: "PASS AL BARAKA",
-        totalGross: 2500,
+        totalGross: totalGrossFromMeta ?? 3000,
         passType: "al_baraka" as const,
         maxInstallments: 8,
         logTag: "[bon_commande]",

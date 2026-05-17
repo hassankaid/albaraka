@@ -34,7 +34,10 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // PASS AL BARAKA
-const TOTAL_AMOUNT_EUR = 2500;
+// Sprint Q (17/05/2026) : prix lu dynamiquement depuis offers (slug=al-baraka),
+// la constante ci-dessous n'est qu'un FALLBACK si la requete BDD echoue.
+// Cf. resolvePassPrice() utilise dans la branche pass_al_baraka.
+const TOTAL_AMOUNT_EUR = 3000;
 const PRODUCT_NAME = "PASS AL BARAKA";
 const PRODUCT_ID = "pass_al_baraka";
 
@@ -75,6 +78,54 @@ function splitIntoInstallmentsCents(totalCents: number, installments: number): n
   const baseCents = Math.floor(totalCents / installments);
   const lastCents = totalCents - baseCents * (installments - 1);
   return [...Array(installments - 1).fill(baseCents), lastCents];
+}
+
+/**
+ * Sprint Q (17/05/2026) — Resolution dynamique du prix d'un Pass (AL BARAKA
+ * ou Liberty) depuis la table offers (source de verite du catalogue admin).
+ *
+ * Avant Sprint Q : prix hardcoded dans des constantes → desync possible avec
+ * le catalog (cas reel : Hassan a passe AL BARAKA de 2500 a 3000 dans le
+ * catalog, le code charge encore 2500 → perte 500€/vente).
+ *
+ * Apres Sprint Q : lit offers.default_price_ht. Si echec (DB down, slug
+ * inconnu, status inactive), fallback sur la constante fournie.
+ */
+async function resolvePassPrice(
+  supabase: ReturnType<typeof createClient>,
+  slug: string,
+  fallbackEur: number,
+): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from("offers")
+      .select("default_price_ht, status")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (error || !data) {
+      console.warn(
+        `[resolvePassPrice] failed to fetch slug=${slug} (${error?.message ?? "no data"}), fallback ${fallbackEur}`,
+      );
+      return fallbackEur;
+    }
+    if (data.status !== "active") {
+      console.warn(
+        `[resolvePassPrice] slug=${slug} status=${data.status}, fallback ${fallbackEur}`,
+      );
+      return fallbackEur;
+    }
+    const price = Number(data.default_price_ht);
+    if (!Number.isFinite(price) || price <= 0) {
+      console.warn(
+        `[resolvePassPrice] slug=${slug} invalid default_price_ht=${data.default_price_ht}, fallback ${fallbackEur}`,
+      );
+      return fallbackEur;
+    }
+    return price;
+  } catch (e) {
+    console.error(`[resolvePassPrice] exception for slug=${slug}:`, e);
+    return fallbackEur;
+  }
 }
 
 /**
@@ -363,10 +414,13 @@ Deno.serve(async (req) => {
           ? input.coupon_code.trim().toUpperCase()
           : undefined;
 
+      // Sprint Q : prix lu dynamiquement depuis offers (slug='liberty')
+      const libPriceEur = await resolvePassPrice(supabase, "liberty", LIBERTY_TOTAL_EUR);
+      const libTotalCents = Math.round(libPriceEur * 100);
+
       // Validation coupon (Sprint P : supporte fixed_eur + percent + targeting) ──
       // Note : LIBERTY2000 (legacy) ne s'applique QUE en 1x (regle business
       // historique). On garde le check explicite avant d'appeler le helper.
-      const libTotalCents = LIBERTY_TOTAL_EUR * 100;
       let libDiscountPercent = 0;
       let libDiscountCents = 0;
       let libCouponApplied: string | null = null;
@@ -1326,12 +1380,15 @@ Deno.serve(async (req) => {
         ? input.payment_code.trim().toUpperCase()
         : undefined;
 
+    // ── Resolution du prix (Sprint Q : lit la table offers, source de verite catalog) ──
+    const passPriceEur = await resolvePassPrice(supabase, "al-baraka", TOTAL_AMOUNT_EUR);
+    const passTotalCentsBrut = Math.round(passPriceEur * 100);
+
     // ── Résolution du coupon (Sprint P : supporte fixed_eur + percent + targeting) ──
     // On utilise le helper unifie qui :
     //   - check le targeting (category 'al_baraka' OU offer_id dans cette categorie)
     //   - calcule le discount en cents quel que soit discount_type
     //   - retourne 0 si pas applicable (silencieux, on log)
-    const passTotalCentsBrut = TOTAL_AMOUNT_EUR * 100;
     const passCouponResult = await resolveCouponDiscountCents(
       supabase,
       couponCode || "",
