@@ -444,24 +444,35 @@ function ConferenceEditModal({
 
         <div className="space-y-4 mt-2">
           <div>
-            <Label htmlFor="replay-url">URL Zoom du replay</Label>
+            <Label htmlFor="replay-url">URL du replay</Label>
             <Input
               id="replay-url"
               value={replayUrl}
               onChange={(e) => setReplayUrl(e.target.value)}
-              placeholder="https://zoom.us/rec/share/..."
+              placeholder="https://youtube.com/watch?v=... ou https://zoom.us/rec/share/..."
               className="mt-1"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              💡 <strong>Pour un visionnage intégré directement dans la page</strong> (sans pop-up),
+              privilégie <strong>YouTube</strong> (en mode « non répertoriée »), <strong>Vimeo</strong> ou <strong>Loom</strong>.<br/>
+              Avec <strong>Zoom</strong>, l'embed est bloqué (limite de leur sécurité) → la page affichera
+              un bouton pour ouvrir Zoom dans un nouvel onglet. Le compteur continue de tourner.
+            </p>
           </div>
           <div>
-            <Label htmlFor="replay-code">Code d'accès Zoom</Label>
+            <Label htmlFor="replay-code">
+              Code d'accès <span className="text-muted-foreground font-normal">(optionnel)</span>
+            </Label>
             <Input
               id="replay-code"
               value={replayCode}
               onChange={(e) => setReplayCode(e.target.value)}
-              placeholder="Ex : abc123"
+              placeholder="Uniquement si Zoom (ex : abc123)"
               className="mt-1 font-mono"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Laisse vide pour YouTube / Vimeo / Loom (pas de code requis).
+            </p>
           </div>
           <div>
             <Label htmlFor="duration">Durée de la vidéo (minutes)</Label>

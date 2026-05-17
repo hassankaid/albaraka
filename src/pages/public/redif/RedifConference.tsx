@@ -17,7 +17,68 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, AlertTriangle, Copy, CheckCircle2, ExternalLink, Calendar } from "lucide-react";
+import { Loader2, AlertTriangle, Copy, CheckCircle2, ExternalLink, Calendar, Video } from "lucide-react";
+
+/**
+ * Sprint S3 (17/05/2026) — Detection du type d'URL pour adapter le rendu.
+ *
+ * YouTube / Vimeo / Loom supportent l'embed iframe natif → on convertit l'URL
+ * en URL embed et on affiche le lecteur directement dans la page.
+ *
+ * Zoom bloque l'embed via X-Frame-Options (limite cote Zoom, pas de
+ * contournement possible) → on affiche un placeholder + bouton externe
+ * "Ouvrir dans Zoom" clair, le timer continue de tourner.
+ *
+ * URL inconnue → tentative iframe + lien externe en dessous au cas ou ca
+ * passe (cas YouTube prive, vid hostee soi-meme, etc.).
+ */
+type EmbedInfo = {
+  embedUrl: string | null;  // null = pas d'embed possible (Zoom ou inconnu refuse)
+  externalUrl: string;
+  provider: "youtube" | "vimeo" | "loom" | "zoom" | "unknown";
+};
+
+function getEmbedInfo(url: string): EmbedInfo {
+  const u = url.trim();
+
+  // YouTube : youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID, youtube.com/shorts/ID
+  const ytMatch = u.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch) {
+    return {
+      embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?rel=0&modestbranding=1`,
+      externalUrl: u,
+      provider: "youtube",
+    };
+  }
+
+  // Vimeo : vimeo.com/123456789 ou vimeo.com/channels/.../123456789
+  const vmMatch = u.match(/vimeo\.com\/(?:[^/]+\/)*(\d{6,})/);
+  if (vmMatch) {
+    return {
+      embedUrl: `https://player.vimeo.com/video/${vmMatch[1]}`,
+      externalUrl: u,
+      provider: "vimeo",
+    };
+  }
+
+  // Loom : loom.com/share/ID ou loom.com/embed/ID
+  const loomMatch = u.match(/loom\.com\/(?:share|embed)\/([a-f0-9]{20,})/);
+  if (loomMatch) {
+    return {
+      embedUrl: `https://www.loom.com/embed/${loomMatch[1]}`,
+      externalUrl: u,
+      provider: "loom",
+    };
+  }
+
+  // Zoom : embed impossible (X-Frame-Options)
+  if (u.includes("zoom.us") || u.includes("zoom.com")) {
+    return { embedUrl: null, externalUrl: u, provider: "zoom" };
+  }
+
+  // Autre : on tente l'embed + on garde le lien externe en fallback
+  return { embedUrl: u, externalUrl: u, provider: "unknown" };
+}
 
 const THEME = {
   bg: "#080808",
@@ -407,7 +468,6 @@ function ReplayPage({
 }) {
   const startedAt = useRef<number>(Date.now());
   const [elapsedSec, setElapsedSec] = useState(0);
-  const [showZoomFallback, setShowZoomFallback] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -415,7 +475,9 @@ function ReplayPage({
   const unlockSec = useMemo(() => Math.floor(totalSec * UNLOCK_RATIO), [totalSec]);
   const progressPct = Math.min(100, Math.round((elapsedSec / unlockSec) * 100));
   const canFinish = elapsedSec >= unlockSec;
-  const isZoomUrl = replayUrl.includes("zoom.us");
+  // Sprint S3 : detection du provider pour adapter le rendu video
+  const embedInfo = useMemo(() => getEmbedInfo(replayUrl), [replayUrl]);
+  const canEmbed = embedInfo.embedUrl !== null;
 
   // Timer : tick chaque seconde
   useEffect(() => {
@@ -424,13 +486,6 @@ function ReplayPage({
     }, 1000);
     return () => window.clearInterval(id);
   }, []);
-
-  // Fallback Zoom : affiche le bouton "Ouvrir dans Zoom" apres 2.5s si URL zoom.us
-  useEffect(() => {
-    if (!isZoomUrl) return;
-    const id = window.setTimeout(() => setShowZoomFallback(true), 2500);
-    return () => window.clearTimeout(id);
-  }, [isZoomUrl]);
 
   function copyCode() {
     navigator.clipboard.writeText(replayCode).then(() => {
@@ -515,7 +570,7 @@ function ReplayPage({
         </div>
       )}
 
-      {/* Iframe + fallback Zoom */}
+      {/* Zone video : embed natif (YouTube/Vimeo/Loom) OU placeholder externe (Zoom) */}
       <div
         style={{
           position: "relative",
@@ -528,19 +583,22 @@ function ReplayPage({
           marginBottom: 16,
         }}
       >
-        <iframe
-          src={replayUrl}
-          title="Rediffusion AL BARAKA"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
-          allow="autoplay; fullscreen"
-          allowFullScreen
-        />
-        {showZoomFallback && (
+        {canEmbed ? (
+          <iframe
+            src={embedInfo.embedUrl!}
+            title="Rediffusion AL BARAKA"
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+            allowFullScreen
+          />
+        ) : (
+          // Provider Zoom (ou autre qui bloque l'embed) : placeholder + CTA externe
           <div
             style={{
               position: "absolute",
               inset: 0,
-              background: "rgba(8,8,8,0.92)",
+              background:
+                "linear-gradient(135deg, rgba(45,140,240,0.15), rgba(8,8,8,0.95))",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -550,22 +608,24 @@ function ReplayPage({
               gap: 16,
             }}
           >
+            <Video size={48} color={THEME.gold} style={{ opacity: 0.6 }} />
             <div
               style={{
                 fontFamily: '"Crimson Pro", Georgia, serif',
                 fontStyle: "italic",
-                fontSize: 22,
+                fontSize: 24,
                 color: THEME.text,
               }}
             >
-              Visionnez la rediffusion dans Zoom
+              La rediffusion s'ouvre dans Zoom
             </div>
-            <p style={{ color: THEME.textSoft, fontSize: 14, maxWidth: 380 }}>
-              Cliquez ci-dessous pour ouvrir la rediffusion dans Zoom. Le compteur de
-              progression continue de tourner sur cette page.
+            <p style={{ color: THEME.textSoft, fontSize: 14, maxWidth: 380, margin: 0 }}>
+              Zoom ne permet pas d'intégrer le lecteur ici directement. Cliquez ci-dessous
+              pour ouvrir la rediffusion. <strong style={{ color: THEME.goldBright }}>Le compteur de
+              progression continue de tourner sur cette page</strong>, revenez ici pour cliquer sur «&nbsp;J'ai terminé&nbsp;».
             </p>
             <a
-              href={replayUrl}
+              href={embedInfo.externalUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="redif-btn redif-btn-primary"
