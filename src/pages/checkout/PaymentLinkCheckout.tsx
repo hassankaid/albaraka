@@ -266,6 +266,43 @@ function formatFrDate(iso: string): string {
   });
 }
 
+function formatFrDateShort(iso: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/**
+ * Calcule les dates de prélèvement de toutes les mensualités.
+ * - Mode différé : démarre à `startDateIso` (date du lien ou choisie par le client).
+ * - Mode immédiat : démarre aujourd'hui, mensualités tous les mois.
+ * Retourne un tableau de strings YYYY-MM-DD.
+ */
+function computeInstallmentDates(
+  startDateIso: string | null,
+  count: number,
+): string[] {
+  const start = startDateIso
+    ? new Date(`${startDateIso}T12:00:00`)
+    : new Date();
+  const dates: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const d = new Date(start);
+    d.setMonth(d.getMonth() + i);
+    dates.push(d.toISOString().slice(0, 10));
+  }
+  return dates;
+}
+
+/** Date min/max acceptables pour la date choisie par le client (mode différé) */
+function todayPlusISO(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 // Coupon state (Phase 1 : auto-applique depuis ?promo=, affichage discount UI)
 type CouponState =
   | { status: "none" }
@@ -373,6 +410,26 @@ export default function PaymentLinkCheckout() {
 
   // Discount applique (0 si pas de coupon ou coupon invalide)
   const discountEur = coupon.status === "applied" ? coupon.discountEur : 0;
+
+  // ── Date de démarrage choisie par le client (mode différé uniquement) ──
+  // Pré-remplie avec la date du lien (deferred_start_date) au chargement.
+  // Le client peut la modifier dans une fenêtre [demain, today+180j].
+  const [clientChosenStartDate, setClientChosenStartDate] = useState<string | null>(null);
+  useEffect(() => {
+    if (lookup?.is_valid && lookup.deferred_start_date) {
+      // Pré-remplit avec la date du lien si pas encore défini par le client
+      setClientChosenStartDate((prev) => prev ?? lookup.deferred_start_date);
+    }
+  }, [lookup]);
+
+  // Date effective utilisée pour calculer le calendrier des prélèvements
+  const effectiveStartDateIso =
+    lookup?.deferred_start_date
+      ? clientChosenStartDate || lookup.deferred_start_date
+      : null;
+
+  const minStartDate = useMemo(() => todayPlusISO(1), []);
+  const maxStartDate = useMemo(() => todayPlusISO(180), []);
 
   const publishableKey = testMode
     ? import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_TEST
@@ -599,29 +656,26 @@ export default function PaymentLinkCheckout() {
             }}
           >
             {schedule!.isDeferred
-              ? "Aucun prélèvement aujourd'hui — vous autorisez simplement votre carte."
+              ? lookup.installments_count === 1
+                ? "Aucun prélèvement aujourd'hui. Votre carte est autorisée maintenant ; le débit aura lieu à la date ci-dessous."
+                : `Aucun prélèvement aujourd'hui. Votre carte est autorisée maintenant ; ${lookup.installments_count} mensualités seront prélevées aux dates ci-dessous.`
               : lookup.installments_count === 1
-                ? "Paiement en 1 fois."
-                : `Réglez en ${lookup.installments_count} mensualités.`}
+                ? "Paiement en 1 fois aujourd'hui."
+                : `Réglez en ${lookup.installments_count} mensualités à partir d'aujourd'hui.`}
           </p>
-          {schedule!.isDeferred && lookup.deferred_start_date && (
-            <div
-              style={{
-                marginTop: 14,
-                display: "inline-block",
-                padding: "8px 14px",
-                borderRadius: 999,
-                border: `1px solid ${THEME.goldLine}`,
-                background: "rgba(201,160,78,0.08)",
-                color: THEME.goldBright,
-                fontSize: 12,
-                letterSpacing: "0.04em",
-              }}
-            >
-              📅 1er prélèvement le <strong>{formatFrDate(lookup.deferred_start_date)}</strong>
-            </div>
-          )}
         </div>
+
+        {/* ─── Calendrier de prélèvement (clair et précis) ─── */}
+        <ScheduleBlock
+          lookup={lookup}
+          schedule={schedule!}
+          discountEur={discountEur}
+          effectiveStartDateIso={effectiveStartDateIso}
+          clientChosenStartDate={clientChosenStartDate}
+          setClientChosenStartDate={setClientChosenStartDate}
+          minStartDate={minStartDate}
+          maxStartDate={maxStartDate}
+        />
 
         <Elements stripe={stripePromise} options={elementsOptions}>
           <PaymentLinkForm
@@ -630,6 +684,15 @@ export default function PaymentLinkCheckout() {
             lookup={lookup}
             schedule={schedule!}
             couponCode={coupon.status === "applied" ? coupon.code : null}
+            clientChosenStartDate={
+              // On ne passe la date au server QUE si elle a été modifiée
+              // par le client (différente de celle du lien). Sinon null →
+              // le server fallback sur link.deferred_start_date naturellement.
+              lookup.deferred_start_date && clientChosenStartDate &&
+              clientChosenStartDate !== lookup.deferred_start_date
+                ? clientChosenStartDate
+                : null
+            }
           />
         </Elements>
 
@@ -699,6 +762,232 @@ function ErrorScreen({ title, message }: { title: string; message: string }) {
   );
 }
 
+// ─── Bloc Calendrier des prélèvements (zéro ambiguïté pour le client) ────
+// Affiche la liste exhaustive des prélèvements avec date + montant pour
+// chaque mensualité. En mode différé, propose au client de modifier la
+// date de démarrage proposée par le CEO (fenêtre [demain, today+180j]).
+function ScheduleBlock({
+  lookup,
+  schedule,
+  discountEur,
+  effectiveStartDateIso,
+  clientChosenStartDate,
+  setClientChosenStartDate,
+  minStartDate,
+  maxStartDate,
+}: {
+  lookup: PaymentLinkLookup;
+  schedule: Schedule;
+  discountEur: number;
+  effectiveStartDateIso: string | null;
+  clientChosenStartDate: string | null;
+  setClientChosenStartDate: (d: string | null) => void;
+  minStartDate: string;
+  maxStartDate: string;
+}) {
+  const isDeferred = schedule.isDeferred;
+  const installments = lookup.installments_count;
+  const totalNet = Number(lookup.total_amount) - discountEur;
+
+  // Dates : différé → effectiveStartDateIso, sinon today.
+  const dates = useMemo(
+    () => computeInstallmentDates(isDeferred ? effectiveStartDateIso : null, installments),
+    [isDeferred, effectiveStartDateIso, installments],
+  );
+
+  // Montants : 1re mensualité absorbe les centimes.
+  const baseCents = Math.floor((totalNet * 100) / installments);
+  const extraCents = Math.round(totalNet * 100) - baseCents * installments;
+  const amounts = Array.from({ length: installments }, (_, i) =>
+    i === 0 ? (baseCents + extraCents) / 100 : baseCents / 100,
+  );
+
+  // Cas 1x immédiat : pas besoin de calendrier, l'affichage du prix en haut suffit.
+  // On affiche juste un mini-rappel "aujourd'hui".
+  if (!isDeferred && installments === 1) {
+    return (
+      <div
+        style={{
+          marginBottom: 24,
+          padding: "10px 14px",
+          borderRadius: 10,
+          background: "rgba(201,160,78,0.06)",
+          border: `1px solid ${THEME.goldLine}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          fontSize: 13,
+          color: THEME.cream,
+        }}
+      >
+        <span style={{ color: THEME.creamMuted }}>Prélèvement aujourd'hui</span>
+        <strong style={{ color: THEME.goldBright }}>{formatEur(totalNet)}</strong>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        marginBottom: 24,
+        padding: "16px 18px",
+        borderRadius: 12,
+        background: "rgba(255,255,255,0.02)",
+        border: `1px solid ${THEME.goldLine}`,
+      }}
+    >
+      {/* ─── Section "Date de démarrage" modifiable par le client (différé) ─── */}
+      {isDeferred && (
+        <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${THEME.goldDim}` }}>
+          <div
+            style={{
+              fontSize: 10.5,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: THEME.creamDim,
+              marginBottom: 8,
+            }}
+          >
+            Date de démarrage
+          </div>
+          <input
+            type="date"
+            value={clientChosenStartDate || effectiveStartDateIso || ""}
+            min={minStartDate}
+            max={maxStartDate}
+            onChange={(e) => setClientChosenStartDate(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "11px 14px",
+              borderRadius: 10,
+              border: `1px solid ${THEME.goldDim}`,
+              background: "rgba(255,255,255,0.02)",
+              color: THEME.cream,
+              fontSize: 14,
+              fontFamily: "inherit",
+              colorScheme: "dark",
+            }}
+          />
+          <div
+            style={{
+              fontSize: 11,
+              color: THEME.creamDim,
+              marginTop: 6,
+              lineHeight: 1.4,
+            }}
+          >
+            Vous pouvez modifier la date du 1<sup>er</sup> prélèvement (de
+            demain jusqu'à 6 mois). Aucun montant n'est débité aujourd'hui — votre
+            carte est seulement autorisée.
+          </div>
+        </div>
+      )}
+
+      {/* ─── Calendrier détaillé des prélèvements ─── */}
+      <div
+        style={{
+          fontSize: 10.5,
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          color: THEME.creamDim,
+          marginBottom: 10,
+        }}
+      >
+        Calendrier des prélèvements
+        {installments > 1 && (
+          <span style={{ color: THEME.goldBright, marginLeft: 8 }}>
+            ({installments} mensualités)
+          </span>
+        )}
+      </div>
+
+      <ul
+        style={{
+          listStyle: "none",
+          padding: 0,
+          margin: 0,
+        }}
+      >
+        {dates.map((dateIso, idx) => {
+          const isFirst = idx === 0;
+          const isToday = !isDeferred && isFirst;
+          return (
+            <li
+              key={dateIso + "-" + idx}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                padding: "8px 0",
+                borderBottom: idx < dates.length - 1 ? `1px solid ${THEME.goldDim}` : "none",
+                fontSize: 13.5,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 22,
+                    height: 22,
+                    borderRadius: 999,
+                    background: isFirst ? THEME.gold : "rgba(255,255,255,0.05)",
+                    color: isFirst ? "#0A0A0A" : THEME.creamMuted,
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    flexShrink: 0,
+                  }}
+                >
+                  {idx + 1}
+                </span>
+                <span style={{ color: isFirst ? THEME.cream : THEME.creamMuted }}>
+                  {isToday ? (
+                    <strong>Aujourd'hui</strong>
+                  ) : (
+                    formatFrDateShort(dateIso)
+                  )}
+                </span>
+              </div>
+              <span
+                style={{
+                  fontVariantNumeric: "tabular-nums",
+                  fontWeight: isFirst ? 600 : 400,
+                  color: isFirst ? THEME.goldBright : THEME.creamMuted,
+                }}
+              >
+                {formatEur(amounts[idx])}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* Total récap */}
+      {installments > 1 && (
+        <div
+          style={{
+            marginTop: 12,
+            paddingTop: 12,
+            borderTop: `1px solid ${THEME.goldLine}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontSize: 13,
+            color: THEME.creamMuted,
+          }}
+        >
+          <span>Total</span>
+          <strong style={{ color: THEME.cream, fontVariantNumeric: "tabular-nums" }}>
+            {formatEur(totalNet)}
+          </strong>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Formulaire ─────────────────────────────────────────────────────────────
 function PaymentLinkForm({
   token,
@@ -706,12 +995,14 @@ function PaymentLinkForm({
   lookup,
   schedule,
   couponCode,
+  clientChosenStartDate,
 }: {
   token: string;
   testMode: boolean;
   lookup: PaymentLinkLookup;
   schedule: Schedule;
   couponCode: string | null;
+  clientChosenStartDate: string | null;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -785,6 +1076,7 @@ function PaymentLinkForm({
           payment_link_token: token,
           test_mode: testMode,
           coupon_code: couponCode || undefined,
+          client_chosen_start_at: clientChosenStartDate || undefined,
           customer: {
             email: billing.email.trim().toLowerCase(),
             full_name: fullName,

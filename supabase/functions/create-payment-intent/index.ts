@@ -956,17 +956,49 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Démarrage différé : la date vient du lien (deferred_start_date).
+      // Démarrage différé : la date provient du lien (deferred_start_date)
+      // OU peut être surchargée par le client via `client_chosen_start_at`
+      // (UX bon de commande : le client peut décaler/avancer la date que le
+      // CEO a pré-remplie, dans une fenêtre [tomorrow, today+180j]).
+      //
+      // Règle : on n'accepte le client_chosen_start_at QUE si le lien est
+      // déjà en mode différé (link.deferred_start_date NON null). Sinon le
+      // CEO a explicitement choisi un démarrage immédiat → on respecte.
       let startAtUnix: number | null = null;
       let startAtIsoDate: string | null = null;
+      let startDateSource: "link" | "client" | null = null;
+
+      const clientChosenStartRaw = typeof input.client_chosen_start_at === "string"
+        ? input.client_chosen_start_at.trim()
+        : "";
+
       if (link.deferred_start_date) {
-        const startDate = new Date(`${String(link.deferred_start_date)}T12:00:00Z`);
-        if (
-          !Number.isNaN(startDate.getTime()) &&
-          startDate.getTime() > Date.now() + 60 * 60 * 1000
-        ) {
-          startAtUnix = Math.floor(startDate.getTime() / 1000);
-          startAtIsoDate = String(link.deferred_start_date);
+        // Priorité 1 : la date choisie par le client (si fournie + valide)
+        if (clientChosenStartRaw && /^\d{4}-\d{2}-\d{2}$/.test(clientChosenStartRaw)) {
+          const clientDate = new Date(`${clientChosenStartRaw}T12:00:00Z`);
+          const maxDate = new Date();
+          maxDate.setDate(maxDate.getDate() + 180);
+          if (
+            !Number.isNaN(clientDate.getTime()) &&
+            clientDate.getTime() > Date.now() + 60 * 60 * 1000 &&
+            clientDate.getTime() <= maxDate.getTime()
+          ) {
+            startAtUnix = Math.floor(clientDate.getTime() / 1000);
+            startAtIsoDate = clientChosenStartRaw;
+            startDateSource = "client";
+          }
+        }
+        // Priorité 2 : la date du lien (fallback)
+        if (!startAtUnix) {
+          const startDate = new Date(`${String(link.deferred_start_date)}T12:00:00Z`);
+          if (
+            !Number.isNaN(startDate.getTime()) &&
+            startDate.getTime() > Date.now() + 60 * 60 * 1000
+          ) {
+            startAtUnix = Math.floor(startDate.getTime() / 1000);
+            startAtIsoDate = String(link.deferred_start_date);
+            startDateSource = "link";
+          }
         }
       }
       const isDeferredStart = !!(startAtUnix && startAtIsoDate);
@@ -1003,6 +1035,7 @@ Deno.serve(async (req) => {
       if (isDeferredStart) {
         customMetadata.start_at = startAtIsoDate as string;
         customMetadata.start_at_unix = String(startAtUnix);
+        customMetadata.start_date_source = startDateSource as string;
       }
 
       // ── Cas 1 : paiement unique immédiat → PaymentIntent ──
