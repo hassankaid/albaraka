@@ -14,74 +14,16 @@
 //   - Fallback Zoom : URL contient "zoom.us" → overlay "Ouvrir dans Zoom"
 //     apres 2.5s (contourne X-Frame-Options)
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, AlertTriangle, ExternalLink, Calendar, Video } from "lucide-react";
+import { Loader2, AlertTriangle, Calendar } from "lucide-react";
+import { VideoPlayer } from "@/components/training/VideoPlayer";
 
-/**
- * Sprint S3 (17/05/2026) — Detection du type d'URL pour adapter le rendu.
- *
- * YouTube / Vimeo / Loom supportent l'embed iframe natif → on convertit l'URL
- * en URL embed et on affiche le lecteur directement dans la page.
- *
- * Zoom bloque l'embed via X-Frame-Options (limite cote Zoom, pas de
- * contournement possible) → on affiche un placeholder + bouton externe
- * "Ouvrir dans Zoom" clair, le timer continue de tourner.
- *
- * URL inconnue → tentative iframe + lien externe en dessous au cas ou ca
- * passe (cas YouTube prive, vid hostee soi-meme, etc.).
- */
-type EmbedInfo = {
-  embedUrl: string | null;  // null = pas d'embed possible (Zoom ou inconnu refuse)
-  externalUrl: string;
-  provider: "youtube" | "vimeo" | "loom" | "zoom" | "unknown";
-};
-
-function getEmbedInfo(url: string): EmbedInfo {
-  const u = url.trim();
-
-  // YouTube : youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID, youtube.com/shorts/ID
-  const ytMatch = u.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (ytMatch) {
-    return {
-      embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?rel=0&modestbranding=1`,
-      externalUrl: u,
-      provider: "youtube",
-    };
-  }
-
-  // Vimeo : vimeo.com/123456789 (public) ou vimeo.com/123456789/HASH (prive)
-  // Le hash est requis pour les videos privees avec lien (mode "Only people
-  // with private link"). On le capture pour le passer comme ?h=HASH a l'embed.
-  const vmMatch = u.match(/vimeo\.com\/(?:[^/]+\/)*(\d{6,})(?:\/([a-zA-Z0-9]+))?/);
-  if (vmMatch) {
-    const id = vmMatch[1];
-    const hash = vmMatch[2];
-    const embed = hash
-      ? `https://player.vimeo.com/video/${id}?h=${hash}`
-      : `https://player.vimeo.com/video/${id}`;
-    return { embedUrl: embed, externalUrl: u, provider: "vimeo" };
-  }
-
-  // Loom : loom.com/share/ID ou loom.com/embed/ID
-  const loomMatch = u.match(/loom\.com\/(?:share|embed)\/([a-f0-9]{20,})/);
-  if (loomMatch) {
-    return {
-      embedUrl: `https://www.loom.com/embed/${loomMatch[1]}`,
-      externalUrl: u,
-      provider: "loom",
-    };
-  }
-
-  // Zoom : embed impossible (X-Frame-Options)
-  if (u.includes("zoom.us") || u.includes("zoom.com")) {
-    return { embedUrl: null, externalUrl: u, provider: "zoom" };
-  }
-
-  // Autre : on tente l'embed + on garde le lien externe en fallback
-  return { embedUrl: u, externalUrl: u, provider: "unknown" };
-}
+// Sprint S5 (17/05/2026) : on reutilise le composant <VideoPlayer/> du module
+// Formation (qui aspire la vraie duree via Vimeo Player SDK / YouTube IFrame
+// API et fire onNearEnd a 95%). Plus de timer fixe, plus de regex maison :
+// le composant gere Vimeo / YouTube / HTML5 / iframe generique nativement.
 
 const THEME = {
   bg: "#080808",
@@ -97,12 +39,9 @@ const THEME = {
   textMute: "#6B6660",
 };
 
-// Sprint S4 (17/05/2026) : timer fixe au lieu d'un calcul base sur la duree
-// de la video (qui obligeait Sidali a saisir la duree manuellement). 5 min
-// est un compromis : suffisant pour empecher un prospect de zapper direct
-// au Calendly sans regarder, mais court pour ne pas frustrer un prospect
-// qui a deja vu la conf en live.
-const UNLOCK_DELAY_SEC = 5 * 60;
+// Sprint S5 (17/05/2026) : plus de timer fixe. Le bouton "J'ai termine"
+// se debloque quand le composant VideoPlayer fire onNearEnd (95% de la
+// vraie duree de la video, calculee par le SDK Vimeo/YouTube).
 
 interface ConferenceLookup {
   conference_date: string;
@@ -468,31 +407,10 @@ function ReplayPage({
   replayUrl: string;
   calendlyUrl: string;
 }) {
-  const startedAt = useRef<number>(Date.now());
-  const [elapsedSec, setElapsedSec] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
-
-  // Sprint S4 : timer fixe (UNLOCK_DELAY_SEC = 5 min) au lieu d'un calcul
-  // base sur la duree de la video (que Sidali n'a plus a saisir).
-  const progressPct = Math.min(100, Math.round((elapsedSec / UNLOCK_DELAY_SEC) * 100));
-  const canFinish = elapsedSec >= UNLOCK_DELAY_SEC;
-  // Sprint S3 : detection du provider pour adapter le rendu video
-  const embedInfo = useMemo(() => getEmbedInfo(replayUrl), [replayUrl]);
-  const canEmbed = embedInfo.embedUrl !== null;
-
-  // Timer : tick chaque seconde
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setElapsedSec(Math.floor((Date.now() - startedAt.current) / 1000));
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, []);
-
-  function mmss(sec: number): string {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  }
+  // Sprint S5 : canFinish passe a true quand VideoPlayer fire onNearEnd
+  // (95% de la vraie duree de la video, calculee par le SDK).
+  const [canFinish, setCanFinish] = useState(false);
 
   return (
     <div style={{ animation: "redif-fade 0.6s cubic-bezier(0.16, 1, 0.3, 1)" }}>
@@ -513,108 +431,20 @@ function ReplayPage({
         Rediffusion
       </div>
 
-      {/* Zone video : embed natif (YouTube/Vimeo/Loom) OU placeholder externe (Zoom) */}
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          aspectRatio: "16 / 9",
-          background: "#000",
-          border: `1px solid ${THEME.line}`,
-          borderRadius: 4,
-          overflow: "hidden",
-          marginBottom: 16,
-        }}
-      >
-        {canEmbed ? (
-          <iframe
-            src={embedInfo.embedUrl!}
-            title="Rediffusion AL BARAKA"
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-            allowFullScreen
-          />
-        ) : (
-          // Provider Zoom (ou autre qui bloque l'embed) : placeholder + CTA externe
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "linear-gradient(135deg, rgba(45,140,240,0.15), rgba(8,8,8,0.95))",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 24,
-              textAlign: "center",
-              gap: 16,
-            }}
-          >
-            <Video size={48} color={THEME.gold} style={{ opacity: 0.6 }} />
-            <div
-              style={{
-                fontFamily: '"Crimson Pro", Georgia, serif',
-                fontStyle: "italic",
-                fontSize: 24,
-                color: THEME.text,
-              }}
-            >
-              La rediffusion s'ouvre dans Zoom
-            </div>
-            <p style={{ color: THEME.textSoft, fontSize: 14, maxWidth: 380, margin: 0 }}>
-              Zoom ne permet pas d'intégrer le lecteur ici directement. Cliquez ci-dessous
-              pour ouvrir la rediffusion. <strong style={{ color: THEME.goldBright }}>Le compteur de
-              progression continue de tourner sur cette page</strong>, revenez ici pour cliquer sur «&nbsp;J'ai terminé&nbsp;».
-            </p>
-            <a
-              href={embedInfo.externalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="redif-btn redif-btn-primary"
-              style={{ marginTop: 8 }}
-            >
-              <span>Ouvrir la rediffusion</span>
-              <ExternalLink size={16} />
-            </a>
-          </div>
-        )}
-      </div>
-
-      {/* Barre progression (timer fixe 5 min, Sprint S4) */}
+      {/* Sprint S5 : composant VideoPlayer du module Formation
+          (Vimeo SDK + YouTube IFrame API + HTML5 + iframe generique).
+          Aspire la vraie duree → onNearEnd a 95%. */}
       <div style={{ marginBottom: 20 }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            fontSize: 11,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            color: THEME.textMute,
-            marginBottom: 8,
-            fontVariantNumeric: "tabular-nums",
+        <VideoPlayer
+          video={{
+            id: "redif",
+            titre: "Rediffusion AL BARAKA",
+            url: replayUrl,
+            vimeo_id: null,
+            duree_secondes: null,
           }}
-        >
-          <span>Progression</span>
-          <span>{progressPct}%</span>
-        </div>
-        <div
-          style={{
-            height: 4,
-            background: THEME.line,
-            borderRadius: 999,
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              width: `${progressPct}%`,
-              height: "100%",
-              background: `linear-gradient(90deg, ${THEME.gold}, ${THEME.goldBright})`,
-              transition: "width 0.5s ease",
-            }}
-          />
-        </div>
+          onNearEnd={() => setCanFinish(true)}
+        />
       </div>
 
       <button
@@ -626,13 +456,13 @@ function ReplayPage({
         <span>
           {canFinish
             ? "J'ai terminé la rediffusion"
-            : `Disponible dans ${mmss(Math.max(0, UNLOCK_DELAY_SEC - elapsedSec))}`}
+            : "Visionnez la rediffusion pour débloquer ce bouton"}
         </span>
         {canFinish && <span className="redif-arrow">→</span>}
       </button>
 
       <p style={{ fontSize: 12, color: THEME.textMute, marginTop: 14, textAlign: "center" }}>
-        Prenez le temps de visionner la rediffusion. Le bouton se débloque après quelques minutes.
+        Le bouton se débloque automatiquement à 95 % de la rediffusion.
       </p>
 
       {showConfirm && (
