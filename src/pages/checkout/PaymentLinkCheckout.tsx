@@ -232,8 +232,10 @@ interface Schedule {
   isDeferred: boolean;
 }
 
-function computeSchedule(l: PaymentLinkLookup): Schedule {
-  const total = Number(l.total_amount);
+function computeSchedule(l: PaymentLinkLookup, discountEur: number = 0): Schedule {
+  // Total net = total brut - discount (coupon promo applique). Si pas de coupon,
+  // discountEur = 0 et le comportement est inchange.
+  const total = Math.max(0.01, Number(l.total_amount) - discountEur);
   const isDeferred = !!l.deferred_start_date;
   const installments = l.installments_count;
 
@@ -264,15 +266,25 @@ function formatFrDate(iso: string): string {
   });
 }
 
+// Coupon state (Phase 1 : auto-applique depuis ?promo=, affichage discount UI)
+type CouponState =
+  | { status: "none" }
+  | { status: "validating" }
+  | { status: "applied"; code: string; discountType: "percent"; percent: number; discountEur: number }
+  | { status: "applied"; code: string; discountType: "fixed_eur"; amountEur: number; discountEur: number }
+  | { status: "invalid"; code: string; reason: string };
+
 // ─── Page principale ────────────────────────────────────────────────────────
 export default function PaymentLinkCheckout() {
   const params = useParams();
   const [searchParams] = useSearchParams();
   const testMode = searchParams.get("test") === "1";
+  const urlPromoCode = searchParams.get("promo")?.trim().toUpperCase() || null;
   const token = (params.token || "").trim().toUpperCase();
 
   const [lookup, setLookup] = useState<PaymentLinkLookup | null>(null);
   const [lookupLoading, setLookupLoading] = useState(true);
+  const [coupon, setCoupon] = useState<CouponState>({ status: "none" });
 
   useEffect(() => {
     if (!token) {
@@ -303,6 +315,65 @@ export default function PaymentLinkCheckout() {
     };
   }, [token]);
 
+  // ── Validation du code promo (?promo=XXX) ──
+  // Phase 1 : validation silencieuse cote client puis affichage du discount.
+  // Source de verite finale = serveur (l'edge function reapplique la
+  // validation et le targeting au moment du paiement).
+  useEffect(() => {
+    if (!urlPromoCode || !lookup || !lookup.is_valid) return;
+    let cancelled = false;
+    (async () => {
+      setCoupon({ status: "validating" });
+      try {
+        const { data, error } = await supabase.rpc("validate_coupon" as any, {
+          p_code: urlPromoCode,
+        });
+        if (cancelled) return;
+        if (error || !data || !data.valid) {
+          setCoupon({
+            status: "invalid",
+            code: urlPromoCode,
+            reason: data?.reason || error?.message || "unknown",
+          });
+          return;
+        }
+        const total = Number(lookup.total_amount);
+        if (data.discount_type === "percent") {
+          const percent = Number(data.discount_percent) || 0;
+          const discountEur = Math.round((total * percent) / 100 * 100) / 100;
+          setCoupon({
+            status: "applied",
+            code: String(data.code),
+            discountType: "percent",
+            percent,
+            discountEur,
+          });
+        } else if (data.discount_type === "fixed_eur") {
+          const amountEur = Number(data.discount_amount_eur) || 0;
+          // Cap au total - 0.01 pour rester > 0
+          const discountEur = Math.min(amountEur, Math.max(0.01, total - 0.01));
+          setCoupon({
+            status: "applied",
+            code: String(data.code),
+            discountType: "fixed_eur",
+            amountEur,
+            discountEur,
+          });
+        }
+      } catch (e) {
+        if (cancelled) return;
+        console.error("[PaymentLinkCheckout] coupon validation error:", e);
+        setCoupon({ status: "invalid", code: urlPromoCode, reason: "error" });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [urlPromoCode, lookup]);
+
+  // Discount applique (0 si pas de coupon ou coupon invalide)
+  const discountEur = coupon.status === "applied" ? coupon.discountEur : 0;
+
   const publishableKey = testMode
     ? import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_TEST
     : import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -313,7 +384,7 @@ export default function PaymentLinkCheckout() {
     return loadStripe(publishableKey);
   }, [publishableKey]);
 
-  const schedule = lookup && lookup.is_valid ? computeSchedule(lookup) : null;
+  const schedule = lookup && lookup.is_valid ? computeSchedule(lookup, discountEur) : null;
 
   const elementsOptions = useMemo(() => {
     if (!lookup || !schedule) {
@@ -457,9 +528,66 @@ export default function PaymentLinkCheckout() {
           >
             {lookup.product_label}
           </div>
-          <h1 style={{ fontSize: 28, fontWeight: 600, margin: 0, color: THEME.cream }}>
-            {formatEur(Number(lookup.total_amount))}
-          </h1>
+          {coupon.status === "applied" ? (
+            <div>
+              <div
+                style={{
+                  fontSize: 16,
+                  color: THEME.creamDim,
+                  textDecoration: "line-through",
+                  marginBottom: 4,
+                }}
+              >
+                {formatEur(Number(lookup.total_amount))}
+              </div>
+              <h1 style={{ fontSize: 30, fontWeight: 600, margin: 0, color: THEME.cream }}>
+                {formatEur(Number(lookup.total_amount) - discountEur)}
+              </h1>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  marginTop: 8,
+                  padding: "5px 11px",
+                  borderRadius: 999,
+                  background: "rgba(74,222,128,0.1)",
+                  border: "1px solid rgba(74,222,128,0.3)",
+                  color: "#86efac",
+                  fontSize: 11.5,
+                  fontWeight: 500,
+                  letterSpacing: "0.03em",
+                }}
+              >
+                ✓ Code {coupon.code} appliqué : −{
+                  coupon.discountType === "percent"
+                    ? `${coupon.percent}%`
+                    : formatEur(coupon.amountEur)
+                }
+              </div>
+            </div>
+          ) : (
+            <h1 style={{ fontSize: 28, fontWeight: 600, margin: 0, color: THEME.cream }}>
+              {formatEur(Number(lookup.total_amount))}
+            </h1>
+          )}
+          {coupon.status === "invalid" && (
+            <div
+              style={{
+                marginTop: 8,
+                display: "inline-block",
+                padding: "4px 10px",
+                borderRadius: 999,
+                background: "rgba(248,113,113,0.08)",
+                border: "1px solid rgba(248,113,113,0.25)",
+                color: "#fca5a5",
+                fontSize: 10.5,
+              }}
+              title={`Reason: ${coupon.reason}`}
+            >
+              Code {coupon.code} invalide
+            </div>
+          )}
           <p
             style={{
               fontSize: 13,
@@ -496,7 +624,13 @@ export default function PaymentLinkCheckout() {
         </div>
 
         <Elements stripe={stripePromise} options={elementsOptions}>
-          <PaymentLinkForm token={token} testMode={testMode} lookup={lookup} schedule={schedule!} />
+          <PaymentLinkForm
+            token={token}
+            testMode={testMode}
+            lookup={lookup}
+            schedule={schedule!}
+            couponCode={coupon.status === "applied" ? coupon.code : null}
+          />
         </Elements>
 
         {/* Footer trust badges */}
@@ -571,11 +705,13 @@ function PaymentLinkForm({
   testMode,
   lookup,
   schedule,
+  couponCode,
 }: {
   token: string;
   testMode: boolean;
   lookup: PaymentLinkLookup;
   schedule: Schedule;
+  couponCode: string | null;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -648,6 +784,7 @@ function PaymentLinkForm({
           product_type: "custom_link",
           payment_link_token: token,
           test_mode: testMode,
+          coupon_code: couponCode || undefined,
           customer: {
             email: billing.email.trim().toLowerCase(),
             full_name: fullName,

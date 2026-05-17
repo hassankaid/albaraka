@@ -41,7 +41,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getPublicAppOrigin } from "@/lib/impersonation";
 import {
   Crown, Sparkles, GraduationCap, Copy, Calendar as CalendarIcon, Check, Loader2,
-  FlaskConical, AlertTriangle,
+  FlaskConical, AlertTriangle, ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePaymentLinksContext } from "./payment-links-context";
@@ -456,6 +456,19 @@ function LinkRow({
         >
           {url || "—"}
         </code>
+        {/* Bouton "Ouvrir dans un nouvel onglet" pour preview rapide */}
+        {!disabled && url && (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-6 w-6 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors shrink-0"
+            title="Ouvrir dans un nouvel onglet"
+            aria-label="Ouvrir le lien"
+          >
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
         <Button
           variant="ghost"
           size="sm"
