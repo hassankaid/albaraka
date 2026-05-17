@@ -110,7 +110,7 @@ BEGIN
     'active',
     TRUE,
     ARRAY[v_offer.formation_id]::UUID[],
-    'Lien auto-genere : formation a la carte ' || v_offer.slug || ' (' || p_installments || 'x)'
+    'Lien auto-genere : formation a la carte ' || p_offer_slug || ' (' || p_installments || 'x)'
   )
   RETURNING id INTO v_link_id;
 
