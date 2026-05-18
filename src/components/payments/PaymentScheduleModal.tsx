@@ -232,6 +232,7 @@ export default function PaymentScheduleModal({ open, onClose, saleId, contactNam
     if (!saleId) return;
     try {
       const res = await repair.mutateAsync({ sale_id: saleId });
+      console.log("[repair] response", res);
       if (res.ok) {
         toast({
           title: "Subscription Stripe recréée",
@@ -249,15 +250,33 @@ export default function PaymentScheduleModal({ open, onClose, saleId, contactNam
         return;
       }
       toast({
-        title: "Réparation échouée",
-        description: res.message || res.error_code,
+        title: `Réparation échouée — ${res.error_code || "erreur"}`,
+        description: res.message || JSON.stringify(res),
         variant: "destructive",
       });
     } catch (e: any) {
-      const msg = e?.context?.body
-        ? (typeof e.context.body === "string" ? e.context.body : JSON.stringify(e.context.body))
-        : (e?.message || String(e));
-      toast({ title: "Erreur", description: msg, variant: "destructive" });
+      // supabase-js v2 : pour status non-2xx, e.context est un Response objet
+      // Il faut le lire avec .json() ou .text() pour récupérer le body de l'edge function
+      console.error("[repair] caught error", e, "context:", e?.context);
+      let body: any = null;
+      let bodyText = "";
+      try {
+        if (e?.context && typeof e.context.json === "function") {
+          body = await e.context.json();
+          bodyText = body?.message || body?.error_code || JSON.stringify(body);
+        } else if (e?.context && typeof e.context.text === "function") {
+          bodyText = await e.context.text();
+        }
+      } catch (parseErr) {
+        bodyText = `[parse error] ${parseErr}`;
+      }
+      const finalMsg = bodyText || e?.message || String(e) || "Erreur inconnue (voir console)";
+      console.error("[repair] body parsed:", body, "final msg:", finalMsg);
+      toast({
+        title: `Erreur Stripe ${body?.error_code ? `(${body.error_code})` : ""}`,
+        description: finalMsg,
+        variant: "destructive",
+      });
     }
   }
 
