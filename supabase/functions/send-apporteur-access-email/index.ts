@@ -19,11 +19,20 @@ const BRAND = {
   redirectPath: "/reset-password",
   testEmail: "contact@hassankaid.com",
   fromEmail: Deno.env.get("RESEND_FROM_EMAIL") || "AL BARAKA <noreply@albarakaecosysteme.com>",
+  // Sprint T (18/05/2026) : URL Discord exposee dans l'email pour les clients
+  // qui ont un Pass (AL BARAKA ou Liberty). Les formations a la carte n'y ont
+  // pas acces.
+  discordInviteUrl: "https://discord.gg/k9aV7DJJgR",
 };
 
 type PassType = "al_baraka" | "liberty";
 
-function buildHtml(fullName: string, actionLink: string, passType: PassType = "al_baraka"): string {
+function buildHtml(
+  fullName: string,
+  actionLink: string,
+  passType: PassType = "al_baraka",
+  includeDiscordButton: boolean = false,
+): string {
   const firstName = (fullName || "").split(" ")[0] || "";
   const isLiberty = passType === "liberty";
   const productLabel = isLiberty ? "PASS LIBERTY" : "AL BARAKA";
@@ -101,9 +110,13 @@ function buildHtml(fullName: string, actionLink: string, passType: PassType = "a
               <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
                 ${ecosystemLabel}.
               </p>
-              <p style="margin:0 0 28px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
+              <p style="margin:0 0 ${includeDiscordButton ? "16" : "28"}px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
                 Ton compte est désormais prêt. Clique sur le bouton ci-dessous pour activer ton accès${isLiberty ? " au " + productLabel : " à la plateforme"} et définir ton mot de passe.
               </p>
+              ${includeDiscordButton ? `
+              <p style="margin:0 0 28px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
+                <strong style="color:${BRAND.gold};font-weight:normal;">Rejoins également notre communauté Discord</strong> pour échanger avec les autres membres et accéder aux ressources exclusives.
+              </p>` : ""}
             </td>
           </tr>
           <tr>
@@ -121,6 +134,23 @@ function buildHtml(fullName: string, actionLink: string, passType: PassType = "a
               <!--<![endif]-->
             </td>
           </tr>
+          ${includeDiscordButton ? `
+          <tr>
+            <td class="bg-card px-mobile" data-bg="card" bgcolor="${BRAND.cardBg}" align="center" style="background-color:${BRAND.cardBg};padding:0 32px 40px;">
+              <p style="margin:0 0 14px 0;font-size:12px;color:${BRAND.textSecondary};letter-spacing:0.5px;text-transform:uppercase;">— Et —</p>
+              <!--[if mso]>
+              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${BRAND.discordInviteUrl}" style="height:48px;v-text-anchor:middle;width:280px;" arcsize="8%" strokecolor="${BRAND.gold}" fillcolor="${BRAND.cardBg}">
+                <w:anchorlock/>
+                <center style="color:${BRAND.gold};font-family:Georgia,serif;font-size:13px;letter-spacing:2px;">Rejoindre l'espace Discord</center>
+              </v:roundrect>
+              <![endif]-->
+              <!--[if !mso]><!-- -->
+              <a href="${BRAND.discordInviteUrl}" target="_blank" style="display:inline-block;background-color:transparent;color:${BRAND.gold};text-decoration:none;padding:14px 32px;border:1px solid ${BRAND.gold};border-radius:4px;font-size:13px;letter-spacing:2px;text-transform:uppercase;font-family:Georgia,'Times New Roman',serif;mso-hide:all;">
+                Rejoindre l'espace Discord
+              </a>
+              <!--<![endif]-->
+            </td>
+          </tr>` : ""}
           <tr>
             <td class="bg-card" data-bg="card" bgcolor="${BRAND.cardBg}" align="center" style="background-color:${BRAND.cardBg};padding:20px 32px;border-top:1px solid ${BRAND.goldSoft};">
               <p style="margin:0;font-size:11px;color:${BRAND.textSecondary};letter-spacing:0.5px;">
@@ -220,6 +250,10 @@ Deno.serve(async (req) => {
     const testMode: boolean = !!body.test_mode;
     // pass_type : "al_baraka" (défaut) ou "liberty" — adapte le wording du mail
     const passType: PassType = body.pass_type === "liberty" ? "liberty" : "al_baraka";
+    // Sprint T : flag pour inclure le bouton "Rejoindre l'espace Discord" dans
+    // l'email. Defaut = false (formations a la carte). Le webhook l'envoie a
+    // true pour les Pass AL BARAKA + Pass Liberty.
+    const includeDiscordButton: boolean = !!body.include_discord_button;
     if (userIds.length === 0) {
       return new Response(JSON.stringify({ error: "user_ids empty" }), {
         status: 400,
@@ -260,7 +294,7 @@ Deno.serve(async (req) => {
         parsed.searchParams.set("redirect_to", redirectTo);
         const actionLink = parsed.toString();
 
-        const html = buildHtml(profile.full_name || "", actionLink, passType);
+        const html = buildHtml(profile.full_name || "", actionLink, passType, includeDiscordButton);
         const toEmail = testMode ? BRAND.testEmail : profile.email;
         const subject = passType === "liberty"
           ? "Bienvenue dans le PASS LIBERTY"

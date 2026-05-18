@@ -7,7 +7,6 @@ import {
   isLockedOut,
 } from "@/lib/access-scope";
 import { DeactivatedAccountScreen } from "@/components/DeactivatedAccountScreen";
-import { DiscordGate } from "@/components/DiscordGate";
 
 export function ProtectedRoute() {
   const { session, profile, isLoading } = useAuth();
@@ -29,15 +28,10 @@ export function ProtectedRoute() {
     return <DeactivatedAccountScreen />;
   }
 
-  // Discord gate — only for élèves arrivés via bon de commande qui n'ont pas
-  // encore rejoint Discord. Les apporteurs early_access bypass ce gate.
-  if (
-    profile?.role === "apporteur" &&
-    profile?.origin === "bon_commande" &&
-    !profile?.discord_joined_at
-  ) {
-    return <DiscordGate />;
-  }
+  // Sprint T (18/05/2026) : suppression du DiscordGate bloquant. Discord est
+  // desormais propose via un bouton optionnel dans l'email de bienvenue
+  // (cf. send-apporteur-access-email + stripe-webhook flag include_discord_button).
+  // Le user arrive directement sur /onboarding apres definition du mot de passe.
 
   // Onboarding gate — only enforced for real apporteurs. Deactivated collabs
   // with is_also_apporteur keep their previous behaviour (no onboarding

@@ -443,6 +443,8 @@ async function ensureBonCommandeOrder(
           body: JSON.stringify({
             user_ids: [profileId],
             pass_type: productCfg.passType, // "al_baraka" ou "liberty"
+            // Sprint T (18/05/2026) : bouton Discord pour tous les Pass
+            include_discord_button: true,
           }),
         },
       );
@@ -839,6 +841,9 @@ async function applyPaymentLinkGrants(
   // la RPC create_payment_link → garantie de ne jamais avoir 'a_la_carte' ici).
   // Insert un user_pass idempotent : skip si le user a deja un pass actif du
   // meme type. Pattern aligne avec ensureBonCommandeOrder lignes 366-386.
+  // Sprint T (18/05/2026) : trace le pass_type accorde pour adapter le mail
+  // (subject + bouton Discord) lors de l'envoi plus bas.
+  let grantedPassType: "al_baraka" | "liberty" | null = null;
   if (grantsOfferId) {
     try {
       const { data: offerRow } = await supabase
@@ -849,6 +854,7 @@ async function applyPaymentLinkGrants(
       const cat = offerRow?.category as string | undefined;
       if (cat === "al_baraka" || cat === "liberty") {
         const passType = cat;
+        grantedPassType = passType;
         const { data: existingPass } = await supabase
           .from("user_passes")
           .select("id")
@@ -881,8 +887,14 @@ async function applyPaymentLinkGrants(
   }
 
   // ── Email d'acces (createPassword + login) ──
-  // Si l'utilisateur existait deja → l'email est quand meme renvoye (pas de
-  // mal a renvoyer un magic link).
+  // Sprint T : si un Pass (AL BARAKA ou Liberty) a ete accorde, l'email
+  // inclut un bouton "Rejoindre l'espace Discord" + le bon subject/wording.
+  // Pour les formations a la carte (pas de pass), email generique sans Discord.
+  const emailBody: Record<string, unknown> = { user_ids: [profileId] };
+  if (grantedPassType) {
+    emailBody.pass_type = grantedPassType;
+    emailBody.include_discord_button = true;
+  }
   try {
     const res = await fetch(
       `${SUPABASE_URL}/functions/v1/send-apporteur-access-email`,
@@ -892,12 +904,7 @@ async function applyPaymentLinkGrants(
           Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          user_ids: [profileId],
-          // pas de pass_type ici : on ne veut pas que l'email annonce un Pass
-          // qui n'existe pas. Le template gere le cas "pas de pass" en mode
-          // "acces a votre espace".
-        }),
+        body: JSON.stringify(emailBody),
       },
     );
     if (!res.ok) {

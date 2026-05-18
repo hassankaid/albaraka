@@ -99,29 +99,48 @@ export default function ApporteurOnboarding() {
 
     toast({ title: "Bienvenue chez Al Baraka !" });
 
-    // Redirige vers le 1er chapitre du parcours Al Baraka (vidéo d'introduction)
-    // la toute première fois après l'onboarding. Les connexions suivantes
-    // passent par PublicOnlyRoute qui envoie vers /training.
+    // Sprint T (18/05/2026) : redirection finale adaptee selon le pass actif :
+    //   - Pass AL BARAKA → 1er chapitre du parcours "al-baraka" (existant)
+    //   - Pass Liberty   → 1er chapitre du parcours "liberty" si existe, sinon /training
+    //   - Formation a la carte (aucun pass) → /training direct (voit ses
+    //     formations debloquees via formation_enrollments)
     let targetPath = "/training";
     try {
-      const { data: parc } = await supabase
-        .from("parcours")
-        .select(
-          `id, parcours_phases(id, ordre, parcours_chapitres(id, ordre))`,
-        )
-        .eq("slug", "al-baraka")
-        .maybeSingle();
-      const phases = (parc?.parcours_phases ?? []).slice().sort(
-        (a: { ordre: number }, b: { ordre: number }) => a.ordre - b.ordre,
-      );
-      const firstPhase = phases[0];
-      const chapters = (firstPhase?.parcours_chapitres ?? []).slice().sort(
-        (a: { ordre: number }, b: { ordre: number }) => a.ordre - b.ordre,
-      );
-      const firstChapter = chapters[0];
-      if (firstChapter?.id) {
-        targetPath = `/parcours/al-baraka/chapitre/${firstChapter.id}`;
+      // Detecte le pass actif (priorite al_baraka > liberty si les 2 existent)
+      const { data: passes } = await supabase
+        .from("user_passes")
+        .select("pass_type")
+        .eq("user_id", user.id)
+        .is("revoked_at", null);
+      const passTypes = (passes ?? []).map((p) => p.pass_type as string);
+      const parcoursSlug = passTypes.includes("al_baraka")
+        ? "al-baraka"
+        : passTypes.includes("liberty")
+          ? "liberty"
+          : null;
+
+      if (parcoursSlug) {
+        const { data: parc } = await supabase
+          .from("parcours")
+          .select(
+            `id, parcours_phases(id, ordre, parcours_chapitres(id, ordre))`,
+          )
+          .eq("slug", parcoursSlug)
+          .maybeSingle();
+        const phases = (parc?.parcours_phases ?? []).slice().sort(
+          (a: { ordre: number }, b: { ordre: number }) => a.ordre - b.ordre,
+        );
+        const firstPhase = phases[0];
+        const chapters = (firstPhase?.parcours_chapitres ?? []).slice().sort(
+          (a: { ordre: number }, b: { ordre: number }) => a.ordre - b.ordre,
+        );
+        const firstChapter = chapters[0];
+        if (firstChapter?.id) {
+          targetPath = `/parcours/${parcoursSlug}/chapitre/${firstChapter.id}`;
+        }
+        // Sinon (parcours pas defini en BDD, cas Liberty actuel) → fallback /training
       }
+      // Si aucun pass (formation a la carte) → /training direct
     } catch {
       /* fallback vers /training */
     }
