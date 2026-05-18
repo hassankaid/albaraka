@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CalendarIcon, Plus, Trash2, RefreshCw, AlertTriangle, Loader2, Save, X, Zap, Copy, ExternalLink, ArrowRight } from "lucide-react";
+import { CalendarIcon, Plus, Trash2, RefreshCw, AlertTriangle, Loader2, Save, X, Zap, Copy, ExternalLink, ArrowRight, Wrench } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatDateOnly } from "@/lib/formatDate";
@@ -33,6 +33,7 @@ import {
   useAddPaymentAdmin,
   useRecalculatePayments,
   useTriggerInstallment,
+  useRepairSubscription,
 } from "@/hooks/usePaymentAdmin";
 
 interface SchedulePayment {
@@ -89,6 +90,7 @@ export default function PaymentScheduleModal({ open, onClose, saleId, contactNam
   const add = useAddPaymentAdmin();
   const recalc = useRecalculatePayments();
   const trigger = useTriggerInstallment();
+  const repair = useRepairSubscription();
 
   const [confirmDelete, setConfirmDelete] = useState<SchedulePayment | null>(null);
   const [confirmRecalc, setConfirmRecalc] = useState<{ count: number } | null>(null);
@@ -226,6 +228,39 @@ export default function PaymentScheduleModal({ open, onClose, saleId, contactNam
     }
   }
 
+  async function handleRepair() {
+    if (!saleId) return;
+    try {
+      const res = await repair.mutateAsync({ sale_id: saleId });
+      if (res.ok) {
+        toast({
+          title: "Subscription Stripe recréée",
+          description: `Nouvelle sub ${res.new_subscription_id?.slice(0, 18)}… créée. ${res.attached_payments?.length ?? 0} mensualité(s) rattachée(s).`,
+        });
+        refetch();
+        return;
+      }
+      if (res.error_code === "existing_sub_still_active") {
+        toast({
+          title: "Sub Stripe encore active",
+          description: `La sub ${res.existing_sub_id} est ${res.existing_sub_status}. Annule-la d'abord sur Stripe Dashboard.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: "Réparation échouée",
+        description: res.message || res.error_code,
+        variant: "destructive",
+      });
+    } catch (e: any) {
+      const msg = e?.context?.body
+        ? (typeof e.context.body === "string" ? e.context.body : JSON.stringify(e.context.body))
+        : (e?.message || String(e));
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
+    }
+  }
+
   async function handleTrigger(p: SchedulePayment) {
     try {
       const res = await trigger.mutateAsync({ payment_id: p.id });
@@ -309,10 +344,28 @@ export default function PaymentScheduleModal({ open, onClose, saleId, contactNam
 
           {/* Toolbar */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <Button size="sm" variant="outline" onClick={() => setAddingRow(true)} className="gap-2">
-              <Plus className="h-3.5 w-3.5" />
-              Ajouter une mensualité
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setAddingRow(true)} className="gap-2">
+                <Plus className="h-3.5 w-3.5" />
+                Ajouter une mensualité
+              </Button>
+              {/* Filet de sécurité : recrée une nouvelle Stripe Sub pour les pending
+                  restantes quand un trigger manuel précédent a laissé la vente sans
+                  sub active (ancienne canceled, nouvelle pas créée). */}
+              {data?.stripe_subscription_id && totals.pendingLate > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleRepair}
+                  disabled={repair.isPending}
+                  className="gap-2 border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+                  title="Recrée la subscription Stripe à partir des mensualités pending (utile si elle a été annulée à tort)"
+                >
+                  {repair.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wrench className="h-3.5 w-3.5" />}
+                  Réparer la sub Stripe
+                </Button>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Recalculer le restant en :</span>
               <Input

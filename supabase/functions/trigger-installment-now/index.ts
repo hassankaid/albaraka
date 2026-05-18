@@ -436,6 +436,11 @@ serve(async (req) => {
         const anchorEpoch = ymdToEpoch(reschedule[0].new_due_date);
         const lastEpoch = ymdToEpoch(reschedule[reschedule.length - 1].new_due_date);
         const cancelAtEpoch = lastEpoch + 86400; // +24h après la dernière échéance
+        // ⚠️ Quand billing_cycle_anchor est dans le futur, Stripe exige `trial_end`
+        // au même timestamp + `proration_behavior=none` pour éviter de tenter une
+        // facture de prorata immédiate (qui chargerait le client 2 fois et/ou
+        // ferait échouer la création de la sub). Sans ça, la création échoue
+        // silencieusement OU déclenche un prélèvement parasite.
         const subRes = await stripePostForm(stripeKey, "/subscriptions", {
           customer: customerId,
           "items[0][price_data][currency]": "eur",
@@ -444,6 +449,7 @@ serve(async (req) => {
           "items[0][price_data][recurring][interval]": "month",
           "items[0][price_data][recurring][interval_count]": "1",
           billing_cycle_anchor: String(anchorEpoch),
+          trial_end: String(anchorEpoch),
           cancel_at: String(cancelAtEpoch),
           proration_behavior: "none",
           default_payment_method: pmId,

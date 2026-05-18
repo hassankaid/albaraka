@@ -147,6 +147,47 @@ export function useTriggerInstallment() {
 }
 
 /**
+ * Filet de sécurité quand `trigger-installment-now` a laissé une vente sans
+ * Stripe Subscription active (ancienne sub canceled, nouvelle pas créée).
+ * Crée une nouvelle Stripe Sub pour les pending restantes en repartant de la
+ * première due_date future, et update les rows BDD avec le nouveau sub_id.
+ *
+ * Retour OK : { ok: true, new_subscription_id, attached_payments[], ... }
+ * Retour KO si la sub existante est encore active (409 existing_sub_still_active).
+ * Passer `force: true` pour forcer la création malgré une sub active.
+ */
+export function useRepairSubscription() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { sale_id: string; force?: boolean }) => {
+      const { data, error } = await (supabase as any).functions.invoke(
+        "repair-sale-subscription",
+        { body: { sale_id: input.sale_id, force: !!input.force } },
+      );
+      if (error) throw error;
+      return data as {
+        ok: boolean;
+        error_code?: string;
+        message?: string;
+        new_subscription_id?: string;
+        old_subscription_id?: string | null;
+        attached_payments?: { id: string; payment_number: number; due_date: string; amount: number }[];
+        stripe_mode?: "live" | "test";
+        anchor_date?: string;
+        cancel_after?: string;
+        existing_sub_id?: string;
+        existing_sub_status?: string;
+      };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["payments-list"] });
+      qc.invalidateQueries({ queryKey: ["schedule"] });
+      qc.invalidateQueries({ queryKey: ["sales"] });
+    },
+  });
+}
+
+/**
  * Supprime une vente complète (CEO uniquement).
  * Cascade auto sur payments + commissions via FK.
  * Bloqué côté DB si invoice_lines existent ou si la vente a des ventes filles.
