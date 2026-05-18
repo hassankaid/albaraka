@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CalendarIcon, Plus, Trash2, RefreshCw, AlertTriangle, Loader2, Save, X } from "lucide-react";
+import { CalendarIcon, Plus, Trash2, RefreshCw, AlertTriangle, Loader2, Save, X, Zap, Copy, ExternalLink, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatDateOnly } from "@/lib/formatDate";
@@ -32,6 +32,7 @@ import {
   useDeletePaymentAdmin,
   useAddPaymentAdmin,
   useRecalculatePayments,
+  useTriggerInstallment,
 } from "@/hooks/usePaymentAdmin";
 
 interface SchedulePayment {
@@ -54,6 +55,19 @@ interface ScheduleData {
   payments: SchedulePayment[];
 }
 
+// Soustrait 1 mois calendaire d'une date YYYY-MM-DD en clampant sur le dernier
+// jour du mois précédent si le jour n'existe pas (ex: 31/03 → 28/02 ou 29/02).
+// Doit rester aligné sur la même fonction côté edge function trigger-installment-now.
+function subtractOneMonthYmd(ymd: string): string {
+  const [y, m, d] = ymd.split("-").map(Number);
+  let newY = y;
+  let newM = m - 1;
+  if (newM === 0) { newM = 12; newY = y - 1; }
+  const lastDayOfNewMonth = new Date(Date.UTC(newY, newM, 0)).getUTCDate();
+  const newD = Math.min(d, lastDayOfNewMonth);
+  return `${newY}-${String(newM).padStart(2, "0")}-${String(newD).padStart(2, "0")}`;
+}
+
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   paid: { label: "Payé", className: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
   pending: { label: "En attente", className: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30" },
@@ -74,9 +88,16 @@ export default function PaymentScheduleModal({ open, onClose, saleId, contactNam
   const del = useDeletePaymentAdmin();
   const add = useAddPaymentAdmin();
   const recalc = useRecalculatePayments();
+  const trigger = useTriggerInstallment();
 
   const [confirmDelete, setConfirmDelete] = useState<SchedulePayment | null>(null);
   const [confirmRecalc, setConfirmRecalc] = useState<{ count: number } | null>(null);
+  const [confirmTrigger, setConfirmTrigger] = useState<SchedulePayment | null>(null);
+  const [checkoutFallback, setCheckoutFallback] = useState<{
+    url: string;
+    amount: number;
+    paymentNumber: number;
+  } | null>(null);
   const [recalcCount, setRecalcCount] = useState<number>(2);
   const [addingRow, setAddingRow] = useState(false);
 
@@ -128,6 +149,33 @@ export default function PaymentScheduleModal({ open, onClose, saleId, contactNam
     return { paid, pendingLate, lost, totalPlanned, remaining };
   }, [data]);
 
+  // Prochaine mensualité "déclenchable" : la première pending triée par due_date asc.
+  // C'est la seule sur laquelle on autorise le bouton « Déclencher maintenant ».
+  // (cohérent avec ce que vérifie l'edge function côté serveur)
+  const nextTriggerable = useMemo(() => {
+    const pendingSorted = (data?.payments ?? [])
+      .filter((p) => p.status === "pending")
+      .sort((a, b) => a.due_date.localeCompare(b.due_date));
+    return pendingSorted[0] ?? null;
+  }, [data]);
+
+  // Calcule le nouveau planning prévu si on déclenche `nextTriggerable` aujourd'hui.
+  // Toutes les pending suivantes se décalent de -1 mois calendaire.
+  const previewReschedule = useMemo(() => {
+    if (!confirmTrigger || !data) return [];
+    const remainingAfter = data.payments
+      .filter((p) => p.status === "pending" && p.due_date > confirmTrigger.due_date)
+      .sort((a, b) => a.due_date.localeCompare(b.due_date));
+    return remainingAfter.map((p) => ({
+      id: p.id,
+      payment_number: p.payment_number,
+      total_payments: p.total_payments,
+      old_due_date: p.due_date,
+      new_due_date: subtractOneMonthYmd(p.due_date),
+      amount: p.amount,
+    }));
+  }, [confirmTrigger, data]);
+
   // ─── Handlers ─────────────────────────────────────────────────────────
   async function handleUpdate(p: SchedulePayment, patch: Partial<{ due_date: string; amount: number }>) {
     try {
@@ -175,6 +223,46 @@ export default function PaymentScheduleModal({ open, onClose, saleId, contactNam
       refetch();
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleTrigger(p: SchedulePayment) {
+    try {
+      const res = await trigger.mutateAsync({ payment_id: p.id });
+      // Cas 1 : succès complet
+      if (res.ok) {
+        const remCount = res.reschedule?.length ?? 0;
+        toast({
+          title: `Mensualité ${p.payment_number} prélevée`,
+          description: remCount > 0
+            ? `${(res.amount_charged ?? 0).toLocaleString("fr-FR")} € chargés. ${remCount} mensualité(s) décalée(s) de -1 mois.`
+            : `${(res.amount_charged ?? 0).toLocaleString("fr-FR")} € chargés. Vente complètement payée.`,
+        });
+        setConfirmTrigger(null);
+        refetch();
+        return;
+      }
+      // Cas 2 : pas de carte → fallback Checkout Session
+      if (res.error_code === "no_payment_method" && res.checkout_url) {
+        setConfirmTrigger(null);
+        setCheckoutFallback({
+          url: res.checkout_url,
+          amount: Number(p.amount),
+          paymentNumber: p.payment_number,
+        });
+        return;
+      }
+      // Cas 3 : carte refusée / autres erreurs métier (200 ok:false ou 4xx)
+      const detail = res.stripe_decline_code
+        ? `${res.message || "Paiement refusé"} (decline: ${res.stripe_decline_code})`
+        : (res.message || "Échec du prélèvement");
+      toast({ title: "Échec du prélèvement", description: detail, variant: "destructive" });
+    } catch (e: any) {
+      // Cas 4 : erreur réseau / 5xx
+      const msg = e?.context?.body
+        ? (typeof e.context.body === "string" ? e.context.body : JSON.stringify(e.context.body))
+        : (e?.message || String(e));
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
     }
   }
 
@@ -272,6 +360,8 @@ export default function PaymentScheduleModal({ open, onClose, saleId, contactNam
                     <ScheduleRow
                       key={p.id}
                       p={p}
+                      isNextTriggerable={nextTriggerable?.id === p.id}
+                      onAskTrigger={() => setConfirmTrigger(p)}
                       onUpdate={handleUpdate}
                       onAskDelete={() => setConfirmDelete(p)}
                     />
@@ -321,6 +411,133 @@ export default function PaymentScheduleModal({ open, onClose, saleId, contactNam
         </DialogContent>
       </Dialog>
 
+      {/* Confirm trigger now */}
+      <Dialog open={!!confirmTrigger} onOpenChange={(v) => !v && !trigger.isPending && setConfirmTrigger(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" />
+              Déclencher la mensualité {confirmTrigger?.payment_number}/{confirmTrigger?.total_payments} maintenant ?
+            </DialogTitle>
+            <DialogDescription className="text-xs leading-relaxed">
+              Le client sera prélevé{" "}
+              <strong className="text-foreground">
+                {confirmTrigger ? confirmTrigger.amount.toLocaleString("fr-FR") : 0} €
+              </strong>{" "}
+              immédiatement sur sa carte enregistrée chez Stripe.
+              {previewReschedule.length > 0 && (
+                <>
+                  {" "}
+                  Les <strong>{previewReschedule.length} mensualité(s) suivante(s)</strong> seront
+                  décalées de <strong>-1 mois</strong> pour conserver l'espacement mensuel.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Aperçu du nouveau planning */}
+          {previewReschedule.length > 0 && (
+            <div className="rounded-md border border-border/50 bg-secondary/40 p-3 space-y-1.5">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-2">
+                Nouveau planning
+              </div>
+              {previewReschedule.map((r) => (
+                <div key={r.id} className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">
+                    Mensualité {r.payment_number}/{r.total_payments}
+                  </span>
+                  <span className="flex items-center gap-1.5 font-mono">
+                    <span className="text-muted-foreground line-through">
+                      {formatDateOnly(r.old_due_date)}
+                    </span>
+                    <ArrowRight className="h-3 w-3 text-primary" />
+                    <span className="text-foreground font-semibold">
+                      {formatDateOnly(r.new_due_date)}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-start gap-2 p-2.5 rounded-md bg-amber-500/5 border border-amber-500/20 text-[11px] leading-relaxed">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-400 mt-0.5 shrink-0" />
+            <div className="text-foreground/80">
+              L'ancienne souscription Stripe sera annulée et remplacée par une nouvelle avec
+              le cycle décalé. Si la carte est refusée, <strong>rien ne sera modifié</strong>.
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmTrigger(null)} disabled={trigger.isPending}>
+              Annuler
+            </Button>
+            <Button
+              onClick={() => confirmTrigger && handleTrigger(confirmTrigger)}
+              disabled={trigger.isPending}
+              className="gap-2"
+            >
+              {trigger.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+              {trigger.isPending ? "Prélèvement en cours…" : "Confirmer le prélèvement"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Fallback Checkout Session (pas de carte enregistrée) */}
+      <Dialog open={!!checkoutFallback} onOpenChange={(v) => !v && setCheckoutFallback(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-400" />
+              Pas de carte enregistrée
+            </DialogTitle>
+            <DialogDescription className="text-xs leading-relaxed">
+              Ce client n'a pas de moyen de paiement enregistré chez Stripe. Un{" "}
+              <strong>lien de paiement Stripe one-shot</strong> a été créé pour la mensualité
+              n°{checkoutFallback?.paymentNumber} ({checkoutFallback?.amount.toLocaleString("fr-FR")} €).
+              Envoie-le au client pour qu'il paie lui-même.
+            </DialogDescription>
+          </DialogHeader>
+
+          {checkoutFallback && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Input value={checkoutFallback.url} readOnly className="text-xs bg-secondary font-mono" />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(checkoutFallback.url);
+                    toast({ title: "Lien copié" });
+                  }}
+                  className="shrink-0"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => window.open(checkoutFallback.url, "_blank")}
+                  className="shrink-0"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Une fois le client a payé, le webhook Stripe marquera automatiquement la mensualité
+                comme « Payée ». Les mensualités suivantes ne sont <strong>pas</strong> décalées
+                tant que le paiement n'est pas effectif.
+              </p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button onClick={() => setCheckoutFallback(null)}>Fermer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Confirm recalc */}
       <Dialog open={!!confirmRecalc} onOpenChange={(v) => !v && setConfirmRecalc(null)}>
         <DialogContent className="sm:max-w-md">
@@ -357,10 +574,14 @@ export default function PaymentScheduleModal({ open, onClose, saleId, contactNam
 // ─── Row éditable ─────────────────────────────────────────────────────
 function ScheduleRow({
   p,
+  isNextTriggerable,
+  onAskTrigger,
   onUpdate,
   onAskDelete,
 }: {
   p: SchedulePayment;
+  isNextTriggerable: boolean;
+  onAskTrigger: () => void;
   onUpdate: (p: SchedulePayment, patch: Partial<{ due_date: string; amount: number }>) => Promise<void>;
   onAskDelete: () => void;
 }) {
@@ -468,17 +689,31 @@ function ScheduleRow({
         {p.paid_at ? formatDateOnly(p.paid_at) : "—"}
       </TableCell>
       <TableCell className="text-right">
-        {!isPaid && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-            onClick={onAskDelete}
-            title="Supprimer cette mensualité"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        )}
+        <div className="flex items-center justify-end gap-1">
+          {isNextTriggerable && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 gap-1 text-xs text-primary hover:text-primary hover:bg-primary/10 border border-primary/30 rounded-md"
+              onClick={onAskTrigger}
+              title="Prélever cette mensualité maintenant"
+            >
+              <Zap className="h-3.5 w-3.5" />
+              Déclencher
+            </Button>
+          )}
+          {!isPaid && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+              onClick={onAskDelete}
+              title="Supprimer cette mensualité"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
       </TableCell>
     </TableRow>
   );

@@ -98,6 +98,55 @@ export function useRecalculatePayments() {
 }
 
 /**
+ * Déclenche MANUELLEMENT le prélèvement de la prochaine mensualité pending
+ * d'une vente (CEO uniquement). Charge la carte enregistrée via PaymentIntent
+ * off-session puis décale toutes les mensualités suivantes de -1 mois, en
+ * recréant la Stripe Subscription avec le nouveau cycle.
+ *
+ * Retour OK : { ok: true, payment_intent_id, amount_charged, reschedule[],
+ *               old_subscription_id, new_subscription_id, stripe_mode }
+ *
+ * Retour KO (200 + ok:false) si pas de carte enregistrée :
+ *   { ok: false, error_code: "no_payment_method", checkout_url }
+ * Retour KO (402) si la carte est refusée :
+ *   { ok: false, error_code: "payment_failed", stripe_decline_code, ... }
+ */
+export function useTriggerInstallment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { payment_id: string }) => {
+      const { data, error } = await (supabase as any).functions.invoke(
+        "trigger-installment-now",
+        { body: { payment_id: input.payment_id } },
+      );
+      if (error) throw error;
+      return data as {
+        ok: boolean;
+        error_code?: string;
+        message?: string;
+        payment_intent_id?: string;
+        amount_charged?: number;
+        reschedule?: { id: string; old_due_date: string; new_due_date: string; amount: number }[];
+        old_subscription_id?: string | null;
+        new_subscription_id?: string | null;
+        new_sub_warning?: string | null;
+        stripe_mode?: "live" | "test";
+        checkout_url?: string;
+        stripe_error_code?: string;
+        stripe_decline_code?: string;
+      };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["payments-list"] });
+      qc.invalidateQueries({ queryKey: ["schedule"] });
+      qc.invalidateQueries({ queryKey: ["commissions"] });
+      qc.invalidateQueries({ queryKey: ["sales"] });
+      qc.invalidateQueries({ queryKey: ["financial"] });
+    },
+  });
+}
+
+/**
  * Supprime une vente complète (CEO uniquement).
  * Cascade auto sur payments + commissions via FK.
  * Bloqué côté DB si invoice_lines existent ou si la vente a des ventes filles.

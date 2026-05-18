@@ -12,14 +12,26 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
-import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare, MoreHorizontal, Clock, XCircle, CalendarIcon, ListOrdered, Save, X as XIcon, Loader2, FileText, Link as LinkIcon, Download, Archive } from "lucide-react";
+import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare, MoreHorizontal, Clock, XCircle, CalendarIcon, ListOrdered, Save, X as XIcon, Loader2, FileText, Link as LinkIcon, Download, Archive, Zap, Copy, ExternalLink, ArrowRight } from "lucide-react";
 import JSZip from "jszip";
 import { formatDateOnly } from "@/lib/formatDate";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useUpdatePaymentAdmin } from "@/hooks/usePaymentAdmin";
+import { useUpdatePaymentAdmin, useTriggerInstallment } from "@/hooks/usePaymentAdmin";
 import PaymentScheduleModal from "@/components/payments/PaymentScheduleModal";
 import ClientInvoiceModal from "@/components/payments/ClientInvoiceModal";
+
+// Soustrait 1 mois calendaire d'un YYYY-MM-DD (clamp sur le dernier jour si
+// jour absent du mois précédent). Aligné sur l'edge function trigger-installment-now.
+function subtractOneMonthYmd(ymd: string): string {
+  const [y, m, d] = ymd.split("-").map(Number);
+  let newY = y;
+  let newM = m - 1;
+  if (newM === 0) { newM = 12; newY = y - 1; }
+  const lastDayOfNewMonth = new Date(Date.UTC(newY, newM, 0)).getUTCDate();
+  const newD = Math.min(d, lastDayOfNewMonth);
+  return `${newY}-${String(newM).padStart(2, "0")}-${String(newD).padStart(2, "0")}`;
+}
 
 interface PaymentRow {
   id: string;
@@ -196,6 +208,88 @@ export default function Payments() {
   const [editingAmountId, setEditingAmountId] = useState<string | null>(null);
   const [amountDraft, setAmountDraft] = useState<string>("");
   const updatePaymentAdmin = useUpdatePaymentAdmin();
+  const triggerInstallment = useTriggerInstallment();
+
+  // Modale « Déclencher maintenant » : confirmation avant le prélèvement off-session.
+  // L'edge function valide côté serveur qu'il s'agit bien de la prochaine pending
+  // du sale (cas multi-rows pendantes pour une même vente).
+  const [triggerConfirm, setTriggerConfirm] = useState<PaymentRow | null>(null);
+  // Fallback Checkout Session si le client n'a pas de carte enregistrée.
+  const [triggerCheckoutFallback, setTriggerCheckoutFallback] = useState<{
+    url: string;
+    amount: number;
+    paymentNumber: number;
+  } | null>(null);
+
+  // Pour Payments.tsx : on calcule client-side la "prochaine pending" PAR sale_id
+  // pour n'afficher l'item du menu que sur la bonne row (et pas sur les #3, #4...).
+  // Ça améliore l'UX même si l'edge function fait le check en double sécurité.
+  const nextPendingBySale = useMemo(() => {
+    const map = new Map<string, string>(); // sale_id → payment_id de la prochaine pending
+    const bySale = new Map<string, PaymentRow[]>();
+    for (const p of allPayments) {
+      if (p.status !== "pending" || !p.sale_id) continue;
+      const arr = bySale.get(p.sale_id) || [];
+      arr.push(p);
+      bySale.set(p.sale_id, arr);
+    }
+    for (const [saleId, arr] of bySale.entries()) {
+      arr.sort((a, b) => a.due_date.localeCompare(b.due_date));
+      map.set(saleId, arr[0].id);
+    }
+    return map;
+  }, [allPayments]);
+
+  async function handleTriggerInstallment(p: PaymentRow) {
+    try {
+      const res = await triggerInstallment.mutateAsync({ payment_id: p.id });
+      if (res.ok) {
+        const remCount = res.reschedule?.length ?? 0;
+        toast({
+          title: `Mensualité ${p.payment_number} prélevée`,
+          description: remCount > 0
+            ? `${(res.amount_charged ?? 0).toLocaleString("fr-FR")} € chargés. ${remCount} mensualité(s) décalée(s) de -1 mois.`
+            : `${(res.amount_charged ?? 0).toLocaleString("fr-FR")} € chargés. Vente complètement payée.`,
+        });
+        setTriggerConfirm(null);
+        fetchPayments();
+        return;
+      }
+      if (res.error_code === "no_payment_method" && res.checkout_url) {
+        setTriggerConfirm(null);
+        setTriggerCheckoutFallback({
+          url: res.checkout_url,
+          amount: Number(p.amount),
+          paymentNumber: p.payment_number,
+        });
+        return;
+      }
+      const detail = res.stripe_decline_code
+        ? `${res.message || "Paiement refusé"} (decline: ${res.stripe_decline_code})`
+        : (res.message || "Échec du prélèvement");
+      toast({ title: "Échec du prélèvement", description: detail, variant: "destructive" });
+    } catch (e: any) {
+      const msg = e?.context?.body
+        ? (typeof e.context.body === "string" ? e.context.body : JSON.stringify(e.context.body))
+        : (e?.message || String(e));
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
+    }
+  }
+
+  // Aperçu du décalage à montrer dans la modale de confirmation.
+  const triggerPreview = useMemo(() => {
+    if (!triggerConfirm || !triggerConfirm.sale_id) return [];
+    return allPayments
+      .filter((p) => p.sale_id === triggerConfirm.sale_id && p.status === "pending" && p.due_date > triggerConfirm.due_date)
+      .sort((a, b) => a.due_date.localeCompare(b.due_date))
+      .map((p) => ({
+        id: p.id,
+        payment_number: p.payment_number,
+        total_payments: p.total_payments,
+        old_due_date: p.due_date,
+        new_due_date: subtractOneMonthYmd(p.due_date),
+      }));
+  }, [triggerConfirm, allPayments]);
 
   // Inline update handler (CEO only). Refetch après update pour avoir la
   // bonne valeur (avec cascade commissions appliquée côté DB).
@@ -1047,7 +1141,16 @@ export default function Payments() {
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuContent align="end" className="w-48">
+                                  {/* Déclencher maintenant : uniquement sur la prochaine pending de la vente */}
+                                  {isCeo && p.sale_id && nextPendingBySale.get(p.sale_id) === p.id && (
+                                    <DropdownMenuItem
+                                      onClick={() => setTriggerConfirm(p)}
+                                      className="text-primary"
+                                    >
+                                      <Zap className="h-3.5 w-3.5 mr-2" /> Déclencher maintenant
+                                    </DropdownMenuItem>
+                                  )}
                                   <DropdownMenuItem onClick={() => setPaidPickerPayment(p)} className="text-emerald-400">
                                     <Check className="h-3.5 w-3.5 mr-2" /> Payé
                                   </DropdownMenuItem>
@@ -1090,6 +1193,131 @@ export default function Payments() {
           )}
         </>
       )}
+
+      {/* Trigger installment confirmation */}
+      <Dialog
+        open={!!triggerConfirm}
+        onOpenChange={(open) => !open && !triggerInstallment.isPending && setTriggerConfirm(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" />
+              Déclencher la mensualité {triggerConfirm?.payment_number}/{triggerConfirm?.total_payments} ?
+            </DialogTitle>
+            <DialogDescription className="text-xs leading-relaxed">
+              <strong className="text-foreground">{triggerConfirm?.contact_name || "Le client"}</strong>{" "}
+              sera prélevé{" "}
+              <strong className="text-foreground">
+                {triggerConfirm ? Number(triggerConfirm.amount).toLocaleString("fr-FR") : 0} €
+              </strong>{" "}
+              immédiatement sur sa carte enregistrée chez Stripe.
+              {triggerPreview.length > 0 && (
+                <>
+                  {" "}Les <strong>{triggerPreview.length} mensualité(s) suivante(s)</strong> seront
+                  décalées de <strong>-1 mois</strong> pour conserver l'espacement mensuel.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {triggerPreview.length > 0 && (
+            <div className="rounded-md border border-border/50 bg-secondary/40 p-3 space-y-1.5">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-2">
+                Nouveau planning
+              </div>
+              {triggerPreview.map((r) => (
+                <div key={r.id} className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">
+                    Mensualité {r.payment_number}/{r.total_payments}
+                  </span>
+                  <span className="flex items-center gap-1.5 font-mono">
+                    <span className="text-muted-foreground line-through">{formatDateOnly(r.old_due_date)}</span>
+                    <ArrowRight className="h-3 w-3 text-primary" />
+                    <span className="text-foreground font-semibold">{formatDateOnly(r.new_due_date)}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-start gap-2 p-2.5 rounded-md bg-amber-500/5 border border-amber-500/20 text-[11px] leading-relaxed">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-400 mt-0.5 shrink-0" />
+            <div className="text-foreground/80">
+              L'ancienne souscription Stripe sera annulée et remplacée par une nouvelle avec
+              le cycle décalé. Si la carte est refusée, <strong>rien ne sera modifié</strong>.
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setTriggerConfirm(null)} disabled={triggerInstallment.isPending}>
+              Annuler
+            </Button>
+            <Button
+              onClick={() => triggerConfirm && handleTriggerInstallment(triggerConfirm)}
+              disabled={triggerInstallment.isPending}
+              className="gap-2"
+            >
+              {triggerInstallment.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+              {triggerInstallment.isPending ? "Prélèvement en cours…" : "Confirmer le prélèvement"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Fallback : Checkout Session si pas de carte enregistrée */}
+      <Dialog open={!!triggerCheckoutFallback} onOpenChange={(open) => !open && setTriggerCheckoutFallback(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-400" />
+              Pas de carte enregistrée
+            </DialogTitle>
+            <DialogDescription className="text-xs leading-relaxed">
+              Ce client n'a pas de moyen de paiement enregistré chez Stripe. Un{" "}
+              <strong>lien de paiement Stripe one-shot</strong> a été créé pour la mensualité
+              n°{triggerCheckoutFallback?.paymentNumber} ({triggerCheckoutFallback?.amount.toLocaleString("fr-FR")} €).
+              Envoie-le au client.
+            </DialogDescription>
+          </DialogHeader>
+
+          {triggerCheckoutFallback && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Input value={triggerCheckoutFallback.url} readOnly className="text-xs bg-secondary font-mono" />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(triggerCheckoutFallback.url);
+                    toast({ title: "Lien copié" });
+                  }}
+                  className="shrink-0"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => window.open(triggerCheckoutFallback.url, "_blank")}
+                  className="shrink-0"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Une fois que le client a payé, le webhook Stripe marquera automatiquement la mensualité
+                comme « Payée ». Les mensualités suivantes ne sont <strong>pas</strong> décalées
+                tant que le paiement n'est pas effectif.
+              </p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button onClick={() => setTriggerCheckoutFallback(null)}>Fermer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Lost confirmation dialog */}
       <Dialog open={!!lostConfirmPayment} onOpenChange={(open) => !open && setLostConfirmPayment(null)}>
