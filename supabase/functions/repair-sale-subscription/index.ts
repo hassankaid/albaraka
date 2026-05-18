@@ -242,10 +242,27 @@ serve(async (req) => {
     const lastEpoch = ymdToEpoch(pending[pending.length - 1].due_date);
     const cancelAtEpoch = lastEpoch + 86400;
 
+    // ⚠️ Stripe Subscriptions API n'accepte PAS price_data.product_data —
+    // il faut un product ID. On crée un Product à la volée.
+    const prodRes = await stripePostForm(stripeKey, "/products", {
+      name: `Mensualités — ${sale.product || "Vente"} (sale ${saleId.slice(0, 8)})`,
+      "metadata[sale_id]": saleId,
+      "metadata[created_by]": "repair-sale-subscription",
+    });
+    if (!prodRes.ok || !prodRes.data?.id) {
+      return json({
+        ok: false,
+        error_code: "stripe_product_creation_failed",
+        message: prodRes.data?.error?.message || `Stripe returned ${prodRes.status}`,
+        stripe_response: prodRes.data,
+      }, 502);
+    }
+    const productId = String(prodRes.data.id);
+
     const subRes = await stripePostForm(stripeKey, "/subscriptions", {
       customer: customerId,
       "items[0][price_data][currency]": "eur",
-      "items[0][price_data][product_data][name]": `Mensualités (repair) — ${sale.product || "Vente"}`,
+      "items[0][price_data][product]": productId,
       "items[0][price_data][unit_amount]": String(Math.round(firstAmount * 100)),
       "items[0][price_data][recurring][interval]": "month",
       "items[0][price_data][recurring][interval_count]": "1",

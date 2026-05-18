@@ -436,41 +436,54 @@ serve(async (req) => {
         const anchorEpoch = ymdToEpoch(reschedule[0].new_due_date);
         const lastEpoch = ymdToEpoch(reschedule[reschedule.length - 1].new_due_date);
         const cancelAtEpoch = lastEpoch + 86400; // +24h après la dernière échéance
-        // ⚠️ Quand billing_cycle_anchor est dans le futur, Stripe exige `trial_end`
-        // au même timestamp + `proration_behavior=none` pour éviter de tenter une
-        // facture de prorata immédiate (qui chargerait le client 2 fois et/ou
-        // ferait échouer la création de la sub). Sans ça, la création échoue
-        // silencieusement OU déclenche un prélèvement parasite.
-        const subRes = await stripePostForm(stripeKey, "/subscriptions", {
-          customer: customerId,
-          "items[0][price_data][currency]": "eur",
-          "items[0][price_data][product_data][name]": `Mensualités (reschedule) — ${sale.product || "Vente"}`,
-          "items[0][price_data][unit_amount]": String(Math.round(firstAmount * 100)),
-          "items[0][price_data][recurring][interval]": "month",
-          "items[0][price_data][recurring][interval_count]": "1",
-          billing_cycle_anchor: String(anchorEpoch),
-          trial_end: String(anchorEpoch),
-          cancel_at: String(cancelAtEpoch),
-          proration_behavior: "none",
-          default_payment_method: pmId,
-          collection_method: "charge_automatically",
+
+        // ⚠️ Stripe Subscriptions API n'accepte PAS `price_data.product_data`
+        // (contrairement à Checkout Sessions). Il faut soit un `product` ID
+        // existant, soit créer un Product à la volée puis référencer son ID.
+        // On crée un Product spécifique à cette vente pour traçabilité.
+        const prodRes = await stripePostForm(stripeKey, "/products", {
+          name: `Mensualités — ${sale.product || "Vente"} (sale ${sale.id.slice(0, 8)})`,
           "metadata[sale_id]": sale.id,
-          "metadata[replaces_subscription]": oldSubId || "",
-          "metadata[created_by_trigger_payment_id]": paymentId,
-          "metadata[trigger]": "manual_admin_reschedule",
+          "metadata[created_by]": "trigger-installment-now",
         });
-        if (subRes.ok && subRes.data?.id) {
-          newSubId = String(subRes.data.id);
-          // Met à jour les rows pending restantes avec le nouveau sub_id
-          for (const r of remaining) {
-            await sb
-              .from("payments")
-              .update({ stripe_subscription_id: newSubId, updated_at: nowIso })
-              .eq("id", r.id);
-          }
+        if (!prodRes.ok || !prodRes.data?.id) {
+          newSubWarning = `product_creation_failed: ${prodRes.data?.error?.message || prodRes.status}`;
+          console.error("[trigger-installment-now] product creation failed", prodRes.data);
         } else {
-          newSubWarning = `new_sub_creation_failed: ${subRes.data?.error?.message || subRes.status}`;
-          console.error("[trigger-installment-now] new sub creation failed", subRes.data);
+          const productId = String(prodRes.data.id);
+          // ⚠️ Quand billing_cycle_anchor est dans le futur, Stripe exige aussi
+          // `trial_end` au même timestamp + `proration_behavior=none` pour éviter
+          // une facture de prorata immédiate.
+          const subRes = await stripePostForm(stripeKey, "/subscriptions", {
+            customer: customerId,
+            "items[0][price_data][currency]": "eur",
+            "items[0][price_data][product]": productId,
+            "items[0][price_data][unit_amount]": String(Math.round(firstAmount * 100)),
+            "items[0][price_data][recurring][interval]": "month",
+            "items[0][price_data][recurring][interval_count]": "1",
+            billing_cycle_anchor: String(anchorEpoch),
+            trial_end: String(anchorEpoch),
+            cancel_at: String(cancelAtEpoch),
+            proration_behavior: "none",
+            default_payment_method: pmId,
+            collection_method: "charge_automatically",
+            "metadata[sale_id]": sale.id,
+            "metadata[replaces_subscription]": oldSubId || "",
+            "metadata[created_by_trigger_payment_id]": paymentId,
+            "metadata[trigger]": "manual_admin_reschedule",
+          });
+          if (subRes.ok && subRes.data?.id) {
+            newSubId = String(subRes.data.id);
+            for (const r of remaining) {
+              await sb
+                .from("payments")
+                .update({ stripe_subscription_id: newSubId, updated_at: nowIso })
+                .eq("id", r.id);
+            }
+          } else {
+            newSubWarning = `new_sub_creation_failed: ${subRes.data?.error?.message || subRes.status}`;
+            console.error("[trigger-installment-now] new sub creation failed", subRes.data);
+          }
         }
       }
     }
