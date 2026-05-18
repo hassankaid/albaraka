@@ -259,6 +259,8 @@ serve(async (req) => {
     }
     const productId = String(prodRes.data.id);
 
+    // ⚠️ Pas de billing_cycle_anchor : Stripe le calcule auto depuis trial_end.
+    // anchor=trial_end + proration_behavior=none → "anchored invoice must be prorated"
     const subRes = await stripePostForm(stripeKey, "/subscriptions", {
       customer: customerId,
       "items[0][price_data][currency]": "eur",
@@ -266,10 +268,8 @@ serve(async (req) => {
       "items[0][price_data][unit_amount]": String(Math.round(firstAmount * 100)),
       "items[0][price_data][recurring][interval]": "month",
       "items[0][price_data][recurring][interval_count]": "1",
-      billing_cycle_anchor: String(anchorEpoch),
       trial_end: String(anchorEpoch),
       cancel_at: String(cancelAtEpoch),
-      proration_behavior: "none",
       default_payment_method: pmId,
       collection_method: "charge_automatically",
       "metadata[sale_id]": saleId,
