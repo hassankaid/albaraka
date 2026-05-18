@@ -1557,6 +1557,19 @@ async function handleInvoicePaid(
 
   if (!subscriptionId || !invoiceId) return;
 
+  // Skip les invoices à 0 € : Stripe en émet automatiquement pour matérialiser
+  // certains événements (démarrage de trial, sub avec trial_end futur, etc.)
+  // qui déclenchent quand même `invoice.paid` côté webhook. Sans ce filtre
+  // on marque par erreur la prochaine pending comme paid (bug Mahir 18/05/2026
+  // après repair-sale-subscription). Une vraie mensualité a forcément amount_paid > 0.
+  const amountPaid = typeof invoice.amount_paid === "number" ? invoice.amount_paid : 0;
+  if (amountPaid === 0) {
+    console.log(
+      `[invoice.paid] zero-amount invoice ${invoiceId} (billing_reason=${invoice.billing_reason}), skip (trial start / coupon 100% / autre).`,
+    );
+    return;
+  }
+
   // Idempotency étendue : check par invoice_id ET par PI (Stripe peut envoyer
   // 2 events distincts portant les mêmes IDs sur des lignes pending différentes).
   let idempQ = supabase
