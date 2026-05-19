@@ -81,6 +81,31 @@ function splitIntoInstallmentsCents(totalCents: number, installments: number): n
 }
 
 /**
+ * Compacte un snapshot d'agreements (5 cases d'engagement cochées AVANT
+ * paiement) en une string courte stockable dans la metadata Stripe (limite
+ * 500 chars/valeur). Format : "id:ISO|id:ISO|...".
+ * Le wording sera reconstruit côté webhook depuis une constante serveur.
+ *
+ * Retourne "" si l'input est vide/invalide (pas d'erreur, le webhook le
+ * traitera comme "pas de snapshot").
+ */
+function compactAgreements(
+  snapshot: unknown,
+): string {
+  if (!Array.isArray(snapshot)) return "";
+  const parts: string[] = [];
+  for (const item of snapshot) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const id = typeof o.id === "string" ? o.id : "";
+    const ts = typeof o.checked_at === "string" ? o.checked_at : "";
+    if (!id || !ts) continue;
+    parts.push(`${id}:${ts}`);
+  }
+  return parts.join("|").slice(0, 480); // marge de sécurité sur la limite Stripe
+}
+
+/**
  * Sprint Q (17/05/2026) — Resolution dynamique du prix d'un Pass (AL BARAKA
  * ou Liberty) depuis la table offers (source de verite du catalogue admin).
  *
@@ -488,6 +513,11 @@ Deno.serve(async (req) => {
         installments_total: String(libInstallments),
         base_payment_cents: String(libBaseCents),
         last_payment_cents: String(libLastCents),
+        // Phase 2 contrats (19/05/2026) : snapshot des cases d'engagement
+        // cochees AVANT paiement, compacte pour rester sous la limite Stripe
+        // (500 chars/valeur). Le wording est reconstruit cote webhook.
+        agreements_compact: compactAgreements(input.agreements_snapshot),
+        agreements_formula: "LIBERTY",
       };
 
       if (libInstallments === 1) {
@@ -1160,6 +1190,17 @@ Deno.serve(async (req) => {
       // SPRINT O : 1re mensualité = baseCents (les centimes vont sur la derniere)
       const customFirstCents = customBaseCents;
 
+      // Phase 2 contrats (19/05/2026) : deduction de la formule a partir de
+      // expected_coupon_category du lien. al_baraka -> "PASS AL BARAKA",
+      // liberty -> "LIBERTY", sinon "" (a_la_carte ou lien custom CEO sans
+      // categorie : pas de contrat genere cote webhook).
+      const customAgreementsFormula =
+        linkExpectedCategory === "al_baraka"
+          ? "PASS AL BARAKA"
+          : linkExpectedCategory === "liberty"
+            ? "LIBERTY"
+            : "";
+
       const customMetadata: Record<string, string> = {
         product: productLabel,
         product_type: "custom_link",
@@ -1187,6 +1228,11 @@ Deno.serve(async (req) => {
         installments_total: String(installmentsCount),
         base_payment_cents: String(customBaseCents),
         last_payment_cents: String(customLastCents),
+        // Phase 2 contrats (19/05/2026) : snapshot des cases d'engagement
+        // cochees AVANT paiement, compacte pour rester sous la limite Stripe
+        // (500 chars/valeur). Le wording est reconstruit cote webhook.
+        agreements_compact: compactAgreements(input.agreements_snapshot),
+        agreements_formula: customAgreementsFormula,
       };
       if (isDeferredStart) {
         customMetadata.start_at = startAtIsoDate as string;
@@ -1482,6 +1528,11 @@ Deno.serve(async (req) => {
       installments_total: String(installments),
       base_payment_cents: String(passBaseCents),
       last_payment_cents: String(passLastCents),
+      // Phase 2 contrats (19/05/2026) : snapshot des cases d'engagement
+      // cochees AVANT paiement, compacte pour rester sous la limite Stripe
+      // (500 chars/valeur). Le wording est reconstruit cote webhook.
+      agreements_compact: compactAgreements(input.agreements_snapshot),
+      agreements_formula: "PASS AL BARAKA",
     };
 
     if (installments === 1) {

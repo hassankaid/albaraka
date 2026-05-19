@@ -20,6 +20,8 @@ import { toast } from "sonner";
 import logo from "@/assets/al-baraka-logo-v2.png";
 import { Lock, ShieldCheck, CheckCircle2, Tag, X, ArrowRight, ChevronDown } from "lucide-react";
 import CheckoutCanvas from "./CheckoutCanvas";
+import { EngagementChecklist } from "@/components/checkout/EngagementChecklist";
+import { initAgreements, allAgreed, type AgreementItem } from "@/lib/checkout-agreements";
 
 // Prix officiel Pass AL BARAKA (table public.offers, slug 'al-baraka').
 // Modifiable depuis l'admin /admin/payment-links → onglet "Codes promo
@@ -1198,7 +1200,10 @@ function CheckoutForm({
 
   const [couponInput, setCouponInput] = useState("");
   const [couponOpen, setCouponOpen] = useState(false);
-  const [agreed, setAgreed] = useState(false);
+  // Refonte Sidali 19/05/2026 : 5 cases d'engagement (cf. CONSIGNES_IMPLEMENTATION).
+  // Le bouton « Payer » est désactivé tant qu'elles ne sont pas TOUTES cochées.
+  // Le snapshot horodaté est transmis au backend pour traçabilité juridique.
+  const [agreements, setAgreements] = useState<AgreementItem[]>(() => initAgreements("PASS AL BARAKA"));
   const [submitting, setSubmitting] = useState(false);
 
   const discountPercent = coupon.status === "valid" ? coupon.percent : 0;
@@ -1300,7 +1305,7 @@ function CheckoutForm({
     if (!billing.postal_code.trim()) return "Code postal requis";
     if (!billing.city.trim()) return "Ville requise";
     if (!billing.country.trim()) return "Pays requis";
-    if (!agreed) return "Tu dois confirmer ton inscription";
+    if (!allAgreed(agreements)) return "Tu dois cocher les 5 engagements avant de continuer";
     return null;
   }
 
@@ -1336,6 +1341,9 @@ function CheckoutForm({
           test_mode: testMode,
           coupon_code: coupon.status === "valid" ? coupon.code : undefined,
           payment_code: paymentCode || undefined,
+          // Snapshot des 5 engagements (Sidali 19/05/2026) — transmis pour traçabilité
+          // jusqu'à la row `client_contracts.agreements_snapshot` côté webhook.
+          agreements_snapshot: agreements,
           customer: {
             email: billing.email.trim().toLowerCase(),
             full_name: fullName,
@@ -1749,71 +1757,20 @@ function CheckoutForm({
         )}
       </section>
 
-      {/* CGV — liste à puces dorées */}
-      <section>
-        <label
-          style={{
-            display: "flex",
-            gap: 12,
-            fontSize: 13,
-            cursor: "pointer",
-            alignItems: "flex-start",
-            color: THEME.cream,
-            lineHeight: 1.55,
-            marginBottom: 12,
-            fontWeight: 500,
-          }}
-        >
-          <input
-            type="checkbox"
-            className="alb-checkbox"
-            checked={agreed}
-            onChange={(e) => setAgreed(e.target.checked)}
-            style={{ marginTop: 2, flexShrink: 0, width: 16, height: 16 }}
-          />
-          <span>Je confirme mon inscription au PASS AL BARAKA.</span>
-        </label>
-        <ul
-          style={{
-            listStyle: "none",
-            margin: 0,
-            padding: "0 0 0 28px",
-            display: "flex",
-            flexDirection: "column",
-            gap: 7,
-            fontSize: 12,
-            color: THEME.creamMuted,
-            lineHeight: 1.55,
-          }}
-        >
-          {[
-            "Je souhaite accéder au contenu immédiatement.",
-            "S'agissant de produits numériques, je renonce à mon droit de rétractation de 14 jours (article L221-28 13° du Code de la consommation).",
-            ...(installments > 1
-              ? ["En cas de paiement en plusieurs fois, je m'engage sur la totalité du paiement prévu."]
-              : []),
-          ].map((item, i) => (
-            <li key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start" }}>
-              <span
-                aria-hidden
-                style={{
-                  width: 4,
-                  height: 4,
-                  background: THEME.gold,
-                  borderRadius: "50%",
-                  flexShrink: 0,
-                  marginTop: 8,
-                  boxShadow: "0 0 6px rgba(201,160,78,0.6)",
-                }}
-              />
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {/* 5 engagements obligatoires (Sidali 19/05/2026 — CONSIGNES_IMPLEMENTATION) */}
+      <EngagementChecklist
+        agreements={agreements}
+        onChange={setAgreements}
+        theme={{ gold: THEME.gold, goldBright: THEME.goldBright, cream: THEME.cream, creamMuted: THEME.creamMuted }}
+        title="Avant de continuer — coche les 5 engagements"
+      />
 
       {/* Bouton */}
-      <button type="submit" className="alb-submit" disabled={submitting || !stripe}>
+      <button
+        type="submit"
+        className="alb-submit"
+        disabled={submitting || !stripe || !allAgreed(agreements)}
+      >
         {submitting ? (
           <>
             <span

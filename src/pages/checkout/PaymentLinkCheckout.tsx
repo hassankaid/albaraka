@@ -26,6 +26,8 @@ import logo from "@/assets/al-baraka-logo-v2.png";
 import { Lock, ShieldCheck, ChevronDown, AlertTriangle, Loader2, Tag, CheckCircle2, X } from "lucide-react";
 import CheckoutCanvas from "./CheckoutCanvas";
 import { ScheduleBlock, formatEur, formatFrDate, todayPlusISO } from "./ScheduleBlock";
+import { EngagementChecklist } from "@/components/checkout/EngagementChecklist";
+import { initAgreements, allAgreed, type AgreementItem, type CheckoutFormula } from "@/lib/checkout-agreements";
 
 const THEME = {
   bg: "#0A0A0A",
@@ -900,6 +902,21 @@ function PaymentLinkForm({
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Refonte Sidali 19/05/2026 : 5 cases d'engagement pour les ventes Pass / Liberty
+  // uniquement (pas pour les formations à la carte). On déduit la formule de
+  // `lookup.expected_coupon_category` qui est défini à la création du lien.
+  const formula: CheckoutFormula | null =
+    lookup.expected_coupon_category === "al_baraka"
+      ? "PASS AL BARAKA"
+      : lookup.expected_coupon_category === "liberty"
+        ? "LIBERTY"
+        : null;
+  const [agreements, setAgreements] = useState<AgreementItem[]>(() =>
+    formula ? initAgreements(formula) : [],
+  );
+  const needsAgreements = formula !== null;
+  const agreementsOk = !needsAgreements || allAgreed(agreements);
+
   function onField<K extends keyof BillingFields>(k: K, v: string) {
     setBilling((b) => ({ ...b, [k]: v }));
   }
@@ -915,6 +932,8 @@ function PaymentLinkForm({
     if (!billing.city.trim()) return "Ville requise";
     if (!billing.country.trim()) return "Pays requis";
     if (!agreed) return "Vous devez confirmer votre paiement";
+    if (needsAgreements && !allAgreed(agreements))
+      return "Tu dois cocher les 5 engagements avant de continuer";
     return null;
   }
 
@@ -953,6 +972,9 @@ function PaymentLinkForm({
           test_mode: testMode,
           coupon_code: couponCode || undefined,
           client_chosen_start_at: clientChosenStartDate || undefined,
+          // Snapshot des 5 engagements (uniquement pour les Pass / Liberty,
+          // pas pour les formations à la carte). Sidali 19/05/2026.
+          agreements_snapshot: needsAgreements ? agreements : undefined,
           customer: {
             email: billing.email.trim().toLowerCase(),
             full_name: fullName,
@@ -1237,6 +1259,18 @@ function PaymentLinkForm({
           />
         </div>
 
+        {/* 5 engagements obligatoires Pass / Liberty (Sidali 19/05/2026).
+            Affichées uniquement pour les ventes Pass AL BARAKA / Liberty —
+            les liens de formations à la carte gardent uniquement la case d'autorisation. */}
+        {needsAgreements && (
+          <EngagementChecklist
+            agreements={agreements}
+            onChange={setAgreements}
+            theme={{ gold: THEME.gold, goldBright: THEME.goldBright, cream: THEME.cream, creamMuted: THEME.creamMuted }}
+            title="Avant de continuer — coche les 5 engagements"
+          />
+        )}
+
         <label
           style={{
             display: "flex",
@@ -1288,7 +1322,7 @@ function PaymentLinkForm({
 
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || !agreementsOk}
           style={{
             background: `linear-gradient(135deg, ${THEME.gold}, ${THEME.goldBright})`,
             color: "#0A0A0A",
@@ -1298,8 +1332,8 @@ function PaymentLinkForm({
             fontSize: 15,
             fontWeight: 600,
             fontFamily: "inherit",
-            cursor: submitting ? "not-allowed" : "pointer",
-            opacity: submitting ? 0.6 : 1,
+            cursor: submitting || !agreementsOk ? "not-allowed" : "pointer",
+            opacity: submitting || !agreementsOk ? 0.6 : 1,
             transition: "transform 0.1s",
             boxShadow: "0 10px 25px rgba(201,160,78,0.25)",
           }}
