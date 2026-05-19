@@ -342,13 +342,27 @@ export const styles = StyleSheet.create({
 /*  Helpers de formatage                                                      */
 /* -------------------------------------------------------------------------- */
 
-/** Format un nombre en euros français : 3000 → "3 000,00 € TTC" */
+/** Format un nombre en euros français : 3000 → "3 000,00 € TTC"
+ *
+ * Note importante : `Intl.NumberFormat("fr-FR")` retourne des caractères
+ * espace exotiques (NBSP ` ` ou NNBSP ` ` selon la version ICU)
+ * comme séparateurs de milliers et avant le €. Or les fonts natifs de
+ * @react-pdf/renderer (Helvetica / Times-Roman) ne couvrent pas ces
+ * caractères Unicode — résultat : un `/` ou un glyphe bizarre apparaît
+ * dans le PDF rendu (cf. test E2E Hassan 19/05/2026).
+ *
+ * Fix : on remplace tout whitespace non-ASCII par un espace standard
+ * (U+0020) après formatage. Visuellement identique, et 100% supporté
+ * par toutes les fonts.
+ */
 export function formatEUR(amount: number, withTtc = true): string {
-  const formatted = new Intl.NumberFormat("fr-FR", {
+  const raw = new Intl.NumberFormat("fr-FR", {
     style: "decimal",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
+  // Remplace NBSP ( ) et NNBSP ( ) par espace ASCII standard.
+  const formatted = raw.replace(/[  ]/g, " ");
   return withTtc ? `${formatted} € TTC` : `${formatted} €`;
 }
 
