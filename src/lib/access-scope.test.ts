@@ -35,7 +35,6 @@ describe("isApporteurScopedPath", () => {
     "/admin/coaching",
     "/coaching",
     "/coaching/session/123",
-    "/working/content",
     "/working/agent",
   ])("blocks %s", (path) => {
     expect(isApporteurScopedPath(path)).toBe(false);

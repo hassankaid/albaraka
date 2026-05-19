@@ -1,0 +1,22 @@
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Suppression de la feature "Générateur de Contenu" + "Mes Contenus"
+-- Date : 19/05/2026
+--
+-- Contexte :
+--   Cette feature était initialement accessible à tous les utilisateurs avec
+--   un pass, puis a été restreinte au CEO le 14/05/2026 (demande Sidali) en
+--   attendant une refonte plus complète.
+--
+--   Le 19/05/2026, décision de la supprimer définitivement et de tout miser
+--   sur Personal Brand (plus structurée, plus aboutie). Les 174 contenus
+--   produits historiquement par 39 utilisateurs ont été exportés en CSV
+--   avant suppression (backup local).
+--
+-- Ce que fait cette migration :
+--   - DROP TABLE public.content_pieces CASCADE (efface aussi les 4 policies RLS)
+--   - Aucune autre table ne référence content_pieces (audit fait)
+--   - L'edge function `claude-content-generator` est CONSERVÉE car elle est
+--     aussi utilisée par Personal Brand (cf. usePersonalBrand.ts)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+DROP TABLE IF EXISTS public.content_pieces CASCADE;

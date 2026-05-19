@@ -3,7 +3,7 @@ import SpaceSwitcher from "./SpaceSwitcher";
 import {
   BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X,
   ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp, GraduationCap,
-  CalendarDays, Award, Sparkles, Wand2, Library, Bot, MessageSquare,
+  CalendarDays, Award, Sparkles, Bot, MessageSquare,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
@@ -23,9 +23,6 @@ const workingNavItems: NavItem[] = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp },
   { title: "Mon Organisation", path: "/working/organisation", icon: CalendarDays },
   { title: "Personal Brand", path: "/working/personal-brand", icon: Sparkles, passRequired: true },
-  // Générateur de Contenu + Mes Contenus : temporairement masqués pour les
-  // apporteurs (demande Sidali — 14/05/2026). Pour réafficher, restaurer
-  // ces deux entrées et synchroniser DashboardLayout.tsx (rôles).
   { title: "Agent IA", path: "/working/agent", icon: Bot, passRequired: true },
   { title: "Dashboard", path: "/my-space", icon: BarChart3 },
   { title: "Mes Leads", path: "/my-space/leads", icon: Users },
@@ -60,8 +57,6 @@ const pageTitles: Record<string, string> = {
   "/working/activity": "Mon Activité",
   "/working/organisation": "Mon Organisation",
   "/working/personal-brand": "Personal Brand",
-  "/working/content": "Générateur de Contenu",
-  "/working/contents": "Mes Contenus",
   "/working/agent": "Agent IA",
   "/training": "Formation",
   "/training/certificats": "Mes Certificats",

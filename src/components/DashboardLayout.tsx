@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, Library, CalendarDays, Wand2, Megaphone, Ticket, Map, Webhook, Link2, Video } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -26,14 +26,6 @@ const workingNavItems: NavItem[] = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Mon Organisation", path: "/working/organisation", icon: CalendarDays, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Personal Brand", path: "/working/personal-brand", icon: Sparkles, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
-  // Générateur de Contenu + Mes Contenus : temporairement masqués pour tous
-  // sauf CEO (demande Sidali — 14/05/2026). Les pages restent en place,
-  // simplement non listées dans la sidebar des non-admins. Pour réafficher
-  // pour collaborateurs et/ou apporteurs : remettre les rôles concernés
-  // dans `roles` ci-dessous et restaurer l'entrée correspondante dans
-  // ApporteurLayout.tsx.
-  { title: "Générateur de Contenu", path: "/working/content", icon: Wand2, roles: ["ceo"] },
-  { title: "Mes Contenus", path: "/working/contents", icon: Library, roles: ["ceo"] },
   { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true },
   // After separator
   { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur", "agence"], adminSection: true },
@@ -119,8 +111,6 @@ const pageTitles: Record<string, string> = {
   "/working/activity": "Mon Activité",
   "/working/organisation": "Mon Organisation",
   "/working/personal-brand": "Personal Brand",
-  "/working/content": "Générateur de Contenu",
-  "/working/contents": "Mes Contenus",
   "/working/agent": "Agent IA",
   "/training/scripts": "Scripts",
   "/training": "Formation",

@@ -44,10 +44,7 @@ import ApporteurSales from "./pages/apporteur/ApporteurSales";
 import ApporteurCommissions from "./pages/apporteur/ApporteurCommissions";
 import ApporteurProfile from "./pages/apporteur/ApporteurProfile";
 import ApporteurOnboarding from "./pages/apporteur/ApporteurOnboarding";
-import Working from "./pages/Working";
 import Scripts from "./pages/working/Scripts";
-import ContentGenerator from "./pages/working/ContentGenerator";
-import MyContents from "./pages/working/MyContents";
 import MyActivity from "./pages/working/MyActivity";
 import AgentIA from "./pages/working/AgentIA";
 import TrainingList from "./pages/training/TrainingList";
@@ -86,12 +83,10 @@ import RdvCalendly from "./pages/public/rdv/RdvCalendly";
 import CoachingCalendar from "./pages/coaching/CoachingCalendar";
 import { PassGuard } from "./components/PassGuard";
 import { FeatureGate } from "./components/FeatureGate";
-import { CeoOnlyGuard } from "./components/CeoOnlyGuard";
 import SharedLayout from "./components/SharedLayout";
 import ParcoursView from "./pages/parcours/ParcoursView";
 import ParcoursChapitreDetail from "./pages/parcours/ParcoursChapitreDetail";
 import OrganisationPage from "./pages/working/organisation/OrganisationPage";
-import ContentGenerator from "./pages/working/ContentGenerator";
 import PersonalBrandPage from "./pages/working/personal-brand/PersonalBrandPage";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import AdminAnnouncements from "./pages/admin/announcements/AdminAnnouncements";
@@ -222,11 +217,6 @@ const App = () => (
                   <Route path="/working/activity" element={<FeatureGate feature="working_activity"><MyActivity /></FeatureGate>} />
                   <Route path="/working/organisation" element={<FeatureGate feature="quiz_organisation"><OrganisationPage /></FeatureGate>} />
                   <Route path="/working/personal-brand" element={<PassGuard><PersonalBrandPage /></PassGuard>} />
-                  {/* Générateur de Contenu + Mes Contenus : temporairement
-                      réservés au CEO (demande Sidali — 14/05/2026). Les
-                      non-CEO sont redirigés vers /working/personal-brand. */}
-                  <Route path="/working/content" element={<CeoOnlyGuard><ContentGenerator /></CeoOnlyGuard>} />
-                  <Route path="/working/contents" element={<CeoOnlyGuard><MyContents /></CeoOnlyGuard>} />
                   <Route path="/working/agent" element={<PassGuard><AgentIA /></PassGuard>} />
                 </Route>
               </Route>
