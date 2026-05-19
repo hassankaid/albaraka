@@ -36,6 +36,13 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   isLoading: boolean;
+  /**
+   * Phase 5 (19/05/2026) — Nb de contrats client en status='pending_signature'
+   * pour l'utilisateur courant. Utilisé par ProtectedRoute pour forcer la
+   * signature avant tout accès à la plateforme (clause "accès activé dès la
+   * signature", Sidali 19/05/2026).
+   */
+  unsignedContractsCount: number;
   signOut: () => Promise<void>;
 }
 
@@ -45,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [unsignedContractsCount, setUnsignedContractsCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -55,6 +63,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq("id", userId)
       .maybeSingle();
     setProfile(data);
+
+    // Phase 5 — compte les contrats en attente de signature pour ce user.
+    // RLS garantit qu'il ne voit que les siens (buyer_profile_id = auth.uid()).
+    // Si le rôle n'est pas susceptible d'avoir un contrat (CEO, collab pur),
+    // count restera 0 → no-op côté ProtectedRoute.
+    try {
+      const { count } = await supabase
+        .from("client_contracts")
+        .select("id", { count: "exact", head: true })
+        .eq("buyer_profile_id", userId)
+        .eq("status", "pending_signature");
+      setUnsignedContractsCount(count ?? 0);
+    } catch {
+      setUnsignedContractsCount(0);
+    }
   }, []);
 
   useEffect(() => {
@@ -92,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setTimeout(() => fetchProfile(newSession.user.id), 0);
         } else {
           setProfile(null);
+          setUnsignedContractsCount(0);
         }
 
         if (event === "SIGNED_OUT") {
@@ -125,7 +149,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, isLoading, signOut }}>
+    <AuthContext.Provider
+      value={{ user, session, profile, isLoading, unsignedContractsCount, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );

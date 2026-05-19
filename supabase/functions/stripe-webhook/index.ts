@@ -125,6 +125,207 @@ function extractId(field: unknown): string | null {
   return null;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Phase 5 — Génération auto contrats client (Sidali 19/05/2026)
+//
+// À chaque vente bon_commande / pass_liberty, on crée une row `client_contracts`
+// (snapshot complet) après l'INSERT de la sale + grant pass. La page
+// /contract/:id rend ensuite le PDF côté navigateur et la signature client est
+// gérée par l'edge function `upload-signed-contract`.
+//
+// Idempotence : sale_id est UNIQUE sur client_contracts → un webhook rejoué
+// ne créera jamais 2 contrats. `ensureClientContract` retourne l'existant
+// silencieusement quand il est déjà présent.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Wording exact des 5 cases d'engagement (Sidali 19/05/2026 — CONSIGNES_IMPLEMENTATION).
+ * Reconstruit le snapshot complet depuis le format compact `id:ISO|id:ISO|...`
+ * stocké dans Stripe metadata par `create-payment-intent` v18.
+ * Le wording est identique à `src/lib/checkout-agreements.ts` côté frontend.
+ */
+const AGREEMENT_WORDING: Record<string, (formula: string) => string> = {
+  knew_formula: (f) => `J'ai bien pris connaissance de ma formule ${f} et de tout ce qui est inclus.`,
+  understood_warranty: () => "J'ai bien compris les conditions de la garantie de continuité d'accompagnement et les obligations qui m'incombent pour en bénéficier.",
+  wants_immediate_access: () => "Je souhaite accéder immédiatement à la plateforme et je comprends les conditions qui en découlent (renonciation au droit de rétractation de 14 jours).",
+  commits_to_payment: () => "Je m'engage à honorer l'intégralité de mon paiement selon la modalité convenue.",
+  respects_confidentiality: () => "Je m'engage à respecter la confidentialité des contenus de l'écosystème.",
+};
+
+interface AgreementSnapshot {
+  id: string;
+  text: string;
+  checked: boolean;
+  checked_at: string | null;
+}
+
+function expandAgreementsCompact(compact: string, formula: string): AgreementSnapshot[] {
+  if (!compact || typeof compact !== "string") return [];
+  return compact
+    .split("|")
+    .map((part) => {
+      const [id, ts] = part.split(":");
+      const wordingFn = AGREEMENT_WORDING[id];
+      if (!wordingFn) return null;
+      return {
+        id,
+        text: wordingFn(formula || "PASS AL BARAKA"),
+        checked: true,
+        checked_at: ts || null,
+      } as AgreementSnapshot;
+    })
+    .filter((a): a is AgreementSnapshot => a !== null);
+}
+
+/**
+ * Déduit le template_key à utiliser pour générer la row client_contracts :
+ *   - pass_standard / pass_conference (selon coupon is_conference)
+ *   - liberty_standard / liberty_conference
+ * Lit coupons.is_conference depuis la BDD via le service_role client.
+ */
+async function deduceTemplateKey(
+  supabase: SupabaseClient,
+  productType: "bon_commande" | "pass_liberty",
+  couponCode: string | null,
+): Promise<"pass_standard" | "pass_conference" | "liberty_standard" | "liberty_conference"> {
+  const passOrLiberty = productType === "pass_liberty" ? "liberty" : "pass";
+  if (!couponCode) {
+    return `${passOrLiberty}_standard` as
+      | "pass_standard"
+      | "pass_conference"
+      | "liberty_standard"
+      | "liberty_conference";
+  }
+  const { data } = await supabase
+    .from("coupons")
+    .select("is_conference")
+    .eq("code", couponCode.toUpperCase())
+    .maybeSingle();
+  const isConf = !!(data as { is_conference?: boolean } | null)?.is_conference;
+  return `${passOrLiberty}_${isConf ? "conference" : "standard"}` as
+    | "pass_standard"
+    | "pass_conference"
+    | "liberty_standard"
+    | "liberty_conference";
+}
+
+/**
+ * Formate "Comptant" ou "5 × 600,00 €" selon le breakdown.
+ * Affiche la base (mensualité standard) ; la dernière qui absorbe les centimes
+ * (Sprint O) n'est pas explicitée ici, c'est juste la modalité de référence
+ * affichée au client. Le détail complet est dans `payments`.
+ */
+function formatPaymentModality(installments: number, baseCents: number, _lastCents: number): string {
+  if (installments <= 1) return "Comptant";
+  const base = (baseCents / 100).toLocaleString("fr-FR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `${installments} × ${base} €`;
+}
+
+/**
+ * Crée la ligne client_contracts pour une vente bon_commande / pass_liberty.
+ * Idempotent : si une ligne existe déjà pour le sale_id, retourne l'existant
+ * sans erreur ; sinon, génère un contract_number séquentiel mensuel via la
+ * RPC `next_contract_number`.
+ * Returns l'objet créé OU l'existant OU null en cas d'erreur.
+ */
+async function ensureClientContract(
+  supabase: SupabaseClient,
+  args: {
+    saleId: string;
+    contactId: string;
+    buyerProfileId: string | null;
+    productType: "bon_commande" | "pass_liberty";
+    couponCode: string | null;
+    amountTotal: number;
+    amountOriginal: number;
+    discountAmount: number;
+    installments: number;
+    paymentModality: string;
+    firstPaymentDate: string;
+    customer: {
+      first_name: string;
+      last_name: string;
+      email: string;
+      phone: string;
+      address: string;
+      postal_code: string;
+      city: string;
+      country: string;
+    };
+    agreementsCompact: string;
+    agreementsFormula: string;
+  },
+): Promise<{ id: string; contract_number: string } | null> {
+  // Idempotence : sale_id UNIQUE sur client_contracts
+  const { data: existing } = await supabase
+    .from("client_contracts")
+    .select("id, contract_number")
+    .eq("sale_id", args.saleId)
+    .maybeSingle();
+  if (existing) {
+    console.log(
+      `[client_contracts] sale_id=${args.saleId} already has contract ${(existing as { contract_number: string }).contract_number}, skip`,
+    );
+    return existing as { id: string; contract_number: string };
+  }
+
+  const templateKey = await deduceTemplateKey(supabase, args.productType, args.couponCode);
+  const now = new Date();
+  const { data: numberData, error: numberErr } = await supabase.rpc("next_contract_number", {
+    p_year: now.getUTCFullYear(),
+    p_month: now.getUTCMonth() + 1,
+  });
+  if (numberErr || !numberData) {
+    console.error("[client_contracts] next_contract_number failed", numberErr);
+    return null;
+  }
+  const contractNumber = numberData as string;
+
+  const agreements = expandAgreementsCompact(args.agreementsCompact, args.agreementsFormula);
+
+  const { data: inserted, error } = await supabase
+    .from("client_contracts")
+    .insert({
+      contract_number: contractNumber,
+      sale_id: args.saleId,
+      contact_id: args.contactId,
+      buyer_profile_id: args.buyerProfileId,
+      template_key: templateKey,
+      client_first_name: args.customer.first_name,
+      client_last_name: args.customer.last_name,
+      client_email: args.customer.email,
+      client_phone: args.customer.phone,
+      client_address: args.customer.address,
+      client_postal_code: args.customer.postal_code,
+      client_city: args.customer.city,
+      client_country: args.customer.country,
+      amount_total: args.amountTotal,
+      amount_original: args.amountOriginal,
+      discount_amount: args.discountAmount,
+      coupon_code: args.couponCode,
+      payment_modality: args.paymentModality,
+      installments_count: args.installments,
+      first_payment_date: args.firstPaymentDate,
+      agreements_snapshot: agreements,
+      status: "pending_signature",
+    })
+    .select("id, contract_number")
+    .single();
+
+  if (error) {
+    console.error("[client_contracts] insert failed", error);
+    return null;
+  }
+  const insertedRow = inserted as { id: string; contract_number: string };
+  console.log(
+    `[client_contracts] created ${insertedRow.contract_number} for sale ${args.saleId}`,
+  );
+  return insertedRow;
+}
+
 interface BonCommandeIds {
   paymentIntentId?: string | null;
   subscriptionId?: string | null;
@@ -429,6 +630,54 @@ async function ensureBonCommandeOrder(
     `${productCfg.logTag} created profile=${profileId} sale=${sale.id} installments=${installments}`,
   );
 
+  // ── Phase 5 (19/05/2026) — Génération auto contrat client ────────────────
+  // Crée la row client_contracts (snapshot complet) pour que le client puisse
+  // signer son contrat depuis /contract/:id. Idempotent via sale_id UNIQUE.
+  // Le wording des 5 cases est reconstruit depuis le format compact stocké
+  // dans Stripe metadata par create-payment-intent v18.
+  const firstSpace = fullName.indexOf(" ");
+  const firstName = firstSpace > 0 ? fullName.slice(0, firstSpace).trim() : fullName.trim();
+  const lastName = firstSpace > 0 ? fullName.slice(firstSpace + 1).trim() : "";
+  const todayIso = todayISO();
+  const baseCentsForModality = Number(metadata.base_payment_cents) || (breakdownCents[0] ?? 0);
+  const lastCentsForModality =
+    Number(metadata.last_payment_cents) || (breakdownCents[breakdownCents.length - 1] ?? 0);
+  const paymentModality = formatPaymentModality(
+    installments,
+    baseCentsForModality,
+    lastCentsForModality,
+  );
+  let createdContract: { id: string; contract_number: string } | null = null;
+  try {
+    createdContract = await ensureClientContract(supabase, {
+      saleId: sale.id,
+      contactId: contact.id,
+      buyerProfileId: profileId,
+      productType: source as "bon_commande" | "pass_liberty",
+      couponCode,
+      amountTotal: totalNet,
+      amountOriginal: productCfg.totalGross,
+      discountAmount,
+      installments,
+      paymentModality,
+      firstPaymentDate: todayIso,
+      customer: {
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        phone: String(metadata.customer_phone || ""),
+        address: String(metadata.customer_address || ""),
+        postal_code: String(metadata.customer_postal_code || ""),
+        city: String(metadata.customer_city || ""),
+        country: normalizeCountryToFrName(metadata.customer_country) || "",
+      },
+      agreementsCompact: String(metadata.agreements_compact || ""),
+      agreementsFormula: String(metadata.agreements_formula || ""),
+    });
+  } catch (e) {
+    console.error(`${productCfg.logTag} ensureClientContract failed:`, e);
+  }
+
   // Email d'onboarding (création password + accès plateforme)
   if (productCfg.sendOnboardingEmail) {
     try {
@@ -445,6 +694,9 @@ async function ensureBonCommandeOrder(
             pass_type: productCfg.passType, // "al_baraka" ou "liberty"
             // Sprint T (18/05/2026) : bouton Discord pour tous les Pass
             include_discord_button: true,
+            // Phase 5 (19/05/2026) : CTA secondaire "Signer mon contrat"
+            // Affiché uniquement si le contrat a bien été créé.
+            contract_id: createdContract?.id || undefined,
           }),
         },
       );

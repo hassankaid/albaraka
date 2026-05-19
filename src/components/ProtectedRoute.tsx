@@ -9,7 +9,7 @@ import {
 import { DeactivatedAccountScreen } from "@/components/DeactivatedAccountScreen";
 
 export function ProtectedRoute() {
-  const { session, profile, isLoading } = useAuth();
+  const { session, profile, isLoading, unsignedContractsCount } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -26,6 +26,18 @@ export function ProtectedRoute() {
   // (is_active=false, is_also_apporteur=false). They cannot navigate the app.
   if (isLockedOut(profile)) {
     return <DeactivatedAccountScreen />;
+  }
+
+  // Phase 5 (19/05/2026) — Blocage strict tant que le contrat n'est pas signé.
+  // Cohérent avec la clause "accès activé dès la signature" (Sidali 19/05).
+  // Le user est redirigé vers /contracts (landing qui choisit automatiquement
+  // le contrat à signer ou affiche la liste). On laisse passer toutes les
+  // routes /contract* pour ne pas se prendre dans une boucle.
+  if (
+    unsignedContractsCount > 0 &&
+    !location.pathname.startsWith("/contract")
+  ) {
+    return <Navigate to="/contracts" replace />;
   }
 
   // Sprint T (18/05/2026) : suppression du DiscordGate bloquant. Discord est
