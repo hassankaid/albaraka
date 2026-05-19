@@ -99,6 +99,8 @@ import ParcoursChapitreEditor from "./pages/admin/parcours/ParcoursChapitreEdito
 import AnnouncementDetail from "./pages/announcements/AnnouncementDetail";
 import AdminQuizLead from "./pages/admin/quiz-lead/AdminQuizLead";
 import ContractPreview from "./pages/admin/contracts/ContractPreview";
+import MyContract from "./pages/contract/MyContract";
+import ContractLandingPage from "./pages/contract/ContractLandingPage";
 
 const queryClient = new QueryClient();
 
@@ -201,6 +203,9 @@ const App = () => (
                 {/* Shared routes: layout chosen by role at runtime (pure apporteur → ApporteurLayout, else DashboardLayout) */}
                 <Route element={<SharedLayout />}>
                   <Route path="/announcements/:id" element={<AnnouncementDetail />} />
+                  <Route path="/contract" element={<ContractLandingPage />} />
+                  <Route path="/contracts" element={<ContractLandingPage />} />
+                  <Route path="/contract/:contractId" element={<MyContract />} />
                   <Route path="/training" element={<TrainingList />} />
                   <Route path="/training/certificats" element={<MyCertificates />} />
                   {/* Scripts / Rôle-Play / Quiz : ouverts à CEO/collab toujours,
