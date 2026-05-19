@@ -20,10 +20,6 @@ function slug(s: string) {
     .replace(/\s+/g, "");
 }
 
-function sub(s: string, n: number) {
-  return s.length > n ? s.substring(0, n) + "…" : s;
-}
-
 // ─── PROMPT — 10 PROFILS INSTAGRAM ─────────────────────────────────────
 export function buildBioPrompt(a: BrandAnswers, mode: BrandMode = "pass"): string {
   const p = slug(g(a, "prenom"));
@@ -32,6 +28,8 @@ export function buildBioPrompt(a: BrandAnswers, mode: BrandMode = "pass"): strin
       ? `a sa propre offre "${g(a, "offre_nom")}" (${g(a, "offre_niche")})`
       : "est apporteur d'affaires AL BARAKA";
 
+  // ⚠️ Refonte 19/05/2026 : on a supprimé la question cible_communaute du
+  // quiz. La cible est musulmane par défaut (positionnement Al Baraka).
   return `Génère 5 profils Instagram. Chaque profil = username + nom affiché + bio 4 lignes COURTES.
 PERSONNE : ${g(a, "prenom")}, ${g(a, "age")}, ${g(a, "situation")}. ${ctx}.
 Motivation : "${g(a, "pourquoi")}"
@@ -42,7 +40,7 @@ Message : "${g(a, "message_monde")}"
 Cible : ${g(a, "cible_qui")}
 Problème cible : "${g(a, "cible_probleme")}"
 Rêve cible : "${g(a, "cible_reve")}"
-Musulmane : ${g(a, "cible_communaute")}
+Musulmane : Oui
 Archétype : ${g(a, "archetype")}
 Ton : ${ga(a, "ton")} | Valeurs : ${ga(a, "valeurs")}
 BIO = exactement 4 lignes, ULTRA COURTES (max 6-8 mots par ligne) :
@@ -67,15 +65,20 @@ export const PROFILE_BATCHES = [
   "styles : minimaliste, spirituel, rebelle, journal, poétique",
 ];
 
-// ─── PROMPT PERSONNALISÉ — ÉTAPE 2 (~3000+ mots) ────────────────────────
-// Ce prompt sera copié par l'utilisateur et utilisé tel quel par
-// l'Étape 3 pour générer ses scripts hebdomadaires.
+// ─── PROMPT PERSONNALISÉ — ÉTAPE 2 (~3800+ mots) ────────────────────────
+// Refonte 19/05/2026 (Sidali) : ajout de 2 sections critiques (TONALITÉ
+// NATURELLE + FRAMEWORK CTA) qui dictent strictement le style des scripts.
+// Sans ces sections, Claude produisait du contenu type "influenceur Instagram"
+// avec des aphorismes, impératifs en chaîne et phrases marketing.
+//
+// Ce prompt sera copié par l'utilisateur et utilisé tel quel par l'Étape 3
+// pour générer ses scripts hebdomadaires.
 export function buildFullPrompt(a: BrandAnswers, mode: BrandMode = "pass"): string {
-  const musulmane = String(a.cible_communaute || "").includes("Oui");
-  const foi = musulmane ? "Foi et valeurs islamiques quand c'est naturel — sans forcer." : "";
-  const rappelSpirituel = musulmane ? "Rappel spirituel, " : "";
   const archType = g(a, "archetype").split("—")[0].trim();
-  const isFem = g(a, "cible_genre") === "Femmes uniquement";
+  // ⚠️ Refonte 19/05/2026 : cible_genre = "Femmes" (sans "uniquement")
+  const isFem = g(a, "cible_genre") === "Femmes";
+  const prenom = g(a, "prenom");
+  const ami = isFem ? "une amie" : "un ami";
 
   // Hook style selon le ton de contenu (déduit du questionnaire)
   const tonContenu = g(a, "ton_contenu") || "";
@@ -102,18 +105,24 @@ SON OFFRE (CŒUR DE LA STRATÉGIE LIBERTY)
 - Prix : ${g(a, "offre_prix")} | Accès : ${g(a, "offre_acces")}
 - Unique : "${g(a, "offre_unique")}"
 - Preuves : "${g(a, "offre_preuves") || "Pas encore de témoignages"}"
-⚠️ S3 = teasing de l'offre. S4 = vente directe avec CTA "${g(a, "offre_acces")}".`
+⚠️ S3 = teasing de l'offre. S4 = vente directe MAIS INVITANTE avec CTA "${g(a, "offre_acces")}".`
       : "";
 
+  // ⚠️ Refonte 19/05 : Pass utilise les nouvelles options competences
+  // (Personal Branding, Storytelling, Setting DM, etc.)
   const ctxLine =
     mode === "pass"
-      ? `Membre Pass AL BARAKA — apporteur d'affaires. Compétences : ${ga(a, "competences")}`
+      ? `Membre Pass AL BARAKA — apporteur d'affaires. Compétences à monétiser : ${ga(a, "competences")}`
       : `Membre Liberty — propriétaire de son offre "${g(a, "offre_nom") || "—"}"`;
 
   const s4Strategy =
     mode === "liberty"
-      ? `S4 🔥 CONVERSION — Vendre "${g(a, "offre_nom")}", casser les objections, CTA : "${g(a, "offre_acces")}"`
-      : `S4 🔥 CONVERSION — Conversion douce vers lien en bio / tunnel AL BARAKA`;
+      ? `S4 🔥 CONVERSION — Vendre "${g(a, "offre_nom")}" en INVITANT, lever les objections, CTA vers : "${g(a, "offre_acces")}"`
+      : `S4 🔥 CONVERSION — Présenter AL BARAKA en douceur, lien en bio / tunnel`;
+
+  // ⚠️ Refonte 19/05 : format_principal réduit à 2 options (Face caméra / Voix off).
+  // Donc la directive est plus stricte : pas de B-rolls/Mix.
+  const formatLine = `Format : ${g(a, "format_principal")} UNIQUEMENT (PAS de B-rolls, PAS de plans illustratifs, PAS de montages)`;
 
   return `Tu es un scriptwriter et stratège de contenu. Tu vas créer du contenu UNIQUE pour une personne UNIQUE.
 
@@ -131,7 +140,7 @@ ${mode === "liberty" ? "6. POURQUOI son offre est DIFFÉRENTE\n7. POURQUOI achet
 ═══════════════════════════════════
 QUI EST CETTE PERSONNE
 ═══════════════════════════════════
-- Prénom : ${g(a, "prenom")} | ${g(a, "age")} | ${g(a, "situation")}
+- Prénom : ${prenom} | ${g(a, "age")} | ${g(a, "situation")}
 - Objectif revenu : ${g(a, "objectif_revenu")}
 - Motivation : "${g(a, "pourquoi")}"
 ${ctxLine}
@@ -155,33 +164,74 @@ SA CIBLE
 - Problème n°1 : "${g(a, "cible_probleme")}"
 - Rêve / transformation : "${g(a, "cible_reve")}"
 - Peur / objection : "${g(a, "cible_objection")}"
-- Musulmane : ${g(a, "cible_communaute")}
+- Musulmane : Oui
 
 ═══════════════════════════════════
 SA PERSONNALITÉ — ${archType}
 ═══════════════════════════════════
 ${hookStyle}
-⚠️ CHAQUE HOOK DIFFÉRENT. Jamais deux pareils sur la semaine.
+⚠️ CHAQUE HOOK DIFFÉRENT. Jamais deux pareils sur les 7 jours d'une semaine.
 - Ton : ${ga(a, "ton")}
 - Valeurs : ${ga(a, "valeurs")}
 - Sujets interdits : ${g(a, "sujets_eviter") || "Aucun"}
-- Inspirations : ${g(a, "modele") || "Aucune"}
+- ${formatLine}
+- Piliers : ${ga(a, "piliers")}
+
+═══════════════════════════════════
+TONALITÉ NATURELLE (CRITIQUE — NE PAS IGNORER)
+═══════════════════════════════════
+${prenom} doit parler comme à ${ami} en pause-café. Pas comme une influenceuse, pas comme un coach Instagram.
+
+✅ FAIRE SYSTÉMATIQUEMENT :
+→ Parler depuis SOI : "moi j'ai vécu", "je crois que", "j'ai mis du temps". JAMAIS depuis la vérité universelle.
+→ UNE seule promesse par script, formulée petit : "ça m'a aidée" plutôt que "ça change ta vie".
+→ Glisser 3-4 respirations naturelles dans chaque script : "hein", "bon", "en vrai", "je crois", "je sais pas", "tu vois", "enfin".
+→ Inviter au lieu d'ordonner : "si ça te parle" plutôt qu'un impératif sec.
+→ Rendre la décision à l'autre en fin de script : "ou pas, tu fais ce que tu sens", "tu fais ce que tu veux de ça".
+
+❌ INTERDIT ABSOLU :
+→ Aphorismes empilés en fin de script ("C'est l'âge. C'est le diplôme. C'est la décision.").
+→ Impératifs en chaîne ("Fuis. Fuis. Fuis.").
+→ "Tu vas" prophétique ("tu vas douter", "tu vas abandonner", "tu vas comprendre").
+→ Promesses bétonnées ("ça change ta vie à vie", "tu vas tomber de ta chaise", "garanti").
+→ Fins punchy commerciales ("ça vaut tout l'or du monde", "c'est la plus haute forme de X").
+→ Phrases marketing ("100% halal", "sans bullshit", "le secret que personne te dit", "sauve-toi des heures").
+→ Sensationnalisme ("choquant", "vérité dérangeante", "ce que personne ne te dit").
+
+═══════════════════════════════════
+FRAMEWORK CTA (CRITIQUE — APPLIQUER À CHAQUE CTA)
+═══════════════════════════════════
+Chaque CTA doit dire CE QUE LA PERSONNE GAGNE EN RÉPONDANT.
+Pas "fais ça". Mais "fais ça ET VOILÀ CE QUE TU REÇOIS".
+
+4 LEVIERS DE BÉNÉFICE (en utiliser 1 à 2 par CTA) :
+→ Information gagnée : "je te réponds personnellement avec un conseil adapté à toi"
+→ Temps économisé : "ça t'évitera des mois de réflexion", "6 mois d'avance"
+→ Risque réduit : "anonyme si tu veux", "aucune pression", "si c'est non je te le dis aussi"
+→ Clarté/Décision : "tu repars avec un plan", "tu décides en connaissance de cause"
+
+3 RÉFLEXES POUR CTA NATUREL :
+1. Ouvrir avec "si" ("si ça te parle", "si tu te reconnais", "si t'as envie de") plutôt qu'un impératif.
+2. Promettre depuis soi ("moi ça m'a aidée") plutôt que depuis la vérité universelle.
+3. Rendre la liberté ("ou pas", "tu fais ce que tu sens", "sans pression").
+
+EXEMPLE AVANT/APRÈS :
+❌ "Commente en bas."
+✅ "Si tu te reconnais dans une de ces erreurs, dis-le-moi en commentaire. Je passe lire, je réponds. Pas du copier-coller, je prends le temps."
 
 ═══════════════════════════════════
 STRATÉGIE TECHNIQUE
 ═══════════════════════════════════
-- Format : ${g(a, "format_principal")} (PAS de B-rolls si non précisé)
 - Plateformes : ${ga(a, "plateformes")}
 - Fréquence : ${g(a, "frequence")}
 - Batching : ${ga(a, "jour_creation")}
-- Piliers : ${ga(a, "piliers")}
 
 ═══════════════════════════════════
 STRATÉGIE 4 SEMAINES (cycle mensuel)
 ═══════════════════════════════════
-S1 👋 NOTORIÉTÉ — Se présenter, déclic, valeurs. CTA : "Abonne-toi"
-S2 💎 CRÉDIBILITÉ — Parcours, preuves, transformation. CTA : "Enregistre / Partage"
-S3 🤝 ENGAGEMENT — Éduquer, valeur pure, interaction${mode === "liberty" ? ", teasing de l'offre" : ""}. CTA : "Commente / DM"
+S1 👋 NOTORIÉTÉ — Se présenter, partager le déclic, poser les valeurs. CTA : "si ça te parle, abonne-toi"
+S2 💎 CRÉDIBILITÉ — Parcours, preuves, transformation en cours. CTA : "enregistre / partage à ${isFem ? "une sœur" : "un frère"}"
+S3 🤝 ENGAGEMENT — Éduquer, valeur pure, créer l'interaction${mode === "liberty" ? ", teasing de l'offre" : ""}. CTA : "commente / écris-moi en DM"
 ${s4Strategy}
 
 ═══════════════════════════════════
@@ -190,16 +240,16 @@ PAR SEMAINE
 - 7 SCRIPTS DE REELS (~60 sec, 1/jour)
 - 21 IDÉES DE STORIES (3/jour : 🌅 matin, ☀️ midi, 🌙 soir)
 - Structure script : HOOK (0-5s) → VALEUR (5-45s) → CTA (45-60s)
-- Mot pour mot. Langage ORAL.
+- MOT POUR MOT. Langage strictement ORAL.
 
 ═══════════════════════════════════
 RÈGLES ABSOLUES
 ═══════════════════════════════════
-→ Scripts MOT POUR MOT — ${g(a, "prenom")} lit et tourne
-→ Langage ORAL, comme ${g(a, "prenom")} parle à ${isFem ? "une amie" : "un ami"}
-→ S1-S2 = pas de vente. ${mode === "liberty" ? `S3 = teasing. S4 = vente directe de "${g(a, "offre_nom")}"` : "S4 = conversion douce vers lien bio (tunnel AL BARAKA)"}
-${foi ? `→ ${foi}` : ""}
-→ Deux élèves AL BARAKA = scripts MÉCONNAISSABLES
+→ Scripts MOT POUR MOT (la personne lit et tourne, pas de "compléter avec X")
+→ Langage ORAL comme ${prenom} parle à ${ami}
+→ S1-S2 = AUCUNE VENTE. ${mode === "liberty" ? `S3 = teasing doux. S4 = vente invitante de "${g(a, "offre_nom")}"` : "S4 = conversion douce vers le lien en bio"}
+→ Foi et valeurs islamiques SI ET SEULEMENT SI c'est naturel (jamais forcé, jamais culpabilisant)
+→ Deux élèves AL BARAKA = scripts TOTALEMENT MÉCONNAISSABLES (le vécu de ${prenom} doit transparaître à chaque ligne)
 → Sujets à éviter : ${g(a, "sujets_eviter") || "aucun"}`;
 }
 
@@ -247,11 +297,13 @@ Jours ${dayStart}-${dayEnd}.
 Focus de la semaine : ${ctx.focus}
 CTA style : ${ctx.ctaStyle}${histLine}
 
+⚠️ APPLIQUE STRICTEMENT les sections "TONALITÉ NATURELLE" et "FRAMEWORK CTA" du brief ci-dessous.
+
 BRIEF COMPLET DE LA PERSONNE :
 ${ctx.basePrompt}
 
 Format JSON STRICT (tableau de 7 objets) :
-[{"day":${dayStart},"title":"titre court accrocheur","pilier":"Éducatif/Inspirationnel/...","objectif":"engagement/conversion/notoriété","hook":"phrase choc 0-5s","valeur":["point 1","point 2","point 3"],"cta":"CTA naturel","overlay":"texte qui apparaît à l'écran","ambiance":"description musique/ton","alt_hooks":["hook alternatif 1","hook alternatif 2","hook alternatif 3"]}]
+[{"day":${dayStart},"title":"titre court accrocheur","pilier":"Éducatif/Inspirationnel/...","objectif":"engagement/conversion/notoriété","hook":"phrase choc 0-5s","valeur":["point 1","point 2","point 3"],"cta":"CTA naturel selon framework","overlay":"texte qui apparaît à l'écran","ambiance":"description musique/ton","alt_hooks":["hook alternatif 1","hook alternatif 2","hook alternatif 3"]}]
 
 Commence directement par [`;
 }
@@ -269,6 +321,8 @@ export function buildWeeklyStoriesPrompt(ctx: WeeklyContext): string {
 Génère 3 idées de stories par jour pour la SEMAINE ${ctx.weekNum} (jours ${dayStart}-${dayEnd}).
 Arc journalier : ${ctx.arc}
 Total : 7 jours × 3 stories = 21 idées.${histLine}
+
+⚠️ APPLIQUE STRICTEMENT les sections "TONALITÉ NATURELLE" et "FRAMEWORK CTA" du brief ci-dessous.
 
 BRIEF COMPLET DE LA PERSONNE :
 ${ctx.basePrompt}
