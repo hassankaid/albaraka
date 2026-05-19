@@ -9,7 +9,7 @@ import {
 import { DeactivatedAccountScreen } from "@/components/DeactivatedAccountScreen";
 
 export function ProtectedRoute() {
-  const { session, profile, isLoading, unsignedContractsCount } = useAuth();
+  const { session, profile, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -28,17 +28,11 @@ export function ProtectedRoute() {
     return <DeactivatedAccountScreen />;
   }
 
-  // Phase 5 (19/05/2026) — Blocage strict tant que le contrat n'est pas signé.
-  // Cohérent avec la clause "accès activé dès la signature" (Sidali 19/05).
-  // Le user est redirigé vers /contracts (landing qui choisit automatiquement
-  // le contrat à signer ou affiche la liste). On laisse passer toutes les
-  // routes /contract* pour ne pas se prendre dans une boucle.
-  if (
-    unsignedContractsCount > 0 &&
-    !location.pathname.startsWith("/contract")
-  ) {
-    return <Navigate to="/contracts" replace />;
-  }
+  // Phase 6 (19/05/2026) — La signature du contrat est désormais intégrée
+  // dans le wizard /onboarding (étape 1/2). Le check `unsignedContractsCount`
+  // a été supprimé pour éviter la boucle de redirection /contracts ⇄ /onboarding
+  // qui crashait React en page noire. Les routes /contracts et /contract/:id
+  // restent disponibles pour les accès directs (relecture, retour ultérieur).
 
   // Sprint T (18/05/2026) : suppression du DiscordGate bloquant. Discord est
   // desormais propose via un bouton optionnel dans l'email de bienvenue

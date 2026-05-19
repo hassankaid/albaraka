@@ -32,7 +32,6 @@ function buildHtml(
   actionLink: string,
   passType: PassType = "al_baraka",
   includeDiscordButton: boolean = false,
-  contractUrl: string | null = null,
 ): string {
   const firstName = (fullName || "").split(" ")[0] || "";
   const isLiberty = passType === "liberty";
@@ -135,34 +134,6 @@ function buildHtml(
               <!--<![endif]-->
             </td>
           </tr>
-          ${contractUrl ? `
-          <tr>
-            <td class="bg-card px-mobile" data-bg="card" bgcolor="${BRAND.cardBg}" align="center" style="background-color:${BRAND.cardBg};padding:0 32px 32px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">
-                <tr>
-                  <td align="center" style="background-color:rgba(212,175,55,0.06);border:1px solid ${BRAND.goldSoft};border-radius:12px;padding:18px 20px;">
-                    <p style="margin:0 0 12px 0;font-size:13px;line-height:1.5;color:${BRAND.gold};font-family:Georgia,'Times New Roman',serif;">
-                      <strong style="font-weight:normal;">Et avant tout :</strong> ton contrat est prêt à signer.
-                    </p>
-                    <!--[if mso]>
-                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${contractUrl}" style="height:44px;v-text-anchor:middle;width:260px;" arcsize="10%" strokecolor="${BRAND.gold}" fillcolor="${BRAND.cardBg}">
-                      <w:anchorlock/>
-                      <center style="color:${BRAND.gold};font-family:Georgia,serif;font-size:13px;letter-spacing:1.5px;">Signer mon contrat</center>
-                    </v:roundrect>
-                    <![endif]-->
-                    <!--[if !mso]><!-- -->
-                    <a href="${contractUrl}" target="_blank" style="display:inline-block;background-color:transparent;color:${BRAND.gold};text-decoration:none;padding:11px 22px;border:1px solid ${BRAND.gold};border-radius:6px;font-size:13px;letter-spacing:1.5px;font-family:Georgia,'Times New Roman',serif;font-weight:bold;mso-hide:all;">
-                      Signer mon contrat →
-                    </a>
-                    <!--<![endif]-->
-                    <p style="margin:14px 0 0 0;font-size:11px;line-height:1.5;color:${BRAND.textSecondary};">
-                      L'accès à ta formation s'active dès que tu signes (article L.221-28 du Code de la consommation).
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>` : ""}
           ${includeDiscordButton ? `
           <tr>
             <td class="bg-card px-mobile" data-bg="card" bgcolor="${BRAND.cardBg}" align="center" style="background-color:${BRAND.cardBg};padding:0 32px 40px;">
@@ -283,16 +254,9 @@ Deno.serve(async (req) => {
     // l'email. Defaut = false (formations a la carte). Le webhook l'envoie a
     // true pour les Pass AL BARAKA + Pass Liberty.
     const includeDiscordButton: boolean = !!body.include_discord_button;
-    // Phase 5 (19/05/2026) : id du contrat à signer. Si présent, ajoute un
-    // 2e CTA "Signer mon contrat" sous le bouton d'activation. La page de
-    // signature (/contract/:id) gère l'authentification + le rendu du PDF.
-    const contractId: string | null =
-      typeof body.contract_id === "string" && body.contract_id.trim().length > 0
-        ? body.contract_id.trim()
-        : null;
-    const contractUrl: string | null = contractId
-      ? `${BRAND.domain}/contract/${contractId}`
-      : null;
+    // Phase 6 (19/05/2026) : la signature du contrat est désormais intégrée
+    // dans le wizard /onboarding (étape 1/2). On n'envoie plus de CTA
+    // "Signer mon contrat" dans cet email — un seul CTA "Activer mon compte".
     if (userIds.length === 0) {
       return new Response(JSON.stringify({ error: "user_ids empty" }), {
         status: 400,
@@ -333,7 +297,7 @@ Deno.serve(async (req) => {
         parsed.searchParams.set("redirect_to", redirectTo);
         const actionLink = parsed.toString();
 
-        const html = buildHtml(profile.full_name || "", actionLink, passType, includeDiscordButton, contractUrl);
+        const html = buildHtml(profile.full_name || "", actionLink, passType, includeDiscordButton);
         const toEmail = testMode ? BRAND.testEmail : profile.email;
         const subject = passType === "liberty"
           ? "Bienvenue dans le PASS LIBERTY"

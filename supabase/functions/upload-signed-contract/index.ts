@@ -217,6 +217,21 @@ Deno.serve(async (req) => {
     return json({ error: "update_failed", detail: updateErr.message }, 500);
   }
 
+  // Phase 6 (19/05/2026) : trigger l'email de confirmation au client avec le
+  // PDF signé en pièce jointe. Fire-and-forget pour ne pas bloquer la réponse.
+  // L'edge function est appelée avec le service role (verify_jwt=false côté
+  // send-signed-contract-email).
+  fetch(`${SUPABASE_URL}/functions/v1/send-signed-contract-email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+    },
+    body: JSON.stringify({ contract_id: contractId }),
+  }).catch((err) => {
+    console.error("[upload-signed-contract] failed to trigger signed-contract email", err);
+  });
+
   return json({
     ok: true,
     signed_pdf_path: signedPdfPath,

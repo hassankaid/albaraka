@@ -694,9 +694,8 @@ async function ensureBonCommandeOrder(
             pass_type: productCfg.passType, // "al_baraka" ou "liberty"
             // Sprint T (18/05/2026) : bouton Discord pour tous les Pass
             include_discord_button: true,
-            // Phase 5 (19/05/2026) : CTA secondaire "Signer mon contrat"
-            // Affiché uniquement si le contrat a bien été créé.
-            contract_id: createdContract?.id || undefined,
+            // Phase 6 (19/05/2026) : la signature du contrat est gérée dans
+            // le wizard /onboarding (étape 1/2). Un seul CTA dans l'email.
           }),
         },
       );
