@@ -1,9 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Check, Sparkles, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Sparkles, X, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getSections, countAnsweredQuestions, totalQuestions, type BrandAnswers, type BrandMode } from "../lib/sections";
+import { getSections, countAnsweredQuestions, totalQuestions, findDeprecatedQuestionIds, type BrandAnswers, type BrandMode } from "../lib/sections";
 import { QuestionBlock } from "./QuestionBlock";
 
 interface Props {
@@ -29,13 +29,30 @@ export function Questionnaire({
   const isLast = currentSection === sections.length - 1;
   const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
 
-  // Une section est "terminée" quand toutes ses questions ont une réponse.
+  // Refonte 19/05/2026 : détecte les questions dont la valeur stockée est
+  // obsolète (anciens libellés disparus du quiz). Sert au bandeau global +
+  // au marquage de section "incomplete migration" dans le stepper.
+  const deprecatedQuestionIds = useMemo(
+    () => findDeprecatedQuestionIds(answers, mode),
+    [answers, mode],
+  );
+  const hasDeprecated = deprecatedQuestionIds.length > 0;
+  const deprecatedSet = useMemo(() => new Set(deprecatedQuestionIds), [deprecatedQuestionIds]);
+
+  // Une section est "terminée" quand toutes ses questions ont une réponse
+  // ET aucune n'a de valeur obsolète à re-confirmer.
   const isSectionDone = (idx: number) =>
     sections[idx].questions.every((q) => {
+      if (deprecatedSet.has(q.id)) return false;
       const v = answers[q.id];
       if (Array.isArray(v)) return v.length > 0;
       return typeof v === "string" && v.trim().length > 0;
     });
+
+  // Une section a-t-elle au moins une question avec valeur obsolète ?
+  // (pour le badge orange dans le stepper)
+  const sectionHasDeprecated = (idx: number) =>
+    sections[idx].questions.some((q) => deprecatedSet.has(q.id));
 
   const scrollTop = () => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   const goNext = () => {
@@ -82,6 +99,32 @@ export function Questionnaire({
         seront uniques et fidèles à toi.
       </p>
 
+      {/* Bandeau global migration 19/05/2026 — sections / questions simplifiées */}
+      {hasDeprecated && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
+            <div className="flex-1 space-y-1">
+              <p className="text-sm font-medium text-foreground">
+                Le questionnaire a été simplifié
+              </p>
+              <p className="text-[12px] text-muted-foreground leading-relaxed">
+                Certaines questions ont des options raccourcies ou redéfinies.{" "}
+                <span className="text-amber-300 font-medium">
+                  {deprecatedQuestionIds.length} réponse{deprecatedQuestionIds.length > 1 ? "s" : ""}
+                </span>{" "}
+                doi{deprecatedQuestionIds.length > 1 ? "vent" : "t"} être mise{deprecatedQuestionIds.length > 1 ? "s" : ""} à jour pour profiter
+                des améliorations du prompt. Cherche le badge{" "}
+                <span className="inline-flex items-center gap-1 text-amber-400 font-medium">
+                  <AlertTriangle className="h-2.5 w-2.5" /> À METTRE À JOUR
+                </span>{" "}
+                à côté des questions concernées.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ─── Parcours : stepper horizontal (homogène 6 ou 7 étapes) ─── */}
       <div className="space-y-3 rounded-xl border border-border bg-card/40 p-4">
         <div className="flex items-baseline justify-between">
@@ -101,6 +144,7 @@ export function Questionnaire({
             {sections.map((s, i) => {
               const active = i === currentSection;
               const done = isSectionDone(i);
+              const needsUpdate = sectionHasDeprecated(i);
               const prevDone = i > 0 && isSectionDone(i - 1);
               return (
                 <button
@@ -125,12 +169,20 @@ export function Questionnaire({
                         "relative z-10 flex h-9 w-9 items-center justify-center rounded-full border text-base transition-all duration-300",
                         active
                           ? "border-primary bg-primary/15 text-primary ring-4 ring-primary/15"
-                          : done
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border bg-card text-muted-foreground group-hover:border-primary/50",
+                          : needsUpdate
+                            ? "border-amber-500/60 bg-amber-500/10 text-amber-400"
+                            : done
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border bg-card text-muted-foreground group-hover:border-primary/50",
                       )}
                     >
-                      {done && !active ? <Check className="h-4 w-4" /> : s.icon}
+                      {needsUpdate && !active ? (
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                      ) : done && !active ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        s.icon
+                      )}
                     </span>
                   </div>
                   {/* titre de l'étape */}
@@ -139,9 +191,11 @@ export function Questionnaire({
                       "text-center text-[10px] font-medium leading-tight transition-colors",
                       active
                         ? "text-primary"
-                        : done
-                          ? "text-foreground"
-                          : "text-muted-foreground group-hover:text-foreground/80",
+                        : needsUpdate
+                          ? "text-amber-400"
+                          : done
+                            ? "text-foreground"
+                            : "text-muted-foreground group-hover:text-foreground/80",
                     )}
                   >
                     {s.title}

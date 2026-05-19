@@ -10,7 +10,7 @@ import {
   WEEKS,
   type WeeklyContext,
 } from "../lib/buildPrompts";
-import type { BrandAnswers, BrandMode } from "../lib/sections";
+import { migrateAnswers, type BrandAnswers, type BrandMode } from "../lib/sections";
 
 export interface GeneratedProfile {
   style: string;
@@ -116,7 +116,13 @@ export function usePersonalBrand(mode: BrandMode | null) {
         .eq("mode", mode!)
         .maybeSingle();
       if (error) throw error;
-      return (data as unknown as PersonalBrandRow) ?? null;
+      if (!data) return null;
+      // Refonte 19/05/2026 : applique le remap silencieux des anciennes
+      // valeurs (ex. "Hommes uniquement" → "Hommes", "18-20 ans" → "18-20").
+      // Les valeurs vraiment obsolètes (B-rolls, "Setting", etc.) restent en
+      // BDD et sont gérées par QuestionBlock via hasDeprecatedValue (bandeau).
+      const row = data as unknown as PersonalBrandRow;
+      return { ...row, answers: migrateAnswers(row.answers || {}) };
     },
   });
 }

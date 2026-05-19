@@ -665,3 +665,35 @@ export function stripDeprecatedValue(
   if (Array.isArray(value)) return value.filter((v) => !deprecated.has(v));
   return deprecated.has(value) ? "" : value;
 }
+
+// Applique migrateLegacyValue à toutes les réponses d'un utilisateur en une
+// passe. Utilisé dans usePersonalBrand au moment de la lecture BDD pour que
+// l'UI ne voie jamais les anciennes valeurs (ex. "Hommes uniquement").
+// Les anciennes valeurs sont sauvegardées en BDD à la prochaine sauvegarde
+// utilisateur (transparent).
+export function migrateAnswers(answers: BrandAnswers): BrandAnswers {
+  const out: BrandAnswers = {};
+  for (const [k, v] of Object.entries(answers)) {
+    const migrated = migrateLegacyValue(k, v);
+    if (migrated !== undefined) out[k] = migrated as string | string[];
+  }
+  return out;
+}
+
+// Liste les question IDs dont la valeur actuelle est obsolète et nécessite
+// une re-confirmation utilisateur. Sert au bandeau global du questionnaire.
+export function findDeprecatedQuestionIds(
+  answers: BrandAnswers,
+  mode: BrandMode,
+): string[] {
+  const sections = getSections(mode);
+  const validQuestionIds = new Set(sections.flatMap((s) => s.questions.map((q) => q.id)));
+  const out: string[] = [];
+  for (const qid of Object.keys(answers)) {
+    // On ne signale que les questions encore présentes dans le quiz
+    // (les questions supprimées comme `modele` ne déclenchent pas de bandeau).
+    if (!validQuestionIds.has(qid)) continue;
+    if (hasDeprecatedValue(qid, answers[qid])) out.push(qid);
+  }
+  return out;
+}

@@ -27,6 +27,7 @@ import {
   isQuestionnaireComplete,
   totalQuestions,
   countAnsweredQuestions,
+  findDeprecatedQuestionIds,
 } from "./lib/sections";
 import { buildFullPrompt } from "./lib/buildPrompts";
 
@@ -288,10 +289,17 @@ export default function PersonalBrandPage() {
   const isNewCycleForStep1 = !step1Confirmed && !!row?.step1_confirmed_at;
   const isNewCycleForStep2 = !step2Confirmed && !!row?.step2_confirmed_at;
 
-  // Détection migration : questionnaire incomplet alors qu'il y a déjà des profils générés
+  // Détection migration : 2 cas distincts traités par le même bandeau
+  //   1. Questionnaire incomplet alors que des profils ont déjà été générés
+  //      (cas classique : ajout de questions au quiz)
+  //   2. Refonte 19/05/2026 : valeurs obsolètes (anciens libellés disparus)
+  //      qui nécessitent une re-confirmation utilisateur (ex. format_principal
+  //      passé de 5 à 2 options, B-rolls supprimé)
+  const deprecatedIds = findDeprecatedQuestionIds(answers, mode);
+  const hasDeprecatedAnswers = deprecatedIds.length > 0;
   const isMigrating =
     profiles.length > 0 &&
-    !isQuestionnaireComplete(answers, mode);
+    (!isQuestionnaireComplete(answers, mode) || hasDeprecatedAnswers);
   const answered = countAnsweredQuestions(answers, mode);
   const total = totalQuestions(mode);
 
@@ -308,7 +316,8 @@ export default function PersonalBrandPage() {
         </p>
       </div>
 
-      {/* Bandeau migration : invite à compléter les nouvelles sections */}
+      {/* Bandeau migration : invite à compléter les nouvelles sections
+          OU à mettre à jour les valeurs obsolètes (refonte 19/05/2026) */}
       {isMigrating && (
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/[0.05] p-4 flex items-start gap-3">
           <div className="h-9 w-9 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
@@ -316,16 +325,24 @@ export default function PersonalBrandPage() {
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium text-foreground">
-              On a enrichi ton studio. Complète les sections manquantes pour
-              débloquer la génération hebdomadaire.
+              {hasDeprecatedAnswers && answered >= total
+                ? "Le questionnaire a été simplifié — quelques réponses sont à mettre à jour."
+                : "On a enrichi ton studio. Complète les sections manquantes pour débloquer la génération hebdomadaire."}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {answered}/{total} questions remplies — environ {Math.max(2, total - answered)} min
-              pour finir.
+              {hasDeprecatedAnswers && answered >= total ? (
+                <>
+                  {deprecatedIds.length} réponse{deprecatedIds.length > 1 ? "s" : ""} avec des options obsolètes — 1 min pour mettre à jour.
+                </>
+              ) : (
+                <>
+                  {answered}/{total} questions remplies — environ {Math.max(2, total - answered)} min pour finir.
+                </>
+              )}
             </p>
           </div>
           <Button size="sm" onClick={() => setForceQuestionnaire(true)} className="shrink-0">
-            Compléter
+            {hasDeprecatedAnswers && answered >= total ? "Mettre à jour" : "Compléter"}
           </Button>
         </div>
       )}
