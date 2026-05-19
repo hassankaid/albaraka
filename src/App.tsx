@@ -98,6 +98,7 @@ import ParcoursEditor from "./pages/admin/parcours/ParcoursEditor";
 import ParcoursChapitreEditor from "./pages/admin/parcours/ParcoursChapitreEditor";
 import AnnouncementDetail from "./pages/announcements/AnnouncementDetail";
 import AdminQuizLead from "./pages/admin/quiz-lead/AdminQuizLead";
+import ContractPreview from "./pages/admin/contracts/ContractPreview";
 
 const queryClient = new QueryClient();
 
@@ -156,6 +157,8 @@ const App = () => (
                   <Route path="/admin/team" element={<AdminTeam />} />
                   <Route path="/admin/announcements" element={<AdminAnnouncements />} />
                   <Route path="/admin/quiz-lead" element={<AdminQuizLead />} />
+                  <Route path="/admin/contracts/preview" element={<ContractPreview />} />
+                  <Route path="/admin/contracts/preview/:templateKey" element={<ContractPreview />} />
                   <Route path="/admin/lead-scoring" element={<AdminLeadScoring />} />
                   <Route path="/admin/invitations" element={<Navigate to="/admin/training/access" replace />} />
                   <Route path="/admin/invitations/campaign" element={<CampaignTracking />} />
