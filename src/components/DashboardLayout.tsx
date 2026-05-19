@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -47,6 +47,7 @@ const adminNavItems: NavItem[] = [
   { title: "Liens de paiement", path: "/admin/payment-links", icon: Link2, roles: ["ceo"] },
   { title: "Conférences", path: "/admin/conferences", icon: Video, roles: ["ceo"] },
   { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
+  { title: "Contrats clients", path: "/admin/contracts", icon: FileSignature, roles: ["ceo"] },
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
   { title: "Agent IA", path: "/admin/agent-knowledge", icon: Bot, roles: ["ceo"] },
   { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"] },
@@ -88,6 +89,7 @@ const pageTitles: Record<string, string> = {
   "/admin/webhooks/calendly": "Webhooks Calendly",
   "/admin/parcours": "Parcours",
   "/admin/invoices": "Factures Apporteurs",
+  "/admin/contracts": "Contrats clients",
   "/admin/commissions": "Commissions",
   "/admin/payment-links": "Liens de paiement",
   "/admin/conferences": "Conférences",

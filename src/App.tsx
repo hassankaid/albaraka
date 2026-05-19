@@ -99,6 +99,7 @@ import ParcoursChapitreEditor from "./pages/admin/parcours/ParcoursChapitreEdito
 import AnnouncementDetail from "./pages/announcements/AnnouncementDetail";
 import AdminQuizLead from "./pages/admin/quiz-lead/AdminQuizLead";
 import ContractPreview from "./pages/admin/contracts/ContractPreview";
+import AdminContracts from "./pages/admin/contracts/AdminContracts";
 import MyContract from "./pages/contract/MyContract";
 import ContractLandingPage from "./pages/contract/ContractLandingPage";
 
@@ -159,6 +160,7 @@ const App = () => (
                   <Route path="/admin/team" element={<AdminTeam />} />
                   <Route path="/admin/announcements" element={<AdminAnnouncements />} />
                   <Route path="/admin/quiz-lead" element={<AdminQuizLead />} />
+                  <Route path="/admin/contracts" element={<AdminContracts />} />
                   <Route path="/admin/contracts/preview" element={<ContractPreview />} />
                   <Route path="/admin/contracts/preview/:templateKey" element={<ContractPreview />} />
                   <Route path="/admin/lead-scoring" element={<AdminLeadScoring />} />
