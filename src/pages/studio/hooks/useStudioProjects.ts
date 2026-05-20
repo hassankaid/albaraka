@@ -166,12 +166,20 @@ export function useTriggerTranscription() {
         { body: { project_id: projectId } },
       );
       if (error) {
-        // Édge function renvoie { error: "..." } en cas d'échec applicatif.
-        // L'erreur réseau elle-même est aussi capturée ici.
-        const msg =
-          (data as { error?: string } | null)?.error ??
-          error.message ??
-          "Transcription échouée";
+        // Quand l'edge function renvoie un non-2xx, le client Supabase met
+        // data=null et error=FunctionsHttpError dont .message est générique
+        // ("Edge Function returned a non-2xx status code"). Le vrai message
+        // est dans error.context (Response), qu'on parse manuellement.
+        let msg = error.message ?? "Transcription échouée";
+        const ctx = (error as any)?.context;
+        if (ctx && typeof ctx.json === "function") {
+          try {
+            const body = await ctx.json();
+            if (body?.error) msg = body.error;
+          } catch {
+            // Body pas JSON — on garde le message générique
+          }
+        }
         throw new Error(msg);
       }
       if (data?.error) throw new Error(data.error);

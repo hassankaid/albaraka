@@ -21,6 +21,7 @@
 // Coût : whisper-1 = 0.006$/min sur les deux providers. Pour 30s = 0.003$.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -226,32 +227,55 @@ serve(async (req) => {
       );
     }
 
-    // 6. Call OpenAI Whisper
+    // 6. Call Whisper (format dépend du provider)
     const ext = (project.audio_path.split(".").pop() ?? "mp3").toLowerCase();
-    const formData = new FormData();
-    formData.append("file", audioBlob, `voice.${ext}`);
-    formData.append("model", "whisper-1");
-    formData.append("response_format", "verbose_json");
-    formData.append("timestamp_granularities[]", "word");
-    formData.append("timestamp_granularities[]", "segment");
-    formData.append("language", "fr"); // français par défaut, Whisper auto-détecte sinon
-
     console.log(
-      `[studio-transcribe] calling whisper via ${provider} for ${ext} audio`,
+      `[studio-transcribe] calling whisper via ${provider} for ${ext} audio (${audioBlob.size} bytes)`,
     );
-    const whisperHeaders: Record<string, string> = {
-      Authorization: `Bearer ${providerKey}`,
-    };
-    // OpenRouter recommande ces headers pour le suivi d'usage et la priorité
+
+    let whisperRes: Response;
+
     if (provider === "openrouter") {
-      whisperHeaders["HTTP-Referer"] = "https://albarakaecosysteme.com";
-      whisperHeaders["X-Title"] = "Albaraka Studio";
+      // OpenRouter : POST JSON avec audio en base64 + provider passthrough
+      // pour activer verbose_json + word/segment timestamps côté OpenAI sous-jacent
+      const audioBuffer = await audioBlob.arrayBuffer();
+      const audioBase64 = encodeBase64(audioBuffer);
+      whisperRes = await fetch(providerUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${providerKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://albarakaecosysteme.com",
+          "X-Title": "Albaraka Studio",
+        },
+        body: JSON.stringify({
+          model: "openai/whisper-1",
+          input_audio: { data: audioBase64, format: ext },
+          language: "fr",
+          // Passthrough OpenAI : essaie d'obtenir word timestamps
+          provider: {
+            openai: {
+              response_format: "verbose_json",
+              timestamp_granularities: ["word", "segment"],
+            },
+          },
+        }),
+      });
+    } else {
+      // OpenAI direct : multipart/form-data classique
+      const formData = new FormData();
+      formData.append("file", audioBlob, `voice.${ext}`);
+      formData.append("model", "whisper-1");
+      formData.append("response_format", "verbose_json");
+      formData.append("timestamp_granularities[]", "word");
+      formData.append("timestamp_granularities[]", "segment");
+      formData.append("language", "fr");
+      whisperRes = await fetch(providerUrl, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${providerKey}` },
+        body: formData,
+      });
     }
-    const whisperRes = await fetch(providerUrl, {
-      method: "POST",
-      headers: whisperHeaders,
-      body: formData,
-    });
 
     if (!whisperRes.ok) {
       const text = await whisperRes.text();
