@@ -21,6 +21,7 @@ import {
 } from "./types";
 import ScriptStep, { isScriptReady } from "./components/ScriptStep";
 import AudioStep from "./components/AudioStep";
+import TranscriptionStep from "./components/TranscriptionStep";
 
 export default function StudioProject() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -123,16 +124,19 @@ export default function StudioProject() {
         }
       />
 
-      {/* ─── Étapes 3 à 5 — Placeholders briques à venir ────────── */}
-      <FutureStepCard
-        idx={3}
-        title="Sous-titres"
-        brick="B3"
-        icon={Sparkles}
-        description="Whisper transcrit ton audio en sous-titres timestampés mot par mot."
-        unlocked={project.status === "audio_uploaded" || isStepDone(project.status, "transcribed")}
-        completed={isStepDone(project.status, "transcribed")}
+      {/* ─── Étape 3 — Transcription Whisper ────────────────────── */}
+      <TranscriptionStep
+        project={project}
+        variant={
+          isStepDone(project.status, "transcribed")
+            ? "done"
+            : isStepDone(project.status, "audio_uploaded")
+            ? "active"
+            : "locked"
+        }
       />
+
+      {/* ─── Étapes 4-5 — Placeholders briques à venir ─────────── */}
       <FutureStepCard
         idx={4}
         title="B-rolls IA"
@@ -152,13 +156,13 @@ export default function StudioProject() {
         completed={project.status === "done"}
       />
 
-      {/* Statut B2 — note de progression */}
+      {/* Statut B3 — note de progression */}
       <div className="rounded-lg border border-dashed border-border p-4 text-center space-y-1">
         <p className="text-xs text-muted-foreground">
-          🚧 Briques <span className="font-mono text-foreground">B1 + B2</span> en place — script éditable + upload voix-off opérationnels.
+          🚧 Briques <span className="font-mono text-foreground">B1 + B2 + B3</span> en place — script + voix + transcription Whisper opérationnels.
         </p>
         <p className="text-[11px] text-muted-foreground/70">
-          La transcription, les b-rolls IA et le rendu final arrivent avec les briques B3, B4, B5.
+          Les b-rolls IA et le rendu final arrivent avec les briques B4 et B5.
         </p>
       </div>
     </div>

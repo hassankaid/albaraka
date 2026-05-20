@@ -143,6 +143,48 @@ export function useUpdateStudioProject() {
 }
 
 /**
+ * Déclenche la transcription Whisper du projet (B3). Appelle l'edge function
+ * `studio-transcribe` qui télécharge l'audio, l'envoie à OpenAI Whisper,
+ * découpe en segments 3-6s, et UPDATE la row avec transcript + segments + statut.
+ */
+export function useTriggerTranscription() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      projectId: string,
+    ): Promise<{
+      segments: Array<{ idx: number; start_ms: number; end_ms: number; text: string }>;
+      text: string;
+      duration: number;
+      language: string;
+      nb_segments: number;
+      cost_cents: number;
+    }> => {
+      const { data, error } = await supabase.functions.invoke(
+        "studio-transcribe",
+        { body: { project_id: projectId } },
+      );
+      if (error) {
+        // Édge function renvoie { error: "..." } en cas d'échec applicatif.
+        // L'erreur réseau elle-même est aussi capturée ici.
+        const msg =
+          (data as { error?: string } | null)?.error ??
+          error.message ??
+          "Transcription échouée";
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (_data, projectId) => {
+      qc.invalidateQueries({ queryKey: PROJECT_KEY(projectId) });
+      qc.invalidateQueries({ queryKey: PROJECTS_KEY });
+    },
+  });
+}
+
+/**
  * Génère une URL signée temporaire pour lire un fichier du bucket `studio`.
  * Cache de 1h côté front (suffisant pour une session d'édition).
  */
