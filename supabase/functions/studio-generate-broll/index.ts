@@ -44,23 +44,41 @@ const FAL_QUEUE_URL = `https://queue.fal.run/${FAL_MODEL}`;
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLL_ATTEMPTS = 50;
 
-const VISUAL_PROMPT_SYSTEM = `Tu génères un prompt court (15-25 mots EN ANGLAIS) pour une IA de génération vidéo (Seedance) à partir d'une phrase d'une vidéo Reel/TikTok d'un apporteur AL BARAKA (entrepreneur musulman français, contenu halal, ton authentique).
+const VISUAL_PROMPT_SYSTEM = `Tu es un directeur de la photographie qui transforme UNE phrase de voix-off en prompt visuel pour une IA de génération vidéo (Seedance). Le résultat doit COLLER LITTÉRALEMENT à ce que dit la phrase — pas un décor générique.
 
-CONTRAINTES STRICTES :
-- 15 à 25 mots maximum
-- EN ANGLAIS (les IA vidéo comprennent mieux)
-- Format vertical 9:16 cinématique
-- Pas de texte affiché à l'écran (no text overlay)
-- Personnages musulmans crédibles si présents (vêtements modestes, ambiance halal)
-- Évite : alcool, animaux haram, scènes de fête non halal, références politiques
-- Privilégie : lumière naturelle (golden hour, matin, mosquée), Maroc/Maghreb/villes européennes, ambiance contemplative ou pro
+MÉTHODE :
+1. Identifie le SUJET CONCRET de la phrase (ce qui se passe, qui parle, à qui, où, quand).
+2. Choisis UNE scène visuelle qui illustre directement ce sujet. Sois littéral, pas symbolique.
+3. Décris cette scène en 18-28 mots en ANGLAIS photo-réaliste.
 
-EXEMPLES (format-cible) :
-"A young muslim entrepreneur on a Marrakech rooftop at sunrise, looking at the Atlas mountains, cinematic golden hour, soft warm light, photo-realistic"
-"Hands typing on a laptop in a quiet modern café, espresso cup beside, morning light through window, cinematic close-up, shallow depth of field"
-"A father holding his son at the airport gate at dawn, both smiling softly, modern terminal interior, soft natural light, cinematic medium shot"
+CONTRAINTES TECHNIQUES :
+- 18 à 28 mots EN ANGLAIS
+- Format vertical 9:16, photo-realistic, cinematic, shallow depth of field si possible
+- AUCUN texte affiché à l'écran (no text overlay, no captions, no signs)
+- Spécifie l'éclairage (natural light, golden hour, overcast, soft ambient, neon...)
+- Spécifie le cadrage (close-up, medium shot, wide shot, over-the-shoulder, hands shot...)
+- Pas d'alcool, pas d'animaux haram, pas de tenues clairement non-modestes, pas de symboles politiques
+- Diversité raciale réaliste si personnages : ne par défaut blanc, le sujet est un entrepreneur musulman français mais le scenario peut montrer n'importe quel humain
+- N'ajoute PAS d'éléments culturels (Maroc, mosquée, Atlas, etc.) sauf si la phrase les évoque explicitement
 
-Réponds UNIQUEMENT avec le prompt brut. Pas de guillemets, pas d'explication, pas de "Voici…".`;
+EXEMPLES :
+
+Phrase : "Mon père s'est fait licencier après 12 ans dans la même boîte"
+→ A middle-aged man in a worn suit walking out of an office building at dusk, holding a small cardboard box, exhausted face, soft overcast light, cinematic medium shot
+
+Phrase : "Je veux pouvoir prier à l'heure sans demander la permission"
+→ A young man checking his watch then unrolling a prayer mat on a balcony at golden hour, soft warm light, peaceful expression, cinematic medium shot, shallow depth of field
+
+Phrase : "On dînait en famille, tout le monde rigolait"
+→ A family of five sharing dinner around a wooden table, warm soft light from above, laughter and gestures, cinematic medium shot, photo-realistic interior
+
+Phrase : "Le marché halal pèse 2.5 trillions de dollars en 2026"
+→ Bustling modern food market with colorful spice stalls and customers shopping, warm afternoon light, cinematic wide shot, photo-realistic, shallow depth of field
+
+Phrase : "Y'a un truc que personne ne te dira jamais"
+→ Close-up of two hands gripping a coffee cup at a wooden table, steam rising softly, blurred warm background, cinematic close-up, natural window light, photo-realistic
+
+Réponds UNIQUEMENT avec le prompt brut, en une seule ligne. Pas de guillemets, pas de préfixe, pas d'explication.`;
 
 async function generateVisualPrompt(
   segmentText: string,
@@ -337,25 +355,23 @@ serve(async (req) => {
     }
     console.log(`[generate-broll] uploaded to ${brollPath}`);
 
-    // 6. UPDATE segments_json + check si tous les segments sont prêts
-    const updatedSegments = segments.map((s) =>
-      s.idx === segment_idx
-        ? { ...s, broll_path: brollPath, broll_prompt: visualPrompt }
-        : s,
+    // 6. UPDATE atomique via RPC (évite race condition quand N calls parallèles
+    // tournent simultanément — chaque call locke la row via FOR UPDATE).
+    const { data: rpcData, error: rpcErr } = await supabaseAdmin.rpc(
+      "update_studio_segment_broll" as any,
+      {
+        p_project_id: project_id,
+        p_segment_idx: segment_idx,
+        p_broll_path: brollPath,
+        p_broll_prompt: visualPrompt,
+      },
     );
-    const allReady = updatedSegments.every((s) => !!s.broll_path);
-    const newStatus = allReady ? "broll_ready" : project.status;
-
-    const { error: updateErr } = await supabaseAdmin
-      .from("studio_projects")
-      .update({
-        segments_json: updatedSegments,
-        status: newStatus,
-      } as any)
-      .eq("id", project_id);
-    if (updateErr) {
-      throw new Error(`UPDATE BDD échoué: ${updateErr.message}`);
+    if (rpcErr) {
+      throw new Error(`RPC update atomique a échoué: ${rpcErr.message}`);
     }
+    const allReady = (rpcData as any)?.all_ready === true;
+
+    console.log(`[generate-broll] persist OK · all_ready=${allReady}`);
 
     return json({
       success: true,
@@ -364,7 +380,7 @@ serve(async (req) => {
       broll_prompt: visualPrompt,
       seed: seed ?? null,
       all_ready: allReady,
-      new_status: newStatus,
+      new_status: allReady ? "broll_ready" : project.status,
     });
   } catch (e) {
     console.error("[generate-broll] uncaught", e);
