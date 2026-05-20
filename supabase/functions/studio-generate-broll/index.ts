@@ -102,11 +102,20 @@ async function generateVisualPrompt(
   return content.replace(/^["'`]+|["'`]+$/g, "").trim();
 }
 
+interface FalSubmitResponse {
+  request_id: string;
+  status?: string;
+  status_url?: string;
+  response_url?: string;
+  cancel_url?: string;
+  gateway_request_id?: string;
+}
+
 async function submitFalJob(
   prompt: string,
   durationSec: number,
   falKey: string,
-): Promise<string> {
+): Promise<FalSubmitResponse> {
   // Seedance accepte 3-12s, on clamp pour la sécurité
   const safeDuration = Math.max(3, Math.min(12, Math.round(durationSec)));
 
@@ -130,12 +139,14 @@ async function submitFalJob(
     throw new Error(`fal.ai submit a échoué (${res.status}): ${errText.slice(0, 200)}`);
   }
 
-  const data = await res.json();
-  const requestId = data?.request_id;
-  if (!requestId) {
+  const data = (await res.json()) as FalSubmitResponse;
+  if (!data?.request_id) {
     throw new Error(`fal.ai a renvoyé une réponse sans request_id: ${JSON.stringify(data).slice(0, 200)}`);
   }
-  return requestId;
+  console.log(
+    `[generate-broll] fal.ai submit OK · request_id=${data.request_id} · status_url=${data.status_url ?? "(none)"} · response_url=${data.response_url ?? "(none)"}`,
+  );
+  return data;
 }
 
 interface FalStatusResponse {
@@ -143,15 +154,23 @@ interface FalStatusResponse {
   request_id?: string;
   response_url?: string;
   status_url?: string;
+  queue_position?: number;
   logs?: Array<{ message: string; timestamp: string }>;
 }
 
 async function pollFalJob(
-  requestId: string,
+  submitResponse: FalSubmitResponse,
   falKey: string,
 ): Promise<{ videoUrl: string; seed?: number }> {
-  const statusUrl = `${FAL_QUEUE_URL}/requests/${requestId}/status`;
-  const resultUrl = `${FAL_QUEUE_URL}/requests/${requestId}`;
+  // On utilise les URLs renvoyées par fal.ai dans la réponse de submit
+  // (plutôt que de les reconstruire), c'est plus robuste face aux changements
+  // de routing côté fal.
+  const statusUrl =
+    submitResponse.status_url ??
+    `${FAL_QUEUE_URL}/requests/${submitResponse.request_id}/status`;
+  const resultUrl =
+    submitResponse.response_url ??
+    `${FAL_QUEUE_URL}/requests/${submitResponse.request_id}`;
 
   for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
@@ -161,12 +180,20 @@ async function pollFalJob(
     });
     if (!statusRes.ok) {
       const t = await statusRes.text();
-      throw new Error(`fal.ai status check a échoué: ${t.slice(0, 200)}`);
+      // Log le statut HTTP + l'URL utilisée pour debug
+      console.error(
+        `[generate-broll] status check failed ${statusRes.status} on ${statusUrl} · body=${t.slice(0, 300)}`,
+      );
+      throw new Error(
+        `fal.ai status check a échoué (HTTP ${statusRes.status}): ${
+          t.slice(0, 200) || "réponse vide"
+        }`,
+      );
     }
     const statusData = (await statusRes.json()) as FalStatusResponse;
 
     console.log(
-      `[generate-broll] poll ${attempt + 1}/${MAX_POLL_ATTEMPTS} · status=${statusData.status}`,
+      `[generate-broll] poll ${attempt + 1}/${MAX_POLL_ATTEMPTS} · status=${statusData.status} · queue=${statusData.queue_position ?? "-"}`,
     );
 
     if (statusData.status === "COMPLETED") {
@@ -175,7 +202,7 @@ async function pollFalJob(
       });
       if (!resultRes.ok) {
         const t = await resultRes.text();
-        throw new Error(`fal.ai result a échoué: ${t.slice(0, 200)}`);
+        throw new Error(`fal.ai result a échoué (HTTP ${resultRes.status}): ${t.slice(0, 200)}`);
       }
       const resultData = await resultRes.json();
       const videoUrl = resultData?.video?.url;
@@ -282,13 +309,12 @@ serve(async (req) => {
     const visualPrompt = await generateVisualPrompt(segment.text, openrouterKey);
     console.log(`[generate-broll] visual prompt: "${visualPrompt}"`);
 
-    // 2. Submit fal.ai job
+    // 2. Submit fal.ai job (récupère request_id + status_url + response_url)
     const segmentDurationSec = (segment.end_ms - segment.start_ms) / 1000;
-    const requestId = await submitFalJob(visualPrompt, segmentDurationSec, falKey);
-    console.log(`[generate-broll] fal.ai request_id=${requestId}`);
+    const submitData = await submitFalJob(visualPrompt, segmentDurationSec, falKey);
 
-    // 3. Poll jusqu'à complétion
-    const { videoUrl, seed } = await pollFalJob(requestId, falKey);
+    // 3. Poll jusqu'à complétion via les URLs fournies par fal.ai
+    const { videoUrl, seed } = await pollFalJob(submitData, falKey);
     console.log(`[generate-broll] video URL ready (seed=${seed}): ${videoUrl}`);
 
     // 4. Download le MP4
