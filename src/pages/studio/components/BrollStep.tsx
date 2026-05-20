@@ -131,6 +131,11 @@ export default function BrollStep({ project, variant }: Props) {
       });
     };
 
+    // B4 v8 — les calls sont maintenant ASYNC. La mutation submit Kling
+    // en ~10s puis l'edge function continue le polling en background
+    // (EdgeRuntime.waitUntil). On NE clear PAS le spinner ici — il est
+    // automatiquement nettoyé via useEffect plus bas quand la BDD est
+    // refetchée et que broll_path apparaît sur les segments du groupe.
     const groupPromises = groups.map(async (groupIdx) => {
       setIdsForGroup(groupIdx, true);
       try {
@@ -138,21 +143,44 @@ export default function BrollStep({ project, variant }: Props) {
           projectId: project.id,
           segmentIndices: groupIdx,
         });
-        if (res.all_ready) {
-          toast.success("Tous les b-rolls sont prêts ✦", { duration: 4000 });
-        }
+        // Pas de clear ici ! Le job continue en background côté Supabase.
+        toast.info(
+          `Groupe [${groupIdx.map((i) => i + 1).join(", ")}] soumis à Kling — génération en cours…`,
+          { duration: 3000 },
+        );
+        return res;
       } catch (e: any) {
         toast.error(
-          `Groupe [${groupIdx.join(", ")}] : ${e?.message ?? "génération échouée"}`,
+          `Groupe [${groupIdx.join(", ")}] : ${e?.message ?? "soumission échouée"}`,
           { duration: 8000 },
         );
-      } finally {
+        // En cas d'échec de soumission, on clear le spinner immédiatement
+        // (sinon le segment resterait bloqué en "génération").
         setIdsForGroup(groupIdx, false);
       }
     });
 
     await Promise.allSettled(groupPromises);
   };
+
+  // B4 v8 — auto-clear des spinners quand la BDD nous remonte les broll_path.
+  // Le refetchInterval de useStudioProject polle la BDD toutes les 5s ;
+  // dès qu'un segment a son broll_path, on retire son idx de generatingIds.
+  useEffect(() => {
+    setGeneratingIds((prev) => {
+      if (prev.size === 0) return prev;
+      const next = new Set(prev);
+      let changed = false;
+      for (const seg of segments) {
+        if (next.has(seg.idx) && seg.broll_path) {
+          next.delete(seg.idx);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(segments.map((s) => ({ idx: s.idx, p: !!s.broll_path })))]);
 
   // ─── LOCKED ────────────────────────────────────────────────────────
   if (variant === "locked") {

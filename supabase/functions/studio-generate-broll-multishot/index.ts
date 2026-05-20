@@ -1,9 +1,14 @@
-// Studio Albaraka — Brique B4 v7 : génération multi-shot Kling 3.0 Pro
+// Studio Albaraka — Brique B4 v8 : multi-shot Kling 3.0 Pro ASYNCHRONE
 //
-// Au lieu de générer N clips isolés (v6 = pas de cohérence), on regroupe
-// les segments par paquets de 2-3 et on lance UN SEUL appel Kling avec
-// multi_prompt = liste de prompts. Kling génère UNE vidéo avec N shots
-// natifs (character + style cohérents par construction).
+// V7 timeout-é à 150s (limite Supabase Edge Functions). Kling multi-shot
+// prend 2-5 min → trop long pour réponse synchrone. V8 utilise
+// EdgeRuntime.waitUntil() : on submit Kling (10s), on répond immédiatement
+// au client avec { pending: true }, et le polling + download + persist
+// continuent en background pendant jusqu'à 1h après le response.
+//
+// Frontend : reçoit "pending", maintient le spinner sur les segments du
+// groupe, et polle la BDD via refetchInterval pour détecter quand
+// broll_path apparaît.
 //
 // Chaque segment du groupe pointe vers la même vidéo via broll_path mais
 // avec des offsets broll_start_ms / broll_end_ms différents. Le rendu
@@ -224,93 +229,96 @@ serve(async (req) => {
       `[broll-multishot] project=${project_id} group=[${segment_indices.join(",")}] · ${multiPrompt.length} shots × ${durations.join("+")}s = ${totalDur}s total`,
     );
 
-    // Submit + poll
+    // SUBMIT ONLY (synchrone, ~10s)
     const submitData = await submitMultiShot(multiPrompt, falKey);
-    const { videoUrl, seed, duration: actualDurationS } = await pollKlingJob(
-      submitData,
-      falKey,
-    );
-    console.log(
-      `[broll-multishot] video ready · seed=${seed} · actual_duration=${actualDurationS}s · expected=${totalDur}s`,
-    );
 
-    // Download
-    const videoRes = await fetch(videoUrl);
-    if (!videoRes.ok) {
-      throw new Error(`Téléchargement vidéo échoué: ${videoRes.status}`);
-    }
-    const videoBlob = await videoRes.blob();
-
-    // Upload Storage (path partagé pour tous les segments du groupe)
-    const minIdx = Math.min(...segment_indices);
-    const maxIdx = Math.max(...segment_indices);
-    const brollPath = `${project.user_id}/projects/${project_id}/broll_group_${minIdx}-${maxIdx}.mp4`;
-    const { error: upErr } = await supabaseAdmin.storage
-      .from("studio")
-      .upload(brollPath, videoBlob, { contentType: "video/mp4", upsert: true });
-    if (upErr) throw new Error(`Upload Storage échoué: ${upErr.message}`);
-    console.log(`[broll-multishot] uploaded to ${brollPath}`);
-
-    // Calcule les offsets cumulés et UPDATE chaque segment via RPC
-    // (l'ordre des shots dans la vidéo = l'ordre dans multi_prompt = l'ordre
-    //  dans groupSegments). Scale factor si Kling a renvoyé une durée différente.
-    const scaleFactor =
-      actualDurationS && actualDurationS > 0 ? actualDurationS / totalDur : 1;
-    let cursorMs = 0;
-    const persistResults: Array<{ idx: number; start_ms: number; end_ms: number }> = [];
-
-    for (let i = 0; i < groupSegments.length; i++) {
-      const shotDurationMs = Math.round(durations[i] * 1000 * scaleFactor);
-      const startMs = cursorMs;
-      const endMs = i === groupSegments.length - 1
-        ? Math.round((actualDurationS ?? totalDur) * 1000)
-        : cursorMs + shotDurationMs;
-      cursorMs = endMs;
-
-      const { error: rpcErr } = await supabaseAdmin.rpc(
-        "update_studio_segment_broll" as any,
-        {
-          p_project_id: project_id,
-          p_segment_idx: groupSegments[i].idx,
-          p_broll_path: brollPath,
-          p_broll_prompt: groupSegments[i].broll_prompt,
-          p_broll_start_ms: startMs,
-          p_broll_end_ms: endMs,
-        },
-      );
-      if (rpcErr) {
-        throw new Error(
-          `RPC échouée pour segment ${groupSegments[i].idx}: ${rpcErr.message}`,
+    // BACKGROUND TASK : polling + download + upload + RPC persist
+    // Cette tâche continue après que la fonction ait répondu au client.
+    // Supabase Edge Functions accordent jusqu'à 1h en background via
+    // EdgeRuntime.waitUntil(). On contourne ainsi le timeout 150s synchrone.
+    const backgroundTask = async () => {
+      try {
+        console.log(
+          `[broll-multishot bg] start polling for group=[${segment_indices.join(",")}]`,
         );
+        const { videoUrl, seed, duration: actualDurationS } = await pollKlingJob(
+          submitData,
+          falKey,
+        );
+        console.log(
+          `[broll-multishot bg] video ready · seed=${seed} · actual=${actualDurationS}s · expected=${totalDur}s`,
+        );
+
+        const videoRes = await fetch(videoUrl);
+        if (!videoRes.ok) {
+          throw new Error(`Téléchargement vidéo échoué: ${videoRes.status}`);
+        }
+        const videoBlob = await videoRes.blob();
+
+        const minIdx = Math.min(...segment_indices);
+        const maxIdx = Math.max(...segment_indices);
+        const brollPath = `${project.user_id}/projects/${project_id}/broll_group_${minIdx}-${maxIdx}.mp4`;
+        const { error: upErr } = await supabaseAdmin.storage
+          .from("studio")
+          .upload(brollPath, videoBlob, { contentType: "video/mp4", upsert: true });
+        if (upErr) throw new Error(`Upload Storage échoué: ${upErr.message}`);
+        console.log(`[broll-multishot bg] uploaded to ${brollPath}`);
+
+        const scaleFactor =
+          actualDurationS && actualDurationS > 0 ? actualDurationS / totalDur : 1;
+        let cursorMs = 0;
+
+        for (let i = 0; i < groupSegments.length; i++) {
+          const shotDurationMs = Math.round(durations[i] * 1000 * scaleFactor);
+          const startMs = cursorMs;
+          const endMs = i === groupSegments.length - 1
+            ? Math.round((actualDurationS ?? totalDur) * 1000)
+            : cursorMs + shotDurationMs;
+          cursorMs = endMs;
+
+          const { error: rpcErr } = await supabaseAdmin.rpc(
+            "update_studio_segment_broll" as any,
+            {
+              p_project_id: project_id,
+              p_segment_idx: groupSegments[i].idx,
+              p_broll_path: brollPath,
+              p_broll_prompt: groupSegments[i].broll_prompt,
+              p_broll_start_ms: startMs,
+              p_broll_end_ms: endMs,
+            },
+          );
+          if (rpcErr) {
+            console.error(
+              `[broll-multishot bg] RPC échouée pour segment ${groupSegments[i].idx}: ${rpcErr.message}`,
+            );
+          }
+        }
+
+        console.log(
+          `[broll-multishot bg] persist OK · ${groupSegments.length} segments updated`,
+        );
+      } catch (e) {
+        console.error(
+          `[broll-multishot bg] FAILED for group [${segment_indices.join(",")}]:`,
+          e,
+        );
+        // Optionnel : on pourrait écrire l'erreur dans la BDD pour
+        // que le front la voie. Pour V1 on log seulement.
       }
-      persistResults.push({ idx: groupSegments[i].idx, start_ms: startMs, end_ms: endMs });
-    }
+    };
 
-    console.log(
-      `[broll-multishot] persist OK · ${persistResults.length} segments updated`,
-    );
+    // @ts-ignore — EdgeRuntime est injecté par le runtime Supabase
+    EdgeRuntime.waitUntil(backgroundTask());
 
-    // Vérifie si tous les segments du projet ont maintenant un broll_path
-    const { data: finalProject } = await supabaseAdmin
-      .from("studio_projects")
-      .select("segments_json, status")
-      .eq("id", project_id)
-      .maybeSingle();
-    const allReady = finalProject
-      ? ((finalProject.segments_json ?? []) as StudioSegment[]).every(
-          (s) => !!s.broll_path,
-        )
-      : false;
-
+    // Réponse immédiate au client : le job tourne en background
     return json({
       success: true,
-      broll_path: brollPath,
-      segments: persistResults,
-      seed: seed ?? null,
-      actual_duration_s: actualDurationS ?? null,
-      all_ready: allReady,
-      new_status: allReady ? "broll_ready" : finalProject?.status,
+      pending: true,
+      kling_request_id: submitData.request_id,
+      segment_indices,
+      group_duration_s: totalDur,
       model: "kling-3.0-pro-multishot",
+      message: "Job submitted, polling in background. Refetch project to detect completion.",
     });
   } catch (e) {
     console.error("[broll-multishot] uncaught", e);

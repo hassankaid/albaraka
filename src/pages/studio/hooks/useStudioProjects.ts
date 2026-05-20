@@ -51,6 +51,20 @@ export function useStudioProject(id: string | undefined) {
       if (error) throw error;
       return (data as StudioProject | null) ?? null;
     },
+    // B4 v8 — refetchInterval conditionnel : si certains segments ont un
+    // broll_prompt planifié mais pas encore broll_path, c'est qu'une
+    // génération multi-shot est en cours en background (Kling 3.0 met
+    // 2-5 min). On refetch toutes les 5s pour détecter la complétion.
+    refetchInterval: (query) => {
+      const project = query.state.data as StudioProject | null;
+      if (!project) return false;
+      const segments = (project.segments_json ?? []) as any[];
+      if (segments.length === 0) return false;
+      const hasPending = segments.some(
+        (s) => s.broll_prompt && !s.broll_path,
+      );
+      return hasPending ? 5000 : false;
+    },
   });
 }
 
