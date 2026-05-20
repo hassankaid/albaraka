@@ -123,6 +123,52 @@ function buildSegmentsFromWhisperSegments(
   }));
 }
 
+/**
+ * Fallback ultime : si Whisper renvoie juste `text` sans timestamps
+ * (cas OpenRouter qui ignore les options de format avancé), on découpe
+ * le texte en phrases via la ponctuation et on distribue la durée totale
+ * proportionnellement au nombre de caractères de chaque phrase.
+ * Précision approximative mais suffisante pour générer des b-rolls (B4).
+ */
+function buildSegmentsFromTextOnly(
+  text: string,
+  totalDurationS: number,
+): StudioSegment[] {
+  const clean = text.trim();
+  if (!clean || totalDurationS <= 0) return [];
+
+  // Split sur fin de phrase tout en conservant la ponctuation finale
+  const rawSentences = clean
+    .split(/([.!?]+\s+|\n+)/)
+    .reduce<string[]>((acc, chunk, i, arr) => {
+      if (i % 2 === 0) {
+        // segment "vrai texte" — on rajoute la ponctuation qui suit s'il y en a
+        const punc = arr[i + 1] ?? "";
+        const merged = (chunk + punc).trim();
+        if (merged.length > 0) acc.push(merged);
+      }
+      return acc;
+    }, []);
+
+  const sentences = rawSentences.length > 0 ? rawSentences : [clean];
+  const totalChars = sentences.reduce((sum, s) => sum + s.length, 0) || 1;
+
+  let cursor = 0;
+  return sentences.map((sentence, idx) => {
+    const share = sentence.length / totalChars;
+    const dur = totalDurationS * share;
+    const start = cursor;
+    const end = idx === sentences.length - 1 ? totalDurationS : cursor + dur;
+    cursor = end;
+    return {
+      idx,
+      start_ms: Math.round(start * 1000),
+      end_ms: Math.round(end * 1000),
+      text: sentence,
+    };
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -299,22 +345,46 @@ serve(async (req) => {
 
     const whisperData = (await whisperRes.json()) as WhisperResponse;
     console.log(
-      `[studio-transcribe] whisper OK · ${whisperData.duration?.toFixed(1)}s · ${whisperData.words?.length ?? 0} words · ${whisperData.segments?.length ?? 0} segments`,
+      `[studio-transcribe] whisper OK · keys=${Object.keys(whisperData).join(",")} · duration=${whisperData.duration} · words=${whisperData.words?.length ?? 0} · segments=${whisperData.segments?.length ?? 0} · text_len=${whisperData.text?.length ?? 0}`,
     );
 
-    // 7. Build segments
-    const segments =
-      whisperData.words && whisperData.words.length > 0
-        ? buildSegmentsFromWords(whisperData.words)
-        : whisperData.segments
-          ? buildSegmentsFromWhisperSegments(whisperData.segments)
-          : [];
+    // 7. Build segments — stratégie cascade :
+    //   a) words avec timestamps (meilleur — OpenAI direct)
+    //   b) segments natifs Whisper (10-30s)
+    //   c) fallback : découpage en phrases avec timing proportionnel
+    //      (cas OpenRouter qui renvoie souvent juste le texte)
+    let segments: StudioSegment[];
+    let segmentSource: "words" | "segments" | "text-fallback";
+
+    if (whisperData.words && whisperData.words.length > 0) {
+      segments = buildSegmentsFromWords(whisperData.words);
+      segmentSource = "words";
+    } else if (whisperData.segments && whisperData.segments.length > 0) {
+      segments = buildSegmentsFromWhisperSegments(whisperData.segments);
+      segmentSource = "segments";
+    } else if (whisperData.text) {
+      // Pas de timestamps — utilise audio_duration_seconds enregistré côté client
+      // lors de l'upload (B2), ou whisperData.duration si présent.
+      const dur =
+        whisperData.duration ?? project.audio_duration_seconds ?? 0;
+      segments = buildSegmentsFromTextOnly(whisperData.text, dur);
+      segmentSource = "text-fallback";
+      console.warn(
+        `[studio-transcribe] no timestamps from ${provider}, using text-fallback split (${segments.length} sentences, duration ${dur}s)`,
+      );
+    } else {
+      segments = [];
+      segmentSource = "text-fallback";
+    }
+
+    console.log(
+      `[studio-transcribe] segmentation done · source=${segmentSource} · ${segments.length} segments`,
+    );
 
     if (segments.length === 0) {
       return json(
         {
-          error:
-            "Whisper n'a pas pu segmenter l'audio (peut-être trop court ou silencieux ?)",
+          error: `Whisper n'a pas renvoyé de texte exploitable. Provider=${provider}, keys=${Object.keys(whisperData).join(",")}, response=${JSON.stringify(whisperData).slice(0, 300)}`,
         },
         422,
       );
