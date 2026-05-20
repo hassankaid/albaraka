@@ -21,10 +21,8 @@ import {
   useGenerateBroll,
   usePlanBrolls,
   useStudioSignedUrl,
-  useUpdateStudioProject,
 } from "../hooks/useStudioProjects";
 import type { StudioProject, StudioSegment } from "../types";
-import ReferenceImageUpload from "./ReferenceImageUpload";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
@@ -89,7 +87,7 @@ export default function BrollStep({ project, variant }: Props) {
       if (!ok) return;
     } else {
       const ok = confirm(
-        `Générer ${segmentsWithoutBroll.length} b-rolls en parallèle ?\n\nCoût estimé : ~${(segmentsWithoutBroll.length * 0.05).toFixed(2)}$ (Seedance 720p 5s).\n${project.reference_image_path ? "Mode image-to-video avec ton image de référence." : "Mode text-to-video (sans ancrage)."}`,
+        `Générer ${segmentsWithoutBroll.length} b-rolls en parallèle ?\n\nModèle : Kling 3.0 Pro (1080p, cinematic).\nCoût estimé : ~${(segmentsWithoutBroll.length * 0.85).toFixed(2)}$ ($0.084/sec × 5s × ${segmentsWithoutBroll.length} clips).\nDurée : 30-90 secondes par clip, en parallèle.`,
       );
       if (!ok) return;
     }
@@ -127,9 +125,6 @@ export default function BrollStep({ project, variant }: Props) {
 
   return (
     <div className="space-y-3">
-      {/* ─── Référence image (top, optionnel) ────────────────────── */}
-      <ReferenceImageUpload project={project} />
-
       {/* ─── Card principale b-rolls ────────────────────────────── */}
       <Card
         className={
@@ -166,11 +161,9 @@ export default function BrollStep({ project, variant }: Props) {
                     📋 Plan prêt
                   </span>
                 )}
-                {project.reference_image_path && (
-                  <span className="text-[10px] font-mono bg-emerald-500/15 text-emerald-500 px-1.5 py-0.5 rounded">
-                    🖼️ Anchor image
-                  </span>
-                )}
+                <span className="text-[10px] font-mono bg-primary/10 text-primary/80 px-1.5 py-0.5 rounded">
+                  Kling 3.0 Pro
+                </span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {allReady
@@ -240,13 +233,10 @@ export default function BrollStep({ project, variant }: Props) {
               <span>
                 Coût estimé pour {segmentsWithoutBroll.length} clip(s) :{" "}
                 <strong className="text-foreground">
-                  ~{(segmentsWithoutBroll.length * 0.05).toFixed(2)}$
+                  ~{(segmentsWithoutBroll.length * 0.85).toFixed(2)}$
                 </strong>
                 {" · "}
-                Mode{" "}
-                <strong className="text-foreground">
-                  {project.reference_image_path ? "image-to-video (anchored)" : "text-to-video"}
-                </strong>
+                <strong className="text-foreground">Kling 3.0 Pro 1080p</strong>
                 {" · "}
                 {allPlanned
                   ? "Prompts pré-planifiés (cohérence narrative)"

@@ -38,10 +38,13 @@ interface StudioSegment {
 
 // Modèle fal.ai à utiliser. Pro Fast = bon compromis prix/qualité (720p, 5s = ~$0.05).
 // Deux endpoints selon qu'on a une image de référence (i2v) ou pas (t2v) :
-const FAL_T2V_MODEL = "fal-ai/bytedance/seedance/v1/pro/fast/text-to-video";
-const FAL_I2V_MODEL = "fal-ai/bytedance/seedance/v1/pro/fast/image-to-video";
+// B4 v6 (20/05/2026) — Migration Seedance 1.0 Pro Fast → Kling 3.0 Pro.
+// Kling 3.0 Pro = 95% character consistency, 1080p, cinematic edge,
+// 9:16 support natif, ~$0.084/sec (Standard) ou ~$0.168/sec (Pro).
+// Coût ×6 par rapport à Seedance Pro Fast mais qualité largement
+// supérieure (per benchmarks fal.ai + LiromFilms reviews avril 2026).
+const FAL_T2V_MODEL = "fal-ai/kling-video/o3/pro/text-to-video";
 const FAL_T2V_URL = `https://queue.fal.run/${FAL_T2V_MODEL}`;
-const FAL_I2V_URL = `https://queue.fal.run/${FAL_I2V_MODEL}`;
 
 // Polling : 60 essais × 3s = 180s max (Edge Function timeout = 150s, on est juste).
 const POLL_INTERVAL_MS = 3000;
@@ -136,36 +139,28 @@ async function submitFalJob(
   prompt: string,
   durationSec: number,
   falKey: string,
-  imageUrl: string | null,
 ): Promise<FalSubmitResponse> {
-  // Seedance accepte 3-12s, on clamp pour la sécurité
-  const safeDuration = Math.max(3, Math.min(12, Math.round(durationSec)));
+  // Kling 3.0 Pro accepte des durations enum "3" à "15" secondes (par seconde entière)
+  const safeDuration = Math.max(3, Math.min(15, Math.round(durationSec)));
 
-  // Switch text-to-video / image-to-video selon présence d'une image anchor
-  const endpoint = imageUrl ? FAL_I2V_URL : FAL_T2V_URL;
-  const body: Record<string, unknown> = {
-    prompt,
-    aspect_ratio: "9:16",
-    resolution: "720p",
-    duration: String(safeDuration),
-    enable_safety_checker: true,
-  };
-  if (imageUrl) {
-    body.image_url = imageUrl;
-  }
-
-  const res = await fetch(endpoint, {
+  const res = await fetch(FAL_T2V_URL, {
     method: "POST",
     headers: {
       Authorization: `Key ${falKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      prompt,
+      aspect_ratio: "9:16",
+      duration: String(safeDuration),
+      // generate_audio: false → on ajoutera l'audio voix-off à l'assemblage (B5)
+      generate_audio: false,
+    }),
   });
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`fal.ai submit a échoué (${res.status}): ${errText.slice(0, 200)}`);
+    throw new Error(`fal.ai Kling submit a échoué (${res.status}): ${errText.slice(0, 200)}`);
   }
 
   const data = (await res.json()) as FalSubmitResponse;
@@ -173,7 +168,7 @@ async function submitFalJob(
     throw new Error(`fal.ai a renvoyé une réponse sans request_id: ${JSON.stringify(data).slice(0, 200)}`);
   }
   console.log(
-    `[generate-broll] fal.ai submit OK (${imageUrl ? "i2v" : "t2v"}) · request_id=${data.request_id} · status_url=${data.status_url ?? "(none)"} · response_url=${data.response_url ?? "(none)"}`,
+    `[generate-broll] Kling 3.0 Pro submit OK · request_id=${data.request_id} · status_url=${data.status_url ?? "(none)"} · response_url=${data.response_url ?? "(none)"}`,
   );
   return data;
 }
@@ -196,10 +191,10 @@ async function pollFalJob(
   // de routing côté fal.
   const statusUrl =
     submitResponse.status_url ??
-    `${FAL_T2V_URL}/requests/${submitResponse.request_id}/status`;
+    `https://queue.fal.run/fal-ai/kling-video/requests/${submitResponse.request_id}/status`;
   const resultUrl =
     submitResponse.response_url ??
-    `${FAL_T2V_URL}/requests/${submitResponse.request_id}`;
+    `https://queue.fal.run/fal-ai/kling-video/requests/${submitResponse.request_id}`;
 
   for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
@@ -347,31 +342,15 @@ serve(async (req) => {
       console.log(`[generate-broll] using planned prompt: "${visualPrompt}"`);
     }
 
-    // 2. Si le projet a une image de référence, on récupère une URL signée
-    //    courte (15 min, fal.ai télécharge l'image en quelques secondes).
-    let referenceImageUrl: string | null = null;
-    if (project.reference_image_path) {
-      const { data: signed, error: signedErr } = await supabaseAdmin.storage
-        .from("studio")
-        .createSignedUrl(project.reference_image_path, 900);
-      if (signedErr || !signed?.signedUrl) {
-        console.error(
-          `[generate-broll] signed URL for reference image failed:`,
-          signedErr,
-        );
-      } else {
-        referenceImageUrl = signed.signedUrl;
-        console.log(`[generate-broll] using reference image (i2v mode)`);
-      }
-    }
-
-    // 3. Submit fal.ai job (text-to-video OU image-to-video selon référence)
+    // 2. Submit fal.ai job (Kling 3.0 Pro text-to-video)
+    //    Note B4 v6 : on a abandonné l'approche image-to-video (Hassan : effet
+    //    "screenshot animé" indésirable). On garde pur text-to-video mais sur
+    //    un modèle de meilleur calibre (Kling 3.0 Pro vs Seedance 1.0 Pro Fast).
     const segmentDurationSec = (segment.end_ms - segment.start_ms) / 1000;
     const submitData = await submitFalJob(
       visualPrompt,
       segmentDurationSec,
       falKey,
-      referenceImageUrl,
     );
 
     // 3. Poll jusqu'à complétion via les URLs fournies par fal.ai
