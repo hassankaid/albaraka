@@ -3,8 +3,9 @@ import SpaceSwitcher from "./SpaceSwitcher";
 import {
   BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X,
   ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp, GraduationCap,
-  CalendarDays, Award, Sparkles, Bot, MessageSquare,
+  CalendarDays, Award, Sparkles, Bot, MessageSquare, Film,
 } from "lucide-react";
+import { isStudioAllowed } from "@/lib/studio-access";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -17,12 +18,15 @@ interface NavItem {
   path: string;
   icon: React.ElementType;
   passRequired?: boolean;
+  /** Studio Albaraka (B1, 20/05/2026) — visible uniquement pour CEO + Sidali Test. */
+  studioOnly?: boolean;
 }
 
 const workingNavItems: NavItem[] = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp },
   { title: "Mon Organisation", path: "/working/organisation", icon: CalendarDays },
   { title: "Personal Brand", path: "/working/personal-brand", icon: Sparkles, passRequired: true },
+  { title: "Studio", path: "/studio", icon: Film, studioOnly: true },
   { title: "Agent IA", path: "/working/agent", icon: Bot, passRequired: true },
   { title: "Dashboard", path: "/my-space", icon: BarChart3 },
   { title: "Mes Leads", path: "/my-space/leads", icon: Users },
@@ -58,6 +62,7 @@ const pageTitles: Record<string, string> = {
   "/working/organisation": "Mon Organisation",
   "/working/personal-brand": "Personal Brand",
   "/working/agent": "Agent IA",
+  "/studio": "Studio · Mes vidéos",
   "/training": "Formation",
   "/training/certificats": "Mes Certificats",
   "/training/scripts": "Scripts",
@@ -97,7 +102,11 @@ export default function ApporteurLayout() {
     if (currentSpace === "coaching") {
       return coachingNavItems.filter((item) => !item.passRequired || hasAnyPass);
     }
-    return workingNavItems;
+    // working : on filtre les items studioOnly à CEO + Sidali Test.
+    return workingNavItems.filter((item) => {
+      if (item.studioOnly) return isStudioAllowed(profile);
+      return true;
+    });
   })();
 
   const renderNavItems = () =>

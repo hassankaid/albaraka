@@ -1,6 +1,7 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film } from "lucide-react";
+import { isStudioAllowed } from "@/lib/studio-access";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -20,12 +21,15 @@ interface NavItem {
   /** Affiche pour CEO/collab toujours, et pour apporteur uniquement s'il a un pass.
    *  Différent de passOrStaff (qui exige aussi le pass pour collab). */
   staffOrApporteurWithPass?: boolean;
+  /** Studio Albaraka (B1, 20/05/2026) — visible uniquement pour CEO + Sidali Test. */
+  studioOnly?: boolean;
 }
 
 const workingNavItems: NavItem[] = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Mon Organisation", path: "/working/organisation", icon: CalendarDays, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Personal Brand", path: "/working/personal-brand", icon: Sparkles, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
+  { title: "Studio", path: "/studio", icon: Film, roles: ["ceo", "collaborateur", "apporteur"], studioOnly: true },
   { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true },
   // After separator
   { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur", "agence"], adminSection: true },
@@ -114,6 +118,7 @@ const pageTitles: Record<string, string> = {
   "/working/organisation": "Mon Organisation",
   "/working/personal-brand": "Personal Brand",
   "/working/agent": "Agent IA",
+  "/studio": "Studio · Mes vidéos",
   "/training/scripts": "Scripts",
   "/training": "Formation",
   "/admin/training": "Gestion des formations",
@@ -163,6 +168,8 @@ export default function DashboardLayout() {
       if (item.staffOrApporteurWithPass) {
         return userRole === "ceo" || userRole === "collaborateur" || hasAnyPass;
       }
+      // Studio (B1) : CEO + Sidali Test uniquement.
+      if (item.studioOnly) return isStudioAllowed(profile);
       return true;
     });
 

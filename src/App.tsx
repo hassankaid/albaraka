@@ -102,6 +102,9 @@ import ContractPreview from "./pages/admin/contracts/ContractPreview";
 import AdminContracts from "./pages/admin/contracts/AdminContracts";
 import MyContract from "./pages/contract/MyContract";
 import ContractLandingPage from "./pages/contract/ContractLandingPage";
+import StudioHome from "./pages/studio/StudioHome";
+import StudioProject from "./pages/studio/StudioProject";
+import { StudioGate } from "./components/StudioGate";
 
 const queryClient = new QueryClient();
 
@@ -228,6 +231,9 @@ const App = () => (
                   <Route path="/working/organisation" element={<FeatureGate feature="quiz_organisation"><OrganisationPage /></FeatureGate>} />
                   <Route path="/working/personal-brand" element={<PassGuard><PersonalBrandPage /></PassGuard>} />
                   <Route path="/working/agent" element={<PassGuard><AgentIA /></PassGuard>} />
+                  {/* Studio Albaraka (B1 du 20/05/2026) — gaté à CEO + Sidali Test */}
+                  <Route path="/studio" element={<StudioGate><StudioHome /></StudioGate>} />
+                  <Route path="/studio/projects/:projectId" element={<StudioGate><StudioProject /></StudioGate>} />
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />

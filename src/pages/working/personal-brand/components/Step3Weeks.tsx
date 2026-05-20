@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,7 +10,9 @@ import {
   Loader2,
   Clock,
   Sparkles,
+  Film,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CopyButton } from "./CopyButton";
 import { WEEKS } from "../lib/buildPrompts";
@@ -19,6 +22,9 @@ import {
   type WeeklyScript,
   type WeeklyStoryDay,
 } from "../hooks/usePersonalBrand";
+import { useAuth } from "@/hooks/useAuth";
+import { isStudioAllowed } from "@/lib/studio-access";
+import { useCreateStudioProject } from "@/pages/studio/hooks/useStudioProjects";
 
 interface Props {
   unlocked: boolean;
@@ -153,6 +159,7 @@ export default function Step3Weeks({
                 ) : wRow ? (
                   <WeekContent
                     weekRow={wRow}
+                    mode={mode}
                     onConfirmPublished={onConfirmPublished}
                   />
                 ) : (
@@ -231,9 +238,11 @@ function WeekGenerator({
 // ───── Sous-composant : affichage d'une semaine générée ────────────
 function WeekContent({
   weekRow,
+  mode,
   onConfirmPublished,
 }: {
   weekRow: PersonalBrandWeekRow;
+  mode: BrandMode;
   onConfirmPublished: (weekRowId: string) => Promise<void>;
 }) {
   const [tab, setTab] = useState<"scripts" | "stories">("scripts");
@@ -270,7 +279,13 @@ function WeekContent({
 
         <TabsContent value="scripts" className="mt-3 space-y-3">
           {scripts.map((s, i) => (
-            <ScriptCard key={i} script={s} />
+            <ScriptCard
+              key={i}
+              script={s}
+              weekRowId={weekRow.id}
+              weekNum={weekRow.week_num as 1 | 2 | 3 | 4}
+              mode={mode}
+            />
           ))}
         </TabsContent>
 
@@ -309,15 +324,77 @@ function WeekContent({
   );
 }
 
-function ScriptCard({ script }: { script: WeeklyScript }) {
+function ScriptCard({
+  script,
+  weekRowId,
+  weekNum,
+  mode,
+}: {
+  script: WeeklyScript;
+  weekRowId: string;
+  weekNum: 1 | 2 | 3 | 4;
+  mode: BrandMode;
+}) {
+  const navigate = useNavigate();
+  const { profile } = useAuth();
+  const createStudioProject = useCreateStudioProject();
   const valeur = Array.isArray(script.valeur) ? script.valeur : [script.valeur || ""];
   const copyText = `J${script.day} — ${script.title}\n\nHOOK : ${script.hook}\n\nVALEUR :\n${valeur.join("\n")}\n\nCTA : ${script.cta}`;
+  const canStudio = isStudioAllowed(profile);
+
+  // Format dédié à la voix-off : pas de "TITRE :", juste le texte à lire dans l'ordre naturel
+  // (hook → valeur → CTA). Le titre sert seulement pour le nom du projet Studio.
+  const studioScript = [
+    script.hook,
+    ...valeur.filter((v) => v.trim().length > 0),
+    script.cta,
+  ]
+    .filter((s) => s && s.trim().length > 0)
+    .join("\n\n");
+
+  const handleProduceVideo = async () => {
+    try {
+      const project = await createStudioProject.mutateAsync({
+        title: `${script.title} — S${weekNum} · J${script.day}`,
+        source: "personal_brand",
+        source_personal_brand: {
+          week_row_id: weekRowId,
+          week_num: weekNum,
+          script_day: script.day,
+          mode,
+        },
+        script_text: studioScript,
+      });
+      toast.success("Projet Studio créé — direction la production ✦");
+      navigate(`/studio/projects/${project.id}`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Création échouée");
+    }
+  };
 
   return (
     <div className="rounded-lg border border-border bg-background/50 p-4 space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className="text-xs font-semibold text-primary">Jour {script.day}</span>
-        <CopyButton text={copyText} label="Copier" />
+        <div className="flex items-center gap-1.5">
+          <CopyButton text={copyText} label="Copier" />
+          {canStudio && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleProduceVideo}
+              disabled={createStudioProject.isPending}
+              className="gap-1.5 text-xs h-7 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+            >
+              {createStudioProject.isPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Film className="h-3 w-3" />
+              )}
+              Produire en vidéo
+            </Button>
+          )}
+        </div>
       </div>
       <p className="font-heading text-base text-foreground">{script.title}</p>
       <div className="space-y-2 text-sm">
