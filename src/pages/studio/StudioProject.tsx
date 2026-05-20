@@ -22,6 +22,7 @@ import {
 import ScriptStep, { isScriptReady } from "./components/ScriptStep";
 import AudioStep from "./components/AudioStep";
 import TranscriptionStep from "./components/TranscriptionStep";
+import BrollStep from "./components/BrollStep";
 
 export default function StudioProject() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -136,16 +137,19 @@ export default function StudioProject() {
         }
       />
 
-      {/* ─── Étapes 4-5 — Placeholders briques à venir ─────────── */}
-      <FutureStepCard
-        idx={4}
-        title="B-rolls IA"
-        brick="B4"
-        icon={Wand2}
-        description="L'IA génère un clip vidéo court par segment du script."
-        unlocked={isStepDone(project.status, "broll_ready")}
-        completed={isStepDone(project.status, "broll_ready")}
+      {/* ─── Étape 4 — B-rolls IA ────────────────────────────── */}
+      <BrollStep
+        project={project}
+        variant={
+          isStepDone(project.status, "broll_ready")
+            ? "done"
+            : isStepDone(project.status, "transcribed")
+            ? "active"
+            : "locked"
+        }
       />
+
+      {/* ─── Étape 5 — Placeholder rendu final (B5) ─────────── */}
       <FutureStepCard
         idx={5}
         title="Rendu final"
@@ -156,13 +160,13 @@ export default function StudioProject() {
         completed={project.status === "done"}
       />
 
-      {/* Statut B3 — note de progression */}
+      {/* Statut B4 — note de progression */}
       <div className="rounded-lg border border-dashed border-border p-4 text-center space-y-1">
         <p className="text-xs text-muted-foreground">
-          🚧 Briques <span className="font-mono text-foreground">B1 + B2 + B3</span> en place — script + voix + transcription Whisper opérationnels.
+          🚧 Briques <span className="font-mono text-foreground">B1 → B4</span> en place — script + voix + transcription + b-rolls IA opérationnels.
         </p>
         <p className="text-[11px] text-muted-foreground/70">
-          Les b-rolls IA et le rendu final arrivent avec les briques B4 et B5.
+          Le rendu final (MP4 9:16 prêt à poster) arrive avec la brique B5.
         </p>
       </div>
     </div>

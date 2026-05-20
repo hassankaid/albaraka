@@ -193,6 +193,59 @@ export function useTriggerTranscription() {
 }
 
 /**
+ * Génère un b-roll pour UN segment (B4). Appelle l'edge function
+ * `studio-generate-broll` qui orchestre Claude (prompt visuel) + fal.ai Seedance
+ * (clip 9:16) + upload Storage + UPDATE segments_json[idx].
+ *
+ * Coût : ~$0.05 par clip 720p 5s + ~$0.001 prompt Claude.
+ * Durée : ~30-90s par segment (variable selon charge fal.ai).
+ */
+export function useGenerateBroll() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      segmentIdx,
+    }: {
+      projectId: string;
+      segmentIdx: number;
+    }): Promise<{
+      segment_idx: number;
+      broll_path: string;
+      broll_prompt: string;
+      seed: number | null;
+      all_ready: boolean;
+      new_status: string;
+    }> => {
+      const { data, error } = await supabase.functions.invoke(
+        "studio-generate-broll",
+        { body: { project_id: projectId, segment_idx: segmentIdx } },
+      );
+      if (error) {
+        let msg = error.message ?? "Génération b-roll échouée";
+        const ctx = (error as any)?.context;
+        if (ctx && typeof ctx.json === "function") {
+          try {
+            const body = await ctx.json();
+            if (body?.error) msg = body.error;
+          } catch {
+            // ignore parsing error, keep generic message
+          }
+        }
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: PROJECT_KEY(vars.projectId) });
+      qc.invalidateQueries({ queryKey: PROJECTS_KEY });
+    },
+  });
+}
+
+/**
  * Génère une URL signée temporaire pour lire un fichier du bucket `studio`.
  * Cache de 1h côté front (suffisant pour une session d'édition).
  */
