@@ -355,6 +355,102 @@ export function useGenerateBroll() {
 }
 
 /**
+ * B5 — Lance le rendu final MP4 via JSON2Video (voix-off + b-rolls +
+ * sous-titres viraux). Le rendu est async : on submit, JSON2Video callback
+ * notre webhook quand terminé, et `studio_projects.output_path` est rempli.
+ *
+ * Le frontend polle ensuite `studio_render_jobs` via `useRenderJobStatus`.
+ */
+export type CaptionPreset = "karaoke" | "classic" | "hormozi";
+
+export function useRenderFinal() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      captionPreset,
+    }: {
+      projectId: string;
+      captionPreset: CaptionPreset;
+    }): Promise<{
+      success: boolean;
+      pending: boolean;
+      render_id: string;
+      render_job_id: string;
+      caption_preset: CaptionPreset;
+      nb_scenes: number;
+      audio_duration_s: number;
+    }> => {
+      const { data, error } = await supabase.functions.invoke(
+        "studio-render-final",
+        { body: { project_id: projectId, caption_preset: captionPreset } },
+      );
+      if (error) {
+        let msg = error.message ?? "Rendu final échoué";
+        const ctx = (error as any)?.context;
+        if (ctx && typeof ctx.json === "function") {
+          try {
+            const body = await ctx.json();
+            if (body?.error) msg = body.error;
+          } catch {
+            // ignore
+          }
+        }
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: PROJECT_KEY(vars.projectId) });
+      qc.invalidateQueries({ queryKey: ["studio", "render-job", vars.projectId] });
+    },
+  });
+}
+
+/**
+ * B5 — Statut du job de rendu courant pour un projet (dernier en date).
+ * Refetch toutes les 5s tant que pending. S'arrête dès qu'on est en
+ * completed/failed.
+ */
+export interface RenderJobRow {
+  id: string;
+  project_id: string;
+  render_id: string;
+  caption_preset: CaptionPreset;
+  status: "pending" | "completed" | "failed";
+  error_message: string | null;
+  duration_s: number | null;
+  size_bytes: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export function useRenderJobStatus(projectId: string | undefined) {
+  return useQuery({
+    queryKey: ["studio", "render-job", projectId],
+    enabled: !!projectId,
+    queryFn: async (): Promise<RenderJobRow | null> => {
+      if (!projectId) return null;
+      const { data, error } = await (supabase as any)
+        .from("studio_render_jobs")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as RenderJobRow | null) ?? null;
+    },
+    refetchInterval: (query) => {
+      const job = query.state.data as RenderJobRow | null;
+      return job && job.status === "pending" ? 5000 : false;
+    },
+  });
+}
+
+/**
  * Génère une URL signée temporaire pour lire un fichier du bucket `studio`.
  * Cache de 1h côté front (suffisant pour une session d'édition).
  */

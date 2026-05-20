@@ -5,24 +5,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ArrowLeft,
-  Sparkles,
-  Wand2,
-  Film,
-  Lock,
-} from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { useStudioProject } from "./hooks/useStudioProjects";
 import {
   STATUS_LABEL,
   STATUS_TONE,
-  type StudioProject as StudioProjectT,
   type StudioProjectStatus,
 } from "./types";
 import ScriptStep, { isScriptReady } from "./components/ScriptStep";
 import AudioStep from "./components/AudioStep";
 import TranscriptionStep from "./components/TranscriptionStep";
 import BrollStep from "./components/BrollStep";
+import RenderStep from "./components/RenderStep";
 
 export default function StudioProject() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -149,91 +143,18 @@ export default function StudioProject() {
         }
       />
 
-      {/* ─── Étape 5 — Placeholder rendu final (B5) ─────────── */}
-      <FutureStepCard
-        idx={5}
-        title="Rendu final"
-        brick="B5"
-        icon={Film}
-        description="Assemblage final : voix + b-rolls + sous-titres → MP4 9:16 prêt à poster."
-        unlocked={project.status === "processing" || project.status === "done"}
-        completed={project.status === "done"}
+      {/* ─── Étape 5 — Rendu final MP4 (B5) ────────────────────── */}
+      <RenderStep
+        project={project}
+        variant={
+          project.status === "done"
+            ? "done"
+            : isStepDone(project.status, "broll_ready")
+            ? "active"
+            : "locked"
+        }
       />
-
-      {/* Statut B4 — note de progression */}
-      <div className="rounded-lg border border-dashed border-border p-4 text-center space-y-1">
-        <p className="text-xs text-muted-foreground">
-          🚧 Briques <span className="font-mono text-foreground">B1 → B4</span> en place — script + voix + transcription + b-rolls IA opérationnels.
-        </p>
-        <p className="text-[11px] text-muted-foreground/70">
-          Le rendu final (MP4 9:16 prêt à poster) arrive avec la brique B5.
-        </p>
-      </div>
     </div>
-  );
-}
-
-function FutureStepCard({
-  idx,
-  title,
-  brick,
-  icon: Icon,
-  description,
-  unlocked,
-  completed,
-}: {
-  idx: number;
-  title: string;
-  brick: string;
-  icon: typeof Sparkles;
-  description: string;
-  unlocked: boolean;
-  completed: boolean;
-}) {
-  return (
-    <Card
-      className={`${
-        completed
-          ? "border-emerald-500/30 bg-emerald-500/[0.03]"
-          : unlocked
-          ? "border-border"
-          : "border-border opacity-60"
-      }`}
-    >
-      <CardContent className="p-4 flex items-start gap-3">
-        <div
-          className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${
-            completed
-              ? "bg-emerald-500/15 text-emerald-500"
-              : unlocked
-              ? "bg-muted text-muted-foreground"
-              : "bg-muted text-muted-foreground/60"
-          }`}
-        >
-          {unlocked ? <Icon className="h-4 w-4" /> : <Lock className="h-3.5 w-3.5" />}
-        </div>
-        <div className="flex-1 min-w-0 space-y-0.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-medium text-foreground">
-              {idx}. {title}
-            </p>
-            <span className="text-[10px] font-mono bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-              {brick}
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
-        </div>
-        <div className="shrink-0 self-center text-[11px] font-medium">
-          {completed ? (
-            <span className="text-emerald-500">✓ Fait</span>
-          ) : unlocked ? (
-            <span className="text-muted-foreground">À venir</span>
-          ) : (
-            <span className="text-muted-foreground/60">Verrouillé</span>
-          )}
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
