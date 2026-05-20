@@ -9,11 +9,16 @@
 //   6. Construit nos propres segments (3-6s, alignés sur fin de phrase)
 //   7. UPDATE studio_projects : transcript_json + segments_json + status=transcribed
 //
-// Côté secrets Supabase requis :
-//   - OPENAI_API_KEY    (https://platform.openai.com/api-keys)
+// Côté secrets Supabase requis (au moins UN des deux) :
+//   - OPENROUTER_API_KEY  (https://openrouter.ai/keys) — priorité, recommandé
+//   - OPENAI_API_KEY      (https://platform.openai.com/api-keys) — fallback
 //   - SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY (auto)
 //
-// Coût : 0.006€ / minute d'audio. Pour 30 sec = 0.003€.
+// OpenRouter expose les endpoints audio depuis 01/05/2026, compatibles 1:1
+// avec l'API OpenAI (même format multipart, même réponse verbose_json).
+// Permet de mutualiser une seule clé pour Whisper (B3) + Claude/GPT (B4).
+//
+// Coût : whisper-1 = 0.006$/min sur les deux providers. Pour 30s = 0.003$.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -131,13 +136,25 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // OpenRouter en priorité (mutualise avec B4), fallback OpenAI direct
+    const openrouterKey = Deno.env.get("OPENROUTER_API_KEY");
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    const provider: "openrouter" | "openai" | null = openrouterKey
+      ? "openrouter"
+      : openaiKey
+        ? "openai"
+        : null;
+    const providerKey = openrouterKey ?? openaiKey;
+    const providerUrl =
+      provider === "openrouter"
+        ? "https://openrouter.ai/api/v1/audio/transcriptions"
+        : "https://api.openai.com/v1/audio/transcriptions";
 
-    if (!openaiKey) {
+    if (!provider || !providerKey) {
       return json(
         {
           error:
-            "OPENAI_API_KEY non configurée. Ajoute la clé OpenAI dans Supabase > Edge Functions > Secrets.",
+            "Aucune clé API trouvée. Ajoute OPENROUTER_API_KEY (recommandé) ou OPENAI_API_KEY dans Supabase > Edge Functions > Secrets.",
         },
         500,
       );
@@ -219,15 +236,22 @@ serve(async (req) => {
     formData.append("timestamp_granularities[]", "segment");
     formData.append("language", "fr"); // français par défaut, Whisper auto-détecte sinon
 
-    console.log(`[studio-transcribe] calling whisper for ${ext} audio`);
-    const whisperRes = await fetch(
-      "https://api.openai.com/v1/audio/transcriptions",
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${openaiKey}` },
-        body: formData,
-      },
+    console.log(
+      `[studio-transcribe] calling whisper via ${provider} for ${ext} audio`,
     );
+    const whisperHeaders: Record<string, string> = {
+      Authorization: `Bearer ${providerKey}`,
+    };
+    // OpenRouter recommande ces headers pour le suivi d'usage et la priorité
+    if (provider === "openrouter") {
+      whisperHeaders["HTTP-Referer"] = "https://albarakaecosysteme.com";
+      whisperHeaders["X-Title"] = "Albaraka Studio";
+    }
+    const whisperRes = await fetch(providerUrl, {
+      method: "POST",
+      headers: whisperHeaders,
+      body: formData,
+    });
 
     if (!whisperRes.ok) {
       const text = await whisperRes.text();
