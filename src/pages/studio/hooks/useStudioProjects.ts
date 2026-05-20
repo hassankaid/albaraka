@@ -239,6 +239,55 @@ export function usePlanBrolls() {
 }
 
 /**
+ * B4 v7 — Génère un GROUPE de b-rolls en multi-shot Kling 3.0.
+ * Au lieu de N appels isolés, on lance un seul appel pour N segments
+ * (jusqu'à 6) qui produit UNE vidéo cohérente. Tous les segments du
+ * groupe partagent le même broll_path avec des offsets différents.
+ */
+export function useGenerateBrollMultishot() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      segmentIndices,
+    }: {
+      projectId: string;
+      segmentIndices: number[];
+    }): Promise<{
+      broll_path: string;
+      segments: Array<{ idx: number; start_ms: number; end_ms: number }>;
+      actual_duration_s: number | null;
+      all_ready: boolean;
+    }> => {
+      const { data, error } = await supabase.functions.invoke(
+        "studio-generate-broll-multishot",
+        { body: { project_id: projectId, segment_indices: segmentIndices } },
+      );
+      if (error) {
+        let msg = error.message ?? "Génération multi-shot échouée";
+        const ctx = (error as any)?.context;
+        if (ctx && typeof ctx.json === "function") {
+          try {
+            const body = await ctx.json();
+            if (body?.error) msg = body.error;
+          } catch {
+            // ignore
+          }
+        }
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: PROJECT_KEY(vars.projectId) });
+      qc.invalidateQueries({ queryKey: PROJECTS_KEY });
+    },
+  });
+}
+
+/**
  * Génère un b-roll pour UN segment (B4). Appelle l'edge function
  * `studio-generate-broll` qui orchestre Claude (prompt visuel) + fal.ai Seedance
  * (clip 9:16) + upload Storage + UPDATE segments_json[idx].

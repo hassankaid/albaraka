@@ -41,6 +41,11 @@ export interface StudioSegment {
   text: string;
   broll_path?: string | null;
   broll_prompt?: string | null;
+  /** B4 v7 — offset dans la vidéo broll_path quand elle est partagée
+   * entre plusieurs segments (multi-shot Kling). Si null, le segment
+   * a sa propre vidéo dédiée (single-shot legacy). */
+  broll_start_ms?: number | null;
+  broll_end_ms?: number | null;
 }
 
 /**

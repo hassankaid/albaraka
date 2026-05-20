@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import {
   useGenerateBroll,
+  useGenerateBrollMultishot,
   usePlanBrolls,
   useStudioSignedUrl,
 } from "../hooks/useStudioProjects";
@@ -30,8 +31,27 @@ interface Props {
   variant: "locked" | "active" | "done";
 }
 
+// B4 v7 — Groupage des segments pour multi-shot Kling 3.0
+// Contraintes : max 6 shots par appel, max 15s par appel, durations ≥ 3s
+const MAX_SEGMENTS_PER_GROUP = 3; // 3 × 5s = 15s, safe pour Kling 15s max
+
+function groupSegmentsForMultishot(segments: StudioSegment[]): number[][] {
+  const groups: number[][] = [];
+  let current: number[] = [];
+  for (const seg of segments) {
+    current.push(seg.idx);
+    if (current.length >= MAX_SEGMENTS_PER_GROUP) {
+      groups.push(current);
+      current = [];
+    }
+  }
+  if (current.length > 0) groups.push(current);
+  return groups;
+}
+
 export default function BrollStep({ project, variant }: Props) {
   const generateMutation = useGenerateBroll();
+  const generateMultishotMutation = useGenerateBrollMultishot();
   const planMutation = usePlanBrolls();
   const [generatingIds, setGeneratingIds] = useState<Set<number>>(new Set());
 
@@ -81,19 +101,57 @@ export default function BrollStep({ project, variant }: Props) {
   const generateAll = async () => {
     if (segmentsWithoutBroll.length === 0) return;
     if (!allPlanned) {
-      const ok = confirm(
-        "⚠️ Aucun plan global n'a été fait — les prompts seront générés en silo (qualité moins bonne, pas de cohérence narrative).\n\nClique 'OK' pour lancer quand même, ou 'Annuler' puis utilise d'abord 'Planifier les b-rolls' pour un meilleur résultat.",
+      toast.error(
+        "Lance d'abord 'Planifier' pour générer des prompts cohérents avant l'IA vidéo",
+        { duration: 6000 },
       );
-      if (!ok) return;
-    } else {
-      const ok = confirm(
-        `Générer ${segmentsWithoutBroll.length} b-rolls en parallèle ?\n\nModèle : Kling 3.0 Pro (1080p, cinematic).\nCoût estimé : ~${(segmentsWithoutBroll.length * 0.85).toFixed(2)}$ ($0.084/sec × 5s × ${segmentsWithoutBroll.length} clips).\nDurée : 30-90 secondes par clip, en parallèle.`,
-      );
-      if (!ok) return;
+      return;
     }
-    await Promise.allSettled(
-      segmentsWithoutBroll.map((s) => generateOne(s.idx)),
+
+    // B4 v7 — groupage par 3 segments max pour multi-shot Kling natif
+    const groups = groupSegmentsForMultishot(segmentsWithoutBroll);
+    const totalSegments = segmentsWithoutBroll.length;
+    const ok = confirm(
+      `Générer ${totalSegments} b-rolls en ${groups.length} appel(s) multi-shot Kling 3.0 Pro ?\n\n` +
+        `→ ${groups.length} appel(s) au lieu de ${totalSegments} → cohérence visuelle native entre les shots du même groupe\n` +
+        `→ Coût estimé : ~${(groups.length * 1.26).toFixed(2)}$ (Kling 3.0 Pro 1080p, 15s × ${groups.length} groupes)\n` +
+        `→ Durée : ~60-120s par groupe en parallèle`,
     );
+    if (!ok) return;
+
+    // Marque tous les segments du groupe comme "en génération" pendant l'appel
+    const setIdsForGroup = (groupIdx: number[], add: boolean) => {
+      setGeneratingIds((prev) => {
+        const next = new Set(prev);
+        for (const idx of groupIdx) {
+          if (add) next.add(idx);
+          else next.delete(idx);
+        }
+        return next;
+      });
+    };
+
+    const groupPromises = groups.map(async (groupIdx) => {
+      setIdsForGroup(groupIdx, true);
+      try {
+        const res = await generateMultishotMutation.mutateAsync({
+          projectId: project.id,
+          segmentIndices: groupIdx,
+        });
+        if (res.all_ready) {
+          toast.success("Tous les b-rolls sont prêts ✦", { duration: 4000 });
+        }
+      } catch (e: any) {
+        toast.error(
+          `Groupe [${groupIdx.join(", ")}] : ${e?.message ?? "génération échouée"}`,
+          { duration: 8000 },
+        );
+      } finally {
+        setIdsForGroup(groupIdx, false);
+      }
+    });
+
+    await Promise.allSettled(groupPromises);
   };
 
   // ─── LOCKED ────────────────────────────────────────────────────────
@@ -162,7 +220,7 @@ export default function BrollStep({ project, variant }: Props) {
                   </span>
                 )}
                 <span className="text-[10px] font-mono bg-primary/10 text-primary/80 px-1.5 py-0.5 rounded">
-                  Kling 3.0 Pro
+                  Kling 3.0 multi-shot
                 </span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -231,16 +289,18 @@ export default function BrollStep({ project, variant }: Props) {
             <div className="rounded-md bg-primary/[0.05] border border-primary/20 px-3 py-2 text-xs text-muted-foreground flex items-start gap-2">
               <Info className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
               <span>
-                Coût estimé pour {segmentsWithoutBroll.length} clip(s) :{" "}
+                Coût estimé pour {segmentsWithoutBroll.length} clip(s) en{" "}
                 <strong className="text-foreground">
-                  ~{(segmentsWithoutBroll.length * 0.85).toFixed(2)}$
+                  {Math.ceil(segmentsWithoutBroll.length / 3)} appel(s) multi-shot
+                </strong>{" "}
+                :{" "}
+                <strong className="text-foreground">
+                  ~{(Math.ceil(segmentsWithoutBroll.length / 3) * 1.26).toFixed(2)}$
                 </strong>
                 {" · "}
                 <strong className="text-foreground">Kling 3.0 Pro 1080p</strong>
                 {" · "}
-                {allPlanned
-                  ? "Prompts pré-planifiés (cohérence narrative)"
-                  : "Prompts générés en silo (qualité moindre)"}
+                Cohérence visuelle native entre shots du même groupe
               </span>
             </div>
           )}
@@ -329,11 +389,10 @@ function SegmentCard({
       {/* Video preview ou placeholder 9:16 */}
       <div className="relative aspect-[9/16] bg-gradient-to-br from-muted to-background flex items-center justify-center">
         {hasBroll && signedUrlQuery.data ? (
-          <video
-            src={signedUrlQuery.data}
-            controls
-            className="w-full h-full object-cover"
-            preload="metadata"
+          <SegmentVideo
+            url={signedUrlQuery.data}
+            startMs={segment.broll_start_ms ?? null}
+            endMs={segment.broll_end_ms ?? null}
           />
         ) : isGenerating ? (
           <div className="flex flex-col items-center gap-2 text-primary">
@@ -442,5 +501,66 @@ function SegmentCard({
         </Button>
       </div>
     </div>
+  );
+}
+
+// ─── SegmentVideo : lit UN sous-clip d'une vidéo partagée ──────────────
+// Quand on est en mode multi-shot Kling, plusieurs segments partagent
+// la même vidéo broll_path mais avec des offsets différents. Ce composant
+// joue uniquement la portion [start_ms, end_ms] de la vidéo, en boucle.
+function SegmentVideo({
+  url,
+  startMs,
+  endMs,
+}: {
+  url: string;
+  startMs: number | null;
+  endMs: number | null;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hasOffsets = startMs !== null && endMs !== null && endMs > startMs;
+
+  useEffect(() => {
+    if (!hasOffsets || !videoRef.current) return;
+    const video = videoRef.current;
+    const startSec = (startMs ?? 0) / 1000;
+    const endSec = (endMs ?? 0) / 1000;
+
+    const onLoaded = () => {
+      try {
+        video.currentTime = startSec;
+      } catch {
+        // ignore (currentTime not yet supported on some browsers before metadata)
+      }
+    };
+    const onTimeUpdate = () => {
+      if (video.currentTime >= endSec) {
+        // Loop : reviens au start
+        try {
+          video.currentTime = startSec;
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    video.addEventListener("loadedmetadata", onLoaded);
+    video.addEventListener("timeupdate", onTimeUpdate);
+
+    return () => {
+      video.removeEventListener("loadedmetadata", onLoaded);
+      video.removeEventListener("timeupdate", onTimeUpdate);
+    };
+  }, [hasOffsets, startMs, endMs, url]);
+
+  return (
+    <video
+      ref={videoRef}
+      src={url}
+      controls
+      className="w-full h-full object-cover"
+      preload="metadata"
+      playsInline
+    />
   );
 }
