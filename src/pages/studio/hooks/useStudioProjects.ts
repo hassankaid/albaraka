@@ -193,6 +193,52 @@ export function useTriggerTranscription() {
 }
 
 /**
+ * Planifie les N prompts visuels en UN SEUL appel Claude (B4 v5).
+ * Garantit la cohérence narrative entre segments (même protagoniste,
+ * même style visuel). Persiste les prompts dans segments_json[i].broll_prompt
+ * AVANT la génération vidéo. L'élève peut alors les éditer avant de cliquer
+ * "Tout générer".
+ */
+export function usePlanBrolls() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      projectId: string,
+    ): Promise<{
+      protagonist: string;
+      visual_style: string;
+      prompts: string[];
+      nb_segments: number;
+    }> => {
+      const { data, error } = await supabase.functions.invoke(
+        "studio-plan-brolls",
+        { body: { project_id: projectId } },
+      );
+      if (error) {
+        let msg = error.message ?? "Planification échouée";
+        const ctx = (error as any)?.context;
+        if (ctx && typeof ctx.json === "function") {
+          try {
+            const body = await ctx.json();
+            if (body?.error) msg = body.error;
+          } catch {
+            // ignore
+          }
+        }
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (_data, projectId) => {
+      qc.invalidateQueries({ queryKey: PROJECT_KEY(projectId) });
+      qc.invalidateQueries({ queryKey: PROJECTS_KEY });
+    },
+  });
+}
+
+/**
  * Génère un b-roll pour UN segment (B4). Appelle l'edge function
  * `studio-generate-broll` qui orchestre Claude (prompt visuel) + fal.ai Seedance
  * (clip 9:16) + upload Storage + UPDATE segments_json[idx].

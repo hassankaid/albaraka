@@ -68,6 +68,8 @@ export interface StudioProject {
   segments_json: StudioSegment[] | null;
   output_path: string | null;
   output_duration_seconds: number | null;
+  /** B4 v5 — image de référence pour image-to-video anchor (personnage persistant) */
+  reference_image_path: string | null;
   job_id: string | null;
   error_message: string | null;
   cost_cents: number;

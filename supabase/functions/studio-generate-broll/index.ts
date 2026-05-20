@@ -37,8 +37,11 @@ interface StudioSegment {
 }
 
 // Modèle fal.ai à utiliser. Pro Fast = bon compromis prix/qualité (720p, 5s = ~$0.05).
-const FAL_MODEL = "fal-ai/bytedance/seedance/v1/pro/fast/text-to-video";
-const FAL_QUEUE_URL = `https://queue.fal.run/${FAL_MODEL}`;
+// Deux endpoints selon qu'on a une image de référence (i2v) ou pas (t2v) :
+const FAL_T2V_MODEL = "fal-ai/bytedance/seedance/v1/pro/fast/text-to-video";
+const FAL_I2V_MODEL = "fal-ai/bytedance/seedance/v1/pro/fast/image-to-video";
+const FAL_T2V_URL = `https://queue.fal.run/${FAL_T2V_MODEL}`;
+const FAL_I2V_URL = `https://queue.fal.run/${FAL_I2V_MODEL}`;
 
 // Polling : 60 essais × 3s = 180s max (Edge Function timeout = 150s, on est juste).
 const POLL_INTERVAL_MS = 3000;
@@ -133,23 +136,31 @@ async function submitFalJob(
   prompt: string,
   durationSec: number,
   falKey: string,
+  imageUrl: string | null,
 ): Promise<FalSubmitResponse> {
   // Seedance accepte 3-12s, on clamp pour la sécurité
   const safeDuration = Math.max(3, Math.min(12, Math.round(durationSec)));
 
-  const res = await fetch(FAL_QUEUE_URL, {
+  // Switch text-to-video / image-to-video selon présence d'une image anchor
+  const endpoint = imageUrl ? FAL_I2V_URL : FAL_T2V_URL;
+  const body: Record<string, unknown> = {
+    prompt,
+    aspect_ratio: "9:16",
+    resolution: "720p",
+    duration: String(safeDuration),
+    enable_safety_checker: true,
+  };
+  if (imageUrl) {
+    body.image_url = imageUrl;
+  }
+
+  const res = await fetch(endpoint, {
     method: "POST",
     headers: {
       Authorization: `Key ${falKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      prompt,
-      aspect_ratio: "9:16",
-      resolution: "720p",
-      duration: String(safeDuration),
-      enable_safety_checker: true,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -162,7 +173,7 @@ async function submitFalJob(
     throw new Error(`fal.ai a renvoyé une réponse sans request_id: ${JSON.stringify(data).slice(0, 200)}`);
   }
   console.log(
-    `[generate-broll] fal.ai submit OK · request_id=${data.request_id} · status_url=${data.status_url ?? "(none)"} · response_url=${data.response_url ?? "(none)"}`,
+    `[generate-broll] fal.ai submit OK (${imageUrl ? "i2v" : "t2v"}) · request_id=${data.request_id} · status_url=${data.status_url ?? "(none)"} · response_url=${data.response_url ?? "(none)"}`,
   );
   return data;
 }
@@ -185,10 +196,10 @@ async function pollFalJob(
   // de routing côté fal.
   const statusUrl =
     submitResponse.status_url ??
-    `${FAL_QUEUE_URL}/requests/${submitResponse.request_id}/status`;
+    `${FAL_T2V_URL}/requests/${submitResponse.request_id}/status`;
   const resultUrl =
     submitResponse.response_url ??
-    `${FAL_QUEUE_URL}/requests/${submitResponse.request_id}`;
+    `${FAL_T2V_URL}/requests/${submitResponse.request_id}`;
 
   for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
@@ -290,7 +301,7 @@ serve(async (req) => {
 
     const { data: project, error: projErr } = await supabaseAdmin
       .from("studio_projects")
-      .select("id, user_id, segments_json, status")
+      .select("id, user_id, segments_json, status, reference_image_path")
       .eq("id", project_id)
       .maybeSingle();
     if (projErr) return json({ error: `Erreur BDD : ${projErr.message}` }, 500);
@@ -323,13 +334,45 @@ serve(async (req) => {
       `[generate-broll] project=${project_id} seg=${segment_idx} text="${segment.text.slice(0, 80)}..."`,
     );
 
-    // 1. Génère le prompt visuel via Claude
-    const visualPrompt = await generateVisualPrompt(segment.text, openrouterKey);
-    console.log(`[generate-broll] visual prompt: "${visualPrompt}"`);
+    // 1. Récupère le prompt visuel :
+    //    - Si le segment a un broll_prompt déjà planifié (par studio-plan-brolls
+    //      ou édité manuellement) → on le réutilise. Évite la régénération
+    //      isolée et préserve la cohérence narrative globale.
+    //    - Sinon (fallback) on génère un prompt en silo via Claude haiku.
+    let visualPrompt = (segment.broll_prompt ?? "").trim();
+    if (!visualPrompt) {
+      visualPrompt = await generateVisualPrompt(segment.text, openrouterKey);
+      console.log(`[generate-broll] generated prompt: "${visualPrompt}"`);
+    } else {
+      console.log(`[generate-broll] using planned prompt: "${visualPrompt}"`);
+    }
 
-    // 2. Submit fal.ai job (récupère request_id + status_url + response_url)
+    // 2. Si le projet a une image de référence, on récupère une URL signée
+    //    courte (15 min, fal.ai télécharge l'image en quelques secondes).
+    let referenceImageUrl: string | null = null;
+    if (project.reference_image_path) {
+      const { data: signed, error: signedErr } = await supabaseAdmin.storage
+        .from("studio")
+        .createSignedUrl(project.reference_image_path, 900);
+      if (signedErr || !signed?.signedUrl) {
+        console.error(
+          `[generate-broll] signed URL for reference image failed:`,
+          signedErr,
+        );
+      } else {
+        referenceImageUrl = signed.signedUrl;
+        console.log(`[generate-broll] using reference image (i2v mode)`);
+      }
+    }
+
+    // 3. Submit fal.ai job (text-to-video OU image-to-video selon référence)
     const segmentDurationSec = (segment.end_ms - segment.start_ms) / 1000;
-    const submitData = await submitFalJob(visualPrompt, segmentDurationSec, falKey);
+    const submitData = await submitFalJob(
+      visualPrompt,
+      segmentDurationSec,
+      falKey,
+      referenceImageUrl,
+    );
 
     // 3. Poll jusqu'à complétion via les URLs fournies par fal.ai
     const { videoUrl, seed } = await pollFalJob(submitData, falKey);
