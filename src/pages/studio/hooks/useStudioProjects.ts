@@ -107,3 +107,57 @@ export function useDeleteStudioProject() {
     },
   });
 }
+
+/**
+ * Update partiel d'un projet. Utilisé pour :
+ *   - sauvegarder le script_text (auto-save debounced — B2)
+ *   - mettre à jour audio_path / audio_duration_seconds (B2)
+ *   - changer le statut (audio_uploaded, transcribed, ...)
+ *   - mettre à jour title, error_message, etc.
+ */
+export function useUpdateStudioProject() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      updates,
+    }: {
+      id: string;
+      updates: Partial<StudioProject>;
+    }): Promise<StudioProject> => {
+      const { data, error } = await (supabase as any)
+        .from("studio_projects")
+        .update(updates)
+        .eq("id", id)
+        .select("*")
+        .single();
+      if (error) throw error;
+      return data as StudioProject;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: PROJECT_KEY(data.id) });
+      qc.invalidateQueries({ queryKey: PROJECTS_KEY });
+    },
+  });
+}
+
+/**
+ * Génère une URL signée temporaire pour lire un fichier du bucket `studio`.
+ * Cache de 1h côté front (suffisant pour une session d'édition).
+ */
+export function useStudioSignedUrl(path: string | null | undefined) {
+  return useQuery({
+    queryKey: ["studio", "signed-url", path],
+    enabled: !!path,
+    staleTime: 50 * 60 * 1000, // 50 min : un peu avant l'expiration 1h Supabase
+    queryFn: async (): Promise<string | null> => {
+      if (!path) return null;
+      const { data, error } = await supabase.storage
+        .from("studio")
+        .createSignedUrl(path, 3600);
+      if (error) throw error;
+      return data?.signedUrl ?? null;
+    },
+  });
+}

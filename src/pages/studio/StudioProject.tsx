@@ -5,68 +5,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft,
-  FileText,
-  Mic,
   Sparkles,
   Wand2,
   Film,
-  CheckCircle2,
-  Clock,
   Lock,
 } from "lucide-react";
 import { useStudioProject } from "./hooks/useStudioProjects";
 import {
   STATUS_LABEL,
   STATUS_TONE,
+  type StudioProject as StudioProjectT,
   type StudioProjectStatus,
 } from "./types";
-
-const STAGES: Array<{
-  key: StudioProjectStatus;
-  label: string;
-  icon: typeof FileText;
-  brick: "B1" | "B2" | "B3" | "B4" | "B5";
-  desc: string;
-}> = [
-  {
-    key: "draft",
-    label: "Script",
-    icon: FileText,
-    brick: "B2",
-    desc: "Écrire ou coller le script de ta vidéo.",
-  },
-  {
-    key: "audio_uploaded",
-    label: "Voix-off",
-    icon: Mic,
-    brick: "B2",
-    desc: "Uploader ton enregistrement audio (MP3, M4A, WAV).",
-  },
-  {
-    key: "transcribed",
-    label: "Sous-titres",
-    icon: Sparkles,
-    brick: "B3",
-    desc: "Whisper transcrit ton audio en sous-titres timestampés.",
-  },
-  {
-    key: "broll_ready",
-    label: "B-rolls IA",
-    icon: Wand2,
-    brick: "B4",
-    desc: "L'IA génère un clip vidéo par segment du script.",
-  },
-  {
-    key: "processing",
-    label: "Rendu final",
-    icon: Film,
-    brick: "B5",
-    desc: "Assemblage final : voix + b-rolls + sous-titres → MP4 9:16.",
-  },
-];
+import ScriptStep, { isScriptReady } from "./components/ScriptStep";
+import AudioStep from "./components/AudioStep";
 
 export default function StudioProject() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -151,112 +105,136 @@ export default function StudioProject() {
         )}
       </div>
 
-      {/* Script pré-rempli (visible si présent) */}
-      {project.script_text && (
-        <Card>
-          <CardContent className="p-5 space-y-2">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary" />
-              <h2 className="font-heading text-sm tracking-wider uppercase text-foreground">
-                Script pré-rempli
-              </h2>
-            </div>
-            <Separator />
-            <pre className="whitespace-pre-wrap text-sm text-foreground/90 font-sans leading-relaxed">
-              {project.script_text}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
+      {/* ─── Étape 1 — Script ────────────────────────────────────── */}
+      <ScriptStep
+        project={project}
+        variant={isStepDone(project.status, "audio_uploaded") ? "done" : "active"}
+      />
 
-      {/* Étapes wizard — placeholder briques à venir */}
-      <Card>
-        <CardContent className="p-5 space-y-4">
-          <div className="space-y-1">
-            <h2 className="font-heading text-lg text-foreground">
-              Étapes de production
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Chaque étape débloque la suivante. Le rendu final arrive après l'assemblage des b-rolls.
-            </p>
-          </div>
+      {/* ─── Étape 2 — Voix-off ─────────────────────────────────── */}
+      <AudioStep
+        project={project}
+        variant={
+          isStepDone(project.status, "audio_uploaded")
+            ? "done"
+            : isScriptReady(project)
+            ? "active"
+            : "locked"
+        }
+      />
 
-          <div className="space-y-2">
-            {STAGES.map((stage, idx) => {
-              const Icon = stage.icon;
-              const completed = isStageCompleted(project.status, stage.key);
-              const current = stage.key === project.status;
-              return (
-                <div
-                  key={stage.key}
-                  className={`rounded-lg border p-3 flex items-start gap-3 ${
-                    current
-                      ? "border-primary/40 bg-primary/[0.04]"
-                      : completed
-                      ? "border-emerald-500/30 bg-emerald-500/[0.03]"
-                      : "border-border"
-                  }`}
-                >
-                  <div
-                    className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${
-                      completed
-                        ? "bg-emerald-500/15 text-emerald-500"
-                        : current
-                        ? "bg-primary/15 text-primary"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {completed ? (
-                      <CheckCircle2 className="h-4 w-4" />
-                    ) : (
-                      <Icon className="h-4 w-4" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0 space-y-0.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium text-foreground">
-                        {idx + 1}. {stage.label}
-                      </p>
-                      <Badge variant="outline" className="text-[10px] font-mono">
-                        {stage.brick}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      {stage.desc}
-                    </p>
-                  </div>
-                  <div className="shrink-0 self-center">
-                    {completed ? (
-                      <span className="text-xs text-emerald-500 font-medium">
-                        ✓ Fait
-                      </span>
-                    ) : current ? (
-                      <span className="text-xs text-primary font-medium flex items-center gap-1">
-                        <Clock className="h-3 w-3" /> En cours
-                      </span>
-                    ) : (
-                      <Lock className="h-3.5 w-3.5 text-muted-foreground/50" />
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* ─── Étapes 3 à 5 — Placeholders briques à venir ────────── */}
+      <FutureStepCard
+        idx={3}
+        title="Sous-titres"
+        brick="B3"
+        icon={Sparkles}
+        description="Whisper transcrit ton audio en sous-titres timestampés mot par mot."
+        unlocked={project.status === "audio_uploaded" || isStepDone(project.status, "transcribed")}
+        completed={isStepDone(project.status, "transcribed")}
+      />
+      <FutureStepCard
+        idx={4}
+        title="B-rolls IA"
+        brick="B4"
+        icon={Wand2}
+        description="L'IA génère un clip vidéo court par segment du script."
+        unlocked={isStepDone(project.status, "broll_ready")}
+        completed={isStepDone(project.status, "broll_ready")}
+      />
+      <FutureStepCard
+        idx={5}
+        title="Rendu final"
+        brick="B5"
+        icon={Film}
+        description="Assemblage final : voix + b-rolls + sous-titres → MP4 9:16 prêt à poster."
+        unlocked={project.status === "processing" || project.status === "done"}
+        completed={project.status === "done"}
+      />
 
-          <div className="rounded-lg border border-dashed border-border p-4 text-center space-y-2">
-            <p className="text-xs text-muted-foreground">
-              🚧 Brique <span className="font-mono text-foreground">B1</span> en place — squelette fonctionnel. Les actions de chaque étape arrivent avec les briques suivantes.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Statut B2 — note de progression */}
+      <div className="rounded-lg border border-dashed border-border p-4 text-center space-y-1">
+        <p className="text-xs text-muted-foreground">
+          🚧 Briques <span className="font-mono text-foreground">B1 + B2</span> en place — script éditable + upload voix-off opérationnels.
+        </p>
+        <p className="text-[11px] text-muted-foreground/70">
+          La transcription, les b-rolls IA et le rendu final arrivent avec les briques B3, B4, B5.
+        </p>
+      </div>
     </div>
   );
 }
 
-function isStageCompleted(
+function FutureStepCard({
+  idx,
+  title,
+  brick,
+  icon: Icon,
+  description,
+  unlocked,
+  completed,
+}: {
+  idx: number;
+  title: string;
+  brick: string;
+  icon: typeof Sparkles;
+  description: string;
+  unlocked: boolean;
+  completed: boolean;
+}) {
+  return (
+    <Card
+      className={`${
+        completed
+          ? "border-emerald-500/30 bg-emerald-500/[0.03]"
+          : unlocked
+          ? "border-border"
+          : "border-border opacity-60"
+      }`}
+    >
+      <CardContent className="p-4 flex items-start gap-3">
+        <div
+          className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${
+            completed
+              ? "bg-emerald-500/15 text-emerald-500"
+              : unlocked
+              ? "bg-muted text-muted-foreground"
+              : "bg-muted text-muted-foreground/60"
+          }`}
+        >
+          {unlocked ? <Icon className="h-4 w-4" /> : <Lock className="h-3.5 w-3.5" />}
+        </div>
+        <div className="flex-1 min-w-0 space-y-0.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm font-medium text-foreground">
+              {idx}. {title}
+            </p>
+            <span className="text-[10px] font-mono bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+              {brick}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
+        </div>
+        <div className="shrink-0 self-center text-[11px] font-medium">
+          {completed ? (
+            <span className="text-emerald-500">✓ Fait</span>
+          ) : unlocked ? (
+            <span className="text-muted-foreground">À venir</span>
+          ) : (
+            <span className="text-muted-foreground/60">Verrouillé</span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * Indique si le statut courant est >= au statut cible (ordre logique du wizard).
+ */
+function isStepDone(
   current: StudioProjectStatus,
-  stage: StudioProjectStatus,
+  target: StudioProjectStatus,
 ): boolean {
   const order: StudioProjectStatus[] = [
     "draft",
@@ -266,9 +244,9 @@ function isStageCompleted(
     "processing",
     "done",
   ];
-  const i = order.indexOf(stage);
-  const j = order.indexOf(current);
-  return j > i;
+  const ci = order.indexOf(current);
+  const ti = order.indexOf(target);
+  return ci >= ti;
 }
 
 function toneClass(
