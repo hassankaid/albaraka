@@ -2,8 +2,7 @@ import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-
-const DISCORD_INVITE_URL = "https://discord.gg/k9aV7DJJgR";
+import { DISCORD_INVITE_URL } from "@/config/discord";
 
 const BRAND = {
   gold: "#C9A04E",

@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPass } from "@/hooks/useUserPass";
 import { NotificationsBell } from "@/components/notifications/NotificationsBell";
+import { DiscordButton } from "@/components/DiscordButton";
 
 interface NavItem {
   title: string;
@@ -275,6 +276,8 @@ export default function DashboardLayout() {
           </div>
 
           <div className="flex items-center gap-3">
+            <DiscordButton />
+
             <NotificationsBell />
 
             <button
