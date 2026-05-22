@@ -172,6 +172,17 @@ export const SOURCE_GROUPS = [
   },
 ] as const;
 
+// Sources publicitaires (Ads). Dérivé de SOURCE_GROUPS pour garder une seule
+// source de vérité. Utilisé par la page Leads (sous-onglets « À affecter »
+// Ads / Organique). Tout ce qui n'est PAS Ads est considéré organique — y
+// compris une source nulle/inconnue — pour qu'Ads + Organique = total.
+export const ADS_SOURCES: string[] = [...SOURCE_GROUPS[0].sources];
+
+/** true si le lead provient d'une source publicitaire (Ads). */
+export function isAdsSource(source: string | null | undefined): boolean {
+  return !!source && ADS_SOURCES.includes(source);
+}
+
 // Status filter options for dropdowns
 export const STATUS_FILTER_OPTIONS = [
   { value: "all", label: "Tous" },

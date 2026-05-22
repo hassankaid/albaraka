@@ -38,6 +38,7 @@ import {
   LEAD_STATUS_LABELS,
   STATUS_FILTER_OPTIONS,
   SOURCE_GROUPS,
+  isAdsSource,
   leadSourceConfig,
   getSourceBadgeClass,
   getSourceLabel,
@@ -241,8 +242,13 @@ export default function Leads() {
     user?.role === "collaborateur" && user?.collaborateur_level === "intermediaire";
   const [tab, setTab] = useState<string>(isIntermediaire ? "mes_leads" : "a_affecter");
   const [statusFilter, setStatusFilter] = useState("all");
-  const ADS_SOURCES = ["vsl_a", "vsl_b", "webi", "instagram_ads", "whatsapp_ads"];
-  const [sourceFilter, setSourceFilter] = useState<string[]>(ADS_SOURCES);
+  // Sous-onglet de « À affecter » : Ads (défaut) ou Organique. Sépare les
+  // leads publicitaires des leads organiques pour ne plus mélanger les
+  // compteurs (cf. demande CEO 20/05/2026).
+  const [aAffecterSegment, setAAffecterSegment] = useState<"ads" | "organique">("ads");
+  // Filtre source = affinage optionnel (popover). Vide par défaut : c'est le
+  // sous-onglet Ads/Organique qui fait la séparation principale.
+  const [sourceFilter, setSourceFilter] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   // Liste fusionnée des "assignables" : CEO + collaborateurs (tous niveaux)
   // + apporteurs actifs. Sert à la fois au dropdown d'affectation (CEO + délégués
@@ -569,29 +575,50 @@ export default function Leads() {
     return leads.filter(l => l.assigned_to === user.id).length;
   }, [leads, user]);
 
-  const counts = useMemo(() => ({
-    total: scopedLeads.length,
-    aQualifier: scopedLeads.filter((l) => l.status === "a_qualifier").length,
-    a_affecter: leads.filter((l) =>
+  const counts = useMemo(() => {
+    // File « À affecter » : leads non affectés, hors recyclés et hors statuts
+    // terminaux. Séparée en Ads vs Organique (tout ce qui n'est pas Ads).
+    const aAffecter = leads.filter((l) =>
       !l.assigned_to
       && !l.recycled_at
       && !["call_booke", "renvoi_pole_vente", "close", "perdu"].includes(l.status || "")
-    ).length,
-    a_recycler: leads.filter((l) => isRecycled(l)).length,
-    call_booke: scopedLeads.filter((l) => l.status === "call_booke").length,
-    mes_leads: myLeadsCount,
-  }), [scopedLeads, leads, myLeadsCount]);
+    );
+    const aAffecterAds = aAffecter.filter((l) => isAdsSource(l.source)).length;
+    return {
+      total: scopedLeads.length,
+      aQualifier: scopedLeads.filter((l) => l.status === "a_qualifier").length,
+      a_affecter: aAffecter.length,
+      a_affecter_ads: aAffecterAds,
+      a_affecter_organique: aAffecter.length - aAffecterAds,
+      a_recycler: leads.filter((l) => isRecycled(l)).length,
+      call_booke: scopedLeads.filter((l) => l.status === "call_booke").length,
+      mes_leads: myLeadsCount,
+    };
+  }, [scopedLeads, leads, myLeadsCount]);
+
+  // Groupes de sources affichés dans le popover « Sources ». Sur « À affecter »,
+  // on ne montre que le groupe du sous-onglet actif (Ads ou Organique) pour
+  // éviter un état de filtre incohérent avec le sous-onglet.
+  const sourceGroupsForFilter = useMemo(() => {
+    if (tab !== "a_affecter") return SOURCE_GROUPS;
+    const wanted = aAffecterSegment === "ads" ? "Ads" : "Organique";
+    return SOURCE_GROUPS.filter((g) => g.label === wanted);
+  }, [tab, aAffecterSegment]);
 
   // Filtered leads
   const filteredLeads = useMemo(() => {
     let result: LeadEnriched[];
 
     if (tab === "a_affecter") {
-      // Always show ALL unassigned leads for everyone (excluding recycled queue)
+      // Tous les leads non affectés (hors file recyclés), puis split par
+      // sous-onglet : Ads vs Organique (tout ce qui n'est pas Ads).
       result = leads.filter((l) =>
         !l.assigned_to
         && !l.recycled_at
         && !["call_booke", "renvoi_pole_vente", "close", "perdu"].includes(l.status || "")
+      );
+      result = result.filter((l) =>
+        aAffecterSegment === "ads" ? isAdsSource(l.source) : !isAdsSource(l.source),
       );
     } else if (tab === "a_recycler") {
       // Logical "À recycler" queue: unassigned leads with recycled_at set
@@ -630,16 +657,25 @@ export default function Leads() {
     }
 
     return result;
-  }, [leads, scopedLeads, tab, statusFilter, sourceFilter, collabFilter, apporteurFilter, search, dateRange, userTz, user]);
+  }, [leads, scopedLeads, tab, aAffecterSegment, statusFilter, sourceFilter, collabFilter, apporteurFilter, search, dateRange, userTz, user]);
 
   useEffect(() => {
     setPage(0);
     setSelectedIds(new Set());
-    setSourceFilter(tab === "a_affecter" ? ADS_SOURCES : []);
+    setAAffecterSegment("ads");
+    setSourceFilter([]);
     setCollabFilter("all");
     setApporteurFilter("all");
     setDateRange(undefined);
   }, [tab]);
+
+  // Changement de sous-onglet Ads/Organique : on remet à zéro l'affinage par
+  // source et la pagination (le sous-onglet gère déjà la séparation).
+  useEffect(() => {
+    setPage(0);
+    setSelectedIds(new Set());
+    setSourceFilter([]);
+  }, [aAffecterSegment]);
 
   useEffect(() => { setPage(0); }, [statusFilter, sourceFilter.length, search, collabFilter, apporteurFilter, dateRange]);
 
@@ -651,10 +687,18 @@ export default function Leads() {
 
   const emptyMessage = () => {
     if (tab === "a_affecter") {
+      const segLabel = aAffecterSegment === "ads" ? "Ads" : "organiques";
       return (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <PartyPopper className="h-12 w-12 text-primary mb-4" />
-          <p className="text-lg font-semibold text-foreground">Tous les leads sont affectés !</p>
+          <p className="text-lg font-semibold text-foreground">
+            Tous les leads {segLabel} sont affectés !
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {aAffecterSegment === "ads"
+              ? "Pense à traiter aussi l'onglet « Organique »."
+              : "Pense à vérifier l'onglet « Ads »."}
+          </p>
         </div>
       );
     }
@@ -703,8 +747,11 @@ export default function Leads() {
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-orange-500/30">
             <UserPlus className="h-3.5 w-3.5 text-orange-400" />
-            <span className="text-sm font-bold text-foreground">{counts.a_affecter}</span>
-            <span className="text-xs text-muted-foreground">à affecter</span>
+            <span className="text-sm font-bold text-foreground">{counts.a_affecter_ads}</span>
+            <span className="text-xs text-muted-foreground">ads</span>
+            <span className="text-xs text-muted-foreground/40">·</span>
+            <span className="text-sm font-bold text-foreground">{counts.a_affecter_organique}</span>
+            <span className="text-xs text-muted-foreground">organiques à affecter</span>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border">
             <Phone className="h-3.5 w-3.5 text-blue-400" />
@@ -750,7 +797,8 @@ export default function Leads() {
               }`}
             >
               {t.label}
-              {t.value === "a_affecter" ? ` (${counts.a_affecter})`
+              {t.value === "a_affecter"
+                ? ` (${aAffecterSegment === "ads" ? counts.a_affecter_ads : counts.a_affecter_organique})`
                 : t.value === "a_recycler" ? ` (${counts.a_recycler})`
                 : t.value === "mes_leads" ? ` (${counts.mes_leads})`
                 : t.value === "tous" ? ` (${counts.total})`
@@ -770,6 +818,33 @@ export default function Leads() {
         </div>
       </div>
 
+      {/* Sous-onglets Ads / Organique — uniquement sur « À affecter ».
+          Le sous-onglet fait la séparation principale ; le filtre « Sources »
+          ci-dessous reste un affinage optionnel à l'intérieur du segment. */}
+      {tab === "a_affecter" && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground">Type de leads :</span>
+          <div className="flex items-center bg-card border border-border rounded-lg p-0.5">
+            {([
+              { id: "ads", label: "Ads", count: counts.a_affecter_ads },
+              { id: "organique", label: "Organique", count: counts.a_affecter_organique },
+            ] as const).map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setAAffecterSegment(s.id)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  aAffecterSegment === s.id
+                    ? "gradient-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {s.label} ({s.count})
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Filters row */}
       <div className="flex flex-wrap items-center gap-2">
         <Popover>
@@ -781,7 +856,7 @@ export default function Leads() {
           </PopoverTrigger>
           <PopoverContent className="w-[250px] p-2" align="start">
             <div className="space-y-3">
-              {SOURCE_GROUPS.map((group) => {
+              {sourceGroupsForFilter.map((group) => {
                 const groupSources = group.sources as readonly string[];
                 const selectedInGroup = groupSources.filter((s) => sourceFilter.includes(s));
                 const allSelected = selectedInGroup.length === groupSources.length;
@@ -926,7 +1001,7 @@ export default function Leads() {
               setStatusFilter("all");
               setCollabFilter("all");
               setApporteurFilter("all");
-              setSourceFilter(tab === "a_affecter" ? ADS_SOURCES : []);
+              setSourceFilter([]);
               setDateRange(undefined);
             }}
           >
