@@ -52,19 +52,19 @@ export default function Step3Weeks({
 }: Props) {
   if (!unlocked) {
     return (
-      <Card id="step-3" className="opacity-50">
+      <Card id="step-2" className="opacity-50">
         <CardContent className="p-6 space-y-2">
           <div className="flex items-center gap-2">
             <Lock className="h-4 w-4 text-muted-foreground" />
             <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-bold">
-              3
+              2
             </span>
             <h2 className="font-heading text-xl text-muted-foreground">
               Ta stratégie 4 semaines
             </h2>
           </div>
           <p className="text-xs text-muted-foreground pl-7">
-            Valide l'étape 2 pour débloquer la génération hebdomadaire.
+            Valide l'étape 1 pour débloquer la génération hebdomadaire.
           </p>
         </CardContent>
       </Card>
@@ -94,12 +94,12 @@ export default function Step3Weeks({
   const [activeWeek, setActiveWeek] = useState<1 | 2 | 3 | 4>(firstAccessibleWeek);
 
   return (
-    <Card id="step-3" className="border-primary/30 bg-primary/[0.03]">
+    <Card id="step-2" className="border-primary/30 bg-primary/[0.03]">
       <CardContent className="p-6 space-y-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-              3
+              2
             </span>
             <h2 className="font-heading text-xl text-foreground">
               Ta stratégie 4 semaines
@@ -209,8 +209,8 @@ function WeekGenerator({
         </p>
         <p className="text-sm text-foreground">{weekDesc}</p>
         <p className="text-xs text-muted-foreground">
-          La plateforme génère tes 7 scripts + 21 stories à partir de ton
-          brief personnalisé. Aucun outil externe, rien à copier-coller.
+          La plateforme génère tes 7 scripts + 21 stories à partir de tes
+          réponses au questionnaire. Aucun outil externe, rien à copier-coller.
         </p>
       </div>
 

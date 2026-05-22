@@ -2,13 +2,25 @@ import { useEffect, useMemo, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Pencil, ArrowLeft, Repeat } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Pencil, Repeat, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Questionnaire } from "./components/Questionnaire";
 import { GeneratingOverlay } from "./components/GeneratingOverlay";
 import ModeSelector from "./components/ModeSelector";
 import Step1Profiles from "./components/Step1Profiles";
-import Step2Prompt from "./components/Step2Prompt";
+// Step2Prompt (« Ton brief personnalisé ») masqué le 20/05/2026 (demande CEO) :
+// le prompt reste calculé (promptText) et injecté dans la génération, mais la
+// section n'est plus affichée à l'élève. Composant conservé sur disque.
 import Step3Weeks from "./components/Step3Weeks";
 import {
   usePersonalBrand,
@@ -49,7 +61,6 @@ export default function PersonalBrandPage() {
   const saveMutation = useSaveBrand();
   const generateProfilesMutation = useGenerateProfiles();
   const confirmStep1 = useConfirmStep(1, safeMode);
-  const confirmStep2 = useConfirmStep(2, safeMode);
   const generateWeekMutation = useGenerateWeek();
   const confirmWeekMutation = useConfirmWeekPublished();
   const startNewCycleMutation = useStartNewCycle(safeMode);
@@ -57,6 +68,11 @@ export default function PersonalBrandPage() {
   const [answers, setAnswers] = useState<BrandAnswers>({});
   const [currentSection, setCurrentSection] = useState(0);
   const [forceQuestionnaire, setForceQuestionnaire] = useState(false);
+  // Bandeau « tes réponses ont changé → régénère un nouveau cycle ». Activé
+  // après une modification du questionnaire alors qu'un cycle est en cours.
+  const [showRegenBanner, setShowRegenBanner] = useState(false);
+  // Dialog de confirmation avant d'archiver le cycle en cours.
+  const [confirmNewCycleOpen, setConfirmNewCycleOpen] = useState(false);
 
   // Récupère les semaines du cycle en cours uniquement
   const currentCycleId = brandQuery.data?.current_cycle_id ?? null;
@@ -127,8 +143,28 @@ export default function PersonalBrandPage() {
       }
     } else {
       toast.success("Tes réponses ont été mises à jour ✦");
+      // Si un cycle a déjà du contenu généré, on invite à régénérer un
+      // nouveau cycle pour que scripts/stories reflètent les nouvelles
+      // réponses (le contenu existant ne se met pas à jour tout seul).
+      if ((weeksQuery.data ?? []).length > 0) {
+        setShowRegenBanner(true);
+      }
     }
     setForceQuestionnaire(false);
+  };
+
+  // Régénération : archive le cycle en cours et repart à zéro. La prochaine
+  // génération de Semaine 1 créera un nouveau current_cycle_id basé sur les
+  // réponses à jour.
+  const handleStartNewCycle = async () => {
+    try {
+      await startNewCycleMutation.mutateAsync();
+      setShowRegenBanner(false);
+      setConfirmNewCycleOpen(false);
+      toast.success("Nouveau cycle prêt — reconfirme ton profil puis génère ta Semaine 1 ✦");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erreur");
+    }
   };
 
   const handleRegenerateProfiles = async () => {
@@ -148,15 +184,6 @@ export default function PersonalBrandPage() {
     try {
       await confirmStep1.mutateAsync();
       toast.success("Étape 1 validée — étape 2 débloquée ✦");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Erreur");
-    }
-  };
-
-  const handleConfirmStep2 = async () => {
-    try {
-      await confirmStep2.mutateAsync();
-      toast.success("Étape 2 validée — étape 3 débloquée ✦");
     } catch (e: any) {
       toast.error(e?.message ?? "Erreur");
     }
@@ -274,7 +301,6 @@ export default function PersonalBrandPage() {
     return new Date(ts).getTime() >= new Date(cycleStartedAt).getTime();
   };
   const step1Confirmed = isAfterCycleStart(row?.step1_confirmed_at);
-  const step2Confirmed = isAfterCycleStart(row?.step2_confirmed_at);
 
   // "Nouveau cycle à démarrer" : le précédent cycle est terminé (4 semaines
   // toutes publiées) → on doit re-confirmer 1+2 pour démarrer le suivant.
@@ -283,11 +309,9 @@ export default function PersonalBrandPage() {
   const cycleCompleted = !!cycleStartedAt && allFourPublished;
 
   // Est-ce qu'on doit afficher le bandeau "Nouveau cycle, re-confirme" ?
-  // Oui si : le cycle est terminé, ou bien step1/step2 sont en attente
-  // de re-confirmation pour ce cycle alors que l'élève en a déjà confirmé
-  // un par le passé.
+  // Oui si l'étape 1 est en attente de re-confirmation pour ce cycle alors
+  // que l'élève en a déjà confirmé une par le passé.
   const isNewCycleForStep1 = !step1Confirmed && !!row?.step1_confirmed_at;
-  const isNewCycleForStep2 = !step2Confirmed && !!row?.step2_confirmed_at;
 
   // Détection migration : 2 cas distincts traités par le même bandeau
   //   1. Questionnaire incomplet alors que des profils ont déjà été générés
@@ -312,7 +336,7 @@ export default function PersonalBrandPage() {
         </p>
         <h1 className="font-heading text-3xl text-foreground">Ton Studio</h1>
         <p className="text-sm text-muted-foreground">
-          Profils Instagram · Prompt personnalisé · Stratégie 4 semaines
+          Profils Instagram · Stratégie 4 semaines
         </p>
       </div>
 
@@ -359,8 +383,7 @@ export default function PersonalBrandPage() {
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
               Démarre ton prochain cycle quand tu es prêt(e). Tu devras
-              re-confirmer rapidement ton profil et ton prompt avant la
-              nouvelle Semaine 1.
+              re-confirmer rapidement ton profil avant la nouvelle Semaine 1.
             </p>
           </div>
           <Button
@@ -378,7 +401,7 @@ export default function PersonalBrandPage() {
       )}
 
       {/* Bandeau nouveau cycle : invite à re-confirmer étapes 1 et 2 */}
-      {!isMigrating && !cycleCompleted && (isNewCycleForStep1 || isNewCycleForStep2) && (
+      {!isMigrating && !cycleCompleted && isNewCycleForStep1 && (
         <div className="rounded-lg border border-primary/30 bg-primary/[0.05] p-4 flex items-start gap-3">
           <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
             <Repeat className="h-4 w-4 text-primary" />
@@ -389,26 +412,69 @@ export default function PersonalBrandPage() {
               Semaine 1.
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Profil Instagram toujours configuré ? Prompt toujours d'actualité ?
-              Coche pour ce cycle (30 secondes).
+              Profil Instagram toujours configuré ? Coche pour ce cycle
+              (30 secondes).
             </p>
           </div>
         </div>
       )}
 
+      {/* Bandeau « réponses modifiées » : invite à régénérer un nouveau cycle
+          pour que scripts/stories reflètent les nouvelles réponses. */}
+      {!isMigrating && !cycleCompleted && showRegenBanner && weeks.length > 0 && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/[0.05] p-4 flex items-start gap-3">
+          <div className="h-9 w-9 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
+            <RefreshCw className="h-4 w-4 text-amber-500" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground">
+              Tu as mis à jour tes réponses.
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Régénère un nouveau cycle pour que tes scripts et stories
+              reflètent ces changements. Ton cycle en cours sera archivé.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => setConfirmNewCycleOpen(true)}
+            disabled={startNewCycleMutation.isPending}
+            className="shrink-0 gap-2"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Régénérer un nouveau cycle
+          </Button>
+        </div>
+      )}
+
       {/* Action bar */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setCurrentSection(0);
-            setForceQuestionnaire(true);
-          }}
-          className="gap-2"
-        >
-          <Pencil className="h-3.5 w-3.5" /> Modifier mes réponses
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setCurrentSection(0);
+              setForceQuestionnaire(true);
+            }}
+            className="gap-2"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Modifier mes réponses
+          </Button>
+          {/* Régénérer : accessible en permanence dès qu'un cycle a du
+              contenu généré (hors cycle terminé, géré par son propre bandeau). */}
+          {weeks.length > 0 && !cycleCompleted && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirmNewCycleOpen(true)}
+              disabled={startNewCycleMutation.isPending}
+              className="gap-2 text-xs"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Régénérer un nouveau cycle
+            </Button>
+          )}
+        </div>
         {canSwitch && (
           <Button
             variant="ghost"
@@ -432,17 +498,8 @@ export default function PersonalBrandPage() {
         confirming={confirmStep1.isPending}
       />
 
-      <Step2Prompt
-        promptText={promptText}
-        unlocked={step1Confirmed}
-        confirmedForCurrentCycle={step2Confirmed}
-        isNewCycle={isNewCycleForStep2}
-        onConfirm={handleConfirmStep2}
-        confirming={confirmStep2.isPending}
-      />
-
       <Step3Weeks
-        unlocked={step1Confirmed && step2Confirmed}
+        unlocked={step1Confirmed}
         mode={mode}
         weeks={weeks}
         topicsHistory={(row?.topics_history as string[]) ?? []}
@@ -453,6 +510,32 @@ export default function PersonalBrandPage() {
       />
 
       {generateProfilesMutation.isPending && <GeneratingOverlay />}
+
+      {/* Confirmation avant d'archiver le cycle en cours */}
+      <AlertDialog open={confirmNewCycleOpen} onOpenChange={setConfirmNewCycleOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Régénérer un nouveau cycle ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Ton cycle de 4 semaines en cours sera archivé et remplacé par un
+              nouveau cycle basé sur tes réponses actuelles. Tes semaines déjà
+              générées ne seront plus affichées. Tu devras reconfirmer ton
+              profil Instagram puis générer ta Semaine 1.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={startNewCycleMutation.isPending}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleStartNewCycle}
+              disabled={startNewCycleMutation.isPending}
+            >
+              Régénérer un nouveau cycle
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
