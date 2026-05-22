@@ -33,11 +33,10 @@ import AdminData from "./pages/AdminData";
 import AdminCreateWizard from "./pages/AdminCreateWizard";
 import AdminTeam from "./pages/AdminTeam";
 import NotFound from "./pages/NotFound";
-import Coaching from "./pages/Coaching";
 import AdminCoaching from "./pages/AdminCoaching";
-import CoachingSession from "./pages/CoachingSession";
-import MonCoaching from "./pages/MonCoaching";
-import SessionDetail from "./pages/SessionDetail";
+// Coaching, CoachingSession, MonCoaching, SessionDetail : « Évaluations » et
+// « Historique » masqués le 20/05/2026 (demande CEO). Pages conservées sur
+// disque mais retirées du routing — leurs routes redirigent vers le calendrier.
 import ApporteurDashboard from "./pages/apporteur/ApporteurDashboard";
 import ApporteurLeads from "./pages/apporteur/ApporteurLeads";
 import ApporteurSales from "./pages/apporteur/ApporteurSales";
@@ -176,8 +175,9 @@ const App = () => (
                   <Route path="/admin/data" element={<AdminData />} />
                   <Route path="/admin/create" element={<AdminCreateWizard />} />
                   <Route path="/profile" element={<Profile />} />
-                  <Route path="/coaching" element={<Coaching />} />
-                  <Route path="/coaching/session/:sessionId" element={<CoachingSession />} />
+                  {/* « Évaluations » masqué (20/05/2026) — redirige vers le calendrier */}
+                  <Route path="/coaching" element={<Navigate to="/coaching/calendar" replace />} />
+                  <Route path="/coaching/session/:sessionId" element={<Navigate to="/coaching/calendar" replace />} />
                   <Route path="/admin/coaching" element={<AdminCoaching />} />
                   <Route path="/working" element={<Navigate to="/working/activity" replace />} />
                   <Route path="/admin/training" element={<AdminTrainingList />} />
@@ -222,8 +222,9 @@ const App = () => (
                   <Route path="/training/quiz/:id" element={<PassGuard allowCollab><QuizPage /></PassGuard>} />
                   <Route path="/training/:slug" element={<FormationDetail />} />
                   <Route path="/training/:slug/chapitre/:chapitreId" element={<ChapterViewer />} />
-                  <Route path="/mon-coaching" element={<MonCoaching />} />
-                  <Route path="/mon-coaching/session/:sessionId" element={<SessionDetail />} />
+                  {/* « Historique » masqué (20/05/2026) — redirige vers le calendrier */}
+                  <Route path="/mon-coaching" element={<Navigate to="/coaching/calendar" replace />} />
+                  <Route path="/mon-coaching/session/:sessionId" element={<Navigate to="/coaching/calendar" replace />} />
                   <Route path="/coaching/calendar" element={<PassGuard><CoachingCalendar /></PassGuard>} />
                   <Route path="/parcours/:slug" element={<PassGuard><ParcoursView /></PassGuard>} />
                   <Route path="/parcours/:slug/chapitre/:chapitreId" element={<PassGuard><ParcoursChapitreDetail /></PassGuard>} />

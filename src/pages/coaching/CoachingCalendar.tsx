@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Clock, User } from "lucide-react";
+import { ExternalLink, Clock, User, Lock } from "lucide-react";
 import { ZOOM_COACHING, type CoachingSlot, type DayName } from "@/config/coachingSlots";
 import {
   currentWeekOccurrences,
@@ -15,6 +16,7 @@ import {
 import { computeJoinPhase } from "@/lib/coaching-window";
 import { useLogAttendance } from "@/hooks/useCoachingTracking";
 import { useCoachingSlots } from "@/hooks/useCoachingSlots";
+import { useCoachingUnlocks, type CoachingUnlocks } from "@/hooks/useCoachingUnlocks";
 import { ReplaysSection } from "@/components/coaching-calendar/ReplaysSection";
 import { MyCoachingStatsCard } from "@/components/coaching-calendar/MyCoachingStatsCard";
 
@@ -33,6 +35,7 @@ export default function CoachingCalendar() {
   const [now, setNow] = useState(() => new Date());
   const logAttendance = useLogAttendance();
   const { data: coachingSlots, isLoading: slotsLoading } = useCoachingSlots();
+  const unlocks = useCoachingUnlocks();
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30_000);
@@ -119,6 +122,7 @@ export default function CoachingCalendar() {
               session={session}
               now={now}
               onConnect={handleConnect}
+              unlocks={unlocks}
             />
           );
         })}
@@ -143,9 +147,10 @@ interface DayColumnProps {
   session?: { slot: CoachingSlot; nextStart: Date };
   now: Date;
   onConnect: (slot: CoachingSlot, startedAt: Date) => void;
+  unlocks: CoachingUnlocks;
 }
 
-function DayColumn({ dayName, date, session, now, onConnect }: DayColumnProps) {
+function DayColumn({ dayName, date, session, now, onConnect, unlocks }: DayColumnProps) {
   return (
     <div className="flex flex-col">
       <div className="mb-2 text-center">
@@ -156,7 +161,7 @@ function DayColumn({ dayName, date, session, now, onConnect }: DayColumnProps) {
       </div>
 
       {session ? (
-        <SessionCard session={session} now={now} onConnect={onConnect} />
+        <SessionCard session={session} now={now} onConnect={onConnect} unlocks={unlocks} />
       ) : (
         <Card className="flex-1 border-dashed bg-muted/20 min-h-[220px]">
           <CardContent className="p-4 h-full flex items-center justify-center">
@@ -172,10 +177,17 @@ interface SessionCardProps {
   session: { slot: CoachingSlot; nextStart: Date };
   now: Date;
   onConnect: (slot: CoachingSlot, startedAt: Date) => void;
+  unlocks: CoachingUnlocks;
 }
 
-function SessionCard({ session, now, onConnect }: SessionCardProps) {
+function SessionCard({ session, now, onConnect, unlocks }: SessionCardProps) {
   const { slot, nextStart } = session;
+
+  // Verrou par formation (demande CEO 20/05/2026). Si le coaching est
+  // verrouillé, on n'affiche pas le bouton « Se connecter » mais un message
+  // invitant à terminer la formation associée.
+  const locked = unlocks.isLocked(slot.id);
+  const rule = unlocks.getRule(slot.id);
 
   const phase = computeJoinPhase(
     {
@@ -193,7 +205,10 @@ function SessionCard({ session, now, onConnect }: SessionCardProps) {
 
   let statusLabel = "";
   let statusVariant: "default" | "secondary" | "destructive" | "outline" = "outline";
-  if (isOpen) {
+  if (locked) {
+    statusLabel = "Verrouillé";
+    statusVariant = "secondary";
+  } else if (isOpen) {
     const started = nextStart.getTime() <= now.getTime();
     statusLabel = started ? "En cours" : "Ouvre maintenant";
     statusVariant = "default";
@@ -206,14 +221,22 @@ function SessionCard({ session, now, onConnect }: SessionCardProps) {
   }
 
   return (
-    <Card className={`flex-1 min-h-[220px] ${isEnded ? "opacity-60" : ""}`}>
+    <Card
+      className={`flex-1 min-h-[220px] ${isEnded && !locked ? "opacity-60" : ""}`}
+    >
       <CardContent className="p-4 flex flex-col h-full gap-3">
         <div>
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xl">{slot.emoji}</span>
+            <span className={`text-xl ${locked ? "grayscale opacity-70" : ""}`}>
+              {slot.emoji}
+            </span>
             <h3 className="text-sm font-semibold leading-tight">{slot.title}</h3>
           </div>
-          <Badge variant={statusVariant} className="mt-2 text-[10px]">
+          <Badge
+            variant={statusVariant}
+            className="mt-2 text-[10px] gap-1"
+          >
+            {locked && <Lock className="h-2.5 w-2.5" />}
             {statusLabel}
           </Badge>
         </div>
@@ -229,33 +252,57 @@ function SessionCard({ session, now, onConnect }: SessionCardProps) {
           </div>
         </div>
 
-        <div className="mt-auto flex flex-col gap-1">
-          <Button
-            asChild={isOpen}
-            disabled={!isOpen}
-            className="w-full"
-            size="sm"
-          >
-            {isOpen ? (
-              <a
-                href={ZOOM_COACHING.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => onConnect(slot, nextStart)}
-              >
-                Se connecter
-                <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
-              </a>
-            ) : (
-              <span>Se connecter</span>
+        {locked ? (
+          <div className="mt-auto flex flex-col gap-2">
+            <div className="rounded-md border border-dashed border-border bg-muted/40 p-2.5">
+              <div className="flex items-start gap-1.5">
+                <Lock className="h-3.5 w-3.5 shrink-0 mt-0.5 text-muted-foreground" />
+                <p className="text-[11px] leading-snug text-muted-foreground">
+                  Termine la formation{" "}
+                  <span className="font-medium text-foreground">
+                    {rule?.formationLabel}
+                  </span>{" "}
+                  pour débloquer ce coaching.
+                </p>
+              </div>
+            </div>
+            {rule && (
+              <Button asChild variant="outline" size="sm" className="w-full">
+                <Link to={`/training/${rule.formationSlug}`}>
+                  Voir la formation
+                </Link>
+              </Button>
             )}
-          </Button>
-          {isOpen && (
-            <p className="text-[10px] text-muted-foreground text-center">
-              Jusqu'à {formatParisTime(endsAt)}
-            </p>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="mt-auto flex flex-col gap-1">
+            <Button
+              asChild={isOpen}
+              disabled={!isOpen}
+              className="w-full"
+              size="sm"
+            >
+              {isOpen ? (
+                <a
+                  href={ZOOM_COACHING.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => onConnect(slot, nextStart)}
+                >
+                  Se connecter
+                  <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+                </a>
+              ) : (
+                <span>Se connecter</span>
+              )}
+            </Button>
+            {isOpen && (
+              <p className="text-[10px] text-muted-foreground text-center">
+                Jusqu'à {formatParisTime(endsAt)}
+              </p>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

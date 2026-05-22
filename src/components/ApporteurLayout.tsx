@@ -47,7 +47,7 @@ const trainingNavItems: NavItem[] = [
 
 const coachingNavItems: NavItem[] = [
   { title: "Mes Coachings", path: "/my-space/coaching-calendar", icon: CalendarDays, passRequired: true },
-  { title: "Historique", path: "/mon-coaching", icon: BookOpen },
+  // « Historique » (/mon-coaching) masqué le 20/05/2026 (demande CEO).
 ];
 
 const pageTitles: Record<string, string> = {
@@ -57,7 +57,6 @@ const pageTitles: Record<string, string> = {
   "/my-space/commissions": "Commissions & Factures",
   "/my-space/profile": "Mon Profil",
   "/my-space/coaching-calendar": "Mes Coachings",
-  "/mon-coaching": "Historique",
   "/working/activity": "Mon Activité",
   "/working/organisation": "Mon Organisation",
   "/working/personal-brand": "Personal Brand",

@@ -41,11 +41,12 @@ export function getSpaces(profile: ProfileInput | null, hasAnyPass: boolean): Sp
       ? "/dashboard"
       : "/working/activity";
 
-  const coachingPath = (profile.is_coach || isCeo)
-    ? "/coaching"
-    : hasAnyPass
-      ? (isApporteurPath ? "/my-space/coaching-calendar" : "/coaching/calendar")
-      : "/mon-coaching";
+  // Espace COACHING — depuis le 20/05/2026, « Évaluations » et « Historique »
+  // sont masqués : le point d'entrée de l'espace est toujours le calendrier.
+  // L'accès réel reste filtré par PassGuard sur les routes du calendrier.
+  const coachingPath = isApporteurPath
+    ? "/my-space/coaching-calendar"
+    : "/coaching/calendar";
 
   const trainingSpace: Space = {
     id: "training",
@@ -72,7 +73,7 @@ export function getSpaces(profile: ProfileInput | null, hasAnyPass: boolean): Sp
     color: "text-teal-400",
     bgColor: "bg-teal-400/10",
     path: coachingPath,
-    description: "Calendrier & Historique",
+    description: "Calendrier des coachings",
   };
 
   // Apprenants (apporteurs) : Training → Working → Coaching

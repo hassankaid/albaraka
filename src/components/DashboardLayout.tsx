@@ -73,8 +73,10 @@ const trainingNavItems: NavItem[] = [
 
 const coachingNavItems: NavItem[] = [
   { title: "Calendrier", path: "/coaching/calendar", icon: CalendarDays, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true },
-  { title: "Évaluations", path: "/coaching", icon: GraduationCap, roles: ["ceo", "collaborateur"], coachOnly: true },
-  { title: "Historique", path: "/mon-coaching", icon: BookOpen, roles: ["ceo", "collaborateur", "apporteur"] },
+  // « Évaluations » (/coaching) et « Historique » (/mon-coaching) masqués le
+  // 20/05/2026 sur demande CEO (sections peu utilisées). Pages et tables
+  // conservées — réactivables en restaurant ces deux entrées + les routes
+  // dans App.tsx.
   { title: "Administration", path: "/admin/coaching", icon: Settings2, roles: ["ceo"] },
 ];
 const pageTitles: Record<string, string> = {
@@ -110,9 +112,7 @@ const pageTitles: Record<string, string> = {
   "/admin/agent-knowledge": "Base de connaissance Agent IA",
   "/my-space": "Mon espace",
   "/profile": "Mon profil",
-  "/coaching": "Évaluations",
   "/coaching/calendar": "Calendrier des coachings",
-  "/mon-coaching": "Historique",
   "/admin/coaching": "Administration Coaching",
   "/working/activity": "Mon Activité",
   "/working/organisation": "Mon Organisation",

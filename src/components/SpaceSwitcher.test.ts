@@ -10,12 +10,13 @@ describe("getSpaces", () => {
     const s = getSpaces({ role: "ceo" }, false);
     expect(s.map((x) => x.id)).toEqual(["working", "training", "coaching", "admin"]);
     expect(s.find((x) => x.id === "working")!.path).toBe("/dashboard");
-    expect(s.find((x) => x.id === "coaching")!.path).toBe("/coaching");
+    // Depuis le 20/05/2026 : l'espace coaching pointe toujours sur le calendrier.
+    expect(s.find((x) => x.id === "coaching")!.path).toBe("/coaching/calendar");
   });
 
-  it("active collaborateur (non-coach, no pass) routes coaching to /mon-coaching", () => {
+  it("active collaborateur (non-coach) routes coaching to the calendar", () => {
     const s = getSpaces({ role: "collaborateur", is_active: true }, false);
-    expect(s.find((x) => x.id === "coaching")!.path).toBe("/mon-coaching");
+    expect(s.find((x) => x.id === "coaching")!.path).toBe("/coaching/calendar");
   });
 
   it("active collaborateur with pass routes coaching to /coaching/calendar", () => {
@@ -23,9 +24,9 @@ describe("getSpaces", () => {
     expect(s.find((x) => x.id === "coaching")!.path).toBe("/coaching/calendar");
   });
 
-  it("coach gets /coaching as coaching path even without pass", () => {
+  it("coach routes coaching to the calendar", () => {
     const s = getSpaces({ role: "collaborateur", is_active: true, is_coach: true }, false);
-    expect(s.find((x) => x.id === "coaching")!.path).toBe("/coaching");
+    expect(s.find((x) => x.id === "coaching")!.path).toBe("/coaching/calendar");
   });
 
   it("pure apporteur routes working to /my-space (not /working/activity)", () => {
@@ -38,9 +39,11 @@ describe("getSpaces", () => {
     expect(s.find((x) => x.id === "coaching")!.path).toBe("/my-space/coaching-calendar");
   });
 
-  it("pure apporteur without pass routes coaching to /mon-coaching (fallback)", () => {
+  it("pure apporteur without pass still routes coaching to /my-space/coaching-calendar", () => {
+    // Le calendrier est protégé par PassGuard : un apporteur sans pass y est
+    // bloqué proprement (plus de fallback /mon-coaching depuis le 20/05/2026).
     const s = getSpaces({ role: "apporteur", is_also_apporteur: false }, false);
-    expect(s.find((x) => x.id === "coaching")!.path).toBe("/mon-coaching");
+    expect(s.find((x) => x.id === "coaching")!.path).toBe("/my-space/coaching-calendar");
   });
 
   it("pure apporteur still sees TRAINING space (no dead-end)", () => {
