@@ -7,10 +7,14 @@ import {
   isLockedOut,
 } from "@/lib/access-scope";
 import { DeactivatedAccountScreen } from "@/components/DeactivatedAccountScreen";
+import { useDiscordGrantNotifications } from "@/hooks/useDiscordGrantNotifications";
 
 export function ProtectedRoute() {
   const { session, profile, isLoading } = useAuth();
   const location = useLocation();
+
+  // D3 — écoute Realtime des nouveaux grants Discord → toast UI
+  useDiscordGrantNotifications();
 
   if (isLoading) {
     return (

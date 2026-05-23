@@ -1,19 +1,17 @@
-// Discord Integration — D2 v1 : OAuth callback pour lier identité Discord.
+// Discord Integration — D2 v1 + D3 backfill : OAuth callback pour lier identité Discord.
 //
 // Workflow :
-//   1. Le frontend redirige l'élève sur Discord OAuth avec scope identify
-//      + un state CSRF
+//   1. Le frontend redirige l'élève sur Discord OAuth avec scope identify + state CSRF
 //   2. Discord redirige sur /discord/callback?code=XXX&state=YYY
-//   3. La page frontend récupère code+state, valide le state contre
-//      sessionStorage, puis appelle cette edge function avec le code
+//   3. La page frontend récupère code+state, valide le state, puis appelle cette function
 //   4. Cette function :
 //        - Exchange code → access_token via Discord OAuth token endpoint
 //        - Fetch identity via /users/@me
-//        - Vérifie membership sur le serveur ALBARAKA via Bot token (plus fiable)
+//        - Vérifie membership sur le serveur ALBARAKA via Bot token
 //        - UPSERT discord_links
-//        - Renvoie les métadonnées Discord pour affichage UI
-//
-// verify_jwt=true : on a besoin de savoir QUEL user plateforme demande la liaison.
+//        - D3 BACKFILL : pour chaque formation gated où l'user a déjà 100% de progress,
+//          déclenche un grant role en arrière-plan (appel à discord-grant-role)
+//        - Renvoie les métadonnées Discord + résumé des grants
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -44,6 +42,13 @@ interface DiscordUser {
   email?: string;
 }
 
+interface BackfillResult {
+  formation_id: string;
+  role_label: string;
+  status: "success" | "already_granted" | "failed" | "skipped";
+  error?: string;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -68,14 +73,12 @@ serve(async (req) => {
       );
     }
 
-    // ─── Auth plateforme ───────────────────────────────────────
     const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user }, error: userErr } = await supabaseUser.auth.getUser();
     if (userErr || !user) return json({ error: "Non authentifié" }, 401);
 
-    // ─── Parse body ────────────────────────────────────────────
     const { code, redirect_uri } = await req.json();
     if (!code || typeof code !== "string") {
       return json({ error: "code manquant" }, 400);
@@ -96,7 +99,6 @@ serve(async (req) => {
         redirect_uri,
       }).toString(),
     });
-
     if (!tokenRes.ok) {
       const errText = await tokenRes.text();
       console.error(
@@ -109,7 +111,6 @@ serve(async (req) => {
         400,
       );
     }
-
     const tokenData = (await tokenRes.json()) as DiscordTokenResponse;
 
     // ─── Fetch Discord identity ────────────────────────────────
@@ -124,7 +125,6 @@ serve(async (req) => {
     const discordUser = (await userRes.json()) as DiscordUser;
 
     // ─── Vérifie membership sur le serveur via Bot token ──────
-    // Plus fiable que /users/@me/guilds (qui dépend du scope guilds + rate limits)
     let isGuildMember = false;
     if (discordBotToken) {
       try {
@@ -146,7 +146,6 @@ serve(async (req) => {
     // ─── UPSERT discord_links ──────────────────────────────────
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check si ce compte Discord est déjà lié à un AUTRE user plateforme
     const { data: existingLink } = await supabaseAdmin
       .from("discord_links")
       .select("user_id")
@@ -182,7 +181,6 @@ serve(async (req) => {
         },
         { onConflict: "user_id" },
       );
-
     if (upsertErr) {
       console.error(`[discord-oauth] UPSERT failed: ${upsertErr.message}`);
       return json({ error: `Erreur BDD: ${upsertErr.message}` }, 500);
@@ -192,6 +190,106 @@ serve(async (req) => {
       `[discord-oauth] OK · user=${user.id} · discord=${discordUser.id} (@${discordUser.username}) · member=${isGuildMember}`,
     );
 
+    // ─── D3 BACKFILL : grant roles pour formations déjà 100% ───
+    // L'élève peut avoir terminé Marketing/Setting/Closing AVANT de lier
+    // son Discord. On rattrape ici.
+    const backfillResults: BackfillResult[] = [];
+    if (isGuildMember) {
+      const { data: mappings } = await supabaseAdmin
+        .from("formation_discord_roles")
+        .select("formation_id, discord_role_label")
+        .eq("is_active", true);
+
+      if (mappings) {
+        for (const mapping of mappings) {
+          // Check progress
+          const { data: progressData, error: progressErr } = await supabaseAdmin.rpc(
+            "get_formation_progress",
+            { p_user_id: user.id, p_formation_id: mapping.formation_id },
+          );
+          if (progressErr) {
+            console.warn(
+              `[discord-oauth backfill] progress error for ${mapping.formation_id}: ${progressErr.message}`,
+            );
+            continue;
+          }
+          const progress = Number(progressData ?? 0);
+          if (progress < 100) continue; // pas complet, skip
+
+          // Call discord-grant-role internal
+          try {
+            const grantRes = await fetch(
+              `${supabaseUrl}/functions/v1/discord-grant-role`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${supabaseServiceKey}`,
+                },
+                body: JSON.stringify({
+                  user_id: user.id,
+                  formation_id: mapping.formation_id,
+                  reason: "oauth_link_backfill",
+                  source: "sync",
+                }),
+              },
+            );
+            const grantData = (await grantRes.json()) as {
+              ok?: boolean;
+              status?: string;
+              already_granted?: boolean;
+              error?: string;
+            };
+            if (grantData?.already_granted) {
+              backfillResults.push({
+                formation_id: mapping.formation_id,
+                role_label: mapping.discord_role_label,
+                status: "already_granted",
+              });
+            } else if (grantData?.status === "success") {
+              backfillResults.push({
+                formation_id: mapping.formation_id,
+                role_label: mapping.discord_role_label,
+                status: "success",
+              });
+            } else if (grantData?.status === "failed") {
+              backfillResults.push({
+                formation_id: mapping.formation_id,
+                role_label: mapping.discord_role_label,
+                status: "failed",
+                error: grantData.error,
+              });
+            } else {
+              backfillResults.push({
+                formation_id: mapping.formation_id,
+                role_label: mapping.discord_role_label,
+                status: "skipped",
+                error: grantData?.error,
+              });
+            }
+          } catch (e) {
+            console.error(
+              `[discord-oauth backfill] grant error for ${mapping.formation_id}:`,
+              e,
+            );
+            backfillResults.push({
+              formation_id: mapping.formation_id,
+              role_label: mapping.discord_role_label,
+              status: "failed",
+              error: (e as Error)?.message ?? "erreur inconnue",
+            });
+          }
+        }
+      }
+      console.log(
+        `[discord-oauth backfill] processed ${backfillResults.length} formations for user=${user.id}`,
+      );
+    } else {
+      console.log(
+        `[discord-oauth backfill] skipped — user pas membre du serveur, aucun grant possible`,
+      );
+    }
+
     return json({
       success: true,
       discord_user_id: discordUser.id,
@@ -199,6 +297,7 @@ serve(async (req) => {
       discord_global_name: discordUser.global_name,
       discord_avatar: discordUser.avatar,
       is_guild_member: isGuildMember,
+      backfill_results: backfillResults,
     });
   } catch (e) {
     console.error("[discord-oauth] uncaught", e);
