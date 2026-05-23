@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -35,6 +35,34 @@ import {
 import { getDiscordAvatarUrl } from "@/hooks/useDiscordLink";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+
+const DISCORD_BRAND_COLOR = "#5865F2";
+
+/** Logo Discord inline (SVG). Réutilisé dans toute la page. */
+function DiscordIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+    >
+      <path d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09-.01-.02-.04-.03-.07-.03-1.5.26-2.93.71-4.27 1.33-.01 0-.02.01-.03.02C2.0 9.46 1.31 13.5 1.65 17.5c0 .02.01.04.03.05a19.95 19.95 0 0 0 5.99 3.03c.03.01.06 0 .08-.02.46-.63.87-1.29 1.22-1.99.02-.04 0-.08-.04-.09a13.06 13.06 0 0 1-1.86-.89c-.04-.02-.04-.08-.01-.11.12-.09.25-.19.37-.29.02-.02.05-.02.07-.01 3.9 1.78 8.13 1.78 11.99 0 .02-.01.05 0 .07.01.12.1.24.2.37.29.04.03.04.09-.01.11a12.06 12.06 0 0 1-1.86.89c-.04.01-.05.06-.04.09.36.7.77 1.36 1.22 1.99.03.02.06.03.09.02 1.96-.61 3.95-1.52 5.99-3.03.02-.01.03-.03.03-.05.36-4.62-.6-8.62-2.69-12.15-.01-.01-.02-.02-.04-.02zM8.52 15.09c-1.18 0-2.16-1.08-2.16-2.41 0-1.33.95-2.41 2.16-2.41 1.21 0 2.18 1.09 2.16 2.41 0 1.33-.96 2.41-2.16 2.41zm7.97 0c-1.18 0-2.16-1.08-2.16-2.41 0-1.33.95-2.41 2.16-2.41 1.21 0 2.18 1.09 2.16 2.41 0 1.33-.95 2.41-2.16 2.41z" />
+    </svg>
+  );
+}
+
+/** Petit rond violet Discord avec logo blanc dedans — pour les headers de colonne rôle. */
+function DiscordBadge() {
+  return (
+    <div
+      className="h-5 w-5 rounded-full flex items-center justify-center shrink-0"
+      style={{ backgroundColor: DISCORD_BRAND_COLOR }}
+    >
+      <DiscordIcon className="h-3 w-3 text-white" />
+    </div>
+  );
+}
 
 /**
  * Page admin Discord (D5) — réservée CEO.
@@ -617,15 +645,28 @@ function UserRecapTab() {
         </Button>
       </div>
 
-      {/* Filtres colonnes (formations + rôles) */}
-      <div className="flex flex-wrap gap-2 mb-4 text-xs">
-        <ColumnFilter label="🎓 Marketing fini" value={marketingDone} onChange={setMarketingDone} />
-        <ColumnFilter label="🎓 Setting fini" value={settingDone} onChange={setSettingDone} />
-        <ColumnFilter label="🎓 Closing fini" value={closingDone} onChange={setClosingDone} />
-        <span className="border-l border-border mx-1" />
-        <ColumnFilter label="Rôle Marketing" value={marketingRole} onChange={setMarketingRole} />
-        <ColumnFilter label="Rôle Setting" value={settingRole} onChange={setSettingRole} />
-        <ColumnFilter label="Rôle Closing" value={closingRole} onChange={setClosingRole} />
+      {/* Filtres colonnes — chaque formation groupée avec son rôle Discord */}
+      <div className="flex flex-wrap gap-2 mb-4 text-xs items-center">
+        <ColumnFilter label="🎓 Mkt fini" value={marketingDone} onChange={setMarketingDone} />
+        <ColumnFilter
+          label={<><DiscordBadge /> Mkt</>}
+          value={marketingRole}
+          onChange={setMarketingRole}
+        />
+        <span className="border-l border-border h-6 mx-1" />
+        <ColumnFilter label="🎓 Set fini" value={settingDone} onChange={setSettingDone} />
+        <ColumnFilter
+          label={<><DiscordBadge /> Set</>}
+          value={settingRole}
+          onChange={setSettingRole}
+        />
+        <span className="border-l border-border h-6 mx-1" />
+        <ColumnFilter label="🎓 Cls fini" value={closingDone} onChange={setClosingDone} />
+        <ColumnFilter
+          label={<><DiscordBadge /> Cls</>}
+          value={closingRole}
+          onChange={setClosingRole}
+        />
       </div>
 
       {/* Compteurs */}
@@ -658,12 +699,24 @@ function UserRecapTab() {
                     <th className="text-left p-3">Élève</th>
                     <th className="text-center p-3">Pass</th>
                     <th className="text-center p-3">Discord</th>
-                    <th className="text-center p-3" title="Marketing complete">🎓 Mkt</th>
-                    <th className="text-center p-3" title="Setting complete">🎓 Set</th>
-                    <th className="text-center p-3" title="Closing complete">🎓 Cls</th>
-                    <th className="text-center p-3" title="Rôle Marketing">R-Mkt</th>
-                    <th className="text-center p-3" title="Rôle Setting">R-Set</th>
-                    <th className="text-center p-3" title="Rôle Closing">R-Cls</th>
+                    <th className="text-center p-3 border-l border-border" title="Formation Marketing terminée">🎓 Mkt</th>
+                    <th className="text-center p-3" title="Rôle Discord Marketing attribué">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <DiscordBadge /><span>Mkt</span>
+                      </div>
+                    </th>
+                    <th className="text-center p-3 border-l border-border" title="Formation Setting terminée">🎓 Set</th>
+                    <th className="text-center p-3" title="Rôle Discord Setting attribué">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <DiscordBadge /><span>Set</span>
+                      </div>
+                    </th>
+                    <th className="text-center p-3 border-l border-border" title="Formation Closing terminée">🎓 Cls</th>
+                    <th className="text-center p-3" title="Rôle Discord Closing attribué">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <DiscordBadge /><span>Cls</span>
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -685,13 +738,13 @@ function ColumnFilter({
   value,
   onChange,
 }: {
-  label: string;
+  label: ReactNode;
   value: string;
   onChange: (v: string) => void;
 }) {
   return (
     <div className="flex items-center gap-1">
-      <span className="text-muted-foreground">{label}:</span>
+      <span className="text-muted-foreground flex items-center gap-1">{label}:</span>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger className="h-7 w-[80px] text-xs"><SelectValue /></SelectTrigger>
         <SelectContent>
@@ -762,15 +815,23 @@ function RecapRow({ row }: { row: AdminDiscordUserRecapRow }) {
           <XCircle className="h-5 w-5 text-muted-foreground mx-auto" />
         )}
       </td>
-      <td className="p-3"><YesNoCell value={row.marketing_completed} /></td>
-      <td className="p-3"><YesNoCell value={row.setting_completed} /></td>
-      <td className="p-3"><YesNoCell value={row.closing_completed} /></td>
-      {/* Pour les rôles : on dim si formation pas finie ET rôle absent (cas attendu) */}
+      {/* Marketing : formation puis rôle Discord, côte à côte */}
+      <td className="p-3 border-l border-border">
+        <YesNoCell value={row.marketing_completed} />
+      </td>
       <td className="p-3">
         <YesNoCell value={row.has_marketing_role} dimmed={!row.marketing_completed} />
       </td>
+      {/* Setting */}
+      <td className="p-3 border-l border-border">
+        <YesNoCell value={row.setting_completed} />
+      </td>
       <td className="p-3">
         <YesNoCell value={row.has_setting_role} dimmed={!row.setting_completed} />
+      </td>
+      {/* Closing */}
+      <td className="p-3 border-l border-border">
+        <YesNoCell value={row.closing_completed} />
       </td>
       <td className="p-3">
         <YesNoCell value={row.has_closing_role} dimmed={!row.closing_completed} />
