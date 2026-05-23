@@ -8,6 +8,7 @@ import {
 } from "@/lib/access-scope";
 import { DeactivatedAccountScreen } from "@/components/DeactivatedAccountScreen";
 import { useDiscordGrantNotifications } from "@/hooks/useDiscordGrantNotifications";
+import { useDiscordHotSync } from "@/hooks/useDiscordHotSync";
 
 export function ProtectedRoute() {
   const { session, profile, isLoading } = useAuth();
@@ -15,6 +16,8 @@ export function ProtectedRoute() {
 
   // D3 — écoute Realtime des nouveaux grants Discord → toast UI
   useDiscordGrantNotifications();
+  // D4 — hot check au login (1×/session) : rattrape les grants manquants
+  useDiscordHotSync();
 
   if (isLoading) {
     return (

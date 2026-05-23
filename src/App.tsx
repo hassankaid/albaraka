@@ -105,6 +105,7 @@ import StudioHome from "./pages/studio/StudioHome";
 import StudioProject from "./pages/studio/StudioProject";
 import { StudioGate } from "./components/StudioGate";
 import DiscordCallback from "./pages/discord/DiscordCallback";
+import AdminDiscord from "./pages/admin/discord/AdminDiscord";
 
 const queryClient = new QueryClient();
 
@@ -182,6 +183,7 @@ const App = () => (
                   <Route path="/coaching" element={<Navigate to="/coaching/calendar" replace />} />
                   <Route path="/coaching/session/:sessionId" element={<Navigate to="/coaching/calendar" replace />} />
                   <Route path="/admin/coaching" element={<AdminCoaching />} />
+                  <Route path="/admin/discord" element={<AdminDiscord />} />
                   <Route path="/working" element={<Navigate to="/working/activity" replace />} />
                   <Route path="/admin/training" element={<AdminTrainingList />} />
                   <Route path="/admin/training/:slug" element={<FormationEditor />} />
