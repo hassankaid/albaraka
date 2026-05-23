@@ -104,6 +104,7 @@ import ContractLandingPage from "./pages/contract/ContractLandingPage";
 import StudioHome from "./pages/studio/StudioHome";
 import StudioProject from "./pages/studio/StudioProject";
 import { StudioGate } from "./components/StudioGate";
+import DiscordCallback from "./pages/discord/DiscordCallback";
 
 const queryClient = new QueryClient();
 
@@ -146,6 +147,8 @@ const App = () => (
               <Route element={<ProtectedRoute />}>
                 {/* Onboarding (no layout) */}
                 <Route path="/onboarding" element={<ApporteurOnboarding />} />
+                {/* Discord OAuth callback (no layout — page transitoire) */}
+                <Route path="/discord/callback" element={<DiscordCallback />} />
                 {/* Team layout (CEO + Collaborateur) */}
                 <Route element={<DashboardLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />

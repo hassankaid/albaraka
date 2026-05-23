@@ -17,6 +17,7 @@ import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+import DiscordLinkCard from "@/components/discord/DiscordLinkCard";
 
 interface BankDetails {
   type?: string;
@@ -570,6 +571,9 @@ export default function ApporteurProfile() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Discord (D2) ── */}
+      <DiscordLinkCard />
 
       <input ref={ribInputRef} type="file" accept="application/pdf,image/jpeg,image/png,image/webp,text/plain,.txt,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={handleRibUpload} />
 
