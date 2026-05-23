@@ -28,7 +28,9 @@ import {
   useAdminDiscordOverview,
   useAdminDiscordGrants,
   useDiscordAdminAction,
+  useAdminDiscordUserRecap,
   type AdminDiscordRow,
+  type AdminDiscordUserRecapRow,
 } from "@/hooks/useAdminDiscord";
 import { getDiscordAvatarUrl } from "@/hooks/useDiscordLink";
 import { format } from "date-fns";
@@ -164,11 +166,17 @@ export default function AdminDiscord() {
         />
       </div>
 
-      <Tabs defaultValue="liaisons">
+      <Tabs defaultValue="recap">
         <TabsList>
-          <TabsTrigger value="liaisons">Liaisons & accès</TabsTrigger>
+          <TabsTrigger value="recap">Récap par élève</TabsTrigger>
+          <TabsTrigger value="liaisons">Détail & actions</TabsTrigger>
           <TabsTrigger value="audit">Audit log</TabsTrigger>
         </TabsList>
+
+        {/* ─── Tab Récap par élève ─── */}
+        <TabsContent value="recap" className="space-y-4">
+          <UserRecapTab />
+        </TabsContent>
 
         {/* ─── Tab Liaisons ─── */}
         <TabsContent value="liaisons" className="space-y-4">
@@ -477,6 +485,295 @@ function AdminRow({
             <RefreshCw className="h-3 w-3" />
           </Button>
         </div>
+      </td>
+    </tr>
+  );
+}
+
+/**
+ * D5 v2 — Tab Récap par élève : 1 ligne par élève éligible avec
+ * tous les booléens formation + Discord + rôles dans un même tableau.
+ */
+function UserRecapTab() {
+  const recapQuery = useAdminDiscordUserRecap();
+  const [search, setSearch] = useState("");
+  const [passFilter, setPassFilter] = useState<string>("all");
+  const [discordFilter, setDiscordFilter] = useState<string>("all"); // all / linked / not_linked
+  // Pour chaque colonne formation/role : "all" / "yes" / "no"
+  const [marketingDone, setMarketingDone] = useState("all");
+  const [settingDone, setSettingDone] = useState("all");
+  const [closingDone, setClosingDone] = useState("all");
+  const [marketingRole, setMarketingRole] = useState("all");
+  const [settingRole, setSettingRole] = useState("all");
+  const [closingRole, setClosingRole] = useState("all");
+
+  const rows = recapQuery.data ?? [];
+
+  const filtered = useMemo(() => {
+    return rows.filter((r) => {
+      // Recherche
+      if (search) {
+        const s = search.toLowerCase();
+        const hay = [
+          r.full_name,
+          r.email,
+          r.discord_username,
+          r.discord_global_name,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(s)) return false;
+      }
+      // Pass type
+      if (passFilter !== "all" && r.pass_type !== passFilter) return false;
+      // Discord linked
+      if (discordFilter === "linked" && !r.discord_linked) return false;
+      if (discordFilter === "not_linked" && r.discord_linked) return false;
+      // Formations
+      if (marketingDone === "yes" && !r.marketing_completed) return false;
+      if (marketingDone === "no" && r.marketing_completed) return false;
+      if (settingDone === "yes" && !r.setting_completed) return false;
+      if (settingDone === "no" && r.setting_completed) return false;
+      if (closingDone === "yes" && !r.closing_completed) return false;
+      if (closingDone === "no" && r.closing_completed) return false;
+      // Rôles
+      if (marketingRole === "yes" && !r.has_marketing_role) return false;
+      if (marketingRole === "no" && r.has_marketing_role) return false;
+      if (settingRole === "yes" && !r.has_setting_role) return false;
+      if (settingRole === "no" && r.has_setting_role) return false;
+      if (closingRole === "yes" && !r.has_closing_role) return false;
+      if (closingRole === "no" && r.has_closing_role) return false;
+      return true;
+    });
+  }, [
+    rows, search, passFilter, discordFilter,
+    marketingDone, settingDone, closingDone,
+    marketingRole, settingRole, closingRole,
+  ]);
+
+  // Compteurs en haut
+  const counts = useMemo(() => {
+    const total = filtered.length;
+    const linked = filtered.filter((r) => r.discord_linked).length;
+    const m = filtered.filter((r) => r.marketing_completed).length;
+    const s = filtered.filter((r) => r.setting_completed).length;
+    const c = filtered.filter((r) => r.closing_completed).length;
+    return { total, linked, m, s, c };
+  }, [filtered]);
+
+  const resetFilters = () => {
+    setSearch("");
+    setPassFilter("all");
+    setDiscordFilter("all");
+    setMarketingDone("all");
+    setSettingDone("all");
+    setClosingDone("all");
+    setMarketingRole("all");
+    setSettingRole("all");
+    setClosingRole("all");
+  };
+
+  return (
+    <>
+      {/* Filtres principaux */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher par nom / email / handle Discord…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        <Select value={passFilter} onValueChange={setPassFilter}>
+          <SelectTrigger className="w-[150px]"><SelectValue placeholder="Pass" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous Pass</SelectItem>
+            <SelectItem value="al_baraka">AL BARAKA</SelectItem>
+            <SelectItem value="liberty">Liberty</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={discordFilter} onValueChange={setDiscordFilter}>
+          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Discord" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous (Discord)</SelectItem>
+            <SelectItem value="linked">Discord lié</SelectItem>
+            <SelectItem value="not_linked">Discord non lié</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="outline" onClick={resetFilters} className="text-xs">
+          Reset filtres
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => recapQuery.refetch()}
+          disabled={recapQuery.isFetching}
+          className="gap-2"
+        >
+          <RefreshCw className={`h-4 w-4 ${recapQuery.isFetching ? "animate-spin" : ""}`} />
+          Rafraîchir
+        </Button>
+      </div>
+
+      {/* Filtres colonnes (formations + rôles) */}
+      <div className="flex flex-wrap gap-2 mb-4 text-xs">
+        <ColumnFilter label="🎓 Marketing fini" value={marketingDone} onChange={setMarketingDone} />
+        <ColumnFilter label="🎓 Setting fini" value={settingDone} onChange={setSettingDone} />
+        <ColumnFilter label="🎓 Closing fini" value={closingDone} onChange={setClosingDone} />
+        <span className="border-l border-border mx-1" />
+        <ColumnFilter label="Rôle Marketing" value={marketingRole} onChange={setMarketingRole} />
+        <ColumnFilter label="Rôle Setting" value={settingRole} onChange={setSettingRole} />
+        <ColumnFilter label="Rôle Closing" value={closingRole} onChange={setClosingRole} />
+      </div>
+
+      {/* Compteurs */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+        <StatCard label="Élèves affichés" value={counts.total} tone="default" />
+        <StatCard label="Avec Discord lié" value={counts.linked} tone="primary" />
+        <StatCard label="Marketing fini" value={counts.m} tone="emerald" />
+        <StatCard label="Setting fini" value={counts.s} tone="emerald" />
+        <StatCard label="Closing fini" value={counts.c} tone="emerald" />
+      </div>
+
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          {recapQuery.isLoading ? (
+            <div className="p-4 space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              Aucun élève avec ces filtres.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="text-left p-3">Élève</th>
+                    <th className="text-center p-3">Pass</th>
+                    <th className="text-center p-3">Discord</th>
+                    <th className="text-center p-3" title="Marketing complete">🎓 Mkt</th>
+                    <th className="text-center p-3" title="Setting complete">🎓 Set</th>
+                    <th className="text-center p-3" title="Closing complete">🎓 Cls</th>
+                    <th className="text-center p-3" title="Rôle Marketing">R-Mkt</th>
+                    <th className="text-center p-3" title="Rôle Setting">R-Set</th>
+                    <th className="text-center p-3" title="Rôle Closing">R-Cls</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((row) => (
+                    <RecapRow key={row.user_id} row={row} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
+function ColumnFilter({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-muted-foreground">{label}:</span>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="h-7 w-[80px] text-xs"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Tous</SelectItem>
+          <SelectItem value="yes">Oui</SelectItem>
+          <SelectItem value="no">Non</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function YesNoCell({ value, dimmed = false }: { value: boolean; dimmed?: boolean }) {
+  if (value) {
+    return (
+      <div className="flex justify-center">
+        <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+      </div>
+    );
+  }
+  return (
+    <div className="flex justify-center">
+      <XCircle className={`h-5 w-5 ${dimmed ? "text-muted-foreground/40" : "text-muted-foreground"}`} />
+    </div>
+  );
+}
+
+function RecapRow({ row }: { row: AdminDiscordUserRecapRow }) {
+  const avatarUrl = row.discord_avatar
+    ? getDiscordAvatarUrl(row.discord_user_id ?? "", row.discord_avatar)
+    : null;
+  const displayName = row.discord_global_name || row.discord_username || "—";
+
+  return (
+    <tr className="border-t hover:bg-muted/30">
+      <td className="p-3">
+        <div className="text-sm font-medium">{row.full_name ?? "—"}</div>
+        <div className="text-[11px] text-muted-foreground">{row.email}</div>
+      </td>
+      <td className="p-3 text-center">
+        <Badge
+          className={
+            row.pass_type === "liberty"
+              ? "bg-purple-500/15 text-purple-500 border-0 text-[10px]"
+              : "bg-amber-500/15 text-amber-500 border-0 text-[10px]"
+          }
+        >
+          {row.pass_type === "liberty" ? "Liberty" : "AL BARAKA"}
+        </Badge>
+      </td>
+      <td className="p-3 text-center">
+        {row.discord_linked ? (
+          <div className="flex flex-col items-center gap-1">
+            <Avatar className="h-6 w-6">
+              {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
+              <AvatarFallback className="text-[9px] bg-[#5865F2] text-white">
+                {displayName.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="text-[10px] truncate max-w-[100px]" title={displayName}>
+              {displayName}
+            </div>
+            {row.is_guild_member === false && (
+              <div className="text-[9px] text-amber-500">Pas sur le serveur</div>
+            )}
+          </div>
+        ) : (
+          <XCircle className="h-5 w-5 text-muted-foreground mx-auto" />
+        )}
+      </td>
+      <td className="p-3"><YesNoCell value={row.marketing_completed} /></td>
+      <td className="p-3"><YesNoCell value={row.setting_completed} /></td>
+      <td className="p-3"><YesNoCell value={row.closing_completed} /></td>
+      {/* Pour les rôles : on dim si formation pas finie ET rôle absent (cas attendu) */}
+      <td className="p-3">
+        <YesNoCell value={row.has_marketing_role} dimmed={!row.marketing_completed} />
+      </td>
+      <td className="p-3">
+        <YesNoCell value={row.has_setting_role} dimmed={!row.setting_completed} />
+      </td>
+      <td className="p-3">
+        <YesNoCell value={row.has_closing_role} dimmed={!row.closing_completed} />
       </td>
     </tr>
   );

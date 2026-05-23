@@ -37,6 +37,43 @@ export interface AdminDiscordRow {
 }
 
 /**
+ * V2 — Récap par élève : 1 ligne par élève éligible (= pass actif),
+ * avec booléens pour chacune des 3 formations + chacun des 3 rôles Discord.
+ */
+export interface AdminDiscordUserRecapRow {
+  user_id: string;
+  full_name: string | null;
+  email: string;
+  user_role: string;
+  pass_type: "al_baraka" | "liberty";
+  discord_linked: boolean;
+  discord_username: string | null;
+  discord_global_name: string | null;
+  discord_avatar: string | null;
+  is_guild_member: boolean | null;
+  marketing_completed: boolean;
+  setting_completed: boolean;
+  closing_completed: boolean;
+  has_marketing_role: boolean;
+  has_setting_role: boolean;
+  has_closing_role: boolean;
+}
+
+export function useAdminDiscordUserRecap() {
+  return useQuery({
+    queryKey: ["admin-discord", "user-recap"],
+    queryFn: async (): Promise<AdminDiscordUserRecapRow[]> => {
+      const { data, error } = await (supabase as any).rpc(
+        "admin_discord_user_recap",
+      );
+      if (error) throw error;
+      return (data ?? []) as AdminDiscordUserRecapRow[];
+    },
+    refetchOnWindowFocus: false,
+  });
+}
+
+/**
  * Récupère un panorama complet : pour chaque (user lié × formation gated),
  * renvoie le statut du grant + progress + identité Discord.
  */
