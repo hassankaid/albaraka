@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  ArrowLeft, ArrowRight, CheckCircle2, PlayCircle, Clock, Video,
+  ArrowLeft, ArrowRight, CheckCircle2, PlayCircle, Clock, Video, Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useParcours, useCompleteChapitre } from "@/hooks/useParcours";
 import { useParcoursChapitreContent } from "@/hooks/useParcoursChapitreContent";
 import { VideoPlayer } from "@/components/training/VideoPlayer";
 import { ExternalLink, FileText as FileTextIcon, Image as ImageIcon, Link as LinkIcon, Download } from "lucide-react";
+import { getLibertyToolRouteForChapitre } from "./liberty/liberty-tool-routes";
 
 export default function ParcoursChapitreDetail() {
   const { slug, chapitreId } = useParams<{ slug: string; chapitreId: string }>();
@@ -129,6 +130,42 @@ export default function ParcoursChapitreDetail() {
           </CardContent>
         </Card>
       )}
+
+      {/* Outil interactif Liberty (si disponible pour ce chapitre) */}
+      {(() => {
+        const toolRoute = getLibertyToolRouteForChapitre(slug, chapitre.titre);
+        if (!toolRoute) return null;
+        return (
+          <Card className="border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/5 to-amber-500/0">
+            <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-amber-600">
+                    Outil interactif de fin de module
+                  </div>
+                  <h3 className="font-semibold text-foreground">
+                    Construis ta Sous-niche 2.0
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Bilan, propositions IA, avatar client et engagement signé — ~45-90 min selon ton
+                    point de départ, sauvegarde automatique.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => navigate(toolRoute)}
+                className="shrink-0 gap-2 bg-amber-500 text-white hover:bg-amber-600"
+              >
+                Démarrer l'outil
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3 justify-between items-center pt-2">
