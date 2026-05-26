@@ -16,6 +16,7 @@ import { LockScreen } from "./screens/LockScreen";
 import { DemoSelectorScreen } from "./screens/DemoSelectorScreen";
 import { usePersistedM4State } from "./lib/usePersistedState";
 import { defaultM4State, type M4Step, type M4State } from "./lib/types";
+import { M4_DEMO_CASES, type M4DemoCase } from "./lib/demo-cases";
 
 export default function M4ValueLadderPage() {
   const navigate = useNavigate();
@@ -44,10 +45,12 @@ export default function M4ValueLadderPage() {
     await persisted.resetState();
   }, [persisted]);
 
-  const handleSelectDemo = useCallback((key: string) => {
-    // Sprint 4 implémentera les patches démo. Placeholder ici.
+  const handleSelectDemo = useCallback((c: M4DemoCase) => {
+    if (!c.patch) return;
     if (!persisted.state.demoMode) preDemoSnapshot.current = persisted.state;
-    persisted.setState((prev) => ({ ...prev, demoMode: key }));
+    const fresh = defaultM4State();
+    const next: M4State = { ...fresh, ...c.patch, demoMode: c.key } as M4State;
+    persisted.setState(() => next);
     setShowDemoSelector(false);
   }, [persisted]);
 
@@ -62,7 +65,9 @@ export default function M4ValueLadderPage() {
     }
   }, [persisted]);
 
-  const demoLabel = persisted.state.demoMode || null;
+  const demoLabel = persisted.state.demoMode
+    ? M4_DEMO_CASES.find((c) => c.key === persisted.state.demoMode)?.title.split("·")[0].trim() ?? persisted.state.demoMode
+    : null;
 
   if (authLoading || passLoading) {
     return (
