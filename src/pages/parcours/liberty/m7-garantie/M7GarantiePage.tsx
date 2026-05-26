@@ -18,7 +18,8 @@ import { TermesConditionsScreen } from "./screens/TermesConditionsScreen";
 import { LockScreen } from "./screens/LockScreen";
 import { DemoSelectorScreen } from "./screens/DemoSelectorScreen";
 import { usePersistedM7State } from "./lib/usePersistedState";
-import { type M7Step, type M7State, PEDA_STEPS } from "./lib/types";
+import { type M7Step, type M7State, PEDA_STEPS, defaultM7State } from "./lib/types";
+import { M7_DEMO_CASES, type M7DemoCase } from "./lib/demo-cases";
 
 export default function M7GarantiePage() {
   const navigate = useNavigate();
@@ -47,9 +48,12 @@ export default function M7GarantiePage() {
     await persisted.resetState();
   }, [persisted]);
 
-  const handleSelectDemo = useCallback((key: string) => {
+  const handleSelectDemo = useCallback((c: M7DemoCase) => {
+    if (!c.patch) return;
     if (!persisted.state.demoMode) preDemoSnapshot.current = persisted.state;
-    persisted.setState((prev) => ({ ...prev, demoMode: key }));
+    const fresh = defaultM7State();
+    const next: M7State = { ...fresh, ...c.patch, demoMode: c.key } as M7State;
+    persisted.setState(() => next);
     setShowDemoSelector(false);
   }, [persisted]);
 
@@ -101,7 +105,9 @@ export default function M7GarantiePage() {
 
   const { state, setState, flushNow } = persisted;
   const showRestartBtn = state.current !== "welcome" && !state.demoMode;
-  const demoLabel = state.demoMode || null;
+  const demoLabel = state.demoMode
+    ? M7_DEMO_CASES.find((c) => c.key === state.demoMode)?.title.split("·")[0].trim() ?? state.demoMode
+    : null;
   const m7Forced = PEDA_STEPS.some((k) => state.forced[k]);
 
   return (
