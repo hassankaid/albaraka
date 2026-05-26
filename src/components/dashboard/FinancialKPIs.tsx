@@ -826,11 +826,17 @@ export default function FinancialKPIs(props: Props) {
       </TooltipProvider>
 
       <Dialog open={!!openModal} onOpenChange={() => setOpenModal(null)}>
-        <DialogContent className={dialogSize}>
-          <DialogHeader>
-            <DialogTitle className="text-base">{openModal ? modalTitles[openModal] : ""}</DialogTitle>
+        <DialogContent
+          className={`${dialogSize} max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden`}
+        >
+          <DialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b border-border">
+            <DialogTitle className="text-base">
+              {openModal ? modalTitles[openModal] : ""}
+            </DialogTitle>
           </DialogHeader>
-          {openModal && renderModalContent(openModal)}
+          <div className="flex-1 overflow-y-auto px-2 py-3 min-h-0">
+            {openModal && renderModalContent(openModal)}
+          </div>
         </DialogContent>
       </Dialog>
     </>
