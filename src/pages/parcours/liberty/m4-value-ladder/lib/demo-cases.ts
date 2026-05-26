@@ -506,6 +506,121 @@ const NAJET_EDUCATION_PATCH: Partial<M4State> = {
   },
 };
 
+// ── 8 · Salima · Perte de poids mamans (bon cas ht_lt saisonnier ramadan) ─
+const SALIMA_PERTE_POIDS_PATCH: Partial<M4State> = {
+  current_step: "vue_ensemble", market_type: "b2c_transfo",
+  m1_data: {
+    source: "demo_sante_perte_poids_mamans",
+    sous_niche_2: {
+      phrase: "Mamans musulmanes 30-45 ans qui veulent perdre 10-25 kg dans un cadre halal compatible hijab et ramadan",
+      phrase_finale: "Mamans musulmanes 30-45 ans qui veulent perdre 10-25 kg dans un cadre halal compatible hijab et ramadan",
+      cible: "Mamans actives multi-tentatives échouées",
+      douleur: "Sentiment d'avoir tout essayé, fatigue du yo-yo",
+      methode: "AL BARAKA FIT — méthode adaptée hijab + 6 mois",
+    },
+    avatar: { socio: { nom: "Salima", age: "37 ans", situation: "Maman 3 enfants 4-7-10, mi-temps comptable, 2 900€/mois, 15 kg à perdre", lieu: "Roubaix" } },
+    marche: { id: "sante", label: "🌱 Santé" },
+  },
+  m2_data: {
+    source: "module_2_psychologie", version: "demo_v1",
+    data: { step8: {
+      positionnement: "La maman qui prend soin d'elle SANS s'éloigner de sa pratique ni de sa famille",
+      hook_principal: "Perdre 15 kg durablement dans un cadre adapté à sa vie de maman musulmane",
+      levier_secondaire: "transformation",
+      biais_killer: "syndrome yo-yo + culpabilité familiale",
+      phase_strategy: "phase 3 — Dukan + WW + salle + 2 coachings, tous échoués par incompatibilité",
+    } },
+  },
+  m3_data: {
+    source: "module_3_anatomie", complete: true, market_type: "b2c_transfo",
+    promesse: "Perdre 12-25 kg durablement en 6 mois, sans abandonner ton hijab ni les repas famille, avec gestion ramadan incluse",
+    mecanisme: { nom: "AL BARAKA FIT — méthode adaptée hijab + 6 mois", etapes: ["Audit métabolique", "Plan nutritionnel halal famille", "Activité compatible hijab", "Gestion ramadan sans rebond"] },
+    vehicule: { format: "6 mois · 1 call/mois + audit nutritionnel + Telegram femmes + recettes + séances vidéo", justification: "Format long pour intégrer la gestion ramadan", validated: true },
+    garantie: { type: "performance", formulation: "Si en 90j tu n'as pas perdu au moins 5 kg, je rembourse 50% et continue gratuitement" },
+    urgence: { type: "fenetre_temporelle", justification: "Cohortes calées pré-ramadan + post-ramadan" },
+    prix: { montant: "2900", levier_faible: "effort" },
+    prix_score_global: 77,
+  },
+  ladder: {
+    freemium: { id: "free_quiz_metabolisme", name: "Quiz « Ton type métabolique de maman »", price: "0€", format: "Quiz 10 questions · 5 min · type + 3 erreurs à éviter emailés", rationale: "Reframing : « ce qui n'a pas marché ce n'est pas toi, c'est la méthode incompatible »." },
+    low: { id: "low_ramadan_kit", name: "30 recettes ramadan sans reprise", price: "19€", format: "PDF 60 pages · 30 recettes iftar + sahour · plan semaine · liste courses · accès à vie", rationale: "Résout l'objection N°1 (peur du rebond ramadan). 19€ = budget courses 1 repas." },
+    mid: { id: "", name: "", price: "", format: "", rationale: "" },
+    high: { id: "high_fit_6m", name: "AL BARAKA FIT · 6 mois", price: "2 900€", format: "6 mois · 1 call/mois + audit nutritionnel + Telegram + recettes + séances vidéo", rationale: "Sommet : transformation durable + gestion ramadan + call individuel mensuel." },
+  },
+  bridges: {
+    free_to_low: "Fin du quiz, en pré-ramadan (jan-fev) : « Ton type est X — voici les 30 recettes ramadan sans rebond adaptées à ton type, 19€ pendant 48h ». 35% conversion (cible chaude, peur du rebond ramadan).",
+    free_to_mid: "", free_to_high: "", low_to_mid: "",
+    low_to_high: "Email post-ramadan (juin-sept) après les acheteuses du PDF ramadan : « Tu as tenu pendant le ramadan — pour transformer ça en 6 mois de transformation durable avec call individuel mensuel + audit nutritionnel, j'ouvre AL BARAKA FIT 6 mois à 2 900€ ». Conversion LT → HT ~6% (les acheteuses ramadan sont qualifiées).",
+    mid_to_high: "",
+  },
+  entry: {
+    strategy: "ht_lt",
+    rationale: "J'ai 18 transformations documentées avec photos avant/après, mon offre HT tourne. Mon avantage temps fort c'est le ramadan — pendant les 6 semaines qui précèdent, le PDF recettes se télécharge 3× plus que d'habitude. C'est un tripwire saisonnier naturel : je le pousse en jan-février, j'engrange 200-300 acheteuses ramadan kit, et ces 300 personnes deviennent mes prospects HT chauds en septembre quand elles veulent prolonger la dynamique post-ramadan. C'est un cycle annuel pas un funnel continu — mais ça multiplie mon CAC par 3 et ça rentre dans une logique de saisonnalité que ma cible vit déjà. Indicateur de bascule : si après 2 cycles ramadan je vois plus de 30% des LT convertir en HT, je tente une cohorte MT à 397€ en hiver pour les indécises.",
+    score: 89,
+    feedback: "✓ Stratégie cohérente avec la temporalité de ta niche. Tu as identifié un cycle saisonnier que la plupart des coachs ignorent (le ramadan comme catalyseur d'achat). Le LT n'est pas un canal continu mais un évènement annuel qui nourrit le HT en septembre. Pense à automatiser la séquence post-LT pour ne pas perdre les acheteuses entre juin et août.",
+    ai_mode: "local", attempts: 1, forced: false,
+    ht_monthly_target: "4 ventes HT/mois à 2 900€ = ~11 600€/mois bruts (avec saisonnalité forte septembre-novembre)",
+    lt_breakeven_check: "LT 19€ avec CAC ads ~7€ en pré-ramadan = 12€ marge brute. 200-300 ventes × 12€ = 2 400-3 600€ qui couvrent les ads + reste positif. Largement profitable.",
+  },
+};
+
+// ── 9 · Mehdi · Reprise sport hommes 40+ (bon cas ht_only conservateur) ──
+const MEHDI_REPRISE_SPORT_PATCH: Partial<M4State> = {
+  current_step: "vue_ensemble", market_type: "b2c_transfo",
+  m1_data: {
+    source: "demo_sante_reprise_sport_hommes",
+    sous_niche_2: {
+      phrase: "Hommes musulmans 38-50 ans cadres pères de famille qui veulent reprendre le sport dans un cadre compatible 5 prières + travail",
+      phrase_finale: "Hommes musulmans 38-50 ans cadres pères de famille qui veulent reprendre le sport dans un cadre compatible 5 prières + travail",
+      cible: "Cadres actifs en couple, 2-5 enfants, sédentaires 5-10 ans",
+      douleur: "Voient leur corps changer, peur de la déchéance",
+      methode: "REPRISE AL BARAKA — protocole 6 mois homme",
+    },
+    avatar: { socio: { nom: "Mehdi", age: "42 ans", situation: "Ingénieur informatique, marié, 4 enfants 6-9-12-14, 4 800€/mois", lieu: "Région nantaise" } },
+    marche: { id: "sante", label: "🌱 Santé" },
+  },
+  m2_data: {
+    source: "module_2_psychologie", version: "demo_v1",
+    data: { step8: {
+      positionnement: "Le père qui prend soin de son corps comme amânah, sans devenir égocentrique",
+      hook_principal: "Retrouver sa forme physique d'avant en 6 mois, sans sacrifier ses 5 prières ni le temps famille",
+      levier_secondaire: "preuve",
+      biais_killer: "abonnement salle inutilisé (engagement échec)",
+      phase_strategy: "phase 2 — payé 3 ans d'abonnement salle inutilisé, sait qu'il a besoin d'un cadre + accountability",
+    } },
+  },
+  m3_data: {
+    source: "module_3_anatomie", complete: true, market_type: "b2c_transfo",
+    promesse: "Retrouver ta forme physique de tes 30 ans en 6 mois, sport compatible 5 prières et planning cadre actif",
+    mecanisme: { nom: "REPRISE AL BARAKA — protocole 6 mois homme", etapes: ["Audit santé initial", "Plan progressif compatible planning cadre", "Intégration 5 prières + travail", "Pérennisation post-6 mois"] },
+    vehicule: { format: "6 mois · 1 call/mois + plan d'entraînement progressif + Telegram frères + audit santé", justification: "Format long pour pérenniser + intégrer hajj", validated: true },
+    garantie: { type: "remboursement", formulation: "Si tu n'as pas perdu au moins 8 kg de gras en 90 jours, je rembourse 50%" },
+    urgence: { type: "cohorte_limitee", justification: "Suivi individuel mensuel limité" },
+    prix: { montant: "2700", levier_faible: "delai" },
+    prix_score_global: 75,
+  },
+  ladder: {
+    freemium: { id: "free_audit_homme", name: "Audit forme « Où en es-tu vraiment à 40 ans ? »", price: "0€", format: "Formulaire détaillé + retour vidéo personnalisé 12 min sous 48h", rationale: "Diagnostic clair et rassurant + 3 actions immédiates sans engagement." },
+    low: { id: "", name: "", price: "", format: "", rationale: "" },
+    mid: { id: "", name: "", price: "", format: "", rationale: "" },
+    high: { id: "high_reprise_6m", name: "REPRISE AL BARAKA · 6 mois", price: "2 700€", format: "6 mois · 1 call/mois + plan progressif + Telegram frères + audit santé", rationale: "Sommet : transformation durable + gestion ramadan + préparation hajj + audit santé." },
+  },
+  bridges: {
+    free_to_low: "", free_to_mid: "",
+    free_to_high: "Après l'audit gratuit (vidéo personnalisée), invitation au webinaire mensuel 60 min « Comment j'ai couru un marathon à 42 ans » suivi d'un call discovery 30 min. Funnel court : audit → webinaire → call → HT. Pas de tripwire à ce stade (cible 40 ans cadre paie cher quand elle est convaincue, pas en testing). Conversion audit → webinaire ~25%, webinaire → call ~20%, call → HT ~30%.",
+    low_to_mid: "", low_to_high: "", mid_to_high: "",
+  },
+  entry: {
+    strategy: "ht_only",
+    rationale: "J'ai 14 frères accompagnés au bout, mais seulement 6 témoignages photo/vidéo solides. Mon angle marketing M3 est preuve sociale — donc mon vrai bottleneck c'est la matière de preuve, pas le volume de leads. À ce stade un tripwire « 4 séances à 27€ » me ferait probablement beaucoup d'acheteurs (la cible 40 ans est sensible au quick-win) mais ces acheteurs convertiraient peu en HT et me distrairaient du travail d'aller chercher les 14 témoignages manquants. Je préfère rester focus HT 6-9 mois de plus pour atteindre 20+ témoignages dont 5 vidéo (= contenu marketing pour 12 mois). Indicateur de bascule : 20 témoignages dont 5 vidéo, ET 100 leads/mois minimum sur l'audit gratuit, ALORS je teste un LT « 4 séances ».",
+    score: 85,
+    feedback: "✓ Stratégie cohérente et patiente. Tu as bien identifié que ton angle (preuve) commande de prioriser la matière de témoignages, pas le volume. La résistance au tripwire facile à ce stade est exactement la discipline qui distingue les coachs qui scalent à terme de ceux qui se dispersent à 6 mois. L'indicateur de bascule est triple (témoignages + vidéo + volume audit) — peut-être un peu strict, mais mieux trop patient que trop tôt.",
+    ai_mode: "local", attempts: 1, forced: false,
+    ht_monthly_target: "3 ventes HT/mois à 2 700€ = 8 100€/mois bruts",
+    lt_breakeven_check: "Non applicable à ce stade — pas de LT.",
+  },
+};
+
 // ── Liste finale ──────────────────────────────────────────────────────────
 export const M4_DEMO_CASES: M4DemoCase[] = [
   // ARGENT
@@ -534,12 +649,12 @@ export const M4_DEMO_CASES: M4DemoCase[] = [
     is_anti_pattern: false, ready: true, patch: NAJET_EDUCATION_PATCH },
 
   // SANTÉ
-  { key: "sante_perte_poids_mamans", segment: "sante", emoji: "🤰", title: "Perte de poids mamans (ht_lt saisonnier)",
-    summary: "Mamans post-grossesse · ht_lt saisonnier (à transcrire)",
-    is_anti_pattern: false, ready: false },
-  { key: "sante_reprise_sport_hommes", segment: "sante", emoji: "💪", title: "Reprise sport hommes (ht_only)",
-    summary: "Hommes 35-50 sédentaires · ht_only conservateur (à transcrire)",
-    is_anti_pattern: false, ready: false },
+  { key: "sante_perte_poids_mamans", segment: "sante", emoji: "🌿", title: "Salima · maman → perte de poids halal",
+    summary: "Maman 37 ans · 15 kg à perdre · cycle saisonnier ramadan → LT 19€ pré-ramadan (ht_lt score 89)",
+    is_anti_pattern: false, ready: true, patch: SALIMA_PERTE_POIDS_PATCH },
+  { key: "sante_reprise_sport_hommes", segment: "sante", emoji: "🏃", title: "Mehdi · cadre 40 ans → reprise sportive",
+    summary: "Cadre 42 ans · 4 enfants · 14 frères accompagnés mais 6 témoignages → ht_only patient (score 85)",
+    is_anti_pattern: false, ready: true, patch: MEHDI_REPRISE_SPORT_PATCH },
   { key: "sante_anxiete_etudiants", segment: "sante", emoji: "⚠", title: "Lina · psy — ANTI-PATTERN full fragile",
     summary: "Psychologue 22 ans · 9 étudiantes accompagnées · full ladder fragile → IA refuse (score 52)",
     is_anti_pattern: true, ready: true, patch: LINA_ANXIETE_PATCH },
