@@ -92,6 +92,7 @@ import M3AnatomiePage from "./pages/parcours/liberty/m3-anatomie/M3AnatomiePage"
 import M4ValueLadderPage from "./pages/parcours/liberty/m4-value-ladder/M4ValueLadderPage";
 import M5HighTicketPage from "./pages/parcours/liberty/m5-high-ticket/M5HighTicketPage";
 import M6PricingPage from "./pages/parcours/liberty/m6-pricing/M6PricingPage";
+import M7GarantiePage from "./pages/parcours/liberty/m7-garantie/M7GarantiePage";
 import OrganisationPage from "./pages/working/organisation/OrganisationPage";
 import PersonalBrandPage from "./pages/working/personal-brand/PersonalBrandPage";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
@@ -247,6 +248,7 @@ const App = () => (
                   <Route path="/parcours/liberty/m4" element={<PassGuard><M4ValueLadderPage /></PassGuard>} />
                   <Route path="/parcours/liberty/m5" element={<PassGuard><M5HighTicketPage /></PassGuard>} />
                   <Route path="/parcours/liberty/m6" element={<PassGuard><M6PricingPage /></PassGuard>} />
+                  <Route path="/parcours/liberty/m7" element={<PassGuard><M7GarantiePage /></PassGuard>} />
                   <Route path="/working/activity" element={<FeatureGate feature="working_activity"><MyActivity /></FeatureGate>} />
                   <Route path="/working/organisation" element={<FeatureGate feature="quiz_organisation"><OrganisationPage /></FeatureGate>} />
                   <Route path="/working/personal-brand" element={<MarketingGate><PersonalBrandPage /></MarketingGate>} />

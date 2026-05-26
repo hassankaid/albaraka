@@ -12,6 +12,7 @@ export const LIBERTY_TOOL_ROUTES: Record<string, string> = {
   "M4 — VALUE LADDER": "/parcours/liberty/m4",
   "M5 — HIGH TICKET": "/parcours/liberty/m5",
   "M6 — PRICING": "/parcours/liberty/m6",
+  "M7 — GARANTIE": "/parcours/liberty/m7",
   // …
 };
 
