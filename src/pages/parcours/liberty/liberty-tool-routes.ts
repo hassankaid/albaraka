@@ -10,6 +10,7 @@ export const LIBERTY_TOOL_ROUTES: Record<string, string> = {
   "M2 — PSYCHOLOGIE": "/parcours/liberty/m2",
   "M3 — ANATOMIE D'UNE OFFRE": "/parcours/liberty/m3",
   "M4 — VALUE LADDER": "/parcours/liberty/m4",
+  "M5 — HIGH TICKET": "/parcours/liberty/m5",
   // …
 };
 
