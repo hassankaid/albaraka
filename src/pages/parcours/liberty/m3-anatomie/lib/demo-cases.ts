@@ -231,6 +231,124 @@ const SEO_LOCAL_PATCH: Partial<M3State> = {
   },
 };
 
+// ── Préparation au mariage halal ──────────────────────────────────────────
+const MARIAGE_PATCH: Partial<M3State> = {
+  current_step: "promesse", market_type: "b2c_transfo",
+  m1_data: {
+    source: "demo_preparation_mariage",
+    sous_niche_2: {
+      phrase_finale: "Soeurs musulmanes francophones célibataires 25-35 ans qui veulent se marier sereinement avec un conjoint aligné en moins d'un an",
+      cible: "Femmes musulmanes pratiquantes 25-35 ans, en France ou Belgique, indépendantes financièrement, qui voient leurs amies se marier et qui ont déjà été déçues par 1 ou 2 tentatives via des plateformes de mariage halal",
+      douleur: "Pression familiale croissante, peur du célibat prolongé, ne savent pas trier les profils sérieux, déçues par les sites de mariage halal pleins de profils non-pratiquants, isolement, baisse d'estime",
+      methode: "Cheminement Sakina™ : trouver un conjoint aligné en sortant des plateformes douteuses et en clarifiant ce qu'on veut vraiment",
+    },
+    avatar: { socio: { nom: "Aïcha", age: "29 ans", situation: "Pharmacienne à Bruxelles, 3 200€/mois, voile depuis l'université, vit chez ses parents, 2 demandes en mariage déclinées en 18 mois (incompatibilité de pratique). Sa petite soeur s'est mariée il y a 6 mois." } },
+    marche: { id: "relations", label: "🤝 Relations" },
+  },
+  m2_data: null,
+  promesse: { text: "Accompagner 100 soeurs musulmanes pratiquantes à rencontrer un conjoint aligné et sérieux en 6 mois, en sortant des plateformes douteuses et en clarifiant ce qu'elles veulent vraiment avant de rencontrer.", score: 87, attempts: 2, validated: true, forced: false, feedback: { verdict: "✓ Promesse claire et empathique · résultat (rencontrer) + délai + condition." }, history: [] },
+  mecanisme: { nom: "Cheminement Sakina™", etapes: ["Clarifier tes 5 non-négociables et tes 5 préférences (semaine 1-2)", "Sortir de la dépendance émotionnelle aux échecs passés (semaine 3-6)", "Activer 3 réseaux de matchmaking sérieux (mosquées, wali, masterminds soeurs)", "Maîtriser l'entretien matrimonial (questions clés, signaux rouges, suite)", "Suivi post-rencontre jusqu'à la décision sereine"], score: 85, attempts: 2, validated: true, forced: false, feedback: { verdict: "✓ Mécanisme structuré + livrable propre par étape." }, history: [] },
+  vehicule: { format: "coaching_groupe_1to1", justification: "Programme 6 mois. Groupe fermé de 20 soeurs sur Telegram + 2 lives mensuels en groupe (mardi 21h après ishā) + 4 sessions 1to1 individuelles d'1h sur les 6 mois pour le suivi personnalisé des rencontres en cours. Tout est en non-mixité totale.", validated: true },
+  bonus: { items: [
+    { nom: "Questionnaire approfondi 50 questions matrimoniales (validé par un imam)", valeur: "97€", raison: "Tu sais exactement quoi poser et dans quel ordre lors d'un entretien. Plus de blanc gênant, plus de question oubliée." },
+    { nom: "Réseau de wali et de mosquées partenaires (12 villes francophones)", valeur: "Inestimable", raison: "On t'oriente vers des structures qui font du vrai matchmaking, pas des plateformes en libre-service. Tu gagnes 12 mois de tâtonnement." },
+    { nom: "10 témoignages audio détaillés de couples mariés via la méthode", valeur: "Inclus", raison: "Tu vois exactement à quoi ressemble un parcours réel — pas juste les photos de mariage. Ça remet de la réalité dans tes attentes." },
+  ], score: 86, attempts: 1, validated: true, forced: false, feedback: { verdict: "✓ Bonus alignés avec les vraies barrières (méthode + réseau + repères réalistes)." }, history: [] },
+  garantie: { type: "continuite", formulation: "Si après 6 mois de programme tu n'as eu aucune rencontre matrimoniale sérieuse (au moins 1 entretien + suite engagée), je continue de t'accompagner gratuitement pendant 6 mois supplémentaires — jusqu'à ta première vraie rencontre.", score: 83, attempts: 2, validated: true, forced: false, feedback: { verdict: "✓ Continuité honnête · pas de promesse de mariage automatique." }, history: [] },
+  urgence: { type: "cohorte_limitee", justification: "20 soeurs maximum par cohorte, parce que les 4 sessions 1to1 + le suivi personnalisé des rencontres demandent un temps réel. Je ne peux pas servir d'intermédiaire pour 100 soeurs en parallèle.", score: 80, attempts: 1, validated: true, forced: false, feedback: { verdict: "✓ Cohérent avec le format coaching de groupe + 1to1." }, history: [] },
+  prix: {
+    montant: "1297",
+    leviers: {
+      resultat:    { score: 88, justification: "Le résultat (rencontrer un conjoint aligné) est le rêve absolu de la cible. Transformation de vie majeure." },
+      probabilite: { score: 81, justification: "Mécanisme + réseau partenaires + 4 sessions 1to1 = encadrement réel. Mais l'issue ne dépend pas que de la méthode." },
+      delai:       { score: 78, justification: "6 mois c'est honnête pour une rencontre sérieuse. La cible peut s'impatienter mais la garantie de continuité compense." },
+      effort:      { score: 79, justification: "L'élève doit sortir de chez elle, activer son réseau, faire les entretiens. Le programme cadre mais ne fait pas le travail à sa place." },
+    },
+    levier_faible: "delai", alignements: { format: true, cible: true, ancrage: true },
+    score: 81, attempts: 1, validated: true, forced: false,
+    feedback: { verdict: "✓ Positionnement validé · 1297€ aligné avec la transformation de vie promise.", weak: "Le délai 6 mois est le levier le plus faible.", action_concrete: "Mets en avant un quick-win mois 1 (clarté sur ses non-négociables)." },
+    history: [],
+  },
+};
+
+// ── Parentalité islamique 3-12 ans ────────────────────────────────────────
+const PARENTALITE_PATCH: Partial<M3State> = {
+  current_step: "promesse", market_type: "b2c_transfo",
+  m1_data: {
+    source: "demo_parentalite_islamique",
+    sous_niche_2: {
+      phrase_finale: "Mères musulmanes francophones d'enfants 3-12 ans qui veulent transformer 80% des crises quotidiennes en moments de transmission",
+      cible: "Mères musulmanes 28-42 ans, 1-4 enfants, salariées ou au foyer, qui pratiquent mais s'épuisent à concilier autorité et tendresse, et qui culpabilisent de transmettre le deen avec colère ou de ne pas le transmettre du tout",
+      douleur: "Crises quotidiennes (devoirs, écrans, prière, frères-soeurs) gérées avec colère puis culpabilité, alternance autorité/laxisme, peur de mal transmettre le deen, isolement face à la famille élargie qui juge",
+      methode: "Méthode Tarbiya Sereine™ : transformer 80% des crises en moments de transmission grâce à 5 rituels et 10 scripts validés islamiquement",
+    },
+    avatar: { socio: { nom: "Sara", age: "34 ans", situation: "Comptable à mi-temps à Strasbourg, 3 enfants (4, 7, 10 ans), pratiquante depuis 8 ans, mari très occupé, sa belle-mère lui reproche d'être 'trop laxiste' et son école 'trop rigide'." } },
+    marche: { id: "relations", label: "🤝 Relations" },
+  },
+  m2_data: null,
+  promesse: { text: "Donner aux mères musulmanes francophones les outils concrets pour transformer 80% des crises quotidiennes en moments de transmission deen, en 60 jours, sans crier ni culpabiliser.", score: 90, attempts: 1, validated: true, forced: false, feedback: { verdict: "✓ Promesse forte · transformation chiffrée + délai + bénéfice émotionnel clair." }, history: [] },
+  mecanisme: { nom: "Méthode Tarbiya Sereine™", etapes: ["Comprendre les besoins développementaux par tranche d'âge (3-6, 7-9, 10-12)", "Sortir de la dichotomie autorité-rigide / laxisme-coupable (cadre 'ferme et chaleureux')", "Installer 5 rituels quotidiens de transmission (matin, repas, dou'a, lecture, dodo)", "Scripts validés pour 10 situations critiques (devoirs, écrans, prière, frères-soeurs, ramadan)"], score: 88, attempts: 2, validated: true, forced: false, feedback: { verdict: "✓ Mécanisme structuré · cadre théorique + livrables actionnables." }, history: [] },
+  vehicule: { format: "programme_video", justification: "Programme vidéo 8 semaines, 24 modules courts (12-18min) accessibles à vie. Groupe Telegram fermé pour entraide quotidienne. 1 live mensuel de questions-réponses (3eme jeudi du mois 21h). Pensé pour des mères qui ont 30 minutes par jour, pas plus.", validated: true },
+  bonus: { items: [
+    { nom: "50 fiches enfant prêtes à l'emploi (par âge et par situation)", valeur: "147€", raison: "Tu n'as pas le temps de chercher comment réagir. Tu sors la fiche, tu suis le script, ça désamorce. Utilisable dès le jour 1." },
+    { nom: "Kit Ramadan Kids (planner 30j + activités + duas illustrés enfants)", valeur: "97€", raison: "Le mois le plus difficile en parentalité musulmane. Tu arrives préparée au lieu d'improviser dans la fatigue." },
+    { nom: "30 scripts de réponse aux questions difficiles", valeur: "67€", raison: "Tu n'es plus prise au dépourvu. Réponses validées par un imam, adaptées par tranche d'âge." },
+  ], score: 87, attempts: 1, validated: true, forced: false, feedback: { verdict: "✓ Bonus utilisables immédiatement, valeur perçue claire." }, history: [] },
+  garantie: { type: "remboursement", formulation: "Si après 30 jours d'utilisation et application de 5 modules au minimum, tu ne sens aucune amélioration sur la gestion des crises de tes enfants, tu es remboursée intégralement, sans question.", score: 84, attempts: 2, validated: true, forced: false, feedback: { verdict: "✓ Garantie 30j claire · condition raisonnable (5 modules)." }, history: [] },
+  urgence: { type: "bonus_expirant", justification: "Le 'Kit Ramadan Kids' est offert uniquement pour les inscriptions avant le 15 février. Après cette date, il reste accessible mais à l'achat séparé (97€). Cette urgence est éthique : Ramadan a une vraie date.", score: 82, attempts: 1, validated: true, forced: false, feedback: { verdict: "✓ Urgence calée sur un événement réel (Ramadan)." }, history: [] },
+  prix: {
+    montant: "397",
+    leviers: {
+      resultat:    { score: 86, justification: "Transformation de la vie quotidienne familiale = bénéfice émotionnel énorme pour la mère ET les enfants." },
+      probabilite: { score: 88, justification: "Mécanisme + 50 fiches + scripts + groupe Telegram + lives mensuels = la mère a tout en main pour réussir. Très outillée." },
+      delai:       { score: 90, justification: "Quick-win semaine 1 (premier rituel installé) + transformation visible à 60 jours. Délai serré mais cohérent." },
+      effort:      { score: 91, justification: "Done-for-you sur les scripts, les fiches, le kit ramadan. La mère applique, elle n'invente rien." },
+    },
+    levier_faible: "resultat", alignements: { format: true, cible: true, ancrage: true },
+    score: 89, attempts: 1, validated: true, forced: false,
+    feedback: { verdict: "✓ Positionnement validé · 397€ low-ticket très accessible · ratio valeur/prix excellent." }, history: [],
+  },
+};
+
+// ── Sortir de la dépendance affective ─────────────────────────────────────
+const DEPENDANCE_PATCH: Partial<M3State> = {
+  current_step: "promesse", market_type: "b2c_transfo",
+  m1_data: {
+    source: "demo_sortir_dependance",
+    sous_niche_2: {
+      phrase_finale: "Femmes musulmanes 28-50 ans en rupture (divorce ou rupture famille) qui veulent retrouver leur estime, leur autonomie émotionnelle et financière en 90 jours",
+      cible: "Femmes musulmanes pratiquantes 28-50 ans, divorcées récentes ou en rupture forte avec leur famille, mères célibataires ou avec garde alternée, qui se sentent perdues, dévalorisées, isolées",
+      douleur: "Perte de repères, peur de l'avenir matériel et affectif, dévalorisation de soi, jugement de l'entourage et de la communauté, isolement, sentiment d'avoir 'gâché' sa vie",
+      methode: "Parcours Hijra Intérieure™ : retrouver son estime, son autonomie émotionnelle et un cap de vie en 90 jours",
+    },
+    avatar: { socio: { nom: "Layla", age: "38 ans", situation: "Divorcée depuis 4 mois après 12 ans de mariage, 2 enfants (8 et 11 ans) en garde alternée, retournée chez ses parents à Lyon, ancienne assistante de direction au chômage, voile depuis 6 ans." } },
+    marche: { id: "relations", label: "🤝 Relations" },
+  },
+  m2_data: null,
+  promesse: { text: "Permettre à 80 femmes musulmanes en rupture de retrouver leur estime, leur autonomie émotionnelle et un cap de vie clair en 90 jours, sans tomber dans la victimisation ni renier leur foi.", score: 86, attempts: 2, validated: true, forced: false, feedback: { verdict: "✓ Promesse délicate maîtrisée · transformation interne + cap externe + ton respectueux." }, history: [] },
+  mecanisme: { nom: "Parcours Hijra Intérieure™", etapes: ["Faire le deuil de l'ancienne vie (semaines 1-2 · rituels et lecture coranique guidée)", "Déconstruire les schémas répétitifs (semaines 3-5 · travail psychologique avec coach validée)", "Poser 3 nouveaux repères de vie (foi · revenu · réseau)", "Construire l'autonomie financière de base (semaines 7-10)", "Refaire communauté féminine saine (semaines 11-12)"], score: 84, attempts: 2, validated: true, forced: false, feedback: { verdict: "✓ Mécanisme intériorisé respectueux + ouverture sur l'autonomie financière." }, history: [] },
+  vehicule: { format: "coaching_groupe_1to1", justification: "Programme 90 jours. Groupe fermé de 12 femmes maximum sur Telegram (non-mixte total) + 1 live de groupe par semaine (jeudi 21h après les enfants couchés) + 1 session 1to1 hebdomadaire de 45min avec une coach formée et validée par un comité religieux. Suivi resserré indispensable vu la fragilité émotionnelle.", validated: true },
+  bonus: { items: [
+    { nom: "Kit méditation et duas adaptées à la rupture (audio + livret)", valeur: "147€", raison: "Apaisement immédiat dès la première écoute. Outils utilisables dans les moments de crise nocturne." },
+    { nom: "Accès gratuit à un thérapeute / coach formée et validée (3 séances incluses)", valeur: "450€", raison: "Beaucoup de soeurs en rupture ont besoin d'un travail psychologique approfondi qu'un programme seul ne peut pas remplacer." },
+    { nom: "Sororité Telegram à vie (même après les 90 jours)", valeur: "Inestimable", raison: "L'isolement post-rupture est le plus grand piège. La sororité reste accessible à vie pour ne plus jamais retomber dedans." },
+  ], score: 88, attempts: 1, validated: true, forced: false, feedback: { verdict: "✓ Bonus adressent les 3 vraies douleurs (apaisement immédiat + soin profond + isolement)." }, history: [] },
+  garantie: { type: "continuite", formulation: "Si après les 90 jours tu ne te sens toujours pas en mesure d'assumer ta nouvelle vie de manière autonome, je continue de t'accompagner gratuitement pendant 60 jours supplémentaires, et tu gardes l'accès à la sororité à vie quoi qu'il arrive.", score: 85, attempts: 2, validated: true, forced: false, feedback: { verdict: "✓ Garantie continuité respectueuse · pas de promesse de bonheur." }, history: [] },
+  urgence: { type: "cohorte_limitee", justification: "12 femmes maximum par cohorte. Les 1to1 hebdomadaires + la fragilité émotionnelle de la cible imposent un suivi rapproché. Je n'accepte pas de candidates au-delà de cette capacité.", score: 84, attempts: 1, validated: true, forced: false, feedback: { verdict: "✓ Capacité réelle, justifiée par le caractère sensible du sujet." }, history: [] },
+  prix: {
+    montant: "1497",
+    leviers: {
+      resultat:    { score: 89, justification: "Reconstruire sa vie après divorce = transformation profonde, valeur émotionnelle quasi-infinie." },
+      probabilite: { score: 86, justification: "1to1 hebdomadaire + 3 séances thérapeute + sororité = encadrement très solide." },
+      delai:       { score: 81, justification: "90 jours c'est court pour une reconstruction profonde mais cohérent comme jalon. Garantie continuité compense." },
+      effort:      { score: 79, justification: "Travail intérieur intense, 1to1 hebdomadaire à honorer, lives groupe à suivre." },
+    },
+    levier_faible: "effort", alignements: { format: true, cible: true, ancrage: true },
+    score: 84, attempts: 1, validated: true, forced: false,
+    feedback: { verdict: "✓ Positionnement validé · 1497€ aligné avec une transformation de vie majeure." }, history: [],
+  },
+};
+
 export const M3_DEMO_CASES: M3DemoCase[] = [
   // ─── ARGENT (4) ───
   { key: "cake_design", segment: "argent", emoji: "🎂",
@@ -252,16 +370,16 @@ export const M3_DEMO_CASES: M3DemoCase[] = [
   // ─── RELATIONS (3) ───
   { key: "preparation_mariage", segment: "relations", emoji: "💍",
     title: "Préparation au mariage pour sœurs",
-    summary: "Sœurs en quête de mariage halal serein (B2C transfo · cohorte 12 sem)",
-    ready: false },
+    summary: "Sœurs en quête de mariage halal serein (B2C transfo · cohorte 6 mois)",
+    ready: true, patch: MARIAGE_PATCH },
   { key: "parentalite_islamique", segment: "relations", emoji: "👶",
     title: "Parentalité islamique 3-12 ans",
-    summary: "Mamans qui veulent éduquer dans le calme + la sunnah (B2C transfo · cohorte)",
-    ready: false },
+    summary: "Mamans qui veulent éduquer dans le calme + la sunnah (B2C transfo · programme vidéo 8 sem)",
+    ready: true, patch: PARENTALITE_PATCH },
   { key: "sortir_dependance", segment: "relations", emoji: "🌿",
     title: "Sortir de la dépendance affective",
-    summary: "Femmes en sortie de relation toxique qui veulent retrouver leur sakina (B2C transfo)",
-    ready: false },
+    summary: "Femmes en sortie de rupture qui veulent retrouver leur sakina (B2C transfo · 90j)",
+    ready: true, patch: DEPENDANCE_PATCH },
   // ─── SANTÉ (3) ───
   { key: "remise_en_forme_pudique", segment: "sante", emoji: "💪",
     title: "Remise en forme pudique à domicile",
