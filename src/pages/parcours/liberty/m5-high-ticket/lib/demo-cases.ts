@@ -582,6 +582,120 @@ const NAJET_PATCH: Partial<M5State> = {
   highest: "lock",
 };
 
+// ── 8 · Salima · Perte de poids mamans (bon cas ht_lt saisonnier ramadan) ─
+const SALIMA_PATCH: Partial<M5State> = {
+  ...buildBaseDemo({
+    avatar: "Salima",
+    niche: "Mamans musulmanes 28-42 ans post-accouchement qui veulent perdre 8-15kg en 6 mois sans frustration et avec ramadan adapté",
+    m2_pain: "Se voir grossir et plus rentrer dans rien depuis 2 ans après le 2e bébé",
+    m3_promesse: "Perdre 8 à 12 kg en 16 semaines, ramadan inclus, sans frustration ni interdit, avec un plan adapté à ta vie de maman",
+    m3_mecanisme: "Maman Légère™",
+    m3_prix: "1 297€",
+    m4_strategy: "ht_lt",
+    m4_ht_target: 10,
+    m4_forced: false,
+  }),
+  data: {
+    pont: {
+      pointA: { selected_pain_idx: 0, custom_text: "", formulated: "Salima a 12 kg de plus que pré-grossesse depuis 2 ans. Elle évite les miroirs, achète des vêtements trop grands, et se sent fatiguée tout le temps." },
+      pointB: { measurable_outcome: "Perdre 8 à 12 kg en 16 semaines (ramadan inclus), avec poids relevé chaque dimanche matin, sans craquage > 3 fois en 16 semaines", timeframe_days: 112, formulated: "Elle passe de maman fatiguée qui évite les miroirs → maman légère qui rentre dans sa garde-robe en 16 semaines." },
+      bridge_summary: "Le pont : nutrition adaptée à la vie de maman (batch cooking, anti-grignotage), plan ramadan spécifique, sport court (15-25 min) faisable à la maison.",
+    },
+    conditions: {
+      simple:       { score: 8, justification: "DWY : menus prêts à imprimer, listes de courses, sport en 15-25 min à la maison.", delivery_mode: "DWY" },
+      rapide:       { score: 7, justification: "16 semaines pour 8-12 kg est sain (0.5-0.75 kg/sem). Plus rapide = effet yoyo.", timeframe_days: 112 },
+      systematique: { score: 9, justification: "38 mamans accompagnées sur 3 cohortes. 34/38 ont atteint l'objectif. 14 témoignages avant/après.", proof_type: "14 témoignages avant/après + courbes de poids" },
+      aspirante:    { score: 8, justification: "Retrouver son corps, son énergie, sa fierté. Et surtout : ramadan vécu sans stress de la prise de poids.", amplitude: "De maman fatiguée +12kg → maman légère, énergique et fière" },
+      weakest_axis: "rapide",
+      action_plan: "Communiquer plus clairement sur le rythme sain pour casser l'attente du « perdre 10kg en 1 mois ».",
+    },
+    eatcomplex: {
+      rows: [
+        { client_step: "Planifier 48 menus équilibrés et halal", what_you_eat: "48 menus prêts (petit-déj, déj, dîner, collation), listes de courses, recettes batch cooking", what_remains: "Faire les courses et cuisiner (15 min batch dimanche)" },
+        { client_step: "Adapter aux contraintes (kids, mari, fatigue)", what_you_eat: "Variantes « 1 ingrédient pour toute la famille » + version express si fatigue + version mari", what_remains: "Choisir entre 2-3 options selon l'énergie du jour" },
+        { client_step: "Bouger sans aller en salle", what_you_eat: "Plans sport 15-25 min × 4 niveaux + vidéos pré-enregistrées + adaptation post-partum", what_remains: "Caser 15-25 min dans la journée" },
+        { client_step: "Survivre au ramadan sans reprendre", what_you_eat: "Plan ramadan dédié : sehri optimisé, iftar protéiné, sport adapté, hydratation", what_remains: "Tenir le plan pendant le mois" },
+        { client_step: "Suivre ses progrès sans obsession", what_you_eat: "Pesée hebdo unique + journal corporel + mesures + photos comparatives", what_remains: "Faire la pesée dimanche matin et l'envoyer dans le groupe" },
+      ],
+    },
+    structure: {
+      total_weeks: 16, promise_days: 112,
+      phases: [
+        { num: 1, name: "Reset nutrition & première fonte", weeks: "1-5", livrables: "Menus en place + batch cooking installé + premier 3-4 kg perdu" },
+        { num: 2, name: "Mouvement & ramadan préparé", weeks: "6-10", livrables: "Routine sport stabilisée + plan ramadan compris + 6-7 kg perdu" },
+        { num: 3, name: "Ramadan tenu + finition", weeks: "11-16", livrables: "Ramadan tenu sans reprise + objectif 8-12 kg atteint + plan post-programme" },
+      ],
+      mecanisme_anchor: "Maman Légère™",
+    },
+    conviction: {
+      checklist: { sur_delivre: true, ten_clients: true, believe_price: true, recommend_to_brother: true, prepared_objections: true },
+      missing: "",
+      next_action: "Lancer une cohorte ramadan dédiée chaque année avec promesse adaptée.",
+    },
+  },
+  scores: { pont: 89, conditions: 88, eatcomplex: 91, structure: 87, conviction: 92 },
+  attempts: { pont: 1, conditions: 1, eatcomplex: 1, structure: 1, conviction: 1 },
+  forced: { pont: false, conditions: false, eatcomplex: false, structure: false, conviction: false },
+  highest: "lock",
+};
+
+// ── 9 · Mehdi · Reprise sport hommes 30+ (bon cas ht_only validation) ──
+const MEHDI_PATCH: Partial<M5State> = {
+  ...buildBaseDemo({
+    avatar: "Mehdi",
+    niche: "Hommes musulmans 28-40 ans sédentaires depuis 3+ ans qui veulent reprendre le sport à la maison sans mixité",
+    m2_pain: "Se sentir mou, à bout de souffle dans les escaliers, et savoir qu'il dégrade son corps depuis 5 ans",
+    m3_promesse: "Reprendre le sport durablement à la maison en 12 semaines, sans mixité, sans matériel cher, et perdre 5-8 kg",
+    m3_mecanisme: "Reprise Forte™",
+    m3_prix: "897€",
+    m4_strategy: "ht_only",
+    m4_ht_target: 8,
+    m4_forced: false,
+  }),
+  data: {
+    pont: {
+      pointA: { selected_pain_idx: 0, custom_text: "", formulated: "Mehdi a 8 kg en trop, son dos lui fait mal au bureau, il est essoufflé quand son fils veut jouer au foot. Il a honte de son corps." },
+      pointB: { measurable_outcome: "Perdre 5-8 kg + tenir une séance de 45 min sans pause + monter 4 étages sans souffler, mesuré sur 12 semaines avec courbe de poids et tests d'endurance", timeframe_days: 84, formulated: "Il passe de sédentaire essoufflé qui a honte → homme qui a repris son corps et son endurance en 12 semaines." },
+      bridge_summary: "Le pont : programme sport-maison 4 niveaux + nutrition simple (pas de régime extrême) + non-mixité respectée + suivi en groupe d'hommes.",
+    },
+    conditions: {
+      simple:       { score: 8, justification: "DWY : vidéos pré-enregistrées 30-45 min, nutrition simple (4 repas types), pas de matériel cher.", delivery_mode: "DWY" },
+      rapide:       { score: 7, justification: "12 semaines pour transformation visible. C'est rapide mais sain (0.5-0.7 kg/sem).", timeframe_days: 84 },
+      systematique: { score: 7, justification: "22 hommes ont fait le programme. 18 ont atteint l'objectif. 7 témoignages avant/après.", proof_type: "7 témoignages avant/après + vidéos d'effort" },
+      aspirante:    { score: 8, justification: "Retrouver fierté + santé + être un père qui peut courir avec ses enfants + meilleur en ibadat (énergie).", amplitude: "De sédentaire essoufflé → homme fort capable de prier debout sans douleur" },
+      weakest_axis: "systematique",
+      action_plan: "Filmer 5 nouveaux témoignages avant/après pour densifier la preuve.",
+    },
+    eatcomplex: {
+      rows: [
+        { client_step: "Reprendre sans se blesser", what_you_eat: "Plan progressif 12 semaines × 4 niveaux + vidéos d'échauffement + tests d'aptitude semaine 1", what_remains: "Faire les 3 séances/semaine (45 min)" },
+        { client_step: "Manger pour perdre sans avoir faim", what_you_eat: "4 repas types modulables + 12 recettes simples + plan macros calculé pour son profil", what_remains: "Faire les courses et cuisiner (batch 1h dimanche)" },
+        { client_step: "Tenir sur la durée", what_you_eat: "1 call de groupe/sem + groupe WhatsApp d'hommes + check-in lundi matin", what_remains: "Se montrer chaque semaine — c'est un engagement" },
+        { client_step: "Adapter en voyage / travail intense", what_you_eat: "Plan « vie réelle » : séance 20 min en chambre d'hôtel + repas express boulangerie/restau", what_remains: "Suivre quand même même en mode dégradé" },
+        { client_step: "Mesurer ses progrès objectivement", what_you_eat: "Tests d'endurance semaine 1, 6, 12 + pesée hebdo + photos comparatives", what_remains: "Faire les tests honnêtement et envoyer dans le groupe" },
+      ],
+    },
+    structure: {
+      total_weeks: 12, promise_days: 84,
+      phases: [
+        { num: 1, name: "Reprise progressive & nutrition", weeks: "1-3", livrables: "Tests initiaux passés + 3 séances/sem tenues + alimentation cadrée" },
+        { num: 2, name: "Intensification & première fonte", weeks: "4-7", livrables: "3-4 kg perdus + endurance visible + douleurs dorsales en baisse" },
+        { num: 3, name: "Stabilisation & autonomie", weeks: "8-12", livrables: "5-8 kg perdus + plan post-programme + autonomie complète sur les séances" },
+      ],
+      mecanisme_anchor: "Reprise Forte™",
+    },
+    conviction: {
+      checklist: { sur_delivre: true, ten_clients: true, believe_price: true, recommend_to_brother: true, prepared_objections: true },
+      missing: "",
+      next_action: "Recruter 1 coach senior pour libérer du temps coaching live.",
+    },
+  },
+  scores: { pont: 86, conditions: 84, eatcomplex: 88, structure: 83, conviction: 89 },
+  attempts: { pont: 1, conditions: 1, eatcomplex: 1, structure: 1, conviction: 1 },
+  forced: { pont: false, conditions: false, eatcomplex: false, structure: false, conviction: false },
+  highest: "lock",
+};
+
 // ── Liste finale 11 cas ──────────────────────────────────────────────
 export const M5_DEMO_CASES: M5DemoCase[] = [
   // ARGENT
@@ -610,12 +724,12 @@ export const M5_DEMO_CASES: M5DemoCase[] = [
     is_anti_pattern: false, ready: true, patch: NAJET_PATCH },
 
   // SANTÉ
-  { key: "sante_perte_poids_mamans", segment: "sante", emoji: "🌿", title: "Salima · perte de poids (à transcrire)",
-    summary: "Maman 37 ans · 18 transformations · ht_lt 2 900€ (saisonnier ramadan)",
-    is_anti_pattern: false, ready: false },
-  { key: "sante_reprise_sport_hommes", segment: "sante", emoji: "🏃", title: "Mehdi · reprise sport 40+ (à transcrire)",
-    summary: "Cadre 42 ans · 14 frères accompagnés · ht_only 2 700€ (patient sur preuves)",
-    is_anti_pattern: false, ready: false },
+  { key: "sante_perte_poids_mamans", segment: "sante", emoji: "🌿", title: "Salima · perte de poids mamans",
+    summary: "Maman 35 ans post-bébé · 38 mamans accompagnées 34/38 réussies · ht_lt 1 297€ saisonnier ramadan (scores 87-92)",
+    is_anti_pattern: false, ready: true, patch: SALIMA_PATCH },
+  { key: "sante_reprise_sport_hommes", segment: "sante", emoji: "💪", title: "Mehdi · reprise sport hommes 30+",
+    summary: "Cadre 34 ans · 22 hommes accompagnés 18 réussis · ht_only 897€ non-mixité (scores 83-89)",
+    is_anti_pattern: false, ready: true, patch: MEHDI_PATCH },
   { key: "sante_anxiete_etudiants", segment: "sante", emoji: "⚠", title: "Lina · psy — ANTI-PATTERN full fragile",
     summary: "Psy 22 ans · 9 étudiantes · name-drop Sarah Knight / Mel Robbins · scoring durci (~22-35/100)",
     is_anti_pattern: true, ready: true, patch: LINA_PATCH },
