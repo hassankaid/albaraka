@@ -19,7 +19,8 @@ import { ScriptAnnonceScreen } from "./screens/ScriptAnnonceScreen";
 import { LockScreen } from "./screens/LockScreen";
 import { DemoSelectorScreen } from "./screens/DemoSelectorScreen";
 import { usePersistedM6State } from "./lib/usePersistedState";
-import { type M6Step, type M6State, PEDA_STEPS } from "./lib/types";
+import { type M6Step, type M6State, PEDA_STEPS, defaultM6State } from "./lib/types";
+import { M6_DEMO_CASES, type M6DemoCase } from "./lib/demo-cases";
 
 export default function M6PricingPage() {
   const navigate = useNavigate();
@@ -48,9 +49,12 @@ export default function M6PricingPage() {
     await persisted.resetState();
   }, [persisted]);
 
-  const handleSelectDemo = useCallback((key: string) => {
+  const handleSelectDemo = useCallback((c: M6DemoCase) => {
+    if (!c.patch) return;
     if (!persisted.state.demoMode) preDemoSnapshot.current = persisted.state;
-    persisted.setState((prev) => ({ ...prev, demoMode: key }));
+    const fresh = defaultM6State();
+    const next: M6State = { ...fresh, ...c.patch, demoMode: c.key } as M6State;
+    persisted.setState(() => next);
     setShowDemoSelector(false);
   }, [persisted]);
 
@@ -102,7 +106,9 @@ export default function M6PricingPage() {
 
   const { state, setState, flushNow } = persisted;
   const showRestartBtn = state.current !== "welcome" && !state.demoMode;
-  const demoLabel = state.demoMode || null;
+  const demoLabel = state.demoMode
+    ? M6_DEMO_CASES.find((c) => c.key === state.demoMode)?.title.split("·")[0].trim() ?? state.demoMode
+    : null;
   const m6Forced = PEDA_STEPS.some((k) => state.forced[k]);
 
   return (
