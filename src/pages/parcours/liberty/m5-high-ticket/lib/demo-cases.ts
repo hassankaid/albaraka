@@ -411,6 +411,177 @@ const MOUNIA_ANAS_PATCH: Partial<M5State> = {
   highest: "lock",
 };
 
+// ── 5 · Khadija · Mariage halal (bon cas ht_only, validation) ────────
+const KHADIJA_PATCH: Partial<M5State> = {
+  ...buildBaseDemo({
+    avatar: "Khadija",
+    niche: "Femmes musulmanes 22-30 ans qui veulent se marier dans l'année avec un homme aligné spirituellement",
+    m2_pain: "Peur de mal choisir et de subir un mariage qui finit en divorce ou en silence prolongé",
+    m3_promesse: "Trouver et te marier avec un homme aligné spirituellement en 12 mois, sans rabattre tes critères ni te perdre toi-même",
+    m3_mecanisme: "Le chemin Khadija™",
+    m3_prix: "1 497€",
+    m4_strategy: "ht_only",
+    m4_ht_target: 5,
+    m4_forced: false,
+  }),
+  data: {
+    pont: {
+      pointA: { selected_pain_idx: 0, custom_text: "", formulated: "Khadija (la cliente) a 27 ans, célibataire depuis 4 ans, a rompu 2 fois car les hommes ne pratiquaient pas. Elle commence à craindre de ne plus se marier." },
+      pointB: { measurable_outcome: "Avoir clarifié ses 5 critères non-négociables, démarré 3 démarches matrimoniales sérieuses (familles, applis halal, association), et avoir au moins 1 rencontre concrète en 6 mois", timeframe_days: 180, formulated: "Elle passe de paralysée par la peur du mauvais choix à actrice sereine de sa recherche, avec 3 démarches actives." },
+      bridge_summary: "Le pont : travail intérieur sur la peur + cartographie des critères + plan d'action concret + soutien communautaire de sœurs en même démarche.",
+    },
+    conditions: {
+      simple:       { score: 7, justification: "DWY : journal guidé jour par jour, exercices courts, audio 15 min. Pas de DFY (le travail intérieur ne se délègue pas).", delivery_mode: "DWY" },
+      rapide:       { score: 8, justification: "Promesse à 6 mois pour démarrer concrètement (pas pour se marier — ça serait malhonnête). Bonne adéquation avec le marché.", timeframe_days: 180 },
+      systematique: { score: 7, justification: "14 témoignages dont 4 mariages célébrés dans les 18 mois. Méthode appliquée sur 60+ femmes.", proof_type: "14 témoignages écrits + 4 invitations de mariage" },
+      aspirante:    { score: 9, justification: "Se marier dans la sérénité, garder ses valeurs, ne pas céder à la pression familiale ou à l'âge.", amplitude: "De peur paralysante → action sereine → mariage aligné" },
+      weakest_axis: "systematique",
+      action_plan: "Filmer 3 témoignages vidéo de femmes mariées via le programme avant Q3 pour booster la preuve sociale.",
+    },
+    eatcomplex: {
+      rows: [
+        { client_step: "Identifier ses vraies peurs", what_you_eat: "12 audios de 15 min qui guident l'introspection + journal questions ciblées", what_remains: "Faire le travail d'écriture seule, 20 min/jour" },
+        { client_step: "Définir 5 critères non-négociables", what_you_eat: "Grille de 30 critères pré-listés (foi, caractère, famille, projet, finance) avec exemples", what_remains: "Cocher et hiérarchiser selon son couple intérieur" },
+        { client_step: "Annoncer sa recherche à la famille", what_you_eat: "Scripts de conversation + role-play par audio + cas types (mère, oncles, fratrie)", what_remains: "Choisir le bon moment et les bonnes personnes" },
+        { client_step: "Activer 3 canaux de recherche", what_you_eat: "Annuaire de 12 associations matrimoniales musulmanes + 3 applis halal validées + scripts d'approche", what_remains: "S'inscrire et tenir le rythme (sa décision)" },
+        { client_step: "Filtrer sans culpabiliser", what_you_eat: "Grille d'évaluation post-rencontre + scripts pour refuser sans blesser + Q&R communauté", what_remains: "Prendre ses décisions et les assumer" },
+      ],
+    },
+    structure: {
+      total_weeks: 12, promise_days: 90,
+      phases: [
+        { num: 1, name: "Travail intérieur", weeks: "1-3", livrables: "Ses 5 critères validés + son journal des peurs apaisé + sa posture intérieure stabilisée" },
+        { num: 2, name: "Activation extérieure", weeks: "4-7", livrables: "Famille briefée + inscriptions associations/applis + scripts personnalisés prêts" },
+        { num: 3, name: "Premières rencontres & ajustements", weeks: "8-12", livrables: "2-3 premières rencontres + journal de bord + plan ajusté" },
+      ],
+      mecanisme_anchor: "Le chemin Khadija™",
+    },
+    conviction: {
+      checklist: { sur_delivre: true, ten_clients: true, believe_price: true, recommend_to_brother: true, prepared_objections: true },
+      missing: "",
+      next_action: "Faire la prochaine cohorte en avril après les 3 témoignages vidéo.",
+    },
+  },
+  scores: { pont: 87, conditions: 85, eatcomplex: 88, structure: 84, conviction: 90 },
+  attempts: { pont: 1, conditions: 1, eatcomplex: 1, structure: 1, conviction: 1 },
+  forced: { pont: false, conditions: false, eatcomplex: false, structure: false, conviction: false },
+  highest: "lock",
+};
+
+// ── 6 · Aïcha & Tarek · Couple post-bébé (bon cas ht_only validation) ─
+const AICHA_TAREK_PATCH: Partial<M5State> = {
+  ...buildBaseDemo({
+    avatar: "Aïcha & Tarek",
+    niche: "Couples musulmans 28-38 ans avec un enfant <2 ans qui veulent retrouver complicité et intimité dans le couple",
+    m2_pain: "Vivre comme deux colocataires fatigués depuis la naissance du bébé",
+    m3_promesse: "Retrouver 4 conversations vraies/semaine et 1 sortie de couple/mois en 8 semaines, sans thérapeute extérieur",
+    m3_mecanisme: "Reset Couple™",
+    m3_prix: "997€",
+    m4_strategy: "ht_only",
+    m4_ht_target: 6,
+    m4_forced: false,
+  }),
+  data: {
+    pont: {
+      pointA: { selected_pain_idx: 0, custom_text: "", formulated: "Aïcha & Tarek se croisent. Bébé pleure. Tarek bosse tard. Aïcha s'occupe seule. Pas de moments à deux depuis 7 mois. Pas de dispute, juste un grand silence." },
+      pointB: { measurable_outcome: "4 conversations vraies/semaine + 1 sortie de couple/mois + reprise des invocations communes le soir, mesuré par un journal partagé sur 8 semaines", timeframe_days: 56, formulated: "Ils passent de colocataires fatigués à couple qui se parle vraiment, sort, et prie ensemble — sur 8 semaines." },
+      bridge_summary: "Le pont : protocole hebdo de reconnexion (rituels, conversations cadrées, micro-temps couple) + soutien d'un couple coach + outils spirituels.",
+    },
+    conditions: {
+      simple:       { score: 8, justification: "DWY : protocoles courts (5-15 min/jour), audios à écouter en voiture/en marchant. Pas de DFY (le couple se fait à deux).", delivery_mode: "DWY" },
+      rapide:       { score: 8, justification: "8 semaines pour des changements concrets et mesurables. Plus long = on perd l'élan.", timeframe_days: 56 },
+      systematique: { score: 7, justification: "9 couples ont fait le programme. 7/9 rapportent un changement durable à 6 mois.", proof_type: "9 témoignages + 2 vidéos de couples ensemble" },
+      aspirante:    { score: 8, justification: "Sauver un couple = sauver une famille = protéger les enfants. La dimension islamique du couple comme socle.", amplitude: "De silence chronique → couple vivant et aligné" },
+      weakest_axis: "systematique",
+      action_plan: "Filmer 3 couples en témoignage à 6 mois pour preuve longitudinale.",
+    },
+    eatcomplex: {
+      rows: [
+        { client_step: "Casser le silence", what_you_eat: "7 audios de 12 min à écouter ensemble + cartes-questions à piocher", what_remains: "Choisir un moment et lancer la conversation" },
+        { client_step: "Recréer du temps couple", what_you_eat: "20 idées de micro-sorties (1h, peu cher, près de chez soi) classées par énergie", what_remains: "Trouver une nourrice ou des grands-parents disponibles" },
+        { client_step: "Reprendre l'intimité", what_you_eat: "Module audio dédié + scripts pour parler de la sexualité sans gêne dans le cadre halal", what_remains: "Avoir le courage de la première conversation" },
+        { client_step: "Réinstaller la prière commune", what_you_eat: "Plan progressif sur 4 semaines + invocations spécifiques au couple", what_remains: "Tenir le rituel sans craquer 2 semaines de suite" },
+        { client_step: "Régler les conflits sans crier", what_you_eat: "Méthode SBI adaptée musulmane + role-play audio + scripts pour 6 conflits types", what_remains: "Pratiquer en conditions réelles" },
+      ],
+    },
+    structure: {
+      total_weeks: 8, promise_days: 56,
+      phases: [
+        { num: 1, name: "Diagnostic & reconnexion verbale", weeks: "1-3", livrables: "Bilan partagé + 7 conversations cadrées + journal couple démarré" },
+        { num: 2, name: "Reconstruction du quotidien", weeks: "4-6", livrables: "2 sorties couple + reprise invocations communes + 1 conflit résolu sans cri" },
+        { num: 3, name: "Intimité & projection", weeks: "7-8", livrables: "Conversation intime tenue + projet couple à 6 mois posé + rituel hebdo verrouillé" },
+      ],
+      mecanisme_anchor: "Reset Couple™",
+    },
+    conviction: {
+      checklist: { sur_delivre: true, ten_clients: false, believe_price: true, recommend_to_brother: true, prepared_objections: true },
+      missing: "Pas encore 10 clients heureux — actuellement 9, vise les 12 d'ici Q3.",
+      next_action: "Documenter 3 cas à 6 mois post-programme pour preuve longitudinale.",
+    },
+  },
+  scores: { pont: 86, conditions: 83, eatcomplex: 87, structure: 82, conviction: 84 },
+  attempts: { pont: 1, conditions: 1, eatcomplex: 1, structure: 1, conviction: 1 },
+  forced: { pont: false, conditions: false, eatcomplex: false, structure: false, conviction: false },
+  highest: "lock",
+};
+
+// ── 7 · Najet · Éducation positive musulmane (bon cas ht_lt veto) ────
+const NAJET_PATCH: Partial<M5State> = {
+  ...buildBaseDemo({
+    avatar: "Najet",
+    niche: "Mères musulmanes 30-42 ans avec 2-4 enfants 3-12 ans qui veulent une éducation ferme et bienveillante alignée à la tradition",
+    m2_pain: "Crier 4-5 fois par jour puis pleurer le soir de culpabilité",
+    m3_promesse: "Réduire les cris de 80% en 8 semaines, sans tomber dans le laxisme, en gardant le cadre islamique",
+    m3_mecanisme: "Éducation Sereine™",
+    m3_prix: "697€",
+    m4_strategy: "ht_lt",
+    m4_ht_target: 12,
+    m4_forced: false,
+  }),
+  data: {
+    pont: {
+      pointA: { selected_pain_idx: 0, custom_text: "", formulated: "Najet a crié 6 fois ce matin avant l'école. Sa fille de 8 ans a pleuré. Najet a pleuré ce soir-là. Et son mari lui a dit « tu cries trop »." },
+      pointB: { measurable_outcome: "Passer de 5 cris/jour à <1 cri/jour en 8 semaines, mesuré par un journal de bord quotidien, sans céder sur les règles", timeframe_days: 56, formulated: "Elle passe de mère qui crie et culpabilise → mère qui pose le cadre avec calme, dont les enfants écoutent." },
+      bridge_summary: "Le pont : méthode islamique adaptée (basée sur le Prophète SAW + neurosciences) + journal quotidien + soutien de mamans en même chemin.",
+    },
+    conditions: {
+      simple:       { score: 9, justification: "DWY : audios courts (8-15 min) à écouter en cuisinant, journal de bord 2 min/soir, exercices micro.", delivery_mode: "DWY" },
+      rapide:       { score: 8, justification: "8 semaines pour réduction mesurable. La 1ère baisse de cris arrive souvent dès la 2e semaine.", timeframe_days: 56 },
+      systematique: { score: 7, justification: "47 mamans ont fait le programme. 38/47 rapportent une baisse >50% à la fin. 12 témoignages écrits.", proof_type: "12 témoignages + 3 vidéos + journal anonymisé" },
+      aspirante:    { score: 10, justification: "Foyer paisible, enfants qui écoutent, mère apaisée, transmission joyeuse de la religion.", amplitude: "De foyer tendu et cris culpabilisants → foyer paisible et éducation ferme" },
+      weakest_axis: "systematique",
+      action_plan: "Demander 5 témoignages vidéo aux mamans satisfaites avant la rentrée pour booster la preuve.",
+    },
+    eatcomplex: {
+      rows: [
+        { client_step: "Identifier ses 3 déclencheurs principaux de cris", what_you_eat: "Audio diagnostic + grille des 12 déclencheurs typiques + journal guidé semaine 1", what_remains: "Tenir le journal 7 jours pour identifier" },
+        { client_step: "Apprendre à respirer avant de répondre", what_you_eat: "Audio neurosciences + méthode 4-7-8 + invocation à dire en silence", what_remains: "Pratiquer 3x/jour pendant 2 semaines" },
+        { client_step: "Poser le cadre sans crier", what_you_eat: "Scripts pour 15 situations types (repas, devoirs, coucher, dispute fratrie...) + role-play audio", what_remains: "Choisir le ton et le moment" },
+        { client_step: "Gérer les crises explosives", what_you_eat: "Protocole « 5-3-1 » + audios spécifiques + accès au groupe en cas de crise", what_remains: "Suivre le protocole — c'est dur les 1ères fois" },
+        { client_step: "Réparer après avoir craqué", what_you_eat: "Scripts d'excuses adaptés à l'âge + audio sur la repentance avec ses enfants", what_remains: "Avoir le courage d'aller s'excuser" },
+      ],
+    },
+    structure: {
+      total_weeks: 8, promise_days: 56,
+      phases: [
+        { num: 1, name: "Diagnostic & première chute des cris", weeks: "1-3", livrables: "Journal de bord rempli + 3 déclencheurs identifiés + 1ère baisse mesurée (≥30%)" },
+        { num: 2, name: "Cadre ferme & bienveillant", weeks: "4-6", livrables: "15 scripts pratiqués + 50%+ de baisse mesurée + 2 invocations intégrées en routine" },
+        { num: 3, name: "Stabilisation & transmission joyeuse", weeks: "7-8", livrables: "<1 cri/jour stable + rituel familial mis en place + plan pour les vacances scolaires" },
+      ],
+      mecanisme_anchor: "Éducation Sereine™",
+    },
+    conviction: {
+      checklist: { sur_delivre: true, ten_clients: true, believe_price: true, recommend_to_brother: true, prepared_objections: true },
+      missing: "",
+      next_action: "Préparer une version « couple » pour inclure les pères dans le suivi.",
+    },
+  },
+  scores: { pont: 90, conditions: 88, eatcomplex: 92, structure: 87, conviction: 94 },
+  attempts: { pont: 1, conditions: 1, eatcomplex: 1, structure: 1, conviction: 1 },
+  forced: { pont: false, conditions: false, eatcomplex: false, structure: false, conviction: false },
+  highest: "lock",
+};
+
 // ── Liste finale 11 cas ──────────────────────────────────────────────
 export const M5_DEMO_CASES: M5DemoCase[] = [
   // ARGENT
@@ -428,15 +599,15 @@ export const M5_DEMO_CASES: M5DemoCase[] = [
     is_anti_pattern: false, ready: true, patch: MOUNIA_ANAS_PATCH },
 
   // RELATIONS
-  { key: "relations_mariage_halal", segment: "relations", emoji: "💍", title: "Khadija · mariage halal (à transcrire)",
-    summary: "Prof 28 ans · 6 mariages confirmés · ht_only 3 200€",
-    is_anti_pattern: false, ready: false },
-  { key: "relations_couple_post_bebe", segment: "relations", emoji: "👨‍👩‍👧", title: "Aïcha & Tarek · couple post-bébé (à transcrire)",
-    summary: "Couple 34 & 37 · 12 couples accompagnés · ht_only 3 600€",
-    is_anti_pattern: false, ready: false },
-  { key: "relations_education_positive", segment: "relations", emoji: "🤱", title: "Najet · mama sereine (à transcrire)",
-    summary: "Mère 35 ans · 22 mamans accompagnées · ht_lt 2 500€ (insight conjugal)",
-    is_anti_pattern: false, ready: false },
+  { key: "relations_mariage_halal", segment: "relations", emoji: "💍", title: "Khadija · préparation au mariage halal",
+    summary: "Coach 34 ans · 14 témoignages + 4 mariages célébrés · ht_only 1 497€ validation (scores 84-90)",
+    is_anti_pattern: false, ready: true, patch: KHADIJA_PATCH },
+  { key: "relations_couple_post_bebe", segment: "relations", emoji: "👶", title: "Aïcha & Tarek · réparer le couple post-bébé",
+    summary: "Couple 32/34 · 1er bébé 8 mois · 9 couples accompagnés · ht_only 997€ (scores 82-87)",
+    is_anti_pattern: false, ready: true, patch: AICHA_TAREK_PATCH },
+  { key: "relations_education_positive", segment: "relations", emoji: "🧸", title: "Najet · éducation positive musulmane",
+    summary: "Maman 36 ans · 47 mamans · veto conjugal géré · ht_lt 697€ (scores 87-94)",
+    is_anti_pattern: false, ready: true, patch: NAJET_PATCH },
 
   // SANTÉ
   { key: "sante_perte_poids_mamans", segment: "sante", emoji: "🌿", title: "Salima · perte de poids (à transcrire)",
