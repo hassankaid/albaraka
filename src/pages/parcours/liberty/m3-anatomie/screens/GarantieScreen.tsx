@@ -9,10 +9,9 @@ import { type M3State, type GarantieType, VALIDATION_THRESHOLD } from "../lib/ty
 interface Props { state: M3State; setState: (n: (p: M3State) => M3State) => void; onBack: () => void; onNext: () => void; }
 
 const TYPES: Array<{ value: GarantieType; emoji: string; label: string; desc: string }> = [
-  { value: "remboursement", emoji: "💸", label: "Remboursement", desc: "Si pas de résultat après X temps + conditions remplies → remboursé." },
-  { value: "continuite", emoji: "🔄", label: "Continuité", desc: "Si pas de résultat → on continue gratuitement jusqu'à ce que tu y arrives." },
-  { value: "paye_au_resultat", emoji: "🎯", label: "Payé au résultat", desc: "Tu ne paies que si le résultat est atteint (modèle agence)." },
-  { value: "satisfaction_double", emoji: "🤝", label: "Satisfaction + reprise", desc: "Combo : remboursement OU continuité au choix du client." },
+  { value: "remboursement", emoji: "💸", label: "Remboursement conditionné", desc: "Tu rembourses si l'élève suit le programme et ne voit pas le résultat. La condition d'effort filtre les profils sérieux." },
+  { value: "continuite", emoji: "🔄", label: "Continuité gratuite", desc: "Si pas de résultat dans X jours, tu accompagnes gratuitement jusqu'au résultat. Plus rassurant que le remboursement pour les marchés transfo." },
+  { value: "performance", emoji: "🎯", label: "Garantie résultats / performance", desc: "Paiement aux résultats ou remboursement total si pas de résultat. Réservé aux acteurs avec track record solide. Très puissant en B2B." },
 ];
 
 export function GarantieScreen({ state, setState, onBack, onNext }: Props) {

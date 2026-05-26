@@ -25,9 +25,9 @@ PHILOSOPHIE PÉDAGOGIQUE :
 ÉLÉMENTS DE L'ANATOMIE D'UNE OFFRE :
 1. PROMESSE : Transformation claire avec résultat + délai + cible précise (SMDC : Spécifique, Mesurable, Délai, Cible)
 2. MÉCANISME UNIQUE : Méthode nommée (™ optionnel) + 3-4 étapes actionnables différenciantes
-3. VÉHICULE : Format de livraison (programme vidéo / cohorte / coaching / DWY / hybride)
+3. VÉHICULE : Format de livraison (programme vidéo / cohorte / coaching+1to1 / DWY / mastermind / hybride)
 4. BONUS STRATÉGIQUES : 2-3 bonus qui lèvent une objection clé chacun (nom + valeur + raison)
-5. GARANTIE : Inverse le risque (remboursement / continuité / payé au résultat / satisfaction)
+5. GARANTIE : Inverse le risque (remboursement conditionné / continuité gratuite / performance)
 6. URGENCE ÉTHIQUE : Justifiée par une vraie contrainte (capacité, fenêtre temporelle, etc.) — JAMAIS un trick
 7. PRIX : Ancré par la valeur perçue (formule Hormozi : Résultat × Probabilité / (Délai × Effort))
 
@@ -115,7 +115,7 @@ export async function evaluateGarantie(state: M3State): Promise<AIFeedback & { s
 
 TÂCHE : Évalue la GARANTIE qui inverse le risque.
 Critères :
-- Type clair (remboursement / continuité / payé au résultat / satisfaction)
+- Type clair (remboursement conditionné / continuité gratuite / performance)
 - Formulation précise avec conditions explicites
 - Délai annoncé
 - Pas magique (pas "résultats garantis sans effort")

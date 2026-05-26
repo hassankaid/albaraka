@@ -7,6 +7,28 @@ function esc(s: string | null | undefined): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+const GARANTIE_LABELS: Record<string, string> = {
+  remboursement: "Remboursement conditionné",
+  continuite: "Continuité gratuite",
+  performance: "Garantie résultats / performance",
+};
+
+const URGENCE_LABELS: Record<string, string> = {
+  cohorte_limitee: "Cohorte limitée",
+  bonus_expirant: "Bonus expirant",
+  prix_qui_monte: "Prix qui monte (early bird)",
+  fenetre_temporelle: "Fenêtre temporelle",
+};
+
+const VEHICULE_LABELS: Record<string, string> = {
+  programme_video: "Programme vidéo + communauté",
+  cohorte_groupe: "Cohorte + lives groupe",
+  coaching_groupe_1to1: "Programme + groupe + 1to1",
+  consulting_done_with_you: "Consulting / done-with-you",
+  mastermind: "Mastermind (cohorte fermée)",
+  hybride_custom: "Format hybride (custom)",
+};
+
 export function exportM3PDF(state: M3State): void {
   const eng = state.engagement;
   const avatar = state.m1_data?.avatar?.socio?.nom || "Avatar";
@@ -73,7 +95,7 @@ body { font-family: 'Inter', sans-serif; color: #1A1A1A; background: white; marg
 
   <div class="section">
     <div class="section-title">📦 Véhicule</div>
-    <div class="field"><div class="field-label">Format</div><div class="field-content">${esc(state.vehicule.format)}</div></div>
+    <div class="field"><div class="field-label">Format</div><div class="field-content">${esc(VEHICULE_LABELS[state.vehicule.format] || state.vehicule.format)}</div></div>
     <div class="field"><div class="field-label">Justification</div><div class="field-content">${esc(state.vehicule.justification)}</div></div>
   </div>
 
@@ -88,12 +110,12 @@ body { font-family: 'Inter', sans-serif; color: #1A1A1A; background: white; marg
   </div>
 
   <div class="section">
-    <div class="section-title">🛡 Garantie · ${esc(state.garantie.type)}</div>
+    <div class="section-title">🛡 Garantie · ${esc(GARANTIE_LABELS[state.garantie.type] || state.garantie.type)}</div>
     <div class="field-content">${esc(state.garantie.formulation)}</div>
   </div>
 
   <div class="section">
-    <div class="section-title">⏳ Urgence · ${esc(state.urgence.type)}</div>
+    <div class="section-title">⏳ Urgence · ${esc(URGENCE_LABELS[state.urgence.type] || state.urgence.type)}</div>
     <div class="field-content">${esc(state.urgence.justification)}</div>
   </div>
 

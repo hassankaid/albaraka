@@ -99,6 +99,7 @@ export type VehiculeFormat =
   | "cohorte_groupe"
   | "coaching_groupe_1to1"
   | "consulting_done_with_you"
+  | "mastermind"
   | "hybride_custom"
   | "";
 
@@ -127,8 +128,7 @@ export interface BonusState {
 export type GarantieType =
   | "remboursement"
   | "continuite"
-  | "paye_au_resultat"
-  | "satisfaction_double"
+  | "performance"
   | "";
 
 export interface GarantieState {
