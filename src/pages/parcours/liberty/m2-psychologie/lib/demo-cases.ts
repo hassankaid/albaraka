@@ -871,6 +871,477 @@ const AICHA_TAREK_PATCH: Partial<M2State> = {
   attempts: { step1: 1, step2: 1, step3: 1, step4: 1, step5: 1, step6: 1, step7: 1, step8: 1 },
 };
 
+// ── Najet · Éducation positive pour mamans musulmanes ──
+const NAJET_PATCH: Partial<M2State> = {
+  step: "step1",
+  highest: 9,
+  m1: {
+    source: "demo_relations_education_positive",
+    completed_at: null,
+    branche: "B",
+    niche: {
+      sub_niche:
+        "Mamans musulmanes 28-42 ans débordées qui crient quotidiennement et veulent éduquer dans la patience et la sunnah",
+      label: "Éducation positive pour mamans musulmanes",
+      name: "Éducation positive halal",
+      pain: "Cri quotidien + culpabilité religieuse + isolement",
+      method: "Programme 6 mois avec live coaching hebdo + protocole Tarbiyya",
+      contact_channels: "Instagram + Newsletter vendredi + Lead magnet 30 jours",
+      growth: "Marché des mamans musulmanes en demande de tarbiyya halal-friendly",
+      buying_power: "Programme 597€ étalable, cohorte 30 mamans × 3 sessions par an",
+      market: "B2C_TRANSFO",
+      market_domain: { id: "relations", label: "🤝 Relations" },
+      market_validation: null,
+      archetype: { id: "transformation", emoji: "🦋", label: "Transformatrice" },
+    },
+    avatar: {
+      name: "Najet", sex: "Femme", age: "35 ans", location: "Banlieue lyonnaise",
+      income: "Maman au foyer · mari commercial moyen",
+      relationship: "Mariée, mari peu présent éducation",
+      family: "3 enfants (8 ans, 5 ans, 2 ans)",
+      situation: "Appartement banlieue, voile, pratiquante, sœurs aînées qui ont eu le même schéma",
+      photo_url: null,
+      problem:
+        "Crie 4-8 fois/jour sur ses enfants, culpabilise chaque soir à la prière, peur que ses enfants la rejettent à l'adolescence",
+      goals:
+        "Diviser par 5 ses cris en 90 jours, sunnah éducative appliquée, ne pas transmettre le modèle reçu de sa mère",
+      consequences:
+        "Sa fille de 8 ans commence déjà à intérioriser, à 13 ans c'est l'ado conflictuelle (vu chez sa sœur aînée Houda)",
+      past: "A lu 3 livres sur éducation positive en français (Faber, Filliozat) — culpabilisée mais pas outillée",
+      feeling: "Honte cuisante, culpabilité religieuse permanente, isolement (mari incompréhensif, belle-mère qui valide les cris)",
+      paradise:
+        "Une semaine sans crier, dimanche soir révision sereine, lundi matin coopération sans répéter 14 fois, fierté maternelle",
+      avatar_phrase:
+        "Je veux pas transmettre à mes enfants la trace de mes cris — qu'à 14 ans ma fille me parle encore.",
+    },
+    promise: {
+      statement:
+        "Diviser par 5 tes crises de cri/punition en 90 jours, en alignement avec la sunnah, sans devenir une « maman-yoga » qui s'efface.",
+      text:
+        "Diviser par 5 tes crises de cri/punition en 90 jours, en alignement avec la sunnah, sans devenir une « maman-yoga » qui s'efface.",
+    },
+    market: "B2C_TRANSFO",
+    market_domain: { id: "relations", label: "🤝 Relations" },
+    archetype: { id: "transformation", emoji: "🦋", label: "Transformatrice" },
+    signed_by: null,
+    signed_on: null,
+  },
+  data: {
+    welcome: {
+      imported: true,
+      sourceTag: "Cas démo M2 · Najet (basé sur le persona M1 relations_education_positive)",
+    },
+    step1: {
+      pains: [
+        { text: "Honte cuisante d'avoir crié sur sa fille de 8 ans à 6h45 du matin parce qu'elle n'avait pas mis ses chaussettes", scene: "Lundi 6h47. Il pleut. Elle est en retard. Sa fille tourne en rond avec 1 chaussette. Najet hurle. Sa fille se met à pleurer. Najet pleure aussi en attachant la chaussette. Elle se déteste 14 secondes." },
+        { text: "Sentiment quotidien d'être une « mauvaise mère » qui ne ressemble pas du tout aux mères qu'elle voit sur Instagram", scene: "Mercredi 21h. Story Insta d'un compte « maman positive » avec son fils de 5 ans qui rit dans la cuisine. Najet pense au sien qui pleurait il y a 2h. Elle ferme l'app. Elle se sert un thé." },
+        { text: "Culpabilité religieuse écrasante de penser que ses enfants la verront mauvaise mère le Jour du Jugement", scene: "Vendredi soir. Khutba à la mosquée. L'imam parle des droits des enfants en Islam. Najet pense aux 4 dernières fois où elle a crié cette semaine. Elle pleure dans son hijab discrètement." },
+        { text: "Frustration de ne plus pouvoir faire ce qu'elle aime (lire, étudier le Coran) parce qu'elle est en mode survie depuis 3 ans", scene: "Samedi 15h. Ismaïl, 5 ans, lui demande pour la 12ème fois en 8 minutes « maman tu joues avec moi ». Elle a un livre qu'elle voulait lire depuis 4 mois. Elle le repose. Elle joue. Le livre reste fermé." },
+        { text: "Peur que ses enfants reproduisent dans 20 ans la même éducation — qu'elle leur transmette la trace de ses cris", scene: "Mardi 22h. Sa fille de 8 ans dort. Najet entre dans la chambre, regarde son visage détendu. Elle pense : « qu'est-ce qu'elle pensera de moi à 30 ans, quand elle élèvera ses propres enfants ? »" },
+      ],
+    },
+    step2: {
+      desires: [
+        { text: "Passer une semaine entière sans crier — et le réaliser le dimanche soir avec un alhamdulillah profond", scene: "Dimanche 21h. Elle révise mentalement la semaine. Lundi calme. Mardi 1 incident géré sans cri. Mercredi tendu mais pas de cri. Jeudi calme. Vendredi très calme. Samedi 1 cri (ratée mais on en parle). Dimanche calme. Elle dit alhamdulillah." },
+        { text: "Voir sa fille de 8 ans coopérer le matin sans qu'il faille répéter 14 fois", scene: "Mardi 7h12. Sa fille s'habille seule, met ses chaussures, prend son sac, dit « je suis prête maman ». Najet n'a rien crié. Najet se sent... compétente. C'est neuf." },
+        { text: "Récupérer 3 soirées par semaine où elle puisse étudier le Coran ou lire", scene: "Lundi 21h15. Les 3 enfants couchés sans drame. Najet ouvre son tafsir. Elle lit 17 minutes. Pour la 1ère fois en 3 ans, elle se sent autre chose qu'une « maman tartine-courses-école »." },
+        { text: "Éduquer ses enfants à la patience et au respect — qu'ils intériorisent ces valeurs par mimétisme", scene: "Vendredi 17h. Son fils de 5 ans tombe à vélo. Au lieu de paniquer comme avant, Najet s'agenouille calmement, valide la douleur, propose une solution. Ismaïl arrête de pleurer en 47 secondes." },
+        { text: "Devenir une référence informelle dans son quartier — la maman musulmane qui a « changé »", scene: "Sortie d'école. Une autre maman lui demande discrètement comment elle a fait pour que sa fille soit « si calme cette année ». Najet sourit, prend le temps." },
+      ],
+      identity: "Une mère musulmane qui a refusé de transmettre à ses enfants le modèle d'épuisement et de cri qu'elle a parfois reçu. Une femme qui a regagné son autorité parentale par le calme, pas par le hurlement. Une croyante qui aligne sa pratique éducative à sa pratique religieuse — pas en théorie, dans le quotidien réel.",
+    },
+    step3: {
+      proofs: [
+        { type: "Vidéo témoignage 7 min — maman en hijab dans son salon, enfants jouant calmement en arrière-plan", who: "Khadija, 38 ans, 4 enfants, banlieue parisienne, ex-prof reconvertie au foyer, criait 5-8 fois/jour avant programme → 1-2 fois/semaine après 60 jours", why: "Najet voit une maman comme elle — voilée, 3+ enfants, périphérie. Les enfants qui jouent CALMEMENT en arrière-plan touchent au cœur : c'est ÇA qu'elle veut." },
+        { type: "Audio podcast 22 min sur Spotify — épisode 14 de « Tarbiyya & Sakina »", who: "Houria, 33 ans, 2 enfants (6 et 3 ans), Marseille, ex-coiffeuse au RSA, qui raconte « la dernière fois que j'ai crié, c'était en avril dernier »", why: "Najet écoute des podcasts en faisant la cuisine ou en pliant le linge. Format audio = format mère qui n'a pas 5 min assise. Houria parle SES MOTS — pas de psy-jargon." },
+        { type: "Carrousel Instagram 10 slides + capture WhatsApp d'une maman qui partage à son groupe de copines", who: "Sara, 36 ans, 3 enfants, Lyon (proche de Najet), ex-aide-soignante en mi-temps", why: "Najet voit la temporalité — pas un miracle en 2 semaines, mais 3 mois de travail réel avec hauts et bas. La crédibilité vient de l'absence de mise en scène : c'est laid, c'est vrai." },
+      ],
+    },
+    step4: {
+      rarete: { angle: "Cohorte fermée à 30 mamans, 3 sessions par an (rentrée septembre, février, fin du Ramadan). Pas plus parce que live coaching groupe par semaine où chaque maman peut poser 1 question.", justif: "Au-delà de 30 mamans, le live coaching de 90 min ne permet plus à toutes de poser leur question. Mon Calendly du jeudi soir 20h30-22h est bloqué. Pas de cohorte pendant le Ramadan ni les vacances scolaires." },
+      reciprocite: { angle: "Audio formation 47 min « Les 7 phrases qui transforment ton enfant — version mère épuisée » + Plan 30 jours « Sortir du cri en 4 semaines »", justif: "Najet n'a PAS 30 min libres pour regarder une vidéo. Mais elle a 47 min cumulés : 15 min trajet école + 22 min cuisine + 10 min linge. L'audio est conçu pour CES moments fragmentés." },
+      engagement: { angle: "Plan 30 jours + Audio gratuits → Mini-programme 27€ « 21 jours pour arrêter de crier » → Programme audio 97€ « 90 jours éducation prophétique » → Programme complet 597€ « 6 mois Cohorte Tarbiyya »", justif: "Najet a un budget famille tendu. 597€ c'est le prix d'une nounou pour une semaine de vacances. L'échelle DOIT démarrer bas (27€ = sortie pizza 2 personnes)." },
+    },
+    step5: {
+      top3: [
+        { bias: "confirmation", why_dominant: "Najet doute d'elle-même comme mère. Sa propre mère criait beaucoup, ses tantes aussi. Elle cherche DÉSESPÉRÉMENT des preuves qu'on peut éduquer AUTREMENT en restant musulmane traditionnelle — pas en devenant « une de ces mères françaises laxistes ».", how_activate: "Mur de témoignages DOIT être 90% de mamans voilées, banlieue, 3+ enfants, ex-actives ou au foyer modeste. Pas de mamans en lin bio dans des cuisines blanches. Najet doit voir 10 jumelles en 60 secondes." },
+        { bias: "ikea", why_dominant: "Najet est une maman qui FABRIQUE — elle coud, elle cuisine, elle bricole. Elle n'aime pas qu'on lui DONNE des solutions clé en main. Elle veut COMPRENDRE et ADAPTER à sa famille.", how_activate: "Programme = 3 livrables personnalisés : (1) Fiche d'éducation par enfant, (2) Calendrier familial affiché dans la cuisine, (3) Journal de bord maman. Najet sort avec UN DOSSIER qui est LE protocole d'éducation de SA famille." },
+        { bias: "aversion_perte", why_dominant: "Najet a une peur SOURDE mais permanente que ses enfants la REJETTENT à l'adolescence. Elle a vu ça chez sa sœur Houda. Najet fait le lien (juste, scientifiquement, mais elle le ressent surtout viscéralement).", how_activate: "Cadrer en perte temporelle : « Ta fille a 8 ans. Tu as 5 ans avant qu'elle entre dans l'adolescence. 5 ans pour construire un compte en banque relationnel positif — ou pour finir de le vider à coups de cris quotidiens. »" },
+      ],
+    },
+    step6: {
+      phase: "prise_de_conscience",
+      justif: "Najet est en Prise de conscience nette mais paralysée. Elle SAIT depuis ~8 mois que sa façon d'éduquer ne marche pas. Elle a googlé, regardé 6-8 reels, écouté 2 podcasts. Elle a tenté 2 fois en solo. Le frein principal : ELLE EST SEULE. Son mari ne voit pas le problème, sa belle-mère lui dit « moi j'en ai élevé 7 sans manuel ».",
+      actions: "(1) Contenu Insta 3x/semaine qui NOMME ses moments de craquage (le lundi matin avant l'école, le mercredi quand tous les enfants sont à la maison, le dimanche soir). (2) Newsletter hebdo le vendredi 19h avec 1 témoignage + 1 verset/hadith + 1 mini-défi. (3) Lead magnet « Plan 30 jours sortir du cri » = ENGAGEMENT diagnostique gratuit.",
+    },
+    step7: {
+      market: "B2C_TRANSFO",
+      vocab: {
+        douleur_mots: ["je crie tout le temps", "j'ai honte chaque soir", "mes enfants vont me détester", "fatiguée jusqu'à l'os", "j'ai plus de patience", "je m'en veux le matin déjà", "mes voisins entendent", "je suis pas la mère que je voulais être", "je perds le contrôle", "je culpabilise à la prière du soir"],
+        desir_mots: ["fermeté douce", "la sunnah éducative du Prophète SAW", "des enfants épanouis", "akhira ensemble", "fierté maternelle", "transmettre l'islam dans la joie", "patience prophétique", "calme intérieur", "construire un foyer paisible"],
+        positifs: ["sunnah éducative", "tarbiyya", "patience prophétique", "barakah du foyer", "fiqh de l'éducation", "ihsan dans l'éducation", "rahma", "communauté des mamans", "fermeté bienveillante"],
+        negatifs: ["pédagogie Montessori (sauf encadré)", "psy occidentale (sauf si musulmane formée fiqh)", "éducation positive sans cadre", "laxisme", "permissif", "mère copine", "child-led parenting", "thérapie individuelle (sans contexte religieux)", "bobo en lin bio"],
+        formulations: ["je crie tellement que je m'entends de l'extérieur et je me dégoûte", "le pire c'est quand je crie pendant le ramadan et que mes enfants me regardent en silence", "ma belle-mère me dit que c'est normal mais moi je sais que c'est pas normal", "j'ai peur que mes enfants reproduisent avec leurs enfants ce que je leur fais", "mon mari me dit que je m'invente des problèmes", "je veux pas qu'ils me détestent à 14 ans"],
+      },
+    },
+    step8: {
+      positionnement: "Le seul programme d'éducation positive pour mamans musulmanes francophones pratiquantes qui transforme le cycle cri-culpabilité en éducation prophétique appliquée — sans tomber dans le laxisme Montessori bobo ni renier la fermeté maghrébine héritée.",
+      hook_principal: "« Tu as crié sur tes enfants encore aujourd'hui — et tu culpabilises au moment de la prière du soir en te disant que tu mérites pas la barakah de cette maison ? »",
+      levier_secondaire: "Insister sur la transmission générationnelle inversée (« tu refuses de transmettre à tes enfants ce que tu as reçu de ta mère sans pour autant trahir ta culture ») + la peur de l'adolescence à venir (« tes enfants ont 8, 5, 2 ans — dans 5 ans, ta fille aînée entre dans l'ado avec ou sans ta confiance gagnée »).",
+      biais_killer: "Confirmation. Mon mur de témoignages DOIT contenir 15+ mamans VOILÉES de banlieue avec 3+ enfants, ex-actives ou au foyer, qui citent leur origine culturelle. Photos en abaya simple dans des cuisines de 12m² avec table en formica.",
+      phase_strategy: "Najet en Prise de conscience paralysée par l'isolement. Donc : (1) Contenu Insta 3x/semaine qui NOMME ses moments précis, (2) Newsletter hebdo vendredi 19h avec témoignage + verset + mini-défi, (3) Lead magnet Plan 30 jours = engagement diagnostique gratuit.",
+      directives_copywriting: "À utiliser : tarbiyya, sunnah éducative, patience prophétique, ihsan dans l'éducation, fermeté bienveillante, rahma, barakah du foyer, communauté des mamans. À BANNIR : éducation positive (sauf préciser : musulmane), Montessori (trop bobo), Janet Lansbury, mère copine, laxisme, child-led parenting, thérapie individuelle sans contexte religieux.",
+    },
+  },
+  scores: { step1: 92, step2: 90, step3: 90, step4: 91, step5: 88, step6: 87, step7: 88, step8: 86 },
+  attempts: { step1: 1, step2: 1, step3: 1, step4: 1, step5: 1, step6: 1, step7: 1, step8: 1 },
+};
+
+// ── Salima · Perte de poids halal pour mamans ──
+const SALIMA_PATCH: Partial<M2State> = {
+  step: "step1",
+  highest: 9,
+  m1: {
+    source: "demo_sante_perte_poids_mamans",
+    completed_at: null,
+    branche: "B",
+    niche: {
+      sub_niche: "Mamans musulmanes 30-45 ans avec 2-4 enfants qui veulent perdre 10-20 kg durablement, sans salle mixte ni régime extrême",
+      label: "Perte de poids halal pour mamans",
+      name: "Perte de poids halal mamans",
+      pain: "+22 kg post-grossesses, 4 échecs programmes classiques, dégradation santé latente",
+      method: "Programme 6 mois : nutrition fonctionnelle médicale + mouvements pudiques + suivi audio + accompagnement spirituel",
+      contact_channels: "Instagram + Audit gratuit 5 chiffres + Carrousel anti-programmes classiques",
+      growth: "Marché des mamans musulmanes en demande de programmes adaptés voile/maison/ramadan",
+      buying_power: "Programme 997€ étalable, cohorte 25 mamans × 4 sessions/an",
+      market: "B2C_TRANSFO",
+      market_domain: { id: "sante", label: "❤️ Santé" },
+      market_validation: null,
+      archetype: { id: "transformation", emoji: "🦋", label: "Transformatrice" },
+    },
+    avatar: {
+      name: "Salima", sex: "Femme", age: "38 ans", location: "Région nantaise",
+      income: "Ex-prof EPS au foyer · mari avec revenu correct",
+      relationship: "Mariée, mari présent mais pas le 1er soutien santé",
+      family: "3 enfants (10, 7, 4 ans)",
+      situation: "+22 kg post-grossesses, voile, ex-sportive, 4 programmes essayés sans succès",
+      photo_url: null,
+      problem: "Évite miroirs/photos depuis 18 mois, crises de larmes sous la douche, mari qui la regarde différemment, doute spirituel",
+      goals: "Perdre 12-15 kg en 6 mois, retrouver énergie pour les enfants, ne pas finir diabétique comme sa tante maternelle",
+      consequences: "Diabète II projeté à 47%, dégradation santé sur 5 ans, transmission rapport au corps négatif aux filles",
+      past: "Weight Watchers 2021 (perte 6 puis reprise 8), Lev 2022 (abandon semaine 4), naturopathe 2023 (juste cher), Comme J'aime 2024 (saturation menus)",
+      feeling: "Honte chronique, épuisée, en colère contre elle-même, doute spirituel à la prière",
+      paradise: "Robe ajustée halal qui rentre en taille 38, courir 20 min au parc avec ses 3 enfants, photo Aïd où elle est au 1er rang sans se cacher",
+      avatar_phrase: "Je suis fatiguée d'avoir échoué 4 fois et de me cacher en photo de famille — je veux retrouver mon corps et ma fierté.",
+    },
+    promise: {
+      statement: "Perdre 10-15 kg en 6 mois inshaAllah, depuis ta maison, sans salle, sans privation extrême, en respectant ta pratique et ton hijab.",
+      text: "Perdre 10-15 kg en 6 mois inshaAllah, depuis ta maison, sans salle, sans privation extrême, en respectant ta pratique et ton hijab.",
+    },
+    market: "B2C_TRANSFO",
+    market_domain: { id: "sante", label: "❤️ Santé" },
+    archetype: { id: "transformation", emoji: "🦋", label: "Transformatrice" },
+    signed_by: null,
+    signed_on: null,
+  },
+  data: {
+    welcome: { imported: true, sourceTag: "Cas démo M2 · Salima (basé sur le persona M1 sante_perte_poids_mamans)" },
+    step1: {
+      pains: [
+        { text: "Honte de souffler en montant les escaliers de chez elle, à 38 ans, alors qu'elle était prof d'EPS il y a 10 ans", scene: "Mardi 15h17. Elle remonte du jardin avec sac de courses + sa fille de 4 ans dans les bras. Au 2ème étage elle s'arrête contre le mur. Sa fille dit « maman tu fais un drôle de bruit ». Elle ment, continue." },
+        { text: "Évitement systématique des miroirs, des plages, des photos de famille — 18 mois sans se voir vraiment", scene: "Vendredi 14h. Sa fille de 7 ans veut faire une photo de famille pour la fête des mères. Salima invente une excuse. Demain, autre excuse. Sa fille a fini par arrêter de demander." },
+        { text: "Crises silencieuses de larmes sous la douche, où l'eau couvre le bruit", scene: "Mercredi 21h47. Douche. Elle voit son ventre, ses cuisses, ce qu'elle ne veut plus voir. Elle pleure 4 minutes. Personne ne sait. Elle sort, met son peignoir, va embrasser ses enfants endormis." },
+        { text: "Sentiment douloureux que son mari la regarde différemment depuis 2 ans — il dit rien, mais elle sent", scene: "Vendredi 22h. Au lit. Il l'embrasse sur le front au lieu d'autre chose. Elle ferme les yeux. Elle se demande s'il a vraiment envie d'elle ou s'il fait semblant. Elle se retourne vers le mur." },
+        { text: "Doute spirituel : « Allah accepte-t-il ma prière dans ce corps que je n'ai pas su entretenir ? »", scene: "Salat al-fajr. Elle se prosterne. Elle pense aux 4 makrout en cachette à 23h. Elle se sent indigne. Elle continue la prière mais elle est dispersée. Elle demande pardon en silence." },
+      ],
+    },
+    step2: {
+      desires: [
+        { text: "Mettre une robe ajustée halal et se sentir belle pour son mari, comme à 25 ans", scene: "Vendredi 19h. Repas en famille. Elle porte une robe longue ajustée bordeaux (taille 38). Son mari la regarde 6 secondes en silence en entrant. Il lui sourit comme avant." },
+        { text: "Courir au parc avec ses 3 enfants pendant 20 minutes sans s'arrêter — qu'ils la voient comme une mère vivante", scene: "Samedi après-midi, parc des Oblates à Nantes. Elle court avec son fils de 7 ans. Il rit. Sa fille de 4 ans la rejoint. Elle court 20 minutes en alternant. Sa fille dit « maman, t'es la meilleure »." },
+        { text: "Monter ses propres escaliers sans souffler, ne plus mentir à ses enfants", scene: "Mardi 15h. Sac de courses + petite. Elle monte les 3 étages d'un trait. Elle respire normalement. C'est une victoire silencieuse qu'elle célèbre intérieurement." },
+        { text: "Retrouver des photos de famille où elle est dessus — pas planquée derrière le sapin", scene: "Aïd al-Fitr. Photo de famille demandée par sa belle-mère. Elle accepte. Elle se met devant. Sur la photo elle se reconnaît. Elle imprime la photo et la met dans le salon." },
+        { text: "Devenir une référence pour les 4 sœurs musulmanes de son cercle qui galèrent comme elle", scene: "Café entre sœurs, 6 mois après. Sa belle-sœur de 36 ans (+18 kg) lui demande franchement comment elle a fait. Salima parle 22 minutes. À la fin, sa belle-sœur s'inscrit le soir même au programme." },
+      ],
+      identity: "Une mère de 38 ans qui a refusé d'accepter que « +20 kg post-grossesses, c'est normal, on est mère maintenant ». Une croyante qui a compris que prendre soin de son corps n'est pas un caprice — c'est une amana. Une référence accessible pour 4-6 sœurs musulmanes qui se voient en elle.",
+    },
+    step3: {
+      proofs: [
+        { type: "Vidéo before/after split-screen 90 sec — même tenue (abaya noire), balance à l'écran", who: "Karima, 39 ans, 4 enfants, ex-infirmière banlieue de Lille — 89 kg → 71 kg en 6 mois", why: "Salima voit une SŒUR qui lui ressemble — voilée, ex-active santé, 4 enfants. Le split-screen MÊME TENUE est CRITIQUE. La balance à l'écran tue le doute. -18 kg en 6 mois = un rythme HALAL." },
+        { type: "Audio Loom 18 min — la femme parle dans sa voiture (moteur en fond) du moment STOP", who: "Houria, 41 ans, 3 enfants, ex-prof maths, Strasbourg — raconte LE moment précis (Aïd 2024, photo où elle s'est cachée derrière sa belle-sœur)", why: "Salima a EXACTEMENT vécu ce moment Aïd. Houria pleure légèrement à 12'40, Salima sait que ce sont des vraies larmes. Format audio = écoutable en cuisinant sans que personne voie." },
+        { type: "Étude de cas écrite 5 pages PDF + 3 captures app tracking (Yazio, Lifesum, MyFitnessPal)", who: "Fatima, 36 ans, 3 enfants, ex-prof EPS (EXACTEMENT le profil de Salima), 84 kg → 67 kg en 8 mois SANS reprise à 18 mois", why: "Salima a un passé EPS — elle est l'experte théorique. Voir Fatima, EX-PROF EPS, qui s'est cassé la figure ET qui s'est relevée, est ULTRA-thérapeutique. C'est une « permission d'avoir échoué tout en étant compétente »." },
+      ],
+    },
+    step4: {
+      rarete: { angle: "Cohorte fermée à 25 mamans, 4 sessions/an (Janvier post-fêtes, Mai pré-été, Septembre, Novembre pré-Ramadan). Pas plus parce que check-in audio hebdo personnalisé.", justif: "Au-delà de 25 mamans, le check-in hebdo personnalisé ne tient plus. Ma vraie limite : je veux répondre dans les 36h. Pas de cohorte en Ramadan." },
+      reciprocite: { angle: "Programme gratuit 7 jours « Détox Aïd » (PDF 18 pages + 7 mini-vidéos 5 min) + Guide « Les 5 aliments qui te gardent en surpoids halal »", justif: "Salima n'a PAS 200€ à mettre à l'aveugle après ses 4 échecs. Le programme 7 jours lui PROUVE quelque chose. Dans les 2 cas, elle est qualifiée pour la cohorte." },
+      engagement: { angle: "Programme 7 jours + Guide gratuits → Mini-formation 27€ « 21 jours pour relancer ton métabolisme » → Cohorte 12 semaines 397€ → Programme 6 mois 997€ VIP", justif: "Salima a un budget santé personnel TRÈS RÉDUIT. 997€ inenvisageable au démarrage. Mais 27€ × 3 mois c'est progressif et chaque palier paie." },
+    },
+    step5: {
+      top3: [
+        { bias: "aversion_perte", why_dominant: "Salima a une SANTÉ qui se dégrade et qu'elle a peur de perdre. Cholestérol limite, résistance insuline pré-diabétique. Sa tante maternelle est sous insuline depuis 58 ans. Salima a 38 ans aujourd'hui.", how_activate: "Calculateur « Quel sera ton bilan santé dans 5 ans ? » avec input : poids + âge + antécédents. Output : projection chiffrée. Pas un drama instagram. Une comptabilité médicale froide." },
+        { bias: "ikea", why_dominant: "Salima est ex-prof EPS — elle CONSTRUIT des programmes. Elle ne supporte pas qu'on lui dise « fais comme ça ». Elle a besoin de PLANIFIER son propre menu.", how_activate: "Programme structuré autour de 4 livrables co-construits par Salima : SON menu hebdomadaire, SON planning séances, SON journal de bord, SA fiche « mes 7 aliments piégeux »." },
+        { bias: "confirmation", why_dominant: "Salima a 4 ÉCHECS de programmes derrière elle. Elle est dans la phase « oui mais pour moi ça marchera pas, parce que post-3-grossesses, âge 38, métabolisme bloqué ».", how_activate: "Mur de témoignages 90% mamans VOILÉES post-3-grossesses avec un passé sport, banlieue/ville moyenne. Préciser l'âge, le poids de départ, le poids d'arrivée et SURTOUT le maintien à 18 mois." },
+      ],
+    },
+    step6: {
+      phase: "consideration",
+      justif: "Salima est en Considération AVANCÉE et lassée. Elle a passé Inconscience (sait qu'elle doit perdre depuis sa 3e grossesse). Elle a passé Prise de conscience (4 programmes essayés). Elle est dans une CONSIDÉRATION fatiguée. Frein principal : « pourquoi celui-là marcherait alors que les 4 autres ont échoué ? ».",
+      actions: "(1) Contenu Insta 3x/semaine sur PROFIL ULTRA-SPÉCIFIQUE (mamans 35-42 voilées +20kg post-grossesses ex-actives). (2) Carrousel « Pourquoi tu as échoué à Weight Watchers, Lev, Comme J'aime ». (3) Audit gratuit 30 min en visio avec coach femme musulmane = bascule en Décision.",
+    },
+    step7: {
+      market: "B2C_TRANSFO",
+      vocab: {
+        douleur_mots: ["je me reconnais plus dans le miroir", "j'évite les photos de famille", "j'ai des bourrelets que j'avais jamais", "essoufflée en montant 2 étages", "honte au Aïd", "mon abaya taille L me serre", "je rentre plus dans rien", "j'ai 38 ans et j'en parais 45"],
+        desir_mots: ["retrouver mon corps d'avant 3 enfants", "énergie pour jouer avec mes enfants", "monter les escaliers sans m'arrêter", "porter à nouveau du M", "fierté en photo famille", "santé pour voir mes enfants adultes", "pudique mais légère", "muscle au lieu de gras"],
+        positifs: ["amanah du corps", "halal", "barakah", "sunnah du Prophète SAW sur le manger modéré", "discrétion", "pudeur", "santé prophétique", "tabarakallah", "ihsan corporel"],
+        negatifs: ["régime fashion", "salle de sport mixte", "fitness Insta sexy", "cellulite (stigmatisant)", "bikini body", "transformation magique 30 jours", "Weight Watchers", "Lev", "Comme J'aime", "chirurgie esthétique"],
+        formulations: ["j'ai 4 programmes derrière moi et 4 échecs", "à chaque programme je perds 6 kg et j'en reprends 8", "j'ai été prof EPS, je SAIS comment faire en théorie mais je n'arrive plus à le faire pour moi", "mon mari me dit que je suis belle mais je vois bien que c'est par politesse", "j'ai peur de devenir diabétique comme ma tante maternelle"],
+      },
+    },
+    step8: {
+      positionnement: "Le seul programme de perte de poids pour mamans musulmanes voilées post 3+ grossesses, ex-actives sportives, qui ont déjà ÉCHOUÉ à 3-4 programmes classiques — combinant nutrition fonctionnelle médicale, mouvements pudiques, suivi 1-to-1 audio par coach femme musulmane, et accompagnement spirituel sur l'amanah du corps.",
+      hook_principal: "« +22 kg depuis ton dernier enfant — et tu te caches en 2e rang derrière ta belle-sœur sur les photos du dernier Aïd ? »",
+      levier_secondaire: "Insister sur la transmission aux filles + la peur médicale (« ta tante maternelle est sous insuline depuis 58 ans pour un diabète II non maîtrisé — tu as 38 ans, ton bilan sanguin est déjà en pré-diabète ») + l'amanah religieuse. Salima ne le fait pas pour la beauté — c'est pour sa santé future, ses filles, son rapport à Allah.",
+      biais_killer: "Aversion à la perte (santé + transmission), couplé à la confirmation. L'offre cadre la perte sur 3 axes : (1) Santé qui se dégrade, (2) Image que les filles intériorisent, (3) Amanah religieuse non honorée. Mur de témoignages avec 15+ mamans EXACTEMENT identiques.",
+      phase_strategy: "Salima en Considération avancée et fatiguée. Donc : (1) Contenu Insta 3x/semaine sur profil ultra-spécifique, (2) Carrousel « Pourquoi tu as échoué à WW, Lev, Comme J'aime », (3) Audit gratuit 30 min en visio.",
+      directives_copywriting: "À utiliser : amanah du corps, halal, barakah, sunnah du manger modéré, santé prophétique, pudeur, discrétion, transformation durable, ihsan corporel, tabarakallah. À BANNIR : régime, bikini body, salle de sport (sans préciser), cellulite, sexy, fitness Insta, body positivity, Weight Watchers, Lev, Comme J'aime, chirurgie, transformation rapide 30 jours.",
+    },
+  },
+  scores: { step1: 91, step2: 90, step3: 89, step4: 90, step5: 88, step6: 87, step7: 88, step8: 85 },
+  attempts: { step1: 1, step2: 1, step3: 1, step4: 1, step5: 1, step6: 1, step7: 1, step8: 1 },
+};
+
+// ── Mehdi · Reprise sportive hommes 35-50 ──
+const MEHDI_PATCH: Partial<M2State> = {
+  step: "step1",
+  highest: 9,
+  m1: {
+    source: "demo_sante_reprise_sport_hommes",
+    completed_at: null,
+    branche: "B",
+    niche: {
+      sub_niche: "Hommes musulmans 35-50 ans, salariés-pères, qui veulent reprendre le sport en intégrant prière, ramadan et contraintes pro/familiales",
+      label: "Reprise sportive hommes 35-50",
+      name: "Reprise sportive halal",
+      pain: "Sédentaire 6 ans, +18 kg, cholestérol limite, essoufflé avec ses fils",
+      method: "Programme 6 mois : protocole sport mesurable + nutrition halal + coaching pair masculin musulman + communauté hommes pratiquants",
+      contact_channels: "Instagram + Newsletter mardi 21h + Audit gratuit 5 chiffres santé",
+      growth: "Marché des pères musulmans 35-50 en demande de programmes pratiquants",
+      buying_power: "Programme 997€ étalable, cohorte 30 hommes × 4 sessions/an",
+      market: "B2C_TRANSFO",
+      market_domain: { id: "sante", label: "❤️ Santé" },
+      market_validation: null,
+      archetype: { id: "strategie", emoji: "🎯", label: "Stratège" },
+    },
+    avatar: {
+      name: "Mehdi", sex: "Homme", age: "39 ans", location: "Toulouse",
+      income: "Ingénieur informaticien · ~4500€/mois net",
+      relationship: "Marié, sa femme fait du sport (suit Inès Aitlhaj)",
+      family: "4 fils (12, 9, 6 ans et un benjamin de 2018)",
+      situation: "92 kg pour 74 kg au mariage, sédentaire depuis 2018, bilan santé en pré-diabète",
+      photo_url: null,
+      problem: "S'essouffle après 5 min de foot avec ses fils, le médecin alerte sur cholestérol/glycémie/tension, peur de finir comme son père (infarctus 53 ans)",
+      goals: "Match de foot complet avec ses fils, reprendre le foot du vendredi avec les frères de la mosquée, peser 78 kg à ses 40 ans, arriver à 50 ans en meilleure forme qu'à 40",
+      consequences: "Risque infarctus 28% à 44 ans, vieillissement physiologique de 13 ans en 5 chronologiques, modèle paternel négatif pour ses 4 fils",
+      past: "3 apps fitness téléchargées non utilisées, corde à sauter de novembre 2023 dans placard, 8-10 vidéos YouTube",
+      feeling: "Frustration, honte douce, anxiété santé latente, solitude (pas de pair masculin musulman pratiquant)",
+      paradise: "Match parents-enfants où il marque 1 but, foot du vendredi avec 14 frères de la mosquée, balance à 77.8 le matin de ses 40 ans",
+      avatar_phrase: "Je veux pas que mes fils ados me regardent depuis le banc — je veux être le père qui joue.",
+    },
+    promise: {
+      statement: "Reprendre une routine sportive durable et perdre 10-15 kg en 6-9 mois, sans sacrifier ta famille ni ta pratique.",
+      text: "Reprendre une routine sportive durable et perdre 10-15 kg en 6-9 mois, sans sacrifier ta famille ni ta pratique.",
+    },
+    market: "B2C_TRANSFO",
+    market_domain: { id: "sante", label: "❤️ Santé" },
+    archetype: { id: "strategie", emoji: "🎯", label: "Stratège" },
+    signed_by: null,
+    signed_on: null,
+  },
+  data: {
+    welcome: { imported: true, sourceTag: "Cas démo M2 · Mehdi (basé sur le persona M1 sante_reprise_sport_hommes)" },
+    step1: {
+      pains: [
+        { text: "Honte de s'arrêter au bout de 5 minutes quand il joue au foot avec ses 4 fils dans le jardin", scene: "Samedi 16h. Jardin. Ses fils de 12, 9 et 6 ans le défient. Au bout de 4 minutes 32 il s'écroule sur le canapé extérieur, mains sur les genoux. Son fils de 6 ans dit « papa, t'es nul aujourd'hui ». Il rit, faux." },
+        { text: "Réveil silencieux à 39 ans en regardant la photo de son mariage à 25 ans — l'homme de 74 kg est devenu un étranger", scene: "Mardi soir. Il range un placard. Tombe sur l'album photo du mariage. Il regarde la photo, lui en costume gris, 74 kg. Il regarde son ventre actuel, +18 kg. Il referme l'album." },
+        { text: "Anxiété latente sur la santé que personne ne voit — son père a fait son infarctus à 53 ans", scene: "Bilan annuel. « Cholestérol limite, glycémie en alerte basse, tension 13.5/8.7 ». Le médecin dit « on surveille, et il faut bouger ». Mehdi dit « oui docteur ». Il sait qu'il dit ça depuis 4 ans." },
+        { text: "Frustration de regarder sa femme (qui n'a pas pris 18 kg) et de réaliser qu'il est « le facteur faiblissant » du couple", scene: "Plage Sète, été. Sa femme et lui marchent. Elle a son corps. Lui a son ventre. Il fait exprès de marcher derrière elle 30 secondes pour ne pas se voir tous les deux dans le reflet de la vitrine." },
+        { text: "Peur sourde qu'il ne soit pas là pour ses petits-enfants — son père est mort à 64 ans, lui en a 39", scene: "Mariage d'un cousin. Il regarde son cousin de 64 ans qui joue avec ses petits-enfants. Mehdi calcule : si je fais comme papa, j'ai 25 ans devant moi. Il ne dit rien. Il rentre tôt." },
+      ],
+    },
+    step2: {
+      desires: [
+        { text: "Faire un match de foot complet (45 min) avec ses fils sans s'arrêter, en menant 3-1", scene: "Samedi 16h dans 5 mois. Match parents-enfants. Il court, dribble, marque 1 but. À la fin, il sourit, transpire, mais sans s'écrouler. Son fils de 12 ans lui dit « papa, t'es revenu en force »." },
+        { text: "Reprendre le foot du vendredi avec les frères de la mosquée", scene: "Vendredi 19h, gymnase de quartier. 14 frères, foot en salle. Il court, marque 2 buts. À la fin, ils mangent un burger halal ensemble. Il appelle ce groupe « mes frères du vendredi » à sa femme." },
+        { text: "Peser 78 kg sur la balance le matin de ses 40 ans", scene: "Matin de ses 40 ans. Salle de bain. Balance 77.8. Il sourit. Il sort, prend sa femme dans ses bras. Selfie. Il ressemble à l'homme du mariage, en plus mature." },
+        { text: "Devenir le « frère qu'on appelle » quand un cousin de 38 ans veut s'y mettre", scene: "WhatsApp, 8 mois après son objectif. Son cousin Hicham, 38 ans, +20 kg, appelle. « Mehdi akhi, comment tu fais ? Tu peux m'aider ? ». Mehdi prend 47 minutes au téléphone. Il accompagne Hicham informellement les 6 mois suivants." },
+        { text: "Arriver à 50 ans en meilleure forme qu'à 40 — inverser la trajectoire que son père a subie", scene: "Dans 11 ans. Bilan médical. Le médecin dit « monsieur Lakhdari, vous avez la tension d'un homme de 35 ans ». Mehdi sourit. Il pense à son père qui n'a pas eu cette chance." },
+      ],
+      identity: "Un père de 39 ans qui a refusé de devenir l'homme essoufflé que ses fils méprisent silencieusement. Un croyant qui a compris que le corps est une amana. Un mari dont la femme regarde à nouveau le ventre avec autre chose que de la pitié. Un musulman qui a inversé la trajectoire de son père sans manquer de respect à sa mémoire.",
+    },
+    step3: {
+      proofs: [
+        { type: "Vidéo before/after 2 min avec balance + analyses sanguines avant/après", who: "Karim, 44 ans, 5 enfants, ingénieur électrique Schneider, banlieue Strasbourg — 96 kg → 84 kg en 4 mois ET cholestérol 2.4 → 1.7", why: "Mehdi voit un frère IDENTIQUE — ingénieur, 5 enfants, banlieue, début 40 ans. Un cholestérol qui passe de 2.4 à 1.7 mesuré par un labo, c'est de la VRAIE SCIENCE qui fait que son cerveau d'ingénieur valide." },
+        { type: "Vidéo amateur 8 min — un père filmé par son fils ado qui refait un footing avec ses garçons", who: "Saïd, 47 ans, 3 fils (16, 14, 11), banlieue parisienne, ex-cadre RATP — termine son footing 4 km en octobre 2024", why: "Mehdi a 4 fils. Voir Saïd, 8 ans plus vieux, qui REFAIT du sport AVEC ses fils — ça touche au cœur. La vidéo amateur (qualité moyenne, fils qui filme, lumière du dimanche matin) tue les soupçons de marketing." },
+        { type: "Étude de cas 6 pages PDF + 5 captures Strava/Garmin Connect mois par mois", who: "Brahim, 41 ans, ingénieur Capgemini, marié 2 enfants, Toulouse — bilan pré-diabète + cholestérol 2.8 + tension 14/9 en janvier 2024, NORMALISÉS septembre 2024", why: "Mehdi en mode preuve par les data. Strava et Garmin Connect = apps qu'il a téléchargées 3 fois. Voir des CAPTURES MOIS PAR MOIS — c'est de la VRAIE DATA. Brahim partage aussi ses erreurs (semaine 3 arrêt, semaine 6 blessure). Cette HONNÊTETÉ chiffrée crée la confiance." },
+      ],
+    },
+    step4: {
+      rarete: { angle: "Cohorte fermée à 30 hommes, 4 sessions/an. Cœur du programme : 1 séance Live coaching jeudi soir 21h après isha où chaque homme partage sa semaine en 2 min.", justif: "Au-delà de 30 hommes, la séance live de 90 min ne tient plus mathématiquement. C'est une vraie limite de tenue de groupe. Pas de cohorte en Ramadan." },
+      reciprocite: { angle: "Programme gratuit 14 jours « Reprise sport adapté Ramadan-friendly » + Audit santé « Connais tes 5 chiffres clés »", justif: "Mehdi est ingénieur — il LUI FAUT comprendre la science avant d'agir. Le programme 14 jours lui donne la PROOF OF CONCEPT. L'audit santé lui donne une LIGNE DE BASE quantifiée." },
+      engagement: { angle: "Programme 14 jours + Audit gratuits → Mini-formation 37€ « 30 jours pour relancer ton cardio » → Cohorte 12 semaines 397€ « Halal Strength Reboot » → Programme 6 mois 997€ VIP", justif: "Mehdi a un budget personnel REPRÉSENTABLE — ingénieur ~4500€/mois, famille de 4 enfants. 997€ = 22% de son revenu mensuel net — c'est faisable mais pas évident. L'échelle progressive permet de prouver chaque palier." },
+    },
+    step5: {
+      top3: [
+        { bias: "aversion_perte", why_dominant: "Mehdi a 4 fils. Sa plus grande PEUR n'est pas chiffrée, elle est viscérale : devenir l'ancêtre fatigué qui regarde ses fils jouer au foot SANS POUVOIR participer. La projection visuelle : ses fils à 20, 17, 14 ans qui disent « non papa reste assis tu vas te fatiguer » — c'est cette image qui hante Mehdi.", how_activate: "Cadrer en perte temporelle paternité : « Tu as 39 ans aujourd'hui. Ton aîné a 12 ans. Dans 6 ans il aura 18. La question n'est pas si tu seras invité — c'est si tu seras PHYSIQUEMENT CAPABLE de répondre OUI. Le choix se fait à 39 ans. Pas à 47. »" },
+        { bias: "ikea", why_dominant: "Mehdi est ingénieur — il PLANIFIE, il TRACKE, il OPTIMISE. C'est son métier. Une méthode rigide « fais ces 3 séances » ne marchera pas. Il veut un programme SYSTÉMATIQUE où chaque variable est ajustable par lui.", how_activate: "Programme structuré autour de 4 livrables techniques co-construits : SON tracker hebdomadaire (Excel/Notion) avec 5 métriques clés, SON plan séances adapté à son créneau, SON plan nutritionnel calé sur sa journée type, SA fiche 5 chiffres santé." },
+        { bias: "statu_quo", why_dominant: "Mehdi est dans la sédentarité depuis 6 ans (depuis 2018). Cette sédentarité est devenue INVISIBLE. Le statu quo est ULTRA-puissant parce que TOUT dans son environnement le valide : ses collègues sont gros, ses cousins aussi, son père a fait un infarctus à 53 ans sans changer ses habitudes ensuite.", how_activate: "Calculateur « À ce rythme, voici tes 5 chiffres santé dans 5 ans » avec input simple et output projection brutale : « Mehdi, à 44 ans avec ta trajectoire actuelle, ton risque d'infarctus précoce est à 28%, cholestérol projeté 2.9, tension 15/10, VO2 max projeté 28 ». Ça réveille." },
+      ],
+    },
+    step6: {
+      phase: "consideration",
+      justif: "Mehdi est en Considération multi-essais et frustrée. Il a téléchargé 3 apps fitness sans les utiliser. Il a regardé 8-10 vidéos YouTube. Il a acheté une corde à sauter en novembre 2023 toujours dans son placard. Il SAIT qu'il doit bouger. Il sait POURQUOI. Le frein est SOCIAL et IDENTITAIRE : il n'a pas de pair masculin musulman pratiquant.",
+      actions: "(1) Contenu Instagram 2x/semaine qui parle EXACTEMENT à son profil (homme 35-45, marié 3+ enfants, ingénieur/cadre, musulman pratiquant, sédentaire). (2) Newsletter hebdo le mardi 21h après isha avec 1 témoignage frère + 1 hadith santé + 1 micro-conseil. (3) Audit gratuit « 5 chiffres santé » = engagement diagnostique.",
+    },
+    step7: {
+      market: "B2C_TRANSFO",
+      vocab: {
+        douleur_mots: ["essoufflé en 5 min de foot", "mal au dos en restant 2h debout", "j'ai vieilli trop vite", "fatigue chronique", "cholestérol limite", "ventre que je rentre plus dans mon thobe Aïd", "mon père a fait son infarctus à 53 ans", "je dis tout le temps attendez papa", "à 40 j'ai l'impression d'en avoir 50"],
+        desir_mots: ["jouer au foot avec mes fils", "santé pour le hajj", "amanah du corps honorée", "énergie pour mes enfants", "sunnah du corps fort", "pouvoir faire la prière debout sans fatigue dans 30 ans", "redevenir un homme qui agit", "transmettre la discipline à mes fils"],
+        positifs: ["amanah du corps", "barakah", "discipline", "rigueur ingénieur", "sunnah du sport", "force du croyant", "halal", "frère ingénieur", "communauté d'hommes", "performance mesurable", "data santé"],
+        negatifs: ["body building", "salle mixte", "fitness bling-bling", "Tony Robbins", "biohacker (trop bobo)", "cross-fit mixte", "shake protéine douteux", "stéroïde", "gym bro culture", "instagram fitness", "esthétique pure", "bikini photo"],
+        formulations: ["j'ai 39 ans et l'impression d'avoir lâché mon corps", "mon fils me dit papa tu cours plus, ça m'a fait mal", "j'ai téléchargé 3 apps fitness, j'ai jamais ouvert la 2e séance", "j'ai pas de pote musulman qui fait du sport régulier", "ma femme me regarde et je sais qu'elle pense que j'ai changé", "j'ai peur de finir comme mon oncle qui est mort à 58 ans d'AVC"],
+      },
+    },
+    step8: {
+      positionnement: "Le seul programme de reprise sportive pour pères musulmans pratiquants 35-50 ans, sédentaires depuis 4-8 ans, qui combine rigueur scientifique mesurable (Strava, analyses sanguines, VO2 max), méthodologie islamique (sport comme amanah), coaching par pair masculin musulman pratiquant et communauté d'hommes — sans salle mixte, sans culture fitness bling-bling.",
+      hook_principal: "« 39 ans, ingénieur, 4 enfants, essoufflé après 5 min de foot avec ton fils — et ton cholestérol qui inquiète le médecin depuis l'analyse de mars ? »",
+      levier_secondaire: "Insister sur la transmission paternelle aux fils + la peur héritée (« ton père a fait son infarctus à 53 ans, tu en as 39 — tu es sur la même trajectoire si rien ne change ») + l'amanah religieuse (« le hadith dit le croyant fort est meilleur que le croyant faible »). Mehdi ne le fait pas pour l'esthétique — c'est pour ses fils, son akhira, et ne pas répéter l'histoire de son père.",
+      biais_killer: "Aversion à la perte (paternité + santé héritée). L'offre cadre en perte temporelle : « Tu as 39 ans. Ton aîné a 12 ans. La fenêtre pour devenir le père qui JOUE avec ses fils ados se ferme à 47 ans. » Et activer le statu quo killer : calculateur « 5 chiffres dans 5 ans » qui rend visible le coût caché.",
+      phase_strategy: "Mehdi en Considération multi-essais et solitaire. Donc : (1) Contenu Insta 2x/semaine sur profil ultra-précis, (2) Newsletter mardi 21h après isha (créneau libre solo), (3) Audit gratuit « 5 chiffres santé » = engagement diagnostique mesurable.",
+      directives_copywriting: "À utiliser : amanah du corps, discipline, rigueur, sunnah du sport, hadith « croyant fort », performance mesurable, data santé, halal, frère ingénieur, communauté d'hommes pratiquants. À BANNIR : body building (esthétique pure), salle mixte (sans préciser), fitness Insta, bling-bling, cross-fit (sauf encadré), gym bro, biohacker, stéroïde, Tony Robbins.",
+    },
+  },
+  scores: { step1: 91, step2: 90, step3: 90, step4: 91, step5: 88, step6: 87, step7: 88, step8: 86 },
+  attempts: { step1: 1, step2: 1, step3: 1, step4: 1, step5: 1, step6: 1, step7: 1, step8: 1 },
+};
+
+// ── Lina · Anxiété & tawakkul pour étudiants musulmans ──
+const LINA_PATCH: Partial<M2State> = {
+  step: "step1",
+  highest: 9,
+  m1: {
+    source: "demo_sante_anxiete_etudiants",
+    completed_at: null,
+    branche: "B",
+    niche: {
+      sub_niche: "Étudiants musulmans 16-25 ans qui souffrent d'anxiété de performance et qui veulent intégrer outils psycho et tawakkul",
+      label: "Anxiété & tawakkul pour étudiants musulmans",
+      name: "Anxiété tawakkul étudiants",
+      pain: "Crises de panique pré-partiels + honte religieuse + solitude familiale",
+      method: "Programme 6 mois : TCC + dhikr + respiration islamique + sessions groupe non-mixte + 2 sessions psy musulmane formée",
+      contact_channels: "Instagram 4x/sem + Stories témoignages + Quiz diagnostique gratuit",
+      growth: "Marché des étudiantes musulmanes en filière exigeante en demande de santé mentale halal",
+      buying_power: "Programme 597€ étalable, cohorte 25 étudiantes × 3 sessions/an",
+      market: "B2C_TRANSFO",
+      market_domain: { id: "sante", label: "❤️ Santé" },
+      market_validation: null,
+      archetype: { id: "transformation", emoji: "🦋", label: "Transformatrice" },
+    },
+    avatar: {
+      name: "Lina", sex: "Femme", age: "19 ans", location: "Paris",
+      income: "Étudiante L2 médecine · bourse CROUS",
+      relationship: "Célibataire, focus études",
+      family: "Parents médecins (père chirurgien), cousine en école d'ingé, 2 cousins en école d'ingé",
+      situation: "Voilée, redoublée en L1, vit chez sa cousine près de la Sorbonne, fait des crises de panique pré-partiels",
+      photo_url: null,
+      problem: "Crise de panique pendant le partiel d'anatomie mardi dernier — vomi dans toilettes, pleuré dans RER B, n'ose pas le dire à ses parents",
+      goals: "Aborder un partiel avec stress sain (pas crise), comprendre que ses crises ne sont PAS un manque de foi, pouvoir parler à sa mère",
+      consequences: "Risque échec L2, 2e redoublement, abandon médecine, dépression à 21 ans, 10 ans de psy plus tard pour reconstruire",
+      past: "1 psy mixte en novembre 2023 (3 séances abandonnées), recherches Google nocturnes, méditation Petit Bambou en pointillé",
+      feeling: "Honte religieuse écrasante, solitude familiale, sentiment d'être « cassée », peur de décevoir ses parents qui ont sacrifié",
+      paradise: "Veille de partiel calme, dormir 7h, aborder l'épreuve avec stress sain, pouvoir parler à sa mère sans se justifier, devenir médecin musulmane qui gardera sa pratique",
+      avatar_phrase: "Mes crises ne sont PAS un manque de foi — je veux réussir médecine ET garder ma pratique intacte.",
+    },
+    promise: {
+      statement: "Te donner les outils psycho-éducatifs et spirituels pour réduire l'intensité de tes crises et comprendre que ton anxiété n'est pas un manque de tawakkul.",
+      text: "Te donner les outils psycho-éducatifs et spirituels pour réduire l'intensité de tes crises et comprendre que ton anxiété n'est pas un manque de tawakkul.",
+    },
+    market: "B2C_TRANSFO",
+    market_domain: { id: "sante", label: "❤️ Santé" },
+    archetype: { id: "transformation", emoji: "🦋", label: "Transformatrice" },
+    signed_by: null,
+    signed_on: null,
+  },
+  data: {
+    welcome: { imported: true, sourceTag: "Cas démo M2 · Lina (basé sur le persona M1 sante_anxiete_etudiants)" },
+    step1: {
+      pains: [
+        { text: "Crises de panique récurrentes les nuits avant les partiels — qu'elle vit seule, en silence", scene: "Veille de partiel. 2h47 du matin. Cœur à 140. Vertiges. Souffle court. Elle se lève, va dans la salle de bain de sa coloc, ferme la porte. Elle pleure 12 minutes en mode « sourdine ». Personne ne sait." },
+        { text: "Honte religieuse écrasante : « si je faisais vraiment confiance à Allah, je n'aurais pas ces crises »", scene: "Vendredi. Sa mère lui dit au téléphone : « fais tawakkul, ma fille, et tout ira bien ». Lina raccroche. Elle pleure en silence. Elle se dit : « je suis incapable même de tawakkul correctement »." },
+        { text: "Solitude devant ses parents médecins qui ne comprennent pas pourquoi leur fille brillante « s'effondre »", scene: "Dimanche midi. Repas familial. Son père demande comment vont les partiels. Lina dit « bien ». Sa mère la regarde 2 secondes de trop. Lina sait que sa mère sait. Elle ne dit rien. Sa mère non plus." },
+        { text: "Sentiment d'être « cassée » — pas comme les autres étudiantes hijabées qui semblent solides", scene: "Bibliothèque universitaire. Elle voit 2 sœurs en hijab travailler tranquillement. Elles rient doucement. Lina pense : « elles sont normales, elles. Moi je vais vomir dans 3h ». Elle ferme son livre, sort prendre l'air." },
+        { text: "Peur d'abandonner médecine et de décevoir ses parents — mais aussi peur de continuer et de s'effondrer", scene: "Mardi 23h17. Elle regarde son cours de biochimie. Elle a relu 4 fois la même page sans rien retenir. Elle pense à son père chirurgien qui « a fait sa P1 sans difficultés en 1991 ». Elle se sent indigne." },
+      ],
+    },
+    step2: {
+      desires: [
+        { text: "Aborder un partiel avec un peu de stress sain — pas une crise de panique paralysante", scene: "Veille de partiel dans 4 mois. 22h45. Elle révise calmement. Elle a un peu mal au ventre, c'est normal. À 23h45 elle va se coucher. Elle dort 7h. Le matin elle prend un petit-déjeuner. Elle a peur, mais elle FONCTIONNE." },
+        { text: "Comprendre que ses crises ne sont PAS un manque de foi", scene: "Module 4 du programme. Elle apprend que des compagnons du Prophète SAW ont connu des moments d'angoisse intense. Elle se met à pleurer 8 minutes, mais des larmes différentes — de soulagement. Elle imprime la page et la met sur son bureau." },
+        { text: "Pouvoir parler à sa mère de son anxiété sans avoir à se justifier", scene: "Visite chez ses parents, dans 5 mois. Sa mère lui demande comment vont les choses. Pour la 1ère fois Lina dit : « maman, j'ai des crises de panique depuis la P1. J'ai commencé un programme et un suivi ». Sa mère se met à pleurer. Elles parlent 47 minutes vraies." },
+        { text: "Utiliser le tawakkul comme un OUTIL de gestion, pas comme une INJONCTION qui culpabilise", scene: "Veille de partiel. Crise qui monte. Elle reconnaît les signaux. Elle applique le protocole (respiration, ancrage). Puis elle prie 2 rakaat. Le tawakkul ne remplace pas la respiration, il la complète." },
+        { text: "Réussir sa médecine ET garder sa pratique religieuse intacte", scene: "Diplôme de médecine, dans 7 ans. Elle est sur le podium. Sa mère pleure. Son père l'embrasse longuement. Elle porte son hijab. Elle se promet d'aider les autres étudiantes hijabées en difficulté psy." },
+      ],
+      identity: "Une étudiante musulmane de 19 ans qui a refusé de choisir entre ses crises et sa foi. Une croyante qui a compris que la santé mentale est une amana, comme la santé physique. Une future médecin qui sera plus à l'écoute que la moyenne, parce qu'elle a vécu. Une référence accessible pour les sœurs étudiantes plus jeunes.",
+    },
+    step3: {
+      proofs: [
+        { type: "Vidéo témoignage 6 min — étudiante voilée filmée chez elle, livres médicaux dans le décor", who: "Sara, 21 ans, L3 médecine Paris-Descartes, hijab discret, mêmes crises pré-partiels en L2 — passée de « main qui tremble en salle » à « partiel de pharmacologie passé en juin 2024 sans crise, mention AB »", why: "Lina voit une JUMELLE — étudiante en médecine, à Paris, voilée, qui a vécu EXACTEMENT ses crises il y a 2 ans. Le détail du décor (Atlas Netter, Précis Sémiologie) tue le soupçon. Lina reconnaît sa propre bibliothèque." },
+        { type: "Audio 14 min sur Spotify — épisode 7 de « Sakina Étudiantes »", who: "Maryam, 25 ans, jeune généraliste, hijab full-time, qui raconte « la crise du concours de l'internat de juin 2022, dans le métro ligne 6 entre Trocadéro et Bir-Hakeim »", why: "Lina écoute des podcasts en sortant du métro ligne 4. 14 min = exactement son trajet. Le moment géographiquement reconnaissable (métro 6 Trocadéro) — Lina connaît ces stations. Format audio = écoutable sans que ses parents voient." },
+        { type: "Étude de cas 4 pages PDF + 5 captures de carnet de bord (Notion ou Notes iPhone)", who: "Khalil, 20 ans, L1 droit Sorbonne-Assas, crises avant chaque épreuve écrite", why: "Lina connaît Assas (cousin qui y est). Khalil est un FRÈRE étudiant — Lina voit que le programme marche aussi pour les jeunes hommes musulmans. Les CAPTURES du journal de bord (jour 1 crise 35 min, jour 14 crise écourtée 8 min, jour 28 stress NORMAL) sont la VRAIE PROGRESSION mesurable." },
+      ],
+    },
+    step4: {
+      rarete: { angle: "Cohorte fermée à 25 étudiantes (femmes uniquement), 3 sessions/an. Session groupe non-mixte hebdo (jeudi soir 19h, 75 min).", justif: "Au-delà de 25 étudiantes, la session ne permet plus à chacune de parler. Mon Calendly du jeudi 19h-20h30 est bloqué. Pas de cohorte pendant les périodes de partiels intenses (mai-juin, décembre-janvier)." },
+      reciprocite: { angle: "Audio gratuit 13 min « Les 7 phrases qui apaisent en 90 secondes pour étudiante musulmane » + Plan respiration islamique 7 jours (PDF 12 pages)", justif: "Lina est étudiante boursière — budget personnel libre ≈ 80€/mois après loyer. Le gratuit lui PROUVE quelque chose. Dans les 2 cas elle est qualifiée." },
+      engagement: { angle: "Audio 13 min + Plan 7 jours gratuits → Mini-formation 17€ « 21 jours pour gérer ton anxiété » → Cohorte 8 semaines 197€ → Programme 6 mois 597€ VIP (avec 2 sessions psy musulmane TCC + groupe WhatsApp privé)", justif: "Lina = budget étudiante boursière. 597€ c'est 7 mois de budget personnel libre. 17€ c'est OK. 197€ se finance avec 3 mois de budget personnel. L'échelle progressive permet à Lina d'entrer SANS vider ses bourses." },
+    },
+    step5: {
+      top3: [
+        { bias: "confirmation", why_dominant: "Lina a une PEUR PROFONDE qu'elle soit en train d'échouer en médecine. Elle a redoublé sa L1. Elle a INTÉRIORISÉ qu'elle est « la moins bien de la famille ». Le biais de confirmation cherche désespérément des preuves d'étudiantes musulmanes en médecine qui SE SONT relevées d'un parcours chaotique.", how_activate: "Mur de témoignages 90% d'étudiantes musulmanes voilées en médecine OU filière exigeante, avec un CHEMIN CHAOTIQUE : redoublement, échec concours, période d'abandon, retour. Préciser l'origine sociale (boursière CROUS, banlieue). Lina doit voir 10 jumelles en 60 secondes." },
+        { bias: "ikea", why_dominant: "Lina est étudiante en MÉDECINE — elle construit déjà ses fiches, elle organise déjà son planning. Elle ne supporte pas qu'on lui DONNE un protocole rigide. Elle a besoin de COMPRENDRE le pourquoi et d'ADAPTER à SES contraintes.", how_activate: "Programme construit autour de 4 livrables que Lina FABRIQUE : SON protocole anti-crise personnalisé (7 déclencheurs identifiés), SON carnet de bord crisis, SON programme de révision compatible santé mentale, SA charte avec elle-même signée." },
+        { bias: "aversion_perte", why_dominant: "Lina a une PEUR très concrète : ÉCHOUER au concours, devoir abandonner médecine, devenir « la cousine qui n'a pas réussi ». Pour une famille maghrébine immigrée 2e génération, médecine = ascension sociale, validation des sacrifices des parents.", how_activate: "Cadrer en perte académique cumulative : « Lina, tu as 19 ans, L2 médecine après avoir redoublé L1. Chaque crise te fait perdre 25-30% de ta capacité cognitive sur 2-3h. Multiplié par 16 partiels/an, ton risque d'échec est multiplié par 2.4. Perdre une 2e année = perdre 12 mois de ta vie active future = perdre potentiellement la spécialité que tu voulais. »" },
+      ],
+    },
+    step6: {
+      phase: "prise_de_conscience",
+      justif: "Lina vient JUSTE de basculer en Prise de conscience aigüe. Elle a fait une crise de panique pendant un PARTIEL il y a 4 jours (mardi 7 mai 2024, salle 305 amphi Vésale, partiel d'anatomie cardiaque, elle a quitté la salle 25 min avant la fin, vomi dans toilettes femmes, est rentrée chez sa cousine en pleurant dans le RER B). Cet événement a TUÉ le déni.",
+      actions: "(1) Contenu Instagram 4x/semaine (Lina scroll la nuit après ses révisions) qui parle À UNE ÉTUDIANTE VOILÉE EN FILIÈRE EXIGEANTE — avec ses mots à elle (partiel, amphi, TD, concours, fiche, classement). (2) Témoignages courts en story 2-3x/semaine. (3) Quiz gratuit « Ton anxiété est-elle situationnelle ou systémique? » = engagement diagnostique.",
+    },
+    step7: {
+      market: "B2C_TRANSFO",
+      vocab: {
+        douleur_mots: ["crise de panique en plein partiel", "je tremble en salle d'examen", "j'arrive plus à respirer", "je vais redoubler", "honte de mes parents", "main qui tremble sur la copie", "je vais oublier le cours", "rythme cardiaque qui explose", "vue qui se trouble", "envie de fuir l'amphi", "j'ai honte d'être musulmane et fragile", "mauvaise musulmane", "manque de foi", "pas de tawakkul"],
+        desir_mots: ["tawakkul authentique", "sakina intérieure", "réussir ma médecine sans me détruire", "fierté de mes parents", "calme avant les partiels", "respiration tranquille", "paix avec mon corps anxieux", "concours réussi inshaAllah", "devenir médecin pour ma communauté", "muslimah forte qui prend soin de sa santé mentale"],
+        positifs: ["tawakkul authentique", "sakina", "dhikr", "fiqh", "TCC validée par psy musulmane", "santé mentale halal", "femmes uniquement", "non-mixte", "barakah des études", "communauté de sœurs étudiantes"],
+        negatifs: ["psy mixte", "antidépresseur (sauf encadré médicalement)", "yoga (gymnastique douteuse fiqh)", "méditation new age", "thérapie sans foi", "mindfulness pure (sans dhikr)", "self-care bobo", "wellness", "burn-out chic", "résilience à l'occidentale", "féministe libre"],
+        formulations: ["j'ai eu une crise mardi en plein partiel d'anatomie et personne ne le sait", "j'ai tellement honte d'être anxieuse en étant musulmane", "j'ai redoublé ma L1, je peux pas redoubler ma L2", "mes parents pensent que je vais bien parce que je leur souris quand je rentre", "j'ai pleuré dans le RER B mardi soir et personne ne sait", "j'ai peur d'oublier 6 mois de révisions à cause d'une crise de panique le jour J"],
+      },
+    },
+    step8: {
+      positionnement: "Le seul programme anti-anxiété pour étudiantes musulmanes 17-25 ans en filière exigeante (médecine, ingé, droit, prépa) qui combine TCC validée scientifiquement, intégration du dhikr et de la spiritualité authentique, respiration alignée sur le dhikr, et communauté non-mixte de sœurs étudiantes — SANS jamais culpabiliser sur la pratique religieuse comme cause de l'anxiété.",
+      hook_principal: "« Crise de panique en plein partiel mardi dernier — tu as quitté la salle, vomi dans les toilettes, pleuré dans le RER B — et tu n'oses même pas le dire à tes parents par honte d'être « mauvaise musulmane » ? »",
+      levier_secondaire: "Insister sur la légitimité religieuse de soigner l'anxiété (« le Prophète SAW a attaché son chameau AVANT de faire tawakkul — soigner ton anxiété c'est attacher ton chameau ») + la peur académique cumulative (« tu as 19 ans, tu as redoublé L1, tu peux pas perdre L2 ») + la solitude actuelle (« tes parents pensent que tu vas bien parce que tu leur souris en rentrant »). Lina ne le fait pas pour aller mieux abstraitement — c'est pour réussir le concours, ne pas décevoir ses parents.",
+      biais_killer: "Confirmation. Mon mur de témoignages DOIT contenir 15+ étudiantes musulmanes voilées en filière exigeante avec un parcours chaotique (redoublement, échec concours, période d'abandon) qui se sont relevées. Préciser l'origine sociale (boursière CROUS, banlieue). Lina doit voir 10 jumelles en 60 secondes.",
+      phase_strategy: "Lina vient de basculer en Prise de conscience aigüe (crise mardi). Donc : (1) Contenu Insta 4x/semaine sur étudiante voilée filière exigeante avec son vocabulaire précis, (2) Témoignages courts en story 2-3x/semaine, (3) Quiz gratuit « Ton anxiété est-elle situationnelle ou systémique? » = engagement diagnostique.",
+      directives_copywriting: "À utiliser : tawakkul authentique, sakina, dhikr, fiqh, TCC validée par psy musulmane, santé mentale halal, femmes uniquement, non-mixte, communauté de sœurs étudiantes, barakah des études. À BANNIR : psy mixte (sauf préciser : femme musulmane), yoga (gymnastique fiqh suspecte), méditation new age, mindfulness pure (sans dhikr), thérapie sans foi, self-care bobo, wellness instagram, résilience occidentale, féministe libre, antidépresseur seul. NE JAMAIS suggérer que la prière seule suffit.",
+    },
+  },
+  scores: { step1: 92, step2: 91, step3: 90, step4: 92, step5: 88, step6: 87, step7: 89, step8: 86 },
+  attempts: { step1: 1, step2: 1, step3: 1, step4: 1, step5: 1, step6: 1, step7: 1, step8: 1 },
+};
+
 export const M2_DEMO_CASES: M2DemoCase[] = [
   // ─── ARGENT (4) ───
   { key: "argent_affiliation", segment: "argent", emoji: "💼",
@@ -901,18 +1372,18 @@ export const M2_DEMO_CASES: M2DemoCase[] = [
   { key: "relations_education_positive", segment: "relation", emoji: "👩‍👧‍👦",
     title: "Najet · Éducation positive pour mamans musulmanes",
     summary: "Maman 35 ans de 3 enfants, banlieue lyonnaise. Crie tous les jours et culpabilise.",
-    ready: false },
+    ready: true, patch: NAJET_PATCH },
   // ─── SANTÉ (3) ───
   { key: "sante_perte_poids_mamans", segment: "sante", emoji: "🥗",
     title: "Salima · Perte de poids halal pour mamans",
     summary: "Maman 38 ans, ex-prof EPS, 3 enfants. +22 kg post-grossesses, veut retrouver son corps.",
-    ready: false },
+    ready: true, patch: SALIMA_PATCH },
   { key: "sante_reprise_sport_hommes", segment: "sante", emoji: "💪",
     title: "Mehdi · Reprise sportive pour hommes musulmans 35-50",
     summary: "Père 39 ans de 4 enfants, ingénieur. 92 kg sédentaire, peur de l'infarctus comme son cousin.",
-    ready: false },
+    ready: true, patch: MEHDI_PATCH },
   { key: "sante_anxiete_etudiants", segment: "sante", emoji: "🌿",
     title: "Lina · Anxiété & tawakkul pour étudiants musulmans",
     summary: "Étudiante 19 ans en L2 médecine. Crises de panique avant chaque exam.",
-    ready: false },
+    ready: true, patch: LINA_PATCH },
 ];
