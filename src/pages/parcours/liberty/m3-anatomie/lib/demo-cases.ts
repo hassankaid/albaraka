@@ -349,6 +349,123 @@ const DEPENDANCE_PATCH: Partial<M3State> = {
   },
 };
 
+// ── Remise en forme pudique à domicile ────────────────────────────────────
+const REMISE_FORME_PATCH: Partial<M3State> = {
+  current_step: "promesse", market_type: "b2c_transfo",
+  m1_data: {
+    source: "demo_remise_en_forme_pudique",
+    sous_niche_2: {
+      phrase_finale: "Femmes voilées 25-45 ans qui veulent perdre 5-15kg à domicile en 12 semaines sans salle mixte ni matériel coûteux",
+      cible: "Femmes musulmanes voilées 25-45 ans, 1-4 enfants, qui ne fréquentent pas les salles de sport mixtes, ont 30 min/jour max, peu de matériel, et se sont déjà essayées à des programmes en ligne sans tenir",
+      douleur: "Refus des salles mixtes (ou salles femmes hors de prix), pas de matériel, pas de temps, sentiment de ne pas se reconnaître dans le corps post-grossesses, programmes Instagram non adaptés (musique, tenues, mixité visuelle)",
+      methode: "Programme Quwwa™ : -5 à -15 kg en 12 semaines à domicile, sans salle ni mixité, avec un tapis et des bandes élastiques",
+    },
+    avatar: { socio: { nom: "Soraya", age: "35 ans", situation: "Mère au foyer à Nantes, 3 enfants (2, 5, 8 ans), voilée depuis 10 ans, +12kg post-grossesses, mari informaticien (4200€/mois), 30 min/jour disponibles le matin avant que les enfants se réveillent." } },
+    marche: { id: "sante", label: "🌱 Santé" },
+  },
+  m2_data: null,
+  promesse: { text: "Perdre 5 à 15 kg en 12 semaines, à domicile, en moins de 30 min par jour, avec uniquement un tapis et des bandes élastiques, sans mixité ni musique inappropriée.", score: 91, attempts: 1, validated: true, forced: false, feedback: { verdict: "✓ Promesse SMDC complète · résultat chiffré + délai + matériel + non-mixité." }, history: [] },
+  mecanisme: { nom: "Programme Quwwa™", etapes: ["Bilan postural et de force initiale (semaine 0 · vidéo de test)", "Cycle 1 — mobilité et activation (semaines 1-3)", "Cycle 2 — endurance et combustion (semaines 4-6)", "Cycle 3 — force fonctionnelle (semaines 7-9)", "Cycle 4 — définition et ancrage des habitudes (semaines 10-12)"], score: 87, attempts: 2, validated: true, forced: false, feedback: { verdict: "✓ Mécanisme par cycles progressifs cohérents avec la science du sport." }, history: [] },
+  vehicule: { format: "programme_video", justification: "Programme vidéo 12 semaines, 60 séances filmées avec une coach féminine voilée, accessibles à vie. Coach WhatsApp dédiée pour répondre aux questions matériel/posture. Groupe Telegram fermé non-mixte pour entraide. Aucune musique, aucune mixité visuelle.", validated: true },
+  bonus: { items: [
+    { nom: "100 recettes halal équilibrées par phase de cycle (collation, repas, batch cooking)", valeur: "97€", raison: "70% du résultat vient de l'assiette. Recettes adaptées aux goûts maghrébins, pas de quinoa-spiruline-tofu." },
+    { nom: "Kit suivi mensuel (mesures, photos privées, journal d'humeur, bilan force)", valeur: "47€", raison: "Le suivi n'est pas que la balance. Tu vois ta progression réelle même quand le poids stagne." },
+    { nom: "Accès au groupe WhatsApp coach (réponse sous 24h)", valeur: "297€", raison: "Tu ne restes jamais bloquée sur une posture ou une douleur. Tu envoies la vidéo, tu reçois la correction." },
+  ], score: 86, attempts: 1, validated: true, forced: false, feedback: { verdict: "✓ Bonus alignés avec les 3 vraies barrières (alimentation, suivi, isolement technique)." }, history: [] },
+  garantie: { type: "continuite", formulation: "Si après les 12 semaines de programme suivies à 80% (séances faites + photos hebdo + alimentation suivie) tu n'as pas perdu au moins 5 kg, je te prolonge l'accès gratuitement pendant 60 jours et je t'accompagne en 1to1 jusqu'à atteindre l'objectif.", score: 86, attempts: 2, validated: true, forced: false, feedback: { verdict: "✓ Continuité avec conditions actives (80% suivi · photos · alim) — pas une garantie passive." }, history: [] },
+  urgence: { type: "cohorte_limitee", justification: "Le coach WhatsApp ne peut pas répondre sereinement à plus de 50 femmes en parallèle. Une fois les 50 places remplies, on ferme jusqu'à la cohorte suivante.", score: 78, attempts: 1, validated: true, forced: false, feedback: { verdict: "✓ Capacité de support technique limitée, justifiée." }, history: [] },
+  prix: {
+    montant: "297",
+    leviers: {
+      resultat:    { score: 88, justification: "5-15 kg en 12 semaines + condition physique retrouvée + estime de soi = transformation forte. Comparée aux salles femmes (80€/mois × 6 = 480€), le ROI est évident." },
+      probabilite: { score: 84, justification: "Programme par cycles + coach WhatsApp + recettes + suivi mensuel = très outillée. Garantie continuité ajoute la sécurité." },
+      delai:       { score: 89, justification: "Quick-win semaine 1 (séance test réussie) + résultats visibles à 6 semaines + objectif final 12 semaines. Délai serré et progressif." },
+      effort:      { score: 88, justification: "30 min/jour · matériel minimal · recettes données · groupe support = effort cadré, accessible à une mère de famille." },
+    },
+    levier_faible: "probabilite", alignements: { format: true, cible: true, ancrage: true },
+    score: 87, attempts: 1, validated: true, forced: false,
+    feedback: { verdict: "✓ Positionnement validé · 297€ low-ticket parfait · ratio valeur/prix excellent · cible solvable." }, history: [],
+  },
+};
+
+// ── Cycle féminin & fertilité naturelle ───────────────────────────────────
+const CYCLE_FEMININ_PATCH: Partial<M3State> = {
+  current_step: "promesse", market_type: "b2c_transfo",
+  m1_data: {
+    source: "demo_cycle_feminin",
+    sous_niche_2: {
+      phrase_finale: "Femmes musulmanes 25-40 ans souffrant de règles douloureuses ou en parcours fertilité qui veulent réguler leur cycle naturellement en 4 mois",
+      cible: "Femmes musulmanes 25-40 ans, mariées, qui souffrent de SPM intense, règles très douloureuses, cycles irréguliers, ou en parcours fertilité depuis 6+ mois sans diagnostic médical clair",
+      douleur: "Tour des médecins sans solution, refus des hormones de synthèse, fatigue chronique, déprime cyclique, peur de l'infertilité, sentiment de ne pas être prise au sérieux par le corps médical",
+      methode: "Méthode Fitra™ : régulariser le cycle, soulager le SPM et booster la fertilité naturellement en 4 mois sans hormones de synthèse",
+    },
+    avatar: { socio: { nom: "Mariam", age: "31 ans", situation: "Mariée depuis 3 ans, professeure d'arabe à Paris, 2 800€/mois, parcours bébé depuis 14 mois sans grossesse, cycles 22-45 jours, médecin refuse Clomid à cause de ses douleurs prémenstruelles déjà fortes." } },
+    marche: { id: "sante", label: "🌱 Santé" },
+  },
+  m2_data: null,
+  promesse: { text: "Régulariser le cycle, soulager les douleurs prémenstruelles à 80% et booster la fertilité naturellement en 4 mois, sans hormones de synthèse, avec 30 min/jour de pratique.", score: 89, attempts: 2, validated: true, forced: false, feedback: { verdict: "✓ Promesse SMDC + précision (80% des douleurs) + cadre méthode." }, history: [] },
+  mecanisme: { nom: "Méthode Fitra™", etapes: ["Bilan complet (hormonal, alimentaire, charge mentale, cycle réel)", "Nettoyage hépatique sur 30 jours (alimentation + plantes spécifiques halal)", "Synchronisation cycle ↔ alimentation ↔ sport (4 phases du cycle)", "Phytothérapie ciblée selon le déséquilibre identifié (toutes plantes halal validées)"], score: 87, attempts: 2, validated: true, forced: false, feedback: { verdict: "✓ Mécanisme structuré et différencié selon le profil." }, history: [] },
+  vehicule: { format: "coaching_groupe_1to1", justification: "Programme 4 mois. Groupe fermé de 30 femmes sur Telegram + 1 live mensuel + 4 sessions 1to1 d'1h avec une naturopathe certifiée musulmane (1 par mois pour ajuster le protocole selon les retours). Toutes les plantes recommandées sont halal et validées par un comité scharia.", validated: true },
+  bonus: { items: [
+    { nom: "Bilan biologique offert (kit prélèvement à domicile + analyses + lecture)", valeur: "247€", raison: "Beaucoup de femmes n'ont jamais eu de bilan hormonal complet. On pose un diagnostic objectif avant d'agir." },
+    { nom: "80 recettes par phase de cycle (folliculaire, ovulatoire, lutéale, menstruelle)", valeur: "97€", raison: "Tu manges ce qui soutient ton corps à chaque phase. Plus de fringales sucre ni de SPM décuplé par l'alimentation." },
+    { nom: "Livret duas et roqya pour la fertilité (validé par un imam)", valeur: "Inclus", raison: "Le pilier spirituel a sa place. Pour les soeurs qui le souhaitent, on intègre la dimension foi à la dimension corps." },
+  ], score: 89, attempts: 1, validated: true, forced: false, feedback: { verdict: "✓ Bonus alignent corps + science + foi · valeur perçue très forte." }, history: [] },
+  garantie: { type: "continuite", formulation: "Si après 4 mois ton cycle n'est pas plus régulier (variation < 5 jours) et que tes douleurs prémenstruelles ne sont pas significativement réduites (échelle objective), je continue à t'accompagner gratuitement jusqu'à régularisation complète, et tu gardes l'accès aux 1to1 jusqu'à 6 mois supplémentaires.", score: 87, attempts: 2, validated: true, forced: false, feedback: { verdict: "✓ Garantie continuité avec critères objectifs (variation < 5j) — pas de promesse magique." }, history: [] },
+  urgence: { type: "cohorte_limitee", justification: "30 places maximum par cohorte. Les 4 sessions 1to1 d'1h chacune avec la naturopathe + le suivi des protocoles individuels imposent une capacité limitée. Prochaine cohorte dans 4 mois.", score: 81, attempts: 1, validated: true, forced: false, feedback: { verdict: "✓ Capacité d'accompagnement personnalisé limitée, justifiée." }, history: [] },
+  prix: {
+    montant: "997",
+    leviers: {
+      resultat:    { score: 90, justification: "Cycle régulier + SPM divisé par 5 + chance grossesse augmentée = transformation très forte pour la cible. Levier rêve maximal pour une femme en parcours bébé." },
+      probabilite: { score: 87, justification: "Bilan biologique objectif + 4 sessions 1to1 + protocole individualisé + naturopathe certifiée = méthode très crédible et personnalisée." },
+      delai:       { score: 80, justification: "4 mois c'est cohérent avec un cycle féminin (3-4 cycles complets) mais peut paraître long pour une femme qui souffre depuis 14 mois." },
+      effort:      { score: 78, justification: "Protocole alimentaire à suivre + plantes à prendre + journal de cycle + 1to1 mensuel = engagement fort. Pas de raccourci." },
+    },
+    levier_faible: "effort", alignements: { format: true, cible: true, ancrage: true },
+    score: 84, attempts: 1, validated: true, forced: false,
+    feedback: { verdict: "✓ Positionnement validé · 997€ aligné · cible motivée prête à investir pour sa santé reproductive." }, history: [],
+  },
+};
+
+// ── Reset alimentaire post-Ramadan ────────────────────────────────────────
+const RESET_RAMADAN_PATCH: Partial<M3State> = {
+  current_step: "promesse", market_type: "b2c_info",
+  m1_data: {
+    source: "demo_reset_post_ramadan",
+    sous_niche_2: {
+      phrase_finale: "Hommes et femmes musulmans 25-50 ans qui veulent éviter la reprise de poids post-Ramadan et repartir sur des bases saines en 30 jours",
+      cible: "Musulmans 25-50 ans (H/F), pratiquants qui font Ramadan tous les ans, qui ont l'expérience d'un Aïd qui efface le bénéfice du jeûne en 1 semaine, et qui veulent un protocole simple post-fêtes",
+      douleur: "Tout le bénéfice du Ramadan effacé en 1 semaine de fêtes, fatigue digestive, reprise de poids systématique, démotivation, ne savent pas par où reprendre une alimentation saine sans frustration",
+      methode: "Reset 30 Jours™ : repartir sur des bases saines après le Ramadan avec -3 à -6 kg, énergie retrouvée et 3 habitudes ancrées",
+    },
+    avatar: { socio: { nom: "Brahim", age: "39 ans", situation: "Cadre commercial à Toulouse, 4 200€/mois, marié 2 enfants. À chaque post-Ramadan il reprend les 3 kg perdus pendant le mois en moins de 10 jours. Il ne sait pas comment 'décrocher' des fêtes." } },
+    marche: { id: "sante", label: "🌱 Santé" },
+  },
+  m2_data: null,
+  promesse: { text: "Repartir sur des bases saines en 30 jours après le Ramadan : -3 à -6 kg, énergie retrouvée, et 3 bonnes habitudes alimentaires ancrées pour ne plus reprendre.", score: 88, attempts: 2, validated: true, forced: false, feedback: { verdict: "✓ Promesse claire · résultat chiffré + délai serré + bénéfice durable." }, history: [] },
+  mecanisme: { nom: "Reset 30 Jours™", etapes: ["Jeûne intermittent halal personnalisé selon le profil (semaines 1)", "Nettoyage 7 jours (alimentation simplifiée + plantes spécifiques + hijama optionnelle)", "Réintroduction graduelle des aliments (semaines 2-3)", "Ancrage de 3 habitudes durables avant le retour à la 'vie normale'"], score: 86, attempts: 2, validated: true, forced: false, feedback: { verdict: "✓ Mécanisme progressif · cohérent avec la physiologie post-jeûne." }, history: [] },
+  vehicule: { format: "programme_video", justification: "Programme vidéo 4 semaines, 16 modules courts (10-15min), démarrage groupé sur les 2 semaines suivant l'Aïd. Lives bi-hebdomadaires (mardi/vendredi 21h) pendant 4 semaines + coach WhatsApp pour les questions urgentes (réponse sous 12h).", validated: true },
+  bonus: { items: [
+    { nom: "30 menus complets + listes de courses halal hebdomadaires", valeur: "47€", raison: "Tu sais exactement quoi acheter et quoi manger chaque jour. Aucune décision à prendre dans la fatigue, donc aucun écart." },
+    { nom: "Kit détox à recevoir chez toi (curcuma bio, gingembre frais, citron, infusion drainage)", valeur: "37€", raison: "Tu démarres concret dès la réception du colis. Pas de friction de courses spécifiques au début." },
+    { nom: "E-book hijama post-Ramadan (en partenariat avec un hijamateur certifié)", valeur: "29€", raison: "Pour ceux qui veulent intégrer la sunnah du Prophète ﷺ. Pas obligatoire mais offert." },
+  ], score: 84, attempts: 1, validated: true, forced: false, feedback: { verdict: "✓ Bonus utiles immédiatement · valeur perçue cohérente avec le prix d'entrée." }, history: [] },
+  garantie: { type: "continuite", formulation: "Si après 30 jours de programme suivi à 80% (modules vus + menus suivis + journal alimentaire rempli) tu n'as pas perdu au moins 3 kg, je te prolonge l'accès gratuitement pendant 30 jours supplémentaires et je t'accompagne par WhatsApp jusqu'à atteindre l'objectif.", score: 83, attempts: 2, validated: true, forced: false, feedback: { verdict: "✓ Continuité avec conditions actives · 3 kg c'est mesurable." }, history: [] },
+  urgence: { type: "fenetre_temporelle", justification: "Le programme démarre uniquement sur les 2 semaines suivant l'Aïd, parce que c'est la fenêtre physiologique où le corps est le plus réceptif (sortie de jeûne récente). Hors de cette fenêtre, le programme perd 40% de son efficacité.", score: 80, attempts: 1, validated: true, forced: false, feedback: { verdict: "✓ Urgence physiologique réelle, pas marketing artificiel." }, history: [] },
+  prix: {
+    montant: "247",
+    leviers: {
+      resultat:    { score: 84, justification: "-3 à -6 kg + énergie + 3 habitudes durables = ROI émotionnel et physique évident, surtout en sortant du Ramadan." },
+      probabilite: { score: 82, justification: "Mécanisme progressif + menus + kit détox livré + coach WhatsApp = très outillé pour 30 jours. Garantie ajoute la sécurité." },
+      delai:       { score: 92, justification: "30 jours, quick-win dès la première semaine (énergie revenue), résultats poids visibles à J15. Délai parfait pour la cible." },
+      effort:      { score: 87, justification: "Done-for-you sur les menus + kit détox livré + lives bi-hebdomadaires = très peu de friction. Application directe." },
+    },
+    levier_faible: "probabilite", alignements: { format: true, cible: true, ancrage: true },
+    score: 86, attempts: 1, validated: true, forced: false,
+    feedback: { verdict: "✓ Positionnement validé · 247€ low-ticket parfait pour entrée de gamme post-Ramadan." }, history: [],
+  },
+};
+
 export const M3_DEMO_CASES: M3DemoCase[] = [
   // ─── ARGENT (4) ───
   { key: "cake_design", segment: "argent", emoji: "🎂",
@@ -383,14 +500,14 @@ export const M3_DEMO_CASES: M3DemoCase[] = [
   // ─── SANTÉ (3) ───
   { key: "remise_en_forme_pudique", segment: "sante", emoji: "💪",
     title: "Remise en forme pudique à domicile",
-    summary: "Programme sport halal pour sœurs voilées qui ne fréquentent pas les salles mixtes",
-    ready: false },
+    summary: "Programme sport halal pour sœurs voilées qui ne fréquentent pas les salles mixtes (B2C transfo · 12 sem)",
+    ready: true, patch: REMISE_FORME_PATCH },
   { key: "cycle_feminin", segment: "sante", emoji: "🌙",
     title: "Cycle féminin & fertilité naturelle",
-    summary: "Méthodes naturelles compatibles avec la pratique musulmane (B2C transfo · cohorte)",
-    ready: false },
+    summary: "Naturopathie pour sœurs en parcours bébé ou règles douloureuses (B2C transfo · 4 mois)",
+    ready: true, patch: CYCLE_FEMININ_PATCH },
   { key: "reset_post_ramadan", segment: "sante", emoji: "🍽",
     title: "Reset alimentaire post-Ramadan",
-    summary: "Programme intensif 30 jours pour stabiliser le poids post-Ramadan (B2C transfo)",
-    ready: false },
+    summary: "Détox + rééquilibrage 30 jours, lutte contre la reprise post-fêtes (B2C info · 4 semaines)",
+    ready: true, patch: RESET_RAMADAN_PATCH },
 ];
