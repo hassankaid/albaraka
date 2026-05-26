@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPass } from "@/hooks/useUserPass";
@@ -10,16 +10,23 @@ import {
 import { Shell } from "./components/Shell";
 import { ProgressBar } from "./components/ProgressBar";
 import { WelcomeScreen } from "./screens/WelcomeScreen";
+import { BilanScreen } from "./screens/BilanScreen";
+import { BrainstormScreen } from "./screens/BrainstormScreen";
+import { PropositionsScreen } from "./screens/PropositionsScreen";
+import { CaptureScreen } from "./screens/CaptureScreen";
+import { StressTestScreen } from "./screens/StressTestScreen";
+import { CrystalScreen } from "./screens/CrystalScreen";
+import { AvatarScreen } from "./screens/AvatarScreen";
+import { ValidationScreen } from "./screens/ValidationScreen";
+import { LockScreen } from "./screens/LockScreen";
+import { DemoSelectorScreen } from "./screens/DemoSelectorScreen";
 import { usePersistedM1State } from "./lib/usePersistedState";
-import type { M1State, M1Step } from "./lib/types";
+import { defaultM1State, type M1State, type M1Step } from "./lib/types";
+import { DEMO_NICHES, type DemoNiche } from "./lib/demo-niches";
 
 /**
  * Page orchestrateur de l'outil M1 NICHE (V2).
  * Route : /parcours/liberty/m1
- *
- * Accès :
- * - Pass Liberty actif
- * - OU rôle CEO/coach (pour démo / support)
  */
 export default function M1NichePage() {
   const navigate = useNavigate();
@@ -30,6 +37,9 @@ export default function M1NichePage() {
   const persisted = usePersistedM1State(userId);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [showExitDemoConfirm, setShowExitDemoConfirm] = useState(false);
+  const [showDemoSelector, setShowDemoSelector] = useState(false);
+  // Backup du state pré-démo en RAM (pour restauration sans cassure du vrai parcours).
+  const preDemoSnapshot = useRef<M1State | null>(null);
 
   const isAuthorized = useMemo(() => {
     if (!profile) return false;
@@ -37,7 +47,14 @@ export default function M1NichePage() {
     return hasLiberty;
   }, [profile, hasLiberty]);
 
-  // ─── Handlers ──────────────────────────────────────────────────────────
+  // ─── Navigation entre étapes ─────────────────────────────────────────
+  const goTo = useCallback(
+    (step: M1Step) => {
+      persisted.setState((prev) => ({ ...prev, step }));
+    },
+    [persisted],
+  );
+
   const handleChooseBranch = useCallback(
     (branch: "A" | "B") => {
       persisted.setState((prev) => ({
@@ -50,28 +67,61 @@ export default function M1NichePage() {
   );
 
   const handleResume = useCallback(() => {
-    // Le state contient déjà la dernière étape — pas d'action nécessaire,
-    // l'écran courant va automatiquement re-render au prochain step.
-    // (Implémenté plus tard quand on aura les autres écrans.)
-  }, []);
-
-  const handleOpenDemo = useCallback(() => {
-    // TODO Sprint 3 : ouvrir le sélecteur de démo.
-    alert("Mode démo — à implémenter au Sprint 3");
-  }, []);
+    // No-op : le state contient déjà la dernière étape, le render switchera dessus.
+    // On force juste un re-render en touchant step si on est sur welcome avec une session.
+    if (persisted.state.step === "welcome" && persisted.state.branch) {
+      const nextStep: M1Step =
+        persisted.state.branch === "A" ? "branchA_bilan" : "branchB_capture";
+      persisted.setState((prev) => ({ ...prev, step: nextStep }));
+    }
+  }, [persisted]);
 
   const handleRestart = useCallback(async () => {
     setShowRestartConfirm(false);
+    preDemoSnapshot.current = null;
+    setShowDemoSelector(false);
     await persisted.resetState();
   }, [persisted]);
+
+  // ─── Mode démo ────────────────────────────────────────────────────────
+  const handleOpenDemoSelector = useCallback(() => {
+    setShowDemoSelector(true);
+  }, []);
+
+  const handleSelectDemo = useCallback(
+    (niche: DemoNiche) => {
+      // Sauve le state actuel pour pouvoir y revenir en sortie de démo.
+      if (!persisted.state.demoMode) {
+        preDemoSnapshot.current = persisted.state;
+      }
+      // Construit un state propre, on n'y mélange pas la session réelle.
+      const fresh = defaultM1State();
+      const next: M1State = {
+        ...fresh,
+        ...niche.patch,
+        sous_niche_2: { ...fresh.sous_niche_2, ...(niche.patch.sous_niche_2 ?? {}) },
+        avatar: niche.patch.avatar ?? fresh.avatar,
+        demoMode: niche.key,
+      };
+      persisted.setState(() => next);
+      setShowDemoSelector(false);
+    },
+    [persisted],
+  );
 
   const handleExitDemo = useCallback(async () => {
     setShowExitDemoConfirm(false);
-    // TODO Sprint 3 : restaurer le state pré-démo
-    await persisted.resetState();
+    // Restaure le state pré-démo s'il existe, sinon repart à zéro.
+    if (preDemoSnapshot.current) {
+      const snap = preDemoSnapshot.current;
+      preDemoSnapshot.current = null;
+      persisted.setState(() => snap);
+    } else {
+      await persisted.resetState();
+    }
   }, [persisted]);
 
-  // ─── Guard auth + access ────────────────────────────────────────────────
+  // ─── Guards ──────────────────────────────────────────────────────────
   if (authLoading || passLoading) {
     return (
       <div className="-mx-6 -my-6 min-h-[calc(100vh-4rem)] w-[calc(100%+3rem)] bg-[#050505] p-6">
@@ -116,33 +166,126 @@ export default function M1NichePage() {
     );
   }
 
-  // ─── Render ─────────────────────────────────────────────────────────────
-  const { state } = persisted;
+  // ─── Render ──────────────────────────────────────────────────────────
+  const { state, setState, flushNow } = persisted;
   const showRestart = state.step !== "welcome" && !state.demoMode;
   const progress = computeProgress(state.step, state.branch);
+  const demoLabel = state.demoMode
+    ? findDemoLabel(state.demoMode)
+    : null;
 
   return (
     <Shell
       onRestart={showRestart ? () => setShowRestartConfirm(true) : undefined}
-      demoLabel={state.demoMode}
-      onExitDemo={state.demoMode ? () => setShowExitDemoConfirm(true) : undefined}
+      demoLabel={demoLabel}
+      onExitDemo={demoLabel ? () => setShowExitDemoConfirm(true) : undefined}
     >
-      {progress && (
-        <ProgressBar stepLabel={progress.label} percent={progress.percent} />
+      {progress && <ProgressBar stepLabel={progress.label} percent={progress.percent} />}
+
+      {/* Sélecteur démo en surcouche */}
+      {showDemoSelector && (
+        <DemoSelectorScreen
+          onBack={() => setShowDemoSelector(false)}
+          onSelect={handleSelectDemo}
+        />
       )}
 
-      {state.step === "welcome" && (
+      {/* Écrans principaux */}
+      {!showDemoSelector && state.step === "welcome" && (
         <WelcomeScreen
           state={state}
           onChooseBranch={handleChooseBranch}
-          onOpenDemo={handleOpenDemo}
+          onOpenDemo={handleOpenDemoSelector}
           onResume={handleResume}
           onRestart={() => setShowRestartConfirm(true)}
         />
       )}
 
-      {state.step !== "welcome" && (
-        <ScreenPlaceholder step={state.step} />
+      {!showDemoSelector && state.step === "branchA_bilan" && (
+        <BilanScreen
+          state={state}
+          setState={setState}
+          onBack={() => goTo("welcome")}
+          onNext={() => goTo("branchA_brainstorm")}
+        />
+      )}
+
+      {!showDemoSelector && state.step === "branchA_brainstorm" && (
+        <BrainstormScreen
+          state={state}
+          setState={setState}
+          onBack={() => goTo("branchA_bilan")}
+          onNext={() => goTo("branchA_propositions")}
+        />
+      )}
+
+      {!showDemoSelector && state.step === "branchA_propositions" && (
+        <PropositionsScreen
+          state={state}
+          setState={setState}
+          onBack={() => goTo("branchA_brainstorm")}
+          onNext={() => goTo("sous_niche_2")}
+        />
+      )}
+
+      {!showDemoSelector && state.step === "branchB_capture" && (
+        <CaptureScreen
+          state={state}
+          setState={setState}
+          onBack={() => goTo("welcome")}
+          onNext={() => goTo("branchB_stress")}
+        />
+      )}
+
+      {!showDemoSelector && state.step === "branchB_stress" && (
+        <StressTestScreen
+          state={state}
+          setState={setState}
+          onBack={() => goTo("branchB_capture")}
+          onNextCristallisation={() => goTo("sous_niche_2")}
+          onSwitchToA={() => {
+            setState((prev) => ({ ...prev, branch: "A", step: "branchA_bilan" }));
+          }}
+        />
+      )}
+
+      {!showDemoSelector && state.step === "sous_niche_2" && (
+        <CrystalScreen
+          state={state}
+          setState={setState}
+          onBack={() =>
+            goTo(state.branch === "A" ? "branchA_propositions" : "branchB_stress")
+          }
+          onNext={() => goTo("avatar")}
+        />
+      )}
+
+      {!showDemoSelector && state.step === "avatar" && (
+        <AvatarScreen
+          state={state}
+          setState={setState}
+          onBack={() => goTo("sous_niche_2")}
+          onNext={() => goTo("validation")}
+        />
+      )}
+
+      {!showDemoSelector && state.step === "validation" && (
+        <ValidationScreen
+          state={state}
+          setState={setState}
+          onBack={() => goTo("avatar")}
+          onNext={() => goTo("engagement")}
+        />
+      )}
+
+      {!showDemoSelector && (state.step === "engagement" || state.step === "recap") && (
+        <LockScreen
+          state={state}
+          setState={setState}
+          userId={userId}
+          onBack={() => goTo("validation")}
+          flushNow={flushNow}
+        />
       )}
 
       {/* Confirmation Recommencer */}
@@ -208,7 +351,6 @@ function computeProgress(
   branch: M1State["branch"],
 ): { label: string; percent: number } | null {
   if (step === "welcome") return null;
-  // Ordres calés sur le HTML standalone Sidali (~9 étapes payantes après welcome).
   const orderA: M1Step[] = [
     "branchA_bilan",
     "branchA_brainstorm",
@@ -217,7 +359,6 @@ function computeProgress(
     "avatar",
     "validation",
     "engagement",
-    "recap",
   ];
   const orderB: M1Step[] = [
     "branchB_capture",
@@ -226,7 +367,6 @@ function computeProgress(
     "avatar",
     "validation",
     "engagement",
-    "recap",
   ];
   const order = branch === "B" ? orderB : orderA;
   const idx = order.indexOf(step);
@@ -239,23 +379,7 @@ function computeProgress(
   };
 }
 
-/**
- * Placeholder pour les écrans non encore implémentés (Sprints 2-5).
- * Remplacé au fur et à mesure par les vrais composants.
- */
-function ScreenPlaceholder({ step }: { step: M1Step }) {
-  return (
-    <div className="rounded-xl border border-dashed border-[#C9A84C]/30 p-8 text-center">
-      <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#C9A84C]">
-        En construction
-      </div>
-      <h2 className="mb-2 text-xl font-semibold text-white">
-        Écran « {step} » à implémenter
-      </h2>
-      <p className="text-sm text-white/60">
-        Cet écran arrive au prochain sprint. Le squelette de persistance et de navigation est en
-        place — il ne reste qu'à brancher le contenu.
-      </p>
-    </div>
-  );
+function findDemoLabel(key: string): string | null {
+  const found = DEMO_NICHES.find((n) => n.key === key);
+  return found?.label ?? null;
 }

@@ -34,10 +34,20 @@ export interface AIProposition {
   cible: string;
   douleur: string;
   pouvoir_achat: string;
-  contact: string;
-  croissance: string;
-  methode: string;
-  phrase: string;
+  alignement: string;
+  // Champs optionnels — l'IA peut aussi remplir ces champs pour pré-alimenter
+  // la sous-niche 2.0 si elle veut prendre la liberté.
+  contact?: string;
+  croissance?: string;
+  methode?: string;
+  phrase?: string;
+}
+
+export interface StressVerdictData {
+  verdict: "solide" | "fragile";
+  titre: string;
+  diagnostic: string;
+  next_action: string;
 }
 
 export interface CaptureState {
