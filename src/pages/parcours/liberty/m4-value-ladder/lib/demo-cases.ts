@@ -334,6 +334,178 @@ const MOUNIA_ANAS_IMMO_PATCH: Partial<M4State> = {
   },
 };
 
+// ── 5 · Khadija · Mariage halal (bon cas ht_only par cohérence preuve) ──
+const KHADIJA_MARIAGE_PATCH: Partial<M4State> = {
+  current_step: "vue_ensemble", market_type: "b2c_transfo",
+  m1_data: {
+    source: "demo_relations_mariage_halal",
+    sous_niche_2: {
+      phrase: "Sœurs musulmanes 25-35 ans qui ont tenté plusieurs fois sans succès et veulent une méthode structurée pour rencontrer leur époux",
+      phrase_finale: "Sœurs musulmanes 25-35 ans qui ont tenté plusieurs fois sans succès et veulent une méthode structurée pour rencontrer leur époux",
+      cible: "Sœurs pratiquantes, professionnelles établies",
+      douleur: "Doutent après plusieurs échecs et craignent d'être « le problème »",
+      methode: "MARIAGE HALAL — méthode en 3 phases",
+    },
+    avatar: { socio: { nom: "Khadija", age: "28 ans", situation: "Prof primaire, célibataire, 2 100€/mois, 4 ruptures de fiançailles", lieu: "Marseille" } },
+    marche: { id: "relations", label: "🤝 Relations" },
+  },
+  m2_data: {
+    source: "module_2_psychologie", version: "demo_v1",
+    data: { step8: {
+      positionnement: "La sœur qui prend la responsabilité de son destin marital sans attendre passivement",
+      hook_principal: "Rencontrer ton époux compatible religieusement et humainement en 12 mois maximum",
+      levier_secondaire: "preuve",
+      biais_killer: "doute identitaire post-ruptures",
+      phase_strategy: "phase 2 — tenté seule, parfois avec matchmaker, sans cadre méthodique",
+    } },
+  },
+  m3_data: {
+    source: "module_3_anatomie", complete: true, market_type: "b2c_transfo",
+    promesse: "Rencontrer ton époux compatible religieusement et humainement en 12 mois, sans répéter tes erreurs passées",
+    mecanisme: { nom: "MARIAGE HALAL — méthode en 3 phases", etapes: ["Bilan identité conjugale", "Cadre méthodique recherche", "Suivi rencontres jusqu'au mariage"] },
+    vehicule: { format: "12 mois · 1 call/mois + masterclass + sisters group + accès matchmakers partenaires", justification: "Format long pour suivre toute la trajectoire d'une rencontre", validated: true },
+    garantie: { type: "remboursement", formulation: "Si tu ne rencontres pas au moins 3 candidats compatibles à tes critères en 6 mois, je rembourse 50%" },
+    urgence: { type: "cohorte_limitee", justification: "8 sœurs par cohorte de 6 mois" },
+    prix: { montant: "3200", levier_faible: "delai" },
+    prix_score_global: 74,
+  },
+  ladder: {
+    freemium: { id: "free_quiz_pretes", name: "Quiz « Es-tu vraiment prête au mariage halal ? »", price: "0€", format: "Quiz Tally 12 questions · 7 min · diagnostic 4 dimensions emailé", rationale: "Donne un diagnostic structuré qui calme l'angoisse et met en mouvement." },
+    low: { id: "", name: "", price: "", format: "", rationale: "" },
+    mid: { id: "", name: "", price: "", format: "", rationale: "" },
+    high: { id: "high_mariage_12m", name: "MARIAGE HALAL · 12 mois jusqu'à la rencontre", price: "3 200€", format: "12 mois · 1 call/mois + matchmakers + sisters group + masterclass mensuelles", rationale: "Sommet : accompagnement long + accès au réseau privé de matchmakers partenaires." },
+  },
+  bridges: {
+    free_to_low: "", free_to_mid: "",
+    free_to_high: "Suite du quiz : on dirige les sœurs vers un webinaire 60 min mensuel « Les 5 phases du parcours mariage halal », suivi d'un call discovery 30 min. Pas de tripwire intermédiaire — l'audience est sensible, mieux vaut un funnel court et qualitatif. Conversion quiz → discovery call ~12%, conversion call → HT ~25%.",
+    low_to_mid: "", low_to_high: "", mid_to_high: "",
+  },
+  entry: {
+    strategy: "ht_only",
+    rationale: "J'ai 6 mariages confirmés sur les 18 derniers mois, et tous mes témoignages sont des sœurs mariées qui parlent de leur parcours. Mon marketing repose à 100% sur cette preuve sociale — pour multiplier les témoignages je dois multiplier les mariages, donc le HT. Tant que je n'ai pas franchi les 10 mariages confirmés je vais résister à l'envie de monter un tripwire qui me disperserait. Mon indicateur de bascule : quand j'atteins 10 mariages et que j'ai 3 témoignages vidéo dont une couple ensemble, là je regarderai un tripwire à 17€ type « 50 questions à poser en entretien » pour élargir le top of funnel.",
+    score: 86,
+    feedback: "✓ Stratégie cohérente avec ton angle marketing. Tu as relié ton angle M3 (preuve sociale via mariages confirmés) à la décision de prioriser le HT — c'est exactement le bon raisonnement. L'indicateur de bascule est concret (10 mariages + 3 vidéos). Continue ainsi.",
+    ai_mode: "local", attempts: 1, forced: false,
+    ht_monthly_target: "8 places HT par cohorte de 6 mois = 1,3/mois à 3 200€ = ~4 200€/mois bruts",
+    lt_breakeven_check: "Non applicable — pas de LT à ce stade.",
+  },
+};
+
+// ── 6 · Aïcha & Tarek · Couple post-bébé (bon cas ht_only par sensibilité) ─
+const AICHA_TAREK_COUPLE_PATCH: Partial<M4State> = {
+  current_step: "vue_ensemble", market_type: "b2c_transfo",
+  m1_data: {
+    source: "demo_relations_couple_post_bebe",
+    sous_niche_2: {
+      phrase: "Couples musulmans 30-45 ans avec enfants en bas âge qui sentent leur relation s'éroder mais ne savent pas comment en parler",
+      phrase_finale: "Couples musulmans 30-45 ans avec enfants en bas âge qui sentent leur relation s'éroder mais ne savent pas comment en parler",
+      cible: "Couples mariés depuis 8-15 ans, 2-4 enfants",
+      douleur: "Communication réduite à la logistique, intimité quasi-disparue, frustration silencieuse",
+      methode: "RETROUVAILLES — protocole 6 mois en 3 niveaux",
+    },
+    avatar: { socio: { nom: "Aïcha & Tarek", age: "34 & 37 ans", situation: "Mariés 11 ans, 3 enfants 2-5-8, revenus combinés 6 400€", lieu: "Région bordelaise" } },
+    marche: { id: "relations", label: "🤝 Relations" },
+  },
+  m2_data: {
+    source: "module_2_psychologie", version: "demo_v1",
+    data: { step8: {
+      positionnement: "Le couple musulman qui ose travailler sur sa relation au lieu de laisser pourrir",
+      hook_principal: "Retrouver une vraie connexion conjugale sans passer par une thérapie occidentale qui ignore le cadre religieux",
+      levier_secondaire: "transformation",
+      biais_killer: "tabou conjugal communautaire",
+      phase_strategy: "phase 1 — tournent en rond, n'ont jamais consulté ensemble",
+    } },
+  },
+  m3_data: {
+    source: "module_3_anatomie", complete: true, market_type: "b2c_transfo",
+    promesse: "Reconstruire votre couple (communication + intimité) en 6 mois, dans un cadre 100% halal et confidentiel",
+    mecanisme: { nom: "RETROUVAILLES — protocole 6 mois en 3 niveaux", etapes: ["Diagnostic communication", "Reconstruction langage couple", "Rétablissement intimité halal"] },
+    vehicule: { format: "6 mois · 1 call couple/mois + masterclass couples + Telegram + ressources audio", justification: "Format long pour aborder l'intimité après reconstruction communication", validated: true },
+    garantie: { type: "remboursement", formulation: "Si vous ne voyez pas d'amélioration mesurable en 90 jours, je rembourse 100%" },
+    urgence: { type: "cohorte_limitee", justification: "Suivi couple personnalisé limité" },
+    prix: { montant: "3600", levier_faible: "effort" },
+    prix_score_global: 79,
+  },
+  ladder: {
+    freemium: { id: "free_audio_couple", name: "Podcast 3 épisodes « Quand le couple meurt en silence »", price: "0€", format: "3 épisodes audio 40-60 min · à écouter en couple", rationale: "Format audio idéal : pas d'engagement, peut être écouté à deux dans la voiture." },
+    low: { id: "", name: "", price: "", format: "", rationale: "" },
+    mid: { id: "", name: "", price: "", format: "", rationale: "" },
+    high: { id: "high_retrouvailles_6m", name: "RETROUVAILLES · 6 mois couple complet", price: "3 600€", format: "6 mois · 1 call couple/mois + masterclass couples + Telegram + ressources audio", rationale: "Sommet : reconstruction communication ET intimité, cadre 100% halal." },
+  },
+  bridges: {
+    free_to_low: "", free_to_mid: "",
+    free_to_high: "Fin de l'épisode 3 du podcast : invitation au webinaire couple privé « Les 4 phases d'érosion conjugale » (90 min en couple), suivi d'un call discovery couple gratuit 45 min. Le funnel reste court et qualitatif. Conversion podcast → webinaire ~8%, conversion webinaire → call ~30%, conversion call → HT ~35%.",
+    low_to_mid: "", low_to_high: "", mid_to_high: "",
+  },
+  entry: {
+    strategy: "ht_only",
+    rationale: "J'ai 12 couples accompagnés jusqu'au bout sur 24 mois, et la spécificité de cette niche c'est que les couples ne parlent à personne — quand ils franchissent le pas de payer 3 600€, c'est qu'ils sont au bord du divorce. Un tripwire à 27€ « 5 questions à poser ce soir » risquerait de banaliser le sujet et d'attirer du curieux qui consomme sans agir. Je préfère un funnel court (podcast → webinaire couple → call discovery) qui qualifie en profondeur. L'organique Instagram me ramène 25 prospects sérieux par mois pour 8 places HT, donc je ne suis pas saturée. Je bascule vers HT+MT (pas LT) quand j'ai 25 couples accompagnés et que je vois une demande pour une version « sans call individuel ».",
+    score: 84,
+    feedback: "✓ Stratégie défendable et fine. Tu as fait l'analyse psychologique de ta cible (couples ultra-prudents, le LT banaliserait) et tu en as tiré la bonne conclusion. Le funnel court est cohérent. L'indicateur de bascule envisage ht_mt plutôt que ht_lt — ce qui est exactement le bon réflexe pour cette niche.",
+    ai_mode: "local", attempts: 1, forced: false,
+    ht_monthly_target: "6-8 couples HT/cohorte de 6 mois = 1-1,3/mois à 3 600€ = 4 200-4 800€/mois bruts",
+    lt_breakeven_check: "Non applicable — pas de LT. Le calcul à venir sera plutôt MT 597€ avec marge brute ~500€ et target 4 ventes MT/mois pour compenser l'absence de 1 couple HT.",
+  },
+};
+
+// ── 7 · Najet · Éducation positive (bon cas ht_lt avec insight conjugal) ─
+const NAJET_EDUCATION_PATCH: Partial<M4State> = {
+  current_step: "vue_ensemble", market_type: "b2c_transfo",
+  m1_data: {
+    source: "demo_relations_education_positive",
+    sous_niche_2: {
+      phrase: "Mères musulmanes 28-42 ans qui crient sur leurs enfants et culpabilisent religieusement de leur impatience",
+      phrase_finale: "Mères musulmanes 28-42 ans qui crient sur leurs enfants et culpabilisent religieusement de leur impatience",
+      cible: "Mamans au foyer ou pause carrière, 2-5 enfants, budget restreint",
+      douleur: "Culpabilité chronique + mari souvent réticent à investir",
+      methode: "MAMA SEREINE — méthode 3 piliers en 90 jours",
+    },
+    avatar: { socio: { nom: "Najet", age: "35 ans", situation: "Mère au foyer 4 enfants 2-5-8-11, mariée, dépend du salaire mari (3 200€)", lieu: "Banlieue parisienne" } },
+    marche: { id: "relations", label: "🤝 Relations" },
+  },
+  m2_data: {
+    source: "module_2_psychologie", version: "demo_v1",
+    data: { step8: {
+      positionnement: "La maman musulmane qui prend la responsabilité de son tempérament",
+      hook_principal: "Devenir la mère apaisée qu'elle voudrait être, dans le cadre de la pédagogie prophétique",
+      levier_secondaire: "transformation",
+      biais_killer: "culpabilité religieuse",
+      phase_strategy: "phase 2 — a lu 5 livres d'éducation positive sans arriver à appliquer",
+    } },
+  },
+  m3_data: {
+    source: "module_3_anatomie", complete: true, market_type: "b2c_transfo",
+    promesse: "Arrêter de crier sur tes enfants en 90 jours, dans le cadre de la pédagogie prophétique, sans culpabilité religieuse",
+    mecanisme: { nom: "MAMA SEREINE — méthode 3 piliers en 90 jours", etapes: ["Régulation émotionnelle", "Outils pédagogie prophétique", "Ancrage routine apaisée"] },
+    vehicule: { format: "90 jours · 2 lives/mois + audits individuels + Telegram mamans + workbook", justification: "Format hybride asynchrone + lives groupe + audits", validated: true },
+    garantie: { type: "continuite", formulation: "Si en 90 jours tu n'as pas réduit tes cris d'au moins 70% mesurés par journal, je continue gratuitement" },
+    urgence: { type: "cohorte_limitee", justification: "6 places par session" },
+    prix: { montant: "2500", levier_faible: "delai" },
+    prix_score_global: 73,
+  },
+  ladder: {
+    freemium: { id: "free_journee_test", name: "Défi gratuit « 24h sans crier »", price: "0€", format: "Email matin + journal PDF · bilan le soir + invitation live", rationale: "Le défi prouve à Najet qu'elle PEUT changer en 1 journée — déclic immédiat." },
+    low: { id: "low_5_phrases", name: "5 phrases magiques anti-cri", price: "17€", format: "PDF 24 pages + 5 cartes imprimables · accès à vie", rationale: "17€ passe sans débat conjugal (= un thé). Premier achat qui ouvre l'écosystème." },
+    mid: { id: "", name: "", price: "", format: "", rationale: "" },
+    high: { id: "high_mama_90j", name: "MAMA SEREINE · 90 jours", price: "2 500€", format: "90 jours · 2 lives/mois + audits individuels + Telegram mamans", rationale: "Sommet : transformation durable avec pédagogie prophétique + audits individuels." },
+  },
+  bridges: {
+    free_to_low: "Fin du défi 24h : « Tu as tenu la journée — pour transformer ça en routine 7 jours, voici 5 phrases magiques anti-cri à 17€ pendant 48h ». 38% de conversion freemium → tripwire (cible engagée par le défi). Le 17€ est calibré pour passer le radar du mari (= une boîte de gâteaux).",
+    free_to_mid: "", free_to_high: "", low_to_mid: "",
+    low_to_high: "Email J+10 du tripwire : « Tu as les 5 phrases ? Maintenant ton mari voit que ça marche. Pour aller plus loin (régulation émotionnelle + pédagogie prophétique au quotidien), j'ouvre 6 places dans MAMA SEREINE — webinaire de présentation cette semaine, échelonné en 5×550€ ». Conversion LT → HT ~4% sur 90 jours.",
+    mid_to_high: "",
+  },
+  entry: {
+    strategy: "ht_lt",
+    rationale: "J'ai 22 mamans accompagnées avec transformation mesurée (journal anti-cri). Mon vrai blocage n'est pas le prix mais le veto du mari sur les achats > 50€ — c'est culturel et c'est partout dans ma cible. Un tripwire à 17€ (= équivalent boîte de gâteaux) passe sous le radar, permet à la maman de tester, et surtout lui donne une preuve à montrer à son mari avant de proposer le HT à 5×550€. C'est pas un volume play, c'est un play de friction conjugale. Mes Reels Instagram ramènent ~1 500 leads/mois (le défi 24h cartonne), j'ai donc largement de quoi nourrir un LT. Indicateur de bascule : quand le LT atteint 300 ventes/mois et que je vois 10% des acheteuses LT poser des questions sur la suite, j'ouvre un MT à 297€.",
+    score: 91,
+    feedback: "✓ Stratégie excellente. Tu as identifié un mécanisme spécifique à ta cible (le veto conjugal sur les achats) et conçu le LT comme outil de contournement de cette friction — pas comme source de revenus. C'est exactement le niveau de psychologie commerciale qui distingue une stratégie d'une intuition.",
+    ai_mode: "local", attempts: 1, forced: false,
+    ht_monthly_target: "4-5 ventes HT/mois à 2 500€ = 10-12k€/mois bruts",
+    lt_breakeven_check: "LT 17€ avec CAC organique ~0€ via Reels = 17€ marge brute. Si ads test : CAC ~8€, marge ~9€. Cible 300 ventes/mois = 2 700€/mois qui finance amplement les ads. Pas en perte du tout.",
+  },
+};
+
 // ── Liste finale ──────────────────────────────────────────────────────────
 export const M4_DEMO_CASES: M4DemoCase[] = [
   // ARGENT
@@ -351,12 +523,15 @@ export const M4_DEMO_CASES: M4DemoCase[] = [
     is_anti_pattern: false, ready: true, patch: MOUNIA_ANAS_IMMO_PATCH },
 
   // RELATIONS
-  { key: "relations_couple_post_bebe", segment: "relations", emoji: "👶", title: "Couple post-bébé (ht_only)",
-    summary: "Couples en burnout post-naissance · ht_only par sensibilité (à transcrire)",
-    is_anti_pattern: false, ready: false },
-  { key: "relations_education_positive", segment: "relations", emoji: "👨‍👩‍👧", title: "Éducation positive (ht_lt insight)",
-    summary: "Mamans éducation cohérente · ht_lt avec insight (à transcrire)",
-    is_anti_pattern: false, ready: false },
+  { key: "relations_mariage_halal", segment: "relations", emoji: "💍", title: "Khadija · sœur célibataire → mariage halal",
+    summary: "Prof 28 ans · 4 ruptures fiançailles · 6 mariages confirmés (ht_only par cohérence preuve · score 86)",
+    is_anti_pattern: false, ready: true, patch: KHADIJA_MARIAGE_PATCH },
+  { key: "relations_couple_post_bebe", segment: "relations", emoji: "👨‍👩‍👧", title: "Aïcha & Tarek · couple en érosion post-bébé",
+    summary: "Couple 34 & 37 · 3 enfants · cible ultra-prudente → ht_only par sensibilité (score 84)",
+    is_anti_pattern: false, ready: true, patch: AICHA_TAREK_COUPLE_PATCH },
+  { key: "relations_education_positive", segment: "relations", emoji: "🤱", title: "Najet · maman au foyer → mère sereine",
+    summary: "4 enfants · veto conjugal sur achats >50€ → LT 17€ contourne (ht_lt insight conjugal · score 91)",
+    is_anti_pattern: false, ready: true, patch: NAJET_EDUCATION_PATCH },
 
   // SANTÉ
   { key: "sante_perte_poids_mamans", segment: "sante", emoji: "🤰", title: "Perte de poids mamans (ht_lt saisonnier)",
@@ -366,11 +541,6 @@ export const M4_DEMO_CASES: M4DemoCase[] = [
     summary: "Hommes 35-50 sédentaires · ht_only conservateur (à transcrire)",
     is_anti_pattern: false, ready: false },
   { key: "sante_anxiete_etudiants", segment: "sante", emoji: "⚠", title: "Lina · psy — ANTI-PATTERN full fragile",
-    summary: "Psychologue 22 ans · 9 étudiantes accompagnées · full ladder fragile → IA refuse",
+    summary: "Psychologue 22 ans · 9 étudiantes accompagnées · full ladder fragile → IA refuse (score 52)",
     is_anti_pattern: true, ready: true, patch: LINA_ANXIETE_PATCH },
-
-  // (10ème case démo à compléter — placeholder)
-  { key: "argent_freelance_dev", segment: "argent", emoji: "💻", title: "Freelance dev halal (à transcrire)",
-    summary: "Dev musulman qui sort du salariat · stratégie (à transcrire)",
-    is_anti_pattern: false, ready: false },
 ];
