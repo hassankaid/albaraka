@@ -17,7 +17,8 @@ import { ConvictionScreen } from "./screens/ConvictionScreen";
 import { LockScreen } from "./screens/LockScreen";
 import { DemoSelectorScreen } from "./screens/DemoSelectorScreen";
 import { usePersistedM5State } from "./lib/usePersistedState";
-import { type M5Step, type M5State, PEDA_STEPS } from "./lib/types";
+import { type M5Step, type M5State, PEDA_STEPS, defaultM5State } from "./lib/types";
+import { M5_DEMO_CASES, type M5DemoCase } from "./lib/demo-cases";
 
 export default function M5HighTicketPage() {
   const navigate = useNavigate();
@@ -46,9 +47,12 @@ export default function M5HighTicketPage() {
     await persisted.resetState();
   }, [persisted]);
 
-  const handleSelectDemo = useCallback((key: string) => {
+  const handleSelectDemo = useCallback((c: M5DemoCase) => {
+    if (!c.patch) return;
     if (!persisted.state.demoMode) preDemoSnapshot.current = persisted.state;
-    persisted.setState((prev) => ({ ...prev, demoMode: key }));
+    const fresh = defaultM5State();
+    const next: M5State = { ...fresh, ...c.patch, demoMode: c.key } as M5State;
+    persisted.setState(() => next);
     setShowDemoSelector(false);
   }, [persisted]);
 
@@ -100,7 +104,9 @@ export default function M5HighTicketPage() {
 
   const { state, setState, flushNow } = persisted;
   const showRestartBtn = state.step !== "welcome" && !state.demoMode;
-  const demoLabel = state.demoMode || null;
+  const demoLabel = state.demoMode
+    ? M5_DEMO_CASES.find((c) => c.key === state.demoMode)?.title.split("·")[0].trim() ?? state.demoMode
+    : null;
   const m5Forced = PEDA_STEPS.some((k) => state.forced[k]);
 
   return (
