@@ -8,7 +8,8 @@
 export const LIBERTY_TOOL_ROUTES: Record<string, string> = {
   "M1 — NICHE": "/parcours/liberty/m1",
   "M2 — PSYCHOLOGIE": "/parcours/liberty/m2",
-  // M3 — ANATOMIE D'UNE OFFRE : à venir
+  "M3 — ANATOMIE D'UNE OFFRE": "/parcours/liberty/m3",
+  "M4 — VALUE LADDER": "/parcours/liberty/m4",
   // …
 };
 
