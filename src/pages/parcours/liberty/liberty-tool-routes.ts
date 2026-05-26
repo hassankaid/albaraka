@@ -7,7 +7,7 @@
  */
 export const LIBERTY_TOOL_ROUTES: Record<string, string> = {
   "M1 — NICHE": "/parcours/liberty/m1",
-  // M2 — PSYCHOLOGIE : à venir
+  "M2 — PSYCHOLOGIE": "/parcours/liberty/m2",
   // M3 — ANATOMIE D'UNE OFFRE : à venir
   // …
 };
