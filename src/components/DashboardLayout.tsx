@@ -7,6 +7,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPass } from "@/hooks/useUserPass";
+import { useCanAccessPersonalBrand } from "@/hooks/useCanAccessPersonalBrand";
 import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 import { DiscordButton } from "@/components/DiscordButton";
 
@@ -134,6 +135,7 @@ export default function DashboardLayout() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { profile, signOut } = useAuth();
   const { hasAnyPass } = useUserPass();
+  const { canAccess: canAccessPersonalBrand } = useCanAccessPersonalBrand();
 
   // Redirect pure apporteurs to their dedicated space (except coaching routes)
   const isCoachingRoute = location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching");
@@ -173,6 +175,11 @@ export default function DashboardLayout() {
       }
       // Studio (B1) : CEO + Sidali Test uniquement.
       if (item.studioOnly) return isStudioAllowed(profile);
+      // Personal Brand (26/05/2026) : masqué pour les AL BARAKA qui n'ont pas
+      // validé Marketing Digital. CEO/coach/Liberty passent.
+      if (item.path === "/working/personal-brand" && !canAccessPersonalBrand) {
+        return false;
+      }
       return true;
     });
 

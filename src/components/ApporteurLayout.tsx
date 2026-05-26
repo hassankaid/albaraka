@@ -87,6 +87,7 @@ export default function ApporteurLayout() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { profile, signOut } = useAuth();
   const { hasAnyPass } = useUserPass();
+  const { canAccess: canAccessPersonalBrand } = useCanAccessPersonalBrand();
 
   const currentSpace = detectSpace(location.pathname);
   const pageTitle = pageTitles[location.pathname] || "Mon espace";
@@ -105,6 +106,10 @@ export default function ApporteurLayout() {
     // working : on filtre les items studioOnly à CEO + Sidali Test.
     return workingNavItems.filter((item) => {
       if (item.studioOnly) return isStudioAllowed(profile);
+      // Personal Brand (26/05/2026) : masqué pour AL BARAKA sans Marketing validé.
+      if (item.path === "/working/personal-brand" && !canAccessPersonalBrand) {
+        return false;
+      }
       return true;
     });
   })();

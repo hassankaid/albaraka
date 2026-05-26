@@ -82,6 +82,7 @@ import RdvCalendly from "./pages/public/rdv/RdvCalendly";
 import CoachingCalendar from "./pages/coaching/CoachingCalendar";
 import { PassGuard } from "./components/PassGuard";
 import { FeatureGate } from "./components/FeatureGate";
+import { MarketingGate } from "./components/MarketingGate";
 import SharedLayout from "./components/SharedLayout";
 import ParcoursView from "./pages/parcours/ParcoursView";
 import ParcoursChapitreDetail from "./pages/parcours/ParcoursChapitreDetail";
@@ -235,7 +236,7 @@ const App = () => (
                   <Route path="/parcours/:slug/chapitre/:chapitreId" element={<PassGuard><ParcoursChapitreDetail /></PassGuard>} />
                   <Route path="/working/activity" element={<FeatureGate feature="working_activity"><MyActivity /></FeatureGate>} />
                   <Route path="/working/organisation" element={<FeatureGate feature="quiz_organisation"><OrganisationPage /></FeatureGate>} />
-                  <Route path="/working/personal-brand" element={<PassGuard><PersonalBrandPage /></PassGuard>} />
+                  <Route path="/working/personal-brand" element={<MarketingGate><PersonalBrandPage /></MarketingGate>} />
                   <Route path="/working/agent" element={<PassGuard><AgentIA /></PassGuard>} />
                   {/* Studio Albaraka (B1 du 20/05/2026) — gaté à CEO + Sidali Test */}
                   <Route path="/studio" element={<StudioGate><StudioHome /></StudioGate>} />
