@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Shell } from "./components/Shell";
 import { ProgressBar } from "./components/ProgressBar";
+import { ArchetypeBanner } from "./components/ArchetypeBanner";
 import { WelcomeScreen } from "./screens/WelcomeScreen";
 import { BilanScreen } from "./screens/BilanScreen";
 import { BrainstormScreen } from "./screens/BrainstormScreen";
@@ -180,6 +181,14 @@ export default function M1NichePage() {
       demoLabel={demoLabel}
       onExitDemo={demoLabel ? () => setShowExitDemoConfirm(true) : undefined}
     >
+      {/* Bandeau Archétype — visible sur Branche A après le Bilan */}
+      {state.branch === "A" &&
+        state.bilan.archetype &&
+        state.step !== "welcome" &&
+        state.step !== "branchA_bilan" && (
+          <ArchetypeBanner bilan={state.bilan} />
+        )}
+
       {progress && <ProgressBar stepLabel={progress.label} percent={progress.percent} />}
 
       {/* Sélecteur démo en surcouche */}

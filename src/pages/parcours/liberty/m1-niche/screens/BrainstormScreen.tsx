@@ -3,6 +3,7 @@ import {
   StepEyebrow, StepTitle, StepSub, InputBlock, InputLabel, InputHelper,
   TextInput, TextArea, Btn, Card, CardTitle, Actions,
 } from "../components/ui";
+import { HintBtn } from "../components/HintBtn";
 import type { M1State } from "../lib/types";
 
 interface BrainstormScreenProps {
@@ -47,7 +48,10 @@ export function BrainstormScreen({ state, setState, onBack, onNext }: Brainstorm
       </StepSub>
 
       <Card className="mb-4">
-        <CardTitle>🎯 5 niches qui te passionnent ou que tu connais</CardTitle>
+        <CardTitle>
+          🎯 5 niches qui te passionnent ou que tu connais
+          <HintBtn hintKey="brainstorm_niches" />
+        </CardTitle>
         <div className="flex flex-col gap-2">
           {state.brainstorm.niches.map((n, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -71,7 +75,10 @@ export function BrainstormScreen({ state, setState, onBack, onNext }: Brainstorm
       </Card>
 
       <Card className="mb-4">
-        <CardTitle>💪 5 compétences que tu maîtrises vraiment</CardTitle>
+        <CardTitle>
+          💪 5 compétences que tu maîtrises vraiment
+          <HintBtn hintKey="brainstorm_competences" />
+        </CardTitle>
         <div className="flex flex-col gap-2">
           {state.brainstorm.competences.map((c, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -95,7 +102,10 @@ export function BrainstormScreen({ state, setState, onBack, onNext }: Brainstorm
       </Card>
 
       <InputBlock>
-        <InputLabel>📖 Vécu détaillé — la passerelle entre tes niches et tes compétences</InputLabel>
+        <InputLabel>
+          📖 Vécu détaillé — la passerelle entre tes niches et tes compétences
+          <HintBtn hintKey="brainstorm_vecu_long" />
+        </InputLabel>
         <TextArea
           rows={5}
           value={state.brainstorm.vecu_long}

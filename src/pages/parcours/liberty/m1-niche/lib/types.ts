@@ -122,6 +122,8 @@ export interface EngagementState {
 export interface M1State {
   step: M1Step;
   branch: M1Branch;
+  /** Sous-étape du Bilan d'orientation (Branche A) : 0..5 — persistée pour reprise au reload. */
+  bilan_step?: number;
   // Branche A
   bilan: BilanState;
   brainstorm: BrainstormState;
@@ -145,6 +147,7 @@ export function defaultM1State(): M1State {
   return {
     step: "welcome",
     branch: null,
+    bilan_step: 0,
     bilan: { archetype: null, marche: null, vecu: "", competence: "" },
     brainstorm: {
       niches: ["", "", "", "", ""],

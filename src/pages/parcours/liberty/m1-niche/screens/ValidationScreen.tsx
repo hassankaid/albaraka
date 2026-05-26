@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import {
   StepEyebrow, StepTitle, StepSub, InputLabel, TextArea, Btn, Actions,
 } from "../components/ui";
+import { HintBtn } from "../components/HintBtn";
 import type { M1State, ValidationState } from "../lib/types";
 
 interface ValidationScreenProps {
@@ -107,7 +108,10 @@ export function ValidationScreen({ state, setState, onBack, onNext }: Validation
           <div className="space-y-3">
             {s.questions.map((q) => (
               <div key={q.key}>
-                <InputLabel>{q.label}</InputLabel>
+                <InputLabel>
+                  {q.label}
+                  <HintBtn hintKey={`val_${q.key}`} />
+                </InputLabel>
                 <TextArea
                   rows={2}
                   value={state.validation[q.key]}

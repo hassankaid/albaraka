@@ -2,9 +2,14 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight, RotateCcw, Compass, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   StepEyebrow, StepTitle, StepSub, InputBlock, InputLabel, InputHelper,
   TextArea, Btn, LoadingScreen, Actions,
 } from "../components/ui";
+import { HintBtn } from "../components/HintBtn";
 import { aiStressTest } from "../lib/prompts";
 import type { M1State, StressVerdictData } from "../lib/types";
 
@@ -21,6 +26,7 @@ export function StressTestScreen({
 }: StressTestScreenProps) {
   const [loading, setLoading] = useState(false);
   const [verdictData, setVerdictData] = useState<StressVerdictData | null>(null);
+  const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
 
   const set = (key: "lives_from_skill" | "three_people" | "revenue_proof") => (val: string) =>
     setState((prev) => ({ ...prev, stress_test: { ...prev.stress_test, [key]: val } }));
@@ -74,7 +80,10 @@ export function StressTestScreen({
       </StepSub>
 
       <InputBlock>
-        <InputLabel>1️⃣ Tu vis toi-même de cette compétence ?</InputLabel>
+        <InputLabel>
+          1️⃣ Tu vis toi-même de cette compétence ?
+          <HintBtn hintKey="stress_q1" />
+        </InputLabel>
         <TextArea
           rows={3}
           value={q1}
@@ -92,6 +101,7 @@ export function StressTestScreen({
         <InputLabel>
           2️⃣ Donne 3 personnes précises (prénom, profil, situation) qui te paieraient 1500€+ pour
           apprendre à le faire
+          <HintBtn hintKey="stress_q2" />
         </InputLabel>
         <TextArea
           rows={5}
@@ -106,7 +116,10 @@ export function StressTestScreen({
       </InputBlock>
 
       <InputBlock>
-        <InputLabel>3️⃣ Ta preuve concrète de résultat sur cette compétence</InputLabel>
+        <InputLabel>
+          3️⃣ Ta preuve concrète de résultat sur cette compétence
+          <HintBtn hintKey="stress_q3" />
+        </InputLabel>
         <TextArea
           rows={3}
           value={q3}
@@ -175,7 +188,7 @@ export function StressTestScreen({
                 <ArrowRight className="h-4 w-4" />
               </Btn>
             ) : (
-              <Btn variant="primary" onClick={onSwitchToA}>
+              <Btn variant="primary" onClick={() => setShowSwitchConfirm(true)}>
                 <Compass className="h-4 w-4" />
                 Passer à la branche A
               </Btn>
@@ -183,6 +196,42 @@ export function StressTestScreen({
           </Actions>
         </>
       )}
+
+      <AlertDialog open={showSwitchConfirm} onOpenChange={setShowSwitchConfirm}>
+        <AlertDialogContent
+          style={{
+            background: "#0F0E0A",
+            border: "0.5px solid rgba(201,168,76,0.4)",
+            color: "#ECEEF4",
+          }}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-white">
+              <Compass className="h-5 w-5 text-[#C9A84C]" />
+              Basculer sur la branche A ?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-white/70">
+              Tu vas faire le Bilan d'Orientation et le Brainstorm pour découvrir une niche solide.
+              Ta capture express et ton stress-test seront conservés au cas où.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowSwitchConfirm(false);
+                onSwitchToA();
+              }}
+              style={{
+                background: "linear-gradient(135deg, #C9A84C 0%, #E8C770 100%)",
+                color: "#FFFFFF",
+              }}
+            >
+              Oui, basculer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

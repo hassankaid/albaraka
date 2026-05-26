@@ -5,6 +5,7 @@ import {
   StepEyebrow, StepTitle, StepSub, InputLabel, InputHelper,
   TextInput, TextArea, Btn, LoadingScreen, Actions, Card,
 } from "../components/ui";
+import { HintBtn } from "../components/HintBtn";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -192,7 +193,10 @@ export function AvatarScreen({ state, setState, onBack, onNext }: AvatarScreenPr
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {SOCIO_FIELDS.map((f) => (
                 <div key={f.key}>
-                  <InputLabel>{f.label}</InputLabel>
+                  <InputLabel>
+                    {f.label}
+                    <HintBtn hintKey={`avatar_${f.key}`} />
+                  </InputLabel>
                   <TextInput
                     value={a.socio[f.key]}
                     onChange={(e) => setSocio(f.key, e.target.value)}
@@ -211,7 +215,10 @@ export function AvatarScreen({ state, setState, onBack, onNext }: AvatarScreenPr
       <div className="space-y-3">
         {PSYCHO_FIELDS.map((f) => (
           <div key={f.key}>
-            <InputLabel>{f.label}</InputLabel>
+            <InputLabel>
+              {f.label}
+              <HintBtn hintKey={`avatar_${f.key}`} />
+            </InputLabel>
             <TextArea
               rows={2}
               value={a.psycho[f.key]}

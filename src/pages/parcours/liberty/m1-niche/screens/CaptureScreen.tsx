@@ -3,6 +3,7 @@ import {
   StepEyebrow, StepTitle, StepSub, InputBlock, InputLabel, InputHelper,
   TextInput, TextArea, Btn, Actions,
 } from "../components/ui";
+import { HintBtn } from "../components/HintBtn";
 import type { M1State } from "../lib/types";
 
 interface CaptureScreenProps {
@@ -32,7 +33,10 @@ export function CaptureScreen({ state, setState, onBack, onNext }: CaptureScreen
       </StepSub>
 
       <InputBlock>
-        <InputLabel>💡 Mon idée en 1 phrase</InputLabel>
+        <InputLabel>
+          💡 Mon idée en 1 phrase
+          <HintBtn hintKey="capture_idee" />
+        </InputLabel>
         <TextInput
           value={idee}
           onChange={(e) => set("idee")(e.target.value)}
@@ -44,7 +48,10 @@ export function CaptureScreen({ state, setState, onBack, onNext }: CaptureScreen
       </InputBlock>
 
       <InputBlock>
-        <InputLabel>📖 Mon vécu sur ce sujet</InputLabel>
+        <InputLabel>
+          📖 Mon vécu sur ce sujet
+          <HintBtn hintKey="capture_vecu" />
+        </InputLabel>
         <TextArea
           rows={4}
           value={vecu}
@@ -55,7 +62,10 @@ export function CaptureScreen({ state, setState, onBack, onNext }: CaptureScreen
       </InputBlock>
 
       <InputBlock>
-        <InputLabel>🎯 Pourquoi cette niche spécifiquement</InputLabel>
+        <InputLabel>
+          🎯 Pourquoi cette niche spécifiquement
+          <HintBtn hintKey="capture_pourquoi" />
+        </InputLabel>
         <TextArea
           rows={3}
           value={pourquoi}

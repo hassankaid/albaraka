@@ -5,6 +5,7 @@ import {
   StepEyebrow, StepTitle, StepSub, InputBlock, InputLabel, InputHelper,
   TextInput, TextArea, Btn, LoadingScreen, Actions,
 } from "../components/ui";
+import { HintBtn } from "../components/HintBtn";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -108,8 +109,9 @@ export function CrystalScreen({ state, setState, onBack, onNext }: CrystalScreen
           border: "1px solid #C9A84C",
         }}
       >
-        <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#C9A84C]">
+        <div className="mb-2 flex items-center text-[10px] font-semibold uppercase tracking-[0.1em] text-[#C9A84C]">
           📌 Phrase finale type cours
+          <HintBtn hintKey="crystal_phrase" />
         </div>
         <TextInput
           value={sn.phrase}
@@ -129,19 +131,28 @@ export function CrystalScreen({ state, setState, onBack, onNext }: CrystalScreen
       </div>
 
       <InputBlock>
-        <InputLabel>👤 Cible précise (15-25 mots)</InputLabel>
+        <InputLabel>
+          👤 Cible précise (15-25 mots)
+          <HintBtn hintKey="crystal_cible" />
+        </InputLabel>
         <TextArea rows={2} value={sn.cible} onChange={(e) => set("cible", e.target.value)} />
         <InputHelper>Âge + sexe + situation pro + zone géo + spécificité 2.0</InputHelper>
       </InputBlock>
 
       <InputBlock>
-        <InputLabel>⚡ Douleur concrète (15-25 mots)</InputLabel>
+        <InputLabel>
+          ⚡ Douleur concrète (15-25 mots)
+          <HintBtn hintKey="crystal_douleur" />
+        </InputLabel>
         <TextArea rows={2} value={sn.douleur} onChange={(e) => set("douleur", e.target.value)} />
         <InputHelper>Concrète, fréquente, émotionnelle — pas une généralité.</InputHelper>
       </InputBlock>
 
       <InputBlock>
-        <InputLabel>💰 Preuve du pouvoir d'achat</InputLabel>
+        <InputLabel>
+          💰 Preuve du pouvoir d'achat
+          <HintBtn hintKey="crystal_pouvoir_achat" />
+        </InputLabel>
         <TextArea
           rows={2}
           value={sn.pouvoir_achat}
@@ -153,7 +164,10 @@ export function CrystalScreen({ state, setState, onBack, onNext }: CrystalScreen
       </InputBlock>
 
       <InputBlock>
-        <InputLabel>📡 Facile à contacter</InputLabel>
+        <InputLabel>
+          📡 Facile à contacter
+          <HintBtn hintKey="crystal_contact" />
+        </InputLabel>
         <TextArea rows={2} value={sn.contact} onChange={(e) => set("contact", e.target.value)} />
         <InputHelper>
           Où sont-ils ? Quels canaux (Instagram, TikTok, LinkedIn, ads, podcasts, groupes Facebook)
@@ -162,7 +176,10 @@ export function CrystalScreen({ state, setState, onBack, onNext }: CrystalScreen
       </InputBlock>
 
       <InputBlock>
-        <InputLabel>📈 Croissance du marché</InputLabel>
+        <InputLabel>
+          📈 Croissance du marché
+          <HintBtn hintKey="crystal_croissance" />
+        </InputLabel>
         <TextArea
           rows={2}
           value={sn.croissance}
@@ -175,7 +192,10 @@ export function CrystalScreen({ state, setState, onBack, onNext }: CrystalScreen
       </InputBlock>
 
       <InputBlock>
-        <InputLabel>💪 Méthode propriétaire (5-8 mots)</InputLabel>
+        <InputLabel>
+          💪 Méthode propriétaire (5-8 mots)
+          <HintBtn hintKey="crystal_methode" />
+        </InputLabel>
         <TextInput value={sn.methode} onChange={(e) => set("methode", e.target.value)} />
         <InputHelper>
           Avec un nom (™ optionnel) · Ex : "Méthode Doublez50K™ en 18 mois"

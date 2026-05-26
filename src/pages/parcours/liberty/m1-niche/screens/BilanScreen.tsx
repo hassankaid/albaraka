@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import {
   StepEyebrow, StepTitle, StepSub, InputBlock, InputLabel, InputHelper,
   TextInput, TextArea, Btn, Option, Card, Actions,
 } from "../components/ui";
+import { HintBtn } from "../components/HintBtn";
 import { ARCHETYPES, MARCHES, type Archetype, type Marche } from "../lib/bilan-options";
 import type { M1State } from "../lib/types";
 
@@ -45,7 +45,16 @@ const TITLES: Record<SubStep, { title: string; sub: string }> = {
 };
 
 export function BilanScreen({ state, setState, onBack, onNext }: BilanScreenProps) {
-  const [subIdx, setSubIdx] = useState(0);
+  // bilan_step est persisté dans le state global pour reprise exacte au reload.
+  const subIdx = Math.max(0, Math.min(ORDER.length - 1, state.bilan_step ?? 0));
+  const setSubIdx = (next: number | ((prev: number) => number)) => {
+    setState((prev) => {
+      const cur = prev.bilan_step ?? 0;
+      const val = typeof next === "function" ? (next as (p: number) => number)(cur) : next;
+      return { ...prev, bilan_step: Math.max(0, Math.min(ORDER.length - 1, val)) };
+    });
+  };
+
   const sub = ORDER[subIdx];
   const meta = TITLES[sub];
 
@@ -53,16 +62,16 @@ export function BilanScreen({ state, setState, onBack, onNext }: BilanScreenProp
     setState((prev) => ({
       ...prev,
       bilan: { ...prev.bilan, archetype: { id: a.id, emoji: a.emoji, label: a.label } },
+      bilan_step: 1,
     }));
-    setTimeout(() => setSubIdx(1), 200);
   };
 
   const selectMarche = (m: Marche) => {
     setState((prev) => ({
       ...prev,
       bilan: { ...prev.bilan, marche: { id: m.id, label: m.label, sous_segment: "" } },
+      bilan_step: 2,
     }));
-    setTimeout(() => setSubIdx(2), 200);
   };
 
   const selectSousSegment = (label: string) => {
@@ -72,8 +81,8 @@ export function BilanScreen({ state, setState, onBack, onNext }: BilanScreenProp
         ...prev.bilan,
         marche: prev.bilan.marche ? { ...prev.bilan.marche, sous_segment: label } : null,
       },
+      bilan_step: 3,
     }));
-    setTimeout(() => setSubIdx(3), 200);
   };
 
   const setVecu = (val: string) => {
@@ -187,7 +196,10 @@ export function BilanScreen({ state, setState, onBack, onNext }: BilanScreenProp
 
       {sub === "vecu" && (
         <InputBlock>
-          <InputLabel>Ton vécu transformateur</InputLabel>
+          <InputLabel>
+            Ton vécu transformateur
+            <HintBtn hintKey="bilan_vecu" />
+          </InputLabel>
           <TextArea
             rows={4}
             value={state.bilan.vecu}
@@ -205,7 +217,10 @@ export function BilanScreen({ state, setState, onBack, onNext }: BilanScreenProp
 
       {sub === "competence" && (
         <InputBlock>
-          <InputLabel>Ta compétence centrale</InputLabel>
+          <InputLabel>
+            Ta compétence centrale
+            <HintBtn hintKey="bilan_competence" />
+          </InputLabel>
           <TextArea
             rows={3}
             value={state.bilan.competence}
