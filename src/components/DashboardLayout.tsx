@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film, Hash } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, MessageCircle, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film, Hash, Mail } from "lucide-react";
 import { isStudioAllowed } from "@/lib/studio-access";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
@@ -59,6 +59,8 @@ const adminNavItems: NavItem[] = [
   { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"] },
   { title: "Webhooks Calendly", path: "/admin/webhooks/calendly", icon: Webhook, roles: ["ceo"] },
   { title: "Discord", path: "/admin/discord", icon: Hash, roles: ["ceo"] },
+  { title: "Campagne Emails", path: "/admin/email-campaign", icon: Mail, roles: ["ceo"] },
+  { title: "Campagne SMS", path: "/admin/sms-campaign", icon: MessageCircle, roles: ["ceo"] },
 ];
 
 const trainingNavItems: NavItem[] = [
