@@ -156,6 +156,7 @@ export function useQuizByModule(moduleId: string | null) {
         .from("quiz_questions")
         .select("*")
         .eq("quiz_id", data.id)
+        .is("archived_at", null)
         .order("ordre");
       if (qErr) throw qErr;
       return { ...data, questions: questions || [] };
@@ -185,6 +186,7 @@ export function useQuizByFormation(formationId: string | null) {
         .from("quiz_questions")
         .select("*")
         .eq("quiz_id", data.id)
+        .is("archived_at", null)
         .order("ordre");
       if (qErr) throw qErr;
       return { ...data, questions: questions || [] };
@@ -214,6 +216,7 @@ export function useQuizByChapitre(chapitreId: string | null) {
         .from("quiz_questions")
         .select("*")
         .eq("quiz_id", data.id)
+        .is("archived_at", null)
         .order("ordre");
       if (qErr) throw qErr;
       return { ...data, questions: questions || [] };
@@ -394,6 +397,7 @@ export function useQuizWithQuestions(quizId: string | null) {
         .from("quiz_questions")
         .select("*")
         .eq("quiz_id", quizId)
+        .is("archived_at", null)
         .order("ordre");
       if (qErr) throw qErr;
       return { ...data, questions: questions || [] };
@@ -532,10 +536,14 @@ export function useCreateQuestion() {
       correct_index: number;
       explication?: string;
     }) => {
+      // Calcul du prochain ordre : on ignore les questions archivées pour que
+      // la nouvelle question prenne place juste après les actives (ex. 100
+      // après une renumérotation 0-99).
       const { data: maxOrdre } = await (supabase as any)
         .from("quiz_questions")
         .select("ordre")
         .eq("quiz_id", input.quiz_id)
+        .is("archived_at", null)
         .order("ordre", { ascending: false })
         .limit(1)
         .single();
