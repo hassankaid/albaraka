@@ -115,6 +115,7 @@ import { StudioGate } from "./components/StudioGate";
 import DiscordCallback from "./pages/discord/DiscordCallback";
 import AdminDiscord from "./pages/admin/discord/AdminDiscord";
 import AdminEmailCampaign from "./pages/admin/email-campaigns/AdminEmailCampaign";
+import AdminSmsCampaign from "./pages/admin/email-campaigns/AdminSmsCampaign";
 
 const queryClient = new QueryClient();
 
@@ -194,6 +195,7 @@ const App = () => (
                   <Route path="/admin/coaching" element={<AdminCoaching />} />
                   <Route path="/admin/discord" element={<AdminDiscord />} />
                   <Route path="/admin/email-campaign" element={<AdminEmailCampaign />} />
+                  <Route path="/admin/sms-campaign" element={<AdminSmsCampaign />} />
                   <Route path="/working" element={<Navigate to="/working/activity" replace />} />
                   <Route path="/admin/training" element={<AdminTrainingList />} />
                   <Route path="/admin/training/:slug" element={<FormationEditor />} />
