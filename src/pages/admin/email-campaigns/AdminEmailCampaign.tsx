@@ -46,6 +46,8 @@ interface CampaignStat {
   campaign_slug: string;
   email_seq: number;
   nb_envoyes: number;
+  nb_destinataires_uniques: number;
+  nb_doublons: number;
   nb_echec_envoi: number;
   nb_delivres: number;
   nb_ouverts: number;
@@ -55,6 +57,17 @@ interface CampaignStat {
   nb_desabos: number;
   premier_envoi_at: string | null;
   dernier_envoi_at: string | null;
+}
+
+interface DuplicateRow {
+  campaign_slug: string;
+  email_seq: number;
+  recipient_email: string;
+  recipient_first_name: string | null;
+  nb_envois: number;
+  premier_envoi: string;
+  dernier_envoi: string;
+  ecart_secondes: number;
 }
 
 interface SendDetail {
@@ -157,6 +170,24 @@ export default function AdminEmailCampaign() {
     },
   });
 
+  // 3. Doublons (destinataires qui ont reçu le même email plusieurs fois)
+  const duplicates = useQuery({
+    queryKey: ["email-campaign-duplicates", CAMPAIGN_SLUG, activeSeq],
+    enabled: isAuthorized,
+    refetchInterval: 60_000,
+    queryFn: async (): Promise<DuplicateRow[]> => {
+      const { data, error } = await (supabase as any)
+        .from("email_campaign_duplicates")
+        .select("*")
+        .eq("campaign_slug", CAMPAIGN_SLUG)
+        .eq("email_seq", parseInt(activeSeq))
+        .order("nb_envois", { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      return (data ?? []) as DuplicateRow[];
+    },
+  });
+
   if (authLoading) {
     return (
       <div className="p-6 space-y-4">
@@ -182,13 +213,17 @@ export default function AdminEmailCampaign() {
   const totals = allStats.reduce(
     (acc, s) => ({
       sent: acc.sent + s.nb_envoyes,
+      uniques: acc.uniques + (s.nb_destinataires_uniques ?? 0),
+      doublons: acc.doublons + (s.nb_doublons ?? 0),
       delivered: acc.delivered + s.nb_delivres,
       opened: acc.opened + s.nb_ouverts,
       clicked: acc.clicked + s.nb_clics,
       bounced: acc.bounced + s.nb_bounces,
     }),
-    { sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 },
+    { sent: 0, uniques: 0, doublons: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 },
   );
+
+  const currentStat = allStats.find((s) => s.email_seq === parseInt(activeSeq));
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -213,15 +248,35 @@ export default function AdminEmailCampaign() {
         </Button>
       </div>
 
-      {/* KPIs globaux */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <KpiCard icon={<Mail />} label="Envoyés total" value={totals.sent} />
+      {/* KPIs globaux — 1ère ligne : volume */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <KpiCard
+          icon={<Mail />}
+          label="Envois total"
+          value={totals.sent}
+          hint={totals.doublons > 0 ? `+${totals.doublons} doublons` : undefined}
+        />
+        <KpiCard
+          icon={<Mail className="text-indigo-600" />}
+          label="Destinataires uniques"
+          value={totals.uniques}
+        />
+        <KpiCard
+          icon={<AlertTriangle className="text-orange-500" />}
+          label="Doublons"
+          value={totals.doublons}
+          hint={totals.uniques > 0 ? `${((totals.doublons / totals.uniques) * 100).toFixed(1)}% des uniques` : undefined}
+        />
         <KpiCard
           icon={<CheckCircle2 className="text-green-600" />}
           label="Délivrés"
           value={totals.delivered}
           pct={pct(totals.delivered, totals.sent)}
         />
+      </div>
+
+      {/* KPIs globaux — 2ème ligne : engagement */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <KpiCard
           icon={<Eye className="text-blue-600" />}
           label="Ouverts"
@@ -274,38 +329,52 @@ export default function AdminEmailCampaign() {
                     {!s || s.nb_envoyes === 0 ? (
                       <p className="text-sm text-muted-foreground">Pas encore envoyé.</p>
                     ) : (
-                      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-sm">
-                        <Metric label="Envoyés" value={s.nb_envoyes} />
-                        <Metric
-                          label="Délivrés"
-                          value={s.nb_delivres}
-                          pct={pct(s.nb_delivres, s.nb_envoyes)}
-                          color="text-green-600"
-                        />
-                        <Metric
-                          label="Ouverts"
-                          value={s.nb_ouverts}
-                          pct={pct(s.nb_ouverts, s.nb_delivres)}
-                          color="text-blue-600"
-                        />
-                        <Metric
-                          label="Clics"
-                          value={s.nb_clics}
-                          pct={pct(s.nb_clics, s.nb_delivres)}
-                          color="text-amber-600"
-                        />
-                        <Metric
-                          label="Bounces"
-                          value={s.nb_bounces}
-                          pct={pct(s.nb_bounces, s.nb_envoyes)}
-                          color="text-red-600"
-                        />
-                        <Metric
-                          label="Plaintes"
-                          value={s.nb_complaints}
-                          color="text-red-700"
-                        />
-                      </div>
+                      <>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
+                          <Metric label="Envois" value={s.nb_envoyes} />
+                          <Metric
+                            label="Uniques"
+                            value={s.nb_destinataires_uniques ?? 0}
+                            color="text-indigo-600"
+                          />
+                          <Metric
+                            label="Doublons"
+                            value={s.nb_doublons ?? 0}
+                            color={s.nb_doublons > 0 ? "text-orange-600" : ""}
+                          />
+                          <Metric
+                            label="Délivrés"
+                            value={s.nb_delivres}
+                            pct={pct(s.nb_delivres, s.nb_envoyes)}
+                            color="text-green-600"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                          <Metric
+                            label="Ouverts"
+                            value={s.nb_ouverts}
+                            pct={pct(s.nb_ouverts, s.nb_delivres)}
+                            color="text-blue-600"
+                          />
+                          <Metric
+                            label="Clics WhatsApp"
+                            value={s.nb_clics}
+                            pct={pct(s.nb_clics, s.nb_delivres)}
+                            color="text-amber-600"
+                          />
+                          <Metric
+                            label="Bounces"
+                            value={s.nb_bounces}
+                            pct={pct(s.nb_bounces, s.nb_envoyes)}
+                            color="text-red-600"
+                          />
+                          <Metric
+                            label="Plaintes"
+                            value={s.nb_complaints}
+                            color="text-red-700"
+                          />
+                        </div>
+                      </>
                     )}
                     {s?.premier_envoi_at && (
                       <p className="text-xs text-muted-foreground mt-3">
@@ -313,6 +382,54 @@ export default function AdminEmailCampaign() {
                       </p>
                     )}
                   </div>
+
+                  {/* Bloc doublons (si applicable) */}
+                  {s && (s.nb_doublons ?? 0) > 0 && (duplicates.data ?? []).length > 0 && (
+                    <div className="border border-orange-200 bg-orange-50/50 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="h-4 w-4 text-orange-600" />
+                        <h4 className="font-semibold text-sm">
+                          {(duplicates.data ?? []).length} destinataire{(duplicates.data ?? []).length > 1 ? "s" : ""} ayant reçu cet email plusieurs fois
+                        </h4>
+                      </div>
+                      <div className="border rounded-lg overflow-auto max-h-[300px] bg-white">
+                        <table className="w-full text-xs">
+                          <thead className="bg-orange-100/60 sticky top-0">
+                            <tr>
+                              <th className="text-left p-2 font-medium">Prénom</th>
+                              <th className="text-left p-2 font-medium">Email</th>
+                              <th className="text-left p-2 font-medium">Nb envois</th>
+                              <th className="text-left p-2 font-medium">1er envoi</th>
+                              <th className="text-left p-2 font-medium">Dernier envoi</th>
+                              <th className="text-left p-2 font-medium">Écart</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(duplicates.data ?? []).slice(0, 1000).map((d) => (
+                              <tr key={d.recipient_email} className="border-t hover:bg-orange-50/40">
+                                <td className="p-2 font-medium">{d.recipient_first_name ?? "—"}</td>
+                                <td className="p-2 text-muted-foreground">{d.recipient_email}</td>
+                                <td className="p-2">
+                                  <Badge variant="outline" className="bg-orange-100 border-orange-300 text-orange-800">
+                                    {d.nb_envois}×
+                                  </Badge>
+                                </td>
+                                <td className="p-2">{fmtDate(d.premier_envoi)}</td>
+                                <td className="p-2">{fmtDate(d.dernier_envoi)}</td>
+                                <td className="p-2 text-muted-foreground">
+                                  {d.ecart_secondes < 60
+                                    ? `${Math.round(d.ecart_secondes)}s`
+                                    : d.ecart_secondes < 3600
+                                    ? `${Math.round(d.ecart_secondes / 60)}min`
+                                    : `${Math.round(d.ecart_secondes / 3600)}h`}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Recherche + liste destinataires */}
                   {s && s.nb_envoyes > 0 && (
@@ -429,11 +546,13 @@ function KpiCard({
   label,
   value,
   pct,
+  hint,
 }: {
   icon: React.ReactNode;
   label: string;
   value: number;
   pct?: string;
+  hint?: string;
 }) {
   return (
     <Card>
@@ -444,6 +563,7 @@ function KpiCard({
         </div>
         <div className="text-2xl font-bold">{value.toLocaleString("fr-FR")}</div>
         {pct && <div className="text-xs text-muted-foreground mt-1">{pct}</div>}
+        {hint && <div className="text-xs text-orange-600 mt-1">{hint}</div>}
       </CardContent>
     </Card>
   );
