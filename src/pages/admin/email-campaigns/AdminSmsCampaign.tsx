@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  MessageSquare, CheckCircle2, XCircle, RefreshCw, DollarSign,
+  MessageSquare, CheckCircle2, XCircle, RefreshCw, DollarSign, MousePointerClick,
 } from "lucide-react";
 
 const CAMPAIGN_SLUG = "conf_2026_05_31_sms";
@@ -39,6 +39,7 @@ interface SmsStat {
   nb_echec_envoi: number;
   nb_delivres: number;
   nb_failed: number;
+  nb_clics: number;
   total_segments: number;
   total_price_usd: number | null;
   premier_envoi_at: string | null;
@@ -50,6 +51,7 @@ interface SmsDetail {
   recipient_first_name: string | null;
   sent_at: string;
   delivered_at: string | null;
+  clicked_at: string | null;
   failed_at: string | null;
   total_segments: number;
   total_price: number | null;
@@ -141,11 +143,12 @@ export default function AdminSmsCampaign() {
     (acc, s) => ({
       sent: acc.sent + s.nb_envoyes,
       delivered: acc.delivered + s.nb_delivres,
+      clicked: acc.clicked + (s.nb_clics ?? 0),
       failed: acc.failed + s.nb_failed,
       segments: acc.segments + (s.total_segments ?? 0),
       price: acc.price + (s.total_price_usd ?? 0),
     }),
-    { sent: 0, delivered: 0, failed: 0, segments: 0, price: 0 },
+    { sent: 0, delivered: 0, clicked: 0, failed: 0, segments: 0, price: 0 },
   );
 
   return (
@@ -176,13 +179,19 @@ export default function AdminSmsCampaign() {
       </div>
 
       {/* KPIs globaux */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <KpiCard icon={<MessageSquare />} label="Envoyés" value={totals.sent} />
         <KpiCard
           icon={<CheckCircle2 className="text-green-600" />}
           label="Délivrés"
           value={totals.delivered}
           pct={pct(totals.delivered, totals.sent)}
+        />
+        <KpiCard
+          icon={<MousePointerClick className="text-blue-600" />}
+          label="Clics"
+          value={totals.clicked}
+          pct={pct(totals.clicked, totals.delivered)}
         />
         <KpiCard
           icon={<XCircle className="text-red-600" />}
@@ -233,13 +242,19 @@ export default function AdminSmsCampaign() {
                     {!s || s.nb_envoyes === 0 ? (
                       <p className="text-sm text-muted-foreground">Pas encore envoyé.</p>
                     ) : (
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-sm">
                         <Metric label="Envoyés" value={s.nb_envoyes} />
                         <Metric
                           label="Délivrés"
                           value={s.nb_delivres}
                           pct={pct(s.nb_delivres, s.nb_envoyes)}
                           color="text-green-600"
+                        />
+                        <Metric
+                          label="Clics"
+                          value={s.nb_clics ?? 0}
+                          pct={pct(s.nb_clics ?? 0, s.nb_delivres)}
+                          color="text-blue-600"
                         />
                         <Metric
                           label="Failed"
@@ -279,6 +294,7 @@ export default function AdminSmsCampaign() {
                               <th className="text-left p-2 font-medium">Destinataire</th>
                               <th className="text-left p-2 font-medium">Envoyé</th>
                               <th className="text-left p-2 font-medium">Délivré</th>
+                              <th className="text-left p-2 font-medium">Cliqué</th>
                               <th className="text-left p-2 font-medium">Segments</th>
                               <th className="text-left p-2 font-medium">Prix</th>
                               <th className="text-left p-2 font-medium">Statut</th>
@@ -309,6 +325,13 @@ export default function AdminSmsCampaign() {
                                       <span className="text-muted-foreground">—</span>
                                     )}
                                   </td>
+                                  <td className="p-2">
+                                    {r.clicked_at ? (
+                                      <span className="text-blue-600">▸ {fmtDate(r.clicked_at)}</span>
+                                    ) : (
+                                      <span className="text-muted-foreground">—</span>
+                                    )}
+                                  </td>
                                   <td className="p-2">{r.total_segments}</td>
                                   <td className="p-2">{fmtPrice(r.total_price)}</td>
                                   <td className="p-2">
@@ -316,6 +339,10 @@ export default function AdminSmsCampaign() {
                                       <Badge variant="destructive">Échec</Badge>
                                     ) : r.failed_at ? (
                                       <Badge variant="destructive">Failed</Badge>
+                                    ) : r.clicked_at ? (
+                                      <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+                                        Cliqué
+                                      </Badge>
                                     ) : r.delivered_at ? (
                                       <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
                                         Délivré

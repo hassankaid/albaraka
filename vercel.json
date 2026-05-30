@@ -1,5 +1,13 @@
 {
   "rewrites": [
+    {
+      "source": "/s/:token/:seq",
+      "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/r-sms?t=:token&s=:seq"
+    },
+    {
+      "source": "/s/:token",
+      "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/r-sms?t=:token"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
