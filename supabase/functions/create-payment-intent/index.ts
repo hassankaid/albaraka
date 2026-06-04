@@ -33,6 +33,21 @@ const STRIPE_SECRET_KEY_TEST = Deno.env.get("STRIPE_SECRET_KEY_TEST");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FIX proration (2026-06-03) : cancel_at = base + N mois avec clamp fin-de-mois,
+// SANS retrait de 1 jour. L'ancien "−1 jour" faisait tomber cancel_at 1 jour avant
+// la fin du dernier cycle => Stripe proratisait la derniere mensualite (ex: triki
+// 966,67 au lieu de 1000). Ici cancel_at tombe pile sur la fin du dernier cycle
+// (derniere mensualite PLEINE) ; calcule AVANT la creation de la sub, il ne depasse
+// jamais la borne (pas de mensualite en trop).
+function addMonthsClampUnix(baseMs: number, n: number): number {
+  const d = new Date(baseMs);
+  const day = d.getUTCDate();
+  d.setUTCMonth(d.getUTCMonth() + n);
+  if (d.getUTCDate() !== day) d.setUTCDate(0); // overflow -> dernier jour du mois cible
+  return Math.floor(d.getTime() / 1000);
+}
+
 // PASS AL BARAKA
 // Sprint Q (17/05/2026) : prix lu dynamiquement depuis offers (slug=al-baraka),
 // la constante ci-dessous n'est qu'un FALLBACK si la requete BDD echoue.
@@ -583,10 +598,7 @@ Deno.serve(async (req) => {
         libCustomerId = created.id;
       }
 
-      const libCancelDate = new Date();
-      libCancelDate.setMonth(libCancelDate.getMonth() + libInstallments);
-      libCancelDate.setDate(libCancelDate.getDate() - 1);
-      const libCancelAt = Math.floor(libCancelDate.getTime() / 1000);
+      const libCancelAt = addMonthsClampUnix(Date.now(), libInstallments); // fix proration: fin de cycle exacte (pas de -1 jour)
 
       const libProductId = await ensureStripeProduct(
         apiKey,
@@ -911,10 +923,7 @@ Deno.serve(async (req) => {
 
       // cancel_at = today + N mois - 1 jour pour que Stripe stoppe la sub
       // automatiquement après la dernière mensualité.
-      const rebillCancelDate = new Date();
-      rebillCancelDate.setMonth(rebillCancelDate.getMonth() + installmentsCount);
-      rebillCancelDate.setDate(rebillCancelDate.getDate() - 1);
-      const rebillCancelAt = Math.floor(rebillCancelDate.getTime() / 1000);
+      const rebillCancelAt = addMonthsClampUnix(Date.now(), installmentsCount); // fix proration
 
       const rebillProductId = await ensureStripeProduct(
         apiKey,
@@ -966,10 +975,7 @@ Deno.serve(async (req) => {
         // Décale aussi cancel_at : trial_end + N mois - 1 jour (au lieu de
         // today + N mois - 1 jour) sinon la sub se ferait annuler avant
         // d'avoir débité toutes les mensualités.
-        const cancelDateDeferred = new Date((startAtUnix as number) * 1000);
-        cancelDateDeferred.setMonth(cancelDateDeferred.getMonth() + installmentsCount);
-        cancelDateDeferred.setDate(cancelDateDeferred.getDate() - 1);
-        rebillSubParams.cancel_at = Math.floor(cancelDateDeferred.getTime() / 1000);
+        rebillSubParams.cancel_at = addMonthsClampUnix((startAtUnix as number) * 1000, installmentsCount); // fix proration
         // Expand le SetupIntent au lieu du PaymentIntent (pas d'invoice immédiate)
         rebillSubParams["expand[0]"] = "pending_setup_intent";
       }
@@ -1332,12 +1338,7 @@ Deno.serve(async (req) => {
 
       // cancel_at = (date de départ) + N mois - 1 jour, pour que Stripe
       // stoppe la sub après la dernière mensualité.
-      const customCancelBase = isDeferredStart
-        ? new Date((startAtUnix as number) * 1000)
-        : new Date();
-      customCancelBase.setMonth(customCancelBase.getMonth() + installmentsCount);
-      customCancelBase.setDate(customCancelBase.getDate() - 1);
-      customSubParams.cancel_at = Math.floor(customCancelBase.getTime() / 1000);
+      customSubParams.cancel_at = addMonthsClampUnix(isDeferredStart ? (startAtUnix as number) * 1000 : Date.now(), installmentsCount); // fix proration
 
       if (isDeferredStart) {
         customSubParams.trial_end = startAtUnix;
@@ -1599,10 +1600,7 @@ Deno.serve(async (req) => {
       customerId = created.id;
     }
 
-    const cancelDate = new Date();
-    cancelDate.setMonth(cancelDate.getMonth() + installments);
-    cancelDate.setDate(cancelDate.getDate() - 1);
-    const cancelAt = Math.floor(cancelDate.getTime() / 1000);
+    const cancelAt = addMonthsClampUnix(Date.now(), installments); // fix proration
 
     const productId = await ensureStripeProduct(apiKey, PRODUCT_ID, PRODUCT_NAME);
 
