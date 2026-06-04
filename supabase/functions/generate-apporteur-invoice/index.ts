@@ -316,14 +316,20 @@ Deno.serve(async (req) => {
     const commissionsTotal = eligibleCommissions.reduce((sum: number, c: any) => sum + (c.amount || 0), 0);
     const totalAmount = commissionsTotal + fixedSalaryAmount;
 
-    // Generate invoice number: FACT-YYYY-MM-NNN
-    const { count } = await supabaseAdmin
-      .from("apporteur_invoices")
-      .select("*", { count: "exact", head: true })
-      .eq("period_year", year)
-      .eq("period_month", month);
-
-    const invoiceNumber = `FACT-${year}-${String(month).padStart(2, "0")}-${String((count || 0) + 1).padStart(3, "0")}`;
+    // Numéro au format FACT-NNN-PRENOM-NOM-AAAAMM via RPC (source unique de
+    // vérité, identique à la renumérotation rétroactive). NNN = compteur
+    // chronologique par apporteur, nom complet normalisé, AAAAMM = période.
+    const { data: numData, error: numErr } = await supabaseAdmin.rpc(
+      "next_apporteur_invoice_number",
+      { p_apporteur_id: apporteur_id, p_year: year, p_month: month },
+    );
+    if (numErr || !numData) {
+      console.error("next_apporteur_invoice_number failed", numErr);
+      return new Response(JSON.stringify({ error: "Failed to generate invoice number" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const invoiceNumber = numData as string;
 
     // Create invoice
     const { data: invoice, error: invoiceError } = await supabaseAdmin
