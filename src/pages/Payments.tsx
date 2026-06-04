@@ -390,6 +390,19 @@ export default function Payments() {
     };
   }
 
+  // Normalise un nom client pour en faire un segment de nom de fichier :
+  // accents retirés, MAJUSCULES, tout caractère non alphanumérique -> "_".
+  // Ex : "Meryem Hanafi" -> "MERYEM_HANAFI", "SORAYA ELBIAD-SEKKATE" -> "SORAYA_ELBIAD_SEKKATE".
+  function normalizeInvoiceName(name: string | null | undefined): string {
+    return String(name || "")
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "") // diacritiques combinants
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, " ")
+      .trim()
+      .replace(/\s+/g, "_");
+  }
+
   // Aperçu : compte des paiements payés + factures déjà générées + à générer
   useEffect(() => {
     if (!bulkOpen) return;
@@ -528,10 +541,33 @@ export default function Payments() {
         setBulkProgress({ phase: "generating", current: i + 1, total: paid.length });
       }
 
-      // 3. Phase "Téléchargement" : zip tous les PDF
-      const invoices = Array.from(invoicePathsByPaymentId.values()).sort((a, b) =>
-        a.invoiceNumber.localeCompare(b.invoiceNumber),
-      );
+      // 3. Phase "Téléchargement"
+      //    On relit les métadonnées finales des factures du mois (numéro légal,
+      //    nom client, date de paiement) pour NOMMER les fichiers du ZIP dans
+      //    l'ordre chronologique de paiement, au format :
+      //        NNNN-NOM_CLIENT-AAAAMMJJ.pdf   (ex : 0001-MERYEM_HANAFI-20260503.pdf)
+      //    où NNNN = rang chronologique du mois (paid_at croissant, départage
+      //    alphabétique sur le nom). IMPORTANT : on ne touche PAS au
+      //    invoice_number (numéro légal déjà imprimé/envoyé aux clients) — ce
+      //    renommage concerne uniquement le fichier transmis au comptable.
+      const paidIds = paid.map((p: any) => p.id);
+      const { data: invRows, error: invErr } = await (supabase as any)
+        .from("client_invoices")
+        .select("invoice_number, html_path, client_name, paid_at")
+        .in("payment_id", paidIds)
+        .not("html_path", "is", null);
+      if (invErr) throw new Error(invErr.message);
+
+      const invoices = (invRows || []).slice().sort((a: any, b: any) => {
+        const da = String(a.paid_at || "").slice(0, 10);
+        const db = String(b.paid_at || "").slice(0, 10);
+        if (da !== db) return da < db ? -1 : 1;
+        const na = normalizeInvoiceName(a.client_name);
+        const nb = normalizeInvoiceName(b.client_name);
+        if (na !== nb) return na < nb ? -1 : 1;
+        return String(a.invoice_number || "").localeCompare(String(b.invoice_number || ""));
+      });
+
       if (invoices.length === 0) {
         toast({
           title: "Aucune facture disponible",
@@ -550,25 +586,28 @@ export default function Payments() {
 
       for (let i = 0; i < invoices.length; i++) {
         const inv = invoices[i];
+        const rank = String(i + 1).padStart(4, "0");
+        const ymd = String(inv.paid_at || "").slice(0, 10).replace(/-/g, "");
+        const fileBase = `${rank}-${normalizeInvoiceName(inv.client_name) || "CLIENT"}-${ymd}`;
         try {
           const { data: signed, error: signErr } = await (supabase as any).storage
             .from("invoices")
-            .createSignedUrl(inv.htmlPath, 300);
+            .createSignedUrl(inv.html_path, 300);
           if (signErr || !signed?.signedUrl) {
-            failedDl.push(inv.invoiceNumber);
+            failedDl.push(fileBase);
             continue;
           }
           const res = await fetch(signed.signedUrl);
           if (!res.ok) {
-            failedDl.push(inv.invoiceNumber);
+            failedDl.push(fileBase);
             continue;
           }
           const blob = await res.blob();
-          folder!.file(`${inv.invoiceNumber}.pdf`, blob);
+          folder!.file(`${fileBase}.pdf`, blob);
           okCount++;
         } catch (e) {
-          console.error("download failed for", inv.invoiceNumber, e);
-          failedDl.push(inv.invoiceNumber);
+          console.error("download failed for", fileBase, e);
+          failedDl.push(fileBase);
         }
         setBulkProgress({ phase: "downloading", current: i + 1, total: invoices.length });
       }
