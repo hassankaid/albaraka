@@ -1,5 +1,8 @@
 project_id = "ktvszjzryabjgxyobtyc"
 
+[functions.create-payment-intent]
+verify_jwt = false
+
 [functions.extract-rib-data]
 verify_jwt = false
 
