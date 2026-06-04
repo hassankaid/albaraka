@@ -1,4 +1,9 @@
-// generate-client-invoice v16 — Génération PDF côté Deno + email Resend.
+// generate-client-invoice v17 — Génération PDF côté Deno + email Resend.
+//
+// v17 : en-tête droit aligné sur la marge droite (FACTURE, numéro, dates)
+//   - Avant, FACTURE / numéro / dates étaient à des x fixes différents, ce
+//     qui donnait un bord gauche en escalier. Désormais chaque élément est
+//     right-aligné sur rightEdge = width - margin → bord droit net.
 //
 // v16 : adresses en MAJUSCULES (style normes postales)
 //   - address, postal_code, city, country sont systématiquement normalisés
@@ -183,12 +188,20 @@ async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Array> {
   drawText(page, "AL BARAKA", margin, y - 10, { size: 22, font: helvBold, color: dark });
   drawText(page, "Ecosysteme by Ethicarena", margin, y - 28, { size: 8, font: helv, color: gold });
 
-  drawText(page, "FACTURE", width - margin - 80, y - 10, { size: 20, font: helvBold, color: gold });
-  drawText(page, data.invoiceNumber, width - margin - 130, y - 32, { size: 11, font: courier, color: gray });
+  // Bloc en-tête droit : tout est aligné sur la marge droite (rightEdge) pour
+  // un bord droit net (FACTURE, numéro, dates) — fini le décalage en escalier.
+  const rightEdge = width - margin;
+  const factureText = "FACTURE";
+  drawText(page, factureText, rightEdge - helvBold.widthOfTextAtSize(factureText, 20), y - 10, { size: 20, font: helvBold, color: gold });
+
+  const invNumText = sanitize(data.invoiceNumber);
+  drawText(page, data.invoiceNumber, rightEdge - courier.widthOfTextAtSize(invNumText, 11), y - 32, { size: 11, font: courier, color: gray });
 
   const issueDate = new Date().toISOString();
-  drawText(page, `Date d'emission : ${fmtDate(issueDate)}`, width - margin - 165, y - 50, { size: 9, font: helv, color: gray });
-  drawText(page, `Date de paiement : ${fmtDate(data.paidAt)}`, width - margin - 165, y - 64, { size: 9, font: helv, color: gray });
+  const emissionText = `Date d'emission : ${fmtDate(issueDate)}`;
+  drawText(page, emissionText, rightEdge - helv.widthOfTextAtSize(sanitize(emissionText), 9), y - 50, { size: 9, font: helv, color: gray });
+  const paiementText = `Date de paiement : ${fmtDate(data.paidAt)}`;
+  drawText(page, paiementText, rightEdge - helv.widthOfTextAtSize(sanitize(paiementText), 9), y - 64, { size: 9, font: helv, color: gray });
 
   // Gold separator
   page.drawRectangle({ x: margin, y: y - 80, width: width - 2 * margin, height: 2, color: gold });

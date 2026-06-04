@@ -584,29 +584,40 @@ export default function Payments() {
       let okCount = 0;
       const failedDl: string[] = [];
 
+      // Récupère le PDF avec 3 tentatives (signature + fetch) pour absorber les
+      // échecs réseau transitoires : sur ~128 téléchargements enchaînés, quelques
+      // requêtes peuvent échouer ponctuellement sans que le fichier soit en cause.
+      const fetchInvoiceBlob = async (path: string): Promise<Blob | null> => {
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const { data: signed, error: signErr } = await (supabase as any).storage
+              .from("invoices")
+              .createSignedUrl(path, 300);
+            if (signErr || !signed?.signedUrl) throw new Error("sign_failed");
+            const res = await fetch(signed.signedUrl);
+            if (!res.ok) throw new Error(`http_${res.status}`);
+            return await res.blob();
+          } catch (e) {
+            if (attempt === 3) {
+              console.error("download failed after 3 tries", path, e);
+              return null;
+            }
+            await new Promise((r) => setTimeout(r, 400 * attempt));
+          }
+        }
+        return null;
+      };
+
       for (let i = 0; i < invoices.length; i++) {
         const inv = invoices[i];
         const rank = String(i + 1).padStart(4, "0");
         const ymd = String(inv.paid_at || "").slice(0, 10).replace(/-/g, "");
         const fileBase = `${rank}-${normalizeInvoiceName(inv.client_name) || "CLIENT"}-${ymd}`;
-        try {
-          const { data: signed, error: signErr } = await (supabase as any).storage
-            .from("invoices")
-            .createSignedUrl(inv.html_path, 300);
-          if (signErr || !signed?.signedUrl) {
-            failedDl.push(fileBase);
-            continue;
-          }
-          const res = await fetch(signed.signedUrl);
-          if (!res.ok) {
-            failedDl.push(fileBase);
-            continue;
-          }
-          const blob = await res.blob();
+        const blob = await fetchInvoiceBlob(inv.html_path);
+        if (blob) {
           folder!.file(`${fileBase}.pdf`, blob);
           okCount++;
-        } catch (e) {
-          console.error("download failed for", fileBase, e);
+        } else {
           failedDl.push(fileBase);
         }
         setBulkProgress({ phase: "downloading", current: i + 1, total: invoices.length });
