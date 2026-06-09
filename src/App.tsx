@@ -97,6 +97,7 @@ import M8PreuveSocialePage from "./pages/parcours/liberty/m8-preuve-sociale/M8Pr
 import M11ConcevoirProgrammePage from "./pages/parcours/liberty/m11-concevoir-programme/M11ConcevoirProgrammePage";
 import M12NamingPage from "./pages/parcours/liberty/m12-naming/M12NamingPage";
 import M13BilanPage from "./pages/parcours/liberty/m13-bilan/M13BilanPage";
+import M14MiddleTicketPage from "./pages/parcours/liberty/m14-middle-ticket/M14MiddleTicketPage";
 import OrganisationPage from "./pages/working/organisation/OrganisationPage";
 import PersonalBrandPage from "./pages/working/personal-brand/PersonalBrandPage";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
@@ -261,6 +262,7 @@ const App = () => (
                   <Route path="/parcours/liberty/m11" element={<PassGuard><M11ConcevoirProgrammePage /></PassGuard>} />
                   <Route path="/parcours/liberty/m12" element={<PassGuard><M12NamingPage /></PassGuard>} />
                   <Route path="/parcours/liberty/m13" element={<PassGuard><M13BilanPage /></PassGuard>} />
+                  <Route path="/parcours/liberty/m14" element={<PassGuard><M14MiddleTicketPage /></PassGuard>} />
                   <Route path="/working/activity" element={<FeatureGate feature="working_activity"><MyActivity /></FeatureGate>} />
                   <Route path="/working/organisation" element={<FeatureGate feature="quiz_organisation"><OrganisationPage /></FeatureGate>} />
                   <Route path="/working/personal-brand" element={<MarketingGate><PersonalBrandPage /></MarketingGate>} />
