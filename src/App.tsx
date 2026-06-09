@@ -44,6 +44,7 @@ import ApporteurCommissions from "./pages/apporteur/ApporteurCommissions";
 import ApporteurProfile from "./pages/apporteur/ApporteurProfile";
 import ApporteurOnboarding from "./pages/apporteur/ApporteurOnboarding";
 import Scripts from "./pages/working/Scripts";
+import ScriptForgePage from "./pages/working/script-forge/ScriptForgePage";
 import MyActivity from "./pages/working/MyActivity";
 import AgentIA from "./pages/working/AgentIA";
 import TrainingList from "./pages/training/TrainingList";
@@ -241,6 +242,7 @@ const App = () => (
                       et aux apporteurs disposant d'un pass AL BARAKA ou Liberty.
                       PassGuard avec allowCollab pour ne pas bloquer les collab simples. */}
                   <Route path="/training/scripts" element={<PassGuard allowCollab><Scripts /></PassGuard>} />
+                  <Route path="/training/script-forge" element={<PassGuard allowCollab><ScriptForgePage /></PassGuard>} />
                   <Route path="/training/role-play" element={<PassGuard allowCollab><RolePlay /></PassGuard>} />
                   <Route path="/training/quiz" element={<PassGuard allowCollab><QuizList /></PassGuard>} />
                   <Route path="/training/quiz/:id" element={<PassGuard allowCollab><QuizPage /></PassGuard>} />
