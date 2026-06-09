@@ -18,6 +18,7 @@ export const LIBERTY_TOOL_ROUTES: Record<string, string> = {
   "M12 — NAMING & POSITIONNEMENT D'OFFRE": "/parcours/liberty/m12",
   "M13 — TRANSITION DIY": "/parcours/liberty/m13",
   "M14 — ARCHITECTURER TON MIDDLE-TICKET": "/parcours/liberty/m14",
+  "M16 — TRIPWIRE & SLO": "/parcours/liberty/m16",
   // …
 };
 
