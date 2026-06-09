@@ -19,6 +19,7 @@ export const LIBERTY_TOOL_ROUTES: Record<string, string> = {
   "M13 — TRANSITION DIY": "/parcours/liberty/m13",
   "M14 — ARCHITECTURER TON MIDDLE-TICKET": "/parcours/liberty/m14",
   "M16 — TRIPWIRE & SLO": "/parcours/liberty/m16",
+  "M18 — VALUE LADDER REVISITÉE": "/parcours/liberty/m18",
   // …
 };
 
