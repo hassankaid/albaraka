@@ -45,6 +45,7 @@ import ApporteurProfile from "./pages/apporteur/ApporteurProfile";
 import ApporteurOnboarding from "./pages/apporteur/ApporteurOnboarding";
 import Scripts from "./pages/working/Scripts";
 import ScriptForgePage from "./pages/working/script-forge/ScriptForgePage";
+import Plan90Page from "./pages/working/plan90/Plan90Page";
 import MyActivity from "./pages/working/MyActivity";
 import AgentIA from "./pages/working/AgentIA";
 import TrainingList from "./pages/training/TrainingList";
@@ -243,6 +244,7 @@ const App = () => (
                       PassGuard avec allowCollab pour ne pas bloquer les collab simples. */}
                   <Route path="/training/scripts" element={<PassGuard allowCollab><Scripts /></PassGuard>} />
                   <Route path="/training/script-forge" element={<PassGuard allowCollab><ScriptForgePage /></PassGuard>} />
+                  <Route path="/working/plan-90" element={<PassGuard allowCollab><Plan90Page /></PassGuard>} />
                   <Route path="/training/role-play" element={<PassGuard allowCollab><RolePlay /></PassGuard>} />
                   <Route path="/training/quiz" element={<PassGuard allowCollab><QuizList /></PassGuard>} />
                   <Route path="/training/quiz/:id" element={<PassGuard allowCollab><QuizPage /></PassGuard>} />
