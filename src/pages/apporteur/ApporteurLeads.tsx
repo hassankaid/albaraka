@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Users, UserPlus, RefreshCw, Search, Pencil, ClipboardList } from "lucide-react";
+import { Users, UserPlus, RefreshCw, Search, Pencil, Sparkles, Inbox, ClipboardList } from "lucide-react";
 import LeadScoringPanel from "@/components/leads/LeadScoringPanel";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -58,10 +59,12 @@ const APPORTEUR_EDITABLE_STATUSES = [
 // Identique à INSTANT_RECYCLE_STATUSES côté ProcessLeadModal.
 const RECYCLE_TRIGGER_STATUSES = new Set(["pas_de_reponse", "pas_de_reponse_post_conference"]);
 
-// L'espace apporteur est désormais mono-vue : on n'affiche QUE les leads que
-// l'utilisateur a apportés lui-même (apporteur_id = moi). Les leads à traiter
-// (qu'on lui a affectés) sont gérés depuis l'espace collaborateur (/leads).
-// Un sous-filtre par source permet de zoomer sur un canal spécifique.
+// Deux vues distinctes sur les leads de l'apporteur :
+//  - "apportes"  : leads dont apporteur_id=moi (ceux que J'AI apportés). Un
+//                  sous-filtre permet de zoomer sur un canal (quiz, IG, etc.).
+//  - "a_traiter" : leads que le CEO/admin m'a affectés (assigned_to=moi) pour
+//                  que je les travaille, comme un collaborateur intermédiaire.
+type LeadTab = "apportes" | "a_traiter";
 
 // Labels affichés dans le sous-filtre "Source".
 // La clé correspond à la colonne `source` de la table leads.
@@ -85,7 +88,8 @@ export default function ApporteurLeads() {
   const [formOpen, setFormOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
-  // Sous-filtre "Source". "all" = toutes sources confondues.
+  const [activeTab, setActiveTab] = useState<LeadTab>("apportes");
+  // Sous-filtre "Source" (onglet "Mes leads apportés"). "all" = toutes sources.
   const [sourceFilter, setSourceFilter] = useState<string>("all");
 
   // Form state
@@ -221,15 +225,16 @@ export default function ApporteurLeads() {
     }
   }
 
-  // Espace apporteur : on ne récupère QUE les leads que l'utilisateur a
-  // apportés lui-même (apporteur_id = moi). Les leads à traiter qu'on lui a
-  // affectés sont visibles côté espace collaborateur (/leads).
+  // Récupère les leads de l'apporteur sur DEUX axes :
+  //  - apporteur_id = moi  (les leads que J'AI apportés)
+  //  - assigned_to  = moi  (les leads qu'on M'A AFFECTÉS pour traitement)
+  // La RLS (leads_select_apporteur) autorise bien ces deux cas.
   const fetchLeads = useCallback(async () => {
     if (!profile) return;
     const { data } = await supabase
       .from("leads_enriched")
       .select("*")
-      .eq("apporteur_id", profile.id)
+      .or(`apporteur_id.eq.${profile.id},assigned_to.eq.${profile.id}`)
       .order("created_at", { ascending: false });
     setLeads(data || []);
     setLoading(false);
@@ -301,20 +306,25 @@ export default function ApporteurLeads() {
     setSaving(false);
   };
 
-  // Sources réellement présentes dans les leads apportés (= options dynamiques
-  // du sous-filtre). On évite d'afficher "Telegram" si l'utilisateur n'a jamais
-  // apporté via Telegram.
+  // Découpe par onglet : "apportés" (apporteur_id=moi) vs "à traiter"
+  // (assigned_to=moi). Un lead auto-assigné à son apporteur peut figurer dans
+  // les deux (comportement attendu).
+  const apportesLeads = leads.filter((l) => l.apporteur_id === profile?.id);
+  const aTraiterLeads = leads.filter((l) => l.assigned_to === profile?.id);
+  const activeLeads = activeTab === "apportes" ? apportesLeads : aTraiterLeads;
+
+  // Sources présentes dans les leads APPORTÉS (options dynamiques du sous-filtre).
   const sourcesPresentes = Array.from(
-    new Set(leads.map((l) => l.source).filter(Boolean))
+    new Set(apportesLeads.map((l) => l.source).filter(Boolean))
   ) as string[];
-  // Comptage par source pour afficher le badge à côté de chaque option.
-  const sourceCounts = leads.reduce<Record<string, number>>((acc, l) => {
+  const sourceCounts = apportesLeads.reduce<Record<string, number>>((acc, l) => {
     if (l.source) acc[l.source] = (acc[l.source] ?? 0) + 1;
     return acc;
   }, {});
 
-  const filtered = leads.filter((l) => {
-    if (sourceFilter !== "all" && l.source !== sourceFilter) return false;
+  const filtered = activeLeads.filter((l) => {
+    // Sous-filtre source : uniquement dans l'onglet "Mes leads apportés".
+    if (activeTab === "apportes" && sourceFilter !== "all" && l.source !== sourceFilter) return false;
     if (statusFilter !== "all" && l.status !== statusFilter) return false;
     if (search) {
       const q = search.toLowerCase();
@@ -344,10 +354,9 @@ export default function ApporteurLeads() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Mes leads apportés</h2>
+          <h2 className="text-2xl font-bold text-foreground">Mes Leads</h2>
           <p className="text-sm text-muted-foreground">
-            {leads.length} lead{leads.length > 1 ? "s" : ""} que tu as apporté{leads.length > 1 ? "s" : ""}.
-            Les leads à traiter qu'on t'a affectés sont sur l'espace collaborateur.
+            {apportesLeads.length} apporté{apportesLeads.length > 1 ? "s" : ""} · {aTraiterLeads.length} à traiter
           </p>
         </div>
         <Button onClick={() => setFormOpen(true)} className="gradient-primary text-primary-foreground gap-2">
@@ -355,6 +364,26 @@ export default function ApporteurLeads() {
           Ajouter un lead
         </Button>
       </div>
+
+      {/* Onglets : "Mes leads apportés" vs "Mes leads à traiter (affectés)" */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as LeadTab)}>
+        <TabsList className="bg-card border border-border/60">
+          <TabsTrigger value="apportes" className="gap-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            Mes leads apportés
+            <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 h-4 bg-background/60">
+              {apportesLeads.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="a_traiter" className="gap-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
+            <Inbox className="h-3.5 w-3.5" />
+            Mes leads à traiter
+            <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 h-4 bg-background/60">
+              {aTraiterLeads.length}
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
@@ -367,9 +396,9 @@ export default function ApporteurLeads() {
             className="pl-9 bg-card"
           />
         </div>
-        {/* Sous-filtre par source — masqué s'il n'y a qu'une seule source
-            (pas d'intérêt à filtrer). */}
-        {sourcesPresentes.length > 1 && (
+        {/* Sous-filtre par source — onglet "apportés" uniquement, masqué s'il
+            n'y a qu'une seule source. */}
+        {activeTab === "apportes" && sourcesPresentes.length > 1 && (
           <Select value={sourceFilter} onValueChange={setSourceFilter}>
             <SelectTrigger className="w-48 bg-card">
               <SelectValue />
@@ -405,14 +434,18 @@ export default function ApporteurLeads() {
           <CardContent className="p-8 text-center">
             <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
             <p className="text-foreground font-medium">
-              {leads.length === 0
-                ? "Aucun lead apporté pour l'instant"
-                : "Aucun lead ne correspond à ta recherche"}
+              {activeTab === "apportes"
+                ? (apportesLeads.length === 0 ? "Aucun lead apporté pour l'instant" : "Aucun lead ne correspond à ta recherche")
+                : (aTraiterLeads.length === 0 ? "Aucun lead à traiter pour l'instant" : "Aucun lead ne correspond à ta recherche")}
             </p>
             <p className="text-sm text-muted-foreground mt-1">
-              {leads.length === 0
-                ? "Partage ton lien quiz ou ajoute un lead manuellement pour commencer."
-                : "Essaie de retirer les filtres (source, statut ou recherche)."}
+              {activeTab === "apportes"
+                ? (apportesLeads.length === 0
+                    ? "Partage ton lien quiz ou ajoute un lead manuellement pour commencer."
+                    : "Essaie de retirer les filtres (source, statut ou recherche).")
+                : (aTraiterLeads.length === 0
+                    ? "Quand Sabrina ou Sidali t'affectent des leads à travailler, ils apparaissent ici."
+                    : "Essaie de retirer les filtres (statut ou recherche).")}
             </p>
           </CardContent>
         </Card>
@@ -436,8 +469,9 @@ export default function ApporteurLeads() {
               </TableHeader>
               <TableBody>
                 {filtered.map((lead) => {
-                  // Tous les leads affichés ici ont apporteur_id = moi (mono-vue).
-                  // On distingue selon l'état de l'assignation pour gérer l'édition.
+                  // Vue duale : un lead peut être apporté par moi (apporteur_id)
+                  // et/ou affecté à moi (assigned_to). L'édition du statut dépend
+                  // de canEditStatus (cf. RPC apporteur_update_lead_status).
                   const isMineButAssignedElsewhere = lead.assigned_to !== null && lead.assigned_to !== profile?.id;
                   return (
                   <TableRow key={lead.id} className="border-border hover:bg-secondary/50 transition-colors">
