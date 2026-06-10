@@ -678,6 +678,35 @@ async function ensureBonCommandeOrder(
     console.error(`${productCfg.logTag} ensureClientContract failed:`, e);
   }
 
+  // Upgrade AL BARAKA -> Liberty (10/06/2026) : détecte si ce paiement Liberty
+  // est un upgrade d'un membre AL BARAKA existant, pour envoyer le mail "ton
+  // compte a été upgradé" (sans lien recovery) au lieu de l'onboarding standard.
+  // Signal fiable = coupon LIBERTY1000 APPLIQUÉ : le garde-fou serveur
+  // (validate_coupon + create-payment-intent) garantit qu'un pass al_baraka
+  // actif existait sur l'email, sinon le paiement aurait été refusé en amont.
+  // Fallback défensif = présence d'un pass al_baraka actif sur le profil
+  // (couvre un upgrade futur hors coupon). Non bloquant.
+  let isLibertyUpgrade = false;
+  if (source === "pass_liberty") {
+    const couponIsUpgrade = String(couponCode || "").toUpperCase() === "LIBERTY1000";
+    let hadAlBaraka = false;
+    if (!couponIsUpgrade) {
+      try {
+        const { data: ab } = await supabase
+          .from("user_passes")
+          .select("id")
+          .eq("user_id", profileId!)
+          .eq("pass_type", "al_baraka")
+          .is("revoked_at", null)
+          .limit(1);
+        hadAlBaraka = !!(ab && ab.length > 0);
+      } catch (e) {
+        console.error(`${productCfg.logTag} hadAlBaraka check failed:`, e);
+      }
+    }
+    isLibertyUpgrade = couponIsUpgrade || hadAlBaraka;
+  }
+
   // Email d'onboarding (création password + accès plateforme)
   if (productCfg.sendOnboardingEmail) {
     try {
@@ -694,6 +723,9 @@ async function ensureBonCommandeOrder(
             pass_type: productCfg.passType, // "al_baraka" ou "liberty"
             // Sprint T (18/05/2026) : bouton Discord pour tous les Pass
             include_discord_button: true,
+            // Upgrade (10/06/2026) : mail "compte upgradé" sans lien recovery
+            // si membre AL BARAKA -> Liberty (coupon LIBERTY1000 / pass al_baraka existant)
+            is_upgrade: isLibertyUpgrade,
             // Phase 6 (19/05/2026) : la signature du contrat est gérée dans
             // le wizard /onboarding (étape 1/2). Un seul CTA dans l'email.
           }),

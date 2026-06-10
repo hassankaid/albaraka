@@ -32,6 +32,7 @@ function buildHtml(
   actionLink: string,
   passType: PassType = "al_baraka",
   includeDiscordButton: boolean = false,
+  isUpgrade: boolean = false,
 ): string {
   const firstName = (fullName || "").split(" ")[0] || "";
   const isLiberty = passType === "liberty";
@@ -111,7 +112,9 @@ function buildHtml(
                 ${ecosystemLabel}.
               </p>
               <p style="margin:0 0 ${includeDiscordButton ? "16" : "28"}px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
-                Ton compte est désormais prêt. Clique sur le bouton ci-dessous pour activer ton accès${isLiberty ? " au " + productLabel : " à la plateforme"} et définir ton mot de passe.
+                ${isUpgrade
+                  ? `Ton compte a bien été <strong style="color:${BRAND.gold};font-weight:normal;">upgradé vers le PASS LIBERTY</strong>. Aucune action n'est nécessaire : connecte-toi comme d'habitude sur la plateforme, tu y retrouves tout ton contenu ainsi que tous les nouveaux modules Liberty.`
+                  : `Ton compte est désormais prêt. Clique sur le bouton ci-dessous pour activer ton accès${isLiberty ? " au " + productLabel : " à la plateforme"} et définir ton mot de passe.`}
               </p>
               ${includeDiscordButton ? `
               <p style="margin:0 0 28px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
@@ -124,12 +127,12 @@ function buildHtml(
               <!--[if mso]>
               <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${actionLink}" style="height:52px;v-text-anchor:middle;width:320px;" arcsize="8%" stroke="f" fillcolor="${BRAND.gold}">
                 <w:anchorlock/>
-                <center style="color:${BRAND.black};font-family:Georgia,serif;font-size:14px;font-weight:bold;letter-spacing:2.5px;">Activer mon accès à la plateforme</center>
+                <center style="color:${BRAND.black};font-family:Georgia,serif;font-size:14px;font-weight:bold;letter-spacing:2.5px;">${isUpgrade ? "Accéder à la plateforme" : "Activer mon accès à la plateforme"}</center>
               </v:roundrect>
               <![endif]-->
               <!--[if !mso]><!-- -->
               <a href="${actionLink}" target="_blank" style="display:inline-block;background-color:${BRAND.gold};color:${BRAND.black};text-decoration:none;padding:16px 36px;border-radius:4px;font-size:14px;letter-spacing:2.5px;text-transform:uppercase;font-family:Georgia,'Times New Roman',serif;font-weight:bold;mso-hide:all;">
-                Activer mon accès à la plateforme
+                ${isUpgrade ? "Accéder à la plateforme" : "Activer mon accès à la plateforme"}
               </a>
               <!--<![endif]-->
             </td>
@@ -254,6 +257,10 @@ Deno.serve(async (req) => {
     // l'email. Defaut = false (formations a la carte). Le webhook l'envoie a
     // true pour les Pass AL BARAKA + Pass Liberty.
     const includeDiscordButton: boolean = !!body.include_discord_button;
+    // Upgrade (10/06/2026) : membre AL BARAKA existant qui passe au PASS LIBERTY.
+    // Mail SANS action (pas de lien recovery) : il a déjà un compte/mot de passe,
+    // il doit juste se reconnecter. Défaut false = onboarding standard.
+    const isUpgrade: boolean = !!body.is_upgrade;
     // Phase 6 (19/05/2026) : la signature du contrat est désormais intégrée
     // dans le wizard /onboarding (étape 1/2). On n'envoie plus de CTA
     // "Signer mon contrat" dans cet email — un seul CTA "Activer mon compte".
@@ -283,25 +290,33 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const redirectTo = `${BRAND.domain}${BRAND.redirectPath}`;
-        const { data: linkData, error: linkErr } = await adminClient.auth.admin.generateLink({
-          type: "recovery",
-          email: profile.email,
-          options: { redirectTo },
-        });
-        if (linkErr || !linkData?.properties?.action_link) {
-          failed.push({ user_id: userId, error: `generateLink: ${linkErr?.message || "no action_link"}` });
-          continue;
+        // Upgrade : pas de lien recovery (le membre a déjà son mot de passe),
+        // on pointe simplement vers la plateforme. Sinon : magic link recovery
+        // pour activer/définir le mot de passe (onboarding standard).
+        let actionLink = BRAND.domain;
+        if (!isUpgrade) {
+          const redirectTo = `${BRAND.domain}${BRAND.redirectPath}`;
+          const { data: linkData, error: linkErr } = await adminClient.auth.admin.generateLink({
+            type: "recovery",
+            email: profile.email,
+            options: { redirectTo },
+          });
+          if (linkErr || !linkData?.properties?.action_link) {
+            failed.push({ user_id: userId, error: `generateLink: ${linkErr?.message || "no action_link"}` });
+            continue;
+          }
+          const parsed = new URL(linkData.properties.action_link);
+          parsed.searchParams.set("redirect_to", redirectTo);
+          actionLink = parsed.toString();
         }
-        const parsed = new URL(linkData.properties.action_link);
-        parsed.searchParams.set("redirect_to", redirectTo);
-        const actionLink = parsed.toString();
 
-        const html = buildHtml(profile.full_name || "", actionLink, passType, includeDiscordButton);
+        const html = buildHtml(profile.full_name || "", actionLink, passType, includeDiscordButton, isUpgrade);
         const toEmail = testMode ? BRAND.testEmail : profile.email;
-        const subject = passType === "liberty"
-          ? "Bienvenue dans le PASS LIBERTY"
-          : "Bienvenue dans l'écosystème AL BARAKA";
+        const subject = isUpgrade
+          ? "Ton compte est passé au PASS LIBERTY"
+          : passType === "liberty"
+            ? "Bienvenue dans le PASS LIBERTY"
+            : "Bienvenue dans l'écosystème AL BARAKA";
 
         console.log(`[send-access] to=${toEmail} (real=${profile.email}) testMode=${testMode} serviceRole=${isServiceRoleCall}`);
         await sendResend(toEmail, subject, html, resendKey);

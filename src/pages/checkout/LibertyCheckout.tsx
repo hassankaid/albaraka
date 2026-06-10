@@ -49,6 +49,24 @@ function formatEur(n: number): string {
   }).format(n);
 }
 
+// Message inline affiché sous le champ code promo en cas d'échec de validation.
+function couponErrorText(reason: string): string {
+  switch (reason) {
+    case "email_required":
+      return "Renseigne d'abord l'adresse email de ton compte (champ Email ci-dessus), puis applique le code.";
+    case "requires_pass":
+      return "Aucun compte Pass AL BARAKA n'existe pour cette adresse email. Ce code est réservé aux membres AL BARAKA — vérifie que tu utilises bien l'email de ton compte.";
+    case "targeting_mismatch":
+      return "Ce code promo n'est pas applicable au Pass Liberty.";
+    case "not_1x":
+      return "Ce code n'est valable qu'en paiement comptant (1 fois).";
+    case "error":
+      return "Erreur lors de la vérification du code. Réessaie dans un instant.";
+    default:
+      return "Code promo invalide ou expiré.";
+  }
+}
+
 const COUNTRY_NAMES: Intl.DisplayNames | null = (() => {
   try {
     return new Intl.DisplayNames(["fr"], { type: "region" });
@@ -1211,6 +1229,12 @@ function CheckoutForm({
 
   function onField<K extends keyof BillingFields>(k: K, v: string) {
     setBilling((b) => ({ ...b, [k]: v }));
+    // L'éligibilité d'un code (ex. LIBERTY1000) dépend de l'email : si on modifie
+    // l'email après avoir (in)validé un code, on remet le code à zéro pour forcer
+    // une revalidation et éviter un message / une remise périmés.
+    if (k === "email") {
+      setCoupon((c) => (c.status === "valid" || c.status === "invalid" ? { status: "idle" } : c));
+    }
   }
 
   async function onApplyCoupon() {
@@ -1577,62 +1601,98 @@ function CheckoutForm({
           <div>
             <span className="alb-section-label">Code promo</span>
             {coupon.status === "valid" ? (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "12px 14px",
-                  background: "rgba(201,160,78,0.08)",
-                  border: `1px solid ${THEME.gold}`,
-                  borderRadius: 10,
-                }}
-              >
-                <span style={{ fontSize: 13, color: THEME.cream, display: "inline-flex", alignItems: "center", gap: 8 }}>
-                  <CheckCircle2 size={15} style={{ color: THEME.gold }} />
-                  <strong style={{ fontWeight: 600 }}>{coupon.code}</strong>
-                  <span style={{ color: THEME.gold }}>
-                    {coupon.amountEur ? `−${formatEur(coupon.amountEur)}` : `−${coupon.percent}%`}
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCoupon({ status: "idle" });
-                    setCouponInput("");
-                    setCouponOpen(false);
-                  }}
+              <>
+                <div
                   style={{
-                    background: "transparent",
-                    border: "none",
-                    color: THEME.creamMuted,
-                    cursor: "pointer",
                     display: "flex",
-                    padding: 4,
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "12px 14px",
+                    background: "rgba(201,160,78,0.08)",
+                    border: `1px solid ${THEME.gold}`,
+                    borderRadius: 10,
                   }}
                 >
-                  <X size={14} />
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  type="text"
-                  className="alb-field"
-                  placeholder="Entre ton code"
-                  value={couponInput}
-                  onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                  style={{ textTransform: "uppercase" }}
-                />
-                <button
-                  type="button"
-                  className="alb-btn-ghost"
-                  onClick={onApplyCoupon}
-                  disabled={coupon.status === "validating" || !couponInput.trim()}
+                  <span style={{ fontSize: 13, color: THEME.cream, display: "inline-flex", alignItems: "center", gap: 8 }}>
+                    <CheckCircle2 size={15} style={{ color: THEME.gold }} />
+                    <strong style={{ fontWeight: 600 }}>{coupon.code}</strong>
+                    <span style={{ color: THEME.gold }}>
+                      {coupon.amountEur ? `−${formatEur(coupon.amountEur)}` : `−${coupon.percent}%`}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCoupon({ status: "idle" });
+                      setCouponInput("");
+                      setCouponOpen(false);
+                    }}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: THEME.creamMuted,
+                      cursor: "pointer",
+                      display: "flex",
+                      padding: 4,
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+                {/* Confirmation : l'email saisi correspond bien a un compte AL BARAKA */}
+                <div
+                  style={{
+                    marginTop: 8,
+                    fontSize: 12,
+                    color: "#86C98B",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 6,
+                    lineHeight: 1.45,
+                  }}
                 >
-                  {coupon.status === "validating" ? "…" : "APPLIQUER"}
-                </button>
-              </div>
+                  <CheckCircle2 size={13} style={{ marginTop: 1, flexShrink: 0 }} />
+                  <span>Compte Pass AL BARAKA reconnu pour cette adresse email — ton upgrade Liberty est débloqué.</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    type="text"
+                    className="alb-field"
+                    placeholder="Entre ton code"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    style={{ textTransform: "uppercase" }}
+                  />
+                  <button
+                    type="button"
+                    className="alb-btn-ghost"
+                    onClick={onApplyCoupon}
+                    disabled={coupon.status === "validating" || !couponInput.trim()}
+                  >
+                    {coupon.status === "validating" ? "…" : "APPLIQUER"}
+                  </button>
+                </div>
+                {/* Message d'echec inline (compte introuvable / email requis / code invalide) */}
+                {coupon.status === "invalid" && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      fontSize: 12,
+                      color: "#E0908A",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 6,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    <X size={13} style={{ marginTop: 1, flexShrink: 0 }} />
+                    <span>{couponErrorText(coupon.reason)}</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
