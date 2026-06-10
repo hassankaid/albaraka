@@ -1205,6 +1205,8 @@ function CheckoutForm({
   const [submitting, setSubmitting] = useState(false);
 
   const discountPercent = coupon.status === "valid" ? coupon.percent : 0;
+  // Remise en euros (coupons fixed_eur comme LIBERTY1000), pour l'affichage exact
+  const discountEur = coupon.status === "valid" ? coupon.amountEur : undefined;
   // Solde à régler : prix après remise − acompte déjà versé
   const payableTotal = Math.max(totalAfterDiscount - acompteTotal, 0);
   const perInstallment = Math.round((payableTotal / installments) * 100) / 100;

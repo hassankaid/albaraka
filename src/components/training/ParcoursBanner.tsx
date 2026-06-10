@@ -9,32 +9,46 @@ import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function ParcoursBanner() {
-  const navigate = useNavigate();
   const { profile } = useAuth();
-  const { passLevel, hasAnyPass } = useUserPass();
+  const { hasAlBaraka, hasLiberty, hasAnyPass } = useUserPass();
   const isCeo = profile?.role === "ceo";
-  // CEO : affiche AL BARAKA par défaut pour visualiser le parcours
-  // User : affiche le parcours correspondant à son pass actif
-  const slug = hasAnyPass
-    ? (passLevel === "liberty" ? "liberty" : "al-baraka")
-    : isCeo
-      ? "al-baraka"
-      : null;
-  const { parcours, progress, isLoading } = useParcours(slug);
 
-  if (!slug) return null;
+  // Un membre voit UN bandeau PAR pass détenu (ex. Liberty + Al Baraka si les
+  // deux). Auparavant un seul parcours (le plus élevé) était affiché, ce qui
+  // faisait "disparaître" Al Baraka pour les détenteurs Liberty (qui ont les deux).
+  // CEO sans pass : Al Baraka par défaut pour visualiser la structure.
+  const slugs: string[] = [];
+  if (hasLiberty) slugs.push("liberty");
+  if (hasAlBaraka) slugs.push("al-baraka");
+  if (slugs.length === 0 && isCeo) slugs.push("al-baraka");
+
+  if (slugs.length === 0) return null;
+
+  return (
+    <div className="space-y-4">
+      {slugs.map((s) => (
+        <SingleParcoursBanner key={s} slug={s} />
+      ))}
+    </div>
+  );
+}
+
+function SingleParcoursBanner({ slug }: { slug: string }) {
+  const navigate = useNavigate();
+  const { parcours, progress, isLoading } = useParcours(slug);
+  const label = slug === "liberty" ? "Pack Liberty" : "Pass Al-Baraka";
 
   if (isLoading) {
     return <Skeleton className="h-32 w-full rounded-2xl" />;
   }
 
   if (!parcours || parcours.phases.length === 0) {
-    // Liberty en draft : bandeau "bientôt disponible"
+    // Parcours en draft / sans contenu : bandeau "bientôt disponible"
     return (
       <div className="rounded-2xl border bg-gradient-to-br from-amber-500/5 via-card to-card p-6">
         <div className="flex items-center gap-3">
           <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-700 dark:text-amber-400">
-            <Sparkles className="h-3 w-3" /> {passLevel === "liberty" ? "Pack Liberty" : "Pass Al-Baraka"}
+            <Sparkles className="h-3 w-3" /> {label}
           </Badge>
         </div>
         <h2 className="mt-2 font-heading text-xl text-foreground">Ton parcours arrive bientôt</h2>
