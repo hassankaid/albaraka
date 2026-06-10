@@ -9,8 +9,8 @@ export const LIBERTY_TOOL_ROUTES: Record<string, string> = {
   "M1 — NICHE": "/parcours/liberty/m1",
   "M2 — PSYCHOLOGIE": "/parcours/liberty/m2",
   "M3 — ANATOMIE D'UNE OFFRE": "/parcours/liberty/m3",
-  "M4 — VALUE LADDER": "/parcours/liberty/m4",
-  "M5 — HIGH TICKET": "/parcours/liberty/m5",
+  "M4 — VALUE LADDER (vue d'ensemble)": "/parcours/liberty/m4",
+  "M5 — CRÉER TON HIGH-TICKET": "/parcours/liberty/m5",
   "M6 — PRICING": "/parcours/liberty/m6",
   "M7 — GARANTIE": "/parcours/liberty/m7",
   "M8 — PREUVE SOCIALE & ÉTUDES DE CAS": "/parcours/liberty/m8",
@@ -29,4 +29,12 @@ export function getLibertyToolRouteForChapitre(
 ): string | null {
   if (parcoursSlug !== "liberty" || !chapitreTitre) return null;
   return LIBERTY_TOOL_ROUTES[chapitreTitre] ?? null;
+}
+
+/** Reverse : route /parcours/liberty/mN → titre du chapitre BDD (ou null). */
+export function getLibertyChapitreTitreForRoute(pathname: string): string | null {
+  for (const [titre, route] of Object.entries(LIBERTY_TOOL_ROUTES)) {
+    if (route === pathname) return titre;
+  }
+  return null;
 }

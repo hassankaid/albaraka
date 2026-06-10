@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { getLibertyToolRouteForChapitre } from "./liberty/liberty-tool-routes";
 
 export default function ParcoursView() {
   const { slug } = useParams<{ slug: string }>();
@@ -273,7 +274,10 @@ function VideoRow({
   const accent = isCompleted ? "done" : !isAccessible ? "locked" : "current";
   const openDetail = () => {
     if (!isAccessible) return;
-    navigate(`/parcours/${slug}/chapitre/${chapitre.id}`);
+    // Entrée directe dans l'outil si le module en a un (plus de page intermédiaire) ;
+    // sinon page chapitre classique (vidéo / placeholder).
+    const toolRoute = getLibertyToolRouteForChapitre(slug, chapitre.titre);
+    navigate(toolRoute ?? `/parcours/${slug}/chapitre/${chapitre.id}`);
   };
 
   return (

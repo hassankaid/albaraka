@@ -87,6 +87,7 @@ import { FeatureGate } from "./components/FeatureGate";
 import { MarketingGate } from "./components/MarketingGate";
 import SharedLayout from "./components/SharedLayout";
 import ParcoursView from "./pages/parcours/ParcoursView";
+import { LibertyModuleFrame } from "./components/parcours/LibertyModuleFrame";
 import ParcoursChapitreDetail from "./pages/parcours/ParcoursChapitreDetail";
 import M1NichePage from "./pages/parcours/liberty/m1-niche/M1NichePage";
 import M2PsychologiePage from "./pages/parcours/liberty/m2-psychologie/M2PsychologiePage";
@@ -257,20 +258,20 @@ const App = () => (
                   <Route path="/parcours/:slug" element={<PassGuard><ParcoursView /></PassGuard>} />
                   <Route path="/parcours/:slug/chapitre/:chapitreId" element={<PassGuard><ParcoursChapitreDetail /></PassGuard>} />
                   {/* Outils interactifs Liberty (M1 → M18) */}
-                  <Route path="/parcours/liberty/m1" element={<PassGuard><M1NichePage /></PassGuard>} />
-                  <Route path="/parcours/liberty/m2" element={<PassGuard><M2PsychologiePage /></PassGuard>} />
-                  <Route path="/parcours/liberty/m3" element={<PassGuard><M3AnatomiePage /></PassGuard>} />
-                  <Route path="/parcours/liberty/m4" element={<PassGuard><M4ValueLadderPage /></PassGuard>} />
-                  <Route path="/parcours/liberty/m5" element={<PassGuard><M5HighTicketPage /></PassGuard>} />
-                  <Route path="/parcours/liberty/m6" element={<PassGuard><M6PricingPage /></PassGuard>} />
-                  <Route path="/parcours/liberty/m7" element={<PassGuard><M7GarantiePage /></PassGuard>} />
-                  <Route path="/parcours/liberty/m8" element={<PassGuard><M8PreuveSocialePage /></PassGuard>} />
-                  <Route path="/parcours/liberty/m11" element={<PassGuard><M11ConcevoirProgrammePage /></PassGuard>} />
-                  <Route path="/parcours/liberty/m12" element={<PassGuard><M12NamingPage /></PassGuard>} />
-                  <Route path="/parcours/liberty/m13" element={<PassGuard><M13BilanPage /></PassGuard>} />
-                  <Route path="/parcours/liberty/m14" element={<PassGuard><M14MiddleTicketPage /></PassGuard>} />
-                  <Route path="/parcours/liberty/m16" element={<PassGuard><M16LowTicketPage /></PassGuard>} />
-                  <Route path="/parcours/liberty/m18" element={<PassGuard><M18ValueLadderPage /></PassGuard>} />
+                  <Route path="/parcours/liberty/m1" element={<PassGuard><LibertyModuleFrame><M1NichePage /></LibertyModuleFrame></PassGuard>} />
+                  <Route path="/parcours/liberty/m2" element={<PassGuard><LibertyModuleFrame><M2PsychologiePage /></LibertyModuleFrame></PassGuard>} />
+                  <Route path="/parcours/liberty/m3" element={<PassGuard><LibertyModuleFrame><M3AnatomiePage /></LibertyModuleFrame></PassGuard>} />
+                  <Route path="/parcours/liberty/m4" element={<PassGuard><LibertyModuleFrame><M4ValueLadderPage /></LibertyModuleFrame></PassGuard>} />
+                  <Route path="/parcours/liberty/m5" element={<PassGuard><LibertyModuleFrame><M5HighTicketPage /></LibertyModuleFrame></PassGuard>} />
+                  <Route path="/parcours/liberty/m6" element={<PassGuard><LibertyModuleFrame><M6PricingPage /></LibertyModuleFrame></PassGuard>} />
+                  <Route path="/parcours/liberty/m7" element={<PassGuard><LibertyModuleFrame><M7GarantiePage /></LibertyModuleFrame></PassGuard>} />
+                  <Route path="/parcours/liberty/m8" element={<PassGuard><LibertyModuleFrame><M8PreuveSocialePage /></LibertyModuleFrame></PassGuard>} />
+                  <Route path="/parcours/liberty/m11" element={<PassGuard><LibertyModuleFrame><M11ConcevoirProgrammePage /></LibertyModuleFrame></PassGuard>} />
+                  <Route path="/parcours/liberty/m12" element={<PassGuard><LibertyModuleFrame><M12NamingPage /></LibertyModuleFrame></PassGuard>} />
+                  <Route path="/parcours/liberty/m13" element={<PassGuard><LibertyModuleFrame><M13BilanPage /></LibertyModuleFrame></PassGuard>} />
+                  <Route path="/parcours/liberty/m14" element={<PassGuard><LibertyModuleFrame><M14MiddleTicketPage /></LibertyModuleFrame></PassGuard>} />
+                  <Route path="/parcours/liberty/m16" element={<PassGuard><LibertyModuleFrame><M16LowTicketPage /></LibertyModuleFrame></PassGuard>} />
+                  <Route path="/parcours/liberty/m18" element={<PassGuard><LibertyModuleFrame><M18ValueLadderPage /></LibertyModuleFrame></PassGuard>} />
                   <Route path="/working/activity" element={<FeatureGate feature="working_activity"><MyActivity /></FeatureGate>} />
                   <Route path="/working/organisation" element={<FeatureGate feature="quiz_organisation"><OrganisationPage /></FeatureGate>} />
                   <Route path="/working/personal-brand" element={<MarketingGate><PersonalBrandPage /></MarketingGate>} />
