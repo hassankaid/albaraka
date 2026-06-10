@@ -36,6 +36,8 @@ function buildHtml(
 ): string {
   const firstName = (fullName || "").split(" ")[0] || "";
   const isLiberty = passType === "liberty";
+  // Upgrade : on n'affiche jamais le bloc Discord (le membre y est déjà).
+  const showDiscord = includeDiscordButton && !isUpgrade;
   const productLabel = isLiberty ? "PASS LIBERTY" : "AL BARAKA";
   const ecosystemLabel = isLiberty ? "Bienvenue dans le PASS LIBERTY" : "Félicitations d'avoir intégré <strong style=\"color:" + BRAND.gold + ";font-weight:normal;\">l'écosystème AL BARAKA</strong>";
   const headerSubtitle = isLiberty ? "Pass Liberty" : "L'écosystème";
@@ -111,12 +113,12 @@ function buildHtml(
               <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
                 ${ecosystemLabel}.
               </p>
-              <p style="margin:0 0 ${includeDiscordButton ? "16" : "28"}px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
+              <p style="margin:0 0 ${showDiscord ?"16" : "28"}px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
                 ${isUpgrade
                   ? `Ton compte a bien été <strong style="color:${BRAND.gold};font-weight:normal;">upgradé vers le PASS LIBERTY</strong>. Aucune action n'est nécessaire : connecte-toi comme d'habitude sur la plateforme, tu y retrouves tout ton contenu ainsi que tous les nouveaux modules Liberty.`
                   : `Ton compte est désormais prêt. Clique sur le bouton ci-dessous pour activer ton accès${isLiberty ? " au " + productLabel : " à la plateforme"} et définir ton mot de passe.`}
               </p>
-              ${includeDiscordButton ? `
+              ${showDiscord ?`
               <p style="margin:0 0 28px 0;font-size:16px;line-height:1.7;color:${BRAND.textMain};">
                 <strong style="color:${BRAND.gold};font-weight:normal;">Rejoins également notre communauté Discord</strong> pour échanger avec les autres membres et accéder aux ressources exclusives.
               </p>` : ""}
@@ -137,7 +139,7 @@ function buildHtml(
               <!--<![endif]-->
             </td>
           </tr>
-          ${includeDiscordButton ? `
+          ${showDiscord ?`
           <tr>
             <td class="bg-card px-mobile" data-bg="card" bgcolor="${BRAND.cardBg}" align="center" style="background-color:${BRAND.cardBg};padding:0 32px 40px;">
               <p style="margin:0 0 14px 0;font-size:12px;color:${BRAND.textSecondary};letter-spacing:0.5px;text-transform:uppercase;">— Et —</p>

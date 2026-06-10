@@ -1,5 +1,8 @@
 project_id = "ktvszjzryabjgxyobtyc"
 
+[functions.send-apporteur-access-email]
+verify_jwt = false
+
 [functions.create-payment-intent]
 verify_jwt = false
 
