@@ -195,27 +195,34 @@ async function resolveCouponDiscountCents(
   totalCents: number,
   expectedCategory: string,
   logTag = "[coupon]",
+  email = "",
 ): Promise<{
   discountCents: number;
   couponAppliedCode: string | null;
   discountPercent: number;
+  reason: string | null;
 }> {
   if (!couponCode) {
-    return { discountCents: 0, couponAppliedCode: null, discountPercent: 0 };
+    return { discountCents: 0, couponAppliedCode: null, discountPercent: 0, reason: null };
   }
 
   // Sprint P (17/05/2026) : on passe expected_category a la RPC qui fait le
   // check de targeting cote SQL (1 source de verite, pas de SELECT offers
   // separe ici).
+  // Upgrade Liberty (10/06/2026) : on passe aussi p_email pour que la RPC
+  // verifie l'eligibilite "pass actif requis" (LIBERTY1000 -> pass al_baraka
+  // sur cet email). L'email vient de customer.email cote checkout.
   const { data: validation } = await supabase.rpc("validate_coupon", {
     p_code: couponCode,
     p_expected_category: expectedCategory,
+    p_email: email ? email.trim().toLowerCase() : null,
   });
   if (!validation?.valid) {
+    const reason = validation?.reason ?? "unknown";
     console.log(
-      `${logTag} ${couponCode} invalid: ${validation?.reason ?? "unknown"} (expected=${expectedCategory})`,
+      `${logTag} ${couponCode} invalid: ${reason} (expected=${expectedCategory})`,
     );
-    return { discountCents: 0, couponAppliedCode: null, discountPercent: 0 };
+    return { discountCents: 0, couponAppliedCode: null, discountPercent: 0, reason };
   }
 
   // Calcul du discount selon discount_type
@@ -230,14 +237,14 @@ async function resolveCouponDiscountCents(
     console.log(
       `${logTag} ${couponCode} has unsupported discount_type=${validation.discount_type} or missing value, ignored`,
     );
-    return { discountCents: 0, couponAppliedCode: null, discountPercent: 0 };
+    return { discountCents: 0, couponAppliedCode: null, discountPercent: 0, reason: "unsupported_type" };
   }
 
   // Cap : au moins 1 centime a payer
   discountCents = Math.max(0, Math.min(discountCents, Math.max(0, totalCents - 1)));
 
   if (discountCents <= 0) {
-    return { discountCents: 0, couponAppliedCode: null, discountPercent: 0 };
+    return { discountCents: 0, couponAppliedCode: null, discountPercent: 0, reason: "zero_discount" };
   }
 
   console.log(
@@ -247,6 +254,7 @@ async function resolveCouponDiscountCents(
     discountCents,
     couponAppliedCode: String(validation.code),
     discountPercent,
+    reason: null,
   };
 }
 
@@ -478,10 +486,30 @@ Deno.serve(async (req) => {
             libTotalCents,
             "liberty",
             "[pass_liberty/coupon]",
+            email, // garde-fou eligibilite : LIBERTY1000 exige un pass al_baraka sur cet email
           );
           libDiscountPercent = libCouponResult.discountPercent;
           libDiscountCents = libCouponResult.discountCents;
           libCouponApplied = libCouponResult.couponAppliedCode;
+
+          // Upgrade Liberty (10/06/2026) : si un code a ete fourni mais REFUSE
+          // (ex. LIBERTY1000 sans pass al_baraka actif sur cet email, ou
+          // mauvaise cible), on REJETTE explicitement le paiement au lieu de
+          // facturer le plein tarif (5000 EUR) par surprise.
+          if (!libCouponApplied) {
+            const reason = libCouponResult.reason || "invalid";
+            const msg =
+              reason === "requires_pass" || reason === "email_required"
+                ? "Ce code promo est réservé aux membres du Pass AL BARAKA. Utilise l'adresse email de ton compte AL BARAKA pour en bénéficier."
+                : "Ce code promo n'est pas valable pour cette commande.";
+            console.log(
+              `[pass_liberty/coupon] ${libCouponCode} rejected (reason=${reason}) for email=${email}`,
+            );
+            return new Response(
+              JSON.stringify({ error: msg, coupon_rejected: reason }),
+              { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+            );
+          }
         }
       }
 

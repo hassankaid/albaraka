@@ -434,7 +434,7 @@ function PhoneCountrySelect({
 type CouponState =
   | { status: "idle" }
   | { status: "validating" }
-  | { status: "valid"; code: string; percent: number }
+  | { status: "valid"; code: string; percent: number; amountEur?: number }
   | { status: "invalid"; reason: string };
 
 interface BillingFields {
@@ -665,7 +665,12 @@ export default function LibertyCheckout() {
 
   const [coupon, setCoupon] = useState<CouponState>({ status: "idle" });
   const discountPercent = coupon.status === "valid" ? coupon.percent : 0;
-  const totalAfterDiscount = Math.round((TOTAL_EUR * (100 - discountPercent)) / 100 * 100) / 100;
+  // Remise en euros (coupons "fixed_eur" comme LIBERTY1000) : prioritaire sur le
+  // calcul en pourcentage pour un affichage exact (5000 − 4000 = 1000).
+  const discountEur = coupon.status === "valid" ? coupon.amountEur : undefined;
+  const totalAfterDiscount = discountEur
+    ? Math.max(TOTAL_EUR - discountEur, 0)
+    : Math.round((TOTAL_EUR * (100 - discountPercent)) / 100 * 100) / 100;
   // Solde réel à payer après déduction des acomptes
   const payableTotal = Math.max(totalAfterDiscount - acompteTotal, 0);
 
@@ -1219,12 +1224,27 @@ function CheckoutForm({
       );
       return;
     }
+    // Upgrade Liberty (10/06/2026) : certains codes (LIBERTY1000) sont reserves
+    // aux membres AL BARAKA et verifies sur l'email du compte. On exige donc
+    // l'email AVANT d'appliquer le code (c'est aussi celui qui recevra le pass
+    // Liberty cote webhook).
+    const couponEmail = billing.email.trim().toLowerCase();
+    if (!couponEmail || !couponEmail.includes("@")) {
+      setCoupon({ status: "invalid", reason: "email_required" });
+      toast.error(
+        "Renseigne d'abord l'adresse email de ton compte (celle de ton Pass AL BARAKA) avant d'appliquer le code.",
+      );
+      return;
+    }
     setCoupon({ status: "validating" });
-    // Sprint P (17/05/2026) : passe p_expected_category='liberty' pour
-    // que la RPC verifie cote SQL que le coupon cible bien Liberty.
+    // Sprint P (17/05/2026) : passe p_expected_category='liberty' pour que la RPC
+    // verifie cote SQL que le coupon cible bien Liberty.
+    // Upgrade Liberty (10/06/2026) : passe p_email pour la verif d'eligibilite
+    // "pass al_baraka actif" (cote serveur = source de verite).
     const { data, error } = await supabase.rpc("validate_coupon", {
       p_code: code,
       p_expected_category: "liberty",
+      p_email: couponEmail,
     });
     if (error) {
       setCoupon({ status: "invalid", reason: "error" });
@@ -1248,7 +1268,7 @@ function CheckoutForm({
       // le vrai discount via le helper resolveCouponDiscountCents.
       if (v.discount_type === "fixed_eur" && typeof v.discount_amount_eur === "number") {
         const equivalentPercent = Math.round((v.discount_amount_eur / TOTAL_EUR) * 100);
-        setCoupon({ status: "valid", code: v.code, percent: equivalentPercent });
+        setCoupon({ status: "valid", code: v.code, percent: equivalentPercent, amountEur: v.discount_amount_eur });
         toast.success(`Code ${v.code} appliqué — −${v.discount_amount_eur}€`);
         return;
       }
@@ -1261,6 +1281,10 @@ function CheckoutForm({
     setCoupon({ status: "invalid", reason: v?.reason || "not_found" });
     if (v?.reason === "targeting_mismatch") {
       toast.error("Ce code promo n'est pas applicable au PASS LIBERTY");
+    } else if (v?.reason === "requires_pass" || v?.reason === "email_required") {
+      toast.error(
+        "Ce code est réservé aux membres du Pass AL BARAKA. Utilise l'adresse email de ton compte AL BARAKA.",
+      );
     } else {
       toast.error("Code promo invalide");
     }
@@ -1567,7 +1591,9 @@ function CheckoutForm({
                 <span style={{ fontSize: 13, color: THEME.cream, display: "inline-flex", alignItems: "center", gap: 8 }}>
                   <CheckCircle2 size={15} style={{ color: THEME.gold }} />
                   <strong style={{ fontWeight: 600 }}>{coupon.code}</strong>
-                  <span style={{ color: THEME.gold }}>−{coupon.percent}%</span>
+                  <span style={{ color: THEME.gold }}>
+                    {coupon.amountEur ? `−${formatEur(coupon.amountEur)}` : `−${coupon.percent}%`}
+                  </span>
                 </span>
                 <button
                   type="button"
@@ -1645,7 +1671,7 @@ function CheckoutForm({
                   fontWeight: 600,
                 }}
               >
-                −{discountPercent}%
+                {discountEur ? `−${formatEur(discountEur)}` : `−${discountPercent}%`}
               </span>
             </span>
             <span style={{ textDecoration: "line-through" }}>{formatEur(TOTAL_EUR)}</span>
