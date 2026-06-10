@@ -82,6 +82,8 @@ export default function ParcoursChapitreDetail() {
     );
   }
 
+  const toolRoute = getLibertyToolRouteForChapitre(slug, chapitre.titre);
+
   const handleComplete = async () => {
     try {
       await completeMutation.mutateAsync(chapitre.id);
@@ -131,7 +133,7 @@ export default function ParcoursChapitreDetail() {
         )}
       </div>
 
-      <ChapitreContent chapitreId={chapitre.id} legacyVimeoId={chapitre.vimeo_id} legacyUrl={chapitre.video_url} />
+      <ChapitreContent chapitreId={chapitre.id} legacyVimeoId={chapitre.vimeo_id} legacyUrl={chapitre.video_url} hasTool={!!toolRoute} />
 
       {/* Description */}
 
@@ -147,40 +149,34 @@ export default function ParcoursChapitreDetail() {
       )}
 
       {/* Outil interactif Liberty (si disponible pour ce chapitre) */}
-      {(() => {
-        const toolRoute = getLibertyToolRouteForChapitre(slug, chapitre.titre);
-        if (!toolRoute) return null;
-        return (
-          <Card className="border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/5 to-amber-500/0">
-            <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600">
-                  <Sparkles className="h-5 w-5" />
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs font-semibold uppercase tracking-wider text-amber-600">
-                    Outil interactif de fin de module
-                  </div>
-                  <h3 className="font-semibold text-foreground">
-                    Construis ta Sous-niche 2.0
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Bilan, propositions IA, avatar client et engagement signé — ~45-90 min selon ton
-                    point de départ, sauvegarde automatique.
-                  </p>
-                </div>
+      {toolRoute && (
+        <Card className="border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/5 to-amber-500/0">
+          <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600">
+                <Sparkles className="h-5 w-5" />
               </div>
-              <Button
-                onClick={() => navigate(toolRoute)}
-                className="shrink-0 gap-2 bg-amber-500 text-white hover:bg-amber-600"
-              >
-                Démarrer l'outil
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        );
-      })()}
+              <div className="space-y-1">
+                <div className="text-xs font-semibold uppercase tracking-wider text-amber-600">
+                  Outil interactif du module
+                </div>
+                <h3 className="font-semibold text-foreground">{chapitre.titre}</h3>
+                <p className="text-sm text-muted-foreground">
+                  Travaille ce module dans l'outil interactif (bilan, suggestions et livrables) —
+                  sauvegarde automatique.
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => navigate(toolRoute)}
+              className="shrink-0 gap-2 bg-amber-500 text-white hover:bg-amber-600"
+            >
+              Démarrer l'outil
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3 justify-between items-center pt-2">
@@ -232,10 +228,12 @@ function ChapitreContent({
   chapitreId,
   legacyVimeoId,
   legacyUrl,
+  hasTool,
 }: {
   chapitreId: string;
   legacyVimeoId: string | null;
   legacyUrl: string | null;
+  hasTool?: boolean;
 }) {
   const { data, isLoading } = useParcoursChapitreContent(chapitreId);
   const videos = data?.videos ?? [];
@@ -270,13 +268,15 @@ function ChapitreContent({
   }
 
   if (effectiveVideos.length === 0) {
+    // Module avec outil interactif : l'outil est le contenu, on n'affiche pas de bloc vidéo vide.
+    if (hasTool) return null;
     return (
       <Card>
         <CardContent className="p-0">
           <div className="aspect-video bg-muted flex items-center justify-center flex-col gap-3 text-muted-foreground">
             <Video className="h-16 w-16 opacity-40" />
             <div className="text-sm">Vidéo à venir</div>
-            <div className="text-xs opacity-70">Les vidéos du parcours sont en tournage.</div>
+            <div className="text-xs opacity-70">Le contenu de ce module est en préparation.</div>
           </div>
         </CardContent>
       </Card>
