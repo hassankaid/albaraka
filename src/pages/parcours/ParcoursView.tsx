@@ -8,6 +8,8 @@ import {
   type ParcoursChapitre,
   type ParcoursPhase,
 } from "@/hooks/useParcours";
+import { useUserPass } from "@/hooks/useUserPass";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -25,6 +27,8 @@ export default function ParcoursView() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { parcours, progress, isLoading } = useParcours(slug);
+  const { hasLiberty, isLoading: passLoading } = useUserPass();
+  const { profile } = useAuth();
   const [milestone, setMilestone] = useState<ParcoursChapitre | null>(null);
 
   // Détecte quand un milestone devient accessible → modal plein écran auto
@@ -47,7 +51,7 @@ export default function ParcoursView() {
     }
   }, [parcours, progress]);
 
-  if (isLoading) {
+  if (isLoading || passLoading) {
     return (
       <div className="max-w-4xl mx-auto p-6 space-y-4">
         <Skeleton className="h-10 w-1/2" />
@@ -62,6 +66,24 @@ export default function ParcoursView() {
       <div className="max-w-2xl mx-auto py-20 text-center">
         <p className="text-muted-foreground">Parcours introuvable.</p>
         <Button variant="outline" className="mt-4" onClick={() => navigate("/training")}>
+          Retour aux formations
+        </Button>
+      </div>
+    );
+  }
+
+  // Cloisonnement Pass Liberty : le contenu d'un parcours Liberty est réservé aux
+  // détenteurs du Pass Liberty (+ CEO/coach). Un détenteur Al Baraka seul ne doit
+  // pas voir la structure ni les vidéos, même par URL directe.
+  const isStaff = profile?.role === "ceo" || profile?.is_coach === true;
+  if (parcours.pass_type === "liberty" && !hasLiberty && !isStaff) {
+    return (
+      <div className="max-w-2xl mx-auto py-20 text-center space-y-3">
+        <h2 className="font-heading text-2xl">{parcours.titre}</h2>
+        <p className="text-muted-foreground">
+          Ce parcours est réservé aux membres du Pass Liberty.
+        </p>
+        <Button variant="outline" onClick={() => navigate("/training")}>
           Retour aux formations
         </Button>
       </div>

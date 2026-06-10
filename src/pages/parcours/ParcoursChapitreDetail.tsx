@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useParcours, useCompleteChapitre } from "@/hooks/useParcours";
+import { useUserPass } from "@/hooks/useUserPass";
+import { useAuth } from "@/hooks/useAuth";
 import { useParcoursChapitreContent } from "@/hooks/useParcoursChapitreContent";
 import { VideoPlayer } from "@/components/training/VideoPlayer";
 import { ExternalLink, FileText as FileTextIcon, Image as ImageIcon, Link as LinkIcon, Download } from "lucide-react";
@@ -18,6 +20,8 @@ export default function ParcoursChapitreDetail() {
   const { slug, chapitreId } = useParams<{ slug: string; chapitreId: string }>();
   const navigate = useNavigate();
   const { parcours, progress, isLoading } = useParcours(slug);
+  const { hasLiberty, isLoading: passLoading } = useUserPass();
+  const { profile } = useAuth();
   const completeMutation = useCompleteChapitre();
 
   // Flatten chapitres avec leur phase pour navigation
@@ -36,7 +40,7 @@ export default function ParcoursChapitreDetail() {
   const isCompleted = chapitre ? progress?.completedChapitreIds.has(chapitre.id) ?? false : false;
   const isAccessible = chapitre ? progress?.isChapitreAccessible(chapitre.id) ?? false : false;
 
-  if (isLoading) {
+  if (isLoading || passLoading) {
     return (
       <div className="max-w-3xl mx-auto p-6 space-y-4">
         <Skeleton className="h-8 w-1/2" />
@@ -52,6 +56,17 @@ export default function ParcoursChapitreDetail() {
         <Button variant="outline" className="mt-4" onClick={() => navigate(`/parcours/${slug}`)}>
           Retour au parcours
         </Button>
+      </div>
+    );
+  }
+
+  // Cloisonnement Pass Liberty : contenu réservé aux détenteurs Liberty (+ CEO/coach).
+  const isStaff = profile?.role === "ceo" || profile?.is_coach === true;
+  if (parcours.pass_type === "liberty" && !hasLiberty && !isStaff) {
+    return (
+      <div className="max-w-2xl mx-auto py-20 text-center space-y-3">
+        <p className="text-muted-foreground">Ce contenu est réservé aux membres du Pass Liberty.</p>
+        <Button variant="outline" onClick={() => navigate("/training")}>Retour aux formations</Button>
       </div>
     );
   }
