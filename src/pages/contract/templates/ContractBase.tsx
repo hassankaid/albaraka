@@ -713,11 +713,10 @@ export function ConditionsBlock({
         impayée, une mise en demeure te sera adressée par email. Si l'échéance
         n'est pas régularisée dans un délai de quinze (15) jours suivant cette
         mise en demeure, l'accès à la plateforme et aux services
-        d'accompagnement pourra être suspendu, et une indemnité forfaitaire de
-        50€ par échéance impayée pourra s'appliquer au titre des frais de
-        gestion. Le Prestataire se réserve également le droit d'exiger le
-        paiement immédiat du solde restant dû et d'engager toute procédure de
-        recouvrement, les frais afférents étant à la charge du Client.
+        d'accompagnement pourra être suspendu. Le Prestataire se réserve
+        également le droit d'exiger le paiement immédiat du solde restant dû et
+        d'engager toute procédure de recouvrement, les frais afférents étant à
+        la charge du Client.
       </Condition>
       <Condition term="Propriété intellectuelle.">
         Tous les contenus de l'écosystème (vidéos, scripts, documents, outils)
