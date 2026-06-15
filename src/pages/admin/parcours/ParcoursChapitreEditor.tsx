@@ -72,6 +72,19 @@ export default function ParcoursChapitreEditor() {
   const chap = data.chapitre;
 
   async function saveMetadata() {
+    // Garde front en miroir de CreateChapitreDialog (respecte chapitre_type_coherent).
+    if (!titre.trim()) {
+      toast.error("Le titre est requis");
+      return;
+    }
+    if (chap.type === "redirect_formation" && !formationId) {
+      toast.error("Choisis la formation cible");
+      return;
+    }
+    if (chap.type === "milestone" && !milestoneMessage.trim()) {
+      toast.error("Le message de l'étape est requis");
+      return;
+    }
     try {
       await updateChap.mutateAsync({
         id: chap.id,
@@ -85,7 +98,11 @@ export default function ParcoursChapitreEditor() {
       } as any);
       toast.success("Chapitre enregistré");
     } catch (e: any) {
-      toast.error(e.message ?? "Erreur");
+      if (e?.code === "23514") {
+        toast.error("Champs requis manquants pour ce type de chapitre.");
+      } else {
+        toast.error(e.message ?? "Erreur");
+      }
     }
   }
 
