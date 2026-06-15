@@ -275,7 +275,7 @@ const App = () => (
                   <Route path="/working/activity" element={<FeatureGate feature="working_activity"><MyActivity /></FeatureGate>} />
                   <Route path="/working/organisation" element={<FeatureGate feature="quiz_organisation"><OrganisationPage /></FeatureGate>} />
                   <Route path="/working/personal-brand" element={<MarketingGate><PersonalBrandPage /></MarketingGate>} />
-                  <Route path="/working/agent" element={<PassGuard><AgentIA /></PassGuard>} />
+                  <Route path="/working/agent" element={<FeatureGate feature="working_activity" lockedTitle="Agent IA verrouillé" lockedDescription="Termine la formation SETTING depuis ton parcours AL BARAKA pour débloquer l'Agent IA." unlockCtaLabel="Ouvrir mon parcours" unlockRoute="/parcours/al-baraka"><AgentIA /></FeatureGate>} />
                   {/* Studio Albaraka (B1 du 20/05/2026) — gaté à CEO + Sidali Test */}
                   <Route path="/studio" element={<StudioGate><StudioHome /></StudioGate>} />
                   <Route path="/studio/projects/:projectId" element={<StudioGate><StudioProject /></StudioGate>} />
