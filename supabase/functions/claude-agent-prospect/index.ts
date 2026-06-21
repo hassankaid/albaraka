@@ -141,7 +141,7 @@ serve(async (req) => {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 1024,
         // Prompt caching Anthropic : system prompt mis en cache côté API,
         // -90% de coût et -50% de latence sur les requêtes suivantes (TTL 5 min)

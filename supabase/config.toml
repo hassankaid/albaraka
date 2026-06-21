@@ -38,3 +38,12 @@ verify_jwt = false
 
 [functions.studio-render-webhook]
 verify_jwt = false
+
+[functions.activity-ai-coach-daily]
+verify_jwt = false
+
+[functions.activity-weekly-recap]
+verify_jwt = false
+
+[functions.liberty-claude-proxy]
+verify_jwt = false

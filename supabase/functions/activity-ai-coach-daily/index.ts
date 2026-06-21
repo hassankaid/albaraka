@@ -103,7 +103,7 @@ Pas de liste, pas d'emoji excessif, français naturel, ton chaleureux mais factu
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 250,
         messages: [{ role: "user", content: prompt }],
       }),

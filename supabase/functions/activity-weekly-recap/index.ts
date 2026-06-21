@@ -113,7 +113,7 @@ Ton bienveillant, factuel, chiffré. Pas de flagornerie, pas d'anglicismes, pas 
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 500,
       messages: [{ role: "user", content: prompt }],
     }),
