@@ -80,7 +80,10 @@ export default function Sales() {
           leads!sales_lead_id_fkey(profiles!leads_apporteur_id_fkey(full_name)),
           commissions(id)
         `)
-        .order("sold_at", { ascending: false });
+        // Tri déterministe : sold_at puis id en tiebreaker — sinon les ventes de même
+        // date (legacy importées à 00:00) "sautent" de place quand on les modifie.
+        .order("sold_at", { ascending: false })
+        .order("id", { ascending: true });
 
       if (data) {
         setSales(
@@ -151,10 +154,13 @@ export default function Sales() {
         }
         // Sort by sold_at desc
         const sorted = Array.from(salesMap.values()).sort((a, b) => {
-          if (!a.sold_at && !b.sold_at) return 0;
-          if (!a.sold_at) return 1;
-          if (!b.sold_at) return -1;
-          return new Date(b.sold_at).getTime() - new Date(a.sold_at).getTime();
+          if (a.sold_at !== b.sold_at) {
+            if (!a.sold_at) return 1;
+            if (!b.sold_at) return -1;
+            return new Date(b.sold_at).getTime() - new Date(a.sold_at).getTime();
+          }
+          // Tiebreaker déterministe : évite que les ventes de même date sautent de place.
+          return a.id.localeCompare(b.id);
         });
         setSales(sorted);
       }
