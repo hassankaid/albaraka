@@ -40,7 +40,7 @@ export function exportM1PDF(state: M1State): void {
 
   w.document.write(`<!DOCTYPE html>
 <html lang="fr"><head>
-<meta charset="UTF-8">
+<meta charset="UTF-8"><meta name="color-scheme" content="light"><style>:root{color-scheme:only light}</style>
 <title>M1 — Sous-Niche 2.0 — ${escapeHtml(eng.nom_complet || "Liberty")}</title>
 <style>
   @page { size: A4; margin: 18mm 16mm; }

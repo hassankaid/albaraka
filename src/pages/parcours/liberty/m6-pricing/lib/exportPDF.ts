@@ -97,7 +97,7 @@ export function exportM6PDF(state: M6State): void {
   if (!w) return;
   w.document.write(`<!DOCTYPE html>
 <html lang="fr"><head>
-<meta charset="UTF-8">
+<meta charset="UTF-8"><meta name="color-scheme" content="light"><style>:root{color-scheme:only light}</style>
 <title>M6 — Pricing — ${esc(state.signed_by || "Liberty")}</title>
 <style>
 @page { size: A4; margin: 18mm 16mm; }

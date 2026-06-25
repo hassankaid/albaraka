@@ -46,7 +46,7 @@ export function exportEcosystemePDF(state: M18State): void {
 
   const w = window.open("", "_blank", "width=900,height=1000");
   if (!w) return;
-  w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Carte d'écosystème — ${esc(programmeNom)}</title>
+  w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="color-scheme" content="light"><style>:root{color-scheme:only light}</style><title>Carte d'écosystème — ${esc(programmeNom)}</title>
 <style>
 @page { size: A4; margin: 14mm; }
 * { box-sizing: border-box; }
