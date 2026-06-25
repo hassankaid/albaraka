@@ -575,6 +575,13 @@ export default function AdminInvoices() {
     return true;
   });
 
+  // KPIs for the "Factures générées" tab — reactive to the filters above
+  const histPaidInvoices = filteredInvoices.filter(inv => inv.status === "paid");
+  const histUnpaidInvoices = filteredInvoices.filter(inv => inv.status !== "paid");
+  const histTotalPaid = histPaidInvoices.reduce((s, inv) => s + (inv.total_amount || 0), 0);
+  const histTotalUnpaid = histUnpaidInvoices.reduce((s, inv) => s + (inv.total_amount || 0), 0);
+  const histTotalAll = filteredInvoices.reduce((s, inv) => s + (inv.total_amount || 0), 0);
+
   // Stats
   const totalCommAmount = beneficiaries.reduce((sum, a) => sum + a.total_amount, 0);
   const totalCommCount = beneficiaries.reduce((sum, a) => sum + a.commission_count, 0);
@@ -911,6 +918,56 @@ export default function AdminInvoices() {
               )}
             </div>
           </div>
+
+          {/* KPI strip — reactive to the filters above */}
+          {!loadingInvoices && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="border-border/50">
+                <CardContent className="py-4 px-5 flex items-center gap-3">
+                  <div className="rounded-lg bg-emerald-500/10 p-2.5 shrink-0">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-2xl font-bold text-foreground tabular-nums truncate">{histTotalPaid.toLocaleString("fr-FR")} €</p>
+                    <p className="text-xs text-muted-foreground">Total payé · {histPaidInvoices.length} facture{histPaidInvoices.length > 1 ? "s" : ""}</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-border/50">
+                <CardContent className="py-4 px-5 flex items-center gap-3">
+                  <div className="rounded-lg bg-amber-500/10 p-2.5 shrink-0">
+                    <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-2xl font-bold text-foreground tabular-nums truncate">{histTotalUnpaid.toLocaleString("fr-FR")} €</p>
+                    <p className="text-xs text-muted-foreground">Reste à payer · {histUnpaidInvoices.length} facture{histUnpaidInvoices.length > 1 ? "s" : ""}</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-border/50">
+                <CardContent className="py-4 px-5 flex items-center gap-3">
+                  <div className="rounded-lg bg-primary/10 p-2.5 shrink-0">
+                    <Euro className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-2xl font-bold text-foreground tabular-nums truncate">{histTotalAll.toLocaleString("fr-FR")} €</p>
+                    <p className="text-xs text-muted-foreground">Total facturé</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-border/50">
+                <CardContent className="py-4 px-5 flex items-center gap-3">
+                  <div className="rounded-lg bg-primary/10 p-2.5 shrink-0">
+                    <FileText className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-2xl font-bold text-foreground tabular-nums truncate">{filteredInvoices.length}</p>
+                    <p className="text-xs text-muted-foreground">Facture{filteredInvoices.length > 1 ? "s" : ""} affichée{filteredInvoices.length > 1 ? "s" : ""}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* Bulk download progress */}
           {bulkDownloading && (
