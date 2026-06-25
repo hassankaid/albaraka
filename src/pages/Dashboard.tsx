@@ -98,6 +98,7 @@ function FinancialTab() {
           tresoOut={data.tresoOut}
           tresoRemaining={data.tresoRemaining}
           commissionsPaid={data.commissionsPaid}
+          commissionsNextCycle={data.commissionsNextCycle}
           totalSalariesCumul={data.totalSalariesCumul}
           totalFixedChargesCumul={data.totalFixedChargesCumul}
           totalAdsCumul={data.totalAdsCumul}

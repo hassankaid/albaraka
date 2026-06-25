@@ -263,6 +263,15 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
   const commissionsPaid = commissions.filter((c) => c.status === "paid").reduce((sum, c) => sum + (c.amount || 0), 0);
   const commissionsDue = commissions.filter((c) => c.status === "due" || c.status === "invoiced").reduce((sum, c) => sum + (c.amount || 0), 0);
 
+  // Estimation des commissions à verser au cycle suivant : commissions NON versées
+  // (statut ≠ paid/cancelled) liées aux paiements ENCAISSÉS dans la période (paidInPeriod).
+  // Les salaires fixes sont naturellement exclus (table commissions). Live : le montant
+  // grandit au fil des encaissements clients du mois.
+  const paidInPeriodIds = new Set(paidInPeriod.map((p) => p.id));
+  const commissionsNextCycle = allCommissions
+    .filter((c) => c.payment_id && paidInPeriodIds.has(c.payment_id) && c.status !== "paid" && c.status !== "cancelled")
+    .reduce((sum, c) => sum + (c.amount || 0), 0);
+
   // ── Charge range: use filter range or global ──
   const chargeRangeStart = range?.from ?? new Date(2020, 0, 1);
   const chargeRangeEnd = range?.to ?? new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -393,6 +402,7 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     commissions,
     commissionsPaid,
     commissionsDue,
+    commissionsNextCycle,
     benefice,
     totalSalariesMensuel,
     totalFixedChargesMensuel,
