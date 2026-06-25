@@ -148,14 +148,10 @@ export function useUnlinkDiscord() {
   return useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Non authentifié");
-      const { error } = await (supabase as any)
-        .from("discord_links")
-        .update({
-          unlinked_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", user.id)
-        .is("unlinked_at", null);
+      // Passe par une RPC SECURITY DEFINER : un UPDATE client-side direct est
+      // bloqué silencieusement par la RLS (discord_links n'a qu'une policy SELECT),
+      // donc la liaison n'était jamais révoquée.
+      const { error } = await (supabase as any).rpc("unlink_discord");
       if (error) throw error;
     },
     onSuccess: () => {
