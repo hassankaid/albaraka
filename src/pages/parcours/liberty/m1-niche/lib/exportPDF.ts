@@ -15,7 +15,7 @@ function escapeHtml(s: string | null | undefined): string {
     .replace(/'/g, "&#039;");
 }
 
-export async function exportM1PDF(state: M1State): Promise<void> {
+export function exportM1PDF(state: M1State): void {
   const sn = state.sous_niche_2;
   const a = state.avatar;
   const eng = state.engagement;
@@ -35,7 +35,10 @@ export async function exportM1PDF(state: M1State): Promise<void> {
     ? `<div class="avatar-photo"><img src="${escapeHtml(a.photo_url)}" alt="" /></div>`
     : `<div class="avatar-photo">👤</div>`;
 
-  const html = `<!DOCTYPE html>
+  const w = window.open("", "_blank", "width=900,height=1000");
+  if (!w) return;
+
+  w.document.write(`<!DOCTYPE html>
 <html lang="fr"><head>
 <meta charset="UTF-8"><meta name="color-scheme" content="light"><style>:root{color-scheme:only light}</style>
 <title>M1 — Sous-Niche 2.0 — ${escapeHtml(eng.nom_complet || "Liberty")}</title>
@@ -212,52 +215,7 @@ export async function exportM1PDF(state: M1State): Promise<void> {
     AL BARAKA · LIBERTY · Module 1 — Sous-niche 2.0 · Confidentiel
   </div>
 </div>
-</body></html>`;
-
-  const filename = `M1 — Sous-Niche 2.0 — ${escapeHtml(eng.nom_complet || "Liberty")}.pdf`;
-  await downloadHtmlAsPdf(html, filename);
-}
-
-/**
- * Télécharge directement un HTML autonome en PDF (sans boîte d'impression).
- * Rendu dans un iframe offscreen ISOLÉ → n'hérite pas du thème (sombre) de l'app.
- * Fallback : ouverture + impression navigateur si html2pdf échoue.
- */
-async function downloadHtmlAsPdf(html: string, filename: string): Promise<void> {
-  try {
-    // @ts-ignore — html2pdf.js n'expose pas de types
-    const html2pdf = (await import("html2pdf.js")).default;
-    const iframe = document.createElement("iframe");
-    iframe.setAttribute("aria-hidden", "true");
-    iframe.style.cssText =
-      "position:fixed; left:-10000px; top:0; width:820px; height:1200px; border:0; background:#fff;";
-    document.body.appendChild(iframe);
-    const idoc = iframe.contentWindow!.document;
-    idoc.open();
-    idoc.write(html);
-    idoc.close();
-    // Laisser les polices/images se charger avant la capture
-    try { await (idoc as any).fonts?.ready; } catch { /* noop */ }
-    await new Promise((r) => setTimeout(r, 450));
-    iframe.style.height = Math.max(1200, idoc.body.scrollHeight + 40) + "px";
-    const target = (idoc.querySelector(".doc") as HTMLElement) || idoc.body;
-    await html2pdf()
-      .set({
-        margin: [10, 12, 14, 12],
-        filename,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", windowWidth: 820 },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        pagebreak: { mode: ["css", "legacy"] },
-      })
-      .from(target)
-      .save();
-    iframe.remove();
-  } catch {
-    // Fallback : impression navigateur (ancien comportement) si la génération échoue
-    const w = window.open("", "_blank", "width=900,height=1000");
-    if (!w) return;
-    w.document.write(html + "<script>setTimeout(function(){window.print();}, 400);<\/script>");
-    w.document.close();
-  }
+<script>setTimeout(function(){window.print();}, 400);</script>
+</body></html>`);
+  w.document.close();
 }
