@@ -7,6 +7,7 @@ interface Props {
   tresoOut: number;
   tresoRemaining: number;
   commissionsPaid: number;
+  commissionsNextCycle: number;
   totalSalariesCumul: number;
   totalFixedChargesCumul: number;
   totalAdsCumul: number;
@@ -21,7 +22,7 @@ function pct(part: number, total: number) {
   return Math.round((part / total) * 100);
 }
 
-export default function TreasuryCard({ tresoIn, tresoOut, tresoRemaining, commissionsPaid, totalSalariesCumul, totalFixedChargesCumul, totalAdsCumul }: Props) {
+export default function TreasuryCard({ tresoIn, tresoOut, tresoRemaining, commissionsPaid, commissionsNextCycle, totalSalariesCumul, totalFixedChargesCumul, totalAdsCumul }: Props) {
   const [showDetails, setShowDetails] = useState(false);
   const isPositive = tresoRemaining >= 0;
   const margin = tresoIn > 0 ? ((tresoRemaining / tresoIn) * 100).toFixed(1) : "0.0";
@@ -59,17 +60,26 @@ export default function TreasuryCard({ tresoIn, tresoOut, tresoRemaining, commis
         <CardContent className="flex-1 p-5 flex flex-col justify-between gap-4">
           {/* Entrées / Sorties */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-lg bg-[hsl(var(--kpi-paid)/0.12)] flex items-center justify-center">
-                  <ArrowDownLeft className="h-4 w-4 text-[hsl(var(--kpi-paid))]" />
+            <div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-lg bg-[hsl(var(--kpi-paid)/0.12)] flex items-center justify-center">
+                    <ArrowDownLeft className="h-4 w-4 text-[hsl(var(--kpi-paid))]" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-foreground">Entrées</p>
+                    <p className="text-[10px] text-muted-foreground">CA collecté</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs font-medium text-foreground">Entrées</p>
-                  <p className="text-[10px] text-muted-foreground">CA collecté</p>
-                </div>
+                <span className="text-sm font-bold text-foreground tabular-nums">{fmt(tresoIn)}</span>
               </div>
-              <span className="text-sm font-bold text-foreground tabular-nums">{fmt(tresoIn)}</span>
+              {/* Astérisque : commissions générées par les encaissements de la période, à verser au cycle suivant (live) */}
+              {commissionsNextCycle > 0 && (
+                <div className="flex items-center justify-between pl-[42px] mt-1.5">
+                  <p className="text-[10px] text-muted-foreground italic">* est. commissions à verser le mois prochain</p>
+                  <span className="text-[11px] font-semibold text-muted-foreground tabular-nums">{fmt(commissionsNextCycle)}</span>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
