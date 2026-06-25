@@ -57,7 +57,7 @@ export function exportM4PDF(state: M4State): void {
 
   w.document.write(`<!DOCTYPE html>
 <html lang="fr"><head>
-<meta charset="UTF-8">
+<meta charset="UTF-8"><meta name="color-scheme" content="light"><style>:root{color-scheme:only light}</style>
 <title>M4 — Value Ladder — ${esc(state.signed_name || "Liberty")}</title>
 <style>
 @page { size: A4; margin: 18mm 16mm; }

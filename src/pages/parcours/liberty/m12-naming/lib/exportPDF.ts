@@ -27,7 +27,7 @@ export function exportM12PDF(state: M12State): void {
 
   const w = window.open("", "_blank", "width=900,height=1000");
   if (!w) return;
-  w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+  w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="color-scheme" content="light"><style>:root{color-scheme:only light}</style>
 <title>M12 — Naming — ${esc(f.nom || "Liberty")}</title>
 <style>
 @page { size: A4; margin: 16mm 14mm; }

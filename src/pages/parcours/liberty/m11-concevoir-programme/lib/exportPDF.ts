@@ -30,7 +30,7 @@ export function exportM11PDF(state: M11State): void {
 
   const w = window.open("", "_blank", "width=900,height=1000");
   if (!w) return;
-  w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+  w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="color-scheme" content="light"><style>:root{color-scheme:only light}</style>
 <title>M11 — Programme — ${esc(state.signed_by || "Liberty")}</title>
 <style>
 @page { size: A4; margin: 16mm 14mm; }

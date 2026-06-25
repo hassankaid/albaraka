@@ -81,7 +81,7 @@ export function exportM14PDF(state: M14State): void {
 
   const w = window.open("", "_blank", "width=900,height=1000");
   if (!w) return;
-  w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+  w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="color-scheme" content="light"><style>:root{color-scheme:only light}</style>
 <title>Mémo MT — ${esc(programmeNom)}</title>
 <style>
 @page { size: A4; margin: 14mm 13mm; }
