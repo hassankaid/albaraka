@@ -152,11 +152,15 @@ serve(async (req) => {
       });
     }
 
-    // ─── Idempotence : déjà granté ? ─────────────────────────────
+    // ─── Idempotence : déjà granté SUR LE COMPTE ACTUELLEMENT LIÉ ? ──
+    // On filtre AUSSI par discord_user_id : si l'élève a changé de compte
+    // Discord (délié puis relié un autre compte), les grants de l'ancien
+    // compte ne comptent pas → le rôle est ré-attribué au nouveau compte.
     const { data: existing } = await supabaseAdmin
       .from("discord_role_grants")
       .select("id")
       .eq("user_id", user_id)
+      .eq("discord_user_id", link.discord_user_id)
       .eq("discord_role_id", mapping.discord_role_id)
       .is("revoked_at", null)
       .eq("status", "success")
