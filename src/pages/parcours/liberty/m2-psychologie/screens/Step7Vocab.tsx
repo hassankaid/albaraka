@@ -58,9 +58,13 @@ export function Step7Vocab({ state, setState, onBack, onNext }: Step7Props) {
   const vocab = state.data.step7.vocab;
 
   const setList = (key: VocabKey, rawValue: string) => {
-    // Parse les listes en split par · / | ou newline
+    // Séparateurs acceptés. Les champs "mots" tolèrent · • | / , ; tiret-espacé
+    // et retour-ligne ; les "formulations" sont des phrases entières → on NE
+    // coupe PAS sur la virgule (sinon on casse les phrases), seulement / · | et
+    // retour-ligne.
+    const splitter = key === "formulations" ? /[·•|\/\n]/ : /[·•|\/,;\n]| - /;
     const items = rawValue
-      .split(/[·•|\n]/)
+      .split(splitter)
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
     setState((prev) => ({
