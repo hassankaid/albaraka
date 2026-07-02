@@ -367,6 +367,7 @@ export default function AdminCommissions() {
                 <TableHead>Mensualité</TableHead>
                 <TableHead>Échéance</TableHead>
                 <TableHead>Paiement client</TableHead>
+                <TableHead className="text-right">Montant paiement</TableHead>
                 <TableHead className="text-right">Montant</TableHead>
                 <TableHead>%</TableHead>
                 <TableHead>Statut</TableHead>
@@ -412,6 +413,9 @@ export default function AdminCommissions() {
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {fmtDate(c.payment_paid_at)}
+                    </TableCell>
+                    <TableCell className="text-right text-sm text-muted-foreground">
+                      {c.payment_amount != null ? `${c.payment_amount.toLocaleString("fr-FR")} €` : "—"}
                     </TableCell>
                     <TableCell className="text-right font-semibold text-sm text-foreground">
                       {c.amount != null ? `${c.amount.toLocaleString("fr-FR")} €` : "—"}
