@@ -102,11 +102,10 @@ export default function CommissionDetailModal({ open, onOpenChange, beneficiaryU
           sale_amount_ht: c.sales?.amount_ht || 0,
           contact_name: c.sales?.contacts?.full_name || null,
         }))
-        .sort((a: CommissionDetail, b: CommissionDetail) => {
-          const dateA = a.payment_due_date || "";
-          const dateB = b.payment_due_date || "";
-          return dateA.localeCompare(dateB);
-        });
+        .sort((a: CommissionDetail, b: CommissionDetail) =>
+          // Tri alphabétique par nom du client (full_name = "Prénom Nom" → par prénom).
+          (a.contact_name || "").localeCompare(b.contact_name || "", "fr", { sensitivity: "base" })
+        );
 
       setCommissions(filtered);
       setLoading(false);
