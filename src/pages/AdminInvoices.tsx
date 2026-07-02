@@ -788,7 +788,7 @@ export default function AdminInvoices() {
                               </Badge>
                               {a.fixed_salary_active && (
                                 <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30">
-                                  + Salaire fixe
+                                  + Salaire fixe{a.fixed_salary != null ? ` ${a.fixed_salary.toLocaleString("fr-FR")} €` : ""}
                                 </Badge>
                               )}
                             </div>
