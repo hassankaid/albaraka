@@ -95,7 +95,12 @@ function firstName(fullName: string): string {
 }
 
 function fmtEur(n: number): string {
-  return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+  // toLocaleString("fr-FR") insere une ESPACE FINE INSECABLE (U+202F) comme
+  // separateur de milliers (montants >= 1000) -> hors WinAnsi, pdf-lib plante.
+  // On neutralise ces espaces speciales. NB: la valeur brute passe dans
+  // widthOfTextAtSize AVANT sanitize, donc le fix doit etre ici aussi.
+  const raw = n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return raw.replace(/[\u00a0\u202f\u2009\u2007\u2060]/g, " ") + " €";
 }
 
 function fmtDate(iso: string): string {
@@ -113,6 +118,7 @@ function toUpperOrNull(s: string | null | undefined): string | null {
 // pdf-lib avec WinAnsi ne supporte pas tous les unicodes (ex: ﷻ). On sanitize.
 function sanitize(s: string): string {
   return String(s)
+    .replace(/[\u00a0\u202f\u2009\u2007\u2060]/g, " ")
     .replace(/[ﷻ]/g, "")
     .replace(/[…]/g, "...")
     .replace(/[—–]/g, "-")
