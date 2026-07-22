@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -126,6 +127,16 @@ import DiscordCallback from "./pages/discord/DiscordCallback";
 import AdminDiscord from "./pages/admin/discord/AdminDiscord";
 import AdminEmailCampaign from "./pages/admin/email-campaigns/AdminEmailCampaign";
 import AdminSmsCampaign from "./pages/admin/email-campaigns/AdminSmsCampaign";
+import { WA_TUNNEL, VSL_TUNNEL } from "./pages/tunnels/config";
+
+// ── Module « tunnels » (funnels natifs) — chargé en lazy pour que le trafic
+// froid des pubs ne télécharge PAS tout le bundle CRM/coaching. ──
+const TunnelLanding = lazy(() => import("./pages/tunnels/components/TunnelLanding"));
+const WebinaireMerci = lazy(() => import("./pages/tunnels/whatsapp/WebinaireMerci"));
+const VslMerci = lazy(() => import("./pages/tunnels/vsl/VslMerci"));
+const TunnelFallback = () => (
+  <div style={{ minHeight: "100vh", background: "#060504" }} aria-hidden />
+);
 
 const queryClient = new QueryClient();
 
@@ -153,6 +164,13 @@ const App = () => (
               <Route path="/rdv/disqualification/:slug" element={<RdvDisqualification />} />
               <Route path="/rdv/calendly" element={<RdvCalendly />} />
               <Route path="/redif/:token" element={<RedifConference />} />
+              {/* ── Tunnels natifs (remplacent Systeme.io) ── */}
+              {/* Tunnel WhatsApp */}
+              <Route path="/webinaire" element={<Suspense fallback={<TunnelFallback />}><TunnelLanding tunnel={WA_TUNNEL} /></Suspense>} />
+              <Route path="/webinaire/merci" element={<Suspense fallback={<TunnelFallback />}><WebinaireMerci /></Suspense>} />
+              {/* Tunnel VSL (même landing) */}
+              <Route path="/vsl" element={<Suspense fallback={<TunnelFallback />}><TunnelLanding tunnel={VSL_TUNNEL} /></Suspense>} />
+              <Route path="/vsl/merci" element={<Suspense fallback={<TunnelFallback />}><VslMerci /></Suspense>} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/checkout/:installments" element={<Checkout />} />
               <Route path="/merci" element={<MerciPage />} />
