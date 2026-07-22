@@ -55,13 +55,8 @@ export default function WebinaireMerci() {
         </div>
       </header>
 
-      <main style={{ position: "relative", zIndex: 1, maxWidth: 680, margin: "0 auto", padding: "clamp(24px,6vw,56px) 22px clamp(56px,10vw,90px)", textAlign: "center" }}>
-        {/* Pastille de validation */}
-        <div className="albm-rise" style={{ width: 76, height: 76, margin: "0 auto 26px", borderRadius: "50%", border: `1px solid ${T.goldLine}`, display: "grid", placeItems: "center", background: "radial-gradient(circle, rgba(201,160,78,0.16), transparent 70%)" }}>
-          <span style={{ fontSize: 40, lineHeight: 1 }}>✅</span>
-        </div>
-
-        <h1 className="albm-rise" style={{ animationDelay: "60ms", fontFamily: T.display, fontWeight: 600, fontSize: "clamp(2rem,6.6vw,3.2rem)", lineHeight: 1.08, color: T.cream, margin: "0 0 16px", textTransform: "uppercase", letterSpacing: "0.01em" }}>
+      <main style={{ position: "relative", zIndex: 1, maxWidth: 980, margin: "0 auto", padding: "clamp(30px,5vw,56px) 22px clamp(56px,10vw,90px)", textAlign: "center" }}>
+        <h1 className="albm-rise" style={{ fontFamily: T.display, fontWeight: 600, fontSize: "clamp(2rem,6.6vw,3.2rem)", lineHeight: 1.08, color: T.cream, margin: "0 auto 16px", maxWidth: 700, textTransform: "uppercase", letterSpacing: "0.01em" }}>
           Félicitations !
         </h1>
 
@@ -75,12 +70,12 @@ export default function WebinaireMerci() {
         <p className="albm-rise" style={{ animationDelay: "170ms", fontFamily: T.body, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", fontSize: "0.78rem", color: T.goldBright, margin: "0 0 14px" }}>
           ⚠️ Regarde cette vidéo en entier
         </p>
-        <div className="albm-rise" style={{ animationDelay: "200ms", marginBottom: 30 }}>
+        <div className="albm-rise" style={{ animationDelay: "200ms", maxWidth: 880, margin: "0 auto 32px" }}>
           <VimeoVideo variant={variant} />
         </div>
 
-        {/* Dernière étape — carte + bouton WhatsApp */}
-        <div className="albm-rise" style={{ animationDelay: "210ms", padding: "clamp(26px,5vw,40px) clamp(20px,4vw,36px)", borderRadius: 22, border: `1px solid ${T.goldLine}`, background: "radial-gradient(ellipse 90% 120% at 50% 0%, rgba(201,160,78,0.10), transparent 70%), rgba(255,255,255,0.02)" }}>
+        {/* Dernière étape — carte + bouton WhatsApp (plus étroite que la vidéo) */}
+        <div className="albm-rise" style={{ animationDelay: "210ms", maxWidth: 620, margin: "0 auto", padding: "clamp(26px,5vw,40px) clamp(20px,4vw,36px)", borderRadius: 22, border: `1px solid ${T.goldLine}`, background: "radial-gradient(ellipse 90% 120% at 50% 0%, rgba(201,160,78,0.10), transparent 70%), rgba(255,255,255,0.02)" }}>
           <p style={{ fontFamily: T.body, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", fontSize: "0.78rem", color: T.goldBright, margin: "0 0 12px" }}>
             ⚠️ Dernière étape obligatoire
           </p>
