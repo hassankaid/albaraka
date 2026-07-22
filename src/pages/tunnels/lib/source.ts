@@ -104,3 +104,31 @@ export function getAttribution(cfg: TunnelConfig): TunnelAttribution | null {
     return null;
   }
 }
+
+// ─── Pré-remplissage (coordonnées saisies à l'opt-in) ────────────────────
+// Stocké à la validation du pop-in pour pré-remplir le Calendly du tunnel VSL
+// sur la page de remerciement (le prospect ne re-saisit pas ses infos).
+const PREFILL_KEY = "alb_tunnel_prefill";
+
+export interface TunnelPrefill {
+  firstName: string;
+  email: string;
+  phone: string;
+}
+
+export function setTunnelPrefill(p: TunnelPrefill): void {
+  try {
+    sessionStorage.setItem(PREFILL_KEY, JSON.stringify(p));
+  } catch {
+    /* mode privé strict : tant pis, pas de pré-remplissage */
+  }
+}
+
+export function getTunnelPrefill(): TunnelPrefill | null {
+  try {
+    const raw = sessionStorage.getItem(PREFILL_KEY);
+    return raw ? (JSON.parse(raw) as TunnelPrefill) : null;
+  } catch {
+    return null;
+  }
+}

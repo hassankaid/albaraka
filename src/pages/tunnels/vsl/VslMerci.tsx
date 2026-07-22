@@ -13,6 +13,7 @@ import { useEffect } from "react";
 import { T, CONFERENCE, ensureTunnelFonts } from "../theme";
 import TunnelBackground from "../components/TunnelBackground";
 import VimeoVideo from "../components/VimeoVideo";
+import CalendlyInline from "../components/CalendlyInline";
 import { resolveVariant } from "../variants";
 
 export default function VslMerci() {
@@ -62,9 +63,12 @@ export default function VslMerci() {
           <VimeoVideo variant={variant} />
         </div>
 
-        {/* ── Agenda Calendly (directement sous la vidéo) — brique suivante ── */}
-        <div className="albv-rise" style={{ animationDelay: "210ms", maxWidth: 760, margin: "0 auto", padding: "clamp(24px,4vw,36px)", borderRadius: 16, border: `1px dashed ${T.goldLine}`, background: "rgba(255,255,255,0.02)", color: T.creamMuted, fontFamily: T.body, fontSize: "0.95rem", lineHeight: 1.55 }}>
-          📅 Le calendrier de prise de rendez-vous s'intégrera <strong style={{ color: T.cream }}>ici même, juste sous la vidéo</strong>. <span style={{ color: T.creamDim }}>(brique suivante — Calendly)</span>
+        {/* ── Agenda Calendly (directement sous la vidéo) ─────────── */}
+        <p className="albv-rise" style={{ animationDelay: "240ms", fontFamily: T.body, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", fontSize: "0.78rem", color: T.goldBright, margin: "0 0 16px" }}>
+          Réserve ton appel ci-dessous
+        </p>
+        <div className="albv-rise" style={{ animationDelay: "280ms", maxWidth: 900, margin: "0 auto" }}>
+          <CalendlyInline url={CONFERENCE.calendlyUrl} />
         </div>
       </main>
 

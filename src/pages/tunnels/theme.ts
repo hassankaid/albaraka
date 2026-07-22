@@ -48,6 +48,8 @@ export const CONFERENCE = {
   tz: "heure de Paris",
   // Lien du groupe WhatsApp (change d'une conférence à l'autre) — test pour l'instant.
   whatsappGroupUrl: "https://chat.whatsapp.com/BwBWVsHhM0Y0Fb37USMZS3",
+  // Événement Calendly (tunnel VSL — agenda sous la vidéo).
+  calendlyUrl: "https://calendly.com/d/cx6r-hxg-4sw/appel-setting-avant-webi",
 } as const;
 
 // Injection unique des webfonts du module (Fraunces display + Poppins body).
