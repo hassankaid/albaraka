@@ -135,6 +135,9 @@ const TunnelLanding = lazy(() => import("./pages/tunnels/components/TunnelLandin
 const WebinaireMerci = lazy(() => import("./pages/tunnels/whatsapp/WebinaireMerci"));
 const VslMerci = lazy(() => import("./pages/tunnels/vsl/VslMerci"));
 const VslConfirmation = lazy(() => import("./pages/tunnels/vsl/VslConfirmation"));
+// Page indépendante de réservation d'appel (partagée pendant/après la conf).
+const AppelConference = lazy(() => import("./pages/tunnels/appel/AppelConference"));
+const AppelConfirmation = lazy(() => import("./pages/tunnels/appel/AppelConfirmation"));
 const TunnelFallback = () => (
   <div style={{ minHeight: "100vh", background: "#060504" }} aria-hidden />
 );
@@ -173,6 +176,9 @@ const App = () => (
               <Route path="/vsl" element={<Suspense fallback={<TunnelFallback />}><TunnelLanding tunnel={VSL_TUNNEL} /></Suspense>} />
               <Route path="/vsl/merci" element={<Suspense fallback={<TunnelFallback />}><VslMerci /></Suspense>} />
               <Route path="/vsl/confirmation" element={<Suspense fallback={<TunnelFallback />}><VslConfirmation /></Suspense>} />
+              {/* Page indépendante : réservation d'appel (lien partagé pendant/après la conf) */}
+              <Route path="/appel-conference" element={<Suspense fallback={<TunnelFallback />}><AppelConference /></Suspense>} />
+              <Route path="/appel-conference/confirmation" element={<Suspense fallback={<TunnelFallback />}><AppelConfirmation /></Suspense>} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/checkout/:installments" element={<Checkout />} />
               <Route path="/merci" element={<MerciPage />} />

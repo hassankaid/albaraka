@@ -50,6 +50,11 @@ export const CONFERENCE = {
   whatsappGroupUrl: "https://chat.whatsapp.com/BwBWVsHhM0Y0Fb37USMZS3",
   // Événement Calendly (tunnel VSL — agenda sous la vidéo).
   calendlyUrl: "https://calendly.com/d/cx6r-hxg-4sw/appel-setting-avant-webi",
+  // Événement Calendly de la page INDÉPENDANTE /appel-conference (réservation
+  // d'appel pendant/après la conférence). Même événement que l'ancienne page
+  // Systeme.io « call-webinaire » → remonte au CRM via webhook-calendly
+  // (event_type = 'inscription_conference'), sans code back à écrire.
+  appelCalendlyUrl: "https://calendly.com/d/ctp9-hkm-4kh/inscription-conference",
 } as const;
 
 // Injection unique des webfonts du module (Fraunces display + Poppins body).
