@@ -129,6 +129,26 @@ export function trackWhatsappJoin(): void {
 }
 
 /**
+ * À appeler quand un RDV Calendly est réservé (tunnel VSL) : event standard
+ * « Schedule » — une réservation d'appel est une conversion forte pour Meta.
+ * No-op hors prod.
+ */
+export function trackCalendlyBooked(): void {
+  if (!isProdHost()) return;
+  try {
+    loadFbqScript();
+    if (!window.fbq) return;
+    if (!initialized) {
+      window.fbq("init", PIXEL_ID);
+      initialized = true;
+    }
+    window.fbq("track", "Schedule");
+  } catch (err) {
+    console.warn("[tunnel-pixel] schedule tracking failed (non-blocking):", err);
+  }
+}
+
+/**
  * À appeler quand le formulaire d'inscription est validé : event « Lead »
  * avec Advanced Matching hashé (meilleure précision de matching Meta).
  * No-op silencieux hors prod.

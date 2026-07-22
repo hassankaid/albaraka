@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { T, CONFERENCE } from "../theme";
 import { trackLead } from "../lib/pixel";
 import { submitTunnelLead } from "../lib/api";
-import { getAttribution } from "../lib/source";
+import { getAttribution, setTunnelPrefill } from "../lib/source";
 import type { TunnelConfig } from "../config";
 import PhoneField, { isValidPhoneNumber } from "./PhoneField";
 
@@ -74,6 +74,8 @@ export default function OptInModal({ open, onClose, tunnel }: Props) {
     try {
       // 1) Création du lead dans le CRM (edge function), avec la source du tunnel.
       await submitTunnelLead({ first_name: firstName.trim(), email: email.trim(), phone }, tunnel);
+      // Mémorise les coordonnées pour pré-remplir le Calendly (tunnel VSL).
+      setTunnelPrefill({ firstName: firstName.trim(), email: email.trim(), phone });
       // 2) Event Meta « Lead » (Advanced Matching) — no-op hors prod.
       await trackLead({ firstName: firstName.trim(), email: email.trim(), phone });
       // 3) Page de remerciement propre au tunnel (en portant la variante A/B).
