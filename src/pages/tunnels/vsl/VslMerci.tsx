@@ -42,12 +42,8 @@ export default function VslMerci() {
         </div>
       </header>
 
-      <main style={{ position: "relative", zIndex: 1, maxWidth: 760, margin: "0 auto", padding: "clamp(20px,5vw,44px) 22px clamp(56px,10vw,90px)", textAlign: "center" }}>
-        <div className="albv-rise" style={{ width: 68, height: 68, margin: "0 auto 22px", borderRadius: "50%", border: `1px solid ${T.goldLine}`, display: "grid", placeItems: "center", background: "radial-gradient(circle, rgba(201,160,78,0.16), transparent 70%)" }}>
-          <span style={{ fontSize: 36, lineHeight: 1 }}>✅</span>
-        </div>
-
-        <h1 className="albv-rise" style={{ animationDelay: "60ms", fontFamily: T.display, fontWeight: 600, fontSize: "clamp(1.9rem,6vw,3rem)", lineHeight: 1.1, color: T.cream, margin: "0 0 14px", textTransform: "uppercase" }}>
+      <main style={{ position: "relative", zIndex: 1, maxWidth: 980, margin: "0 auto", padding: "clamp(30px,5vw,56px) 22px clamp(56px,10vw,90px)", textAlign: "center" }}>
+        <h1 className="albv-rise" style={{ fontFamily: T.display, fontWeight: 600, fontSize: "clamp(1.9rem,6vw,3rem)", lineHeight: 1.1, color: T.cream, margin: "0 auto 14px", maxWidth: 680, textTransform: "uppercase" }}>
           Félicitations !
         </h1>
 
@@ -61,37 +57,15 @@ export default function VslMerci() {
           ⚠️ Regarde cette vidéo jusqu'au bout
         </p>
 
-        {/* ── VIDÉO VSL (variante A/B) ─────────────────────────────── */}
-        <div className="albv-rise" style={{ animationDelay: "220ms", marginBottom: 28 }}>
+        {/* ── VIDÉO VSL (variante A/B) — plus large que le reste ─────── */}
+        <div className="albv-rise" style={{ animationDelay: "160ms", maxWidth: 900, margin: "0 auto 30px" }}>
           <VimeoVideo variant={variant} />
         </div>
 
-        {/* ── CTA prise de RDV — Calendly (B4) ─────────────────────── */}
-        <button
-          disabled
-          className="albv-rise"
-          style={{
-            animationDelay: "280ms",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "16px 32px",
-            border: "none",
-            borderRadius: 999,
-            fontFamily: T.body,
-            fontWeight: 700,
-            fontSize: "1.05rem",
-            color: "#1A1206",
-            background: `linear-gradient(180deg, ${T.goldBright}, ${T.gold})`,
-            opacity: 0.5,
-            cursor: "not-allowed",
-          }}
-        >
-          Réserver mon appel
-        </button>
-        <p className="albv-rise" style={{ animationDelay: "320ms", fontFamily: T.body, fontSize: "0.76rem", color: T.creamDim, marginTop: 12 }}>
-          (Le bouton se débloquera après la vidéo — prise de RDV Calendly à intégrer.)
-        </p>
+        {/* ── Agenda Calendly (directement sous la vidéo) — brique suivante ── */}
+        <div className="albv-rise" style={{ animationDelay: "210ms", maxWidth: 760, margin: "0 auto", padding: "clamp(24px,4vw,36px)", borderRadius: 16, border: `1px dashed ${T.goldLine}`, background: "rgba(255,255,255,0.02)", color: T.creamMuted, fontFamily: T.body, fontSize: "0.95rem", lineHeight: 1.55 }}>
+          📅 Le calendrier de prise de rendez-vous s'intégrera <strong style={{ color: T.cream }}>ici même, juste sous la vidéo</strong>. <span style={{ color: T.creamDim }}>(brique suivante — Calendly)</span>
+        </div>
       </main>
 
       {/* Footer */}
