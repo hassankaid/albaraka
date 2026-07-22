@@ -55,6 +55,9 @@ export const CONFERENCE = {
   // Systeme.io « call-webinaire » → remonte au CRM via webhook-calendly
   // (event_type = 'inscription_conference'), sans code back à écrire.
   appelCalendlyUrl: "https://calendly.com/d/ctp9-hkm-4kh/inscription-conference",
+  // Événement Calendly du bouton « Prendre rendez-vous » de la page
+  // INDÉPENDANTE /temoignages (redirection externe, pas d'embed).
+  temoignagesCalendlyUrl: "https://calendly.com/d/dv5n-nfb-t55/temoignages",
 } as const;
 
 // Injection unique des webfonts du module (Fraunces display + Poppins body).
