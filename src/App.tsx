@@ -134,6 +134,7 @@ import { WA_TUNNEL, VSL_TUNNEL } from "./pages/tunnels/config";
 const TunnelLanding = lazy(() => import("./pages/tunnels/components/TunnelLanding"));
 const WebinaireMerci = lazy(() => import("./pages/tunnels/whatsapp/WebinaireMerci"));
 const VslMerci = lazy(() => import("./pages/tunnels/vsl/VslMerci"));
+const VslConfirmation = lazy(() => import("./pages/tunnels/vsl/VslConfirmation"));
 const TunnelFallback = () => (
   <div style={{ minHeight: "100vh", background: "#060504" }} aria-hidden />
 );
@@ -171,6 +172,7 @@ const App = () => (
               {/* Tunnel VSL (même landing) */}
               <Route path="/vsl" element={<Suspense fallback={<TunnelFallback />}><TunnelLanding tunnel={VSL_TUNNEL} /></Suspense>} />
               <Route path="/vsl/merci" element={<Suspense fallback={<TunnelFallback />}><VslMerci /></Suspense>} />
+              <Route path="/vsl/confirmation" element={<Suspense fallback={<TunnelFallback />}><VslConfirmation /></Suspense>} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/checkout/:installments" element={<Checkout />} />
               <Route path="/merci" element={<MerciPage />} />
