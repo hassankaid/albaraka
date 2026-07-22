@@ -138,6 +138,8 @@ const VslConfirmation = lazy(() => import("./pages/tunnels/vsl/VslConfirmation")
 // Page indépendante de réservation d'appel (partagée pendant/après la conf).
 const AppelConference = lazy(() => import("./pages/tunnels/appel/AppelConference"));
 const AppelConfirmation = lazy(() => import("./pages/tunnels/appel/AppelConfirmation"));
+// Page indépendante de témoignages (preuve sociale → CTA Calendly).
+const Temoignages = lazy(() => import("./pages/tunnels/temoignages/Temoignages"));
 const TunnelFallback = () => (
   <div style={{ minHeight: "100vh", background: "#060504" }} aria-hidden />
 );
@@ -179,6 +181,8 @@ const App = () => (
               {/* Page indépendante : réservation d'appel (lien partagé pendant/après la conf) */}
               <Route path="/appel-conference" element={<Suspense fallback={<TunnelFallback />}><AppelConference /></Suspense>} />
               <Route path="/appel-conference/confirmation" element={<Suspense fallback={<TunnelFallback />}><AppelConfirmation /></Suspense>} />
+              {/* Page indépendante : témoignages (preuve sociale) */}
+              <Route path="/temoignages" element={<Suspense fallback={<TunnelFallback />}><Temoignages /></Suspense>} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/checkout/:installments" element={<Checkout />} />
               <Route path="/merci" element={<MerciPage />} />
