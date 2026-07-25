@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.discord-admin-action]
 verify_jwt = false
+
+[functions.sync-stripe-payments]
+verify_jwt = false
