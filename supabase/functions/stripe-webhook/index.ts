@@ -1921,9 +1921,33 @@ async function handleInvoicePaid(
   }
   const { data: already } = await idempQ.maybeSingle();
   if (already) {
-    console.log(
-      `[invoice.paid] invoice/PI already attached to payment #${already.payment_number} (${already.status}), skip`,
-    );
+    // Idempotence : si l'échéance portant déjà cet invoice/PI est PAYÉE, rien à faire.
+    if (already.status === "paid") {
+      console.log(
+        `[invoice.paid] invoice/PI déjà réconcilié sur payment #${already.payment_number} (paid), skip`,
+      );
+      return;
+    }
+    // Sinon elle est late/pending : c'est un RETRY réussi après échec (handleInvoiceFailed
+    // avait gravé l'invoice_id en la passant `late`). On la marque payée — sans ça,
+    // l'échéance restait bloquée « late » alors que Stripe avait bien encaissé au retry.
+    const { data: retried } = await supabase
+      .from("payments")
+      .update({ status: "paid", paid_at: todayISO() })
+      .eq("id", already.id)
+      .in("status", ["pending", "late"])
+      .select("id")
+      .maybeSingle();
+    if (retried) {
+      console.log(
+        `[invoice.paid] payment #${already.payment_number} late/pending → paid (retry réussi)`,
+      );
+      triggerClientInvoice(already.id);
+    } else {
+      console.log(
+        `[invoice.paid] payment #${already.payment_number} déjà traité en parallèle (race), skip`,
+      );
+    }
     return;
   }
 
