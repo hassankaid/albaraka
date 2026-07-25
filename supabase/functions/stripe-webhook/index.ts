@@ -1706,12 +1706,16 @@ async function handleSubscriptionCreated(
 async function handleSetupIntentSucceeded(
   si: Record<string, unknown>,
   apiKey: string,
+  supabase: SupabaseClient,
 ): Promise<void> {
   const metadata = (si.metadata as Record<string, string>) || {};
-  // Mode différé : rebill ET custom_link utilisent un SetupIntent + sub trialing.
-  // Dans les deux cas, il faut attacher la PM autorisée comme default sur la
-  // sub pour que la 1re invoice à trial_end débite correctement.
-  if (metadata.source !== "rebill" && metadata.source !== "custom_link") return;
+  // SetupIntent confirmé (carte autorisée). 3 sources l'utilisent :
+  //   - rebill / custom_link : démarrage différé (sub trialing) → attacher la PM
+  //     comme default sur la sub pour que la 1re invoice à trial_end débite.
+  //   - card_update : changement de carte sur un abo existant → attacher la PM
+  //     comme default (sub + customer) PUIS rejouer immédiatement l'échéance ouverte.
+  const source = metadata.source;
+  if (source !== "rebill" && source !== "custom_link" && source !== "card_update") return;
 
   const subscriptionId = metadata.stripe_subscription_id;
   const paymentMethodId =
@@ -1721,37 +1725,86 @@ async function handleSetupIntentSucceeded(
 
   if (!subscriptionId || !paymentMethodId) {
     console.warn(
-      `[rebill/si.succeeded] missing sub_id (${subscriptionId}) or pm_id (${paymentMethodId})`,
+      `[si.succeeded/${source}] missing sub_id (${subscriptionId}) or pm_id (${paymentMethodId})`,
     );
     return;
   }
 
+  const stripeHeaders = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/x-www-form-urlencoded",
+  };
+
   try {
-    // PATCH subscription.default_payment_method via Stripe API.
-    // Pas besoin du SDK : un POST x-www-form-urlencoded suffit.
-    const body = new URLSearchParams({
-      default_payment_method: paymentMethodId,
-    }).toString();
+    // PATCH subscription.default_payment_method (commun aux 3 sources).
     const res = await fetch(`https://api.stripe.com/v1/subscriptions/${subscriptionId}`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body,
+      headers: stripeHeaders,
+      body: new URLSearchParams({ default_payment_method: paymentMethodId }).toString(),
     });
     if (!res.ok) {
       const text = await res.text();
       console.error(
-        `[rebill/si.succeeded] failed to attach default_pm to sub=${subscriptionId}: ${res.status} ${text}`,
+        `[si.succeeded/${source}] failed to attach default_pm to sub=${subscriptionId}: ${res.status} ${text}`,
       );
       return;
     }
-    console.log(
-      `[rebill/si.succeeded] attached default_pm=${paymentMethodId} to sub=${subscriptionId}`,
-    );
+    console.log(`[si.succeeded/${source}] attached default_pm=${paymentMethodId} to sub=${subscriptionId}`);
   } catch (err) {
-    console.error("[rebill/si.succeeded] fatal:", err);
+    console.error(`[si.succeeded/${source}] fatal:`, err);
+    return;
+  }
+
+  // ── card_update : carte par défaut aussi sur le CUSTOMER + rejeu de l'échéance ──
+  if (source === "card_update") {
+    const customerId = typeof si.customer === "string" ? si.customer : extractId(si.customer);
+    try {
+      // 1) default_payment_method sur le customer (pour les factures futures).
+      if (customerId) {
+        await fetch(`https://api.stripe.com/v1/customers/${customerId}`, {
+          method: "POST",
+          headers: stripeHeaders,
+          body: new URLSearchParams({
+            "invoice_settings[default_payment_method]": paymentMethodId,
+          }).toString(),
+        });
+      }
+      // 2) Rejoue immédiatement l'échéance ouverte de l'abo sur la nouvelle carte.
+      //    invoice.paid (si succès) réconcilie la mensualité DB via la logique existante.
+      const invRes = await fetch(
+        `https://api.stripe.com/v1/invoices?subscription=${subscriptionId}&status=open&limit=1`,
+        { headers: { Authorization: `Bearer ${apiKey}` } },
+      );
+      const invList = await invRes.json();
+      const openInv = invList?.data?.[0];
+      if (openInv?.id) {
+        const payRes = await fetch(`https://api.stripe.com/v1/invoices/${openInv.id}/pay`, {
+          method: "POST",
+          headers: stripeHeaders,
+          body: new URLSearchParams({ payment_method: paymentMethodId }).toString(),
+        });
+        if (!payRes.ok) {
+          const t = await payRes.text();
+          // La nouvelle carte a aussi échoué : elle reste la carte par défaut →
+          // les retries automatiques Stripe l'utiliseront. On ne bloque pas.
+          console.error(`[card_update] pay invoice ${openInv.id} failed: ${payRes.status} ${t}`);
+        } else {
+          console.log(`[card_update] invoice ${openInv.id} paid on new card for sub=${subscriptionId}`);
+        }
+      } else {
+        console.log(`[card_update] no open invoice for sub=${subscriptionId} (rien à rejouer)`);
+      }
+      // 3) Marque le lien comme utilisé (idempotent via .eq status active).
+      if (metadata.token) {
+        await supabase
+          .from("card_update_links")
+          .update({ status: "used", used_at: new Date().toISOString() })
+          .eq("token", metadata.token)
+          .eq("status", "active");
+      }
+    } catch (err) {
+      console.error("[card_update] finalize error:", err);
+    }
   }
 }
 
@@ -2166,7 +2219,7 @@ Deno.serve(async (req) => {
             );
             break;
           }
-          await handleSetupIntentSucceeded(event.data.object, apiKey);
+          await handleSetupIntentSucceeded(event.data.object, apiKey, supabase);
           break;
         }
 

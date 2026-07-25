@@ -16,6 +16,8 @@ import MerciAcomptePage from "./pages/checkout/MerciAcomptePage";
 import LibertyCheckout from "./pages/checkout/LibertyCheckout";
 import MerciLibertyPage from "./pages/checkout/MerciLibertyPage";
 import RebillCheckout from "./pages/checkout/RebillCheckout";
+import UpdateCard from "./pages/checkout/UpdateCard";
+import UpdateCardMerci from "./pages/checkout/UpdateCardMerci";
 import PaymentLinkCheckout from "./pages/checkout/PaymentLinkCheckout";
 import FormationCheckout from "./pages/checkout/FormationCheckout";
 import DashboardLayout from "./components/DashboardLayout";
@@ -192,6 +194,8 @@ const App = () => (
               <Route path="/liberty/:installments" element={<LibertyCheckout />} />
               <Route path="/merci-liberty" element={<MerciLibertyPage />} />
               <Route path="/rebill/:token" element={<RebillCheckout />} />
+              <Route path="/update-card/merci" element={<UpdateCardMerci />} />
+              <Route path="/update-card/:token" element={<UpdateCard />} />
               <Route path="/pay/:token" element={<PaymentLinkCheckout />} />
               <Route path="/checkout/formation/:slug" element={<FormationCheckout />} />
               <Route path="/checkout/formation/:slug/:installments" element={<FormationCheckout />} />

@@ -90,11 +90,12 @@ export default function SaleDetailModal({
         .select("id, payment_number, total_payments, amount, due_date, paid_at, status, payment_method, stripe_subscription_id, stripe_payment_intent_id")
         .eq("sale_id", saleId)
         .order("payment_number", { ascending: true }),
-      supabase.from("sales").select("systeme_io_order_id, rebill_token").eq("id", saleId).single(),
+      supabase.from("sales").select("systeme_io_order_id, rebill_token, contact_id").eq("id", saleId).single(),
     ]);
     setPayments(paymentsData || []);
     setSystemeIoOrderId(saleMeta?.systeme_io_order_id ?? null);
     setRebillToken((saleMeta as { rebill_token?: string | null })?.rebill_token ?? null);
+    setSaleContactId((saleMeta as { contact_id?: string | null })?.contact_id ?? null);
     setLoading(false);
   }, [saleId]);
 
@@ -246,6 +247,13 @@ export default function SaleDetailModal({
   const [rebillToken, setRebillToken] = useState<string | null>(null);
   const [rebillDialogOpen, setRebillDialogOpen] = useState(false);
   const [rebillCopied, setRebillCopied] = useState(false);
+  const [saleContactId, setSaleContactId] = useState<string | null>(null);
+
+  // ─── Changement de carte (process "Changer de carte") ──────────────
+  const [cardLinkOpen, setCardLinkOpen] = useState(false);
+  const [cardLinkUrl, setCardLinkUrl] = useState<string | null>(null);
+  const [cardGenerating, setCardGenerating] = useState(false);
+  const [cardCopied, setCardCopied] = useState(false);
 
   // Démarrage différé du rebill — état local de la modale "Lien client".
   // Si la date sélectionnée est ≥ today+1, on ajoute `?start=YYYY-MM-DD` à
@@ -310,6 +318,32 @@ export default function SaleDetailModal({
   const canCancelStripe = (hasStripeSubInDb || isSystemeIoSale) && pendingCount > 0;
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+
+  // ─── Changement de carte : cible l'abo de l'échéance impayée (pending OU late) ──
+  const unpaidOnSub = payments.filter((p) => p.stripe_subscription_id && (p.status === "pending" || p.status === "late"));
+  const cardUpdateSub = unpaidOnSub[0]?.stripe_subscription_id ?? stripeSubscriptionId;
+  const canChangeCard = !!cardUpdateSub && unpaidOnSub.length > 0;
+  const PLATFORM_ORIGIN = "https://plateforme.albarakaecosysteme.com";
+
+  async function handleGenerateCardLink() {
+    if (!saleId || !cardUpdateSub) return;
+    setCardGenerating(true);
+    try {
+      const { data, error } = await supabase.rpc("create_card_update_link", {
+        p_sale_id: saleId,
+        p_contact_id: saleContactId,
+        p_stripe_subscription_id: cardUpdateSub,
+      });
+      if (error) throw error;
+      setCardLinkUrl(`${PLATFORM_ORIGIN}/update-card/${data as string}`);
+      setCardCopied(false);
+      setCardLinkOpen(true);
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e?.message || "Génération du lien impossible", variant: "destructive" });
+    } finally {
+      setCardGenerating(false);
+    }
+  }
 
   async function handleCancelStripe() {
     if (!saleId || !canCancelStripe) return;
@@ -528,6 +562,21 @@ export default function SaleDetailModal({
             <h4 className="text-sm font-semibold text-foreground">Échéancier</h4>
             {isCeo && (
               <div className="flex items-center gap-2 flex-wrap">
+                {/* Bouton "Changer la carte" : visible dès qu'un abo Stripe a une
+                    échéance impayée (pending ou late). Génère un lien /update-card
+                    → le client saisit sa nouvelle carte → l'échéance est reprélevée. */}
+                {canChangeCard && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateCardLink}
+                    disabled={cardGenerating}
+                    className="gap-1.5 border-blue-500/40 bg-blue-500/5 hover:bg-blue-500/10 text-blue-300"
+                    title="Génère un lien pour que le client mette à jour sa carte. L'échéance en échec sera reprélevée immédiatement sur la nouvelle carte."
+                  >
+                    {cardGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />} Changer la carte
+                  </Button>
+                )}
                 {/* Bouton "Lien client" : visible dès qu'un rebill_token existe ET
                     qu'il y a encore des mensualités à payer. Ouvre la modale de
                     partage (copy/email/whatsapp). */}
@@ -1103,6 +1152,87 @@ export default function SaleDetailModal({
             <Button onClick={() => setRebillDialogOpen(false)}>
               Fermer
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lien "Changer la carte" */}
+      <Dialog open={cardLinkOpen} onOpenChange={setCardLinkOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-blue-400" />
+              Lien de changement de carte
+            </DialogTitle>
+            <DialogDescription>
+              Transmets ce lien à <strong>{contactName || "ce client"}</strong>. Il saisit sa nouvelle carte,
+              l'abonnement reste le même, et l'échéance en attente est reprélevée immédiatement.
+            </DialogDescription>
+          </DialogHeader>
+          {cardLinkUrl && (
+            <>
+              <div className="space-y-2">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <Link2 className="h-3.5 w-3.5 text-primary" /> URL sécurisée
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    readOnly
+                    value={cardLinkUrl}
+                    onClick={(e) => (e.currentTarget as HTMLInputElement).select()}
+                    className="text-xs font-mono h-9"
+                  />
+                  <Button
+                    size="sm"
+                    variant={cardCopied ? "default" : "outline"}
+                    onClick={() => {
+                      navigator.clipboard.writeText(cardLinkUrl).then(
+                        () => { setCardCopied(true); toast({ title: "Lien copié", description: "Colle-le dans WhatsApp, email, SMS…" }); setTimeout(() => setCardCopied(false), 2500); },
+                        () => toast({ title: "Copie impossible", description: "Sélectionne le lien manuellement.", variant: "destructive" }),
+                      );
+                    }}
+                    className="gap-1.5 shrink-0"
+                  >
+                    {cardCopied ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    {cardCopied ? "Copié" : "Copier"}
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Lien à usage unique, valable 14 jours. Paiement sécurisé Stripe (3D Secure).
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 h-9 text-xs"
+                  onClick={() => {
+                    const firstName = (contactName || "").split(" ")[0];
+                    const text = encodeURIComponent(
+                      `Bonjour ${firstName} 👋\n\n` +
+                        `Pour mettre à jour ta carte et régler ton échéance, clique ici :\n\n` +
+                        `${cardLinkUrl}\n\n` +
+                        `C'est 100% sécurisé (Stripe / 3D Secure). Ton abonnement reste le même.`,
+                    );
+                    window.open(`https://wa.me/?text=${text}`, "_blank");
+                  }}
+                >
+                  <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 h-9 text-xs"
+                  onClick={() => window.open(cardLinkUrl, "_blank")}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" /> Tester
+                </Button>
+              </div>
+            </>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setCardLinkOpen(false)}>Fermer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
