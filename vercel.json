@@ -8,6 +8,44 @@
       "source": "/s/:token",
       "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/r-sms?t=:token"
     },
+
+    {
+      "source": "/(webinaire|vsl|appel-conference|temoignages)",
+      "has": [{ "type": "host", "value": "event.albarakaecosysteme.com" }],
+      "destination": "/index.html"
+    },
+    {
+      "source": "/(webinaire|vsl|appel-conference|temoignages)/(.*)",
+      "has": [{ "type": "host", "value": "event.albarakaecosysteme.com" }],
+      "destination": "/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "event.albarakaecosysteme.com" }],
+      "destination": "/introuvable.html"
+    },
+
+    {
+      "source": "/(webinaire|vsl|appel-conference|temoignages)",
+      "has": [
+        {
+          "type": "host",
+          "value": "(www\\.|plateforme\\.|view\\.)?albarakaecosysteme\\.com"
+        }
+      ],
+      "destination": "/introuvable.html"
+    },
+    {
+      "source": "/(webinaire|vsl|appel-conference|temoignages)/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "(www\\.|plateforme\\.|view\\.)?albarakaecosysteme\\.com"
+        }
+      ],
+      "destination": "/introuvable.html"
+    },
+
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

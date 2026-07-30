@@ -130,6 +130,7 @@ import AdminDiscord from "./pages/admin/discord/AdminDiscord";
 import AdminEmailCampaign from "./pages/admin/email-campaigns/AdminEmailCampaign";
 import AdminSmsCampaign from "./pages/admin/email-campaigns/AdminSmsCampaign";
 import { WA_TUNNEL, VSL_TUNNEL } from "./pages/tunnels/config";
+import { isTunnelHost, isAppHost } from "./lib/hosts";
 
 // ── Module « tunnels » (funnels natifs) — chargé en lazy pour que le trafic
 // froid des pubs ne télécharge PAS tout le bundle CRM/coaching. ──
@@ -142,13 +143,45 @@ const AppelConference = lazy(() => import("./pages/tunnels/appel/AppelConference
 const AppelConfirmation = lazy(() => import("./pages/tunnels/appel/AppelConfirmation"));
 // Page indépendante de témoignages (preuve sociale → CTA Calendly).
 const Temoignages = lazy(() => import("./pages/tunnels/temoignages/Temoignages"));
+const TunnelNotFound = lazy(() => import("./pages/tunnels/components/TunnelNotFound"));
 const TunnelFallback = () => (
   <div style={{ minHeight: "100vh", background: "#060504" }} aria-hidden />
 );
 
+// ── Segmentation par sous-domaine (voir src/lib/hosts.ts) ────────────────
+// Les routes des tunnels, isolées pour pouvoir être servies SEULES (sur
+// event.albarakaecosysteme.com) ou RETIRÉES (sur les domaines de l'app).
+const tunnelRoutes = (
+  <>
+    {/* Tunnel WhatsApp */}
+    <Route path="/webinaire" element={<Suspense fallback={<TunnelFallback />}><TunnelLanding tunnel={WA_TUNNEL} /></Suspense>} />
+    <Route path="/webinaire/merci" element={<Suspense fallback={<TunnelFallback />}><WebinaireMerci /></Suspense>} />
+    {/* Tunnel VSL (même landing) */}
+    <Route path="/vsl" element={<Suspense fallback={<TunnelFallback />}><TunnelLanding tunnel={VSL_TUNNEL} /></Suspense>} />
+    <Route path="/vsl/merci" element={<Suspense fallback={<TunnelFallback />}><VslMerci /></Suspense>} />
+    <Route path="/vsl/confirmation" element={<Suspense fallback={<TunnelFallback />}><VslConfirmation /></Suspense>} />
+    {/* Page indépendante : réservation d'appel (lien partagé pendant/après la conf) */}
+    <Route path="/appel-conference" element={<Suspense fallback={<TunnelFallback />}><AppelConference /></Suspense>} />
+    <Route path="/appel-conference/confirmation" element={<Suspense fallback={<TunnelFallback />}><AppelConfirmation /></Suspense>} />
+    {/* Page indépendante : témoignages (preuve sociale) */}
+    <Route path="/temoignages" element={<Suspense fallback={<TunnelFallback />}><Temoignages /></Suspense>} />
+  </>
+);
+
+// Sur le domaine des tunnels : application MINIMALE. Ni AuthProvider, ni thème
+// CRM, ni la moindre route de la plateforme — rien à quoi se connecter.
+const TunnelOnlyApp = () => (
+  <BrowserRouter>
+    <Routes>
+      {tunnelRoutes}
+      <Route path="*" element={<Suspense fallback={<TunnelFallback />}><TunnelNotFound /></Suspense>} />
+    </Routes>
+  </BrowserRouter>
+);
+
 const queryClient = new QueryClient();
 
-const App = () => (
+const FullApp = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <TooltipProvider>
@@ -172,19 +205,10 @@ const App = () => (
               <Route path="/rdv/disqualification/:slug" element={<RdvDisqualification />} />
               <Route path="/rdv/calendly" element={<RdvCalendly />} />
               <Route path="/redif/:token" element={<RedifConference />} />
-              {/* ── Tunnels natifs (remplacent Systeme.io) ── */}
-              {/* Tunnel WhatsApp */}
-              <Route path="/webinaire" element={<Suspense fallback={<TunnelFallback />}><TunnelLanding tunnel={WA_TUNNEL} /></Suspense>} />
-              <Route path="/webinaire/merci" element={<Suspense fallback={<TunnelFallback />}><WebinaireMerci /></Suspense>} />
-              {/* Tunnel VSL (même landing) */}
-              <Route path="/vsl" element={<Suspense fallback={<TunnelFallback />}><TunnelLanding tunnel={VSL_TUNNEL} /></Suspense>} />
-              <Route path="/vsl/merci" element={<Suspense fallback={<TunnelFallback />}><VslMerci /></Suspense>} />
-              <Route path="/vsl/confirmation" element={<Suspense fallback={<TunnelFallback />}><VslConfirmation /></Suspense>} />
-              {/* Page indépendante : réservation d'appel (lien partagé pendant/après la conf) */}
-              <Route path="/appel-conference" element={<Suspense fallback={<TunnelFallback />}><AppelConference /></Suspense>} />
-              <Route path="/appel-conference/confirmation" element={<Suspense fallback={<TunnelFallback />}><AppelConfirmation /></Suspense>} />
-              {/* Page indépendante : témoignages (preuve sociale) */}
-              <Route path="/temoignages" element={<Suspense fallback={<TunnelFallback />}><Temoignages /></Suspense>} />
+              {/* ── Tunnels natifs (remplacent Systeme.io) ──
+                  Servis ici uniquement hors domaines de l'app (local, preview).
+                  En prod ils vivent sur event.albarakaecosysteme.com. */}
+              {isAppHost() ? null : tunnelRoutes}
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/checkout/:installments" element={<Checkout />} />
               <Route path="/merci" element={<MerciPage />} />
@@ -323,5 +347,9 @@ const App = () => (
     </ThemeProvider>
   </QueryClientProvider>
 );
+
+// Le domaine des tunnels ne monte jamais l'application. 2e barrière derrière
+// les règles serveur de `vercel.json`.
+const App = () => (isTunnelHost() ? <TunnelOnlyApp /> : <FullApp />);
 
 export default App;
