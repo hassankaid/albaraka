@@ -14,25 +14,17 @@ const EVENT_TYPE_MAPPING: Record<string, string> = {
   '29475949-1729-46d9-a073-9587e8a655c5': 'inscription_conference',
 }
 
-// Repli par NOM d'événement, appliqué seulement si l'UUID n'est pas dans la table
-// ci-dessus. Sans lui, un type non listé retombe sur le nom brut Calendly : le
-// rendez-vous atterrit bien dans l'onglet Appels, mais sous un libellé qui n'est
-// ni filtrable ni stable (il change si l'événement est renommé).
-// Le nom est normalisé (minuscules, accents retirés) avant le test.
-const NAME_FALLBACK: Array<{ match: RegExp; type: string }> = [
-  { match: /temoignage/, type: 'appel_temoignages' },
-]
-
-function normalizeEventName(name: string | null | undefined): string {
-  return (name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-}
-
-/** UUID connu > repli par nom > nom brut Calendly > 'inconnu'. */
+// Correspondance STRICTEMENT par UUID de type d'evenement (decision Hassan du
+// 02/08/2026 : pas de repli par nom, juge approximatif - on branchera les vrais
+// UUID une fois les evenements recrees). Un type absent retombe sur le nom brut.
+//
+// ATTENTION - etat au 02/08/2026, verifie via l'API Calendly : la reduction des
+// licences de l'organisation a SUPPRIME les evenements round-robin. Les 4
+// premieres entrees ci-dessus pointent vers des types qui n'existent plus et ne
+// matcheront jamais ; seul 29475949-... (INSCRIPTION CONFERENCE) est vivant.
+// A la recreation : ajouter ici les NOUVEAUX UUID et retirer les entrees mortes.
 function resolveEventType(eventTypeId: string | null, name: string | null | undefined): string {
   if (eventTypeId && EVENT_TYPE_MAPPING[eventTypeId]) return EVENT_TYPE_MAPPING[eventTypeId]
-  const normalized = normalizeEventName(name)
-  const hit = NAME_FALLBACK.find((f) => f.match.test(normalized))
-  if (hit) return hit.type
   return name || 'inconnu'
 }
 
