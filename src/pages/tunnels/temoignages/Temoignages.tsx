@@ -12,6 +12,7 @@
 import { useEffect } from "react";
 import { T, CONFERENCE, ensureTunnelFonts } from "../theme";
 import TunnelBackground from "../components/TunnelBackground";
+import BookingUnavailable from "../components/BookingUnavailable";
 
 // Nombre de slots placeholder (remplacés par les vrais témoignages plus tard).
 const SHOT_SLOTS = [1, 2, 3, 4, 5, 6];
@@ -182,9 +183,17 @@ export default function Temoignages() {
           <p style={{ fontFamily: T.body, fontSize: "clamp(0.98rem,2.6vw,1.12rem)", lineHeight: 1.6, color: T.creamMuted, margin: "0 auto 28px", maxWidth: 480 }}>
             Réserve un créneau et parlons de ton projet.
           </p>
-          <a className="albt-cta" href={CONFERENCE.temoignagesCalendlyUrl}>
-            Prendre rendez-vous
-          </a>
+          {/* Pas d'événement Calendly disponible → panneau d'attente plutôt
+              qu'un bouton qui mènerait à une page d'erreur. */}
+          {CONFERENCE.temoignagesCalendlyUrl ? (
+            <a className="albt-cta" href={CONFERENCE.temoignagesCalendlyUrl}>
+              Prendre rendez-vous
+            </a>
+          ) : (
+            <div style={{ maxWidth: 520, margin: "0 auto" }}>
+              <BookingUnavailable note="La prise de rendez-vous ouvre très bientôt. Reviens sur cette page dans quelques instants pour choisir ton créneau." />
+            </div>
+          )}
         </div>
       </main>
 
