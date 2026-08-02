@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Al Baraka — Livraison des tunnels de conférence</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}</style>
+</head>
+<body>
+<style>
+  :root {
+    --ink:        #070605;
+    --surface:    #100E0A;
+    --surface-2:  #17140E;
+    --line:       rgba(201, 160, 78, 0.20);
+    --line-soft:  rgba(246, 241, 231, 0.09);
+    --gold:       #C9A04E;
+    --gold-bright:#E4C57A;
+    --gold-deep:  #8F6E2E;
+    --cream:      #F6F1E7;
+    --cream-mid:  rgba(246, 241, 231, 0.72);
+    --cream-dim:  rgba(246, 241, 231, 0.46);
+    --ok:         #8FBF7F;
+    --ok-bg:      rgba(143, 191, 127, 0.12);
+    --wait:       #8AA9BE;
+    --wait-bg:    rgba(138, 169, 190, 0.13);
+
+    --display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --body: "Avenir Next", "Segoe UI", Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: "Cascadia Mono", "SF Mono", ui-monospace, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--ink);
+    background-image:
+      radial-gradient(70% 40% at 50% -5%, rgba(201, 160, 78, 0.10), transparent 72%),
+      radial-gradient(50% 30% at 8% 55%, rgba(201, 160, 78, 0.05), transparent 70%);
+    background-attachment: fixed;
+    color: var(--cream);
+    font-family: var(--body);
+    font-size: 1rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 50rem;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 7vw, 5.5rem) clamp(1.15rem, 5vw, 2.5rem) 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(3rem, 7vw, 4.5rem);
+  }
+
+  /* ── en-tête ── */
+  .mast { display: flex; flex-direction: column; gap: 1.1rem; }
+  .wordmark {
+    font-family: var(--display);
+    letter-spacing: 0.34em;
+    font-size: 0.82rem;
+    color: var(--gold);
+    margin: 0;
+    text-transform: uppercase;
+  }
+  .hairline { width: 100%; height: 1px; background: linear-gradient(90deg, var(--gold), transparent 62%); }
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(2.1rem, 6.4vw, 3.35rem);
+    font-weight: 600;
+    line-height: 1.06;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    margin: 0.4rem 0 0;
+    color: var(--cream);
+  }
+  .subject {
+    font-size: clamp(1.02rem, 2.7vw, 1.18rem);
+    color: var(--cream-mid);
+    max-width: 34ch;
+    margin: 0;
+  }
+  .subject strong { color: var(--gold-bright); font-weight: 600; }
+  .issued {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.05em;
+    color: var(--cream-dim);
+    margin: 0.5rem 0 0;
+  }
+
+  /* ── sections ── */
+  section { display: flex; flex-direction: column; gap: 1.4rem; }
+  h2 {
+    font-family: var(--display);
+    font-size: clamp(1.45rem, 3.8vw, 1.9rem);
+    font-weight: 600;
+    line-height: 1.2;
+    margin: 0;
+    color: var(--gold-bright);
+  }
+  .kicker {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    margin: 0 0 -0.9rem;
+  }
+  p { margin: 0; max-width: 62ch; }
+  .muted { color: var(--cream-mid); }
+
+  /* ── pastilles d'état ── */
+  .chip {
+    display: inline-flex; align-items: center; gap: 0.42rem;
+    font-family: var(--mono); font-size: 0.66rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 0.26rem 0.6rem; border-radius: 2px; white-space: nowrap;
+  }
+  .chip::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .chip-ok { color: var(--ok); background: var(--ok-bg); }
+  .chip-wait { color: var(--wait); background: var(--wait-bg); }
+
+  /* ── cartes d'état ── */
+  .states { display: grid; gap: 0.9rem; }
+  .state {
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--surface-2), var(--surface));
+    border-radius: 4px;
+    padding: clamp(1.1rem, 3vw, 1.5rem);
+    display: flex; flex-direction: column; gap: 0.6rem;
+  }
+  .state-top { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+  .state h3 {
+    font-family: var(--display); font-size: 1.2rem; font-weight: 600;
+    margin: 0; color: var(--cream);
+  }
+  .state p { font-size: 0.95rem; color: var(--cream-mid); }
+
+  /* ── liste simple ── */
+  /* Puce en position absolue plutôt qu'en colonne de grille : une grille
+     renverrait tout contenu suivant le premier élément dans la colonne
+     étroite du tiret, et le texte s'afficherait un mot par ligne. */
+  ul.plain { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.8rem; }
+  ul.plain li { position: relative; padding-left: 1.8rem; color: var(--cream-mid); max-width: 62ch; }
+  ul.plain li::before {
+    content: "\2014";
+    position: absolute; left: 0; top: 0;
+    color: var(--gold); line-height: 1.65;
+  }
+  ul.plain strong { color: var(--cream); font-weight: 600; }
+
+  /* ── constructeur de lien ── */
+  .builder {
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--surface-2), var(--surface));
+    border-radius: 4px;
+    padding: clamp(1.1rem, 3vw, 1.6rem);
+    display: flex; flex-direction: column; gap: 1.1rem;
+  }
+  .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 0.9rem; }
+  .field { display: flex; flex-direction: column; gap: 0.4rem; }
+  .field label {
+    font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--gold-deep);
+  }
+  select {
+    font-family: var(--body); font-size: 0.95rem; color: var(--cream);
+    background: var(--ink); border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.55rem 0.6rem; width: 100%;
+  }
+  select:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .result { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; border-top: 1px solid var(--line-soft); padding-top: 1.05rem; }
+  .result code {
+    font-family: var(--mono); font-size: 0.8rem; color: var(--gold-bright);
+    flex: 1; min-width: 12rem; overflow-x: auto; white-space: nowrap; padding-bottom: 0.2rem;
+  }
+  button {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--gold); background: transparent; border: 1px solid var(--gold-deep);
+    border-radius: 2px; padding: 0.45rem 0.85rem; cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  button:hover { background: rgba(201, 160, 78, 0.12); color: var(--gold-bright); }
+  button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  button[data-done="1"] { color: var(--ok); border-color: var(--ok); }
+
+  details { border-top: 1px solid var(--line-soft); padding-top: 1.05rem; }
+  summary {
+    font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--cream-dim); cursor: pointer;
+  }
+  summary:hover { color: var(--gold); }
+  summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+  .all-links { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.9rem; }
+  .all-links h4 {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--gold-deep); margin: 0.5rem 0 0;
+  }
+  .all-links ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+  .all-links li { font-family: var(--mono); font-size: 0.76rem; color: var(--cream-mid); overflow-x: auto; white-space: nowrap; }
+
+  /* ── tableau ── */
+  .scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.93rem; background: var(--surface); }
+  th, td { text-align: left; padding: 0.62rem 0.9rem; border-bottom: 1px solid var(--line-soft); }
+  thead th {
+    font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--gold-deep); background: var(--surface-2); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.v { font-family: var(--mono); color: var(--gold); white-space: nowrap; }
+  td { color: var(--cream-mid); }
+
+  /* ── étapes de test ── */
+  /* Même précaution que pour ul.plain : numéro en absolu, contenu en flux
+     normal — un li peut contenir plusieurs éléments sans casser. */
+  ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: 1.15rem; }
+  ol.steps li {
+    counter-increment: s; position: relative; padding-left: 3.1rem;
+    display: flex; flex-direction: column; gap: 0.6rem;
+  }
+  ol.steps li::before {
+    content: counter(s, decimal-leading-zero);
+    position: absolute; left: 0; top: 0.15rem; width: 2.1rem; text-align: center;
+    font-family: var(--mono); font-size: 0.74rem; color: var(--gold);
+    border-bottom: 1px solid var(--line); padding-bottom: 0.2rem;
+  }
+  ol.steps p { color: var(--cream-mid); font-size: 0.96rem; }
+  ol.steps strong { color: var(--cream); font-weight: 600; }
+  ol.steps code, p code, li code {
+    font-family: var(--mono); font-size: 0.86em; color: var(--gold-bright);
+    background: rgba(201, 160, 78, 0.09); padding: 0.06em 0.34em; border-radius: 2px;
+  }
+
+  .callout {
+    border-left: 2px solid var(--gold);
+    padding: 0.2rem 0 0.2rem 1.1rem;
+    color: var(--cream-mid);
+    font-size: 0.96rem;
+  }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 1.6rem;
+    display: flex; flex-direction: column; gap: 0.5rem; align-items: center;
+    text-align: center;
+  }
+  footer .wordmark { letter-spacing: 0.3em; }
+  footer p { font-size: 0.76rem; color: var(--cream-dim); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="mast">
+    <p class="wordmark">Al Baraka · Écosystème</p>
+    <div class="hairline"></div>
+    <h1>Livraison des tunnels de conférence</h1>
+    <p class="subject">Vos deux tunnels d'inscription sont désormais hébergés chez vous, en remplacement de Systeme.io. Conférence du <strong>dimanche 30 août 2026 à 11h00</strong>.</p>
+    <p class="issued">Document remis le 2 août 2026</p>
+  </header>
+
+  <section>
+    <p class="kicker">En un coup d'œil</p>
+    <h2>Où nous en sommes</h2>
+    <div class="states">
+
+      <div class="state">
+        <div class="state-top">
+          <span class="chip chip-ok">Prêt</span>
+          <h3>Tunnel WhatsApp</h3>
+        </div>
+        <p>Complet et vérifié en conditions réelles : page d'entrée, inscription, vidéo de confirmation et accès au groupe WhatsApp. <strong>Vous pouvez lancer vos publicités dessus dès maintenant.</strong></p>
+      </div>
+
+      <div class="state">
+        <div class="state-top">
+          <span class="chip chip-wait">Une action requise</span>
+          <h3>Tunnel VSL</h3>
+        </div>
+        <p>Page d'entrée, inscription et vidéo fonctionnent. Il manque <strong>l'agenda de prise de rendez-vous</strong> placé sous la vidéo — voir la dernière section. En attendant, vos visiteurs voient un message d'attente soigné plutôt qu'une erreur.</p>
+      </div>
+
+      <div class="state">
+        <div class="state-top">
+          <span class="chip chip-ok">Prêt</span>
+          <h3>Page « Réserver un appel »</h3>
+        </div>
+        <p>Le lien à partager pendant ou après la conférence. Les rendez-vous pris remontent automatiquement dans l'onglet <em>Appels</em> de votre plateforme.</p>
+      </div>
+
+      <div class="state">
+        <div class="state-top">
+          <span class="chip chip-wait">En attente de contenus</span>
+          <h3>Page Témoignages</h3>
+        </div>
+        <p>La page est en ligne et sa mise en forme est prête. Elle attend vos <strong>6 avis écrits</strong> et vos <strong>3 vidéos</strong> pour être diffusable.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Le livrable</p>
+    <h2>Ce qui a été construit</h2>
+    <ul class="plain">
+      <li><strong>Deux tunnels d'inscription complets</strong>, hébergés sur votre propre domaine. Vous n'avez plus de dépendance à Systeme.io ni d'abonnement à payer pour les héberger.</li>
+      <li><strong>Les inscrits arrivent directement dans votre CRM</strong>, avec l'origine exacte de chacun : publicité, Instagram ou TikTok — et, pour les publicités, la distinction Facebook / Instagram.</li>
+      <li><strong>Six variantes de vidéo par tunnel</strong>, sélectionnables par le lien, pour comparer les accroches qui convertissent le mieux.</li>
+      <li><strong>Le suivi publicitaire Meta</strong> est en place sur les pages, prêt pour vos campagnes.</li>
+      <li><strong>Deux pages complémentaires</strong> : la réservation d'appel à partager en conférence, et la page de témoignages pour vos relances.</li>
+      <li><strong>Vos pages publiques et votre plateforme interne sont séparées.</strong> Le domaine qui reçoit vos visiteurs publicitaires ne donne plus aucun accès à votre outil de gestion.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Diffusion</p>
+    <h2>Vos liens</h2>
+    <p class="muted">Chaque lien combine un tunnel, une origine de trafic et une variante de vidéo. Composez celui dont vous avez besoin :</p>
+
+    <div class="builder">
+      <div class="fields">
+        <div class="field">
+          <label for="f-tunnel">Tunnel</label>
+          <select id="f-tunnel">
+            <option value="webinaire">WhatsApp</option>
+            <option value="vsl">VSL</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-src">Origine</label>
+          <select id="f-src">
+            <option value="ads">Publicités Meta</option>
+            <option value="ig">Instagram (organique)</option>
+            <option value="tiktok">TikTok (organique)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-v">Variante vidéo</label>
+          <select id="f-v">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+          </select>
+        </div>
+      </div>
+      <div class="result">
+        <code id="out">https://event.albarakaecosysteme.com/webinaire?src=ads&amp;v=1</code>
+        <button id="copy" type="button">Copier</button>
+      </div>
+
+      <details>
+        <summary>Voir les 36 liens</summary>
+        <div class="all-links" id="all"></div>
+      </details>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Variante</th><th>Tunnel WhatsApp</th><th>Tunnel VSL</th></tr></thead>
+        <tbody>
+          <tr><td class="v">1</td><td>Variante 1</td><td>Frère 1</td></tr>
+          <tr><td class="v">2</td><td>Variante 2</td><td>Frère 2</td></tr>
+          <tr><td class="v">3</td><td>Variante 3</td><td>Sœur 1</td></tr>
+          <tr><td class="v">4</td><td>Variante 4</td><td>Sœur 2</td></tr>
+          <tr><td class="v">5</td><td>Variante 5</td><td>Mixte tenue noire</td></tr>
+          <tr><td class="v">6</td><td>Ton Street</td><td>Mixte tenue blanche</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="callout">Les deux pages complémentaires se partagent telles quelles, sans paramètre :<br>
+      <code>event.albarakaecosysteme.com/appel-conference</code><br>
+      <code>event.albarakaecosysteme.com/temoignages</code></p>
+
+    <p class="callout"><strong>Pour vos publicités Meta :</strong> le lien ne suffit pas. Dans chaque publicité, section <em>Suivi → Paramètres d'URL</em>, il faut coller la ligne de suivi que nous vous avons transmise. C'est elle — et elle seule — qui permet de distinguer Facebook d'Instagram dans vos statistiques.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Recette</p>
+    <h2>Comment vérifier vous-même</h2>
+    <p class="muted">Comptez cinq minutes par tunnel. À faire de préférence depuis un téléphone, comme vos prospects.</p>
+    <ol class="steps">
+      <li><p><strong>Ouvrez un lien d'entrée</strong> — par exemple le tunnel WhatsApp, origine Instagram, variante 3. La page doit s'afficher entièrement, sans coupure.</p></li>
+      <li><p><strong>Inscrivez-vous</strong> avec un e-mail et un numéro qui ne sont pas déjà dans votre CRM. C'est important : un numéro déjà connu serait rattaché au contact existant.</p></li>
+      <li><p><strong>Vérifiez la page de confirmation</strong> : la vidéo doit être celle de la variante demandée, et l'heure annoncée doit être <strong>11h00</strong>.</p></li>
+      <li><p><strong>Testez la dernière étape.</strong> Sur le tunnel WhatsApp, le bouton doit ouvrir le bon groupe. Sur le tunnel VSL, vous verrez pour l'instant le message d'attente de l'agenda.</p></li>
+      <li><p><strong>Retournez dans votre plateforme</strong>, onglet Contacts : votre inscription doit apparaître avec la bonne origine.</p></li>
+      <li><p><strong>Supprimez vos fiches de test</strong> une fois la vérification terminée.</p></li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">Reste à faire</p>
+    <h2>Les deux derniers points</h2>
+
+    <div class="states">
+      <div class="state">
+        <div class="state-top">
+          <span class="chip chip-wait">Côté Calendly</span>
+          <h3>Remettre l'agenda du tunnel VSL</h3>
+        </div>
+        <p>La réduction du nombre de licences Calendly a supprimé les agendas partagés entre plusieurs personnes. L'agenda qui s'affichait sous la vidéo VSL en faisait partie — il n'existe donc plus, tout comme celui de la page Témoignages.</p>
+        <p><strong>Ce que ça demande :</strong> réactiver une licence, recréer l'agenda dans Calendly, puis nous transmettre son lien. Le rebranchement prend quelques minutes et ne demande aucun développement. Le tunnel VSL est complet dès cet instant.</p>
+        <p class="muted">En attendant, aucun visiteur ne tombe sur une erreur : un message d'attente à votre image s'affiche à la place de l'agenda.</p>
+      </div>
+
+      <div class="state">
+        <div class="state-top">
+          <span class="chip chip-wait">Côté contenus</span>
+          <h3>Alimenter la page Témoignages</h3>
+        </div>
+        <p>La page attend <strong>6 captures d'avis écrits</strong> et <strong>3 vidéos face caméra</strong>. Le nombre d'emplacements est ajustable si vous en avez plus ou moins.</p>
+      </div>
+    </div>
+
+    <p class="callout">Une fois ces deux points réglés, l'ensemble du dispositif est opérationnel. La suite prévue — la répartition automatique du trafic entre les six variantes vidéo, pour mesurer laquelle convertit le mieux — attend vos règles de test.</p>
+  </section>
+
+  <footer>
+    <p class="wordmark">Al Baraka</p>
+    <p>Document de livraison · 2 août 2026</p>
+  </footer>
+
+</div>
+
+<script>
+  (function () {
+    var BASE = "https://event.albarakaecosysteme.com/";
+    var tunnel = document.getElementById("f-tunnel");
+    var src = document.getElementById("f-src");
+    var v = document.getElementById("f-v");
+    var out = document.getElementById("out");
+    var copy = document.getElementById("copy");
+
+    function build(t, s, n) { return BASE + t + "?src=" + s + "&v=" + n; }
+    function refresh() { out.textContent = build(tunnel.value, src.value, v.value); }
+    [tunnel, src, v].forEach(function (el) { el.addEventListener("change", refresh); });
+    refresh();
+
+    copy.addEventListener("click", function () {
+      var text = out.textContent;
+      function done() {
+        var before = copy.textContent;
+        copy.textContent = "Copié";
+        copy.setAttribute("data-done", "1");
+        setTimeout(function () { copy.textContent = before; copy.removeAttribute("data-done"); }, 1400);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else { fallback(); }
+      function fallback() {
+        var ta = document.createElement("textarea");
+        ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); done(); } catch (e) { /* ignoré */ }
+        document.body.removeChild(ta);
+      }
+    });
+
+    // Liste complète, repliée par défaut.
+    var LABELS = { webinaire: "Tunnel WhatsApp", vsl: "Tunnel VSL" };
+    var SOURCES = [
+      ["ads", "Publicités Meta"],
+      ["ig", "Instagram organique"],
+      ["tiktok", "TikTok organique"],
+    ];
+    var host = document.getElementById("all");
+    ["webinaire", "vsl"].forEach(function (t) {
+      SOURCES.forEach(function (pair) {
+        var h = document.createElement("h4");
+        h.textContent = LABELS[t] + " — " + pair[1];
+        var ol = document.createElement("ol");
+        for (var i = 1; i <= 6; i++) {
+          var li = document.createElement("li");
+          li.textContent = build(t, pair[0], i);
+          ol.appendChild(li);
+        }
+        host.appendChild(h);
+        host.appendChild(ol);
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>
