@@ -65,3 +65,7 @@ verify_jwt = false
 
 [functions.sync-stripe-payments]
 verify_jwt = false
+
+# Appelée par Calendly (webhook externe, aucun JWT) → doit rester à false.
+[functions.webhook-calendly]
+verify_jwt = false

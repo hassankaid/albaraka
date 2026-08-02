@@ -42,6 +42,7 @@ const TYPE_OPTIONS = [
   { value: "appel_setting_webi", label: "Setting Webi" },
   { value: "inscription_conference", label: "Conférence" },
   { value: "appel_organique", label: "Organique" },
+  { value: "appel_temoignages", label: "Témoignages" },
 ];
 
 const TYPE_COLORS: Record<string, string> = {
@@ -50,6 +51,7 @@ const TYPE_COLORS: Record<string, string> = {
   appel_setting_webi: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   inscription_conference: "bg-amber-500/20 text-amber-300 border-amber-500/30",
   appel_organique: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+  appel_temoignages: "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30",
 };
 
 // Tabs are built dynamically — "Mes calls" only shown for CEO
