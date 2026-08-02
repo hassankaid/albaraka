@@ -44,9 +44,10 @@ export const T = {
 // Pour l'instant en dur (exemple : dernier dimanche d'août 2026) ; passera
 // dans une petite config éditable sans redéploiement à la brique suivante.
 export const CONFERENCE = {
-  dateLabel: "Dimanche 30 août 2026 à 18h00",
+  dateLabel: "Dimanche 30 août 2026 à 11h00",
   tz: "heure de Paris",
-  // Lien du groupe WhatsApp (change d'une conférence à l'autre) — test pour l'instant.
+  // Lien du groupe WhatsApp de la conférence — change d'une conférence à l'autre,
+  // à remettre à jour avant chaque session (confirmé par Hassan le 30/07/2026).
   whatsappGroupUrl: "https://chat.whatsapp.com/BwBWVsHhM0Y0Fb37USMZS3",
   // Événement Calendly (tunnel VSL — agenda sous la vidéo).
   calendlyUrl: "https://calendly.com/d/cx6r-hxg-4sw/appel-setting-avant-webi",
