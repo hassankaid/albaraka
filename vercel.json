@@ -26,6 +26,17 @@
     },
 
     {
+      "source": "/livraison-tunnels",
+      "has": [
+        {
+          "type": "host",
+          "value": "(www\\.|plateforme\\.|view\\.)?albarakaecosysteme\\.com"
+        }
+      ],
+      "destination": "/livraison-tunnels.html"
+    },
+
+    {
       "source": "/(webinaire|vsl|appel-conference|temoignages)",
       "has": [
         {
