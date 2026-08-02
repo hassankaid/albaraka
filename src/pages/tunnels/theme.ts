@@ -50,7 +50,12 @@ export const CONFERENCE = {
   // à remettre à jour avant chaque session (confirmé par Hassan le 30/07/2026).
   whatsappGroupUrl: "https://chat.whatsapp.com/BwBWVsHhM0Y0Fb37USMZS3",
   // Événement Calendly (tunnel VSL — agenda sous la vidéo).
-  calendlyUrl: "https://calendly.com/d/cx6r-hxg-4sw/appel-setting-avant-webi",
+  // ⚠️ null = l'agenda est remplacé par un panneau « ouvre très bientôt ».
+  // L'événement round-robin a été supprimé lors de la réduction des licences
+  // Calendly (08/2026). RÉACTIVATION : recoller l'URL du nouvel événement ici,
+  // l'agenda revient tout seul. Ne PAS laisser une URL morte : le prospect
+  // tomberait sur une page d'erreur Calendly en fin de tunnel.
+  calendlyUrl: null as string | null,
   // Événement Calendly de la page INDÉPENDANTE /appel-conference (réservation
   // d'appel pendant/après la conférence). Même événement que l'ancienne page
   // Systeme.io « call-webinaire » → remonte au CRM via webhook-calendly
@@ -58,7 +63,9 @@ export const CONFERENCE = {
   appelCalendlyUrl: "https://calendly.com/d/ctp9-hkm-4kh/inscription-conference",
   // Événement Calendly du bouton « Prendre rendez-vous » de la page
   // INDÉPENDANTE /temoignages (redirection externe, pas d'embed).
-  temoignagesCalendlyUrl: "https://calendly.com/d/dv5n-nfb-t55/temoignages",
+  // ⚠️ null = le bouton laisse place au même panneau d'attente. Même cause et
+  // même réactivation que `calendlyUrl` ci-dessus.
+  temoignagesCalendlyUrl: null as string | null,
 } as const;
 
 // Injection unique des webfonts du module (Fraunces display + Poppins body).

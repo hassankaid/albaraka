@@ -14,6 +14,7 @@ import { T, CONFERENCE, ensureTunnelFonts } from "../theme";
 import TunnelBackground from "../components/TunnelBackground";
 import VimeoVideo from "../components/VimeoVideo";
 import CalendlyInline from "../components/CalendlyInline";
+import BookingUnavailable from "../components/BookingUnavailable";
 import { resolveVariant } from "../variants";
 
 export default function VslMerci() {
@@ -63,12 +64,18 @@ export default function VslMerci() {
           <VimeoVideo variant={variant} />
         </div>
 
-        {/* ── Agenda Calendly (directement sous la vidéo) ─────────── */}
+        {/* ── Agenda Calendly (directement sous la vidéo) ───────────
+            Si l'événement n'est pas disponible (`calendlyUrl` à null), on
+            affiche un panneau d'attente plutôt qu'un agenda mort. */}
         <p className="albv-rise" style={{ animationDelay: "240ms", fontFamily: T.body, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", fontSize: "0.78rem", color: T.goldBright, margin: "0 0 16px" }}>
-          Réserve ton appel ci-dessous
+          {CONFERENCE.calendlyUrl ? "Réserve ton appel ci-dessous" : "Ton appel avec l'équipe"}
         </p>
         <div className="albv-rise" style={{ animationDelay: "280ms", maxWidth: 900, margin: "0 auto" }}>
-          <CalendlyInline url={CONFERENCE.calendlyUrl} />
+          {CONFERENCE.calendlyUrl ? (
+            <CalendlyInline url={CONFERENCE.calendlyUrl} />
+          ) : (
+            <BookingUnavailable note="La prise de rendez-vous ouvre très bientôt. Ton inscription à la conférence est déjà confirmée — reviens sur cette page dans quelques instants pour choisir ton créneau." />
+          )}
         </div>
       </main>
 
