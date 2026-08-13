@@ -48,6 +48,15 @@ function FinancialTab() {
       <FinancialKPIs
         caGenere={data.caGenere}
         caCollecte={data.caCollecte}
+        caCollectePrevisionnel={data.caCollectePrevisionnel}
+        caCollecteDuADate={data.caCollecteDuADate}
+        caCollecteAtterrissage={data.caCollecteAtterrissage}
+        prevAVenir={data.prevAVenir}
+        prevEchu={data.prevEchu}
+        prevRetard={data.prevRetard}
+        prevPerdu={data.prevPerdu}
+        prevResteList={data.prevResteList}
+        tauxRealisation={data.tauxRealisation}
         tauxCashCollecte={data.tauxCashCollecte}
         tauxImpayes={data.tauxImpayes}
         benefice={data.benefice}
