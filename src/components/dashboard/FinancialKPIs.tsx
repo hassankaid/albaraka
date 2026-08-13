@@ -97,6 +97,18 @@ interface Ad {
 interface Props {
   caGenere: number;
   caCollecte: number;
+  /** Objectif de la période : déjà encaissé + échéances restantes (hors perdues). */
+  caCollectePrevisionnel: number;
+  /** Ce qui aurait dû être encaissé à ce jour — repère de rythme sur la barre. */
+  caCollecteDuADate: number;
+  /** Reste à encaisser pondéré par le taux de réalisation observé. */
+  caCollecteAtterrissage: number;
+  prevAVenir: number;
+  prevEchu: number;
+  prevRetard: number;
+  prevPerdu: number;
+  prevResteList: Payment[];
+  tauxRealisation: number;
   tauxCashCollecte: number;
   tauxImpayes: number;
   benefice: number;
@@ -127,6 +139,36 @@ interface Props {
 
 function fmt(n: number) {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+}
+
+// Sans centimes — pour les libellés compacts des cartes KPI (~140px de large).
+function fmtShort(n: number) {
+  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
+}
+
+/**
+ * Barre empilée du CA collecté : encaissé / attendu / en retard, sur fond du
+ * prévisionnel. Le trait vertical marque le « dû à date » — au-dessus de la partie
+ * pleine, on est en retard sur l'échéancier ; en dessous, en avance.
+ */
+function PrevisionnelBar({
+  collecte, attendu, retard, total, duADate, height,
+}: { collecte: number; attendu: number; retard: number; total: number; duADate: number | null; height: number }) {
+  if (total <= 0) return null;
+  const pct = (v: number) => Math.min(100, Math.max(0, (v / total) * 100));
+  const wCollecte = pct(collecte);
+  const wAttendu = pct(attendu);
+  const wRetard = pct(retard);
+  return (
+    <div className="relative w-full rounded-full bg-muted overflow-hidden" style={{ height }}>
+      <div className="absolute inset-y-0 left-0 bg-[hsl(var(--kpi-paid))]" style={{ width: `${wCollecte}%` }} />
+      <div className="absolute inset-y-0 bg-[hsl(var(--kpi-paid)/0.3)]" style={{ left: `${wCollecte}%`, width: `${wAttendu}%` }} />
+      <div className="absolute inset-y-0 bg-[hsl(var(--kpi-late))]" style={{ left: `${wCollecte + wAttendu}%`, width: `${wRetard}%` }} />
+      {duADate !== null && (
+        <div className="absolute inset-y-0 w-px bg-foreground" style={{ left: `${pct(duADate)}%` }} />
+      )}
+    </div>
+  );
 }
 
 function formatDate(d: string) {
@@ -250,6 +292,8 @@ export default function FinancialKPIs(props: Props) {
   const {
     caGenere, caCollecte, tauxCashCollecte, tauxImpayes, benefice,
     totalChargesCumul, totalCommissions, isFiltered,
+    caCollectePrevisionnel, caCollecteDuADate, caCollecteAtterrissage,
+    prevAVenir, prevEchu, prevRetard, prevPerdu, prevResteList, tauxRealisation,
     sales, payments, paidInPeriod, contactMap, commissions, profiles,
     totalSalariesCumul, totalFixedChargesCumul, commissionsPaid,
     activeSalaries, activeCharges, allPayments, allSales,
@@ -262,7 +306,8 @@ export default function FinancialKPIs(props: Props) {
   const [commFilterBenef, setCommFilterBenef] = useState<string>("all");
   const [commFilterSale, setCommFilterSale] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const handleOpenModal = (key: KpiKey) => { setModalPage(0); setCommFilterBenef("all"); setCommFilterSale("all"); setSearchQuery(""); setOpenModal(key); };
+  const [caTab, setCaTab] = useState<"encaisse" | "reste">("encaisse");
+  const handleOpenModal = (key: KpiKey) => { setModalPage(0); setCommFilterBenef("all"); setCommFilterSale("all"); setSearchQuery(""); setCaTab("encaisse"); setOpenModal(key); };
 
   const profileMap = new Map(profiles.map(p => [p.id, p]));
   // Use allSales for lookups so filtered payments always find their sale/contact
@@ -287,9 +332,28 @@ export default function FinancialKPIs(props: Props) {
     ? "📊 Mode période : sur toutes les échéances prévues dans cette période, quel pourcentage a bien été encaissé ? Les échéances en retard ou perdues font baisser ce taux. Cela mesure votre efficacité de recouvrement sur la période choisie."
     : "📊 Mode global (Tout) : on compare le total réellement encaissé (CA Collecté) au total des ventes signées (CA Généré) depuis le début. Cela montre où en est la maturité de vos encaissements sur l'ensemble de l'activité.";
 
-  const kpis: { key: KpiKey; label: string; value: string; icon: any; color: string; hasDetail: boolean; tooltip?: string }[] = [
+  // Barre prévisionnelle : seulement s'il reste quelque chose à encaisser sur la période
+  // sélectionnée. Sur « Tout » et sur un mois soldé, elle vaudrait toujours 100 % et
+  // n'apprendrait rien.
+  const resteAEncaisser = prevAVenir + prevEchu + prevRetard;
+  const showPrevisionnel = !!isFiltered && resteAEncaisser > 0;
+  const pctPrevisionnel = caCollectePrevisionnel > 0 ? (caCollecte / caCollectePrevisionnel) * 100 : 0;
+  const ecartADate = caCollecte - caCollecteDuADate;
+
+  // Le repère « à date » ne veut dire quelque chose que sur une période EN COURS : sur un
+  // mois passé il vaut la totalité, sur un mois futur zéro.
+  const now = new Date();
+  const periodeEnCours = !!dateRange && dateRange.from <= now && now <= dateRange.to;
+
+  const caCollecteTooltip = showPrevisionnel
+    ? periodeEnCours
+      ? `💰 Barre : vert plein = déjà encaissé, vert clair = échéances encore à venir, ambre = échéances en retard. Le trait vertical marque ce qui aurait dû être encaissé à ce jour — si le vert plein s'arrête avant, vous êtes en retard sur votre échéancier. Les échéances perdues sont exclues de l'objectif.`
+      : `💰 Barre : vert plein = déjà encaissé, vert clair = échéances à venir, ambre = échéances en retard, sur le total attendu de la période. Les échéances perdues sont exclues de l'objectif.`
+    : undefined;
+
+  const kpis: { key: KpiKey; label: string; value: string; icon: any; color: string; hasDetail: boolean; tooltip?: string; showBar?: boolean }[] = [
     { key: "caGenere", label: "CA Généré", value: fmt(caGenere), icon: TrendingUp, color: "text-primary", hasDetail: true },
-    { key: "caCollecte", label: "CA Collecté", value: fmt(caCollecte), icon: Wallet, color: "text-emerald-500", hasDetail: true },
+    { key: "caCollecte", label: "CA Collecté", value: fmt(caCollecte), icon: Wallet, color: "text-emerald-500", hasDetail: true, tooltip: caCollecteTooltip, showBar: showPrevisionnel },
     { key: "tauxCollecte", label: isFiltered ? "Taux collecte" : "Taux encaissé", value: `${tauxCashCollecte.toFixed(1)}%`, icon: Percent, color: "text-blue-500", hasDetail: true, tooltip: tauxCollecteTooltip },
     { key: "tauxImpayes", label: isFiltered ? "Éch. impayées" : "Taux d'impayés", value: `${tauxImpayes.toFixed(1)}%`, icon: AlertTriangle, color: tauxImpayes > 10 ? "text-destructive" : "text-amber-500", hasDetail: true },
     { key: "commissions", label: "Commissions", value: fmt(totalCommissions), icon: CreditCard, color: "text-orange-500", hasDetail: true },
@@ -397,17 +461,105 @@ export default function FinancialKPIs(props: Props) {
       // ═══════════════════ CA COLLECTÉ / TAUX COLLECTE ═══════════════════
       case "caCollecte":
       case "tauxCollecte": {
+        const withPrev = key === "caCollecte" && showPrevisionnel;
+        const showReste = withPrev && caTab === "reste";
+        const source = showReste ? prevResteList : paidPayments;
         const q = searchQuery.toLowerCase();
         const filtered = q
-          ? paidPayments.filter(p => {
+          ? source.filter(p => {
               const sale = p.sale_id ? saleMap.get(p.sale_id) : null;
               const contact = sale ? contactMap.get(sale.contact_id) : null;
               return (contact?.full_name || "").toLowerCase().includes(q);
             })
-          : paidPayments;
+          : source;
         const { items, safePage, totalPages } = paginate(filtered);
+        // La colonne « Date paiem. » n'a pas de sens sur le reste à encaisser.
+        const gridCols = showReste
+          ? "grid-cols-[1fr_100px_56px_68px_90px]"
+          : "grid-cols-[1fr_100px_56px_80px_68px_90px]";
+
+        const legend = [
+          { label: "Déjà encaissé", amount: caCollecte, swatch: "bg-[hsl(var(--kpi-paid))]" },
+          { label: "Échéances à venir", amount: prevAVenir + prevEchu, swatch: "bg-[hsl(var(--kpi-paid)/0.3)]" },
+          { label: "En retard, à risque", amount: prevRetard, swatch: "bg-[hsl(var(--kpi-late))]" },
+          { label: "Perdu, hors calcul", amount: prevPerdu, swatch: "bg-muted border border-border" },
+        ];
+
         return (
           <div>
+            {withPrev && (
+              <div className="px-3 pb-4 space-y-3">
+                <div className="rounded-lg border border-border p-3 space-y-3">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-xs text-muted-foreground">Prévisionnel de la période</span>
+                    <span className="text-lg font-bold text-foreground tabular-nums">{fmt(caCollectePrevisionnel)}</span>
+                  </div>
+
+                  <PrevisionnelBar
+                    collecte={caCollecte}
+                    attendu={prevAVenir + prevEchu}
+                    retard={prevRetard}
+                    total={caCollectePrevisionnel}
+                    duADate={caCollecteDuADate}
+                    height={14}
+                  />
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2">
+                    {legend.map(l => (
+                      <div key={l.label} className="flex items-start gap-2">
+                        <span className={`h-2.5 w-2.5 rounded-sm flex-shrink-0 mt-1 ${l.swatch}`} />
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold text-foreground tabular-nums">{fmt(l.amount)}</div>
+                          <div className="text-[10px] text-muted-foreground leading-tight">{l.label}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/60">
+                    {!periodeEnCours ? (
+                      // Le repère « à date » ne veut rien dire hors période en cours.
+                      <span className="text-xs text-muted-foreground">
+                        {dateRange && dateRange.from > now ? "Période à venir" : "Période passée"}
+                      </span>
+                    ) : Math.abs(ecartADate) < 0.01 ? (
+                      <span className="flex items-center gap-1.5 text-xs text-[hsl(var(--kpi-paid))]">
+                        <CheckCheck className="h-3.5 w-3.5" /> À jour sur l'échéancier
+                      </span>
+                    ) : ecartADate < 0 ? (
+                      <span className="flex items-center gap-1.5 text-xs text-[hsl(var(--kpi-late))]">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        {fmt(-ecartADate)} de retard sur l'échéancier
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-xs text-[hsl(var(--kpi-paid))]">
+                        <TrendingUp className="h-3.5 w-3.5" />
+                        {fmt(ecartADate)} d'avance sur l'échéancier
+                      </span>
+                    )}
+                    <span className="text-[11px] text-muted-foreground">
+                      Atterrissage probable <span className="font-semibold text-foreground tabular-nums">{fmt(caCollecteAtterrissage)}</span>
+                      {" "}· taux de réalisation observé {(tauxRealisation * 100).toFixed(0)} %
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5 w-fit">
+                  {([["encaisse", "Encaissé"], ["reste", "Reste à encaisser"]] as const).map(([val, lbl]) => (
+                    <button
+                      key={val}
+                      onClick={() => { setCaTab(val); setModalPage(0); setSearchQuery(""); }}
+                      className={`px-2.5 py-1 text-xs rounded-md transition-all font-medium ${
+                        caTab === val ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="px-3 pb-3">
               <Input
                 placeholder="Rechercher un client…"
@@ -416,30 +568,40 @@ export default function FinancialKPIs(props: Props) {
                 className="h-8 text-xs"
               />
             </div>
-            <div className="grid grid-cols-[1fr_100px_56px_80px_68px_90px] gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              <span>Client</span><span>Date éch.</span><span className="text-center">N°</span><span className="text-center">Date paiem.</span><span className="text-center">Statut</span><span className="text-right">Montant</span>
+            <div className={`grid ${gridCols} gap-3 px-3 pb-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`}>
+              <span>Client</span><span>Date éch.</span><span className="text-center">N°</span>
+              {!showReste && <span className="text-center">Date paiem.</span>}
+              <span className="text-center">Statut</span><span className="text-right">Montant</span>
             </div>
             <div className="divide-y divide-border/40">
               {items.map((p, idx) => {
                 const sale = p.sale_id ? saleMap.get(p.sale_id) : null;
                 const contact = sale ? contactMap.get(sale.contact_id) : null;
+                const cfg = showReste ? (statusCfg[p.status] || statusCfg.pending) : statusCfg.paid;
                 return (
-                  <div key={p.id} className={`grid grid-cols-[1fr_100px_56px_80px_68px_90px] gap-3 items-center px-3 py-2.5 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
+                  <div key={p.id} className={`grid ${gridCols} gap-3 items-center px-3 py-2.5 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0"><User className="h-3 w-3 text-muted-foreground" /></div>
                       <span className="text-xs font-medium text-foreground truncate">{contact?.full_name || "Inconnu"}</span>
                     </div>
                     <span className="text-[11px] text-muted-foreground tabular-nums">{formatDate(p.due_date)}</span>
                     <span className="text-[11px] font-medium text-foreground tabular-nums text-center">{p.payment_number}/{p.total_payments}</span>
-                    <span className="text-[11px] text-muted-foreground tabular-nums text-center">{p.paid_at ? formatDate(p.paid_at) : "—"}</span>
-                    <div className="flex justify-center"><Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${statusCfg.paid.className}`}>Payé</Badge></div>
+                    {!showReste && <span className="text-[11px] text-muted-foreground tabular-nums text-center">{p.paid_at ? formatDate(p.paid_at) : "—"}</span>}
+                    <div className="flex justify-center"><Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${cfg.className}`}>{cfg.label}</Badge></div>
                     <span className="text-xs font-bold text-foreground tabular-nums text-right">{fmt(p.amount)}</span>
                   </div>
                 );
               })}
+              {items.length === 0 && (
+                <div className="px-3 py-8 text-center text-sm text-muted-foreground">
+                  {showReste ? "Plus rien à encaisser sur cette période 🎉" : "Aucun encaissement sur cette période"}
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-between pt-3 border-t border-border px-3">
-              <span className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{filtered.length}</span> échéance{filtered.length > 1 ? "s" : ""} payée{filtered.length > 1 ? "s" : ""} — Total <span className="font-bold text-foreground">{fmt(filtered.reduce((s, p) => s + p.amount, 0))}</span></span>
+              <span className="text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">{filtered.length}</span> échéance{filtered.length > 1 ? "s" : ""}{showReste ? " à encaisser" : ` payée${filtered.length > 1 ? "s" : ""}`} — Total <span className="font-bold text-foreground">{fmt(filtered.reduce((s, p) => s + p.amount, 0))}</span>
+              </span>
               <ModalPagination page={safePage} totalPages={totalPages} setPage={setModalPage} />
             </div>
           </div>
@@ -789,6 +951,21 @@ export default function FinancialKPIs(props: Props) {
                   {k.tooltip && <Info className="h-3 w-3 text-muted-foreground/50" />}
                 </div>
                 <span className="text-sm font-bold text-foreground">{k.value}</span>
+                {k.showBar && (
+                  <div className="flex flex-col gap-1 mt-0.5">
+                    <PrevisionnelBar
+                      collecte={caCollecte}
+                      attendu={prevAVenir + prevEchu}
+                      retard={prevRetard}
+                      total={caCollectePrevisionnel}
+                      duADate={periodeEnCours ? caCollecteDuADate : null}
+                      height={6}
+                    />
+                    <span className="text-[10px] text-muted-foreground truncate">
+                      {pctPrevisionnel.toFixed(0)} % de {fmtShort(caCollectePrevisionnel)}
+                    </span>
+                  </div>
+                )}
               </button>
             );
 

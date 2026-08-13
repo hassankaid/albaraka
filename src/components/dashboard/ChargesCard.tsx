@@ -197,11 +197,16 @@ export default function ChargesCard({
   const [otcMonth, setOtcMonth] = useState<{ month: number; year: number } | null>(null);
   const [savingOtc, setSavingOtc] = useState(false);
 
-   const today = new Date().toISOString().slice(0, 10);
+  // Heure locale : toISOString() convertit en UTC et décale les bornes d'un jour
+  // en arrière (un 1er août à minuit à Paris devient "2026-07-31").
+  const ymd = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  const today = ymd(new Date());
 
   // ── Period filtering helpers ──
-  const rangeFromStr = dateRange ? dateRange.from.toISOString().slice(0, 10) : null;
-  const rangeToStr = dateRange ? dateRange.to.toISOString().slice(0, 10) : null;
+  const rangeFromStr = dateRange ? ymd(dateRange.from) : null;
+  const rangeToStr = dateRange ? ymd(dateRange.to) : null;
   const isFiltered = !!dateRange;
 
   // Check if a recurring charge (monthly) is active during the period

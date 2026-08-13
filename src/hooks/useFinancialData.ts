@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAllRows } from "@/lib/fetchAllRows";
+import { computePrevisionnel, ymd } from "@/lib/finance/previsionnel";
 
 interface Ad {
   id: string;
@@ -100,12 +101,13 @@ function countMonthsInRange(startDate: string, endDate: string | null, rangeStar
   return Math.max(0, endMonth - startMonth + 1);
 }
 
+// Les bornes passent par ymd() (heure locale) et non toISOString() : ce dernier convertit
+// en UTC, et un 1er août à minuit heure de Paris (UTC+2) devient "2026-07-31", ce qui
+// décalait toutes les périodes d'un jour en arrière.
 function inRange(dateStr: string | null, range: FinancialDateRange | null): boolean {
   if (!range || !dateStr) return true;
   const d = dateStr.slice(0, 10);
-  const from = range.from.toISOString().slice(0, 10);
-  const to = range.to.toISOString().slice(0, 10);
-  return d >= from && d <= to;
+  return d >= ymd(range.from) && d <= ymd(range.to);
 }
 
 export function useFinancialData(dateRange?: FinancialDateRange | null) {
@@ -176,10 +178,14 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
   // ── Apply date range filtering ──
   // Cap the end date to today so future periods don't include projected data
   const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
+  const todayStr = ymd(today);
   const range: FinancialDateRange | null = dateRange
     ? { from: dateRange.from, to: dateRange.to > today ? today : dateRange.to }
     : null;
+
+  // Plage NON écrêtée : le prévisionnel doit justement regarder au-delà d'aujourd'hui,
+  // jusqu'à la fin de la période choisie.
+  const fullRange: FinancialDateRange | null = dateRange ?? null;
 
   // Sales: filter by sold_at
   const sales = range
@@ -217,6 +223,17 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
 
   // KPI: CA Collecté — based on payments actually received (paid_at) in period
   const caCollecte = paidInPeriod.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+  // ── CA Collecté prévisionnel ────────────────────────────────────────────────
+  // Objectif de la période = déjà encaissé + échéances de la période encore ouvertes.
+  // On borne sur fullRange (fin de période) et non sur range (écrêté à aujourd'hui) :
+  // c'est tout l'intérêt du prévisionnel de regarder au-delà d'aujourd'hui.
+  const prev = computePrevisionnel({
+    caCollecte,
+    periodPayments: fullRange ? allPayments.filter((p) => inRange(p.due_date, fullRange)) : allPayments,
+    allPayments,
+    today,
+  });
 
   // KPI: Taux de cash collecté & Taux d'impayés
   // When a period filter is active, base these on échéances (payments) of the period
@@ -379,6 +396,15 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     isLoading,
     caGenere,
     caCollecte,
+    caCollectePrevisionnel: prev.previsionnel,
+    caCollecteDuADate: prev.duADate,
+    caCollecteAtterrissage: prev.atterrissage,
+    prevAVenir: prev.aVenir,
+    prevEchu: prev.echu,
+    prevRetard: prev.retard,
+    prevPerdu: prev.perdu,
+    prevResteList: prev.resteList,
+    tauxRealisation: prev.tauxRealisation,
     tauxCashCollecte,
     oneShotPct,
     multiPct,
