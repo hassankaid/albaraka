@@ -2,9 +2,14 @@
 // PAGE INDÉPENDANTE — Témoignages (preuve sociale).
 //
 // Vitrine des témoignages : captures d'écran (images) + témoignages vidéo.
-// Pour l'instant = PLACEHOLDERS (structure de la page) ; Sidali fournira les
-// vrais assets. Bouton bas de page « Prendre rendez-vous » → redirection vers
-// l'événement Calendly `temoignages` (lien externe, pas d'embed).
+// Le CONTENU vit dans `content.ts` — c'est le seul fichier à éditer pour
+// alimenter la page. Chaque section bascule d'elle-même : liste vide =
+// emplacements d'attente, liste remplie = vrais témoignages. Les deux
+// sections sont indépendantes, on peut donc livrer les captures avant les
+// vidéos sans que la page paraisse cassée entre-temps.
+//
+// Bouton bas de page « Prendre rendez-vous » → redirection vers l'événement
+// Calendly `temoignages` (lien externe, pas d'embed).
 //
 // Autonome (module tunnels) : réutilise seulement le socle marque (theme,
 // TunnelBackground, fonts). Pas de dépendance aux tunnels WA/VSL.
@@ -13,10 +18,18 @@ import { useEffect } from "react";
 import { T, CONFERENCE, ensureTunnelFonts } from "../theme";
 import TunnelBackground from "../components/TunnelBackground";
 import BookingUnavailable from "../components/BookingUnavailable";
+import {
+  SCREENSHOTS,
+  VIDEOS,
+  PLACEHOLDER_SHOTS,
+  PLACEHOLDER_VIDEOS,
+  testimonialVimeoUrl,
+  type ScreenshotTestimonial,
+  type VideoTestimonial,
+} from "./content";
 
-// Nombre de slots placeholder (remplacés par les vrais témoignages plus tard).
-const SHOT_SLOTS = [1, 2, 3, 4, 5, 6];
-const VIDEO_SLOTS = [1, 2, 3];
+const shotSlots = Array.from({ length: PLACEHOLDER_SHOTS }, (_, i) => i + 1);
+const videoSlots = Array.from({ length: PLACEHOLDER_VIDEOS }, (_, i) => i + 1);
 
 // ── Placeholder « capture d'écran » (portrait, façon capture WhatsApp/DM) ──
 function ScreenshotSlot({ n }: { n: number }) {
@@ -88,6 +101,84 @@ function VideoSlot({ n }: { n: number }) {
   );
 }
 
+// ── Capture d'écran réelle ──
+// Pas de recadrage ni de hauteur imposée : une capture d'avis est du TEXTE,
+// la rogner la rendrait illisible. L'image garde donc ses proportions et la
+// grille s'adapte (colonnes façon mosaïque).
+function Screenshot({ shot }: { shot: ScreenshotTestimonial }) {
+  return (
+    <figure
+      style={{
+        margin: 0,
+        borderRadius: 16,
+        border: `1px solid ${T.goldLine}`,
+        background: "rgba(255,255,255,0.03)",
+        overflow: "hidden",
+        breakInside: "avoid",
+      }}
+    >
+      <img
+        src={shot.src}
+        alt={shot.alt}
+        loading="lazy"
+        decoding="async"
+        style={{ display: "block", width: "100%", height: "auto" }}
+      />
+    </figure>
+  );
+}
+
+// ── Témoignage vidéo réel (Vimeo ou fichier) ──
+function Video({ video }: { video: VideoTestimonial }) {
+  const ratio = video.orientation === "portrait" ? "9 / 16" : "16 / 9";
+  return (
+    <figure style={{ margin: 0 }}>
+      <div
+        style={{
+          position: "relative",
+          aspectRatio: ratio,
+          borderRadius: 16,
+          overflow: "hidden",
+          border: `1px solid ${T.goldLine}`,
+          background: "#000",
+          boxShadow: "0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(201,160,78,0.08)",
+        }}
+      >
+        {video.kind === "vimeo" ? (
+          <iframe
+            src={testimonialVimeoUrl(video)}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+            title={video.title}
+          />
+        ) : (
+          <video
+            src={video.src}
+            poster={video.poster}
+            controls
+            playsInline
+            // Ne précharge que les métadonnées : la page en affiche plusieurs,
+            // tout charger d'un coup coûterait cher au visiteur mobile.
+            preload="metadata"
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", background: "#000" }}
+          />
+        )}
+      </div>
+      <figcaption style={{ marginTop: 12, textAlign: "center" }}>
+        <div style={{ fontFamily: T.display, fontWeight: 600, fontSize: "1rem", lineHeight: 1.3, color: T.cream }}>
+          {video.title}
+        </div>
+        {video.author && (
+          <div style={{ fontFamily: T.body, fontSize: "0.78rem", letterSpacing: "0.1em", textTransform: "uppercase", color: T.goldBright, marginTop: 6 }}>
+            {video.author}
+          </div>
+        )}
+      </figcaption>
+    </figure>
+  );
+}
+
 function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {
   return (
     <div style={{ textAlign: "center", margin: "0 auto 26px" }}>
@@ -115,7 +206,12 @@ export default function Temoignages() {
         @keyframes albt-rise { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
         .albt-rise { animation: albt-rise .8s cubic-bezier(.2,.7,.3,1) both; }
         .albt-shots { display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
-        .albt-vids  { display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+        .albt-vids  { display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; align-items: start; }
+        /* Mosaïque des vraies captures : hauteurs libres, aucun recadrage. */
+        .albt-mosaic { column-count: 3; column-gap: 16px; }
+        .albt-mosaic > figure { margin: 0 0 16px; }
+        @media (max-width: 860px) { .albt-mosaic { column-count: 2; } }
+        @media (max-width: 520px) { .albt-mosaic { column-count: 1; } }
         .albt-cta {
           display:inline-block; font-family:${T.body}; font-weight:700; letter-spacing:0.02em;
           font-size:1.02rem; color:#1A1206; text-decoration:none;
@@ -150,28 +246,40 @@ export default function Temoignages() {
             Des membres de l'écosystème Al Baraka partagent leur expérience,
             sans filtre — en captures d'écran comme en vidéo.
           </p>
-          <p className="albt-rise" style={{ animationDelay: "160ms", fontFamily: T.body, fontSize: "0.78rem", color: T.creamDim, marginTop: 16 }}>
-            (Emplacements en attente — Sidali fournira les vrais témoignages.)
-          </p>
+          {(SCREENSHOTS.length === 0 || VIDEOS.length === 0) && (
+            <p className="albt-rise" style={{ animationDelay: "160ms", fontFamily: T.body, fontSize: "0.78rem", color: T.creamDim, marginTop: 16 }}>
+              (Emplacements en attente — les témoignages arrivent.)
+            </p>
+          )}
         </div>
 
         {/* Captures d'écran */}
         <section className="albt-rise" style={{ animationDelay: "180ms", marginBottom: "clamp(48px,8vw,72px)" }}>
           <SectionTitle eyebrow="Avis écrits" title="Ce qu'ils nous écrivent" />
-          <div className="albt-shots">
-            {SHOT_SLOTS.map((n) => (
-              <ScreenshotSlot key={n} n={n} />
-            ))}
-          </div>
+          {SCREENSHOTS.length > 0 ? (
+            <div className="albt-mosaic">
+              {SCREENSHOTS.map((shot) => (
+                <Screenshot key={shot.src} shot={shot} />
+              ))}
+            </div>
+          ) : (
+            <div className="albt-shots">
+              {shotSlots.map((n) => (
+                <ScreenshotSlot key={n} n={n} />
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Témoignages vidéo */}
         <section className="albt-rise" style={{ animationDelay: "220ms", marginBottom: "clamp(48px,8vw,72px)" }}>
           <SectionTitle eyebrow="Face caméra" title="Témoignages vidéo" />
           <div className="albt-vids">
-            {VIDEO_SLOTS.map((n) => (
-              <VideoSlot key={n} n={n} />
-            ))}
+            {VIDEOS.length > 0
+              ? VIDEOS.map((video) => (
+                  <Video key={video.kind === "vimeo" ? video.id : video.src} video={video} />
+                ))
+              : videoSlots.map((n) => <VideoSlot key={n} n={n} />)}
           </div>
         </section>
 
