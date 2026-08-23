@@ -16,6 +16,11 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, cleanup, screen } from "@testing-library/react";
 import type { ScreenshotTestimonial, VideoTestimonial } from "./content";
 
+// Chaque cas remonte le module et monte la page : ~2 s à froid, et davantage
+// quand la machine est chargée. Le délai par défaut (5 s) rendait ce fichier
+// instable — vu échouer une fois sur quatre pendant un build concurrent.
+vi.setConfig({ testTimeout: 20_000 });
+
 afterEach(() => {
   cleanup();
   vi.resetModules();
@@ -142,11 +147,12 @@ describe("page Témoignages — vidéos", () => {
     expect(video.getAttribute("preload")).toBe("metadata");
   });
 
-  it("cadre en vertical une vidéo filmée au téléphone", async () => {
+  it("respecte les proportions réelles de chaque vidéo", async () => {
     const { container } = await renderPage({
       videos: [
-        { kind: "file", src: "https://cdn.test/a.mp4", title: "Verticale", orientation: "portrait" },
-        { kind: "file", src: "https://cdn.test/b.mp4", title: "Par défaut" },
+        { kind: "file", src: "https://cdn.test/a.mp4", title: "Verticale", ratio: "9 / 16" },
+        { kind: "file", src: "https://cdn.test/b.mp4", title: "Ancien appel", ratio: "4 / 3" },
+        { kind: "file", src: "https://cdn.test/c.mp4", title: "Par défaut" },
       ],
     });
 
@@ -154,7 +160,8 @@ describe("page Témoignages — vidéos", () => {
       (v) => (v.parentElement as HTMLElement).style.aspectRatio,
     );
     expect(frames[0]).toBe("9 / 16");
-    expect(frames[1]).toBe("16 / 9");
+    expect(frames[1]).toBe("4 / 3");
+    expect(frames[2]).toBe("16 / 9");
   });
 
   it("affiche le titre, et l'auteur seulement s'il est renseigné", async () => {

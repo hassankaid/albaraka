@@ -17,6 +17,8 @@ import { trackLandingView } from "../lib/pixel";
 import type { TunnelConfig } from "../config";
 import TunnelBackground from "./TunnelBackground";
 import OptInModal from "./OptInModal";
+import TestimonialVideo from "./TestimonialVideo";
+import type { VideoTestimonial } from "../lib/testimonials";
 
 const DISCOVERIES = [
   {
@@ -36,12 +38,22 @@ const DISCOVERIES = [
   },
 ];
 
-// Témoignages : PLACEHOLDER volontaire. Sidali fournira les vrais avis.
-// Rien ici n'est un faux avis présenté comme réel.
-const TESTIMONIALS = [
-  { initials: "—", name: "Prénom N.", quote: "[ Témoignage à insérer — Sidali fournira les vrais avis. ]" },
-  { initials: "—", name: "Prénom N.", quote: "[ Témoignage à insérer — Sidali fournira les vrais avis. ]" },
-  { initials: "—", name: "Prénom N.", quote: "[ Témoignage à insérer — Sidali fournira les vrais avis. ]" },
+// Témoignages vidéo. Ce sont les MÊMES fichiers que six des vidéos de la page
+// /temoignages (empreintes identiques), avec la légende de la landing : elle
+// annonce un résultat chiffré plutôt qu'une citation, ce qui convient au
+// trafic froid. Légendes fournies par Hassan, reprises telles quelles.
+//
+// ⚠️ La landing n'est servie QUE depuis `event.albarakaecosysteme.com`. Toute
+// vidéo ajoutée ici doit avoir ce domaine dans ses domaines autorisés côté
+// Vimeo, sinon le lecteur est refusé — et seulement ici, pas sur la
+// plateforme, donc le défaut ne se voit pas en testant ailleurs.
+export const LANDING_TESTIMONIALS: VideoTestimonial[] = [
+  { kind: "vimeo", id: "1220657728", hash: "748144b688", ratio: "9 / 16", title: "Safwan est passé de 0 à 6.656 € en 4 mois" },
+  { kind: "vimeo", id: "1220657898", hash: "68691fe2a5", ratio: "9 / 16", title: "Fatima est passée de 0 à 3.125 € en – de 90 jours" },
+  { kind: "vimeo", id: "1220657559", hash: "6ad4e9ea94", ratio: "4 / 3",  title: "Anissa est passée de 0 à + de 9.500 € en 4,5 mois" },
+  { kind: "vimeo", id: "1220657980", hash: "622e41d09a", ratio: "4 / 3",  title: "Cindy est passée de 0 à 4.000€ en - de 4 mois" },
+  { kind: "vimeo", id: "1220658000", hash: "4f903eabdd", ratio: "4 / 3",  title: "Miradie est passée de 0 à 1.400€ en – de 40 jours" },
+  { kind: "vimeo", id: "1220658107", hash: "4dab5588eb", ratio: "4 / 3",  title: "Siham est passée de 0 à 2.000€ en – de 60 jours" },
 ];
 
 export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
@@ -159,23 +171,14 @@ export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
           <div style={{ textAlign: "center", marginTop: 40 }}>{cta("Je m'inscris à la conférence")}</div>
         </section>
 
-        {/* ── TÉMOIGNAGES (placeholder) ────────────────────────────── */}
+        {/* ── TÉMOIGNAGES VIDÉO ────────────────────────────────────── */}
         <section style={{ padding: "clamp(30px,6vw,56px) 0" }}>
           <SectionLabel>Ils l'ont fait avant toi</SectionLabel>
-          <div className="albt-grid3">
-            {TESTIMONIALS.map((t, i) => (
-              <figure key={i} className="albt-rise" style={{ margin: 0, padding: "26px 24px", background: T.bgCard, border: `1px dashed ${T.goldDim}`, borderRadius: 18 }}>
-                <div style={{ fontFamily: T.display, fontSize: "2rem", color: T.goldDim, lineHeight: 0.5, marginBottom: 12 }}>“</div>
-                <blockquote style={{ margin: 0, fontFamily: T.body, fontSize: "0.96rem", lineHeight: 1.6, color: T.creamMuted, fontStyle: "italic" }}>
-                  {t.quote}
-                </blockquote>
-                <figcaption style={{ display: "flex", alignItems: "center", gap: 11, marginTop: 18 }}>
-                  <span style={{ width: 38, height: 38, borderRadius: "50%", border: `1px solid ${T.goldLine}`, display: "grid", placeItems: "center", color: T.gold, fontSize: "0.9rem", fontWeight: 600 }}>
-                    {t.initials}
-                  </span>
-                  <span style={{ fontFamily: T.body, fontSize: "0.88rem", color: T.cream, fontWeight: 500 }}>{t.name}</span>
-                </figcaption>
-              </figure>
+          <div className="albt-grid3" style={{ alignItems: "start" }}>
+            {LANDING_TESTIMONIALS.map((v) => (
+              <div key={v.kind === "vimeo" ? v.id : v.src} className="albt-rise">
+                <TestimonialVideo video={v} />
+              </div>
             ))}
           </div>
         </section>

@@ -18,15 +18,9 @@ import { useEffect } from "react";
 import { T, CONFERENCE, ensureTunnelFonts } from "../theme";
 import TunnelBackground from "../components/TunnelBackground";
 import BookingUnavailable from "../components/BookingUnavailable";
-import {
-  SCREENSHOTS,
-  VIDEOS,
-  PLACEHOLDER_SHOTS,
-  PLACEHOLDER_VIDEOS,
-  testimonialVimeoUrl,
-  type ScreenshotTestimonial,
-  type VideoTestimonial,
-} from "./content";
+import TestimonialVideo from "../components/TestimonialVideo";
+import type { ScreenshotTestimonial } from "../lib/testimonials";
+import { SCREENSHOTS, VIDEOS, PLACEHOLDER_SHOTS, PLACEHOLDER_VIDEOS } from "./content";
 
 const shotSlots = Array.from({ length: PLACEHOLDER_SHOTS }, (_, i) => i + 1);
 const videoSlots = Array.from({ length: PLACEHOLDER_VIDEOS }, (_, i) => i + 1);
@@ -124,57 +118,6 @@ function Screenshot({ shot }: { shot: ScreenshotTestimonial }) {
         decoding="async"
         style={{ display: "block", width: "100%", height: "auto" }}
       />
-    </figure>
-  );
-}
-
-// ── Témoignage vidéo réel (Vimeo ou fichier) ──
-function Video({ video }: { video: VideoTestimonial }) {
-  const ratio = video.orientation === "portrait" ? "9 / 16" : "16 / 9";
-  return (
-    <figure style={{ margin: 0 }}>
-      <div
-        style={{
-          position: "relative",
-          aspectRatio: ratio,
-          borderRadius: 16,
-          overflow: "hidden",
-          border: `1px solid ${T.goldLine}`,
-          background: "#000",
-          boxShadow: "0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(201,160,78,0.08)",
-        }}
-      >
-        {video.kind === "vimeo" ? (
-          <iframe
-            src={testimonialVimeoUrl(video)}
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-            title={video.title}
-          />
-        ) : (
-          <video
-            src={video.src}
-            poster={video.poster}
-            controls
-            playsInline
-            // Ne précharge que les métadonnées : la page en affiche plusieurs,
-            // tout charger d'un coup coûterait cher au visiteur mobile.
-            preload="metadata"
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", background: "#000" }}
-          />
-        )}
-      </div>
-      <figcaption style={{ marginTop: 12, textAlign: "center" }}>
-        <div style={{ fontFamily: T.display, fontWeight: 600, fontSize: "1rem", lineHeight: 1.3, color: T.cream }}>
-          {video.title}
-        </div>
-        {video.author && (
-          <div style={{ fontFamily: T.body, fontSize: "0.78rem", letterSpacing: "0.1em", textTransform: "uppercase", color: T.goldBright, marginTop: 6 }}>
-            {video.author}
-          </div>
-        )}
-      </figcaption>
     </figure>
   );
 }
@@ -277,7 +220,7 @@ export default function Temoignages() {
           <div className="albt-vids">
             {VIDEOS.length > 0
               ? VIDEOS.map((video) => (
-                  <Video key={video.kind === "vimeo" ? video.id : video.src} video={video} />
+                  <TestimonialVideo key={video.kind === "vimeo" ? video.id : video.src} video={video} />
                 ))
               : videoSlots.map((n) => <VideoSlot key={n} n={n} />)}
           </div>

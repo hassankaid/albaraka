@@ -3,82 +3,50 @@
 //
 // Tant qu'une liste est vide, la page affiche ses emplacements d'attente :
 // ajouter un témoignage = ajouter une entrée ici, rien d'autre à toucher.
+// Le nombre de témoignages est LIBRE, les grilles s'adaptent.
 //
-// Le nombre de témoignages est LIBRE (le document de livraison parlait de
-// 6 captures et 3 vidéos, ce n'était qu'un ordre de grandeur). Les grilles
-// s'adaptent d'elles-mêmes.
+// Les vidéos vivent dans Vimeo, dossier VIDÉOS TÉMOIGNAGES ▸ HISTORIQUE
+// (témoignages de l'ancien tunnel Systeme.io, versés le 22/08/2026). Elles
+// sont réglées « masquée de Vimeo » avec intégration restreinte à
+// plateforme. / view. / event. — le hash est donc OBLIGATOIRE.
 //
-// Où héberger les fichiers : n'importe quelle URL publique fait l'affaire
-// (Supabase Storage, un CDN, ou un fichier déposé dans `public/`). Les vidéos
-// lourdes ont tout intérêt à passer par Vimeo — hébergement, compression et
-// lecture adaptative sont déjà gérés, et c'est ce qu'utilisent les tunnels.
+// ⚠️ AJOUTER UNE VIDÉO : inscrire aussi `event.albarakaecosysteme.com` dans
+// ses domaines autorisés côté Vimeo. Les tunnels ne sont servis QUE depuis ce
+// domaine ; sans lui le lecteur est refusé sur la landing — et nulle part
+// ailleurs, donc le défaut ne se voit pas en testant sur la plateforme.
+//
+// Les légendes sont celles fournies par Hassan, reprises telles quelles.
 // ─────────────────────────────────────────────────────────────────────────
+import type { ScreenshotTestimonial, VideoTestimonial } from "../lib/testimonials";
 
-/** Capture d'écran d'un avis écrit (WhatsApp, DM, mail…). */
-export interface ScreenshotTestimonial {
-  /** URL publique de l'image. */
-  src: string;
-  /**
-   * Description de l'avis. Elle sert aux lecteurs d'écran ET s'affiche si
-   * l'image ne charge pas — une capture illisible ne prouve plus rien, donc
-   * on résume ce qu'elle dit plutôt que d'écrire « capture n°3 ».
-   */
-  alt: string;
-}
+export type { ScreenshotTestimonial, VideoTestimonial };
+export { testimonialVimeoUrl } from "../lib/testimonials";
 
-/** Champs communs aux deux façons d'héberger un témoignage vidéo. */
-interface VideoBase {
-  /** Titre court, affiché sous la vidéo. Ex. « De salarié à 3 clients en 6 semaines ». */
-  title: string;
-  /** Prénom (et rôle) de la personne, affiché en second. */
-  author?: string;
-  /**
-   * Cadre du lecteur. Les vidéos filmées au téléphone sont souvent verticales :
-   * les mettre en 16/9 les entourerait de deux grosses bandes noires.
-   */
-  orientation?: "landscape" | "portrait";
-}
-
-/** Vidéo hébergée sur Vimeo — à préférer, surtout si le fichier est lourd. */
-export interface VimeoTestimonial extends VideoBase {
-  kind: "vimeo";
-  /** Identifiant numérique, ex. « 1012345678 ». */
-  id: string;
-  /** Hash de partage, obligatoire si la vidéo est en « non listée ». */
-  hash?: string;
-}
-
-/** Vidéo servie comme simple fichier (Supabase Storage, /public…). */
-export interface FileTestimonial extends VideoBase {
-  kind: "file";
-  /** URL publique du fichier (.mp4 de préférence, lu par tous les navigateurs). */
-  src: string;
-  /** Image d'attente. Sans elle, le navigateur affiche un cadre noir avant lecture. */
-  poster?: string;
-}
-
-export type VideoTestimonial = VimeoTestimonial | FileTestimonial;
-
-/** Avis écrits, dans l'ordre d'affichage. */
+/** Avis écrits, dans l'ordre d'affichage. Images servies depuis `public/`. */
 export const SCREENSHOTS: ScreenshotTestimonial[] = [
-  // Exemple :
-  // { src: "https://…/temoignages/avis-01.jpg", alt: "Karim : « J'ai signé mon premier client trois semaines après la formation. »" },
+  { src: "/temoignages/avis-01.jpg", alt: "L'élève dépasse le maître" },
+  { src: "/temoignages/avis-02.jpg", alt: "J'y crois pas, c'est possible en 2 semaines" },
 ];
 
-/** Témoignages filmés, dans l'ordre d'affichage. */
+/**
+ * Témoignages filmés, dans l'ordre d'affichage.
+ * `ratio` = dimensions réelles du fichier source (aucun n'est en 16/9).
+ */
 export const VIDEOS: VideoTestimonial[] = [
-  // Exemples :
-  // { kind: "vimeo", id: "1012345678", hash: "a1b2c3d4e5", title: "Six semaines pour changer de métier", author: "Yasmine" },
-  // { kind: "file", src: "https://…/temoignages/amine.mp4", poster: "https://…/temoignages/amine.jpg", title: "Ce que j'aurais aimé savoir avant", author: "Amine", orientation: "portrait" },
+  { kind: "vimeo", id: "1220657720", hash: "a6644805b8", ratio: "9 / 16",     title: "Tu nous a appris une pépite" },
+  { kind: "vimeo", id: "1220657728", hash: "748144b688", ratio: "9 / 16",     title: "Tu as changé ma vie Sidali, grâce à toi je suis indépendant" },
+  { kind: "vimeo", id: "1220657898", hash: "68691fe2a5", ratio: "9 / 16",     title: "Je suis avec Sidali depuis avril, et j'ai déjà généré 3.000 € pendant mes 3 premiers mois" },
+  { kind: "vimeo", id: "1220657959", hash: "d74050d102", ratio: "886 / 1920", title: "J'y crois pas, c'est possible en 2 semaines" },
+  { kind: "vimeo", id: "1220657980", hash: "622e41d09a", ratio: "4 / 3",      title: "Le coaching est vraiment intéressant" },
+  { kind: "vimeo", id: "1220658000", hash: "4f903eabdd", ratio: "4 / 3",      title: "En moins de 40 jours, j'ai pu générer 1.400 €" },
+  { kind: "vimeo", id: "1220657559", hash: "6ad4e9ea94", ratio: "4 / 3",      title: "Je suis déjà à 9.500 € de commissions en 4 mois et demi" },
+  { kind: "vimeo", id: "1220658011", hash: "592c6c6d6f", ratio: "886 / 1920", title: "Je croyais pas au début, j'avais dit tout le monde sauf moi" },
+  { kind: "vimeo", id: "1220658021", hash: "78c65136fe", ratio: "9 / 16",     title: "Je n'avais pas assez d'argent, j'ai dû risquer" },
+  // Même légende que la précédente, confirmée par Hassan. Côté Vimeo, ce
+  // fichier porte « — Siham » en plus, pour les distinguer dans la bibliothèque.
+  { kind: "vimeo", id: "1220658107", hash: "4dab5588eb", ratio: "4 / 3",      title: "Je croyais pas au début, j'avais dit tout le monde sauf moi" },
 ];
 
 /** Emplacements d'attente affichés tant que la liste correspondante est vide. */
 export const PLACEHOLDER_SHOTS = 6;
 export const PLACEHOLDER_VIDEOS = 3;
-
-/** URL d'embed du player Vimeo (mêmes paramètres que les tunnels). */
-export function testimonialVimeoUrl(v: VimeoTestimonial): string {
-  const params = new URLSearchParams({ title: "0", byline: "0", portrait: "0", dnt: "1" });
-  if (v.hash) params.set("h", v.hash);
-  return `https://player.vimeo.com/video/${v.id}?${params.toString()}`;
-}
