@@ -48,12 +48,12 @@ const DISCOVERIES = [
 // Vimeo, sinon le lecteur est refusé — et seulement ici, pas sur la
 // plateforme, donc le défaut ne se voit pas en testant ailleurs.
 export const LANDING_TESTIMONIALS: VideoTestimonial[] = [
-  { kind: "vimeo", id: "1220657728", hash: "748144b688", ratio: "9 / 16", title: "Safwan est passé de 0 à 6.656 € en 4 mois" },
-  { kind: "vimeo", id: "1220657898", hash: "68691fe2a5", ratio: "9 / 16", title: "Fatima est passée de 0 à 3.125 € en – de 90 jours" },
-  { kind: "vimeo", id: "1220657559", hash: "6ad4e9ea94", ratio: "4 / 3",  title: "Anissa est passée de 0 à + de 9.500 € en 4,5 mois" },
-  { kind: "vimeo", id: "1220657980", hash: "622e41d09a", ratio: "4 / 3",  title: "Cindy est passée de 0 à 4.000€ en - de 4 mois" },
-  { kind: "vimeo", id: "1220658000", hash: "4f903eabdd", ratio: "4 / 3",  title: "Miradie est passée de 0 à 1.400€ en – de 40 jours" },
-  { kind: "vimeo", id: "1220658107", hash: "4dab5588eb", ratio: "4 / 3",  title: "Siham est passée de 0 à 2.000€ en – de 60 jours" },
+  { kind: "vimeo", id: "1220657728", hash: "748144b688", ratio: "9 / 16", title: "Safwan est passé de 0 à 6.656\u00A0€ en 4 mois" },
+  { kind: "vimeo", id: "1220657898", hash: "68691fe2a5", ratio: "9 / 16", title: "Fatima est passée de 0 à 3.125\u00A0€ en – de 90 jours" },
+  { kind: "vimeo", id: "1220657559", hash: "6ad4e9ea94", ratio: "4 / 3",  title: "Anissa est passée de 0 à + de 9.500\u00A0€ en 4,5 mois" },
+  { kind: "vimeo", id: "1220657980", hash: "622e41d09a", ratio: "4 / 3",  title: "Cindy est passée de 0 à 4.000\u00A0€ en – de 4 mois" },
+  { kind: "vimeo", id: "1220658000", hash: "4f903eabdd", ratio: "4 / 3",  title: "Miradie est passée de 0 à 1.400\u00A0€ en – de 40 jours" },
+  { kind: "vimeo", id: "1220658107", hash: "4dab5588eb", ratio: "4 / 3",  title: "Siham est passée de 0 à 2.000\u00A0€ en – de 60 jours" },
 ];
 
 export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {

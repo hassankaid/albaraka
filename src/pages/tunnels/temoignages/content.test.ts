@@ -51,6 +51,19 @@ describe("vidéos publiées", () => {
     }
   });
 
+  it("écrivent les montants à la française — insécable avant l'euro", () => {
+    // Deux raisons : la règle typographique, et surtout qu'un montant ne se
+    // coupe pas en fin de ligne (« 6.656 » d'un côté, « € » de l'autre).
+    // Ce test vérifie aussi que la séquence ` ` du fichier source est
+    // bien interprétée : une insécable écrite en clair se perd au premier
+    // copier-coller, et rien ne le signalerait autrement.
+    for (const v of all) {
+      for (const m of v.title.matchAll(/(.)€/g)) {
+        expect(m[1], `« ${v.title} » : caractère ${JSON.stringify(m[1])} avant l'euro`).toBe(" ");
+      }
+    }
+  });
+
   it("portent une légende", () => {
     for (const v of all) expect(v.title.trim().length).toBeGreaterThan(5);
   });
