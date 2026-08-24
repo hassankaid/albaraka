@@ -17,7 +17,7 @@ import { trackLandingView } from "../lib/pixel";
 import type { TunnelConfig } from "../config";
 import TunnelBackground from "./TunnelBackground";
 import OptInModal from "./OptInModal";
-import TestimonialVideo from "./TestimonialVideo";
+import TestimonialTile from "./TestimonialTile";
 import type { VideoTestimonial } from "../lib/testimonials";
 
 const DISCOVERIES = [
@@ -177,7 +177,7 @@ export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
           <div className="albt-grid3" style={{ alignItems: "start" }}>
             {LANDING_TESTIMONIALS.map((v) => (
               <div key={v.kind === "vimeo" ? v.id : v.src} className="albt-rise">
-                <TestimonialVideo video={v} />
+                <TestimonialTile item={v} />
               </div>
             ))}
           </div>

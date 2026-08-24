@@ -1,20 +1,19 @@
 /**
  * Rendu de la page /temoignages.
  *
- * La page a deux visages — emplacements d'attente tant que `content.ts` est
- * vide, vrais témoignages une fois rempli — et personne ne verra le second
- * avant que Sidali n'ait livré ses fichiers. Sans ces tests, la bascule ne
- * serait exercée pour la première fois qu'en production, le jour de la mise
- * en ligne des témoignages.
+ * La page a deux visages — tuiles d'attente tant que `content.ts` est vide,
+ * vrais témoignages une fois rempli. Sans ces tests, le second ne serait
+ * exercé pour la première fois qu'en production.
  *
- * Ce qui est vérifié ici et que TypeScript ne peut pas voir : la bascule
- * elle-même, l'URL d'embed Vimeo réellement construite, et le cadre vertical
- * des vidéos filmées au téléphone.
+ * Ce qui est vérifié ici et que TypeScript ne voit pas : la bascule, le mur
+ * unique (captures et vidéos mélangées, sans section par support), l'URL
+ * d'embed Vimeo réellement construite, les proportions de chaque cadre, et
+ * le bouton Calendly dans ses deux états.
  */
 
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, cleanup, screen } from "@testing-library/react";
-import type { ScreenshotTestimonial, VideoTestimonial } from "./content";
+import type { Testimonial } from "./content";
 
 // Chaque cas remonte le module et monte la page : ~2 s à froid, et davantage
 // quand la machine est chargée. Le délai par défaut (5 s) rendait ce fichier
@@ -27,16 +26,12 @@ afterEach(() => {
 });
 
 /** Monte la page avec un contenu et un lien Calendly choisis. */
-async function renderPage(opts: {
-  screenshots?: ScreenshotTestimonial[];
-  videos?: VideoTestimonial[];
-  calendlyUrl?: string | null;
-}) {
+async function renderPage(opts: { items?: Testimonial[]; calendlyUrl?: string | null }) {
   vi.resetModules();
 
   vi.doMock("./content", async () => {
     const actual = await vi.importActual<typeof import("./content")>("./content");
-    return { ...actual, SCREENSHOTS: opts.screenshots ?? [], VIDEOS: opts.videos ?? [] };
+    return { ...actual, TEMOIGNAGES: opts.items ?? [] };
   });
 
   vi.doMock("../theme", async () => {
@@ -54,72 +49,92 @@ async function renderPage(opts: {
   return render(<Temoignages />);
 }
 
+const capture: Testimonial = { kind: "capture", src: "/temoignages/avis-01.jpg", title: "L'élève dépasse le maître" };
+const videoVimeo: Testimonial = { kind: "vimeo", id: "1012345678", hash: "a1b2c3d4e5", ratio: "9 / 16", title: "Six semaines pour changer de métier", author: "Yasmine" };
+
 describe("page Témoignages — en attente de contenu", () => {
-  it("affiche les emplacements d'attente et le prévient au visiteur", async () => {
+  it("affiche des tuiles d'attente et le dit au visiteur", async () => {
     const { container } = await renderPage({});
 
-    expect(screen.getByText("Capture n°1")).toBeTruthy();
-    expect(screen.getByText("Capture n°6")).toBeTruthy();
-    expect(screen.queryByText("Capture n°7")).toBeNull();
-    expect(screen.getByText("Témoignage vidéo n°3")).toBeTruthy();
+    expect(screen.getByText("Témoignage n°1")).toBeTruthy();
+    expect(screen.getByText("Témoignage n°6")).toBeTruthy();
+    expect(screen.queryByText("Témoignage n°7")).toBeNull();
     expect(screen.getByText(/Emplacements en attente/)).toBeTruthy();
     expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector("iframe")).toBeNull();
   });
 });
 
-describe("page Témoignages — avis écrits", () => {
-  const shots: ScreenshotTestimonial[] = [
-    { src: "https://cdn.test/avis-01.jpg", alt: "Karim : premier client en trois semaines" },
-    { src: "https://cdn.test/avis-02.jpg", alt: "Naïma : « J'ai enfin structuré mon offre »" },
-  ];
+describe("page Témoignages — le mur", () => {
+  it("mélange captures et vidéos dans un seul mur, sans section par support", async () => {
+    const { container } = await renderPage({ items: [videoVimeo, capture] });
 
-  it("remplace les emplacements par les vraies captures", async () => {
-    const { container } = await renderPage({ screenshots: shots });
+    const murs = container.querySelectorAll(".albt-mur");
+    expect(murs).toHaveLength(1);
+    expect(murs[0].querySelectorAll("figure")).toHaveLength(2);
 
-    const imgs = container.querySelectorAll<HTMLImageElement>(".albt-mosaic img");
-    expect(imgs).toHaveLength(2);
-    expect(imgs[0].getAttribute("src")).toBe("https://cdn.test/avis-01.jpg");
-    expect(imgs[1].getAttribute("alt")).toContain("Naïma");
-    expect(screen.queryByText("Capture n°1")).toBeNull();
+    // La preuve ne se trie plus par support : ces intitulés ont disparu.
+    expect(screen.queryByText(/Avis écrits/i)).toBeNull();
+    expect(screen.queryByText(/Face caméra/i)).toBeNull();
+    expect(screen.queryByText(/Emplacements en attente/)).toBeNull();
   });
 
-  it("n'impose aucune hauteur à l'image — une capture rognée serait illisible", async () => {
-    const { container } = await renderPage({ screenshots: shots });
+  it("répartit les tuiles en colonnes, sans en perdre aucune", async () => {
+    const { container } = await renderPage({ items: [capture, videoVimeo] });
 
-    const img = container.querySelector<HTMLImageElement>(".albt-mosaic img")!;
+    const colonnes = container.querySelectorAll(".albt-mur > .albt-col");
+    expect(colonnes.length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".albt-col figure")).toHaveLength(2);
+    // Chaque tuile appartient à une colonne, aucune n'est restée à la racine.
+    expect(container.querySelectorAll(".albt-mur > figure")).toHaveLength(0);
+  });
+});
+
+describe("page Témoignages — captures", () => {
+  it("n'impose aucune hauteur à l'image — une capture rognée serait illisible", async () => {
+    const { container } = await renderPage({ items: [capture] });
+
+    const img = container.querySelector<HTMLImageElement>("img")!;
+    expect(img.getAttribute("src")).toBe("/temoignages/avis-01.jpg");
     expect(img.style.height).toBe("auto");
     expect(img.style.width).toBe("100%");
     // Un `objectFit: cover` recadrerait le texte de l'avis.
     expect(img.style.objectFit).toBe("");
   });
 
-  it("laisse les vidéos en attente si seules les captures sont livrées", async () => {
-    await renderPage({ screenshots: shots });
+  it("reprend la légende comme description, et la préfère explicite si fournie", async () => {
+    const { container } = await renderPage({
+      items: [capture, { ...capture, src: "/temoignages/avis-02.jpg", alt: "Message de Karim, 12 mars" }],
+    });
 
-    expect(screen.getByText("Témoignage vidéo n°1")).toBeTruthy();
-    expect(screen.getByText(/Emplacements en attente/)).toBeTruthy();
+    const imgs = container.querySelectorAll<HTMLImageElement>("img");
+    expect(imgs[0].getAttribute("alt")).toBe("L'élève dépasse le maître");
+    expect(imgs[1].getAttribute("alt")).toBe("Message de Karim, 12 mars");
+    expect(screen.getAllByText("L'élève dépasse le maître").length).toBeGreaterThan(0);
   });
 });
 
 describe("page Témoignages — vidéos", () => {
-  it("construit l'URL d'embed Vimeo avec le hash des vidéos non listées", async () => {
-    const { container } = await renderPage({
-      videos: [
-        { kind: "vimeo", id: "1012345678", hash: "a1b2c3d4e5", title: "Six semaines", author: "Yasmine" },
-      ],
-    });
+  it("construit l'URL d'embed Vimeo avec le hash des vidéos masquées", async () => {
+    const { container } = await renderPage({ items: [videoVimeo] });
 
     const iframe = container.querySelector("iframe")!;
     const url = new URL(iframe.getAttribute("src")!);
     expect(url.origin + url.pathname).toBe("https://player.vimeo.com/video/1012345678");
     expect(url.searchParams.get("h")).toBe("a1b2c3d4e5");
     expect(url.searchParams.get("dnt")).toBe("1");
-    expect(iframe.getAttribute("title")).toBe("Six semaines");
+    expect(iframe.getAttribute("title")).toBe("Six semaines pour changer de métier");
+  });
+
+  it("diffère le chargement des lecteurs — la page en aligne une douzaine", async () => {
+    const { container } = await renderPage({ items: [videoVimeo] });
+
+    expect(container.querySelector("iframe")!.getAttribute("loading")).toBe("lazy");
   });
 
   it("omet le paramètre de hash quand la vidéo est publique", async () => {
     const { container } = await renderPage({
-      videos: [{ kind: "vimeo", id: "76979871", title: "Publique" }],
+      items: [{ kind: "vimeo", id: "76979871", title: "Publique" }],
     });
 
     const url = new URL(container.querySelector("iframe")!.getAttribute("src")!);
@@ -128,7 +143,7 @@ describe("page Témoignages — vidéos", () => {
 
   it("lit un fichier hébergé avec son image d'attente, sans le précharger", async () => {
     const { container } = await renderPage({
-      videos: [
+      items: [
         {
           kind: "file",
           src: "https://cdn.test/amine.mp4",
@@ -143,13 +158,12 @@ describe("page Témoignages — vidéos", () => {
     expect(video.getAttribute("src")).toBe("https://cdn.test/amine.mp4");
     expect(video.getAttribute("poster")).toBe("https://cdn.test/amine.jpg");
     expect(video.getAttribute("controls")).not.toBeNull();
-    // Plusieurs vidéos sur la page : tout précharger coûterait cher en mobile.
     expect(video.getAttribute("preload")).toBe("metadata");
   });
 
   it("respecte les proportions réelles de chaque vidéo", async () => {
     const { container } = await renderPage({
-      videos: [
+      items: [
         { kind: "file", src: "https://cdn.test/a.mp4", title: "Verticale", ratio: "9 / 16" },
         { kind: "file", src: "https://cdn.test/b.mp4", title: "Ancien appel", ratio: "4 / 3" },
         { kind: "file", src: "https://cdn.test/c.mp4", title: "Par défaut" },
@@ -159,32 +173,17 @@ describe("page Témoignages — vidéos", () => {
     const frames = [...container.querySelectorAll<HTMLVideoElement>("video")].map(
       (v) => (v.parentElement as HTMLElement).style.aspectRatio,
     );
-    expect(frames[0]).toBe("9 / 16");
-    expect(frames[1]).toBe("4 / 3");
-    expect(frames[2]).toBe("16 / 9");
+    expect(frames).toEqual(["9 / 16", "4 / 3", "16 / 9"]);
   });
 
-  it("affiche le titre, et l'auteur seulement s'il est renseigné", async () => {
+  it("affiche le prénom seulement s'il est renseigné", async () => {
     const { container } = await renderPage({
-      videos: [
-        { kind: "file", src: "https://cdn.test/a.mp4", title: "Avec auteur", author: "Yasmine" },
-        { kind: "file", src: "https://cdn.test/b.mp4", title: "Sans auteur" },
-      ],
+      items: [videoVimeo, { kind: "vimeo", id: "999", title: "Sans prénom" }],
     });
 
-    expect(screen.getByText("Avec auteur")).toBeTruthy();
     expect(screen.getByText("Yasmine")).toBeTruthy();
     const captions = container.querySelectorAll("figcaption");
-    expect(captions[1].textContent).toBe("Sans auteur");
-  });
-
-  it("retire le bandeau d'attente une fois les deux sections livrées", async () => {
-    await renderPage({
-      screenshots: [{ src: "https://cdn.test/a.jpg", alt: "Un avis" }],
-      videos: [{ kind: "vimeo", id: "1", title: "Une vidéo" }],
-    });
-
-    expect(screen.queryByText(/Emplacements en attente/)).toBeNull();
+    expect(captions[1].textContent).toBe("Sans prénom");
   });
 });
 

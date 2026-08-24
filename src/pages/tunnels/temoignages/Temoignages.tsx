@@ -1,137 +1,95 @@
 // ─────────────────────────────────────────────────────────────────────────
 // PAGE INDÉPENDANTE — Témoignages (preuve sociale).
 //
-// Vitrine des témoignages : captures d'écran (images) + témoignages vidéo.
-// Le CONTENU vit dans `content.ts` — c'est le seul fichier à éditer pour
-// alimenter la page. Chaque section bascule d'elle-même : liste vide =
-// emplacements d'attente, liste remplie = vrais témoignages. Les deux
-// sections sont indépendantes, on peut donc livrer les captures avant les
-// vidéos sans que la page paraisse cassée entre-temps.
+// UN SEUL mur de témoignages, captures et vidéos mélangées. La version
+// précédente les séparait en « avis écrits » et « témoignages vidéo » : ça
+// triait la preuve par support au lieu de la montrer, et la grille laissait
+// de grands trous sous les vidéos les plus courtes — une rangée de grille
+// prend la hauteur de son élément le plus haut.
 //
-// Bouton bas de page « Prendre rendez-vous » → redirection vers l'événement
-// Calendly `temoignages` (lien externe, pas d'embed).
+// D'où la mise en page en colonnes : chaque tuile garde ses proportions et se
+// range sous la précédente, sans trou possible. Les colonnes CSS ne suffisaient
+// pas — avec des tuiles hautes et insécables, la 3e s'arrêtait 700 px avant les
+// autres (mesuré). La répartition est donc calculée, chaque témoignage
+// déclarant ses proportions.
+//
+// Le CONTENU vit dans `content.ts` — seul fichier à éditer pour l'alimenter.
+//
+// Bouton bas de page « Prendre rendez-vous » → événement Calendly
+// `temoignages` (lien externe, pas d'embed).
 //
 // Autonome (module tunnels) : réutilise seulement le socle marque (theme,
 // TunnelBackground, fonts). Pas de dépendance aux tunnels WA/VSL.
 // ─────────────────────────────────────────────────────────────────────────
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { T, CONFERENCE, ensureTunnelFonts } from "../theme";
 import TunnelBackground from "../components/TunnelBackground";
 import BookingUnavailable from "../components/BookingUnavailable";
-import TestimonialVideo from "../components/TestimonialVideo";
-import type { ScreenshotTestimonial } from "../lib/testimonials";
-import { SCREENSHOTS, VIDEOS, PLACEHOLDER_SHOTS, PLACEHOLDER_VIDEOS } from "./content";
+import TestimonialTile from "../components/TestimonialTile";
+import { TEMOIGNAGES, PLACEHOLDER_COUNT, testimonialKey } from "./content";
+import { repartirEnColonnes } from "../lib/testimonials";
 
-const shotSlots = Array.from({ length: PLACEHOLDER_SHOTS }, (_, i) => i + 1);
-const videoSlots = Array.from({ length: PLACEHOLDER_VIDEOS }, (_, i) => i + 1);
+const placeholders = Array.from({ length: PLACEHOLDER_COUNT }, (_, i) => i + 1);
 
-// ── Placeholder « capture d'écran » (portrait, façon capture WhatsApp/DM) ──
-function ScreenshotSlot({ n }: { n: number }) {
-  return (
-    <div
-      style={{
-        position: "relative",
-        aspectRatio: "4 / 5",
-        borderRadius: 16,
-        border: `1px solid ${T.goldLine}`,
-        background: "linear-gradient(160deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015))",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 12,
-        overflow: "hidden",
-      }}
-    >
-      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke={T.gold} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <rect x="3" y="3" width="18" height="18" rx="3" />
-        <circle cx="8.5" cy="9" r="1.6" />
-        <path d="M21 15l-5-5L5 21" />
-      </svg>
-      <div style={{ fontFamily: T.body, fontSize: "0.72rem", letterSpacing: "0.12em", textTransform: "uppercase", color: T.creamDim }}>
-        Capture n°{n}
-      </div>
-    </div>
-  );
+/**
+ * Nombre de colonnes du mur, suivi en direct.
+ *
+ * La répartition est calculée en JS (cf. `repartirEnColonnes`), il faut donc
+ * connaître le nombre de colonnes au rendu — une règle CSS ne suffirait pas.
+ */
+function useNombreDeColonnes(): number {
+  const [n, setN] = useState(3);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const deux = window.matchMedia("(max-width: 900px)");
+    const une = window.matchMedia("(max-width: 560px)");
+    const maj = () => setN(une.matches ? 1 : deux.matches ? 2 : 3);
+    maj();
+    deux.addEventListener("change", maj);
+    une.addEventListener("change", maj);
+    return () => {
+      deux.removeEventListener("change", maj);
+      une.removeEventListener("change", maj);
+    };
+  }, []);
+  return n;
 }
 
-// ── Placeholder « témoignage vidéo » (16:9 + bouton play) ──
-function VideoSlot({ n }: { n: number }) {
+// ── Tuile d'attente, tant qu'aucun témoignage n'est publié ──
+function PlaceholderTile({ n }: { n: number }) {
   return (
-    <div
-      style={{
-        position: "relative",
-        aspectRatio: "16 / 9",
-        borderRadius: 16,
-        border: `1px solid ${T.goldLine}`,
-        background: "linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015))",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 12,
-        overflow: "hidden",
-      }}
-    >
+    <figure style={{ margin: 0 }}>
       <div
         style={{
-          width: 58,
-          height: 58,
-          borderRadius: "50%",
+          position: "relative",
+          aspectRatio: n % 2 === 0 ? "4 / 3" : "9 / 16",
+          borderRadius: 16,
           border: `1px solid ${T.goldLine}`,
-          background: "radial-gradient(circle, rgba(201,160,78,0.18), transparent 70%)",
+          background: "linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015))",
           display: "grid",
           placeItems: "center",
         }}
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill={T.goldBright} aria-hidden>
-          <path d="M8 5v14l11-7z" />
-        </svg>
+        <div
+          style={{
+            width: 54,
+            height: 54,
+            borderRadius: "50%",
+            border: `1px solid ${T.goldLine}`,
+            background: "radial-gradient(circle, rgba(201,160,78,0.18), transparent 70%)",
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          <svg width="19" height="19" viewBox="0 0 24 24" fill={T.goldBright} aria-hidden>
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </div>
       </div>
-      <div style={{ fontFamily: T.body, fontSize: "0.72rem", letterSpacing: "0.12em", textTransform: "uppercase", color: T.creamDim }}>
-        Témoignage vidéo n°{n}
-      </div>
-    </div>
-  );
-}
-
-// ── Capture d'écran réelle ──
-// Pas de recadrage ni de hauteur imposée : une capture d'avis est du TEXTE,
-// la rogner la rendrait illisible. L'image garde donc ses proportions et la
-// grille s'adapte (colonnes façon mosaïque).
-function Screenshot({ shot }: { shot: ScreenshotTestimonial }) {
-  return (
-    <figure
-      style={{
-        margin: 0,
-        borderRadius: 16,
-        border: `1px solid ${T.goldLine}`,
-        background: "rgba(255,255,255,0.03)",
-        overflow: "hidden",
-        breakInside: "avoid",
-      }}
-    >
-      <img
-        src={shot.src}
-        alt={shot.alt}
-        loading="lazy"
-        decoding="async"
-        style={{ display: "block", width: "100%", height: "auto" }}
-      />
+      <figcaption style={{ margin: "12px 2px 0", textAlign: "center", fontFamily: T.body, fontSize: "0.72rem", letterSpacing: "0.12em", textTransform: "uppercase", color: T.creamDim }}>
+        Témoignage n°{n}
+      </figcaption>
     </figure>
-  );
-}
-
-function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {
-  return (
-    <div style={{ textAlign: "center", margin: "0 auto 26px" }}>
-      <div style={{ fontFamily: T.body, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", fontSize: "0.7rem", color: T.goldBright, marginBottom: 10 }}>
-        {eyebrow}
-      </div>
-      <h2 style={{ fontFamily: T.display, fontWeight: 600, fontSize: "clamp(1.4rem,4vw,2rem)", lineHeight: 1.15, color: T.cream, margin: 0 }}>
-        {title}
-      </h2>
-    </div>
   );
 }
 
@@ -141,6 +99,15 @@ export default function Temoignages() {
     document.title = "Témoignages — Al Baraka";
   }, []);
 
+  const colonnes = useNombreDeColonnes();
+  const vide = TEMOIGNAGES.length === 0;
+  const murs = useMemo(() => repartirEnColonnes(TEMOIGNAGES, colonnes), [colonnes]);
+  // Les tuiles d'attente n'ont pas de contenu à peser : simple tour de rôle.
+  const colonnesDAttente = useMemo(
+    () => Array.from({ length: colonnes }, (_, i) => placeholders.filter((_, j) => j % colonnes === i)),
+    [colonnes],
+  );
+
   return (
     <div style={{ position: "relative", minHeight: "100vh", background: T.bg, color: T.cream, fontFamily: T.body, overflowX: "hidden" }}>
       <TunnelBackground />
@@ -148,13 +115,12 @@ export default function Temoignages() {
       <style>{`
         @keyframes albt-rise { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
         .albt-rise { animation: albt-rise .8s cubic-bezier(.2,.7,.3,1) both; }
-        .albt-shots { display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
-        .albt-vids  { display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; align-items: start; }
-        /* Mosaïque des vraies captures : hauteurs libres, aucun recadrage. */
-        .albt-mosaic { column-count: 3; column-gap: 16px; }
-        .albt-mosaic > figure { margin: 0 0 16px; }
-        @media (max-width: 860px) { .albt-mosaic { column-count: 2; } }
-        @media (max-width: 520px) { .albt-mosaic { column-count: 1; } }
+        /* Mur : colonnes réparties en JS, chacune empilant ses tuiles. */
+        .albt-mur { display: flex; align-items: flex-start; gap: 20px; }
+        .albt-col { flex: 1 1 0; min-width: 0; }
+        .albt-col > figure { margin: 0 0 26px; }
+        .albt-col > figure:last-child { margin-bottom: 0; }
+        @media (max-width: 900px) { .albt-mur { gap: 16px; } .albt-col > figure { margin-bottom: 20px; } }
         .albt-cta {
           display:inline-block; font-family:${T.body}; font-weight:700; letter-spacing:0.02em;
           font-size:1.02rem; color:#1A1206; text-decoration:none;
@@ -186,43 +152,34 @@ export default function Temoignages() {
             Ils l'ont vécu, ils en parlent
           </h1>
           <p className="albt-rise" style={{ animationDelay: "120ms", fontFamily: T.body, fontSize: "clamp(1rem,2.7vw,1.18rem)", lineHeight: 1.6, color: T.creamMuted, margin: "0 auto", maxWidth: 560 }}>
-            Des membres de l'écosystème Al Baraka partagent leur expérience,
-            sans filtre — en captures d'écran comme en vidéo.
+            Des membres de l'écosystème Al Baraka racontent leur expérience,
+            sans filtre et dans leurs mots.
           </p>
-          {(SCREENSHOTS.length === 0 || VIDEOS.length === 0) && (
+          {vide && (
             <p className="albt-rise" style={{ animationDelay: "160ms", fontFamily: T.body, fontSize: "0.78rem", color: T.creamDim, marginTop: 16 }}>
               (Emplacements en attente — les témoignages arrivent.)
             </p>
           )}
         </div>
 
-        {/* Captures d'écran */}
-        <section className="albt-rise" style={{ animationDelay: "180ms", marginBottom: "clamp(48px,8vw,72px)" }}>
-          <SectionTitle eyebrow="Avis écrits" title="Ce qu'ils nous écrivent" />
-          {SCREENSHOTS.length > 0 ? (
-            <div className="albt-mosaic">
-              {SCREENSHOTS.map((shot) => (
-                <Screenshot key={shot.src} shot={shot} />
-              ))}
-            </div>
-          ) : (
-            <div className="albt-shots">
-              {shotSlots.map((n) => (
-                <ScreenshotSlot key={n} n={n} />
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Témoignages vidéo */}
-        <section className="albt-rise" style={{ animationDelay: "220ms", marginBottom: "clamp(48px,8vw,72px)" }}>
-          <SectionTitle eyebrow="Face caméra" title="Témoignages vidéo" />
-          <div className="albt-vids">
-            {VIDEOS.length > 0
-              ? VIDEOS.map((video) => (
-                  <TestimonialVideo key={video.kind === "vimeo" ? video.id : video.src} video={video} />
+        {/* Le mur */}
+        <section className="albt-rise" style={{ animationDelay: "180ms", marginBottom: "clamp(52px,9vw,80px)" }}>
+          <div className="albt-mur">
+            {vide
+              ? colonnesDAttente.map((colonne, i) => (
+                  <div className="albt-col" key={i}>
+                    {colonne.map((n) => (
+                      <PlaceholderTile key={n} n={n} />
+                    ))}
+                  </div>
                 ))
-              : videoSlots.map((n) => <VideoSlot key={n} n={n} />)}
+              : murs.map((colonne, i) => (
+                  <div className="albt-col" key={i}>
+                    {colonne.map((item) => (
+                      <TestimonialTile key={testimonialKey(item)} item={item} />
+                    ))}
+                  </div>
+                ))}
           </div>
         </section>
 
