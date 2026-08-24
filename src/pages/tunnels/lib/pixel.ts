@@ -20,7 +20,16 @@
 // pendant le dev.
 // ─────────────────────────────────────────────────────────────────────────
 
-const PIXEL_ID = "1076753490786885";
+// Identifiant du Pixel Meta. Le compte publicitaire du client fait foi : un
+// pixel different de celui utilise dans le gestionnaire de publicites signifie
+// des pubs optimisees sur un pixel qui ne recoit rien, donc un budget depense
+// a l'aveugle. Verifie et corrige le 24/08/2026 sur l'extrait transmis par le
+// client (l'ancien, 1076753490786885, datait de la creation des tunnels le
+// 22/07 et ne correspondait pas a son compte).
+//
+// UN SEUL pixel : en declarer deux dedouble les evenements et fausse
+// l'attribution.
+const PIXEL_ID = "1499213912013386";
 
 declare global {
   interface Window {
