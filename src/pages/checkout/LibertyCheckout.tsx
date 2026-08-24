@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { loadStripe, type Stripe } from "@stripe/stripe-js";
+// `/pure` et non l'entrée par défaut : importer `@stripe/stripe-js` INJECTE
+// le script Stripe dans la page, au simple import. Les pages de paiement
+// étant importées en dur dans App.tsx, Stripe se chargeait sur TOUTES les
+// pages — y compris les tunnels publicitaires, qui n'encaissent rien
+// (mesuré : 238 Ko + une iframe invisible). Avec `/pure`, le script n'est
+// chargé qu'au premier appel de `loadStripe()`, donc ici seulement.
+import { loadStripe, type Stripe } from "@stripe/stripe-js/pure";
 import {
   Elements,
   PaymentElement,
