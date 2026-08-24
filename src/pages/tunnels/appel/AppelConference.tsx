@@ -14,12 +14,14 @@
 // pipeline que la page SIO qu'on remplace) → 0 code back.
 // ─────────────────────────────────────────────────────────────────────────
 import { useEffect } from "react";
+import { trackLandingView } from "../lib/pixel";
 import { T, CONFERENCE, ensureTunnelFonts } from "../theme";
 import TunnelBackground from "../components/TunnelBackground";
 import CalendlyInline from "../components/CalendlyInline";
 
 export default function AppelConference() {
   useEffect(() => {
+    trackLandingView();
     ensureTunnelFonts();
     document.title = "Réserve ton appel — Al Baraka";
   }, []);

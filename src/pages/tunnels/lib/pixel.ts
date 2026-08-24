@@ -31,6 +31,8 @@
 // l'attribution.
 const PIXEL_ID = "1499213912013386";
 
+import { getTunnelPrefill } from "./source";
+
 declare global {
   interface Window {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -151,27 +153,64 @@ export function trackCalendlyBooked(): void {
       window.fbq("init", PIXEL_ID);
       initialized = true;
     }
+    window.fbq("track", "PageView");
     window.fbq("track", "Schedule");
   } catch (err) {
     console.warn("[tunnel-pixel] schedule tracking failed (non-blocking):", err);
   }
 }
 
+/** Marqueur d'inscription en attente, posé à la validation du formulaire. */
+const LEAD_EN_ATTENTE = "alb_tunnel_lead_pending";
+
 /**
- * À appeler quand le formulaire d'inscription est validé : event « Lead »
- * avec Advanced Matching hashé (meilleure précision de matching Meta).
- * No-op silencieux hors prod.
+ * À appeler à la validation du formulaire, APRÈS l'écriture en base : pose un
+ * marqueur pour que la page de remerciement déclenche « Lead ».
+ *
+ * Le client veut l'event sur la Thank You Page, comme dans un montage
+ * classique. Mais ces pages sont accessibles par URL directe : un
+ * rechargement, un retour arrière ou un lien partagé compteraient chacun une
+ * conversion. D'où ce marqueur à usage unique — l'event part bien depuis la
+ * page de remerciement, mais seulement pour qui vient VRAIMENT de s'inscrire.
  */
-export async function trackLead(contact: PixelContact = {}): Promise<void> {
+export function markLeadPending(): void {
+  try {
+    sessionStorage.setItem(LEAD_EN_ATTENTE, "1");
+  } catch {
+    /* mode privé strict : on perdra le Lead, jamais on n'en inventera un */
+  }
+}
+
+/**
+ * À appeler au mount d'une page de remerciement : PageView, plus « Lead » si
+ * le visiteur vient de s'inscrire (marqueur consommé une seule fois).
+ *
+ * L'Advanced Matching est posé ICI par un `init` explicite : le pixel ayant
+ * déjà été initialisé sur la landing, un second `init` conditionnel n'aurait
+ * rien fait — les données de correspondance n'étaient donc JAMAIS transmises.
+ */
+export async function trackTypLead(): Promise<void> {
   if (!isProdHost()) return;
   try {
     loadFbqScript();
     if (!window.fbq) return;
-    const am = await buildAdvancedMatching(contact);
+
+    let enAttente = false;
+    try {
+      enAttente = sessionStorage.getItem(LEAD_EN_ATTENTE) === "1";
+      if (enAttente) sessionStorage.removeItem(LEAD_EN_ATTENTE);
+    } catch { /* pas de stockage : pas de Lead */ }
+
     if (!initialized) {
-      Object.keys(am).length > 0 ? window.fbq("init", PIXEL_ID, am) : window.fbq("init", PIXEL_ID);
+      window.fbq("init", PIXEL_ID);
       initialized = true;
     }
+    window.fbq("track", "PageView");
+    if (!enAttente) return;
+
+    const p = getTunnelPrefill();
+    const am = await buildAdvancedMatching({ firstName: p?.firstName, email: p?.email, phone: p?.phone });
+    if (Object.keys(am).length > 0) window.fbq("init", PIXEL_ID, am);
     window.fbq("track", "Lead");
   } catch (err) {
     console.warn("[tunnel-pixel] lead tracking failed (non-blocking):", err);

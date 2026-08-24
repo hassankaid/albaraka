@@ -10,6 +10,7 @@
 //   - B4 : embed Calendly + page de confirmation après réservation.
 // ─────────────────────────────────────────────────────────────────────────
 import { useEffect } from "react";
+import { trackTypLead } from "../lib/pixel";
 import { T, CONFERENCE, ensureTunnelFonts } from "../theme";
 import TunnelBackground from "../components/TunnelBackground";
 import VimeoVideo from "../components/VimeoVideo";
@@ -21,6 +22,9 @@ export default function VslMerci() {
   const variant = resolveVariant("vsl", new URLSearchParams(window.location.search).get("v"));
 
   useEffect(() => {
+    // Page de remerciement : PageView, et « Lead » si le visiteur vient
+    // vraiment de s'inscrire (marqueur pose par le formulaire).
+    void trackTypLead();
     ensureTunnelFonts();
     document.title = "Inscription confirmée — Al Baraka";
   }, []);

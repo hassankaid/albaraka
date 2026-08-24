@@ -23,6 +23,7 @@
 // TunnelBackground, fonts). Pas de dépendance aux tunnels WA/VSL.
 // ─────────────────────────────────────────────────────────────────────────
 import { useEffect, useMemo } from "react";
+import { trackLandingView } from "../lib/pixel";
 import { T, CONFERENCE, ensureTunnelFonts } from "../theme";
 import TunnelBackground from "../components/TunnelBackground";
 import BookingUnavailable from "../components/BookingUnavailable";
@@ -74,6 +75,7 @@ function PlaceholderTile({ n }: { n: number }) {
 
 export default function Temoignages() {
   useEffect(() => {
+    trackLandingView();
     ensureTunnelFonts();
     document.title = "Témoignages — Al Baraka";
   }, []);

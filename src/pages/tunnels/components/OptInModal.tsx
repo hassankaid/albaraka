@@ -7,13 +7,13 @@
 //   « Veuillez renseigner les informations ci-dessous »
 //   Prénom / Email / Téléphone (drapeau + indicatif) / « Je valide mon inscription »
 //
-// À la validation : event Meta « Lead » → POST vers l'edge function
+// À la validation : POST vers l'edge function
 // tunnel-lead-submit (find_or_create_contact + INSERT leads, source webi_wa_*)
 // → redirection vers la page de remerciement /webinaire/merci.
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { T, CONFERENCE } from "../theme";
-import { trackLead } from "../lib/pixel";
+import { markLeadPending } from "../lib/pixel";
 import { submitTunnelLead } from "../lib/api";
 import { getAttribution, setTunnelPrefill } from "../lib/source";
 import type { TunnelConfig } from "../config";
@@ -76,8 +76,11 @@ export default function OptInModal({ open, onClose, tunnel }: Props) {
       await submitTunnelLead({ first_name: firstName.trim(), email: email.trim(), phone }, tunnel);
       // Mémorise les coordonnées pour pré-remplir le Calendly (tunnel VSL).
       setTunnelPrefill({ firstName: firstName.trim(), email: email.trim(), phone });
-      // 2) Event Meta « Lead » (Advanced Matching) — no-op hors prod.
-      await trackLead({ firstName: firstName.trim(), email: email.trim(), phone });
+      // 2) Le « Lead » part de la PAGE DE REMERCIEMENT (montage voulu par le
+      //    client). On pose ici un marqueur a usage unique : sans lui, les
+      //    pages de remerciement etant accessibles par URL directe, chaque
+      //    rechargement compterait une conversion.
+      markLeadPending();
       // 3) Page de remerciement propre au tunnel (en portant la variante A/B).
       const variant = getAttribution(tunnel)?.variant;
       navigate(variant ? `${tunnel.merciPath}?v=${encodeURIComponent(variant)}` : tunnel.merciPath);

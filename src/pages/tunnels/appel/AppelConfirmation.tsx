@@ -11,6 +11,7 @@
 // uniquement les paramètres que Calendly ajoute à l'URL de redirection.
 // ─────────────────────────────────────────────────────────────────────────
 import { useEffect, useMemo } from "react";
+import { trackCalendlyBooked } from "../lib/pixel";
 import { T, ensureTunnelFonts } from "../theme";
 import TunnelBackground from "../components/TunnelBackground";
 
@@ -53,6 +54,7 @@ export default function AppelConfirmation() {
   }, []);
 
   useEffect(() => {
+    trackCalendlyBooked();
     ensureTunnelFonts();
     document.title = "Appel confirmé — Al Baraka";
   }, []);
