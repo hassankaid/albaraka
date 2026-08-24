@@ -10,7 +10,7 @@
 // (direction luxe éditorial noir & or). Module autonome (aucune dépendance vers
 // quiz / rdv / redif / conferences).
 // ─────────────────────────────────────────────────────────────────────────
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { T, ensureTunnelFonts } from "../theme";
 import { captureAttribution } from "../lib/source";
 import { trackLandingView } from "../lib/pixel";
@@ -18,7 +18,9 @@ import type { TunnelConfig } from "../config";
 import TunnelBackground from "./TunnelBackground";
 import OptInModal from "./OptInModal";
 import TestimonialTile from "./TestimonialTile";
-import type { VideoTestimonial } from "../lib/testimonials";
+import FeaturedTestimonial from "./FeaturedTestimonial";
+import { COMPILATION, COMPILATION_DUREE, repartirEnColonnes, testimonialKey, type VideoTestimonial } from "../lib/testimonials";
+import { useColonnes } from "../lib/useColonnes";
 
 const DISCOVERIES = [
   {
@@ -58,6 +60,15 @@ export const LANDING_TESTIMONIALS: VideoTestimonial[] = [
 
 export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
   const [open, setOpen] = useState(false);
+  // Mêmes proportions disparates que sur la page témoignages : une grille
+  // laisserait un trou sous les vidéos les plus courtes (mesuré : la tuile
+  // d'Anissa, en 4/3, flottait au-dessus d'un vide de plusieurs centaines de
+  // pixels). Voir `repartirEnColonnes`.
+  const colonnes = useColonnes({ deux: 900, une: 760 });
+  const colonnesTemoignages = useMemo(
+    () => repartirEnColonnes(LANDING_TESTIMONIALS, colonnes),
+    [colonnes],
+  );
 
   useEffect(() => {
     ensureTunnelFonts();
@@ -100,6 +111,11 @@ export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
         .albt-disc-card:hover { transform:translateY(-4px); border-color:${T.goldLine}; background:rgba(201,160,78,.045); }
         /* Empilé sur mobile, 3 colonnes à partir de la tablette large */
         .albt-grid3 { display:grid; grid-template-columns:1fr; gap:18px; margin-top:34px; }
+        /* Mur de témoignages : colonnes réparties en JS, hauteurs équilibrées. */
+        .albt-mur { display:flex; align-items:flex-start; gap:18px; margin-top:34px; }
+        .albt-col { flex:1 1 0; min-width:0; }
+        .albt-col > figure { margin:0 0 22px; }
+        .albt-col > figure:last-child { margin-bottom:0; }
         @media (min-width:760px){ .albt-grid3 { grid-template-columns:repeat(3,1fr); } }
       `}</style>
 
@@ -174,10 +190,22 @@ export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
         {/* ── TÉMOIGNAGES VIDÉO ────────────────────────────────────── */}
         <section style={{ padding: "clamp(30px,6vw,56px) 0" }}>
           <SectionLabel>Ils l'ont fait avant toi</SectionLabel>
-          <div className="albt-grid3" style={{ alignItems: "start" }}>
-            {LANDING_TESTIMONIALS.map((v) => (
-              <div key={v.kind === "vimeo" ? v.id : v.src} className="albt-rise">
-                <TestimonialTile item={v} />
+          {/* Trafic froid : une seule pièce à regarder, pas six choix à faire.
+              Les six parcours détaillés viennent après, pour qui veut creuser. */}
+          <div style={{ maxWidth: 820, margin: "0 auto clamp(40px,7vw,60px)" }}>
+            <FeaturedTestimonial
+              video={COMPILATION}
+              eyebrow="En une fois"
+              title="Leurs retours, bout à bout"
+              duree={COMPILATION_DUREE}
+            />
+          </div>
+          <div className="albt-mur">
+            {colonnesTemoignages.map((colonne, i) => (
+              <div className="albt-col albt-rise" key={i}>
+                {colonne.map((v) => (
+                  <TestimonialTile key={testimonialKey(v)} item={v} />
+                ))}
               </div>
             ))}
           </div>

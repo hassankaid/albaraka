@@ -1,7 +1,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 // PAGE INDÉPENDANTE — Témoignages (preuve sociale).
 //
-// UN SEUL mur de témoignages, captures et vidéos mélangées. La version
+// La compilation ouvre la page (tout, d'une traite), puis UN SEUL mur de
+// témoignages, captures et vidéos mélangées, pour aller en chercher un. La version
 // précédente les séparait en « avis écrits » et « témoignages vidéo » : ça
 // triait la preuve par support au lieu de la montrer, et la grille laissait
 // de grands trous sous les vidéos les plus courtes — une rangée de grille
@@ -21,39 +22,17 @@
 // Autonome (module tunnels) : réutilise seulement le socle marque (theme,
 // TunnelBackground, fonts). Pas de dépendance aux tunnels WA/VSL.
 // ─────────────────────────────────────────────────────────────────────────
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { T, CONFERENCE, ensureTunnelFonts } from "../theme";
 import TunnelBackground from "../components/TunnelBackground";
 import BookingUnavailable from "../components/BookingUnavailable";
 import TestimonialTile from "../components/TestimonialTile";
+import FeaturedTestimonial from "../components/FeaturedTestimonial";
 import { TEMOIGNAGES, PLACEHOLDER_COUNT, testimonialKey } from "./content";
-import { repartirEnColonnes } from "../lib/testimonials";
+import { repartirEnColonnes, COMPILATION, COMPILATION_DUREE } from "../lib/testimonials";
+import { useColonnes } from "../lib/useColonnes";
 
 const placeholders = Array.from({ length: PLACEHOLDER_COUNT }, (_, i) => i + 1);
-
-/**
- * Nombre de colonnes du mur, suivi en direct.
- *
- * La répartition est calculée en JS (cf. `repartirEnColonnes`), il faut donc
- * connaître le nombre de colonnes au rendu — une règle CSS ne suffirait pas.
- */
-function useNombreDeColonnes(): number {
-  const [n, setN] = useState(3);
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const deux = window.matchMedia("(max-width: 900px)");
-    const une = window.matchMedia("(max-width: 560px)");
-    const maj = () => setN(une.matches ? 1 : deux.matches ? 2 : 3);
-    maj();
-    deux.addEventListener("change", maj);
-    une.addEventListener("change", maj);
-    return () => {
-      deux.removeEventListener("change", maj);
-      une.removeEventListener("change", maj);
-    };
-  }, []);
-  return n;
-}
 
 // ── Tuile d'attente, tant qu'aucun témoignage n'est publié ──
 function PlaceholderTile({ n }: { n: number }) {
@@ -99,7 +78,7 @@ export default function Temoignages() {
     document.title = "Témoignages — Al Baraka";
   }, []);
 
-  const colonnes = useNombreDeColonnes();
+  const colonnes = useColonnes({ deux: 900, une: 560 });
   const vide = TEMOIGNAGES.length === 0;
   const murs = useMemo(() => repartirEnColonnes(TEMOIGNAGES, colonnes), [colonnes]);
   // Les tuiles d'attente n'ont pas de contenu à peser : simple tour de rôle.
@@ -161,6 +140,17 @@ export default function Temoignages() {
             </p>
           )}
         </div>
+
+        {/* La compilation : ce que tout le monde dit, d'une traite. Le mur
+            qui suit permet d'aller chercher un témoignage en particulier. */}
+        <section className="albt-rise" style={{ animationDelay: "150ms", maxWidth: 880, margin: "0 auto clamp(52px,9vw,80px)" }}>
+          <FeaturedTestimonial
+            video={COMPILATION}
+            eyebrow="Tout, d'une traite"
+            title="Ils racontent, les uns après les autres"
+            duree={COMPILATION_DUREE}
+          />
+        </section>
 
         {/* Le mur */}
         <section className="albt-rise" style={{ animationDelay: "180ms", marginBottom: "clamp(52px,9vw,80px)" }}>

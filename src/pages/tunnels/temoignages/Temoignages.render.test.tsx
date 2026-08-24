@@ -61,7 +61,37 @@ describe("page Témoignages — en attente de contenu", () => {
     expect(screen.queryByText("Témoignage n°7")).toBeNull();
     expect(screen.getByText(/Emplacements en attente/)).toBeTruthy();
     expect(container.querySelector("img")).toBeNull();
-    expect(container.querySelector("iframe")).toBeNull();
+    // La compilation reste affichée : elle ne dépend pas du contenu du mur.
+    expect(container.querySelector(".albt-mur iframe")).toBeNull();
+  });
+});
+
+describe("page Témoignages — la compilation", () => {
+  it("ouvre la page, avant le mur, avec sa durée annoncée", async () => {
+    const { container } = await renderPage({ items: [videoVimeo] });
+
+    const cadres = [...container.querySelectorAll("iframe")];
+    const compil = cadres.find((f) => f.getAttribute("src")!.includes("1218423745"));
+    expect(compil, "la compilation est absente de la page").toBeTruthy();
+    expect(new URL(compil!.getAttribute("src")!).searchParams.get("h")).toBe("fa0ea35b2f");
+
+    // Elle précède le mur : c'est l'entrée en matière, pas une tuile.
+    const mur = container.querySelector(".albt-mur")!;
+    expect(compil!.compareDocumentPosition(mur) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(mur.contains(compil!)).toBe(false);
+
+    // Douze minutes : le visiteur doit le savoir avant de lancer.
+    expect(screen.getByText("12 min")).toBeTruthy();
+  });
+
+  it("se charge tout de suite, contrairement aux tuiles du mur", async () => {
+    const { container } = await renderPage({ items: [videoVimeo] });
+
+    const cadres = [...container.querySelectorAll("iframe")];
+    const compil = cadres.find((f) => f.getAttribute("src")!.includes("1218423745"))!;
+    const tuile = cadres.find((f) => f.getAttribute("src")!.includes("1012345678"))!;
+    expect(compil.getAttribute("loading")).toBeNull();
+    expect(tuile.getAttribute("loading")).toBe("lazy");
   });
 });
 
@@ -118,7 +148,7 @@ describe("page Témoignages — vidéos", () => {
   it("construit l'URL d'embed Vimeo avec le hash des vidéos masquées", async () => {
     const { container } = await renderPage({ items: [videoVimeo] });
 
-    const iframe = container.querySelector("iframe")!;
+    const iframe = container.querySelector(".albt-mur iframe")!;
     const url = new URL(iframe.getAttribute("src")!);
     expect(url.origin + url.pathname).toBe("https://player.vimeo.com/video/1012345678");
     expect(url.searchParams.get("h")).toBe("a1b2c3d4e5");
@@ -129,7 +159,7 @@ describe("page Témoignages — vidéos", () => {
   it("diffère le chargement des lecteurs — la page en aligne une douzaine", async () => {
     const { container } = await renderPage({ items: [videoVimeo] });
 
-    expect(container.querySelector("iframe")!.getAttribute("loading")).toBe("lazy");
+    expect(container.querySelector(".albt-mur iframe")!.getAttribute("loading")).toBe("lazy");
   });
 
   it("omet le paramètre de hash quand la vidéo est publique", async () => {
@@ -137,7 +167,7 @@ describe("page Témoignages — vidéos", () => {
       items: [{ kind: "vimeo", id: "76979871", title: "Publique" }],
     });
 
-    const url = new URL(container.querySelector("iframe")!.getAttribute("src")!);
+    const url = new URL(container.querySelector(".albt-mur iframe")!.getAttribute("src")!);
     expect(url.searchParams.has("h")).toBe(false);
   });
 

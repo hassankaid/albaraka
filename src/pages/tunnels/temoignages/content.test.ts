@@ -15,11 +15,12 @@ import { describe, it, expect } from "vitest";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { TEMOIGNAGES, testimonialKey } from "./content";
+import { COMPILATION } from "../lib/testimonials";
 import { LANDING_TESTIMONIALS } from "../components/TunnelLanding";
 
 const tous = [...TEMOIGNAGES, ...LANDING_TESTIMONIALS];
 const captures = TEMOIGNAGES.filter((t) => t.kind === "capture");
-const videos = tous.filter((t) => t.kind !== "capture");
+const videos = [...tous.filter((t) => t.kind !== "capture"), COMPILATION];
 
 describe("captures publiées", () => {
   it("pointent toutes vers un fichier réellement présent dans public/", () => {
@@ -81,6 +82,14 @@ describe("le mur", () => {
     for (let i = 1; i < positions.length; i++) {
       expect(positions[i] - positions[i - 1], "deux captures se suivent").toBeGreaterThan(1);
     }
+  });
+});
+
+describe("la compilation", () => {
+  it("n'apparaît pas AUSSI dans le mur — elle serait montrée deux fois", () => {
+    const cle = testimonialKey(COMPILATION);
+    expect(TEMOIGNAGES.map(testimonialKey)).not.toContain(cle);
+    expect(LANDING_TESTIMONIALS.map(testimonialKey)).not.toContain(cle);
   });
 });
 

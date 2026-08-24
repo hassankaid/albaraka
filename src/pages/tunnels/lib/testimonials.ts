@@ -175,3 +175,23 @@ export function repartirEnColonnes(items: Testimonial[], colonnes: number): Test
 
   return cols.map((col) => col.sort((a, b) => a - b).map((i) => items[i]));
 }
+
+/**
+ * La compilation de tous les témoignages, montée bout à bout (Vimeo,
+ * dossier VIDÉOS TÉMOIGNAGES). Les deux pages la montrent — d'où une seule
+ * déclaration : changer de montage ne doit pas se faire à deux endroits.
+ *
+ * ⚠️ Elle n'autorisait l'intégration que sur plateforme. et view. ;
+ * `event.` a été ajouté le 24/08/2026, sans quoi elle aurait été refusée
+ * sur les deux pages, qui ne sont servies que depuis ce domaine.
+ */
+export const COMPILATION: VimeoTestimonial = {
+  kind: "vimeo",
+  id: "1218423745",
+  hash: "fa0ea35b2f",
+  ratio: "16 / 9",
+  title: "La compilation des témoignages",
+};
+
+/** Durée annoncée au visiteur — 12 min, autant qu'il le sache avant de lancer. */
+export const COMPILATION_DUREE = "12 min";
