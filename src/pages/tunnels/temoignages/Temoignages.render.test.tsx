@@ -66,6 +66,23 @@ describe("page Témoignages — en attente de contenu", () => {
   });
 });
 
+describe("page Témoignages — les titres", () => {
+  it("interdit le retour à la ligne sur les deux titres", async () => {
+    // Ils doivent tenir sur UNE ligne. La taille qui le garantit est calculée
+    // à partir de la largeur mesurée du texte (Fraunces 600, en capitales) et
+    // de la place disponible — vérifié de 320 à 1440 px, marge minimale 14 px.
+    //
+    // Ce test ne garde que `nowrap`, la seule moitié observable ici : jsdom
+    // n'interprète ni `min()` ni `calc()`, donc la taille y est vide. La
+    // mesure du rendu se fait hors de cette suite, dans un navigateur.
+    const { container } = await renderPage({ items: [videoVimeo] });
+
+    for (const titre of [container.querySelector("h1")!, container.querySelector("h2")!]) {
+      expect(titre.style.whiteSpace, `« ${titre.textContent} » peut passer à la ligne`).toBe("nowrap");
+    }
+  });
+});
+
 describe("page Témoignages — la compilation", () => {
   it("ouvre la page, avant le mur, avec sa durée annoncée", async () => {
     const { container } = await renderPage({ items: [videoVimeo] });

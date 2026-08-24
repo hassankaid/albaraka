@@ -189,7 +189,7 @@ export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
 
         {/* ── TÉMOIGNAGES VIDÉO ────────────────────────────────────── */}
         <section style={{ padding: "clamp(30px,6vw,56px) 0" }}>
-          <SectionLabel>Ils l'ont fait avant toi</SectionLabel>
+          <SectionLabel grand>Ils l'ont fait avant toi</SectionLabel>
           {/* Trafic froid : une seule pièce à regarder, pas six choix à faire.
               Les six parcours détaillés viennent après, pour qui veut creuser.
               Aucun intitulé propre : le libellé de section ci-dessus suffit. */}
@@ -227,11 +227,37 @@ export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+/**
+ * Libellé de section. `grand` en fait un vrai titre : depuis que la
+ * compilation n'a plus d'intitulé propre, ce libellé est le SEUL titre de la
+ * section témoignages — à la taille courante il était trop discret pour ce
+ * rôle, et posé trop près du lecteur.
+ */
+function SectionLabel({ children, grand = false }: { children: React.ReactNode; grand?: boolean }) {
   return (
-    <div className="albt-rise" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
+    <div
+      className="albt-rise"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: grand ? 20 : 16,
+        marginBottom: grand ? "clamp(26px,4vw,38px)" : undefined,
+      }}
+    >
       <span style={{ height: 1, width: "clamp(24px,10vw,60px)", background: `linear-gradient(90deg, transparent, ${T.goldLine})` }} />
-      <h2 style={{ margin: 0, fontFamily: T.body, fontWeight: 600, fontSize: "0.82rem", letterSpacing: "0.22em", textTransform: "uppercase", color: T.goldBright, textAlign: "center" }}>
+      <h2
+        style={{
+          margin: 0,
+          fontFamily: T.body,
+          fontWeight: 600,
+          fontSize: grand ? "clamp(1rem,2.6vw,1.3rem)" : "0.82rem",
+          letterSpacing: grand ? "0.16em" : "0.22em",
+          textTransform: "uppercase",
+          color: T.goldBright,
+          textAlign: "center",
+        }}
+      >
         {children}
       </h2>
       <span style={{ height: 1, width: "clamp(24px,10vw,60px)", background: `linear-gradient(90deg, ${T.goldLine}, transparent)` }} />

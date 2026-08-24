@@ -125,8 +125,18 @@ export default function Temoignages() {
         {/* Épuré à la demande de Hassan : la pastille « Témoignages » et le
             paragraphe d'intro repoussaient la vidéo hors du premier écran, en
             répétant ce que le titre dit déjà. Il ne reste que le titre. */}
-        <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto clamp(28px,5vw,40px)" }}>
-          <h1 className="albt-rise" style={{ fontFamily: T.display, fontWeight: 600, fontSize: "clamp(1.9rem,5.6vw,2.9rem)", lineHeight: 1.1, color: T.cream, margin: 0, textTransform: "uppercase" }}>
+        <div style={{ textAlign: "center", margin: "0 auto clamp(28px,5vw,40px)" }}>
+          {/* Une seule ligne, à toutes les largeurs. La taille n'est pas
+              choisie au jugé : le titre mesure 14,8 fois sa taille de police
+              en largeur (mesuré sur Fraunces 600, en capitales), et la place
+              disponible vaut `min(1040px, 100vw) - 44`. D'où la formule, et
+              `nowrap` pour que tout écart se voie au lieu de passer à la ligne.
+              ⚠️ Fraunces est une police VARIABLE à taille optique : ses
+              proportions changent avec la taille. Un coefficient mesuré à
+              100 px débordait de 16 px sous 900 px de large — les valeurs
+              ci-dessous sont mesurées aux tailles réellement rendues, de
+              320 à 1440 px. */}
+          <h1 className="albt-rise" style={{ fontFamily: T.display, fontWeight: 600, fontSize: "min(2.9rem, calc(5.5vw - 2px))", lineHeight: 1.1, color: T.cream, margin: 0, textTransform: "uppercase", whiteSpace: "nowrap" }}>
             Ils l'ont vécu, ils en parlent
           </h1>
           {vide && (
@@ -164,8 +174,13 @@ export default function Temoignages() {
         </section>
 
         {/* CTA final → Calendly */}
-        <div style={{ textAlign: "center", maxWidth: 620, margin: "0 auto" }}>
-          <h2 style={{ fontFamily: T.display, fontWeight: 600, fontSize: "clamp(1.5rem,4.6vw,2.2rem)", lineHeight: 1.15, color: T.cream, margin: "0 0 14px", textTransform: "uppercase" }}>
+        <div style={{ textAlign: "center", margin: "0 auto" }}>
+          {/* Même raison : ce titre-ci mesure 17,25 fois sa taille de police,
+              c'est le plus long des deux. Son ancien cadre de 620 px ne lui
+              laissait que 2 % de marge — le moindre écart de rendu de police
+              le faisait passer à la ligne. Coefficient mesuré, cf. le titre
+              ci-dessus. */}
+          <h2 style={{ fontFamily: T.display, fontWeight: 600, fontSize: "min(2.2rem, calc(4.6vw - 2px))", lineHeight: 1.15, color: T.cream, margin: "0 0 14px", textTransform: "uppercase", whiteSpace: "nowrap" }}>
             À ton tour d'écrire ton histoire
           </h2>
           <p style={{ fontFamily: T.body, fontSize: "clamp(0.98rem,2.6vw,1.12rem)", lineHeight: 1.6, color: T.creamMuted, margin: "0 auto 28px", maxWidth: 480 }}>
