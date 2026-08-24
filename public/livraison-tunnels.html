@@ -235,6 +235,11 @@
   ol.steps code, p code, li code {
     font-family: var(--mono); font-size: 0.86em; color: var(--gold-bright);
     background: rgba(201, 160, 78, 0.09); padding: 0.06em 0.34em; border-radius: 2px;
+    /* Les liens et la ligne de paramètres Meta sont plus larges qu'un écran de
+       téléphone : sans cette règle, c'est la PAGE ENTIÈRE qui défile en
+       largeur. Le retour à la ligne n'insère aucun caractère, la copie du
+       texte reste exacte. */
+    overflow-wrap: anywhere;
   }
 
   .callout {
@@ -389,16 +394,40 @@
   </section>
 
   <section>
-    <p class="kicker">Recette</p>
-    <h2>Comment vérifier vous-même</h2>
-    <p class="muted">Comptez cinq minutes par tunnel. À faire de préférence depuis un téléphone, comme vos prospects.</p>
+    <p class="kicker">Pour l'équipe</p>
+    <h2>Plan de recette</h2>
+    <p class="muted">Dix minutes. À faire depuis un téléphone, comme vos prospects.</p>
     <ol class="steps">
-      <li><p><strong>Ouvrez un lien d'entrée</strong> — par exemple le tunnel WhatsApp, origine Instagram, variante 3. La page doit s'afficher entièrement, sans coupure.</p></li>
-      <li><p><strong>Inscrivez-vous</strong> avec un e-mail et un numéro qui ne sont pas déjà dans votre CRM. C'est important : un numéro déjà connu serait rattaché au contact existant.</p></li>
-      <li><p><strong>Vérifiez la page de confirmation</strong> : la vidéo doit être celle de la variante demandée, et l'heure annoncée doit être <strong>11h00</strong>.</p></li>
-      <li><p><strong>Testez la dernière étape.</strong> Sur le tunnel WhatsApp, le bouton doit ouvrir le bon groupe. Sur le tunnel VSL, l'agenda doit s'afficher sous la vidéo et permettre de réserver un créneau.</p></li>
-      <li><p><strong>Retournez dans votre plateforme</strong>, onglet Contacts : votre inscription doit apparaître avec la bonne origine.</p></li>
-      <li><p><strong>Supprimez vos fiches de test</strong> une fois la vérification terminée.</p></li>
+      <li><p><strong>Tunnel WhatsApp</strong> — ouvrez <code>event.albarakaecosysteme.com/webinaire?src=ads&amp;v=1</code>. La page doit s'afficher entièrement. Inscrivez-vous avec un e-mail et un numéro <strong>jamais utilisés</strong> dans le CRM.<br>
+        ⚠️ Le champ téléphone contient déjà <code>+33</code> : tapez votre numéro <strong>sans le 0</strong> à la suite.</p></li>
+      <li><p><strong>Page de confirmation</strong> — la vidéo se lance, l'heure annoncée est <strong>11h00</strong>, et le bouton ouvre le bon groupe WhatsApp.</p></li>
+      <li><p><strong>Tunnel VSL</strong> — même inscription sur <code>event.albarakaecosysteme.com/vsl?src=ads&amp;v=1</code>. Sur la page de confirmation, <strong>l'agenda doit s'afficher sous la vidéo</strong>. Réservez un créneau pour de vrai.</p></li>
+      <li><p><strong>Les deux autres pages</strong> — <code>/temoignages</code> et <code>/appel-conference</code> : les vidéos se lancent, les boutons de rendez-vous proposent des créneaux.</p></li>
+      <li><p><strong>Contrôle dans la plateforme</strong> — onglet <em>Contacts</em> : vos deux inscriptions, avec la bonne origine. Onglet <em>Appels</em> : le rendez-vous de l'étape 3, libellé <strong>« Appel VSL (tunnel) »</strong>.</p></li>
+      <li><p><strong>Ménage</strong> — supprimez vos fiches de test et annulez votre rendez-vous Calendly.</p></li>
+    </ol>
+    <p class="callout">Déjà vérifié de notre côté : les deux inscriptions complètes, l'écriture en base, la déduplication des contacts, la remontée de l'origine publicitaire, et le circuit Calendly → CRM. <strong>L'étape 3 est le seul maillon que personne n'a encore parcouru en vrai</strong>, car la réservation passe par un contrôle anti-robot.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Pour la personne qui lance les publicités</p>
+    <h2>Plan de lancement Meta</h2>
+
+    <ol class="steps">
+      <li><p><strong>Le lien de destination.</strong><br>
+        <code>event.albarakaecosysteme.com/TUNNEL?src=ads&amp;v=VARIANTE</code><br>
+        <em>TUNNEL</em> = <code>webinaire</code> (groupe WhatsApp) ou <code>vsl</code> (prise de rendez-vous). <em>VARIANTE</em> = 1 à 6, c'est la vidéo testée.<br>
+        Sur Meta, <code>src</code> vaut <strong>toujours <code>ads</code></strong> — <code>ig</code> et <code>tiktok</code> sont réservés aux publications organiques.</p></li>
+
+      <li><p><strong>Le paramètre indispensable.</strong> Dans chaque publicité, section <em>Suivi → Paramètres d'URL</em>, collez exactement :<br>
+        <code>utm_source={{site_source_name}}&amp;utm_medium=paid&amp;utm_campaign={{campaign.name}}&amp;utm_content={{ad.name}}</code><br>
+        <strong>Sans cette ligne, impossible de distinguer Facebook d'Instagram</strong> : le lien seul ne le dit pas. C'est elle qui remplit la colonne origine dans le CRM.</p></li>
+
+      <li><p><strong>Le Pixel</strong> — identifiant <code>1499213912013386</code>, déjà en place sur les pages. Il envoie <code>PageView</code> et <code>ViewContent</code> à l'arrivée, <strong><code>Lead</code> à l'inscription validée</strong> (c'est l'évènement d'optimisation), <code>Schedule</code> au rendez-vous pris, et <code>WhatsAppJoin</code> au clic sur le groupe.</p></li>
+
+      <li><p><strong>Avant de dépenser.</strong> Ouvrez votre lien final, inscrivez-vous une fois, et vérifiez dans le gestionnaire d'évènements Meta que <code>Lead</code> remonte bien sur ce pixel. Supprimez ensuite la fiche de test.</p></li>
+
+      <li><p><strong>Une seule variante par publicité.</strong> C'est le <code>v=</code> qui permettra de savoir laquelle convertit. Ne mélangez pas deux variantes dans un même ensemble.</p></li>
     </ol>
   </section>
 
@@ -421,6 +450,24 @@
           <h3>La page Témoignages est alimentée</h3>
         </div>
         <p>Vos <strong>10 témoignages vidéo</strong> et <strong>2 avis écrits</strong> sont en ligne, précédés de la <strong>compilation</strong>. Les six parcours chiffrés apparaissent également sur la page d'entrée des tunnels.</p>
+      </div>
+    </div>
+
+    <div class="states">
+      <div class="state">
+        <div class="state-top">
+          <span class="chip chip-ok">Fait</span>
+          <h3>Le Pixel est aligné sur votre compte</h3>
+        </div>
+        <p>L'identifiant en place ne correspondait pas à celui de votre compte publicitaire. Corrigé avec celui que vous nous avez transmis. Sans cela, Meta aurait optimisé sur un pixel ne recevant rien.</p>
+      </div>
+
+      <div class="state">
+        <div class="state-top">
+          <span class="chip chip-ok">Fait</span>
+          <h3>Les pages ont été allégées</h3>
+        </div>
+        <p>La page d'entrée publicitaire est passée de <strong>2,8 Mo à 570 Ko</strong> sur mobile. Les vidéos ne se chargent plus qu'à l'approche du regard, et le module de paiement a été retiré des pages qui n'encaissent rien.</p>
       </div>
     </div>
 
