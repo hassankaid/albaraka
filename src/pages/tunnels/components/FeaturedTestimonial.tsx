@@ -1,43 +1,26 @@
-// Bloc « pièce maîtresse » : une vidéo mise en avant, plus large que les
-// tuiles du mur, avec son intitulé AU-DESSUS.
+// Vidéo mise en avant : le lecteur, et rien d'autre.
 //
 // Sert à la compilation des témoignages, présente sur les deux pages. Elle
-// n'est pas un témoignage parmi d'autres : douze minutes bout à bout, c'est
-// une entrée en matière — la noyer dans le mur l'aurait rendue invisible, et
-// une tuile de douze minutes au milieu de clips d'une minute est trompeuse.
+// n'est pas un témoignage parmi d'autres — douze minutes au milieu de clips
+// d'une minute serait trompeur — d'où un cadre plus large, hors du mur.
 //
-// La durée est annoncée : le visiteur doit savoir ce qu'il engage avant de
-// lancer la lecture.
+// Pas d'intitulé au-dessus, volontairement : chaque page en porte déjà un
+// (le titre de la page témoignages, le libellé de section sur la landing),
+// et empiler un troisième titre repoussait la vidéo plus bas que le premier
+// écran. Seule la durée subsiste, discrète et SOUS le lecteur : le visiteur
+// doit savoir ce qu'il engage, sans que ça retarde ce qu'il est venu voir.
 import { T } from "../theme";
 import { testimonialVimeoUrl, type VimeoTestimonial } from "../lib/testimonials";
 
 export default function FeaturedTestimonial({
   video,
-  eyebrow,
-  title,
   duree,
 }: {
   video: VimeoTestimonial;
-  eyebrow: string;
-  title: string;
   duree?: string;
 }) {
   return (
     <figure style={{ margin: 0 }}>
-      <div style={{ textAlign: "center", margin: "0 auto 22px" }}>
-        <div style={{ fontFamily: T.body, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", fontSize: "0.7rem", color: T.goldBright, marginBottom: 10 }}>
-          {eyebrow}
-        </div>
-        <h2 style={{ fontFamily: T.display, fontWeight: 600, fontSize: "clamp(1.35rem,3.8vw,1.9rem)", lineHeight: 1.2, color: T.cream, margin: 0 }}>
-          {title}
-        </h2>
-        {duree && (
-          <div style={{ fontFamily: T.body, fontSize: "0.78rem", color: T.creamDim, marginTop: 10 }}>
-            {duree}
-          </div>
-        )}
-      </div>
-
       <div
         style={{
           position: "relative",
@@ -59,6 +42,11 @@ export default function FeaturedTestimonial({
           title={video.title}
         />
       </div>
+      {duree && (
+        <figcaption style={{ marginTop: 12, textAlign: "center", fontFamily: T.body, fontSize: "0.76rem", letterSpacing: "0.14em", textTransform: "uppercase", color: T.creamDim }}>
+          {duree}
+        </figcaption>
+      )}
     </figure>
   );
 }

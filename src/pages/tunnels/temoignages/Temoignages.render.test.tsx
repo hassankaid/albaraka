@@ -212,7 +212,9 @@ describe("page Témoignages — vidéos", () => {
     });
 
     expect(screen.getByText("Yasmine")).toBeTruthy();
-    const captions = container.querySelectorAll("figcaption");
+    // La compilation porte elle aussi une légende (sa durée) : on ne vise
+    // que celles du mur.
+    const captions = container.querySelectorAll(".albt-mur figcaption");
     expect(captions[1].textContent).toBe("Sans prénom");
   });
 });

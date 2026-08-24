@@ -112,7 +112,7 @@ export default function Temoignages() {
       `}</style>
 
       {/* Header lockup */}
-      <header style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "28px 0 4px" }}>
+      <header style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "24px 0 0" }}>
         <div style={{ fontFamily: T.display, letterSpacing: "0.34em", fontWeight: 600, fontSize: "clamp(1.05rem,3.2vw,1.25rem)", color: T.gold }}>
           AL&nbsp;BARAKA
         </div>
@@ -121,21 +121,16 @@ export default function Temoignages() {
         </div>
       </header>
 
-      <main style={{ position: "relative", zIndex: 1, maxWidth: 1040, margin: "0 auto", padding: "clamp(28px,5vw,52px) 22px clamp(56px,10vw,90px)" }}>
-        {/* Hero */}
-        <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto clamp(40px,7vw,64px)" }}>
-          <div className="albt-rise" style={{ display: "inline-block", fontFamily: T.body, fontWeight: 600, letterSpacing: "0.24em", textTransform: "uppercase", fontSize: "0.72rem", color: T.goldBright, border: `1px solid ${T.goldLine}`, borderRadius: 999, padding: "7px 16px", marginBottom: 20 }}>
-            Témoignages
-          </div>
-          <h1 className="albt-rise" style={{ animationDelay: "60ms", fontFamily: T.display, fontWeight: 600, fontSize: "clamp(2rem,6.4vw,3.2rem)", lineHeight: 1.1, color: T.cream, margin: "0 0 16px", textTransform: "uppercase" }}>
+      <main style={{ position: "relative", zIndex: 1, maxWidth: 1040, margin: "0 auto", padding: "clamp(22px,4vw,38px) 22px clamp(56px,10vw,90px)" }}>
+        {/* Épuré à la demande de Hassan : la pastille « Témoignages » et le
+            paragraphe d'intro repoussaient la vidéo hors du premier écran, en
+            répétant ce que le titre dit déjà. Il ne reste que le titre. */}
+        <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto clamp(28px,5vw,40px)" }}>
+          <h1 className="albt-rise" style={{ fontFamily: T.display, fontWeight: 600, fontSize: "clamp(1.9rem,5.6vw,2.9rem)", lineHeight: 1.1, color: T.cream, margin: 0, textTransform: "uppercase" }}>
             Ils l'ont vécu, ils en parlent
           </h1>
-          <p className="albt-rise" style={{ animationDelay: "120ms", fontFamily: T.body, fontSize: "clamp(1rem,2.7vw,1.18rem)", lineHeight: 1.6, color: T.creamMuted, margin: "0 auto", maxWidth: 560 }}>
-            Des membres de l'écosystème Al Baraka racontent leur expérience,
-            sans filtre et dans leurs mots.
-          </p>
           {vide && (
-            <p className="albt-rise" style={{ animationDelay: "160ms", fontFamily: T.body, fontSize: "0.78rem", color: T.creamDim, marginTop: 16 }}>
+            <p className="albt-rise" style={{ animationDelay: "120ms", fontFamily: T.body, fontSize: "0.78rem", color: T.creamDim, marginTop: 16 }}>
               (Emplacements en attente — les témoignages arrivent.)
             </p>
           )}
@@ -143,13 +138,8 @@ export default function Temoignages() {
 
         {/* La compilation : ce que tout le monde dit, d'une traite. Le mur
             qui suit permet d'aller chercher un témoignage en particulier. */}
-        <section className="albt-rise" style={{ animationDelay: "150ms", maxWidth: 880, margin: "0 auto clamp(52px,9vw,80px)" }}>
-          <FeaturedTestimonial
-            video={COMPILATION}
-            eyebrow="Tout, d'une traite"
-            title="Ils racontent, les uns après les autres"
-            duree={COMPILATION_DUREE}
-          />
+        <section className="albt-rise" style={{ animationDelay: "60ms", maxWidth: 880, margin: "0 auto clamp(48px,8vw,72px)" }}>
+          <FeaturedTestimonial video={COMPILATION} duree={COMPILATION_DUREE} />
         </section>
 
         {/* Le mur */}

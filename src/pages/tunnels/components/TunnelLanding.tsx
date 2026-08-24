@@ -191,14 +191,10 @@ export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
         <section style={{ padding: "clamp(30px,6vw,56px) 0" }}>
           <SectionLabel>Ils l'ont fait avant toi</SectionLabel>
           {/* Trafic froid : une seule pièce à regarder, pas six choix à faire.
-              Les six parcours détaillés viennent après, pour qui veut creuser. */}
+              Les six parcours détaillés viennent après, pour qui veut creuser.
+              Aucun intitulé propre : le libellé de section ci-dessus suffit. */}
           <div style={{ maxWidth: 820, margin: "0 auto clamp(40px,7vw,60px)" }}>
-            <FeaturedTestimonial
-              video={COMPILATION}
-              eyebrow="En une fois"
-              title="Leurs retours, bout à bout"
-              duree={COMPILATION_DUREE}
-            />
+            <FeaturedTestimonial video={COMPILATION} duree={COMPILATION_DUREE} />
           </div>
           <div className="albt-mur">
             {colonnesTemoignages.map((colonne, i) => (
