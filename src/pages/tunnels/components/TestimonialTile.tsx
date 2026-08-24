@@ -5,6 +5,7 @@
 // verraient immédiatement.
 import { T } from "../theme";
 import { testimonialVimeoUrl, type Testimonial } from "../lib/testimonials";
+import { useVisibleOnce } from "../lib/useVisibleOnce";
 
 const frame: React.CSSProperties = {
   position: "relative",
@@ -16,8 +17,13 @@ const frame: React.CSSProperties = {
 };
 
 export default function TestimonialTile({ item }: { item: Testimonial }) {
+  // Le lecteur n'est monté qu'à l'approche de l'écran. L'attribut natif
+  // `loading="lazy"` ne suffisait pas : mesuré, les 11 lecteurs se
+  // chargeaient tous d'emblée (4,2 Mo sur mobile). Voir `useVisibleOnce`.
+  const { ref, visible } = useVisibleOnce<HTMLElement>();
+
   return (
-    <figure style={{ margin: 0 }}>
+    <figure ref={ref} style={{ margin: 0 }}>
       {item.kind === "capture" ? (
         // Ni recadrage ni hauteur imposée : une capture d'avis est du TEXTE,
         // la rogner la rendrait illisible.
@@ -32,7 +38,16 @@ export default function TestimonialTile({ item }: { item: Testimonial }) {
         </div>
       ) : (
         <div style={{ ...frame, aspectRatio: item.ratio ?? "16 / 9" }}>
-          {item.kind === "vimeo" ? (
+          {!visible ? (
+            // Cadre d'attente, aux MÊMES proportions : la page ne bouge pas
+            // d'un pixel au montage du lecteur. En pratique le visiteur ne le
+            // voit jamais, le chargement étant déclenché 800 px en amont.
+            <div aria-hidden style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
+              <svg width="34" height="34" viewBox="0 0 24 24" fill={T.goldDim}>
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          ) : item.kind === "vimeo" ? (
             <iframe
               src={testimonialVimeoUrl(item)}
               // La page en aligne une douzaine : sans chargement différé, le
