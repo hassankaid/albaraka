@@ -1,6 +1,21 @@
 // ── Lead Source Config ──
 
 export const leadSourceConfig: Record<string, { label: string; color: string }> = {
+  // ── Tunnels natifs (src/pages/tunnels) — source de leads actuelle ──
+  // Le libellé est construit par `tunnels/lib/source.ts` (`${srcPrefix}_${suffixe}`),
+  // écrit par l'edge fn `tunnel-lead-submit` et validé par `leads_source_check`.
+  // Ces 8 valeurs vivaient en base depuis le 22/07/2026 mais PAS ici : le CRM
+  // affichait la clé brute (« webi_vsl_ads ») et, faute d'appartenir au groupe
+  // Ads plus bas, rangeait ces leads publicitaires dans « Organique ».
+  webi_wa_ads: { label: "Tunnel WhatsApp - Ads", color: "green" },
+  webi_wa_instagram_organic: { label: "Tunnel WhatsApp - Instagram", color: "fuchsia" },
+  webi_wa_tiktok_organic: { label: "Tunnel WhatsApp - TikTok", color: "slate" },
+  webi_wa_direct: { label: "Tunnel WhatsApp - Direct", color: "gray" },
+  webi_vsl_ads: { label: "Tunnel VSL - Ads", color: "blue" },
+  webi_vsl_instagram_organic: { label: "Tunnel VSL - Instagram", color: "fuchsia" },
+  webi_vsl_tiktok_organic: { label: "Tunnel VSL - TikTok", color: "slate" },
+  webi_vsl_direct: { label: "Tunnel VSL - Direct", color: "gray" },
+  // ── Historique (Systeme.io + saisie manuelle) ──
   vsl_a: { label: "VSL A", color: "blue" },
   vsl_b: { label: "VSL B", color: "indigo" },
   webi: { label: "Webinaire", color: "purple" },
@@ -151,11 +166,29 @@ export const SOURCE_FILTER_OPTIONS = [
 export const SOURCE_GROUPS = [
   {
     label: "Ads",
-    sources: ["vsl_a", "vsl_b", "webi", "instagram_ads", "whatsapp_ads"],
+    sources: [
+      "webi_wa_ads",
+      "webi_vsl_ads",
+      "vsl_a",
+      "vsl_b",
+      "webi",
+      "instagram_ads",
+      "whatsapp_ads",
+    ],
   },
   {
     label: "Organique",
     sources: [
+      // Trafic non publicitaire des tunnels. « direct » = arrivée sans `?src=`
+      // (lien partagé, historique de navigation) : origine inconnue, donc NON
+      // créditée aux ads — sinon on gonflerait leur performance et le lead
+      // partirait dans la mauvaise file d'affectation.
+      "webi_wa_instagram_organic",
+      "webi_wa_tiktok_organic",
+      "webi_wa_direct",
+      "webi_vsl_instagram_organic",
+      "webi_vsl_tiktok_organic",
+      "webi_vsl_direct",
       "instagram_organic",
       "apporteur_facebook",
       "apporteur_whatsapp",

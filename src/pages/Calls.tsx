@@ -43,6 +43,9 @@ const TYPE_OPTIONS = [
   { value: "inscription_conference", label: "Conférence" },
   { value: "appel_organique", label: "Organique" },
   { value: "appel_temoignages", label: "Témoignages" },
+  // Agenda sous la vidéo du tunnel VSL : le chemin de prise de RDV principal
+  // du tunnel, absent d'ici alors que `webhook-calendly` l'écrit déjà.
+  { value: "appel_vsl_tunnel", label: "VSL (tunnel)" },
 ];
 
 const TYPE_COLORS: Record<string, string> = {
@@ -52,6 +55,7 @@ const TYPE_COLORS: Record<string, string> = {
   inscription_conference: "bg-amber-500/20 text-amber-300 border-amber-500/30",
   appel_organique: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
   appel_temoignages: "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30",
+  appel_vsl_tunnel: "bg-sky-500/20 text-sky-300 border-sky-500/30",
 };
 
 // Tabs are built dynamically — "Mes calls" only shown for CEO

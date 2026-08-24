@@ -2,6 +2,16 @@
 // Si une valeur n'est pas dans la map → fallback sur une version capitalisée "Title Case".
 
 const SOURCE_LABELS: Record<string, string> = {
+  // Tunnels natifs — cf. src/lib/leadConfig.ts (même vocabulaire, sinon le
+  // tableau « par source » affiche « Webi Vsl Ads » via le fallback titleCase).
+  webi_wa_ads: "Tunnel WhatsApp (Ads)",
+  webi_wa_instagram_organic: "Tunnel WhatsApp (Instagram)",
+  webi_wa_tiktok_organic: "Tunnel WhatsApp (TikTok)",
+  webi_wa_direct: "Tunnel WhatsApp (Direct)",
+  webi_vsl_ads: "Tunnel VSL (Ads)",
+  webi_vsl_instagram_organic: "Tunnel VSL (Instagram)",
+  webi_vsl_tiktok_organic: "Tunnel VSL (TikTok)",
+  webi_vsl_direct: "Tunnel VSL (Direct)",
   webi: "Webinaire",
   vsl_a: "VSL A",
   vsl_b: "VSL B",
@@ -89,6 +99,10 @@ export function channelLabel(raw: string | null | undefined): string {
 /** Couleur sémantique associée à une source (utilisée dans les charts). */
 export function sourceColor(raw: string): string {
   const k = raw.toLowerCase();
+  // Avant le préfixe « webi » générique : les 8 sources des tunnels commencent
+  // toutes par là et se seraient confondues en un seul violet dans les charts.
+  if (k.startsWith("webi_wa")) return "#25d366"; // vert whatsapp
+  if (k.startsWith("webi_vsl")) return "#06b6d4"; // cyan vsl
   if (k.startsWith("webi")) return "#8b5cf6"; // violet
   if (k.startsWith("vsl_a")) return "#06b6d4"; // cyan
   if (k.startsWith("vsl_b")) return "#0ea5e9"; // sky
