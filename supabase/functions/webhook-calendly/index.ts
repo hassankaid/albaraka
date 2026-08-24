@@ -7,22 +7,36 @@ const corsHeaders = {
 }
 
 const EVENT_TYPE_MAPPING: Record<string, string> = {
+  // ── Agendas VIVANTS (verifies via l'API Calendly le 24/08/2026) ──
+  '29475949-1729-46d9-a073-9587e8a655c5': 'inscription_conference', // /appel-conference
+  '2ce9ca9a-2bfd-435c-a1e6-87fc9716f2c7': 'appel_vsl_tunnel',       // agenda sous la video du tunnel VSL
+  '5123cdb3-bf46-4492-910f-b958f7f99f06': 'appel_temoignages',      // bouton de la page /temoignages
+
+  // ── Agendas SUPPRIMES (round-robin perdus avec les licences, 08/2026) ──
+  // Conserves VOLONTAIREMENT : `replay-calendly-webhook` peut rejouer un
+  // ancien echec qui les reference encore. Ils ne matcheront aucun nouveau
+  // rendez-vous, les types n'existant plus.
   '2661d582-c990-4c9d-828d-9ce357da243c': 'appel_offert_vsl_a',
   'ee0de510-a1cf-4156-9c98-a5302149dc29': 'appel_offert_vsl_b',
   '17c649be-a27f-48a9-a0f8-704b8c2dfafa': 'appel_organique',
   'e673a644-4ed6-406a-b593-72a60408cbe0': 'appel_setting_webi',
-  '29475949-1729-46d9-a073-9587e8a655c5': 'inscription_conference',
 }
 
 // Correspondance STRICTEMENT par UUID de type d'evenement (decision Hassan du
-// 02/08/2026 : pas de repli par nom, juge approximatif - on branchera les vrais
-// UUID une fois les evenements recrees). Un type absent retombe sur le nom brut.
+// 02/08/2026 : pas de repli par nom, juge approximatif). Un type absent
+// retombe sur le nom brut Calendly — instable, car il change si quelqu'un
+// renomme l'evenement.
 //
-// ATTENTION - etat au 02/08/2026, verifie via l'API Calendly : la reduction des
-// licences de l'organisation a SUPPRIME les evenements round-robin. Les 4
-// premieres entrees ci-dessus pointent vers des types qui n'existent plus et ne
-// matcheront jamais ; seul 29475949-... (INSCRIPTION CONFERENCE) est vivant.
-// A la recreation : ajouter ici les NOUVEAUX UUID et retirer les entrees mortes.
+// ⚠️ LES UUID CHANGENT A CHAQUE RECREATION D'AGENDA. Les deux agendas
+// recrees le 24/08/2026 (tunnel VSL, page temoignages) n'etaient pas branches :
+// leurs rendez-vous seraient remontes sous un libelle brut. Ajoutes ci-dessus.
+//
+// POUR RETROUVER UN UUID : l'API Calendly seule le donne (la page publique de
+// reservation ne l'expose pas), et son jeton ne vit que dans les secrets
+// Supabase. Passer par `audit-calendly-history` en mode `event_types` — il
+// balaie l'organisation ET chaque membre, car les agendas d'equipe
+// (`calendly.com/d/...`) n'apparaissent pas dans la seule liste de
+// l'organisation.
 function resolveEventType(eventTypeId: string | null, name: string | null | undefined): string {
   if (eventTypeId && EVENT_TYPE_MAPPING[eventTypeId]) return EVENT_TYPE_MAPPING[eventTypeId]
   return name || 'inconnu'

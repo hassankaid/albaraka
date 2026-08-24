@@ -11,6 +11,11 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
+
+// Ce test monte un layout complet : ~2 s seul, davantage quand les 13 fichiers
+// de la suite tournent en parallele. Le delai par defaut (5 s) le rendait
+// instable — vu echouer en suite complete et passer isolement, le meme jour.
+vi.setConfig({ testTimeout: 20_000 });
 import { MemoryRouter } from "react-router-dom";
 import { render } from "@testing-library/react";
 

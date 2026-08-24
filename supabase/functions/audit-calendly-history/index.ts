@@ -94,6 +94,50 @@ serve(async (req) => {
     if (callerProfile?.role !== "ceo") return json({ error: "CEO only" }, 403);
 
     const body = await req.json().catch(() => ({}));
+
+    // ── mode "event_types" : liste les types d'événement de l'organisation.
+    //
+    // Sert à brancher `webhook-calendly` : sa table de correspondance est
+    // indexée par UUID de type d'événement, et ces UUID changent dès qu'un
+    // agenda est recréé (ce qui est arrivé le 24/08/2026 après la réduction
+    // des licences). L'UUID n'est PAS lisible depuis la page publique de
+    // réservation — seule l'API Calendly le donne, et son jeton ne vit que
+    // dans les secrets Supabase. D'où cette lecture ici.
+    if (body.mode === "event_types") {
+      const me = await getCurrentUser(calendlyToken);
+      const org = me.current_organization;
+
+      // Balayage COMPLET : les agendas d'équipe (liens `calendly.com/d/...`)
+      // n'apparaissent pas forcément dans la liste de l'organisation — il faut
+      // aussi interroger chaque membre. On déduplique par UUID.
+      const membres = await calendlyFetch(
+        `https://api.calendly.com/organization_memberships?organization=${encodeURIComponent(org)}&count=100`,
+        calendlyToken,
+      );
+      const users = (membres.collection ?? []).map((m: any) => ({ uri: m.user?.uri, nom: m.user?.name, mail: m.user?.email, role: m.role }));
+
+      const vus = new Map<string, any>();
+      const sources: string[] = [`organization=${org}`];
+      const ajoute = (data: any, provenance: string) => {
+        for (const e of data.collection ?? []) {
+          const uuid = String(e.uri ?? "").split("/").pop();
+          if (!uuid || vus.has(uuid)) continue;
+          vus.set(uuid, { uuid, name: e.name, slug: e.slug, active: e.active, kind: e.type, scheduling_url: e.scheduling_url, provenance });
+        }
+      };
+      ajoute(await calendlyFetch(`https://api.calendly.com/event_types?organization=${encodeURIComponent(org)}&count=100`, calendlyToken), "organisation");
+      for (const u of users) {
+        if (!u.uri) continue;
+        sources.push(`user=${u.uri}`);
+        try {
+          ajoute(await calendlyFetch(`https://api.calendly.com/event_types?user=${encodeURIComponent(u.uri)}&count=100`, calendlyToken), u.nom || u.mail || u.uri);
+        } catch (e) {
+          sources.push(`ECHEC ${u.mail}: ${String(e).slice(0, 80)}`);
+        }
+      }
+      return json({ ok: true, organization: org, membres: users, sources, count: vus.size, types: [...vus.values()] });
+    }
+
     const days = Math.max(1, Math.min(365, Number(body.days) || 30));
     const importMissing: boolean = !!body.import_missing;
 

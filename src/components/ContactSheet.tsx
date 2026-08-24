@@ -579,6 +579,8 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   appel_setting_webi: "Appel Setting Webi",
   inscription_conference: "Conférence",
   appel_organique: "Appel Organique",
+  appel_vsl_tunnel: "Appel VSL (tunnel)",
+  appel_temoignages: "Appel Témoignages",
 };
 
 function CallEvent({ data, userTz, contact }: { data: any; userTz: string; contact: ContactDetail | null }) {
