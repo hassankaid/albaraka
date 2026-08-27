@@ -262,7 +262,8 @@ export default function Sales() {
         </div>
       ) : (
         <>
-          <div className="rounded-lg border border-border/50 overflow-hidden">
+          {/* Desktop : tableau (jusqu'a 8 colonnes selon le role). */}
+          <div className="hidden overflow-hidden rounded-lg border border-border/50 sm:block">
             <Table>
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
@@ -346,6 +347,96 @@ export default function Sales() {
                 ))}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Mobile : une carte par vente. Le tableau demande 8 colonnes, ce qui
+              tronque tout sous 640 px ; la carte hierarchise les memes donnees. */}
+          <div className="space-y-2 sm:hidden">
+            {paginated.map((sale) => (
+              <div
+                key={sale.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => setDetailSale(sale)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setDetailSale(sale);
+                  }
+                }}
+                className="cursor-pointer rounded-lg border border-border/50 bg-card/50 p-3 transition-colors hover:bg-secondary/50"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">{sale.contact_name || "—"}</p>
+                    {sale.contact_email && (
+                      <p className="truncate text-xs text-muted-foreground">{sale.contact_email}</p>
+                    )}
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={`shrink-0 text-[10px] leading-tight ${PAYMENT_COLORS[sale.payment_status || "pending"] || ""}`}
+                  >
+                    {PAYMENT_LABELS[sale.payment_status || "pending"] || sale.payment_status}
+                  </Badge>
+                </div>
+
+                <div className="mt-2 flex items-baseline justify-between gap-2">
+                  <p className="min-w-0 truncate text-xs text-muted-foreground">{sale.product}</p>
+                  <p className="shrink-0 text-base font-bold text-foreground">
+                    {sale.amount_ht.toLocaleString("fr-FR")} €
+                  </p>
+                </div>
+
+                {isCeo ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    <span>{formatDate(sale.sold_at)}</span>
+                    <span>Closer <span className="text-foreground">{sale.closed_by_name || "—"}</span></span>
+                    <span>{sale.commission_count} commission{sale.commission_count > 1 ? "s" : ""}</span>
+                  </div>
+                ) : (
+                  <>
+                    {sale.my_roles.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {sale.my_roles.map((role) => {
+                          const cfg = ROLE_CONFIG[role];
+                          if (!cfg) return <Badge key={role} variant="outline" className="text-[10px]">{role}</Badge>;
+                          const Icon = cfg.icon;
+                          return (
+                            <Badge key={role} variant="outline" className={`text-[10px] leading-tight ${cfg.class}`}>
+                              <Icon className="mr-1 h-3 w-3" />{cfg.label}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span>{formatDate(sale.sold_at)}</span>
+                      <span>
+                        Ma commission{" "}
+                        <span className="font-semibold text-foreground">
+                          {sale.my_commission_total.toLocaleString("fr-FR")} €
+                        </span>
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {isCeo && (
+                  <div className="mt-3 border-t border-border/50 pt-2.5">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 w-full gap-1.5 text-xs"
+                      onClick={(e) => { e.stopPropagation(); setCommissionsModalSale(sale); }}
+                    >
+                      <Settings className="h-3.5 w-3.5" />
+                      Gérer les commissions
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
 
           {totalPages > 1 && (
