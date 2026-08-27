@@ -447,13 +447,16 @@ export default function SaleDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="space-y-1">
-          <DialogTitle className="text-xl">{saleProduct}</DialogTitle>
+      <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-3xl max-h-[90dvh] p-0 gap-0 flex flex-col overflow-hidden">
+        {/* Header non scrollable : garde la croix de fermeture toujours visible, mobile inclus. */}
+        <DialogHeader className="shrink-0 space-y-1 border-b border-border px-4 py-4 pr-12 text-left sm:px-6">
+          <DialogTitle className="text-lg sm:text-xl">{saleProduct}</DialogTitle>
           <DialogDescription className="text-sm">
             {contactName || "—"}
           </DialogDescription>
         </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 sm:px-6">
 
         {/* ── Summary cards : Total / Encaissé / Restant / Prochaine ───── */}
         {nbTotal > 0 && (
@@ -627,14 +630,14 @@ export default function SaleDetailModal({
           ) : payments.length === 0 && !addingNew ? (
             <p className="text-sm text-muted-foreground py-4 text-center">Aucun paiement enregistré pour cette vente.</p>
           ) : (
-            <Table>
+            <Table className="[&_th]:px-2 [&_td]:px-2 sm:[&_th]:px-4 sm:[&_td]:px-4">
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
                   <TableHead>N°</TableHead>
                   <TableHead>Montant</TableHead>
                   <TableHead>Échéance</TableHead>
-                  <TableHead>Payé le</TableHead>
-                  <TableHead>Méthode</TableHead>
+                  <TableHead className="hidden sm:table-cell">Payé le</TableHead>
+                  <TableHead className="hidden sm:table-cell">Méthode</TableHead>
                   <TableHead>Statut</TableHead>
                   {isCeo && <TableHead className="text-right">Actions</TableHead>}
                 </TableRow>
@@ -678,7 +681,7 @@ export default function SaleDetailModal({
                             </PopoverContent>
                           </Popover>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button variant="outline" size="sm" className="h-8 text-xs">
@@ -698,7 +701,7 @@ export default function SaleDetailModal({
                             </PopoverContent>
                           </Popover>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           <Select value={editData.payment_method || "none"} onValueChange={(v) => setEditData({ ...editData, payment_method: v === "none" ? null : v })}>
                             <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
@@ -722,7 +725,7 @@ export default function SaleDetailModal({
                           </Select>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex items-center justify-end gap-1 [&>button]:h-8 [&>button]:w-8 [&>button]:p-0 sm:[&>button]:h-9 sm:[&>button]:w-auto sm:[&>button]:px-3">
                             <Button variant="ghost" size="sm" onClick={saveEdit}>
                               <Save className="h-4 w-4" />
                             </Button>
@@ -746,10 +749,10 @@ export default function SaleDetailModal({
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDateOnly(p.due_date, userTz)}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
                         {p.paid_at ? formatDateOnly(p.paid_at, userTz) : "—"}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
                         {p.payment_method ? (METHOD_LABELS[p.payment_method] || p.payment_method) : "—"}
                       </TableCell>
                       <TableCell>
@@ -759,7 +762,7 @@ export default function SaleDetailModal({
                       </TableCell>
                       {isCeo && (
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex items-center justify-end gap-1 [&>button]:h-8 [&>button]:w-8 [&>button]:p-0 sm:[&>button]:h-9 sm:[&>button]:w-auto sm:[&>button]:px-3">
                             {p.status === "pending" && (
                               <Popover>
                                 <PopoverTrigger asChild>
@@ -843,8 +846,8 @@ export default function SaleDetailModal({
                         </PopoverContent>
                       </Popover>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">—</TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">—</TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <Select value={newPayment.paymentMethod || "none"} onValueChange={(v) => setNewPayment({ ...newPayment, paymentMethod: v === "none" ? "" : v })}>
                         <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -866,7 +869,7 @@ export default function SaleDetailModal({
                       </Select>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="flex items-center justify-end gap-1 [&>button]:h-8 [&>button]:w-8 [&>button]:p-0 sm:[&>button]:h-9 sm:[&>button]:w-auto sm:[&>button]:px-3">
                         <Button variant="ghost" size="sm" onClick={addPayment}>
                           <Save className="h-4 w-4" />
                         </Button>
@@ -886,7 +889,7 @@ export default function SaleDetailModal({
         {isCeo && saleId && (
           <>
             <Separator />
-            <div className="flex items-center justify-between gap-4 pt-2">
+            <div className="flex flex-col items-start justify-between gap-3 pt-2 sm:flex-row sm:items-center sm:gap-4">
               <div className="text-xs text-muted-foreground">
                 Suppression complète de la vente, des paiements et des commissions associés.
               </div>
@@ -902,6 +905,7 @@ export default function SaleDetailModal({
             </div>
           </>
         )}
+        </div>
       </DialogContent>
 
       {/* Wizard Modifier le plan */}
