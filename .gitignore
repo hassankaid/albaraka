@@ -29,3 +29,6 @@ exports/
 
 # Fichiers temporaires Supabase CLI
 supabase/.temp/
+
+# Secrets locaux (token Supabase CLI) — jamais commite
+.env.local
