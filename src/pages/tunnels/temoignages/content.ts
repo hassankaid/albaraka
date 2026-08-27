@@ -37,7 +37,7 @@ export const TEMOIGNAGES: Testimonial[] = [
   { kind: "vimeo",   id: "1220658000", hash: "4f903eabdd", ratio: "4 / 3",      title: "En moins de 40 jours, j'ai pu générer 1.400 €" },
   { kind: "capture", src: "/temoignages/avis-02.jpg", ratio: "878 / 1500",      title: "J'y crois pas, c'est possible en 2 semaines" },
   { kind: "vimeo",   id: "1220657720", hash: "a6644805b8", ratio: "9 / 16",     title: "Tu nous a appris une pépite" },
-  { kind: "vimeo",   id: "1220657980", hash: "622e41d09a", ratio: "4 / 3",      title: "Le coaching est vraiment intéressant" },
+  { kind: "vimeo",   id: "1220657980", hash: "622e41d09a", ratio: "4 / 3",      title: "En moins d'un mois, j'ai généré 4.000\u00A0€" },
   { kind: "vimeo",   id: "1220657959", hash: "d74050d102", ratio: "886 / 1920", title: "J'y crois pas, c'est possible en 2 semaines" },
   { kind: "vimeo",   id: "1220658107", hash: "4dab5588eb", ratio: "4 / 3",      title: "Je croyais pas au début, j'avais dit tout le monde sauf moi" },
   { kind: "vimeo",   id: "1220658021", hash: "78c65136fe", ratio: "9 / 16",     title: "Je n'avais pas assez d'argent, j'ai dû risquer" },
