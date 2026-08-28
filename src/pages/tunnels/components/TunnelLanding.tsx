@@ -50,12 +50,19 @@ const DISCOVERIES = [
 // Vimeo, sinon le lecteur est refusé — et seulement ici, pas sur la
 // plateforme, donc le défaut ne se voit pas en testant ailleurs.
 export const LANDING_TESTIMONIALS: VideoTestimonial[] = [
-  { kind: "vimeo", id: "1220657728", hash: "748144b688", ratio: "9 / 16", title: "Safwan est passé de 0 à 6.656\u00A0€ en 4 mois" },
-  { kind: "vimeo", id: "1220657898", hash: "68691fe2a5", ratio: "9 / 16", title: "Fatima est passée de 0 à 3.125\u00A0€ en – de 90 jours" },
-  { kind: "vimeo", id: "1220657559", hash: "6ad4e9ea94", ratio: "4 / 3",  title: "Anissa est passée de 0 à + de 9.500\u00A0€ en 4,5 mois" },
-  { kind: "vimeo", id: "1220657980", hash: "622e41d09a", ratio: "4 / 3",  title: "Cindy est passée de 0 à 4.000\u00A0€ en – de 1 mois" },
-  { kind: "vimeo", id: "1220658000", hash: "4f903eabdd", ratio: "4 / 3",  title: "Miradie est passée de 0 à 1.400\u00A0€ en – de 40 jours" },
-  { kind: "vimeo", id: "1220658107", hash: "4dab5588eb", ratio: "4 / 3",  title: "Siham est passée de 0 à 2.000\u00A0€ en – de 60 jours" },
+  // Les quatre plus récents (Sabrine, Adil, Mohamed, Sabrina) sont intercalés
+  // plutôt qu'ajoutés en fin de liste : le visiteur d'une pub ne descend pas
+  // jusqu'en bas du mur, et ce sont les témoignages les mieux filmés.
+  { kind: "vimeo", id: "1218417464", hash: "56e814239f", ratio: "16 / 9",     title: "Sabrine est passée de 0 à 13.500\u00A0€ en 4 mois" },
+  { kind: "vimeo", id: "1220657728", hash: "748144b688", ratio: "9 / 16",     title: "Safwan est passé de 0 à 6.656\u00A0€ en 4 mois" },
+  { kind: "vimeo", id: "1218417479", hash: "416ffd5e0a", ratio: "9 / 16",     title: "Adil a fait sa 1re vente en 1 semaine, rentable en 3 mois" },
+  { kind: "vimeo", id: "1220657559", hash: "6ad4e9ea94", ratio: "4 / 3",      title: "Anissa est passée de 0 à + de 9.500\u00A0€ en 4,5 mois" },
+  { kind: "vimeo", id: "1218417487", hash: "3984aecc3d", ratio: "480 / 1040", title: "Mohamed est passé de 0 à 500\u00A0€ en 2 semaines, puis 2.300\u00A0€" },
+  { kind: "vimeo", id: "1220657898", hash: "68691fe2a5", ratio: "9 / 16",     title: "Fatima est passée de 0 à 3.125\u00A0€ en – de 90 jours" },
+  { kind: "vimeo", id: "1221742459", hash: "09be40cde3", ratio: "832 / 464",  title: "Sabrina est passée de 0 à un SMIC dès son 1er mois" },
+  { kind: "vimeo", id: "1220657980", hash: "622e41d09a", ratio: "4 / 3",      title: "Cindy est passée de 0 à 4.000\u00A0€ en – de 1 mois" },
+  { kind: "vimeo", id: "1220658000", hash: "4f903eabdd", ratio: "4 / 3",      title: "Miradie est passée de 0 à 1.400\u00A0€ en – de 40 jours" },
+  { kind: "vimeo", id: "1220658107", hash: "4dab5588eb", ratio: "4 / 3",      title: "Siham est passée de 0 à 2.000\u00A0€ en – de 60 jours" },
 ];
 
 export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
