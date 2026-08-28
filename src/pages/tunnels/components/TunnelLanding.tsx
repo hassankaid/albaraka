@@ -53,7 +53,7 @@ export const LANDING_TESTIMONIALS: VideoTestimonial[] = [
   // Les quatre plus récents (Sabrine, Adil, Mohamed, Sabrina) sont intercalés
   // plutôt qu'ajoutés en fin de liste : le visiteur d'une pub ne descend pas
   // jusqu'en bas du mur, et ce sont les témoignages les mieux filmés.
-  { kind: "vimeo", id: "1218417464", hash: "56e814239f", ratio: "16 / 9",     title: "Sabrine est passée de 0 à 13.500\u00A0€ en 4 mois" },
+  { kind: "vimeo", id: "1218417464", hash: "56e814239f", ratio: "16 / 9",     title: "Sabrine a généré 13.500\u00A0€ en 4 mois" },
   { kind: "vimeo", id: "1220657728", hash: "748144b688", ratio: "9 / 16",     title: "Safwan est passé de 0 à 6.656\u00A0€ en 4 mois" },
   { kind: "vimeo", id: "1218417479", hash: "416ffd5e0a", ratio: "9 / 16",     title: "Adil a fait sa 1re vente en 1 semaine, rentable en 3 mois" },
   { kind: "vimeo", id: "1220657559", hash: "6ad4e9ea94", ratio: "4 / 3",      title: "Anissa est passée de 0 à + de 9.500\u00A0€ en 4,5 mois" },
