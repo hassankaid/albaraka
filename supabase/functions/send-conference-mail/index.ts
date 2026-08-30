@@ -1,21 +1,25 @@
 // ─────────────────────────────────────────────────────────────────────────
 // Envoi de la séquence e-mail d'une conférence, via Resend.
 //
-// Appel : POST { seq: 4 | 5, max?: 1..300 }
+// Appel : POST { seq: 4 | 5, max?: 1..300, conference_date?: "YYYY-MM-DD",
+//                dry_run?: true }
 //
-// La fonction lit la liste dans `email_campaign_recipients` (filtrée sur
-// CAMPAIGN_SLUG, triée par `position`), retire ceux qui ont déjà reçu CETTE
-// séquence d'après `email_campaign_sends`, et envoie aux `max` premiers.
+// RIEN N'EST ÉCRIT EN DUR POUR UNE SEMAINE DONNÉE. La fonction résout la fiche
+// de la conférence dans `conferences`, et en tire :
+//   • le lien du groupe WhatsApp du bouton,
+//   • l'heure annoncée dans les messages,
+//   • le slug de campagne (conf_AAAA_MM_JJ), donc la liste et la déduplication.
+// Sans `conference_date`, elle prend la prochaine conférence à partir
+// d'aujourd'hui — celle du jour même le dimanche, toute la journée.
+//
+// ⚠️ TOUJOURS FAIRE UN `dry_run` D'ABORD. Il renvoie la fiche résolue, le slug,
+// le groupe et le nombre de destinataires restants, sans rien envoyer. C'est le
+// seul moyen de vérifier qu'on vise la bonne semaine avant de tirer.
 //
 // ⚠️ UN SEUL APPEL À LA FOIS. Le journal n'est écrit que tous les 50 envois :
 // relancer pendant qu'un appel tourne fait redémarrer la déduplication sur un
 // journal incomplet et renvoie aux mêmes personnes. C'est ce qui a produit
 // 353 doublons sur la conférence du 31/05/2026.
-//
-// ⚠️ À CHAQUE CONFÉRENCE, vérifier les trois constantes ci-dessous : le lien du
-// groupe WhatsApp change à chaque fois, et l'ancien groupe reste ouvert — se
-// tromper n'affiche donc AUCUNE erreur, ça envoie juste tout le monde dans la
-// salle précédente.
 // ─────────────────────────────────────────────────────────────────────────
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -25,11 +29,15 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
-// ── Conférence du dimanche 30 août 2026, 11h00 (heure de Paris) ──
 const FROM_ADDR = "Sidali · AL BARAKA <conference@albarakaecosysteme.com>";
 const REPLY_TO = ["contact@albarakaecosysteme.com"];
-const WHATSAPP = "https://chat.whatsapp.com/BwBWVsHhM0Y0Fb37USMZS3";
-const CAMPAIGN_SLUG = "conf_2026_08_30";
+
+// Filets, utilisés seulement si la fiche est incomplète. Un e-mail sans bouton
+// vaut moins qu'un e-mail dont le bouton mène au groupe de la semaine passée,
+// mais les deux valent mieux qu'un envoi qui échoue.
+const WHATSAPP_DEFAUT = "https://chat.whatsapp.com/BwBWVsHhM0Y0Fb37USMZS3";
+const HEURE_DEFAUT = "11h00";
+
 // Le lien de désabonnement doit rester joignable : la route /unsubscribe
 // n'existe pas dans l'application, et en mai 8 personnes ont cliqué dans le
 // vide avant que 11 plaintes pour spam ne tombent. Un mailto ne dépend d'aucun
@@ -40,6 +48,60 @@ const DEFAULT_MAX = 150;
 const DELAY_MS = 230;
 
 function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
+
+/** Date du jour en heure de Paris, "AAAA-MM-JJ". `toISOString()` donnerait la
+ *  date UTC, décalée d'un jour entre minuit et 2h du matin l'été. */
+function aujourdhuiParis(): string {
+  return new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris" }).format(new Date());
+}
+
+/** "11:00:00" → "11h00". */
+function formatHeure(h: string | null): string {
+  if (!h) return HEURE_DEFAUT;
+  const [hh, mm] = h.split(":");
+  return `${hh}h${mm}`;
+}
+
+/** "2026-08-30" → "conf_2026_08_30". */
+function slugDe(date: string): string {
+  return `conf_${date.replaceAll("-", "_")}`;
+}
+
+interface Fiche {
+  conference_date: string;
+  whatsapp: string;
+  heure: string;
+  campaign_slug: string;
+  groupe_renseigne: boolean;
+}
+
+async function resoudreFiche(supabase: any, demande?: string): Promise<Fiche | null> {
+  let q = supabase
+    .from("conferences")
+    .select("conference_date, whatsapp_group_url, starts_at_local");
+
+  if (demande) {
+    q = q.eq("conference_date", demande);
+  } else {
+    // Pas de bascule à l'heure de la conférence ici : un envoi ou une reprise
+    // en fin de matinée doit continuer à viser la conférence du jour, pas celle
+    // de la semaine suivante.
+    q = q.gte("conference_date", aujourdhuiParis())
+         .order("conference_date", { ascending: true });
+  }
+
+  const { data } = await q.limit(1);
+  const row = (data ?? [])[0];
+  if (!row) return null;
+
+  return {
+    conference_date: row.conference_date,
+    whatsapp: row.whatsapp_group_url || WHATSAPP_DEFAUT,
+    heure: formatHeure(row.starts_at_local),
+    campaign_slug: slugDe(row.conference_date),
+    groupe_renseigne: !!row.whatsapp_group_url,
+  };
+}
 
 function wrap(preheader: string, body: string): string {
   return `<!DOCTYPE html>
@@ -59,15 +121,42 @@ AL BARAKA — Écosystème de l'entrepreneuriat halal<br>
 </td></tr></table></td></tr></table></body></html>`;
 }
 
-const CTA = `<div style="text-align:center;margin:28px 0;"><a href="${WHATSAPP}" style="display:inline-block;background-color:#C9A04E;color:#ffffff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:600;font-size:15px;">► Je rejoins le groupe WhatsApp privé</a></div>`;
+// Bouton « à toute épreuve ».
+//
+// L'ancienne version était un simple <a> doré : `background-color` en CSS,
+// `color:#ffffff` par-dessus. Les clients qui filtrent le CSS des liens
+// (Outlook via le moteur Word, certains rendus en mode sombre) retiraient le
+// fond mais gardaient le texte blanc — bouton blanc sur carte blanche, donc
+// invisible, donc « pas cliquable » pour le lecteur.
+//
+// Trois protections :
+//   • l'attribut HTML `bgcolor` sur la cellule, qui survit là où le CSS tombe ;
+//   • une bordure de la même couleur, qui dessine le bouton même sans fond ;
+//   • sous le bouton, l'adresse en clair — un lecteur qui ne voit rien peut
+//     toujours la lire et la recopier. C'est le vrai filet.
+function cta(whatsapp: string): string {
+  const visible = whatsapp.replace(/^https?:\/\//, "");
+  return `<table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" style="margin:28px auto 10px;">
+<tr><td align="center" bgcolor="#C9A04E" style="background-color:#C9A04E;border:1px solid #C9A04E;border-radius:6px;">
+<a href="${whatsapp}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:6px;">► Je rejoins le groupe WhatsApp privé</a>
+</td></tr></table>
+<p style="text-align:center;font-size:13px;line-height:1.5;color:#7a7a7a;margin:0 0 22px;">Le bouton ne s'affiche pas ?<br><a href="${whatsapp}" target="_blank" style="color:#A8813A;text-decoration:underline;">${visible}</a></p>`;
+}
+
 const SIG = `<p style="margin-top:24px;">Sidali<br><span style="color:#7a7a7a;">Fondateur de l'écosystème AL BARAKA</span></p>`;
 
-const TEMPLATES: Record<number, { name: string; subject: string; preheader: string; body: string }> = {
-  4: {
-    name: "T-2h",
-    subject: "Plus que 2 heures ⏳",
-    preheader: "Le lien du direct t'attend dans le groupe WhatsApp.",
-    body: `<p>Assalamu alaykum {{FIRST_NAME}},</p>
+interface Gabarit { name: string; subject: string; preheader: string; body: string }
+
+// Les gabarits dépendent de la fiche (lien du groupe, heure) : ils sont donc
+// construits à chaque appel plutôt que figés au chargement du module.
+function gabarits(f: Fiche): Record<number, Gabarit> {
+  const CTA = cta(f.whatsapp);
+  return {
+    4: {
+      name: "T-2h",
+      subject: "Plus que 2 heures ⏳",
+      preheader: "Le lien du direct t'attend dans le groupe WhatsApp.",
+      body: `<p>Assalamu alaykum {{FIRST_NAME}},</p>
 <p><strong>Dans 2 heures, on est ensemble en direct.</strong></p>
 <p>Ce qu'on va voir ce matin :</p>
 <ul style="padding-left:20px;">
@@ -77,21 +166,22 @@ const TEMPLATES: Record<number, { name: string; subject: string; preheader: stri
 </ul>
 <p>Si tu n'as qu'une seule chose à faire maintenant, c'est celle-ci : <strong>rejoins le groupe WhatsApp</strong>. Le lien du direct y sera posté — je ne veux pas que tu rates ça pour une simple histoire de lien.</p>
 ${CTA}
-<p>Prépare tes questions. Rendez-vous à 11h00, inshaAllah.</p>
+<p>Prépare tes questions. Rendez-vous à ${f.heure}, inshaAllah.</p>
 ${SIG}`,
-  },
-  5: {
-    name: "Ouverture",
-    subject: "🔴 C'est maintenant — viens, {{FIRST_NAME}}",
-    preheader: "Je suis déjà là. On démarre à 11h00.",
-    body: `<p>Assalamu alaykum {{FIRST_NAME}},</p>
+    },
+    5: {
+      name: "Ouverture",
+      subject: "🔴 C'est maintenant — viens, {{FIRST_NAME}}",
+      preheader: `Je suis déjà là. On démarre à ${f.heure}.`,
+      body: `<p>Assalamu alaykum {{FIRST_NAME}},</p>
 <p><strong>J'y suis. On démarre dans quelques minutes.</strong></p>
 <p>Le lien du direct est posté dans le groupe WhatsApp. Rejoins, clique, et viens t'asseoir avec nous :</p>
 ${CTA}
 <p>On t'attend. Bismillah.</p>
 ${SIG}`,
-  },
-};
+    },
+  };
+}
 
 function render(template: string, vars: Record<string, string>): string {
   let out = template;
@@ -139,26 +229,52 @@ serve(async (req) => {
   let body: any;
   try { body = await req.json(); } catch { return new Response(JSON.stringify({ error: "invalid_json" }), { status: 400 }); }
 
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  const fiche = await resoudreFiche(supabase, body?.conference_date);
+  if (!fiche) {
+    return new Response(JSON.stringify({ error: "conference_introuvable", demande: body?.conference_date ?? null }), { status: 404 });
+  }
+
   const seq = parseInt(body?.seq);
+  const TEMPLATES = gabarits(fiche);
   if (!TEMPLATES[seq]) {
     return new Response(JSON.stringify({ error: "seq_inconnu", attendus: Object.keys(TEMPLATES) }), { status: 400 });
   }
+  const tpl = TEMPLATES[seq];
 
   const maxParam = parseInt(body?.max);
   const maxRecipients = (Number.isFinite(maxParam) && maxParam > 0 && maxParam <= 300) ? maxParam : DEFAULT_MAX;
 
-  const tpl = TEMPLATES[seq];
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-  const alreadySent = await loadAll(supabase, "email_campaign_sends", "recipient_email", { campaign_slug: CAMPAIGN_SLUG, email_seq: seq }, null);
+  const alreadySent = await loadAll(supabase, "email_campaign_sends", "recipient_email", { campaign_slug: fiche.campaign_slug, email_seq: seq }, null);
   const alreadySentSet = new Set(alreadySent.map((r: any) => r.recipient_email.toLowerCase().trim()));
 
-  const recipients = await loadAll(supabase, "email_campaign_recipients", "email, first_name, position", { campaign_slug: CAMPAIGN_SLUG }, "position");
+  const recipients = await loadAll(supabase, "email_campaign_recipients", "email, first_name, position", { campaign_slug: fiche.campaign_slug }, "position");
 
-  const todo = recipients.filter((r: any) => !alreadySentSet.has(r.email.toLowerCase().trim())).slice(0, maxRecipients);
+  const restants = recipients.filter((r: any) => !alreadySentSet.has(r.email.toLowerCase().trim()));
+  const todo = restants.slice(0, maxRecipients);
+
+  // Ce que la fonction ferait, sans le faire. À appeler avant tout envoi réel.
+  if (body?.dry_run === true) {
+    return new Response(JSON.stringify({
+      dry_run: true,
+      seq,
+      template_name: tpl.name,
+      conference_date: fiche.conference_date,
+      heure: fiche.heure,
+      campaign_slug: fiche.campaign_slug,
+      groupe_whatsapp: fiche.whatsapp,
+      groupe_renseigne_sur_la_fiche: fiche.groupe_renseigne,
+      objet: render(tpl.subject, { FIRST_NAME: "Prénom" }),
+      liste_totale: recipients.length,
+      deja_envoyes: alreadySentSet.size,
+      partiraient_maintenant: todo.length,
+      resteraient_apres: Math.max(0, restants.length - todo.length),
+    }), { status: 200 });
+  }
 
   if (todo.length === 0) {
-    return new Response(JSON.stringify({ ok: true, seq, message: "all_sent", already_sent: alreadySentSet.size, total_recipients_loaded: recipients.length }), { status: 200 });
+    return new Response(JSON.stringify({ ok: true, seq, message: "all_sent", conference_date: fiche.conference_date, campaign_slug: fiche.campaign_slug, already_sent: alreadySentSet.size, total_recipients_loaded: recipients.length }), { status: 200 });
   }
 
   const htmlTemplate = wrap(tpl.preheader, tpl.body);
@@ -181,7 +297,7 @@ serve(async (req) => {
         reply_to: REPLY_TO,
         subject, html,
         tags: [
-          { name: "campaign", value: CAMPAIGN_SLUG },
+          { name: "campaign", value: fiche.campaign_slug },
           { name: "seq", value: String(seq) },
         ],
       });
@@ -194,7 +310,7 @@ serve(async (req) => {
     if (ok) okCount++; else failCount++;
 
     logs.push({
-      campaign_slug: CAMPAIGN_SLUG,
+      campaign_slug: fiche.campaign_slug,
       email_seq: seq,
       recipient_email: r.email,
       recipient_first_name: r.first_name,
@@ -218,7 +334,9 @@ serve(async (req) => {
 
   return new Response(JSON.stringify({
     ok: true, seq, processed: todo.length, sent: okCount, failed: failCount,
-    template_name: tpl.name, already_sent_before: alreadySentSet.size, max_used: maxRecipients,
+    template_name: tpl.name,
+    conference_date: fiche.conference_date, campaign_slug: fiche.campaign_slug,
+    already_sent_before: alreadySentSet.size, max_used: maxRecipients,
     total_recipients_loaded: recipients.length,
   }), { status: 200 });
 });
