@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { buildConferenceList, conferenceEnCours, formatConferenceLabelFull, type ConferenceFilter } from "@/lib/marketing/conferenceFilter";
+import { buildConferenceList, conferenceEnCours, currentOrPrevSunday, formatConferenceLabelFull, type ConferenceFilter } from "@/lib/marketing/conferenceFilter";
 import { additionner, calculerKpis } from "@/lib/marketing/perf";
 import { useMarketingPerf } from "@/hooks/useMarketingPerf";
 import TableauKpis, { type ColonneKpi } from "./TableauKpis";
@@ -22,11 +22,23 @@ export default function VueConference({ onPeriodeChange }: { onPeriodeChange?: (
     // dernière passée : c'est elle qui porte les leads de la semaine, et
     // l'arrêter avant la faisait disparaître de l'écran le dimanche matin.
     // Au-delà, rien à montrer — les dimanches suivants n'ont pas encore de leads.
-    const derniere = conferenceEnCours(new Date());
-    return buildConferenceList(new Date(), 26, 2).filter((d) => d <= derniere).reverse();
+    const borneHaute = conferenceEnCours(new Date());
+    return buildConferenceList(new Date(), 26, 2).filter((d) => d <= borneHaute).reverse();
   }, []);
 
-  const [date, setDate] = useState(conferences[0]);
+  // La sélection par défaut n'est PAS le premier élément de la liste.
+  //
+  // La liste s'arrête à la conférence qui collecte encore des inscriptions ;
+  // celle-là n'a ni ventes ni CA, donc l'ouvrir par défaut donnerait un écran
+  // presque vide. On ouvre sur la dernière conférence qui a eu lieu — celle
+  // dont on vient lire les résultats. Le dimanche à 11h00, on bascule donc sur
+  // la conférence du jour, pas sur celle de la semaine suivante.
+  const parDefaut = useMemo(() => {
+    const derniereTenue = currentOrPrevSunday(new Date());
+    return conferences.includes(derniereTenue) ? derniereTenue : conferences[0];
+  }, [conferences]);
+
+  const [date, setDate] = useState(parDefaut);
 
   useEffect(() => {
     if (date && onPeriodeChange) onPeriodeChange({ mode: "single", date });
