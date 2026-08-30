@@ -155,8 +155,10 @@ export default function VueMensuelle({ onPeriodeChange }: { onPeriodeChange?: (f
                 <TableauKpis kpis={kpis} colonnes={colonnes} />
               </div>
               <p className="text-xs text-muted-foreground mt-3">
-                L'écart se lit dans le sens du progrès : dépasser l'objectif de CPL ou de coût par vente s'affiche en orange, le dépasser en CA s'affiche en vert.
-                Vider une case retire l'objectif.
+                Période calendaire : les leads comptent par date d'inscription, pas par conférence visée — un mois
+                contient donc des leads de plusieurs conférences, et son total ne correspond à aucune d'elles.
+                L'écart se lit dans le sens du progrès : dépasser l'objectif de CPL ou de coût par vente s'affiche en orange,
+                le dépasser en CA s'affiche en vert. Vider une case retire l'objectif.
               </p>
             </>
           )}

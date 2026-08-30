@@ -88,11 +88,11 @@ export default function VueConference({ onPeriodeChange }: { onPeriodeChange?: (
               <div className="mt-4">
                 <TableauKpis kpis={kpis} colonnes={colonnes} />
               </div>
-              {kpis.leads === 0 && (
-                <p className="text-xs text-muted-foreground mt-3">
-                  Aucun lead rattaché à cette conférence.
-                </p>
-              )}
+              <p className="text-xs text-muted-foreground mt-3">
+                {kpis.leads === 0
+                  ? "Aucun lead rattaché à cette conférence."
+                  : "Les leads sont comptés par conférence visée, pas par date d'inscription : un lead venu le mercredi compte pour le dimanche suivant. Les totaux d'un mois calendaire ne coïncideront donc pas avec la somme de ses conférences."}
+              </p>
             </>
           )}
         </CardContent>

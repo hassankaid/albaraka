@@ -7,6 +7,11 @@
 //
 // Un « nombre de RDV » global mélangerait ces trois-là et masquerait la seule
 // chose qu'on veut savoir : lequel de ces chemins remplit vraiment l'agenda.
+//
+// ATTRIBUTION. Un rendez-vous est crédité à la conférence du LEAD qui l'a pris,
+// et compté au moment où il est PRIS — pas au moment où il doit se tenir. Sans
+// ça, un appel pris pendant une campagne mais programmé après la conférence
+// tombait sur la semaine suivante, qui n'avait rien dépensé.
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fmtNombre, fmtPourcent } from "@/lib/marketing/perf";
@@ -84,8 +89,9 @@ export default function BlocRendezVous({ periode }: { periode: PeriodePerf | nul
           </div>
         )}
         <p className="text-xs text-muted-foreground mt-3">
-          « Honoré » = le rendez-vous a eu lieu, quelle qu'en soit l'issue. Un rendez-vous encore à
-          venir n'y est pas compté.
+          « Honoré » = le rendez-vous a eu lieu, quelle qu'en soit l'issue ; un rendez-vous encore à
+          venir n'y est pas compté. Un rendez-vous est rattaché à la conférence du lead qui l'a pris,
+          et compté au moment de la prise — pas à la date où il doit se tenir.
         </p>
       </CardContent>
     </Card>
