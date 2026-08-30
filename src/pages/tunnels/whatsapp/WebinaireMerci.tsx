@@ -6,10 +6,13 @@
 // remplace toute la partie VSL (« ne quitte pas avant d'avoir regardé la vidéo »)
 // par la dernière étape du tunnel WhatsApp : rejoindre le groupe.
 //
-// Le lien du groupe change par conférence → CONFERENCE.whatsappGroupUrl (config).
+// Le lien du groupe et la date viennent de la fiche de la conférence en base
+// (`useConference`), pas du code : ils basculent seuls sur le dimanche suivant
+// à l'heure de début. `theme.ts` ne sert plus que de filet.
 // ─────────────────────────────────────────────────────────────────────────
 import { useEffect } from "react";
 import { T, CONFERENCE, ensureTunnelFonts } from "../theme";
+import { useConference } from "../lib/conference";
 import { trackWhatsappJoin, trackTypLead } from "../lib/pixel";
 import TunnelBackground from "../components/TunnelBackground";
 import VimeoVideo from "../components/VimeoVideo";
@@ -19,6 +22,7 @@ const WA_GREEN = "#25D366";
 const WA_GREEN_DARK = "#1EB457";
 
 export default function WebinaireMerci() {
+  const conference = useConference();
   const variant = resolveVariant("wa", new URLSearchParams(window.location.search).get("v"));
 
   useEffect(() => {
@@ -65,7 +69,7 @@ export default function WebinaireMerci() {
 
         <p className="albm-rise" style={{ animationDelay: "130ms", fontFamily: T.body, fontSize: "clamp(1.02rem,2.7vw,1.2rem)", lineHeight: 1.55, color: T.creamMuted, margin: "0 auto 34px", maxWidth: 520 }}>
           Ton inscription à la conférence du{" "}
-          <strong style={{ color: T.goldBright, fontWeight: 600 }}>{CONFERENCE.dateLabel}</strong>{" "}
+          <strong style={{ color: T.goldBright, fontWeight: 600 }}>{conference.dateLabel}</strong>{" "}
           ({CONFERENCE.tz}) est confirmée.
         </p>
 
@@ -91,7 +95,7 @@ export default function WebinaireMerci() {
 
           <a
             className="albm-wa"
-            href={CONFERENCE.whatsappGroupUrl}
+            href={conference.whatsappGroupUrl}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => trackWhatsappJoin()}

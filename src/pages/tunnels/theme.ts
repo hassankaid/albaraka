@@ -40,14 +40,21 @@ export const T = {
   body: "'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif",
 } as const;
 
-// Config « conférence » — variable d'une conf à l'autre.
-// Pour l'instant en dur (exemple : dernier dimanche d'août 2026) ; passera
-// dans une petite config éditable sans redéploiement à la brique suivante.
+// Config « conférence ».
+//
+// ⚠️ `dateLabel` et `whatsappGroupUrl` ne pilotent PLUS l'affichage : depuis le
+// 30/08/2026, les pages lisent la fiche de la conférence en base via
+// `lib/conference.ts` → `conference_courante()`, qui bascule d'elle-même sur le
+// dimanche suivant à l'heure de début. Les groupes des semaines à venir se
+// renseignent dans /admin/conferences.
+//
+// Ces deux valeurs restent le FILET : si l'appel échoue (réseau, fiche vide),
+// mieux vaut afficher une date d'une semaine en retard qu'un écran vide sur une
+// page servie à du trafic publicitaire payant. Les garder à jour de temps en
+// temps ne coûte rien ; les oublier ne casse rien tant que la base répond.
 export const CONFERENCE = {
   dateLabel: "Dimanche 30 août 2026 à 11h00",
   tz: "heure de Paris",
-  // Lien du groupe WhatsApp de la conférence — change d'une conférence à l'autre,
-  // à remettre à jour avant chaque session (confirmé par Hassan le 30/07/2026).
   whatsappGroupUrl: "https://chat.whatsapp.com/BwBWVsHhM0Y0Fb37USMZS3",
   // Événement Calendly (tunnel VSL — agenda sous la vidéo).
   // ⚠️ null = l'agenda est remplacé par un panneau « ouvre très bientôt ».

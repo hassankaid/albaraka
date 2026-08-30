@@ -48,6 +48,8 @@ interface Conference {
   replay_code: string | null;
   video_duration_min: number | null;
   calendly_url: string | null;
+  whatsapp_group_url: string | null;
+  starts_at_local: string | null;
   ready_at: string | null;
   created_at: string;
   updated_at: string;
@@ -130,6 +132,8 @@ export default function AdminConferences() {
       replay_code: string;
       video_duration_min: number;
       calendly_url: string;
+      whatsapp_group_url: string;
+      starts_at_local: string;
     }) => {
       const { error } = await supabase
         .from("conferences" as any)
@@ -138,6 +142,8 @@ export default function AdminConferences() {
           replay_code: input.replay_code || null,
           video_duration_min: input.video_duration_min || null,
           calendly_url: input.calendly_url || null,
+          whatsapp_group_url: input.whatsapp_group_url || null,
+          starts_at_local: input.starts_at_local || null,
         })
         .eq("id", input.id);
       if (error) throw error;
@@ -402,6 +408,8 @@ function ConferenceEditModal({
     replay_code: string;
     video_duration_min: number;
     calendly_url: string;
+    whatsapp_group_url: string;
+    starts_at_local: string;
   }) => void;
   onArchive: (id: string) => void;
   saving: boolean;
@@ -410,10 +418,16 @@ function ConferenceEditModal({
   const [calendlyUrl, setCalendlyUrl] = useState(
     conference.calendly_url || "https://calendly.com/d/cvyb-4ts-83b/rediffusion-conference",
   );
+  const [whatsappUrl, setWhatsappUrl] = useState(conference.whatsapp_group_url || "");
+  // L'input time attend HH:MM ; la base renvoie HH:MM:SS.
+  const [heure, setHeure] = useState((conference.starts_at_local || "11:00:00").slice(0, 5));
 
   function handleSave() {
-    if (!replayUrl.trim()) {
-      toast.error("L'URL du replay est requise");
+    // Le replay ne peut pas etre obligatoire : le groupe WhatsApp et l'heure se
+    // renseignent AVANT la conference, quand aucun replay n'existe encore. Le
+    // declencheur SQL ne bascule le statut en « Prete » que si tout est rempli.
+    if (whatsappUrl.trim() && !whatsappUrl.trim().startsWith("https://chat.whatsapp.com/")) {
+      toast.error("Le lien du groupe doit commencer par https://chat.whatsapp.com/");
       return;
     }
     // Sprint S4 (17/05/2026) : on n'envoie plus replay_code ni video_duration_min
@@ -425,6 +439,8 @@ function ConferenceEditModal({
       replay_code: "",
       video_duration_min: 90,
       calendly_url: calendlyUrl.trim(),
+      whatsapp_group_url: whatsappUrl.trim(),
+      starts_at_local: heure,
     });
   }
 
@@ -434,11 +450,43 @@ function ConferenceEditModal({
         <DialogHeader>
           <DialogTitle className="capitalize">Conférence du {formatConferenceDate(conference.conference_date)}</DialogTitle>
           <DialogDescription>
-            Renseigne le replay Zoom + le code d'accès. Quand les 4 champs sont remplis, le statut passe automatiquement en « Prête » et le lien devient copiable.
+            Avant la conférence : le groupe WhatsApp et l'heure. Après : le replay, qui fait passer le statut en « Prête » et rend le lien copiable.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 mt-2">
+          <div className="rounded-lg border bg-muted/30 p-3 space-y-4">
+            <div>
+              <Label htmlFor="wa-url">Groupe WhatsApp de cette conférence</Label>
+              <Input
+                id="wa-url"
+                value={whatsappUrl}
+                onChange={(e) => setWhatsappUrl(e.target.value)}
+                placeholder="https://chat.whatsapp.com/..."
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                À créer et renseigner <strong>la semaine précédente</strong>. Les funnels et les
+                messages d'envoi le lisent ici. Nomme le groupe avec sa date — c'est le seul moyen
+                de repérer qu'on a gardé celui de la semaine passée, puisque l'ancien groupe reste
+                ouvert et ne produit aucune erreur.
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="heure-debut">Heure de début (Paris)</Label>
+              <Input
+                id="heure-debut"
+                type="time"
+                value={heure}
+                onChange={(e) => setHeure(e.target.value)}
+                className="mt-1 w-36"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                C'est aussi l'heure à laquelle les nouvelles inscriptions basculent sur la
+                conférence suivante.
+              </p>
+            </div>
+          </div>
           <div>
             <Label htmlFor="replay-url">URL du replay</Label>
             <Input

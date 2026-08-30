@@ -12,6 +12,7 @@
 import { useEffect } from "react";
 import { trackTypLead } from "../lib/pixel";
 import { T, CONFERENCE, ensureTunnelFonts } from "../theme";
+import { useConference } from "../lib/conference";
 import TunnelBackground from "../components/TunnelBackground";
 import VimeoVideo from "../components/VimeoVideo";
 import CalendlyInline from "../components/CalendlyInline";
@@ -19,6 +20,7 @@ import BookingUnavailable from "../components/BookingUnavailable";
 import { resolveVariant } from "../variants";
 
 export default function VslMerci() {
+  const conference = useConference();
   const variant = resolveVariant("vsl", new URLSearchParams(window.location.search).get("v"));
 
   useEffect(() => {
@@ -55,7 +57,7 @@ export default function VslMerci() {
 
         <p className="albv-rise" style={{ animationDelay: "130ms", fontFamily: T.body, fontSize: "clamp(1rem,2.7vw,1.18rem)", lineHeight: 1.55, color: T.creamMuted, margin: "0 auto 30px", maxWidth: 540 }}>
           Ton inscription à la conférence du{" "}
-          <strong style={{ color: T.goldBright, fontWeight: 600 }}>{CONFERENCE.dateLabel}</strong>{" "}
+          <strong style={{ color: T.goldBright, fontWeight: 600 }}>{conference.dateLabel}</strong>{" "}
           ({CONFERENCE.tz}) est confirmée.
         </p>
 

@@ -13,6 +13,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { T, CONFERENCE } from "../theme";
+import { useConference } from "../lib/conference";
 import { markLeadPending } from "../lib/pixel";
 import { submitTunnelLead } from "../lib/api";
 import { getAttribution, setTunnelPrefill } from "../lib/source";
@@ -42,6 +43,7 @@ const L = {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function OptInModal({ open, onClose, tunnel }: Props) {
+  const conference = useConference();
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
@@ -143,7 +145,7 @@ export default function OptInModal({ open, onClose, tunnel }: Props) {
           Inscris-toi gratuitement à la conférence
         </h3>
         <p style={{ fontFamily: T.body, color: L.goldText, fontWeight: 700, fontSize: "1rem", textAlign: "center", margin: "0 0 6px" }}>
-          {CONFERENCE.dateLabel} · {CONFERENCE.tz}
+          {conference.dateLabel} · {CONFERENCE.tz}
         </p>
         <p style={{ fontFamily: T.body, color: L.inkMuted, fontSize: "0.9rem", textAlign: "center", margin: "0 0 22px" }}>
           Veuillez renseigner les informations ci-dessous
