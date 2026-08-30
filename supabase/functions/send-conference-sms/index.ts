@@ -12,6 +12,10 @@
 // accentué bascule le SMS en UCS-2 et fait tomber la limite de 160 à 70
 // caractères par segment, ce qui double la facture.
 //
+// Ils sont aussi calibrés pour tenir en UN segment (160 caractères) avec le
+// prénom le plus long de la liste. Le lien court en consomme 54 à lui seul :
+// toute phrase rallongée fait basculer l'envoi entier à 2 segments.
+//
 // ⚠️ À CHAQUE CONFÉRENCE : changer CAMPAIGN_SLUG ici, et le lien du groupe
 // WhatsApp dans `r-sms` (c'est lui qui reçoit le clic et redirige). L'ancien
 // groupe reste ouvert, donc une erreur n'affiche rien : elle envoie juste tout
@@ -49,7 +53,7 @@ const TEMPLATES: Record<number, { name: string; body: string }> = {
 
 Plus que 2h : conference en direct a 11h00.
 
-Le lien du direct arrive dans le groupe :
+Le lien arrive dans le groupe :
 {{LINK}}`,
   },
   6: {
@@ -58,7 +62,7 @@ Le lien du direct arrive dans le groupe :
 
 On commence dans 10 min.
 
-Rejoins le groupe maintenant, le lien du direct y est :
+Rejoins le groupe maintenant, le lien y est :
 {{LINK}}`,
   },
 };
