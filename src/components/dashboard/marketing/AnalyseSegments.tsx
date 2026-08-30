@@ -77,9 +77,10 @@ export default function AnalyseSegments({ lignes, titre = "Meilleur et pire" }: 
 }
 
 function ContenuAxe({ classement }: { classement: Classement }) {
-  const { meilleur, pire, critere, compares, ecartes } = classement;
+  const { meilleur, pire, critere, compares, ecartes, motif } = classement;
+  const totalLeads = compares.reduce((a, s) => a + s.kpis.leads, 0);
 
-  if (!meilleur) {
+  if (motif === "volume_insuffisant") {
     return (
       <p className="text-sm text-muted-foreground">
         Pas assez de volume sur cette période pour classer quoi que ce soit
@@ -88,14 +89,20 @@ function ContenuAxe({ classement }: { classement: Classement }) {
     );
   }
 
-  const totalLeads = compares.reduce((a, s) => a + s.kpis.leads, 0);
-
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Podium segment={meilleur} critere={critere} rang="meilleur" ecart={ecartEntreLesDeux(meilleur, pire, critere)} />
-        {pire && <Podium segment={pire} critere={critere} rang="pire" />}
-      </div>
+      {motif === "aucun_ecart" ? (
+        <p className="text-sm text-muted-foreground rounded-lg border border-dashed p-3">
+          Aucun écart entre les segments sur cette période — ils sont tous à{" "}
+          {critere === "roi" ? "ROI nul" : "0 € de CA par lead"}. Il n'y a donc ni meilleur ni pire
+          à désigner, seulement des volumes. Le classement apparaîtra dès la première vente.
+        </p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Podium segment={meilleur!} critere={critere} rang="meilleur" ecart={ecartEntreLesDeux(meilleur!, pire, critere)} />
+          {pire && <Podium segment={pire} critere={critere} rang="pire" />}
+        </div>
+      )}
 
       <div className="rounded-lg border overflow-x-auto">
         <table className="w-full text-sm min-w-[820px]">
@@ -141,7 +148,7 @@ function ContenuAxe({ classement }: { classement: Classement }) {
       <p className="text-xs text-muted-foreground flex items-start gap-1.5">
         <Info className="size-3.5 mt-0.5 shrink-0" />
         <span>
-          Classé sur le <strong>{libelleCritere(critere)}</strong>
+          {motif === "classe" ? "Classé" : "Comparé"} sur le <strong>{libelleCritere(critere)}</strong>
           {critere === "caParLead" && " — le ROI n'est pas comparable ici, tous les segments n'ont pas de dépense publicitaire"}.
           {ecartes.length > 0 && (
             <> Écartés du classement : {ecartes.map((e) => `${e.libelle} (${e.raison})`).join(", ")}.</>

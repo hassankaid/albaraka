@@ -163,6 +163,8 @@ export interface Classement {
   compares: Segment[];
   /** Écartés faute de volume, avec la raison. Affiché pour qu'aucun segment ne disparaisse en silence. */
   ecartes: { libelle: string; raison: string }[];
+  /** Pourquoi il n'y a pas de gagnant, le cas échéant. */
+  motif: "classe" | "volume_insuffisant" | "aucun_ecart";
 }
 
 /** En dessous de ce nombre de leads, un segment n'est pas comparable : un seul lead qui achète donne un rendement absurde. */
@@ -191,12 +193,28 @@ export function classer(segments: Segment[]): Classement {
   const valeur = (s: Segment) => (critere === "roi" ? s.kpis.roi : s.kpis.caParLead) ?? -Infinity;
 
   const tries = [...compares].sort((a, b) => valeur(b) - valeur(a));
+
+  // Tant qu'aucune vente n'est tombée, tous les segments valent zéro. Trier des
+  // égalités et couronner le premier de la liste donnerait un « meilleur canal »
+  // qui ne dit rien — et sur lequel on arbitrerait du budget. Dans ce cas il n'y
+  // a pas de gagnant, et on le dit.
+  const valeurs = tries.map(valeur).filter((v) => Number.isFinite(v));
+  const aucunEcart = valeurs.length > 0 && Math.max(...valeurs) === Math.min(...valeurs);
+
+  if (tries.length === 0) {
+    return { meilleur: null, pire: null, critere, compares: tries, ecartes, motif: "volume_insuffisant" };
+  }
+  if (aucunEcart) {
+    return { meilleur: null, pire: null, critere, compares: tries, ecartes, motif: "aucun_ecart" };
+  }
+
   return {
-    meilleur: tries[0] ?? null,
+    meilleur: tries[0],
     pire: tries.length > 1 ? tries[tries.length - 1] : null,
     critere,
     compares: tries,
     ecartes,
+    motif: "classe",
   };
 }
 
