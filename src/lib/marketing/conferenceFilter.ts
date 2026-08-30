@@ -1,5 +1,15 @@
 // Modèle de filtre pour le dashboard marketing : filtrage par conférence du dimanche.
-// Une conférence = le dimanche 12h00 Paris, identifié par sa date (YYYY-MM-DD).
+// Une conférence = un dimanche, identifié par sa date (YYYY-MM-DD).
+//
+// L'heure de bascule ci-dessous doit suivre l'heure de début réelle, portée par
+// `conferences.starts_at_local` (11h00 depuis le 30/08/2026 ; c'était 18h30 au
+// printemps, et ce fichier disait 12h00). Elle ne sert qu'à choisir la
+// conférence proposée par défaut dans la liste déroulante : une fonction
+// synchrone ne peut pas interroger la base, donc on la garde en constante et on
+// la met à jour si l'horaire change durablement.
+
+/** Heure de début des conférences, heure de Paris. Voir l'en-tête du fichier. */
+const HEURE_BASCULE = 11;
 
 export type ConferenceFilter =
   | { mode: "single"; date: string } // une conf précise
@@ -31,10 +41,9 @@ export function currentOrPrevSunday(ref: Date): string {
 
   // Dim du milieu de semaine Paris (via UTC anchor)
   const anchor = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-  // Si on est dim après 12h Paris : ce dim
-  // Sinon : dim précédent
+  // Dimanche après l'heure de début : cette conférence. Sinon : la précédente.
   let daysBack = dow;
-  if (dow === 0 && hour < 12) daysBack = 7;
+  if (dow === 0 && hour < HEURE_BASCULE) daysBack = 7;
   const back = new Date(anchor.getTime() - daysBack * 86400000);
   const backFmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Paris",

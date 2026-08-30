@@ -1,13 +1,13 @@
 // AgencyDashboard — Dashboard dédié au rôle 'agence' (lecture seule)
 //
 // Composition :
-//   1. MarketingTab (existant) — toutes les métriques marketing : budget ads,
-//      leads, RDV, ventes, CPL/CPR/CAC, drill-downs. Filtre contrôlé depuis ici.
-//   2. AgencyCommissionsBlock (nouveau) — synthèse des commissions de l'agence :
-//      collectées / à venir / ROI. Drill-downs sur les lignes.
+//   1. MarketingTab — performance par conférence et mensuelle, objectifs,
+//      analyse par canal / tunnel / combinaison.
+//   2. AgencyCommissionsBlock — commissions de l'agence : collectées, à venir, ROI.
 //
-// Le filtre par conférence (dimanche) est partagé entre les 2 sections pour
-// assurer la cohérence des chiffres.
+// La période n'est plus choisie ici : c'est l'onglet Marketing qui la remonte,
+// pour que les commissions parlent toujours du même périmètre que le tableau
+// affiché juste au-dessus. Un seul sélecteur à l'écran, donc.
 
 import { useState } from "react";
 import MarketingTab from "@/components/dashboard/marketing/MarketingTab";
@@ -32,8 +32,8 @@ export default function AgencyDashboard() {
         </p>
       </div>
 
-      {/* Section 1 : Marketing (budget ads, leads, RDV, ventes, CAC…) */}
-      <MarketingTab filter={filter} onFilterChange={setFilter} />
+      {/* Section 1 : Marketing — pilote aussi la période des commissions */}
+      <MarketingTab onPeriodeChange={setFilter} />
 
       {/* Section 2 : Commissions (collectées, à venir, ROI) */}
       <AgencyCommissionsBlock filter={filter} />
