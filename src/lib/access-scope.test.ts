@@ -19,6 +19,15 @@ describe("isApporteurScopedPath", () => {
     "/mon-coaching/session/abc",
     "/coaching/calendar",
     "/working/activity",
+    "/working/organisation",
+    "/working/personal-brand",
+    // Ouvert aux apporteurs le 15/04/2026 (« Agent IA accessible aux apporteurs
+    // avec pass actif »). Cette fonction ne dit QUE si le chemin appartient à la
+    // navigation apporteur ; c'est `FeatureGate feature="working_activity"` qui
+    // décide, sur la route elle-même, si la personne y a droit. Sans pass, elle
+    // voit un écran verrouillé — pas l'outil.
+    "/working/agent",
+    "/parcours/al-baraka",
     "/onboarding",
   ])("allows %s", (path) => {
     expect(isApporteurScopedPath(path)).toBe(true);
@@ -35,7 +44,7 @@ describe("isApporteurScopedPath", () => {
     "/admin/coaching",
     "/coaching",
     "/coaching/session/123",
-    "/working/agent",
+    "/working/settings",
   ])("blocks %s", (path) => {
     expect(isApporteurScopedPath(path)).toBe(false);
   });
