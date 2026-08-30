@@ -12,9 +12,13 @@
 // accentué bascule le SMS en UCS-2 et fait tomber la limite de 160 à 70
 // caractères par segment, ce qui double la facture.
 //
-// Ils sont aussi calibrés pour tenir en UN segment (160 caractères) avec le
-// prénom le plus long de la liste. Le lien court en consomme 54 à lui seul :
-// toute phrase rallongée fait basculer l'envoi entier à 2 segments.
+// Ils sont aussi calibrés pour tenir en UN segment (160 caractères). Le lien
+// court en consomme 54 à lui seul : toute phrase rallongée fait basculer
+// l'envoi entier à 2 segments.
+//
+// Pas d'en-tête « AL BARAKA - {{FIRST_NAME}} » : l'expéditeur alphanumérique
+// affiche déjà « Al Baraka » sur le téléphone, donc la répéter dans le corps
+// coûtait 12 caractères pour ne rien apprendre au lecteur.
 //
 // ⚠️ À CHAQUE CONFÉRENCE : changer CAMPAIGN_SLUG ici, et le lien du groupe
 // WhatsApp dans `r-sms` (c'est lui qui reçoit le clic et redirige). L'ancien
@@ -49,20 +53,16 @@ function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
 const TEMPLATES: Record<number, { name: string; body: string }> = {
   4: {
     name: "T-2h",
-    body: `AL BARAKA - {{FIRST_NAME}}
+    body: `Plus que 2h : conference en direct a 11h00.
 
-Plus que 2h : conference en direct a 11h00.
-
-Le lien arrive dans le groupe :
+Le lien du direct arrive dans le groupe :
 {{LINK}}`,
   },
   6: {
     name: "Ouverture",
-    body: `AL BARAKA - {{FIRST_NAME}}
+    body: `On commence dans 10 min.
 
-On commence dans 10 min.
-
-Rejoins le groupe maintenant, le lien y est :
+Rejoins le groupe maintenant, le lien du direct y est :
 {{LINK}}`,
   },
 };
