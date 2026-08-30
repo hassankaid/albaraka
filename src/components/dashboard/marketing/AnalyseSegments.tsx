@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ArrowDown, ArrowUp, Info } from "lucide-react";
+import BarrePart from "./BarrePart";
 import {
   classer, estCanalMarketing, fmtEuros, fmtNombre, fmtPourcent,
   libelleCritere, parCanal, parCombinaison, parTunnel, SEUIL_LEADS,
@@ -53,7 +54,7 @@ export default function AnalyseSegments({ lignes, titre = "Meilleur et pire" }: 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">{titre}</CardTitle>
+        <CardTitle className="font-heading text-xl font-semibold">{titre}</CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs value={axe} onValueChange={(v) => setAxe(v as Axe)}>
@@ -87,17 +88,19 @@ function ContenuAxe({ classement }: { classement: Classement }) {
     );
   }
 
+  const totalLeads = compares.reduce((a, s) => a + s.kpis.leads, 0);
+
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2">
-        <Podium segment={meilleur} critere={critere} rang="meilleur" />
+        <Podium segment={meilleur} critere={critere} rang="meilleur" ecart={ecartEntreLesDeux(meilleur, pire, critere)} />
         {pire && <Podium segment={pire} critere={critere} rang="pire" />}
       </div>
 
       <div className="rounded-lg border overflow-x-auto">
         <table className="w-full text-sm min-w-[820px]">
           <thead>
-            <tr className="border-b bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+            <tr className="border-b bg-muted/40 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
               <th className="text-left font-medium p-2.5">Segment</th>
               <th className="text-right font-medium p-2.5">Leads</th>
               <th className="text-right font-medium p-2.5">CPL</th>
@@ -112,9 +115,12 @@ function ContenuAxe({ classement }: { classement: Classement }) {
           <tbody>
             {compares.map((s, i) => (
               <tr key={s.cle} className="border-b last:border-0 hover:bg-muted/30">
-                <td className="p-2.5">
-                  <span className="text-muted-foreground tabular-nums mr-2">{i + 1}.</span>
-                  {s.libelle}
+                <td className="p-2.5 min-w-[190px]">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-muted-foreground tabular-nums text-xs">{i + 1}</span>
+                    <span className={i === 0 ? "font-medium" : undefined}>{s.libelle}</span>
+                  </div>
+                  <BarrePart valeur={s.kpis.leads} total={totalLeads} ton={i === 0 ? "or" : "neutre"} />
                 </td>
                 <td className="p-2.5 text-right tabular-nums">{fmtNombre(s.kpis.leads)}</td>
                 <td className="p-2.5 text-right tabular-nums">{fmtEuros(s.kpis.cpl, 2)}</td>
@@ -122,7 +128,9 @@ function ContenuAxe({ classement }: { classement: Classement }) {
                 <td className="p-2.5 text-right tabular-nums">{fmtEuros(s.kpis.ca)}</td>
                 <td className="p-2.5 text-right tabular-nums">{fmtEuros(s.kpis.coutParVente, 2)}</td>
                 <td className="p-2.5 text-right tabular-nums">{fmtEuros(s.kpis.depense, 2)}</td>
-                <td className="p-2.5 text-right tabular-nums">{fmtPourcent(s.kpis.roi)}</td>
+                <td className={`p-2.5 text-right tabular-nums ${
+                  s.kpis.roi === null ? "" : s.kpis.roi >= 0 ? "text-[hsl(var(--kpi-paid))]" : "text-[hsl(var(--kpi-lost))]"
+                }`}>{fmtPourcent(s.kpis.roi)}</td>
                 <td className="p-2.5 text-right tabular-nums">{fmtEuros(s.kpis.caParLead, 2)}</td>
               </tr>
             ))}
@@ -144,27 +152,68 @@ function ContenuAxe({ classement }: { classement: Classement }) {
   );
 }
 
-function Podium({ segment, critere, rang }: { segment: Segment; critere: "roi" | "caParLead"; rang: "meilleur" | "pire" }) {
+/**
+ * L'écart entre le meilleur et le pire, en toutes lettres. C'est le calcul que
+ * le lecteur allait faire de tête ; autant le lui donner.
+ */
+function ecartEntreLesDeux(meilleur: Segment, pire: Segment | null, critere: "roi" | "caParLead"): string | undefined {
+  if (!pire) return undefined;
+  const a = critere === "roi" ? meilleur.kpis.roi : meilleur.kpis.caParLead;
+  const b = critere === "roi" ? pire.kpis.roi : pire.kpis.caParLead;
+  if (a === null || b === null) return undefined;
+
+  if (critere === "caParLead") {
+    if (b <= 0) return `${pire.libelle} n'a rien rapporté`;
+    const facteur = a / b;
+    if (!Number.isFinite(facteur) || facteur < 1.05) return undefined;
+    return `${facteur.toFixed(1).replace(".", ",")}× ce que rapporte ${pire.libelle}`;
+  }
+  const points = Math.round(a - b);
+  if (points === 0) return undefined;
+  return `${points} points de ROI de plus que ${pire.libelle}`;
+}
+
+function Podium({ segment, critere, rang, ecart }: {
+  segment: Segment;
+  critere: "roi" | "caParLead";
+  rang: "meilleur" | "pire";
+  ecart?: string;
+}) {
   const estMeilleur = rang === "meilleur";
   const valeur = critere === "roi" ? fmtPourcent(segment.kpis.roi) : fmtEuros(segment.kpis.caParLead, 2);
 
   return (
-    <div className={`rounded-lg border p-4 ${estMeilleur ? "border-emerald-500/40 bg-emerald-500/5" : "border-orange-500/40 bg-orange-500/5"}`}>
-      <div className="flex items-center gap-2 mb-1.5">
+    <div
+      className={`rounded-xl border p-4 sm:p-5 ${
+        estMeilleur
+          ? "gold-border bg-primary/[0.04]"
+          : "border-border bg-muted/40"
+      }`}
+    >
+      <div className="flex items-center gap-2 mb-2 text-[11px] font-medium uppercase tracking-[0.12em]">
         {estMeilleur
-          ? <ArrowUp className="size-4 text-emerald-600" />
-          : <ArrowDown className="size-4 text-orange-600" />}
-        <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
+          ? <ArrowUp className="size-3.5 text-primary" />
+          : <ArrowDown className="size-3.5 text-muted-foreground" />}
+        <span className={estMeilleur ? "text-primary" : "text-muted-foreground"}>
           {estMeilleur ? "Meilleur" : "Pire"}
-        </Badge>
+        </span>
       </div>
-      <div className="font-semibold">{segment.libelle}</div>
-      <div className={`text-2xl font-bold tabular-nums mt-1 ${estMeilleur ? "text-emerald-600" : "text-orange-600"}`}>
+
+      <div className="font-medium text-[15px]">{segment.libelle}</div>
+
+      <div className={`font-heading font-semibold tabular-nums leading-none mt-2 text-[clamp(1.6rem,3.6vw,2.1rem)] ${
+        estMeilleur ? "text-primary" : "text-muted-foreground"
+      }`}>
         {valeur}
       </div>
-      <div className="text-xs text-muted-foreground mt-1">
+
+      <div className="text-xs text-muted-foreground mt-2 leading-snug">
         {fmtNombre(segment.kpis.leads)} leads · {fmtNombre(segment.kpis.ventes)} vente{segment.kpis.ventes > 1 ? "s" : ""} · {fmtEuros(segment.kpis.ca)}
       </div>
+
+      {ecart && (
+        <div className="text-xs mt-2 pt-2 border-t border-border/60 text-muted-foreground">{ecart}</div>
+      )}
     </div>
   );
 }

@@ -19,6 +19,7 @@ import { additionner, calculerKpis, fmtNombre } from "@/lib/marketing/perf";
 import { calculerEcart, type DefKpi } from "@/lib/marketing/kpiDefs";
 import { useEnregistrerObjectif, useMarketingPerfComparee, useObjectifs, type KpiObjectif } from "@/hooks/useMarketingPerf";
 import TableauKpis, { type ColonneKpi } from "./TableauKpis";
+import KpiVedette from "./KpiVedette";
 import AnalyseSegments from "./AnalyseSegments";
 import BlocRendezVous from "./BlocRendezVous";
 
@@ -130,7 +131,7 @@ export default function VueMensuelle({ onPeriodeChange }: { onPeriodeChange?: (f
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-3 flex-row items-center justify-between gap-4 space-y-0">
-          <CardTitle className="text-base">Performance mensuelle</CardTitle>
+          <CardTitle className="font-heading text-xl font-semibold">Performance mensuelle</CardTitle>
           <Select value={selection} onValueChange={setSelection}>
             <SelectTrigger className="w-[200px]">
               <SelectValue />
@@ -149,7 +150,10 @@ export default function VueMensuelle({ onPeriodeChange }: { onPeriodeChange?: (f
             <p className="text-sm text-destructive">Impossible de charger les données : {(perf.error as any)?.message ?? "erreur inconnue"}</p>
           ) : (
             <>
-              <TableauKpis kpis={kpis} colonnes={colonnes} />
+              <KpiVedette kpis={kpis} comparaison={kpisPrec} />
+              <div className="mt-4">
+                <TableauKpis kpis={kpis} colonnes={colonnes} />
+              </div>
               <p className="text-xs text-muted-foreground mt-3">
                 L'écart se lit dans le sens du progrès : dépasser l'objectif de CPL ou de coût par vente s'affiche en orange, le dépasser en CA s'affiche en vert.
                 Vider une case retire l'objectif.

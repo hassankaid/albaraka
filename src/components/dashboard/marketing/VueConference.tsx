@@ -12,6 +12,7 @@ import { buildConferenceList, conferenceEnCours, formatConferenceLabelFull, type
 import { additionner, calculerKpis } from "@/lib/marketing/perf";
 import { useMarketingPerf } from "@/hooks/useMarketingPerf";
 import TableauKpis, { type ColonneKpi } from "./TableauKpis";
+import KpiVedette from "./KpiVedette";
 import AnalyseSegments from "./AnalyseSegments";
 import BlocRendezVous from "./BlocRendezVous";
 
@@ -50,7 +51,7 @@ export default function VueConference({ onPeriodeChange }: { onPeriodeChange?: (
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-3 flex-row items-center justify-between gap-4 space-y-0">
-          <CardTitle className="text-base">Performance d'une conférence</CardTitle>
+          <CardTitle className="font-heading text-xl font-semibold">Performance d'une conférence</CardTitle>
           <Select value={date} onValueChange={setDate}>
             <SelectTrigger className="w-[280px]">
               <SelectValue placeholder="Choisir une conférence" />
@@ -71,7 +72,10 @@ export default function VueConference({ onPeriodeChange }: { onPeriodeChange?: (
             <p className="text-sm text-destructive">Impossible de charger les données : {(error as any)?.message ?? "erreur inconnue"}</p>
           ) : (
             <>
-              <TableauKpis kpis={kpis} colonnes={colonnes} />
+              <KpiVedette kpis={kpis} />
+              <div className="mt-4">
+                <TableauKpis kpis={kpis} colonnes={colonnes} />
+              </div>
               {kpis.leads === 0 && (
                 <p className="text-xs text-muted-foreground mt-3">
                   Aucun lead rattaché à cette conférence.

@@ -22,7 +22,7 @@ export default function TableauKpis({ kpis, colonnes }: { kpis: Kpis; colonnes: 
       <div className="rounded-lg border overflow-x-auto">
         <table className="w-full text-sm min-w-[520px]">
           <thead>
-            <tr className="border-b bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+            <tr className="border-b bg-muted/40 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
               <th className="text-left font-medium p-3">Indicateur</th>
               {colonnes.map((c) => (
                 <th

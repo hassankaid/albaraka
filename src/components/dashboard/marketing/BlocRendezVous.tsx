@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fmtNombre, fmtPourcent } from "@/lib/marketing/perf";
 import { useMarketingRdv, type PeriodePerf, type RdvParOrigine } from "@/hooks/useMarketingPerf";
+import BarrePart from "./BarrePart";
 
 const LIBELLES: Record<RdvParOrigine["origine"], { titre: string; aide: string }> = {
   conference: { titre: "Événement conférence", aide: "Pris sur l'agenda de la conférence" },
@@ -33,7 +34,7 @@ export default function BlocRendezVous({ periode }: { periode: PeriodePerf | nul
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Rendez-vous par origine</CardTitle>
+        <CardTitle className="font-heading text-xl font-semibold">Rendez-vous par origine</CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -44,7 +45,7 @@ export default function BlocRendezVous({ periode }: { periode: PeriodePerf | nul
           <div className="rounded-lg border overflow-x-auto">
             <table className="w-full text-sm min-w-[560px]">
               <thead>
-                <tr className="border-b bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+                <tr className="border-b bg-muted/40 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
                   <th className="text-left font-medium p-2.5">Origine</th>
                   <th className="text-right font-medium p-2.5">RDV pris</th>
                   <th className="text-right font-medium p-2.5">Part</th>
@@ -56,9 +57,10 @@ export default function BlocRendezVous({ periode }: { periode: PeriodePerf | nul
               <tbody>
                 {triees.map((l) => (
                   <tr key={l.origine} className="border-b last:border-0 hover:bg-muted/30">
-                    <td className="p-2.5">
+                    <td className="p-2.5 min-w-[200px]">
                       <div>{LIBELLES[l.origine].titre}</div>
                       <div className="text-xs text-muted-foreground">{LIBELLES[l.origine].aide}</div>
+                      <BarrePart valeur={l.rdv} total={total} ton={l.origine === "autre" ? "sourdine" : "or"} />
                     </td>
                     <td className="p-2.5 text-right tabular-nums font-medium">{fmtNombre(l.rdv)}</td>
                     <td className="p-2.5 text-right tabular-nums text-muted-foreground">
