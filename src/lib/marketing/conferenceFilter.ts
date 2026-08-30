@@ -113,3 +113,29 @@ export function formatConferenceLabelFull(dateStr: string): string {
   });
   return `Conférence du ${fmt.format(d)}`;
 }
+
+/** Ajoute `n` semaines à une date de conférence (YYYY-MM-DD). */
+export function dimanchePlus(dateStr: string, n: number): string {
+  const d = new Date(dateStr + "T12:00:00Z");
+  return new Date(d.getTime() + n * 7 * 86400000).toISOString().slice(0, 10);
+}
+
+/**
+ * Conférence sur laquelle les inscriptions du moment sont rattachées : celle du
+ * jour tant qu'elle n'a pas commencé, celle du dimanche suivant après.
+ *
+ * À ne pas confondre avec `currentOrPrevSunday`, qui répond « quelle est la
+ * dernière conférence passée ». Le tableau de bord a besoin des deux : la
+ * dernière passée pour lire des résultats, celle en cours pour voir arriver les
+ * leads. Ne garder que la première faisait disparaître de la liste déroulante la
+ * conférence du jour — avec tous ses inscrits de la semaine.
+ *
+ * C'est toujours la suivante, par construction : `currentOrPrevSunday` bascule
+ * exactement à l'heure de début.
+ *
+ * Miroir de `next_sunday_noon_paris_after()` côté base. Les deux doivent
+ * répondre la même chose, sinon l'affichage et le rattachement divergent.
+ */
+export function conferenceEnCours(ref: Date = new Date()): string {
+  return dimanchePlus(currentOrPrevSunday(ref), 1);
+}

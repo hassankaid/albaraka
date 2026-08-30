@@ -60,6 +60,43 @@ export function useMarketingPerfComparee(courant: PeriodePerf | null, precedent:
   };
 }
 
+// ── Rendez-vous par agenda d'origine ───────────────────────────────────────
+//
+// Un RDV pris sur l'événement de la conférence, un autre sous la vidéo du
+// tunnel VSL et un troisième depuis la page témoignages n'ont pas la même
+// valeur : le premier vient d'assister à la conférence, le deuxième ne l'a pas
+// vue, le troisième revient de lui-même. Les additionner masque exactement la
+// différence qu'on cherche à piloter.
+
+export interface RdvParOrigine {
+  origine: "conference" | "vsl" | "retargeting" | "autre";
+  rdv: number;
+  annules: number;
+  no_show: number;
+  honores: number;
+}
+
+export function useMarketingRdv(p: PeriodePerf | null) {
+  return useQuery({
+    queryKey: ["marketing-rdv", p?.mode, p?.from, p?.to],
+    enabled: !!p,
+    staleTime: 60_000,
+    queryFn: async (): Promise<RdvParOrigine[]> => {
+      const { data, error } = await (supabase as any).rpc("marketing_rdv", {
+        p_mode: p!.mode, p_from: p!.from, p_to: p!.to,
+      });
+      if (error) throw error;
+      return (data ?? []).map((r: any) => ({
+        origine: r.origine,
+        rdv: Number(r.rdv ?? 0),
+        annules: Number(r.annules ?? 0),
+        no_show: Number(r.no_show ?? 0),
+        honores: Number(r.honores ?? 0),
+      }));
+    },
+  });
+}
+
 // ── Objectifs mensuels ─────────────────────────────────────────────────────
 
 export type KpiObjectif = "leads" | "cpl" | "ventes" | "ca" | "cout_par_vente" | "budget" | "roi";

@@ -20,6 +20,7 @@ import { calculerEcart, type DefKpi } from "@/lib/marketing/kpiDefs";
 import { useEnregistrerObjectif, useMarketingPerfComparee, useObjectifs, type KpiObjectif } from "@/hooks/useMarketingPerf";
 import TableauKpis, { type ColonneKpi } from "./TableauKpis";
 import AnalyseSegments from "./AnalyseSegments";
+import BlocRendezVous from "./BlocRendezVous";
 
 /** 18 derniers mois, du plus récent au plus ancien. */
 function derniersMois(n = 18): string[] {
@@ -157,6 +158,8 @@ export default function VueMensuelle({ onPeriodeChange }: { onPeriodeChange?: (f
           )}
         </CardContent>
       </Card>
+
+      <BlocRendezVous periode={{ mode: "calendrier", ...bornes }} />
 
       {!perf.isLoading && perf.courant.length > 0 && (
         <AnalyseSegments lignes={perf.courant} titre={`Meilleur et pire — ${libelleMois(selection)}`} />

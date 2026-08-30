@@ -8,18 +8,21 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { buildConferenceList, currentOrPrevSunday, formatConferenceLabelFull, type ConferenceFilter } from "@/lib/marketing/conferenceFilter";
+import { buildConferenceList, conferenceEnCours, formatConferenceLabelFull, type ConferenceFilter } from "@/lib/marketing/conferenceFilter";
 import { additionner, calculerKpis } from "@/lib/marketing/perf";
 import { useMarketingPerf } from "@/hooks/useMarketingPerf";
 import TableauKpis, { type ColonneKpi } from "./TableauKpis";
 import AnalyseSegments from "./AnalyseSegments";
+import BlocRendezVous from "./BlocRendezVous";
 
 export default function VueConference({ onPeriodeChange }: { onPeriodeChange?: (f: ConferenceFilter) => void }) {
   const conferences = useMemo(() => {
-    // Les dimanches à venir n'ont pas encore de résultats : on ne propose que
-    // le passé et la conférence en cours.
-    const courante = currentOrPrevSunday(new Date());
-    return buildConferenceList(new Date(), 26, 0).filter((d) => d <= courante).reverse();
+    // La liste va jusqu'à la conférence EN COURS d'inscription, pas jusqu'à la
+    // dernière passée : c'est elle qui porte les leads de la semaine, et
+    // l'arrêter avant la faisait disparaître de l'écran le dimanche matin.
+    // Au-delà, rien à montrer — les dimanches suivants n'ont pas encore de leads.
+    const derniere = conferenceEnCours(new Date());
+    return buildConferenceList(new Date(), 26, 2).filter((d) => d <= derniere).reverse();
   }, []);
 
   const [date, setDate] = useState(conferences[0]);
@@ -78,6 +81,8 @@ export default function VueConference({ onPeriodeChange }: { onPeriodeChange?: (
           )}
         </CardContent>
       </Card>
+
+      {date && <BlocRendezVous periode={{ mode: "conference", from: date, to: date }} />}
 
       {!isLoading && lignes.length > 0 && (
         <AnalyseSegments lignes={lignes} titre="Meilleur et pire — sur cette conférence" />
