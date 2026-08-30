@@ -74,14 +74,15 @@ export function calculerKpis(m: Mesures): Kpis {
 
 // ── Libellés ───────────────────────────────────────────────────────────────
 
-export const CANAUX_MARKETING = ["meta_ads", "instagram_organic", "tiktok_organic", "direct"] as const;
-export const TUNNELS = ["wa", "vsl"] as const;
+export const CANAUX_MARKETING = ["meta_ads", "instagram_organic", "tiktok_organic", "direct", "tunnel_quiz_apporteurs"] as const;
+export const TUNNELS = ["wa", "vsl", "quiz"] as const;
 
 const LIB_CANAL: Record<string, string> = {
   meta_ads: "Meta Ads",
   instagram_organic: "Organique Instagram",
   tiktok_organic: "Organique TikTok",
   direct: "Accès direct",
+  tunnel_quiz_apporteurs: "Tunnel Quiz Apporteurs",
   apporteur: "Apporteurs",
   non_attribue: "Non attribué",
   autre: "Autre",
@@ -90,6 +91,7 @@ const LIB_CANAL: Record<string, string> = {
 const LIB_TUNNEL: Record<string, string> = {
   wa: "WhatsApp",
   vsl: "VSL",
+  quiz: "Quiz apporteur",
   webinaire_legacy: "Webinaire (ancien)",
   apporteur: "Apporteurs",
   non_attribue: "Non attribué",
@@ -126,9 +128,12 @@ function regrouper(
 }
 
 /**
- * Les apporteurs ne sont pas un canal marketing : ce sont des recommandations.
- * Les mélanger fausserait la comparaison entre canaux — et surtout le classement
- * du meilleur et du pire. Ils restent visibles sur leur propre ligne.
+ * Les apports individuels d'un apporteur — sa recommandation, son Instagram, son
+ * WhatsApp — ne sont pas un canal marketing : les comparer aux campagnes
+ * fausserait le classement. Ils restent visibles sur leur propre ligne.
+ *
+ * Le tunnel quiz, lui, EN EST un : le prospect remplit un formulaire sur une
+ * page dédiée, exactement comme sur une landing. Il entre donc au classement.
  */
 export const estCanalMarketing = (l: PerfBrute): boolean =>
   l.canal !== "apporteur" && l.canal !== "non_attribue";
