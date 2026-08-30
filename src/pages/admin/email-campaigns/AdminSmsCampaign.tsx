@@ -22,15 +22,15 @@ import {
   MessageSquare, CheckCircle2, XCircle, RefreshCw, DollarSign, MousePointerClick,
 } from "lucide-react";
 
-const CAMPAIGN_SLUG = "conf_2026_05_31_sms";
+const CAMPAIGN_SLUG = "conf_2026_08_30_sms";
 
+// Mêmes règles que côté e-mail : les onglets se déduisent de cet objet.
 const SMS_NAMES: Record<number, string> = {
-  2: "SMS 2 — La promesse",
-  3: "SMS 3 — Jour J",
   4: "SMS 4 — T-2h",
-  5: "SMS 5 — T-40min",
   6: "SMS 6 — Ouverture",
 };
+
+const SMS_SEQS = Object.keys(SMS_NAMES).map(Number).sort((a, b) => a - b);
 
 interface SmsStat {
   campaign_slug: string;
@@ -79,7 +79,7 @@ function fmtPrice(p: number | null): string {
 export default function AdminSmsCampaign() {
   const { profile, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [activeSeq, setActiveSeq] = useState("2");
+  const [activeSeq, setActiveSeq] = useState(String(SMS_SEQS[0]));
   const [search, setSearch] = useState("");
 
   const isAuthorized =
@@ -157,7 +157,7 @@ export default function AdminSmsCampaign() {
         <div>
           <h1 className="text-2xl font-bold">Campagne SMS — Conférence 31/05</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Suivi temps réel · ~500 destinataires FR/BE · 5 SMS (sender « Al Baraka »)
+            Suivi temps réel · conférence du 30/08 · {SMS_SEQS.length} SMS (expéditeur « Al Baraka »)
           </p>
         </div>
         <div className="flex gap-2">
@@ -217,8 +217,8 @@ export default function AdminSmsCampaign() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeSeq} onValueChange={setActiveSeq}>
-            <TabsList className="grid grid-cols-5 mb-4">
-              {[2, 3, 4, 5, 6].map((seq) => {
+            <TabsList className="grid grid-cols-2 mb-4">
+              {SMS_SEQS.map((seq) => {
                 const s = allStats.find((x) => x.sms_seq === seq);
                 return (
                   <TabsTrigger key={seq} value={String(seq)} className="text-xs">
@@ -233,7 +233,7 @@ export default function AdminSmsCampaign() {
               })}
             </TabsList>
 
-            {[2, 3, 4, 5, 6].map((seq) => {
+            {SMS_SEQS.map((seq) => {
               const s = allStats.find((x) => x.sms_seq === seq);
               return (
                 <TabsContent key={seq} value={String(seq)} className="space-y-4">

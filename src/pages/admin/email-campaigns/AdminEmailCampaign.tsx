@@ -32,15 +32,17 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-const CAMPAIGN_SLUG = "conf_2026_05_31";
+const CAMPAIGN_SLUG = "conf_2026_08_30";
 
+// Séquences réellement envoyées pour cette conférence. Les onglets se déduisent
+// de cet objet : une séquence retirée ici disparaît de l'interface, au lieu de
+// laisser un onglet vide qui donne l'impression d'un envoi raté.
 const EMAIL_NAMES: Record<number, string> = {
-  1: "Email 1 — L'invitation",
-  2: "Email 2 — La promesse",
-  3: "Email 3 — Jour J",
   4: "Email 4 — T-2h",
   5: "Email 5 — Ouverture salle",
 };
+
+const EMAIL_SEQS = Object.keys(EMAIL_NAMES).map(Number).sort((a, b) => a - b);
 
 interface CampaignStat {
   campaign_slug: string;
@@ -102,7 +104,7 @@ function fmtDate(s: string | null): string {
 export default function AdminEmailCampaign() {
   const { profile, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [activeSeq, setActiveSeq] = useState("1");
+  const [activeSeq, setActiveSeq] = useState(String(EMAIL_SEQS[0]));
   const [search, setSearch] = useState("");
 
   const isAuthorized =
@@ -210,7 +212,7 @@ export default function AdminEmailCampaign() {
         <div>
           <h1 className="text-2xl font-bold">Campagne — Conférence 31/05</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Suivi temps réel · 1 000 destinataires · 5 emails
+            Suivi temps réel · conférence du 30/08 · {EMAIL_SEQS.length} emails
           </p>
         </div>
         <Button
@@ -262,8 +264,8 @@ export default function AdminEmailCampaign() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeSeq} onValueChange={setActiveSeq}>
-            <TabsList className="grid grid-cols-5 mb-4">
-              {[1, 2, 3, 4, 5].map((seq) => {
+            <TabsList className="grid grid-cols-2 mb-4">
+              {EMAIL_SEQS.map((seq) => {
                 const s = allStats.find((x) => x.email_seq === seq);
                 return (
                   <TabsTrigger key={seq} value={String(seq)} className="text-xs">
@@ -278,7 +280,7 @@ export default function AdminEmailCampaign() {
               })}
             </TabsList>
 
-            {[1, 2, 3, 4, 5].map((seq) => {
+            {EMAIL_SEQS.map((seq) => {
               const s = allStats.find((x) => x.email_seq === seq);
               return (
                 <TabsContent key={seq} value={String(seq)} className="space-y-4">
