@@ -1956,7 +1956,7 @@ async function handleInvoicePaid(
   // précédemment marquée en échec.
   const { data: unpaids } = await supabase
     .from("payments")
-    .select("id, payment_number")
+    .select("id, payment_number, amount, notes")
     .eq("stripe_subscription_id", subscriptionId)
     .in("status", ["pending", "late"])
     .order("payment_number", { ascending: true })
@@ -1975,6 +1975,35 @@ async function handleInvoicePaid(
   //     une ligne déjà paid par un autre webhook parallèle.
   //   - L'UNIQUE INDEX sur stripe_payment_intent_id / stripe_invoice_id
   //     rejette toute 2e tentative d'attacher ces IDs ailleurs (race-safe).
+  // STRIPE FAIT FOI SUR LE MONTANT, PAS SEULEMENT SUR LE STATUT.
+  //
+  // Jusqu'au 05/09/2026 on n'ecrivait que le statut : une echeance prevue a
+  // 500 € mais encaissee 381,42 € (proration Stripe apres un report d'echeance)
+  // restait affichee a 500 € en base. Le chiffre d'affaires etait surevalue, les
+  // commissions calculees sur un montant jamais encaisse, et RIEN ne le signalait.
+  //
+  // On enregistre donc le montant REEL. Le trigger de rebalance recalcule les
+  // commissions dessus, et l'ecart est trace dans `notes` : le corriger en
+  // silence reviendrait a effacer une dette. Quelqu'un doit decider quoi faire
+  // des 118,58 € manquants — la machine ne le decide pas a sa place.
+  const montantEncaisse = Math.round(amountPaid) / 100;
+  const montantPrevu = Number(target.amount);
+  const ecart = Number.isFinite(montantPrevu)
+    ? Math.round((montantPrevu - montantEncaisse) * 100) / 100
+    : 0;
+  const champsMontant: Record<string, unknown> = {};
+  if (ecart !== 0) {
+    const signe = ecart > 0 ? "manque" : "excedent";
+    const trace = `[${todayISO()}] Encaisse ${montantEncaisse.toFixed(2)} € au lieu de ` +
+      `${montantPrevu.toFixed(2)} € (${signe} ${Math.abs(ecart).toFixed(2)} €, facture ${invoiceId}).`;
+    champsMontant.amount = montantEncaisse;
+    champsMontant.notes = target.notes ? `${target.notes} ${trace}` : trace;
+    console.error(
+      `[invoice.paid] ECART DE MONTANT sur payment #${target.payment_number} : ` +
+      `prevu ${montantPrevu}, encaisse ${montantEncaisse} (facture ${invoiceId})`,
+    );
+  }
+
   const { data: updated, error: updErr } = await supabase
     .from("payments")
     .update({
@@ -1982,6 +2011,7 @@ async function handleInvoicePaid(
       paid_at: todayISO(),
       stripe_invoice_id: invoiceId,
       stripe_payment_intent_id: paymentIntentId,
+      ...champsMontant,
     })
     .eq("id", target.id)
     .in("status", ["pending", "late"])
