@@ -6,6 +6,16 @@
 //   - ses abonnements (subscriptions) : statut, montant mensuel, intervalle,
 //     période courante
 //   - ses factures (invoices) : payées / à venir, montant, date d'encaissement
+//   - ses REMISES (coupons) et leur durée
+//   - la PROCHAINE FACTURE telle que Stripe la calcule, remise déduite
+//
+// Les deux derniers points ont été ajoutés le 03/09/2026 après une alerte
+// réelle : un abonnement affichait un prix catalogue de 312,50 € alors que
+// toutes ses factures sortaient à 250 €. Un coupon de 20 % expliquait l'écart,
+// mais rien ici ne le montrait — on ne pouvait donc pas savoir, avant de
+// décaler un prélèvement, quel montant allait réellement partir. Le prix d'un
+// item Stripe n'est PAS ce que le client paie ; seule la facture prévisionnelle
+// fait foi.
 //
 // Cette fonction NE MODIFIE RIEN — ni Stripe, ni la base. Elle sert à VOIR,
 // pour pouvoir ensuite rattacher en confiance les anciens clients (Systeme.io)
@@ -143,6 +153,55 @@ serve(async (req) => {
 
         const facturesPayees = invoices.filter((i) => i.statut === "paid");
 
+        // ─── Remises actives sur l'abonnement ───
+        // `discounts` (pluriel) sur les versions récentes de l'API, `discount`
+        // (singulier) sur les anciennes : on lit les deux.
+        const bruts = Array.isArray(sub.discounts) && sub.discounts.length
+          ? sub.discounts
+          : (sub.discount ? [sub.discount] : []);
+        const remises = bruts
+          .map((d: any) => (typeof d === "string" ? null : d))
+          .filter(Boolean)
+          .map((d: any) => ({
+            coupon_id: d.coupon?.id ?? null,
+            nom: d.coupon?.name ?? null,
+            pourcentage: d.coupon?.percent_off ?? null,
+            montant_off: cents(d.coupon?.amount_off),
+            duree: d.coupon?.duration ?? null,          // once | repeating | forever
+            duree_en_mois: d.coupon?.duration_in_months ?? null,
+            debut: tsToIso(d.start),
+            // `end` n'est renseigné que pour un coupon `repeating`. Null sur un
+            // coupon `forever` : la remise ne s'arrête jamais.
+            fin: tsToIso(d.end),
+          }));
+
+        // ─── Ce que Stripe facturera réellement au prochain cycle ───
+        // C'est la seule source fiable : elle applique remises, prorata et
+        // taxes. Un abonnement résilié ou terminé n'en a pas — ce n'est pas
+        // une erreur, on le dit simplement.
+        let prochaineFacture: any = null;
+        try {
+          const up = await stripeGet(
+            `invoices/upcoming?subscription=${sub.id}`,
+            apiKey,
+          );
+          prochaineFacture = {
+            montant_a_payer: cents(up.amount_due),
+            sous_total: cents(up.subtotal),
+            total: cents(up.total),
+            remise_appliquee: cents(
+              (up.total_discount_amounts ?? []).reduce(
+                (s: number, d: any) => s + (d.amount ?? 0), 0,
+              ),
+            ),
+            date_prevue: tsToIso(up.next_payment_attempt ?? up.period_end),
+            periode_debut: tsToIso(up.period_start),
+            periode_fin: tsToIso(up.period_end),
+          };
+        } catch (e: any) {
+          prochaineFacture = { indisponible: e?.message ?? String(e) };
+        }
+
         subs.push({
           subscription_id: sub.id,
           statut: sub.status, // active | past_due | canceled | trialing | unpaid | incomplete
@@ -152,6 +211,8 @@ serve(async (req) => {
           annulation_prevue_le: tsToIso(sub.cancel_at),
           annule_le: tsToIso(sub.canceled_at),
           items,
+          remises,
+          prochaine_facture: prochaineFacture,
           nb_factures_payees: facturesPayees.length,
           total_encaisse:
             facturesPayees.reduce((s, i) => s + (i.montant_paye ?? 0), 0),
