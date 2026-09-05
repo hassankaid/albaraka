@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, MessageCircle, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film, Hash, Mail } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, MessageCircle, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film, Hash, Mail, FlaskConical } from "lucide-react";
 import { isStudioAllowed } from "@/lib/studio-access";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
@@ -41,6 +41,7 @@ const workingNavItems: NavItem[] = [
   { title: "Mes Ventes", path: "/sales", icon: BadgeEuro, roles: ["ceo", "collaborateur", "apporteur"], adminSection: true },
   { title: "Mes Paiements", path: "/payments", icon: CreditCard, roles: ["ceo", "collaborateur"], adminSection: true },
   { title: "Mes Commissions", path: "/my-commissions", icon: Receipt, roles: ["ceo", "collaborateur", "agence"], adminSection: true },
+  { title: "A/B Testing", path: "/ab-tests", icon: FlaskConical, roles: ["ceo", "agence"], adminSection: true },
   { title: "Mon profil", path: "/profile", icon: User, roles: ["agence"] },
 ];
 
@@ -92,6 +93,7 @@ const pageTitles: Record<string, string> = {
   "/sales": "Mes Ventes",
   "/payments": "Mes Paiements",
   "/my-commissions": "Mes Commissions",
+  "/ab-tests": "A/B Testing",
   "/admin/team": "Équipe",
   "/admin/announcements": "Annonces",
   "/admin/quiz-lead": "Quiz prospection",

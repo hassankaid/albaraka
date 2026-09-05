@@ -35,7 +35,9 @@ const SRC_SUFFIX: Record<string, string> = {
 };
 
 export interface TunnelAttribution {
-  src: string | null; // valeur brute du lien (ads | ig | tiktok)
+  src: string | null; // valeur brute du lien (ads | ig | tiktok | youtube)
+  /** Code du test A/B porté par le lien (?ab=CODE), s'il y en a un. */
+  abCode: string | null;
   source: string; // libellé destiné au CRM (leads.source) : `${prefix}_${suffixe}`
   variant: string | null; // variante A/B captée à l'entrée (?v=1..6), portée jusqu'à la page merci
   utm_source: string | null;
@@ -80,11 +82,17 @@ export function captureAttribution(cfg: TunnelConfig): TunnelAttribution {
   const src = readParam(params, "src");
   const utm_source = readParam(params, "utm_source");
   const variant = readParam(params, "v");
+  // Le code du test voyage avec le lien mais n'est PAS résolu ici : la variante
+  // n'apparaît que sur la page de remerciement, c'est là qu'on la demandera.
+  // Aucune requête réseau sur la landing, donc aucun coût pour le trafic
+  // ordinaire — le dispositif peut rester branché en permanence.
+  const abCode = readParam(params, "ab");
 
-  if (!src && !utm_source && !variant && existing) return existing;
+  if (!src && !utm_source && !variant && !abCode && existing) return existing;
 
   const attrib: TunnelAttribution = {
     src,
+    abCode: abCode ? abCode.toUpperCase() : null,
     source: sourceLabel(cfg, src),
     variant,
     utm_source,

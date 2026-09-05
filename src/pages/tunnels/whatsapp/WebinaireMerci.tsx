@@ -16,14 +16,18 @@ import { useConference } from "../lib/conference";
 import { trackWhatsappJoin, trackTypLead } from "../lib/pixel";
 import TunnelBackground from "../components/TunnelBackground";
 import VimeoVideo from "../components/VimeoVideo";
-import { resolveVariant } from "../variants";
+import { useVarianteAB, enregistrerConversion } from "../lib/abtest";
+import { WA_TUNNEL } from "../config";
 
 const WA_GREEN = "#25D366";
 const WA_GREEN_DARK = "#1EB457";
 
 export default function WebinaireMerci() {
   const conference = useConference();
-  const variant = resolveVariant("wa", new URLSearchParams(window.location.search).get("v"));
+  // La variante vient du test A/B s'il y en a un, sinon de `?v=`. C'est ICI que
+  // l'exposition est comptée : la landing est commune aux deux tunnels, la
+  // variante n'apparaît que sur cette page.
+  const variant = useVarianteAB(WA_TUNNEL, "wa");
 
   useEffect(() => {
     // Page de remerciement : PageView, et « Lead » si le visiteur vient
@@ -98,7 +102,12 @@ export default function WebinaireMerci() {
             href={conference.whatsappGroupUrl}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => trackWhatsappJoin()}
+            onClick={() => {
+              trackWhatsappJoin();
+              // La conversion du tunnel WhatsApp : rejoindre le groupe, donc
+              // venir à la conférence. C'est ce que le test cherche à améliorer.
+              enregistrerConversion(WA_TUNNEL, "groupe_whatsapp");
+            }}
           >
             <WhatsAppIcon />
             Rejoindre le groupe WhatsApp

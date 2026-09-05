@@ -9,7 +9,11 @@
 // de s'afficher. Chaque fonction ici échoue en silence et rend « pas de test »,
 // ce qui ramène le tunnel à son comportement d'origine.
 // ─────────────────────────────────────────────────────────────────────────
+import { useEffect, useState } from "react";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
+import { getAttribution } from "./source";
+import { resolveVariant, type TunnelVariant } from "../variants";
+import type { TunnelConfig } from "../config";
 
 const CLE_VISITEUR = "alb_visitor_id";
 
@@ -71,4 +75,65 @@ export async function resoudreTestAB(
   } catch {
     return null;
   }
+}
+
+/** L'action d'aval que mesure le test, selon le tunnel. */
+export type ActionAB = "groupe_whatsapp" | "rendez_vous";
+
+/**
+ * Enregistre la conversion : le visiteur a fait l'action qu'on mesurait.
+ *
+ * Dédoublonnée côté base — cliquer trois fois sur le bouton du groupe compte
+ * une fois. Appel « au mieux » : on ne bloque ni n'attend, parce qu'il ne doit
+ * jamais retarder l'ouverture de WhatsApp ni l'affichage d'une confirmation.
+ */
+export function enregistrerConversion(cfg: TunnelConfig, action: ActionAB): void {
+  const code = getAttribution(cfg)?.abCode;
+  if (!code) return; // hors test : rien à mesurer
+
+  try {
+    void fetch(`${SUPABASE_URL}/functions/v1/ab-convert`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ code, visitor_id: visitorId(), action }),
+      keepalive: true, // survit à la navigation vers WhatsApp
+    });
+  } catch {
+    /* silencieux : une mesure perdue vaut mieux qu'un bouton cassé */
+  }
+}
+
+/**
+ * La variante à afficher sur une page de remerciement.
+ *
+ * C'EST ICI que se joue l'exposition, pas sur la landing : les deux tunnels
+ * partagent la même landing, la variante n'apparaît qu'ici. Compter l'exposition
+ * plus tôt gonflerait le dénominateur de visiteurs n'ayant jamais rien vu.
+ *
+ * Sans test en cours, on retombe sur `?v=` — le fonctionnement d'origine, qui
+ * reste utile pour prévisualiser une variante à la main.
+ */
+export function useVarianteAB(cfg: TunnelConfig, tunnelKey: "wa" | "vsl"): TunnelVariant {
+  const parDefaut = resolveVariant(
+    tunnelKey,
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("v") : null,
+  );
+  const [variante, setVariante] = useState<TunnelVariant>(parDefaut);
+
+  useEffect(() => {
+    const a = getAttribution(cfg);
+    if (!a?.abCode) return; // hors test : la variante par défaut suffit
+
+    let annule = false;
+    void resoudreTestAB(a.abCode, tunnelKey, a.src).then((r) => {
+      if (!annule && r) setVariante(resolveVariant(tunnelKey, r.variant));
+    });
+    return () => { annule = true; };
+  }, [cfg, tunnelKey]);
+
+  return variante;
 }

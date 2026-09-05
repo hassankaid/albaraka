@@ -208,17 +208,28 @@ export function comparerProportions(
 
 // ═══ 5. Lecture d'ensemble ═══════════════════════════════════════════════
 
-/** Une ligne de `ab_test_resultats`, telle que la base la renvoie. */
+/**
+ * Une ligne de `ab_test_resultats`, telle que la base la renvoie.
+ *
+ * `visiteurs` = ceux qui ont VU la variante (page de remerciement).
+ * `conversions` = ceux qui ont fait l'action d'après — rejoindre le groupe
+ * WhatsApp, ou prendre rendez-vous. C'est le couple qui fait le test.
+ *
+ * Le taux d'inscription n'y figure pas, et c'est voulu : les deux tunnels
+ * partagent la même landing, donc les deux groupes s'inscrivent au même rythme
+ * par construction. En mesurer l'écart ne mesurerait que du bruit.
+ */
 export interface ResultatBrut {
   variant: string;
   poids: number;
   visiteurs: number;
-  leads: number;
+  conversions: number;
   ventes: number;
   ca: number;
 }
 
 export interface VarianteAnalysee extends ResultatBrut {
+  /** Part des exposés qui ont fait l'action, en %. */
   tauxConversion: number | null;
   caParVisiteur: number | null;
   /** Comparaison à la variante de référence. `null` pour la référence elle-même. */
@@ -256,12 +267,15 @@ export const VISITEURS_MINIMUM = 100;
  * comparer tout le monde à tout le monde multiplie les tests et fabrique des
  * faux positifs.
  *
- * @param metrique ce qu'on optimise, décidé au lancement. « lead » compare les
- *        taux d'inscription, « vente » les taux de vente par visiteur — une
- *        variante peut très bien apporter plus d'inscrits ET moins de clients.
+ * @param critere ce qu'on regarde. « action » est le critère du test, fixé à
+ *        son lancement : rejoindre le groupe, ou prendre rendez-vous. « vente »
+ *        permet de vérifier après coup qu'une variante gagnante n'a pas amené
+ *        des gens moins acheteurs — ça arrive, et c'est la question qui compte
+ *        vraiment. À ne PAS utiliser pour choisir le gagnant après coup : c'est
+ *        exactement comme ça qu'on se raconte des histoires.
  */
-export function analyser(bruts: ResultatBrut[], metrique: "lead" | "vente" = "lead"): Analyse {
-  const succes = (r: ResultatBrut) => (metrique === "vente" ? r.ventes : r.leads);
+export function analyser(bruts: ResultatBrut[], critere: "action" | "vente" = "action"): Analyse {
+  const succes = (r: ResultatBrut) => (critere === "vente" ? r.ventes : r.conversions);
 
   const variantes: VarianteAnalysee[] = bruts.map((r) => ({
     ...r,

@@ -14,6 +14,8 @@ import { useEffect, useMemo } from "react";
 import { T, ensureTunnelFonts } from "../theme";
 import { trackCalendlyBooked } from "../lib/pixel";
 import { getTunnelPrefill } from "../lib/source";
+import { enregistrerConversion } from "../lib/abtest";
+import { VSL_TUNNEL } from "../config";
 import TunnelBackground from "../components/TunnelBackground";
 
 function param(sp: URLSearchParams, key: string): string | null {
@@ -60,6 +62,10 @@ export default function VslConfirmation() {
     ensureTunnelFonts();
     document.title = "Rendez-vous confirmé — Al Baraka";
     trackCalendlyBooked(); // event Meta « Schedule » (prod uniquement)
+    // La conversion du tunnel VSL : le rendez-vous est pris. C'est l'étape que
+    // la vidéo de la page précédente cherche à déclencher, donc ce que le test
+    // A/B mesure. Sans test en cours, l'appel ne part pas.
+    enregistrerConversion(VSL_TUNNEL, "rendez_vous");
   }, []);
 
   const rows: Array<{ icon: string; label: string; value: string | null }> = [

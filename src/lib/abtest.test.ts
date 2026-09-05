@@ -14,8 +14,8 @@ import {
   khiDeuxPValeur, analyser, VISITEURS_MINIMUM, type ResultatBrut,
 } from "./abtest";
 
-const brut = (variant: string, poids: number, visiteurs: number, leads: number, ventes = 0, ca = 0): ResultatBrut =>
-  ({ variant, poids, visiteurs, leads, ventes, ca });
+const brut = (variant: string, poids: number, visiteurs: number, conversions: number, ventes = 0, ca = 0): ResultatBrut =>
+  ({ variant, poids, visiteurs, conversions, ventes, ca });
 
 describe("attribution d'une variante", () => {
   it("rend toujours la même variante au même visiteur", () => {
@@ -158,16 +158,17 @@ describe("verdict d'ensemble", () => {
     expect(a.verdict.type).toBe("aucun_ecart");
   });
 
-  it("change de conclusion selon la métrique choisie", () => {
-    // La variante 5 apporte plus d'inscrits mais moins de clients : selon ce
-    // qu'on optimise, la réponse s'inverse. D'où le choix AVANT le lancement.
+  it("change de conclusion selon le critère regardé", () => {
+    // La variante 5 fait rejoindre le groupe plus souvent, mais amène des gens
+    // qui achètent moins. Selon ce qu'on regarde, la réponse s'inverse — d'où
+    // le critère fixé AVANT, et la vérification « et les ventes ? » APRÈS.
     const donnees = [
       brut("3", 50, 1000, 100, 30, 60000),
       brut("5", 50, 1000, 170, 12, 24000),
     ];
-    const surLeads = analyser(donnees, "lead");
-    expect(surLeads.verdict.type).toBe("gagnante");
-    if (surLeads.verdict.type === "gagnante") expect(surLeads.verdict.variant).toBe("5");
+    const surAction = analyser(donnees, "action");
+    expect(surAction.verdict.type).toBe("gagnante");
+    if (surAction.verdict.type === "gagnante") expect(surAction.verdict.variant).toBe("5");
 
     const surVentes = analyser(donnees, "vente");
     expect(surVentes.verdict.type).toBe("aucun_ecart"); // la 5 est pire, on ne la couronne pas

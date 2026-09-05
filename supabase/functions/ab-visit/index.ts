@@ -1,15 +1,20 @@
 // ─────────────────────────────────────────────────────────────────────────
 // ab-visit — point d'entrée public de l'A/B testing des tunnels.
 //
-// Un visiteur arrive sur une landing avec `?ab=CODE`. Cette fonction :
+// Un visiteur arrive sur une page de remerciement avec un test en cours. Cette
+// fonction :
 //   1. retrouve le test s'il est en cours et concerne bien ce tunnel
 //   2. lui attribue une variante, de façon déterministe
 //   3. enregistre son exposition, une seule fois
 //   4. rend la variante à afficher
 //
-// UN SEUL APPEL, ET SEULEMENT SI `?ab=` EST PRÉSENT. Le trafic hors test ne
-// paie donc rien : la landing s'affiche comme avant. C'est ce qui permet de
-// laisser le dispositif branché en permanence sans dégrader les pages.
+// APPELÉE DEPUIS LA PAGE DE REMERCIEMENT, pas depuis la landing : les deux
+// tunnels partagent la même landing, la variante n'apparaît qu'après
+// l'inscription. Compter l'exposition plus tôt gonflerait le dénominateur de
+// visiteurs n'ayant jamais rien vu de variable.
+//
+// Et seulement si un code de test a été capté : le trafic hors test ne paie
+// aucun aller-retour réseau.
 //
 // POURQUOI L'ATTRIBUTION EST CALCULÉE ICI et pas dans le navigateur : elle fait
 // foi. Un client pourrait annoncer la variante qui l'arrange ; le serveur, non.
@@ -92,7 +97,7 @@ serve(async (req) => {
       .maybeSingle();
 
     // Test inconnu, terminé, ou lien recopié sur le mauvais tunnel : on ne
-    // bloque rien, la landing affichera simplement sa variante par défaut.
+    // bloque rien, la page affichera simplement sa variante par défaut.
     if (!test) return json({ active: false, raison: "test_introuvable_ou_termine" });
     if (test.tunnel !== tunnel) return json({ active: false, raison: "mauvais_tunnel" });
     // Un test ciblé sur un canal ne s'applique qu'à ce canal : sinon le trafic
@@ -113,7 +118,7 @@ serve(async (req) => {
 
     return json({ active: true, variant, code: test.code });
   } catch (e) {
-    // Une panne de l'A/B testing ne doit JAMAIS empêcher une landing de
+    // Une panne de l'A/B testing ne doit JAMAIS empêcher une page de
     // s'afficher : on répond « pas de test » et le tunnel suit son cours.
     console.error("[ab-visit]", e);
     return json({ active: false, raison: "erreur_interne" });

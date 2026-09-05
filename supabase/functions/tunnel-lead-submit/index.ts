@@ -15,6 +15,8 @@
 //     (le default 'nouveau' violerait leads_status_check).
 //   - UTM stockés dans les colonnes utm_* ; fbclid/referrer (pas de colonne
 //     dédiée) consignés dans notes.
+//   - visitor_id + ab_test_code : rattachent l'inscrit à son test A/B, donc
+//     permettent de relier une VENTE à la variante qui l'a précédée.
 //   - Pas d'apporteur → lead non assigné (reste dans le pool), comme les
 //     anciens leads « webi ».
 // ─────────────────────────────────────────────────────────────────────────
@@ -155,6 +157,11 @@ serve(async (req) => {
     };
     const fbclid = clip(body?.fbclid, 255);
     const referrer = clip(body?.referrer, 300);
+    // A/B testing : le visiteur et le test suivent l'inscrit. La VARIANTE, elle,
+    // n'est pas stockée ici — elle n'est décidée qu'à la page de remerciement,
+    // et c'est `ab_exposures` qui en fait foi. Le lien se fait par `visitor_id`.
+    const visitorIdBrut = clip(body?.visitor_id, 64);
+    const abTestCode = clip(body?.ab_test_code, 8);
 
     const fullNameUpper = firstName.toUpperCase();
 
@@ -184,6 +191,8 @@ serve(async (req) => {
         raw_email: email,
         raw_phone: phoneE164,
         notes: noteParts.join(" "),
+        visitor_id: visitorIdBrut,
+        ab_test_code: abTestCode ? abTestCode.toUpperCase() : null,
         ...utm,
       })
       .select("id")

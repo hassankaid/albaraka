@@ -17,11 +17,15 @@ import TunnelBackground from "../components/TunnelBackground";
 import VimeoVideo from "../components/VimeoVideo";
 import CalendlyInline from "../components/CalendlyInline";
 import BookingUnavailable from "../components/BookingUnavailable";
-import { resolveVariant } from "../variants";
+import { useVarianteAB } from "../lib/abtest";
+import { VSL_TUNNEL } from "../config";
 
 export default function VslMerci() {
   const conference = useConference();
-  const variant = resolveVariant("vsl", new URLSearchParams(window.location.search).get("v"));
+  // Idem tunnel WhatsApp : l'exposition se compte ici, où la variante est vue.
+  // La conversion, elle, sera enregistrée sur la page de confirmation, une fois
+  // le rendez-vous réellement pris.
+  const variant = useVarianteAB(VSL_TUNNEL, "vsl");
 
   useEffect(() => {
     // Page de remerciement : PageView, et « Lead » si le visiteur vient

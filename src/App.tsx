@@ -31,6 +31,7 @@ import Payments from "./pages/Payments";
 import MyCommissions from "./pages/MyCommissions";
 import Profile from "./pages/Profile";
 import AdminInvoices from "./pages/AdminInvoices";
+import AbTests from "./pages/AbTests";
 import AdminCommissions from "./pages/AdminCommissions";
 import AdminData from "./pages/AdminData";
 import AdminCreateWizard from "./pages/AdminCreateWizard";
@@ -237,6 +238,7 @@ const FullApp = () => (
                   <Route path="/sales" element={<Sales />} />
                   <Route path="/payments" element={<Payments />} />
                   <Route path="/my-commissions" element={<MyCommissions />} />
+                  <Route path="/ab-tests" element={<AbTests />} />
                   <Route path="/admin/invoices" element={<AdminInvoices />} />
                   <Route path="/admin/commissions" element={<AdminCommissions />} />
                   <Route path="/admin/payment-links" element={<AdminPaymentLinks />} />

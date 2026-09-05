@@ -6,6 +6,7 @@
 // (partagées, pas de la logique métier funnel).
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { getAttribution } from "./source";
+import { visitorId } from "./abtest";
 import type { TunnelConfig } from "../config";
 
 const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/tunnel-lead-submit`;
@@ -37,6 +38,12 @@ export async function submitTunnelLead(input: TunnelLeadInput, cfg: TunnelConfig
     utm_term: a?.utm_term ?? null,
     fbclid: a?.fbclid ?? null,
     referrer: a?.referrer ?? null,
+    // Le visiteur et le test voyagent avec l'inscrit : c'est ce qui permettra
+    // plus tard de rattacher une VENTE à la variante qui l'a précédée. La
+    // variante elle-même n'est pas envoyée ici — elle n'est décidée qu'à la
+    // page suivante, et c'est l'exposition qui en fait foi.
+    visitor_id: visitorId(),
+    ab_test_code: a?.abCode ?? null,
   };
 
   const res = await fetch(FUNCTION_URL, {
