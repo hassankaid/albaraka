@@ -74,13 +74,14 @@ export function calculerKpis(m: Mesures): Kpis {
 
 // ── Libellés ───────────────────────────────────────────────────────────────
 
-export const CANAUX_MARKETING = ["meta_ads", "instagram_organic", "tiktok_organic", "direct", "tunnel_quiz_apporteurs"] as const;
+export const CANAUX_MARKETING = ["meta_ads", "instagram_organic", "tiktok_organic", "youtube_organic", "direct", "tunnel_quiz_apporteurs"] as const;
 export const TUNNELS = ["wa", "vsl", "quiz"] as const;
 
 const LIB_CANAL: Record<string, string> = {
   meta_ads: "Meta Ads",
   instagram_organic: "Organique Instagram",
   tiktok_organic: "Organique TikTok",
+  youtube_organic: "Organique YouTube",
   direct: "Accès direct",
   tunnel_quiz_apporteurs: "Tunnel Quiz Apporteurs",
   apporteur: "Apporteurs",

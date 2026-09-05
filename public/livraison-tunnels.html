@@ -319,7 +319,7 @@
     <h2>Ce qui a été construit</h2>
     <ul class="plain">
       <li><strong>Deux tunnels d'inscription complets</strong>, hébergés sur votre propre domaine. Vous n'avez plus de dépendance à Systeme.io ni d'abonnement à payer pour les héberger.</li>
-      <li><strong>Les inscrits arrivent directement dans votre CRM</strong>, avec l'origine exacte de chacun : publicité, Instagram ou TikTok — et, pour les publicités, la distinction Facebook / Instagram.</li>
+      <li><strong>Les inscrits arrivent directement dans votre CRM</strong>, avec l'origine exacte de chacun : publicité, Instagram, TikTok ou YouTube — et, pour les publicités, la distinction Facebook / Instagram.</li>
       <li><strong>Six variantes de vidéo par tunnel</strong>, sélectionnables par le lien, pour comparer les accroches qui convertissent le mieux.</li>
       <li><strong>Le suivi publicitaire Meta</strong> est en place sur les pages, prêt pour vos campagnes.</li>
       <li><strong>Deux pages complémentaires</strong> : la réservation d'appel à partager en conférence, et la page de témoignages pour vos relances.</li>
@@ -347,6 +347,7 @@
             <option value="ads">Publicités Meta</option>
             <option value="ig">Instagram (organique)</option>
             <option value="tiktok">TikTok (organique)</option>
+            <option value="youtube">YouTube (organique)</option>
           </select>
         </div>
         <div class="field">
@@ -367,7 +368,7 @@
       </div>
 
       <details>
-        <summary>Voir les 36 liens</summary>
+        <summary>Voir les 48 liens</summary>
         <div class="all-links" id="all"></div>
       </details>
     </div>
@@ -417,7 +418,7 @@
       <li><p><strong>Le lien de destination.</strong><br>
         <code>event.albarakaecosysteme.com/TUNNEL?src=ads&amp;v=VARIANTE</code><br>
         <em>TUNNEL</em> = <code>webinaire</code> (groupe WhatsApp) ou <code>vsl</code> (prise de rendez-vous). <em>VARIANTE</em> = 1 à 6, c'est la vidéo testée.<br>
-        Sur Meta, <code>src</code> vaut <strong>toujours <code>ads</code></strong> — <code>ig</code> et <code>tiktok</code> sont réservés aux publications organiques.</p></li>
+        Sur Meta, <code>src</code> vaut <strong>toujours <code>ads</code></strong> — <code>ig</code>, <code>tiktok</code> et <code>youtube</code> sont réservés aux publications organiques.</p></li>
 
       <li><p><strong>Le paramètre indispensable.</strong> Dans chaque publicité, section <em>Suivi → Paramètres d'URL</em>, collez exactement :<br>
         <code>utm_source={{site_source_name}}&amp;utm_medium=paid&amp;utm_campaign={{campaign.name}}&amp;utm_content={{ad.name}}</code><br>
@@ -527,6 +528,7 @@
       ["ads", "Publicités Meta"],
       ["ig", "Instagram organique"],
       ["tiktok", "TikTok organique"],
+      ["youtube", "YouTube organique"],
     ];
     var host = document.getElementById("all");
     ["webinaire", "vsl"].forEach(function (t) {

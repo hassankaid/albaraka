@@ -1,11 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────
 // Capture de la SOURCE de trafic — module « tunnels » (partagé WA + VSL).
 //
-// Objectif : distinguer d'où vient le prospect via les 3 liens d'entrée par
+// Objectif : distinguer d'où vient le prospect via les 4 liens d'entrée par
 // tunnel :
 //     ?src=ads     → Ads (Meta uniquement) → FB/IG distingués via utm_source
 //     ?src=ig      → Instagram organique
 //     ?src=tiktok  → TikTok organique
+//     ?src=youtube → YouTube organique
 //
 // Le libellé CRM final = `${srcPrefix}_${suffixe}` (ex. webi_wa_ads,
 // webi_vsl_instagram_organic). Le préfixe vient de la config du tunnel.
@@ -17,12 +18,20 @@
 import type { TunnelConfig } from "../config";
 
 // src (lien) → suffixe du libellé de source CRM.
+//
+// Les alias comptent : le lien officiel utilise `youtube`, mais `yt` traîne
+// partout dans les descriptions de vidéos. Une valeur absente de cette table
+// est reprise telle quelle par `sourceLabel`, produirait un libellé hors
+// `leads_source_check`, et `tunnel-lead-submit` la rétrograderait en `direct` —
+// le lead ne serait pas perdu, mais son origine le serait.
 const SRC_SUFFIX: Record<string, string> = {
   ads: "ads",
   ig: "instagram_organic",
   insta: "instagram_organic",
   instagram: "instagram_organic",
   tiktok: "tiktok_organic",
+  youtube: "youtube_organic",
+  yt: "youtube_organic",
 };
 
 export interface TunnelAttribution {

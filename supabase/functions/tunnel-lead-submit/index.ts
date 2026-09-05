@@ -10,7 +10,8 @@
 //     (on ne met NI source='apporteur_quiz' NI apporteur_id → le trigger
 //      trg_notify_apporteur_lead_captured ne se déclenche pas).
 //   - source = webi_wa_ads | webi_wa_instagram_organic | webi_wa_tiktok_organic
-//     (whitelist ; défaut webi_wa_direct). status = 'a_qualifier' OBLIGATOIRE
+//     | webi_wa_youtube_organic (whitelist ; défaut webi_wa_direct).
+//     status = 'a_qualifier' OBLIGATOIRE
 //     (le default 'nouveau' violerait leads_status_check).
 //   - UTM stockés dans les colonnes utm_* ; fbclid/referrer (pas de colonne
 //     dédiée) consignés dans notes.
@@ -39,16 +40,25 @@ const ALLOWED_SOURCES = new Set([
   "webi_wa_ads",
   "webi_wa_instagram_organic",
   "webi_wa_tiktok_organic",
+  "webi_wa_youtube_organic",
   "webi_wa_direct",
   // Tunnel VSL
   "webi_vsl_ads",
   "webi_vsl_instagram_organic",
   "webi_vsl_tiktok_organic",
+  "webi_vsl_youtube_organic",
   "webi_vsl_direct",
 ]);
 function safeSource(s: unknown): string {
   if (typeof s === "string" && ALLOWED_SOURCES.has(s)) return s;
   // Filet de sécurité si le client envoie une source non reconnue.
+  //
+  // ⚠️ Ce filet est SILENCIEUX : une origine oubliée ici n'échoue pas, elle est
+  // comptée en « direct ». C'est exactement ce qui serait arrivé à YouTube si
+  // on n'avait ajouté que le lien sur la page de livraison : du trafic bien
+  // tracké côté client, et une colonne « Accès direct » qui enfle sans raison.
+  // Toute nouvelle origine se pose ICI, dans `leads_source_check`, et dans
+  // `marketing_canal` — les trois ensemble ou aucune.
   if (typeof s === "string" && s.startsWith("webi_vsl")) return "webi_vsl_direct";
   return "webi_wa_direct";
 }
@@ -135,7 +145,7 @@ serve(async (req) => {
     if (!phoneE164) return json({ error: "invalid_phone" }, 400);
 
     const source = safeSource(body?.source);
-    const src = clip(body?.src, 40); // token brut (ads/ig/tiktok/direct)
+    const src = clip(body?.src, 40); // token brut (ads/ig/tiktok/youtube/direct)
     const utm = {
       utm_source: clip(body?.utm_source, 120),
       utm_medium: clip(body?.utm_medium, 120),
@@ -168,7 +178,7 @@ serve(async (req) => {
       .insert({
         contact_id: contactId,
         source, // webi_wa_*
-        source_detail: src, // ads | ig | tiktok | direct
+        source_detail: src, // ads | ig | tiktok | youtube | direct
         status: "a_qualifier", // OBLIGATOIRE (default 'nouveau' viole la CHECK)
         raw_full_name: fullNameUpper,
         raw_email: email,
