@@ -206,6 +206,31 @@ function ymdToEpoch(ymd: string, hour = 12): number {
   return Math.floor(Date.UTC(y, m - 1, d, hour, 0, 0) / 1000);
 }
 
+/**
+ * La frontiere de facturation qui suit la N-ieme mensualite.
+ *
+ * POURQUOI CETTE FONCTION EXISTE. Stripe TRONQUE la periode de facturation a
+ * `cancel_at` et facture au prorata la fraction restante. Un `cancel_at` pose
+ * 24 h apres la derniere echeance tombe donc A L'INTERIEUR de la derniere
+ * periode : Stripe facture 24 h sur un mois, soit ~3 % du montant du.
+ *
+ * Constate le 05/09/2026 sur onze abonnements. BAMAR GUEYE devait payer sa
+ * derniere mensualite 500,00 € ; Stripe s'appretait a prelever 15,59 €.
+ * ISSOUF DOUMBIA a reellement paye 381,42 € au lieu de 500,00 €.
+ *
+ * La date de fin doit donc tomber EXACTEMENT sur une frontiere de periode :
+ * ancre + N mois, a la seconde pres. Stripe compte en mois calendaires depuis
+ * l'ancre et rabat le quantieme quand le mois d'arrivee est plus court — une
+ * ancre au 31 tombe au 28 en fevrier — d'ou le `Math.min` ci-dessous.
+ */
+function frontiereApresNMois(ancreYmd: string, n: number, hour = 12): number {
+  const [y, m, d] = ancreYmd.split("-").map(Number);
+  const annee = y + Math.floor((m - 1 + n) / 12);
+  const mois = (m - 1 + n) % 12;
+  const dernierJourDuMois = new Date(Date.UTC(annee, mois + 1, 0)).getUTCDate();
+  return Math.floor(Date.UTC(annee, mois, Math.min(d, dernierJourDuMois), hour, 0, 0) / 1000);
+}
+
 // ─── Handler ───────────────────────────────────────────────────────────────
 
 serve(async (req) => {
@@ -434,8 +459,10 @@ serve(async (req) => {
         console.warn("[trigger-installment-now] remaining amounts differ, skipping new sub. Manual handling required.");
       } else {
         const anchorEpoch = ymdToEpoch(reschedule[0].new_due_date);
-        const lastEpoch = ymdToEpoch(reschedule[reschedule.length - 1].new_due_date);
-        const cancelAtEpoch = lastEpoch + 86400; // +24h après la dernière échéance
+        // La fin tombe sur la frontiere qui SUIT la derniere mensualite, pas 24 h
+        // apres elle : voir `frontiereApresNMois`. Les montants ayant ete verifies
+        // egaux juste au-dessus, les echeances sont mensuelles : N = leur nombre.
+        const cancelAtEpoch = frontiereApresNMois(reschedule[0].new_due_date, reschedule.length);
 
         // ⚠️ Stripe Subscriptions API n'accepte PAS `price_data.product_data`
         // (contrairement à Checkout Sessions). Il faut soit un `product` ID
