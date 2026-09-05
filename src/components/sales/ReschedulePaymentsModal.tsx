@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { format, addMonths } from "date-fns";
 import { fr } from "date-fns/locale";
+import { commissionEuros } from "@/lib/commissions";
 
 interface PendingPayment {
   id: string;
@@ -287,8 +288,11 @@ export default function ReschedulePaymentsModal({
             beneficiary_external: c.beneficiary_external,
             percentage: c.percentage,
             role: c.role,
-            // commission = montant × pourcentage / 100, arrondie à 2 décimales
-            amount: Math.round(p.amount * Number(c.percentage)) / 100,
+            // Même calcul que la base (`rebalance_commission_group`), au centime
+            // près. L'ancienne formule passait par un flottant et basculait du
+            // mauvais côté sur les demi-centimes exacts — 2 294 cas à 25 %, le
+            // taux apporteur. Voir `@/lib/commissions`.
+            amount: commissionEuros(p.amount, Number(c.percentage)),
             status: "pending",
           }));
           await supabase.from("commissions").insert(newCommissions);

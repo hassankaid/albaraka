@@ -290,6 +290,25 @@ Deno.serve(async (req) => {
   }
 });
 
+/**
+ * Commission due sur une échéance : montant x taux, arrondi à la 2e décimale.
+ *
+ * COPIE VOLONTAIRE de `src/lib/commissions.ts` — une edge function Deno ne peut
+ * pas importer depuis `src/`. Toute correction ici doit y être reportée, et
+ * réciproquement ; les tests de vérité vivent dans `src/lib/commissions.test.ts`.
+ *
+ * Tout reste entier. L'ancienne formule, `Math.round(euros * taux) / 100`,
+ * passait par un flottant et basculait du mauvais côté quand la valeur exacte
+ * tombait pile sur un demi-centime : aucun écart à 5/10/20 %, mais 137 à 15 %,
+ * 273 à 30 % et 2 294 à 25 % — le taux apporteur — sur 200 000 montants testés.
+ * Elle écrasait donc parfois d'un centime le calcul juste de la base.
+ */
+function commissionEuros(montantEuros: number, pourcentage: number): number {
+  const cents = Math.round(montantEuros * 100);
+  const tauxMilliemes = Math.round(pourcentage * 1000);
+  return Math.floor((cents * tauxMilliemes + 50_000) / 100_000) / 100;
+}
+
 // ─── Helper : applique les updates BDD (payments, sale, commissions) ──
 async function applyDbUpdates(
   supabase: ReturnType<typeof createClient>,
@@ -323,8 +342,7 @@ async function applyDbUpdates(
     for (const c of commissions) {
       const newPayAmount = newPaymentAmounts.get(c.payment_id as string);
       if (newPayAmount != null && c.percentage != null) {
-        const newCommissionAmount =
-          Math.round(newPayAmount * Number(c.percentage)) / 100;
+        const newCommissionAmount = commissionEuros(newPayAmount, Number(c.percentage));
         await supabase
           .from("commissions")
           .update({ amount: newCommissionAmount })
