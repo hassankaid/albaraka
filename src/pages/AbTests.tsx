@@ -9,11 +9,16 @@
 // CE QUE MESURE UN TEST, en une phrase : parmi les visiteurs qui ont VU une
 // variante, combien ont fait l'action suivante ?
 //
-// Le taux d'inscription n'en fait pas partie, et c'est délibéré. Les deux
-// tunnels partagent la même landing — choix assumé — et la variante n'apparaît
-// que sur la page de remerciement, après l'inscription. Les deux groupes
-// s'inscrivent donc au même rythme par construction. En contrepartie,
-// l'expérience est propre : ils ont vécu exactement la même chose jusque-là.
+// Un test dit OÙ il se joue, et l'action mesurée en découle :
+//
+//   Landing    vu à l'arrivée      → mesure l'INSCRIPTION
+//   Merci      vu après inscription → mesure le groupe WhatsApp, ou le RDV
+//
+// Les deux tunnels partagent aujourd'hui la même landing — choix assumé. Un
+// test de landing y comparera donc deux fois la même page et ne trouvera aucun
+// écart : c'est le résultat attendu, et la preuve que l'instrument est juste.
+// Ce qui manquait n'était pas le contenu mais la MESURE ; elle est en place, et
+// le jour où une seconde version de la landing existe, il n'y a rien à ajouter.
 // ─────────────────────────────────────────────────────────────────────────
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -41,7 +46,8 @@ interface AbTest {
   canal: string | null;
   variants: string[];
   weights: number[];
-  action: "groupe_whatsapp" | "rendez_vous";
+  etape: "landing" | "merci";
+  action: "groupe_whatsapp" | "rendez_vous" | "inscription";
   statut: "running" | "stopped";
   demarre_le: string;
   arrete_le: string | null;
@@ -56,12 +62,20 @@ const LIB_CANAL: Record<string, string> = {
 const LIB_ACTION: Record<string, string> = {
   groupe_whatsapp: "Rejoindre le groupe WhatsApp",
   rendez_vous: "Prendre rendez-vous",
+  inscription: "S'inscrire",
 };
-// L'action d'aval est imposée par le tunnel : c'est la seule étape que la
-// variante peut influencer, il n'y a donc rien à choisir.
-const ACTION_DU_TUNNEL: Record<TunnelKey, AbTest["action"]> = {
-  wa: "groupe_whatsapp", vsl: "rendez_vous",
+const LIB_ETAPE: Record<AbTest["etape"], string> = {
+  landing: "Landing (page d'arrivée)",
+  merci: "Page de remerciement",
 };
+
+// L'action mesurée n'est pas un choix : c'est la première chose que le visiteur
+// peut faire APRÈS avoir vu la variante. La proposer dans un menu inviterait à
+// mesurer une étape que la variante ne peut pas influencer.
+function actionDuTest(etape: AbTest["etape"], tunnel: TunnelKey): AbTest["action"] {
+  if (etape === "landing") return "inscription";
+  return tunnel === "vsl" ? "rendez_vous" : "groupe_whatsapp";
+}
 const BASE_TUNNEL: Record<TunnelKey, string> = {
   wa: "https://event.albarakaecosysteme.com/webinaire",
   vsl: "https://event.albarakaecosysteme.com/vsl",
@@ -137,10 +151,11 @@ export default function AbTests() {
           <FlaskConical className="size-6 text-primary" /> A/B Testing
         </h1>
         <p className="text-sm text-muted-foreground mt-1 max-w-3xl">
-          Un test compare deux variantes vidéo de la page de remerciement, et mesure
-          combien de visiteurs font ensuite l'action attendue — rejoindre le groupe,
-          ou prendre rendez-vous. La landing, elle, est identique pour tout le monde :
-          les deux groupes vivent exactement la même chose jusqu'à l'inscription.
+          Un test partage le trafic entre deux variantes et compte, pour chacune, ce que
+          font les visiteurs ensuite. Sur la <strong>landing</strong>, la mesure est
+          l'inscription ; sur la <strong>page de remerciement</strong>, c'est le groupe
+          WhatsApp ou le rendez-vous. Un visiteur voit toujours la même variante, même
+          s'il revient.
         </p>
       </div>
 
@@ -181,6 +196,7 @@ export default function AbTests() {
 function NouveauTest({ onCree }: { onCree: () => void }) {
   const { profile } = useAuth();
   const [tunnel, setTunnel] = useState<TunnelKey>("wa");
+  const [etape, setEtape] = useState<AbTest["etape"]>("merci");
   const [canal, setCanal] = useState<string>("tous");
   const [libelle, setLibelle] = useState("");
   const [choisies, setChoisies] = useState<string[]>([]);
@@ -196,7 +212,8 @@ function NouveauTest({ onCree }: { onCree: () => void }) {
         canal: canal === "tous" ? null : canal,
         variants: choisies,
         weights: choisies.map(() => 1), // réparti à parts égales
-        action: ACTION_DU_TUNNEL[tunnel],
+        etape,
+        action: actionDuTest(etape, tunnel),
         cree_par: profile?.id ?? null,
       });
       if (error) throw error;
@@ -223,7 +240,18 @@ function NouveauTest({ onCree }: { onCree: () => void }) {
         <CardTitle className="font-heading text-xl font-semibold">Ouvrir un test</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-1.5">
+            <Label>Où se joue le test</Label>
+            <Select value={etape} onValueChange={(v) => setEtape(v as AbTest["etape"])}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="landing">Landing (page d'arrivée)</SelectItem>
+                <SelectItem value="merci">Page de remerciement</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-1.5">
             <Label>Tunnel</Label>
             <Select value={tunnel} onValueChange={(v) => { setTunnel(v as TunnelKey); setChoisies([]); }}>
@@ -280,8 +308,17 @@ function NouveauTest({ onCree }: { onCree: () => void }) {
         </div>
 
         <p className="text-xs text-muted-foreground rounded-lg border border-dashed p-3">
-          <strong>Ce test mesurera :</strong> {LIB_ACTION[ACTION_DU_TUNNEL[tunnel]]}. C'est la seule
-          étape que la vidéo peut influencer — elle est vue juste avant.
+          <strong>Ce test mesurera :</strong> {LIB_ACTION[actionDuTest(etape, tunnel)].toLowerCase()}.
+          {etape === "landing"
+            ? " C'est la première chose que le visiteur peut faire après être arrivé."
+            : " C'est la seule étape que la vidéo peut influencer — elle est vue juste avant."}
+          {etape === "landing" && (
+            <>
+              {" "}Attention : la landing est aujourd'hui <strong>identique</strong> pour toutes les
+              variantes. Un test ouvert maintenant comparera deux fois la même page et ne trouvera,
+              à raison, aucun écart. Il devient utile dès qu'une seconde version existe.
+            </>
+          )}
         </p>
 
         {trop && (
@@ -341,7 +378,8 @@ function CarteTest({ test, onArreter }: { test: AbTest; onArreter?: () => void }
             {test.statut === "stopped" && <Badge variant="secondary">Terminé</Badge>}
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            {LIB_TUNNEL[test.tunnel]} · {test.canal ? LIB_CANAL[test.canal] : "toutes origines"} ·
+            {LIB_TUNNEL[test.tunnel]} · {LIB_ETAPE[test.etape ?? "merci"].toLowerCase()} ·{" "}
+            {test.canal ? LIB_CANAL[test.canal] : "toutes origines"} ·
             mesure : {LIB_ACTION[test.action].toLowerCase()} ·
             depuis le {new Date(test.demarre_le).toLocaleDateString("fr-FR")}
           </p>
@@ -390,8 +428,12 @@ function CarteTest({ test, onArreter }: { test: AbTest; onArreter?: () => void }
                 <thead>
                   <tr className="border-b bg-muted/40 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
                     <th className="text-left font-medium p-2.5">Variante</th>
-                    <th className="text-right font-medium p-2.5">Exposés</th>
-                    <th className="text-right font-medium p-2.5">Actions</th>
+                    <th className="text-right font-medium p-2.5">
+                      {test.etape === "landing" ? "Visiteurs" : "Exposés"}
+                    </th>
+                    <th className="text-right font-medium p-2.5">
+                      {test.etape === "landing" ? "Inscrits" : "Actions"}
+                    </th>
                     <th className="text-right font-medium p-2.5">Taux</th>
                     <th className="text-right font-medium p-2.5">vs référence</th>
                     <th className="text-right font-medium p-2.5">Ventes</th>

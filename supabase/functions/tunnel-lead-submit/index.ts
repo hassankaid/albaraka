@@ -15,8 +15,11 @@
 //     (le default 'nouveau' violerait leads_status_check).
 //   - UTM stockés dans les colonnes utm_* ; fbclid/referrer (pas de colonne
 //     dédiée) consignés dans notes.
-//   - visitor_id + ab_test_code : rattachent l'inscrit à son test A/B, donc
-//     permettent de relier une VENTE à la variante qui l'a précédée.
+//   - visitor_id + ab_test_code + tunnel_variant : rattachent l'inscrit à son
+//     test A/B et à la page par laquelle il est passé, donc permettent de
+//     relier une VENTE à la variante qui l'a précédée.
+//   - Sur un test de LANDING, c'est ici qu'est enregistrée la conversion :
+//     l'inscription. Seul cet endroit sait qu'un lead a réellement été créé.
 //   - Pas d'apporteur → lead non assigné (reste dans le pool), comme les
 //     anciens leads « webi ».
 // ─────────────────────────────────────────────────────────────────────────
@@ -157,11 +160,16 @@ serve(async (req) => {
     };
     const fbclid = clip(body?.fbclid, 255);
     const referrer = clip(body?.referrer, 300);
-    // A/B testing : le visiteur et le test suivent l'inscrit. La VARIANTE, elle,
-    // n'est pas stockée ici — elle n'est décidée qu'à la page de remerciement,
-    // et c'est `ab_exposures` qui en fait foi. Le lien se fait par `visitor_id`.
+    // A/B testing : le visiteur, le test et la variante de landing suivent
+    // l'inscrit. `tunnel_variant` n'est renseigné que sur un test de LANDING —
+    // c'est la page par laquelle l'inscrit est passé, et elle n'a de sens que
+    // là ; sur un test de page de remerciement, la variante n'existe pas encore
+    // au moment de l'inscription. `ab_exposures` reste la source de vérité, le
+    // lien se faisant par `visitor_id` ; cette colonne rend seulement la lecture
+    // directe depuis le CRM possible, sans jointure.
     const visitorIdBrut = clip(body?.visitor_id, 64);
     const abTestCode = clip(body?.ab_test_code, 8);
+    const varianteLanding = clip(body?.tunnel_variant, 8);
 
     const fullNameUpper = firstName.toUpperCase();
 
@@ -193,11 +201,52 @@ serve(async (req) => {
         notes: noteParts.join(" "),
         visitor_id: visitorIdBrut,
         ab_test_code: abTestCode ? abTestCode.toUpperCase() : null,
+        tunnel_variant: varianteLanding,
         ...utm,
       })
       .select("id")
       .single();
     if (leadErr) throw leadErr;
+
+    // 3) A/B testing — sur un test de LANDING, l'inscription EST la conversion.
+    //
+    // Enregistrée ici et pas dans le navigateur : c'est le seul endroit qui
+    // sache qu'un lead a réellement été créé. Le client pourrait annoncer une
+    // inscription qui a échoué, ou la rater si l'onglet se ferme trop vite.
+    //
+    // La variante vient de l'EXPOSITION, pas du corps de la requête : c'est
+    // celle qui a réellement été servie. Conséquence utile — sans exposition,
+    // pas de conversion, donc un taux ne peut jamais dépasser 100 %.
+    //
+    // Ce bloc ne doit jamais faire échouer une inscription : un lead vaut plus
+    // qu'une mesure.
+    if (abTestCode && visitorIdBrut) {
+      try {
+        const { data: test } = await supabase
+          .from("ab_tests")
+          .select("id, etape, action")
+          .eq("code", abTestCode.toUpperCase())
+          .maybeSingle();
+
+        if (test?.etape === "landing" && test.action === "inscription") {
+          const { data: expo } = await supabase
+            .from("ab_exposures")
+            .select("variant")
+            .eq("test_id", test.id)
+            .eq("visitor_id", visitorIdBrut)
+            .maybeSingle();
+
+          if (expo) {
+            await supabase.from("ab_conversions").upsert(
+              { test_id: test.id, visitor_id: visitorIdBrut, variant: expo.variant, action: "inscription" },
+              { onConflict: "test_id,visitor_id,action", ignoreDuplicates: true },
+            );
+          }
+        }
+      } catch (e) {
+        console.error("[tunnel-lead-submit] conversion A/B non enregistree (non bloquant):", e);
+      }
+    }
 
     return json({ ok: true, lead_id: lead.id, contact_id: contactId });
   } catch (error) {

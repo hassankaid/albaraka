@@ -6,7 +6,7 @@
 // (partagées, pas de la logique métier funnel).
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { getAttribution } from "./source";
-import { visitorId } from "./abtest";
+import { visitorId, varianteLandingRetenue } from "./abtest";
 import type { TunnelConfig } from "../config";
 
 const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/tunnel-lead-submit`;
@@ -44,6 +44,10 @@ export async function submitTunnelLead(input: TunnelLeadInput, cfg: TunnelConfig
     // page suivante, et c'est l'exposition qui en fait foi.
     visitor_id: visitorId(),
     ab_test_code: a?.abCode ?? null,
+    // La variante de LANDING, s'il y avait un test à cette étape. C'est elle qui
+    // dira quelle page a produit cet inscrit. Nulle pour un test de page de
+    // remerciement, où la variante n'est décidée qu'après l'inscription.
+    tunnel_variant: varianteLandingRetenue(cfg),
   };
 
   const res = await fetch(FUNCTION_URL, {

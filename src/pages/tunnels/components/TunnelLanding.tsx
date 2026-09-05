@@ -13,6 +13,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { T, ensureTunnelFonts } from "../theme";
 import { captureAttribution } from "../lib/source";
+import { exposerLanding } from "../lib/abtest";
 import { trackLandingView } from "../lib/pixel";
 import type { TunnelConfig } from "../config";
 import TunnelBackground from "./TunnelBackground";
@@ -81,6 +82,11 @@ export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
     ensureTunnelFonts();
     captureAttribution(tunnel);
     trackLandingView();
+    // Test de LANDING en cours ? On compte l'arrivée. C'est le dénominateur qui
+    // manquait : jusqu'ici `trackLandingView` partait au pixel Meta et rien
+    // n'atteignait la base, donc on avait des inscrits sans savoir sur combien
+    // de visiteurs. Sans test de landing, aucun appel réseau ne part.
+    void exposerLanding(tunnel, tunnel.key);
     document.title = "Conférence Al Baraka — Réserve ta place";
   }, [tunnel]);
 

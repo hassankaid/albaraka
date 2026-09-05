@@ -78,8 +78,17 @@ function phi(x: number): number {
   return x >= 0 ? 1 - p : p;
 }
 
-/** Fonction gamma logarithmique (Lanczos), pour la loi du khi-deux. */
+/**
+ * Fonction gamma logarithmique (Lanczos), pour la loi du khi-deux.
+ *
+ * Les coefficients sont ceux, publiés, de Numerical Recipes. Deux d'entre eux
+ * comptent un chiffre de plus qu'un flottant 64 bits n'en retient : les
+ * recopier tronqués serait les FAUSSER, alors que la troncature automatique se
+ * joue vers la 16e décimale — sans commune mesure avec les p-valeurs qu'on
+ * compare à 0,001. `abtest.test.ts` les confronte aux valeurs de table.
+ */
 function lnGamma(x: number): number {
+  /* eslint-disable no-loss-of-precision -- constantes publiées, cf. ci-dessus */
   const g = [76.18009172947146, -86.50532032941677, 24.01409824083091,
              -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
   let y = x, tmp = x + 5.5;
@@ -87,6 +96,7 @@ function lnGamma(x: number): number {
   let ser = 1.000000000190015;
   for (let j = 0; j < 6; j++) ser += g[j] / ++y;
   return -tmp + Math.log(2.5066282746310005 * ser / x);
+  /* eslint-enable no-loss-of-precision */
 }
 
 /** Gamma incomplète régularisée P(a,x), par série puis fraction continue. */

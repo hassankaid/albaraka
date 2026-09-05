@@ -1,17 +1,18 @@
 // ─────────────────────────────────────────────────────────────────────────
 // ab-visit — point d'entrée public de l'A/B testing des tunnels.
 //
-// Un visiteur arrive sur une page de remerciement avec un test en cours. Cette
-// fonction :
+// Un visiteur arrive sur une page portant un test en cours. Cette fonction :
 //   1. retrouve le test s'il est en cours et concerne bien ce tunnel
-//   2. lui attribue une variante, de façon déterministe
-//   3. enregistre son exposition, une seule fois
-//   4. rend la variante à afficher
+//   2. vérifie qu'il se joue bien SUR CETTE PAGE
+//   3. lui attribue une variante, de façon déterministe
+//   4. enregistre son exposition, une seule fois
+//   5. rend la variante à afficher
 //
-// APPELÉE DEPUIS LA PAGE DE REMERCIEMENT, pas depuis la landing : les deux
-// tunnels partagent la même landing, la variante n'apparaît qu'après
-// l'inscription. Compter l'exposition plus tôt gonflerait le dénominateur de
-// visiteurs n'ayant jamais rien vu de variable.
+// APPELÉE DES DEUX CÔTÉS — la landing et la page de remerciement — mais jamais
+// pour le même test : chaque test déclare son `etape`, et l'appel qui ne
+// correspond pas repart sans rien enregistrer. Sans ce contrôle, un visiteur
+// serait compté deux fois, et le dénominateur inclurait des gens n'ayant rien
+// vu de variable.
 //
 // Et seulement si un code de test a été capté : le trafic hors test ne paie
 // aucun aller-retour réseau.
@@ -78,6 +79,10 @@ serve(async (req) => {
     const visitorId = String(body?.visitor_id ?? "").trim();
     const tunnel = String(body?.tunnel ?? "").trim();
     const src = body?.src ? String(body.src).slice(0, 40) : null;
+    // D'où l'appel provient : la landing, ou la page de remerciement. Le serveur
+    // vérifie que ça correspond au test — un test de landing ne doit rien
+    // enregistrer depuis la page de remerciement, et inversement.
+    const etape = String(body?.etape ?? "merci").trim();
 
     if (!code || !visitorId || !tunnel) return json({ active: false, raison: "params_manquants" });
     // Garde-fou sur la taille : `visitor_id` vient du client, on ne stocke pas
@@ -91,7 +96,7 @@ serve(async (req) => {
 
     const { data: test } = await supabase
       .from("ab_tests")
-      .select("id, code, tunnel, canal, variants, weights, statut")
+      .select("id, code, tunnel, canal, variants, weights, statut, etape")
       .eq("code", code)
       .eq("statut", "running")
       .maybeSingle();
@@ -100,6 +105,10 @@ serve(async (req) => {
     // bloque rien, la page affichera simplement sa variante par défaut.
     if (!test) return json({ active: false, raison: "test_introuvable_ou_termine" });
     if (test.tunnel !== tunnel) return json({ active: false, raison: "mauvais_tunnel" });
+    // Chaque page n'appelle que pour les tests qui s'y jouent. Sans ce contrôle,
+    // un visiteur serait exposé deux fois — à l'arrivée puis au remerciement —
+    // et le dénominateur compterait des gens n'ayant rien vu de variable.
+    if (test.etape !== etape) return json({ active: false, raison: "mauvaise_etape" });
     // Un test ciblé sur un canal ne s'applique qu'à ce canal : sinon le trafic
     // d'une autre origine viendrait diluer un test conçu pour TikTok.
     if (test.canal && src !== test.canal) return json({ active: false, raison: "hors_canal" });

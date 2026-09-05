@@ -58,6 +58,7 @@ export async function resoudreTestAB(
   code: string,
   tunnelKey: string,
   src: string | null,
+  etape: "landing" | "merci",
 ): Promise<AffectationAB | null> {
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/ab-visit`, {
@@ -67,7 +68,7 @@ export async function resoudreTestAB(
         apikey: SUPABASE_PUBLISHABLE_KEY,
         Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ code, visitor_id: visitorId(), tunnel: tunnelKey, src }),
+      body: JSON.stringify({ code, visitor_id: visitorId(), tunnel: tunnelKey, src, etape }),
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -110,17 +111,25 @@ export function enregistrerConversion(cfg: TunnelConfig, action: ActionAB): void
 /**
  * La variante à afficher sur une page de remerciement.
  *
- * C'EST ICI que se joue l'exposition, pas sur la landing : les deux tunnels
- * partagent la même landing, la variante n'apparaît qu'ici. Compter l'exposition
- * plus tôt gonflerait le dénominateur de visiteurs n'ayant jamais rien vu.
+ * Trois sources, dans cet ordre :
  *
- * Sans test en cours, on retombe sur `?v=` — le fonctionnement d'origine, qui
- * reste utile pour prévisualiser une variante à la main.
+ *   1. un test de page de remerciement en cours — c'est lui qui décide ici ;
+ *   2. la variante déjà tirée sur la landing, s'il y avait un test de landing —
+ *      le visiteur reste dans le même parcours du début à la fin, exactement
+ *      comme si `?v=` avait été dans son lien ;
+ *   3. `?v=` — le fonctionnement d'origine, qui reste utile pour prévisualiser
+ *      une variante à la main.
+ *
+ * L'exposition n'est comptée QUE dans le premier cas : c'est ici que la variante
+ * de la page de remerciement se voit pour la première fois. Dans le deuxième,
+ * elle a déjà été comptée à l'arrivée sur la landing.
  */
 export function useVarianteAB(cfg: TunnelConfig, tunnelKey: "wa" | "vsl"): TunnelVariant {
   const parDefaut = resolveVariant(
     tunnelKey,
-    typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("v") : null,
+    (typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("v")
+      : null) ?? varianteLandingRetenue(cfg),
   );
   const [variante, setVariante] = useState<TunnelVariant>(parDefaut);
 
@@ -129,11 +138,48 @@ export function useVarianteAB(cfg: TunnelConfig, tunnelKey: "wa" | "vsl"): Tunne
     if (!a?.abCode) return; // hors test : la variante par défaut suffit
 
     let annule = false;
-    void resoudreTestAB(a.abCode, tunnelKey, a.src).then((r) => {
+    void resoudreTestAB(a.abCode, tunnelKey, a.src, "merci").then((r) => {
       if (!annule && r) setVariante(resolveVariant(tunnelKey, r.variant));
     });
     return () => { annule = true; };
   }, [cfg, tunnelKey]);
 
   return variante;
+}
+
+/**
+ * Enregistre l'arrivée sur une landing testée, et retient la variante servie.
+ *
+ * Elle est mémorisée pour être envoyée avec l'inscription : c'est ce qui
+ * permettra de dire quelle PAGE a produit quel inscrit. Sans test de landing en
+ * cours, la fonction ne fait rien — aucun appel réseau pour le trafic ordinaire.
+ *
+ * Retourne la variante pour que la page puisse s'afficher en conséquence, le
+ * jour où il y aura effectivement plusieurs versions de la landing. Aujourd'hui
+ * elle n'en a qu'une : la mesure fonctionne, elle ne mesure simplement aucune
+ * différence tant que le contenu ne varie pas.
+ */
+export async function exposerLanding(
+  cfg: TunnelConfig,
+  tunnelKey: "wa" | "vsl",
+): Promise<string | null> {
+  const a = getAttribution(cfg);
+  if (!a?.abCode) return null;
+
+  const r = await resoudreTestAB(a.abCode, tunnelKey, a.src, "landing");
+  if (!r) return null;
+
+  try {
+    sessionStorage.setItem(`alb_ab_landing_${cfg.key}`, r.variant);
+  } catch { /* mode privé : la variante vivra le temps de la page */ }
+  return r.variant;
+}
+
+/** La variante de landing retenue pour ce tunnel, à joindre à l'inscription. */
+export function varianteLandingRetenue(cfg: TunnelConfig): string | null {
+  try {
+    return sessionStorage.getItem(`alb_ab_landing_${cfg.key}`);
+  } catch {
+    return null;
+  }
 }
