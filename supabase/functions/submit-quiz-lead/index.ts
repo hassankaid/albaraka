@@ -131,6 +131,62 @@ function extractErrorMessage(error: unknown): string {
 }
 
 // ─── resolve : charge les infos publiques d'un slug ───
+/**
+ * Rend la fiche du jour de ce contact sur cette source, s'il en existe une.
+ *
+ * POURQUOI. Une meme personne qui remplit deux fois le quiz produisait deux
+ * fiches, requalifiees separement par deux setters. Depuis le 09/09/2026, un
+ * index en base l'interdit : sans ce controle prealable, la seconde insertion
+ * echouerait et le prospect verrait une erreur alors qu'il est bien inscrit.
+ *
+ * ON FUSIONNE, ON NE JETTE PAS : on ne comble que les champs restes vides, sans
+ * jamais ecraser ce que la premiere soumission avait capte.
+ *
+ * LE CAS SENSIBLE EST L'APPORTEUR. Si la fiche existante appartient a un AUTRE
+ * apporteur, on ne le remplace pas — l'anteriorite fait foi — mais on inscrit le
+ * second nom dans les notes et on journalise en erreur. Personne ne doit perdre
+ * une attribution en silence ; c'est un arbitrage humain, pas une regle.
+ * Ce cas ne s'est jamais produit a ce jour (7 doublons quiz historiques, tous
+ * sur un seul apporteur), mais il coute une commission le jour ou il arrive.
+ */
+async function ficheDuJour(
+  supabase: any,
+  contactId: string,
+  source: string,
+  apporteurId: string | null,
+  apport: Record<string, unknown>,
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("leads")
+    .select("id, apporteur_id, notes, source_detail, raw_email, raw_phone, raw_full_name")
+    .eq("contact_id", contactId)
+    .eq("source", source)
+    .gte("created_at", new Date(Date.now() - 86_400_000).toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  const existante = (data ?? [])[0];
+  if (!existante) return null;
+
+  const combler: Record<string, unknown> = {};
+  for (const [champ, valeur] of Object.entries(apport)) {
+    if (valeur != null && existante[champ] == null) combler[champ] = valeur;
+  }
+
+  const jour = new Date().toISOString().slice(0, 10);
+  let trace = `[${jour}] Nouvelle soumission du quiz, fusionnee dans cette fiche.`;
+  if (apporteurId && existante.apporteur_id && existante.apporteur_id !== apporteurId) {
+    trace += ` ATTENTION : soumission via l'apporteur ${apporteurId}, alors que la fiche appartient a ${existante.apporteur_id}.`
+           + ` L'anteriorite a ete conservee — a arbitrer manuellement.`;
+    console.error(`[submit-quiz-lead] deux apporteurs sur le meme contact le meme jour : `
+      + `fiche ${existante.id} appartient a ${existante.apporteur_id}, nouvelle soumission par ${apporteurId}`);
+  }
+  combler.notes = existante.notes ? `${existante.notes} ${trace}` : trace;
+
+  await supabase.from("leads").update(combler).eq("id", existante.id);
+  return existante.id;
+}
+
 async function handleResolve(supabase: any, body: any) {
   const slug = (body?.slug as string | undefined)?.toLowerCase();
   if (!slug || !isValidSlug(slug)) return json({ error: "invalid_slug" }, 400);
@@ -249,6 +305,18 @@ async function handleEmailCaptured(supabase: any, body: any, req: Request) {
 
   // Crée le lead CRM directement (coordonnées complètes garanties).
   const sourceDetail = `quiz:${owner.slug}`;
+
+  // Une fiche du jour existe deja pour ce contact ? On l'enrichit et on s'arrete
+  // la : recreer une fiche heurterait l'index anti-doublon et ferait echouer
+  // l'inscription alors que le prospect a bien rempli le formulaire.
+  const dejaLa = await ficheDuJour(supabase, contactId, "apporteur_quiz", owner.user_id, {
+    source_detail: sourceDetail,
+    raw_full_name: fullNameUpper,
+    raw_email: email,
+    raw_phone: phoneE164,
+  });
+  if (dejaLa) return json({ ok: true, lead_id: dejaLa, contact_id: contactId, fusionne: true });
+
   const { data: lead, error: leadErr } = await supabase
     .from("leads")
     .insert({
@@ -431,6 +499,17 @@ async function handlePhoneCaptured(supabase: any, body: any) {
 
   // Créer le lead CRM
   const sourceDetail = `quiz:${owner.slug}`;
+
+  // Meme garde-fou que plus haut : on enrichit la fiche du jour plutot que d'en
+  // creer une seconde, que l'index anti-doublon refuserait.
+  const dejaLa2 = await ficheDuJour(supabase, contactId, "apporteur_quiz", owner.user_id, {
+    source_detail: sourceDetail,
+    raw_full_name: fullNameUpper,
+    raw_email: sub.email,
+    raw_phone: phoneE164,
+  });
+  if (dejaLa2) return json({ ok: true, lead_id: dejaLa2, contact_id: contactId, fusionne: true });
+
   const { data: lead, error: leadError } = await supabase
     .from("leads")
     .insert({

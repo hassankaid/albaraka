@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RefreshCw } from "lucide-react";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+import { messageErreurLead } from "@/lib/leadDoublon";
 
 const APPORTEUR_SOURCES = [
   { value: "apporteur_facebook", label: "Facebook" },
@@ -112,7 +113,7 @@ export default function LeadApporteurForm({
     });
 
     if (insertError) {
-      toast({ title: "Erreur", description: insertError.message, variant: "destructive" });
+      toast({ title: "Erreur", description: messageErreurLead(insertError), variant: "destructive" });
     } else {
       toast({ title: "Lead apporté avec succès" });
       resetForm();

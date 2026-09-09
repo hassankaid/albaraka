@@ -20,6 +20,7 @@ import { LEAD_STATUS_LABELS, LEAD_STATUS_COLORS } from "@/lib/leadConfig";
 import { leadSourceConfig, getSourceLabel, getSourceBadgeClass } from "@/lib/leadConfig";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+import { messageErreurLead } from "@/lib/leadDoublon";
 
 type LeadEnriched = Tables<"leads_enriched">;
 
@@ -296,7 +297,7 @@ export default function ApporteurLeads() {
     });
 
     if (insertError) {
-      toast({ title: "Erreur", description: insertError.message, variant: "destructive" });
+      toast({ title: "Erreur", description: messageErreurLead(insertError), variant: "destructive" });
     } else {
       toast({ title: "Lead ajouté avec succès" });
       resetForm();

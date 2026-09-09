@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { leadSourceConfig, leadStatusConfig } from "@/lib/leadConfig";
 import EntitySearchSelect from "./EntitySearchSelect";
+import { messageErreurLead } from "@/lib/leadDoublon";
 
 interface Props {
   /** Pre-filled contact from wizard */
@@ -80,7 +81,7 @@ export default function CreateLeadForm({ prefilledContactId, onCreated, isWizard
         setRawName(""); setRawEmail(""); setRawPhone("");
       }
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: "Erreur", description: messageErreurLead(e), variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
