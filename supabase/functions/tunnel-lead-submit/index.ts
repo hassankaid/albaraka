@@ -188,6 +188,51 @@ serve(async (req) => {
     if (fbclid) noteParts.push(`fbclid=${fbclid}`);
     if (referrer) noteParts.push(`ref=${referrer}`);
 
+    // UNE SEULE FICHE PAR (CONTACT, SOURCE) ET PAR JOUR.
+    //
+    // Le prospect qui valide deux fois, ou dont le navigateur rejoue l'envoi,
+    // ne doit pas produire deux fiches : deux setters les requalifient alors
+    // separement. Le 03/09/2026, Sabrina a passe les deux fiches d'un meme
+    // prospect de `a_qualifier` a `inscrit_conference` a six secondes
+    // d'intervalle — le meme geste, fait deux fois.
+    //
+    // ON FUSIONNE, ON NE JETTE PAS. La seconde soumission peut porter une
+    // attribution que la premiere n'avait pas : un utm arrive plus tard, un
+    // visitor_id, un code de test A/B. On ne remplit donc que les champs restes
+    // vides, sans jamais ecraser ce que la premiere avait capte.
+    //
+    // L'index `leads_un_par_contact_source_et_jour` garantit la regle cote
+    // base, pour les six autres chemins de code qui creent des leads. Ici on
+    // s'en sert comme d'un garde-fou, pas comme d'un mecanisme : le prospect
+    // doit voir son inscription reussir, pas une erreur.
+    const { data: fichesDuJour } = await supabase
+      .from("leads")
+      .select("id, utm_source, utm_medium, utm_campaign, utm_content, utm_term, visitor_id, ab_test_code, tunnel_variant, notes")
+      .eq("contact_id", contactId)
+      .eq("source", source)
+      .gte("created_at", new Date(Date.now() - 86_400_000).toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const dejaLa = (fichesDuJour ?? [])[0];
+    if (dejaLa) {
+      const combler: Record<string, unknown> = {};
+      const nouveau: Record<string, unknown> = {
+        ...utm,
+        visitor_id: visitorIdBrut,
+        ab_test_code: abTestCode ? abTestCode.toUpperCase() : null,
+        tunnel_variant: varianteLanding,
+      };
+      for (const [champ, valeur] of Object.entries(nouveau)) {
+        if (valeur != null && (dejaLa as Record<string, unknown>)[champ] == null) combler[champ] = valeur;
+      }
+      const trace = `[${new Date().toISOString().slice(0, 10)}] Nouvelle soumission du meme formulaire, fusionnee dans cette fiche.`;
+      combler.notes = dejaLa.notes ? `${dejaLa.notes} ${trace}` : trace;
+      await supabase.from("leads").update(combler).eq("id", dejaLa.id);
+      console.log(`[tunnel-lead-submit] doublon fusionne dans le lead ${dejaLa.id}`);
+      return json({ ok: true, lead_id: dejaLa.id, contact_id: contactId, fusionne: true });
+    }
+
     const { data: lead, error: leadErr } = await supabase
       .from("leads")
       .insert({
