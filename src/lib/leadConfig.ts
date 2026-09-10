@@ -84,6 +84,9 @@ export function getSourceLabel(sourceKey: string, sourceDetail?: string | null):
 export const leadStatusConfig: Record<string, { label: string; color: string }> = {
   a_qualifier: { label: "À qualifier", color: "blue" },
   inscrit_conference: { label: "Inscrit conférence", color: "violet" },
+  // Rediffusion envoyée à un inscrit absent : suivi ouvert, même comportement
+  // qu'« À relancer » (reste chez son commercial, jamais recyclé).
+  envoi_rediffusion: { label: "Envoi rediffusion", color: "sky" },
   pas_de_reponse_post_conference: { label: "Pas de réponse post conférence", color: "amber" },
   faux_numero: { label: "Faux numéro", color: "red-light" },
   pas_de_reponse: { label: "Pas de réponse", color: "orange" },
@@ -112,6 +115,7 @@ export const LEAD_STATUS_COLORS: Record<string, string> = Object.fromEntries(
 export const LEAD_MANUAL_STATUSES = [
   "a_qualifier",
   "inscrit_conference",
+  "envoi_rediffusion",
   "pas_de_reponse_post_conference",
   "faux_numero",
   "pas_de_reponse",

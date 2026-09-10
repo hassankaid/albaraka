@@ -15,8 +15,15 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { leadSourceConfig, SOURCE_GROUPS, isAdsSource, getSourceLabel } from "./leadConfig";
+import { readdirSync, readFileSync } from "node:fs";
+import {
+  leadSourceConfig,
+  leadStatusConfig,
+  LEAD_MANUAL_STATUSES,
+  SOURCE_GROUPS,
+  isAdsSource,
+  getSourceLabel,
+} from "./leadConfig";
 
 /** Les sources que l'edge fn accepte d'écrire dans `leads.source`. */
 function sourcesEcritesParLesTunnels(): string[] {
@@ -77,5 +84,40 @@ describe("cohérence interne du référentiel de sources", () => {
 
   it("ne range aucune source dans deux groupes à la fois", () => {
     expect(new Set(toutesLesSourcesDesGroupes).size).toBe(toutesLesSourcesDesGroupes.length);
+  });
+});
+
+/**
+ * Le même contrat pour les statuts, dans l'autre sens : un statut proposé dans
+ * le menu mais refusé par `leads_status_check` fait échouer l'enregistrement
+ * au moment où le commercial qualifie sa fiche. La liste est lue dans la
+ * dernière migration qui redéfinit la contrainte, pas recopiée.
+ */
+function statutsAcceptesParLaBase(): string[] {
+  const dossier = "supabase/migrations";
+  const derniere = readdirSync(dossier)
+    .filter((f) => f.endsWith(".sql"))
+    .sort()
+    .map((f) => readFileSync(`${dossier}/${f}`, "utf-8"))
+    .filter((sql) => /add constraint leads_status_check/i.test(sql))
+    .pop();
+  if (!derniere) throw new Error("aucune migration ne définit leads_status_check");
+  const bloc = derniere.match(/add constraint leads_status_check[\s\S]*?array\s*\[([\s\S]*?)\]/i);
+  if (!bloc) throw new Error("liste de leads_status_check illisible");
+  return [...bloc[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+}
+
+describe("statuts de fiche proposés dans le menu", () => {
+  const acceptes = statutsAcceptesParLaBase();
+
+  // Témoin, comme pour les sources : une lecture cassée renverrait une liste
+  // vide et les vérifications suivantes passeraient sans rien prouver.
+  it("la base en accepte 12 depuis l'ajout d'« Envoi rediffusion » le 10/09/2026", () => {
+    expect(acceptes).toHaveLength(12);
+  });
+
+  it.each([...LEAD_MANUAL_STATUSES])("« %s » est accepté par la base et a un libellé", (statut) => {
+    expect(acceptes).toContain(statut);
+    expect(leadStatusConfig[statut]?.label, `aucun libellé pour ${statut}`).toBeTruthy();
   });
 });

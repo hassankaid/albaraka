@@ -45,6 +45,7 @@ const STATUS_OPTIONS = [
 const APPORTEUR_EDITABLE_STATUSES = [
   { value: "a_qualifier", label: "À qualifier" },
   { value: "inscrit_conference", label: "Inscrit conférence" },
+  { value: "envoi_rediffusion", label: "Envoi rediffusion" },
   { value: "call_booke", label: "Call booké" },
   { value: "a_relancer", label: "À relancer" },
   { value: "faux_numero", label: "Faux numéro" },
