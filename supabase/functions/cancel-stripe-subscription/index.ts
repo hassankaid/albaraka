@@ -3,8 +3,20 @@
 // Annule une subscription Stripe attachée à une vente, et marque les paiements
 // pending de cette vente comme 'lost'. Réservé au CEO.
 //
-// Body : { sale_id: string }
-// Returns : { ok: true, subscription_id, cancelled_at, payments_marked_lost: number }
+// Body : { sale_id: string, arret_definitif?: boolean }
+// Returns : { ok: true, subscription_id, cancelled_at, payments_marked_lost: number,
+//             invoices_voided: string[], invoices_deleted: string[], invoice_errors: string[] }
+//
+// DEUX USAGES, DEUX PERIMETRES.
+//   - Replan (ReschedulePaymentsModal, arret_definitif absent) : seules les
+//     mensualites pending sont reprises dans le nouveau plan ; une mensualite
+//     en retard reste due et sa facture Stripe n'est pas touchee.
+//   - Arret definitif (« Stopper les prelevements », « Perdu » sur la page
+//     Paiements) : les mensualites en retard passent aussi en 'lost', et les
+//     factures ouvertes de l'abonnement sont annulees. Sans cela, Stripe
+//     relancait encore la facture d'OMAR SGHIR OUARDI apres son passage en
+//     « Perdu » le 07/09/2026, et deux factures sont restees ouvertes des
+//     semaines apres l'arret des abonnements de MERYEM HANAFI et MERYEM SEROUANE.
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -35,12 +47,19 @@ function json(data: unknown, status = 200) {
 async function stripeCall(
   apiKey: string,
   path: string,
-  method: "GET" | "DELETE" = "GET",
+  method: "GET" | "DELETE" | "POST" = "GET",
 ): Promise<{ ok: boolean; data: any; status: number }> {
-  const res = await fetch(`https://api.stripe.com/v1${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${apiKey}` },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`https://api.stripe.com/v1${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+  } catch (e) {
+    // Panne réseau : rendue comme une erreur Stripe, pour que l'appelant la
+    // consigne au lieu d'interrompre l'arrêt en plein milieu.
+    return { ok: false, data: { error: { message: `réseau : ${String(e)}` } }, status: 0 };
+  }
   const text = await res.text();
   let data: any;
   try { data = text ? JSON.parse(text) : {}; } catch { data = { _raw: text }; }
@@ -86,6 +105,36 @@ async function cancelSubscription(subscriptionId: string): Promise<{ data: any; 
     throw new Error(`Stripe test: ${r.status} ${JSON.stringify(r.data)}`);
   }
   throw new Error("No Stripe API key configured");
+}
+
+function cleStripe(mode: "live" | "test"): string {
+  return mode === "test" ? STRIPE_SECRET_KEY_TEST : STRIPE_SECRET_KEY_LIVE;
+}
+
+// Arret definitif : annuler l'abonnement ne solde pas ses factures deja emises.
+// Elles restent ouvertes, donc relancables et comptees comme impayees. On annule
+// (void) les factures ouvertes et on supprime les brouillons. Une facture payee
+// n'est jamais touchee : Stripe refuse de toute facon de la voider.
+async function solderFacturesOuvertes(
+  apiKey: string,
+  subscriptionId: string,
+): Promise<{ voided: string[]; deleted: string[]; errors: string[] }> {
+  const out = { voided: [] as string[], deleted: [] as string[], errors: [] as string[] };
+  for (const statut of ["open", "draft"] as const) {
+    const liste = await stripeCall(apiKey, `/invoices?subscription=${subscriptionId}&status=${statut}&limit=20`);
+    if (!liste.ok) {
+      out.errors.push(`lecture des factures ${statut} : ${liste.data?.error?.message || liste.status}`);
+      continue;
+    }
+    for (const facture of liste.data?.data || []) {
+      const r = statut === "open"
+        ? await stripeCall(apiKey, `/invoices/${facture.id}/void`, "POST")
+        : await stripeCall(apiKey, `/invoices/${facture.id}`, "DELETE");
+      if (r.ok) (statut === "open" ? out.voided : out.deleted).push(facture.id);
+      else out.errors.push(`${facture.id} : ${r.data?.error?.message || r.status}`);
+    }
+  }
+  return out;
 }
 
 // Fallback pour les ventes Systeme.io : Systeme.io utilise Stripe en backend, donc
@@ -148,6 +197,10 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const saleId = body?.sale_id as string | undefined;
     if (!saleId) return json({ error: "sale_id_required" }, 400);
+    const arretDefinitif = body?.arret_definitif === true;
+    // Replan : seules les pending sont reprises. Arret definitif : les
+    // mensualites en retard aussi, leur facture Stripe etant encore relancee.
+    const statutsVises = arretDefinitif ? ["pending", "late"] : ["pending"];
 
     // ── Récupère les payments de la vente ──
     const { data: payments, error: paymentsErr } = await supabase
@@ -157,7 +210,7 @@ serve(async (req) => {
     if (paymentsErr) throw paymentsErr;
 
     const pendingPaymentIds = (payments || [])
-      .filter((p) => p.status === "pending")
+      .filter((p) => statutsVises.includes(p.status))
       .map((p) => p.id);
 
     if (pendingPaymentIds.length === 0) {
@@ -174,7 +227,7 @@ serve(async (req) => {
     // pending n'en ont pas — il ne faut PAS retoucher l'ancien sub).
     const subscriptionIds = Array.from(new Set(
       (payments || [])
-        .filter((p) => p.status === "pending")
+        .filter((p) => statutsVises.includes(p.status))
         .map((p) => p.stripe_subscription_id)
         .filter((s): s is string => !!s)
     ));
@@ -185,6 +238,11 @@ serve(async (req) => {
     let alreadyCanceled = false;
 
     if (subscriptionIds.length === 1) {
+      subId = subscriptionIds[0];
+    } else if (subscriptionIds.length > 1 && arretDefinitif) {
+      // Arrêt définitif : une mensualité en retard peut porter l'ANCIEN
+      // abonnement, trigger-installment-now et repair-sale-subscription ne
+      // rattachant que les pending au nouveau. On les arrête tous (plus bas).
       subId = subscriptionIds[0];
     } else if (subscriptionIds.length > 1) {
       return json({
@@ -234,18 +292,38 @@ serve(async (req) => {
     }
 
     // ── Annule la subscription Stripe (si on en a une) ──
+    // Plusieurs abonnements seulement en arrêt définitif (voir plus haut).
+    const aAnnuler = subscriptionIds.length > 1 ? subscriptionIds : (subId ? [subId] : []);
+    const annulees: { id: string; mode: "live" | "test" }[] = [];
     let cancelMode: "live" | "test" | null = stripeMode;
-    if (subId) {
+    for (const id of aAnnuler) {
       try {
-        const cancelResult = await cancelSubscription(subId);
+        const cancelResult = await cancelSubscription(id);
         cancelMode = cancelResult.mode;
-        alreadyCanceled = !!cancelResult.alreadyCanceled;
+        // « déjà annulée » seulement si toutes l'étaient.
+        alreadyCanceled = (annulees.length === 0 || alreadyCanceled) && !!cancelResult.alreadyCanceled;
+        annulees.push({ id, mode: cancelResult.mode });
       } catch (e: any) {
+        // Rejouable : un abonnement déjà annulé au premier passage ressortira
+        // « déjà annulé » au suivant.
         return json({
           error: "stripe_cancel_failed",
           message: `Annulation Stripe échouée : ${e?.message || String(e)}`,
-          subscription_id: subId,
+          subscription_id: id,
         }, 502);
+      }
+    }
+
+    // ── Arrêt définitif : solde les factures encore ouvertes des abonnements ──
+    // Aussi quand l'abonnement était déjà annulé : c'est précisément le cas où
+    // une facture a pu rester ouverte derrière lui.
+    const factures = { voided: [] as string[], deleted: [] as string[], errors: [] as string[] };
+    if (arretDefinitif) {
+      for (const { id, mode } of annulees) {
+        const r = await solderFacturesOuvertes(cleStripe(mode), id);
+        factures.voided.push(...r.voided);
+        factures.deleted.push(...r.deleted);
+        factures.errors.push(...r.errors);
       }
     }
 
@@ -257,11 +335,13 @@ serve(async (req) => {
         ? "Stripe natif"
         : "Pas de subscription Stripe (manuel ou post-replan)";
     const noteParts = [
-      subId ? `Subscription Stripe ${subId}` : "Pending",
+      aAnnuler.length ? `Subscription Stripe ${aAnnuler.join(", ")}` : "Pending",
       `${alreadyCanceled ? "déjà annulée" : "annulée"} le ${cancelledAtIso.slice(0, 10)}`,
       `(CEO ${user.email})`,
       `Source: ${sourceLabel}`,
       cancelMode ? `Mode: ${cancelMode}` : null,
+      factures.voided.length ? `Facture(s) ouverte(s) annulée(s) : ${factures.voided.join(", ")}` : null,
+      factures.errors.length ? `Facture(s) NON annulée(s) : ${factures.errors.join(" | ")}` : null,
     ].filter(Boolean);
     const note = noteParts.join(". ") + ".";
 
@@ -285,6 +365,10 @@ serve(async (req) => {
       stripe_already_canceled: alreadyCanceled,
       cancelled_at: cancelledAtIso,
       payments_marked_lost: count ?? pendingPaymentIds.length,
+      subscriptions_cancelled: aAnnuler,
+      invoices_voided: factures.voided,
+      invoices_deleted: factures.deleted,
+      invoice_errors: factures.errors,
       sale_id: saleId,
       used_systemeio_fallback: usedFallback,
     });

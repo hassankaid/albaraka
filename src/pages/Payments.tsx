@@ -18,6 +18,7 @@ import { formatDateOnly } from "@/lib/formatDate";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useUpdatePaymentAdmin, useTriggerInstallment } from "@/hooks/usePaymentAdmin";
+import { abonnementStripeEnCours } from "@/lib/abonnementStripe";
 import PaymentScheduleModal from "@/components/payments/PaymentScheduleModal";
 import ClientInvoiceModal from "@/components/payments/ClientInvoiceModal";
 
@@ -151,6 +152,7 @@ export default function Payments() {
 
   // Lost confirmation dialog
   const [lostConfirmPayment, setLostConfirmPayment] = useState<PaymentRow | null>(null);
+  const [markingLost, setMarkingLost] = useState(false);
   // Paid date picker
   const [paidPickerPayment, setPaidPickerPayment] = useState<PaymentRow | null>(null);
   // Schedule modal (toutes les mensualités d'une vente)
@@ -711,17 +713,83 @@ export default function Payments() {
     }
   };
 
-  const markAsLost = async (paymentId: string) => {
-    const { error } = await supabase
-      .from("payments")
-      .update({ status: "lost" })
-      .eq("id", paymentId);
-    if (error) {
-      toast({ title: "Erreur", variant: "destructive" });
-    } else {
-      toast({ title: "Paiement marqué comme perdu (cascade appliquée)" });
-      setLostConfirmPayment(null);
-      fetchPayments();
+  // « Perdu » sur une vente dont l'abonnement Stripe prélève encore : marquer la
+  // mensualité ne suffit pas, Stripe continuerait de relancer la facture pendant
+  // que la plateforme affiche Perdu (cas Omar Sghir Ouardi, 10/09/2026). On passe
+  // alors par cancel-stripe-subscription, qui arrête l'abonnement, annule ses
+  // factures ouvertes et marque toutes les mensualités non réglées en Perdu.
+  const markAsLost = async (payment: PaymentRow) => {
+    setMarkingLost(true);
+    try {
+      if (payment.sale_id) {
+        const { data: echeances, error: lectureErr } = await supabase
+          .from("payments")
+          .select("status, stripe_subscription_id")
+          .eq("sale_id", payment.sale_id);
+        // Sans cette lecture, on ne sait pas si Stripe prélève encore : mieux vaut
+        // s'arrêter que retomber en silence sur un « Perdu » plateforme seule.
+        if (lectureErr) throw new Error(`Lecture des mensualités impossible : ${lectureErr.message}`);
+
+        if (abonnementStripeEnCours(echeances || [])) {
+          if (!isCeo) {
+            toast({
+              title: "Action réservée au CEO",
+              description: "Cette vente a un abonnement Stripe en cours : seul le CEO peut l'arrêter.",
+              variant: "destructive",
+            });
+            return;
+          }
+          const { data, error } = await supabase.functions.invoke("cancel-stripe-subscription", {
+            body: { sale_id: payment.sale_id, arret_definitif: true },
+          });
+          let result: { ok?: boolean; payments_marked_lost?: number; invoices_voided?: string[]; invoice_errors?: string[]; message?: string; error?: string } | null = null;
+          if (error) {
+            // Sur un 4xx/5xx, le message métier est dans le corps de la réponse.
+            const ctx = (error as { context?: Response }).context;
+            if (ctx && typeof ctx.json === "function") {
+              try { result = await ctx.json(); } catch { result = null; }
+            }
+            if (!result) throw new Error(error.message || "Erreur réseau");
+          } else {
+            result = data as typeof result;
+          }
+          if (!result?.ok) throw new Error(result?.message || result?.error || "Arrêt Stripe échoué");
+
+          const nbFactures = result.invoices_voided?.length ?? 0;
+          toast({
+            title: "Vente perdue, Stripe arrêté",
+            description:
+              `${result.payments_marked_lost ?? 0} mensualité(s) marquée(s) Perdu` +
+              (nbFactures > 0 ? `, ${nbFactures} facture(s) Stripe annulée(s).` : ". Plus aucun prélèvement Stripe."),
+          });
+          if (result.invoice_errors?.length) {
+            toast({
+              title: "Une facture Stripe n'a pas pu être annulée",
+              description: result.invoice_errors.join(" · "),
+              variant: "destructive",
+            });
+          }
+          setLostConfirmPayment(null);
+          fetchPayments();
+          return;
+        }
+      }
+
+      const { error } = await supabase
+        .from("payments")
+        .update({ status: "lost" })
+        .eq("id", payment.id);
+      if (error) {
+        toast({ title: "Erreur", variant: "destructive" });
+      } else {
+        toast({ title: "Paiement marqué comme perdu (cascade appliquée)" });
+        setLostConfirmPayment(null);
+        fetchPayments();
+      }
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e?.message || "Réessaie ou contacte le dev", variant: "destructive" });
+    } finally {
+      setMarkingLost(false);
     }
   };
 
@@ -1376,6 +1444,8 @@ export default function Payments() {
             <DialogTitle>Confirmer « Perdu »</DialogTitle>
             <DialogDescription>
               Cette action marquera ce paiement et toutes les mensualités suivantes (non payées) comme perdues. Les commissions associées seront annulées.
+              <br /><br />
+              Si la vente a un abonnement Stripe en cours, il est arrêté : ses factures en cours sont annulées, plus aucun prélèvement n'est tenté, et toutes les mensualités non payées de la vente passent en Perdu.
             </DialogDescription>
           </DialogHeader>
           <div className="text-sm text-muted-foreground">
@@ -1384,7 +1454,8 @@ export default function Payments() {
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="ghost" onClick={() => setLostConfirmPayment(null)}>Annuler</Button>
-            <Button variant="destructive" onClick={() => lostConfirmPayment && markAsLost(lostConfirmPayment.id)}>
+            <Button variant="destructive" disabled={markingLost} onClick={() => lostConfirmPayment && markAsLost(lostConfirmPayment)}>
+              {markingLost && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
               Confirmer Perdu
             </Button>
           </DialogFooter>

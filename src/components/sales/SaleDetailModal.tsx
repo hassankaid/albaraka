@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { abonnementStripeEnCours, estNonReglee } from "@/lib/abonnementStripe";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -164,20 +165,41 @@ export default function SaleDetailModal({
   // --- SAVE EDIT ---
   const saveEdit = async () => {
     if (!editingId) return;
+    // Passer une mensualité en « Perdu » pendant que Stripe prélève encore : on
+    // n'écrit pas ce statut ici, sinon la plateforme dirait Perdu pendant que
+    // Stripe relance (cas Omar Sghir Ouardi, 10/09/2026). On enregistre le reste
+    // et on ouvre « Stopper les prélèvements », qui arrête aussi Stripe.
+    const original = payments.find((p) => p.id === editingId);
+    const versPerduAvecStripe =
+      editData.status === "lost" && original?.status !== "lost" && !!abonnementStripeEnCours(payments);
     const { error } = await supabase
       .from("payments")
       .update({
         amount: editData.amount,
         due_date: editData.due_date,
         paid_at: editData.paid_at || null,
-        status: editData.status,
+        status: versPerduAvecStripe ? original?.status : editData.status,
         payment_method: editData.payment_method || null,
       })
       .eq("id", editingId);
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Paiement modifié" });
+      if (!versPerduAvecStripe) {
+        toast({ title: "Paiement modifié" });
+      } else if (isCeo) {
+        toast({
+          title: "Abonnement Stripe en cours",
+          description: "Confirme l'arrêt des prélèvements pour passer la vente en Perdu.",
+        });
+        setCancelOpen(true);
+      } else {
+        toast({
+          title: "Action réservée au CEO",
+          description: "Cette vente a un abonnement Stripe en cours : seul le CEO peut la passer en Perdu.",
+          variant: "destructive",
+        });
+      }
       setEditingId(null);
       fetchPayments();
       onUpdated();
@@ -313,9 +335,15 @@ export default function SaleDetailModal({
   // Le bouton est donc proposé dans les 2 cas tant qu'il y a au moins 1 pending.
   const stripeSubscriptionId = payments.find((p) => p.stripe_subscription_id)?.stripe_subscription_id ?? null;
   const pendingCount = payments.filter((p) => p.status === "pending").length;
+  // Mensualités encore dues, retards compris : une mensualité en retard a une
+  // facture Stripe ouverte que Stripe relance encore. Ne compter que les
+  // « en attente » masquait ce bouton alors que Stripe prélevait toujours.
+  const duePayments = payments.filter(estNonReglee);
+  const dueCount = duePayments.length;
+  const totalDue = duePayments.reduce((s, p) => s + Number(p.amount), 0);
   const hasStripeSubInDb = !!stripeSubscriptionId;
   const isSystemeIoSale = !!systemeIoOrderId && !hasStripeSubInDb;
-  const canCancelStripe = (hasStripeSubInDb || isSystemeIoSale) && pendingCount > 0;
+  const canCancelStripe = (hasStripeSubInDb || isSystemeIoSale) && dueCount > 0;
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
@@ -350,13 +378,13 @@ export default function SaleDetailModal({
     setCancelling(true);
     try {
       const { data, error } = await supabase.functions.invoke("cancel-stripe-subscription", {
-        body: { sale_id: saleId },
+        body: { sale_id: saleId, arret_definitif: true },
       });
 
       // supabase.functions.invoke met `error` dès qu'on a un 4xx/5xx. On lit
       // alors le body JSON via context (Response) pour récupérer le message
       // métier et l'afficher correctement.
-      let result: { ok?: boolean; payments_marked_lost?: number; subscription_id?: string; message?: string; error?: string; stripe_already_canceled?: boolean } | null = null;
+      let result: { ok?: boolean; payments_marked_lost?: number; subscription_id?: string; message?: string; error?: string; stripe_already_canceled?: boolean; invoices_voided?: string[]; invoice_errors?: string[] } | null = null;
       if (error) {
         const ctx = (error as { context?: Response }).context;
         if (ctx && typeof ctx.json === "function") {
@@ -375,10 +403,18 @@ export default function SaleDetailModal({
             : `${result.payments_marked_lost} paiement(s) marqué(s) Perdu. Plus aucun prélèvement Stripe.`)
         : `${result.payments_marked_lost} paiement(s) marqué(s) Perdu (pas de subscription Stripe active).`;
 
+      const nbFactures = result.invoices_voided?.length ?? 0;
       toast({
         title: "Prélèvements stoppés ✓",
-        description: subDesc,
+        description: nbFactures > 0 ? `${subDesc} ${nbFactures} facture(s) Stripe en cours annulée(s).` : subDesc,
       });
+      if (result.invoice_errors?.length) {
+        toast({
+          title: "Une facture Stripe n'a pas pu être annulée",
+          description: result.invoice_errors.join(" · "),
+          variant: "destructive",
+        });
+      }
       setCancelOpen(false);
       fetchPayments();
       onUpdated();
@@ -528,11 +564,11 @@ export default function SaleDetailModal({
                     {canCancelStripe ? (
                       hasStripeSubInDb ? (
                         <>
-                          {pendingCount} prélèvement{pendingCount > 1 ? "s" : ""} à venir · <code className="text-[10px] font-mono">{stripeSubscriptionId}</code>
+                          {dueCount} mensualité{dueCount > 1 ? "s" : ""} encore due{dueCount > 1 ? "s" : ""} · <code className="text-[10px] font-mono">{stripeSubscriptionId}</code>
                         </>
                       ) : (
                         <>
-                          {pendingCount} prélèvement{pendingCount > 1 ? "s" : ""} à venir · order Systeme.io <code className="text-[10px] font-mono">#{systemeIoOrderId}</code> (sub Stripe sous-jacente)
+                          {dueCount} mensualité{dueCount > 1 ? "s" : ""} encore due{dueCount > 1 ? "s" : ""} · order Systeme.io <code className="text-[10px] font-mono">#{systemeIoOrderId}</code> (sub Stripe sous-jacente)
                         </>
                       )
                     ) : (
@@ -1534,12 +1570,12 @@ export default function SaleDetailModal({
                   </p>
                   <p className="text-xs text-foreground/90">
                     {hasStripeSubInDb ? (
-                      <>La subscription <code className="text-[10px] font-mono">{stripeSubscriptionId}</code> sera annulée immédiatement.</>
+                      <>La subscription <code className="text-[10px] font-mono">{stripeSubscriptionId}</code> sera annulée immédiatement, et ses factures en cours annulées.</>
                     ) : (
                       <>La subscription Stripe liée à <strong>{contactName || "ce client"}</strong> (vente Systeme.io order <code className="text-[10px] font-mono">#{systemeIoOrderId}</code>) sera retrouvée par lookup email puis annulée immédiatement.</>
                     )}
                     <br />
-                    <strong>{pendingCount} prélèvement{pendingCount > 1 ? "s" : ""}</strong> futur{pendingCount > 1 ? "s" : ""} ({totalPending.toLocaleString("fr-FR")} €) ne ser{pendingCount > 1 ? "ont" : "a"} pas effectué{pendingCount > 1 ? "s" : ""}.
+                    <strong>{dueCount} mensualité{dueCount > 1 ? "s" : ""}</strong> encore due{dueCount > 1 ? "s" : ""} ({totalDue.toLocaleString("fr-FR")} €) ne ser{dueCount > 1 ? "ont" : "a"} pas prélevée{dueCount > 1 ? "s" : ""}.
                   </p>
                 </div>
 
@@ -1548,7 +1584,7 @@ export default function SaleDetailModal({
                     Impact côté plateforme
                   </p>
                   <ul className="text-xs space-y-0.5 list-disc pl-5 text-foreground/80">
-                    <li><strong>{pendingCount}</strong> paiement(s) pending → marqué(s) <strong className="text-destructive">Perdu</strong></li>
+                    <li><strong>{dueCount}</strong> mensualité(s) en attente ou en retard → marquée(s) <strong className="text-destructive">Perdu</strong></li>
                     <li>Vente passée en statut <strong className="text-destructive">Perdu</strong></li>
                     <li>Les <strong>{nbPaid}</strong> paiement(s) déjà encaissé(s) ({totalPaid.toLocaleString("fr-FR")} €) restent acquis</li>
                   </ul>
