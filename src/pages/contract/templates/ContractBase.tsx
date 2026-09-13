@@ -713,8 +713,8 @@ export function ContractPage({
  * dans l'article "Durée".
  *
  * DURÉE (13/09/2026) : l'accompagnement est limité à huit mois à compter de la
- * signature ; l'accès à la plateforme reste à vie, pendant toute la durée
- * d'exploitation de la plateforme. Avant cette date, l'accompagnement était
+ * signature ; l'accès à la plateforme, à ses modules et à la communauté privée
+ * reste à vie, pendant toute la durée d'exploitation de la plateforme. Avant cette date, l'accompagnement était
  * accordé « pour une durée illimitée ». La garantie ne cite pas les huit mois :
  * elle prolonge l'accompagnement dans ses propres conditions.
  */
@@ -759,12 +759,12 @@ export function ConditionsBlock({
       </Condition>
       <Condition term="Durée.">
         {libertyDurationExtra
-          ? "L'accompagnement et le consulting (sessions d'accompagnement en groupe, reviews personnalisées et accès à la communauté privée) sont fournis pendant une durée de huit (8) mois à compter de la signature du présent contrat."
-          : "L'accompagnement et le consulting (sessions d'accompagnement en groupe et accès à la communauté privée) sont fournis pendant une durée de huit (8) mois à compter de la signature du présent contrat."}{" "}
-        L'accès à la plateforme AL BARAKA et à ses modules est accordé à vie,
-        c'est-à-dire pendant toute la durée d'exploitation de la plateforme,
-        sous réserve du règlement complet du prix et du respect des conditions
-        du présent contrat.
+          ? "L'accompagnement et le consulting (sessions d'accompagnement en groupe et reviews personnalisées) sont fournis pendant une durée de huit (8) mois à compter de la signature du présent contrat."
+          : "L'accompagnement et le consulting (sessions d'accompagnement en groupe) sont fournis pendant une durée de huit (8) mois à compter de la signature du présent contrat."}{" "}
+        L'accès à la plateforme AL BARAKA, à ses modules et à la communauté
+        privée est accordé à vie, c'est-à-dire pendant toute la durée
+        d'exploitation de la plateforme, sous réserve du règlement complet du
+        prix et du respect des conditions du présent contrat.
         {libertyDurationExtra
           ? " L'accès aux futurs modules ajoutés à l'écosystème est inclus dans les mêmes conditions."
           : ""}
