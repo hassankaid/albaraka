@@ -1,8 +1,13 @@
 // ─────────────────────────────────────────────────────────────────────────
 // Envoi de la séquence e-mail d'une conférence, via Resend.
 //
-// Appel : POST { seq: 4 | 5 | 8 | 9, max?: 1..300, conference_date?: "YYYY-MM-DD",
+// Appel : POST { seq: 4 | 5 | 8 | 9 | 10..15, max?: 1..300, conference_date?: "YYYY-MM-DD",
 //                dry_run?: true }
+//
+// Séquence en vigueur depuis le 13/09/2026 : 10 = J-1 (samedi), 8 = M-30,
+// 9 = ouverture, 11 à 15 = après la conférence (dimanche 14h → mercredi 19h).
+// Les seq 11 à 15 excluent, au moment de l'envoi, ceux qui ont réservé un appel
+// ou acheté depuis le live (`emails_a_exclure_conference`).
 //
 // RIEN N'EST ÉCRIT EN DUR POUR UNE SEMAINE DONNÉE. La fonction résout la fiche
 // de la conférence dans `conferences`, et en tire :
@@ -172,6 +177,16 @@ const ZOOM_DEFAUT = "https://us06web.zoom.us/j/85455284733";
 
 const SIG = `<p style="margin-top:24px;">Sidali<br><span style="color:#7a7a7a;">Fondateur de l'écosystème AL BARAKA</span></p>`;
 
+/** Prise de rendez-vous : parcours de qualification puis Calendly (route /rdv). */
+const RDV_URL = "https://plateforme.albarakaecosysteme.com/rdv";
+const CTA_RDV = ctaZoom(RDV_URL, "JE RÉSERVE MON APPEL");
+
+/** Paragraphe du document « Email webi 20_30 ans » : texte brut → <p>. */
+const p = (texte: string) => `<p>${texte}</p>`;
+/** Liste à puces dont la puce est un emoji du texte d'origine. */
+const puces = (lignes: string[]) =>
+  lignes.map((l) => `<p style="margin:6px 0 6px 4px;">${l}</p>`).join("\n");
+
 interface Gabarit { name: string; subject: string; preheader: string; body: string }
 
 // Les gabarits dépendent de la fiche (lien du groupe, heure) : ils sont donc
@@ -228,6 +243,115 @@ ${SIG}`,
 <p>Si tu veux enfin comprendre comment générer des revenus en ligne sans produit, sans audience, et de manière 100% halal&hellip;</p>
 <p>Et découvrir le métier méconnu qui permet à des frères et sœurs de gagner entre 2 000 et 6 000&euro;/mois en 90 jours&hellip;</p>
 ${ctaZoom(f.zoom, "&#10145; Je rejoins maintenant")}
+${SIG}`,
+    },
+    // ── Rappel J-1, texte fourni par Hassan le 13/09/2026 ─────────────
+    10: {
+      name: "J-1 (rappel)",
+      subject: `Rappel – on se retrouve demain à ${f.heure}`,
+      preheader: "Petit rappel : la conférence, c'est demain.",
+      body: `${p("Salam aleykoum {{FIRST_NAME}},")}
+${p("Petit rappel : la conférence, c’est demain.")}
+${p("Et si tu ne l’as pas encore fait, pense à rejoindre le groupe WhatsApp dédié à la conférence.")}
+${p("C’est là qu’on partage toutes les infos importantes avant le webinaire.")}
+${p("➡️ Clique ici pour rejoindre le groupe :")}
+${CTA}
+${p("On se retrouve demain in shaa Allah.")}
+${p("Prépare-toi, on entre dans le concret.")}
+${SIG}`,
+    },
+    // ── Séquence post-conférence, document « Email webi 20_30 ans » ────
+    11: {
+      name: "Dimanche 14h (après la conférence)",
+      subject: "La suite, c'est maintenant",
+      preheader: "Merci d'être venu(e). Voilà ce qu'on a vu aujourd'hui.",
+      body: `${p("Salam aleykoum,")}
+${p("Merci d'être venu(e).")}
+${p("Je sais que bloquer 2h un dimanche, c'est pas rien. Donc respect.")}
+${p("On a parlé de beaucoup de choses aujourd'hui. De cette croyance qui bloque la majorité des musulmans qui veulent entreprendre. Des compétences concrètes qui permettent de faire de l'argent en ligne, halal, à partir de rien. Et de comment sortir de ce sentiment de stagner malgré les efforts.")}
+${p("Voilà ce qu'on a vu :")}
+${puces([
+  "🔹 <strong>Pourquoi \"il faudrait devenir quelqu'un que je suis pas\" est une croyance fausse</strong><br>Hedi et Sabrina pensaient pareil. Ils ont remplacé leur salaire en moins de 4 mois, sans changer qui ils sont.",
+  "🔹 <strong>Les compétences qui permettent de monétiser en ligne</strong><br>Personal branding, storytelling, marketing, community management, setting, closing. Pas besoin de toutes les maîtriser pour commencer.",
+  "🔹 <strong>Comment on accompagne concrètement jusqu'au résultat</strong><br>Coaching 4 fois par semaine, communauté, réseau de partenaires musulmans, plateforme boostée à l'IA.",
+])}
+${p("Si tu veux voir concrètement ce qui te correspond, réserve ton appel. C'est là qu'on regarde ta situation ensemble et qu'on avance, sérieusement.")}
+${CTA_RDV}
+${p("Laisse pas retomber ce que t'as ressenti pendant la conférence.")}
+${SIG}`,
+    },
+    12: {
+      name: "J+1",
+      subject: "Pourquoi tout seul, ça marche jamais",
+      preheader: "Depuis hier, un message revient tout le temps.",
+      body: `${p("Salam aleykoum,")}
+${p("Depuis hier, j'ai reçu pas mal de messages. Il y en a un qui revient tout le temps :")}
+${p("<em>\"Je sais pas par où commencer.\"</em>")}
+${p("Je vais être cash.")}
+${p("Ce message-là, c'est celui de quelqu'un qui va essayer seul, se prendre trois murs dans la tête, et abandonner en se disant \"c'est pas fait pour moi.\" Pas parce qu'il est nul. Parce que personne le corrige, personne lui dit quand c'est faux, personne le rattrape quand il commence à douter.")}
+${p("Chez nous, c'est pas comme ça. Tu rejoins une communauté, des coachs disponibles 4 fois par semaine, et tu te retrouves jamais seul face à un blocage. C'est exactement ce qui a fait la différence pour Hedi, pour Sabrina, pour des centaines d'autres qui savaient pas vendre au départ.")}
+${p("Voilà ce que tu retrouves dans l'Écosystème Al Baraka :")}
+${puces([
+  "✅ Des formations concrètes — Personal Branding, Storytelling, Marketing Digital, Community Management, Setting, Closing",
+  "✅ Coaching en direct 4 fois par semaine",
+  "✅ Une plateforme boostée à l'IA",
+  "✅ La communauté Al Baraka Family",
+  "✅ Un réseau de partenaires + missions freelance",
+  "✅ Un module Muslim Mindset et un module administratif inclus",
+])}
+${p("Deux formules existent selon ta situation, Pass ou Liberty. On regarde ensemble laquelle te correspond pendant l'appel.")}
+${p("⚠️ Une offre spéciale est réservée aux 10 premiers inscrits qui valident leur inscription.")}
+${CTA_RDV}
+${SIG}`,
+    },
+    13: {
+      name: "J+2",
+      subject: "\"Ça va être tout le monde sauf moi\"",
+      preheader: "Je veux te raconter une histoire.",
+      body: `${p("Salam aleykoum,")}
+${p("Je veux te raconter une histoire.")}
+${p("Une des membres de l'écosystème me disait, avant de faire sa première vente : \"Je croyais que ça allait être tout le monde sauf moi.\"")}
+${p("Elle avait vu les autres témoignages. Elle s'était dit, sincèrement, que c'était possible pour eux, mais pas pour elle. Pas assez de temps, pas assez d'expérience, pas le bon profil.")}
+${p("Elle s'est lancée quand même.")}
+${p("Elle a fait sa première vente. Elle raconte elle-même qu'elle ne s'y attendait pas du tout, au point de pleurer en raccrochant.")}
+${p("Retiens ce truc : si elle pensait sincèrement que ça marcherait pour tout le monde sauf elle, et que ça a marché quand même, c'est probablement pas ton profil qui va te bloquer, toi non plus. C'est juste que t'as pas encore essayé avec le bon cadre.")}
+${p("Voilà ce que tu retrouves dans l'Écosystème Al Baraka :")}
+${puces([
+  "✅ Des formations concrètes, Personal Branding, Storytelling, Marketing Digital, Community Management, Setting, Closing",
+  "✅ Coaching en direct 4 fois par semaine",
+  "✅ Une plateforme boostée à l'IA",
+  "✅ La communauté Al Baraka Family",
+  "✅ Un réseau de partenaires + missions freelance",
+])}
+${p("Réserve ton appel, on regarde ensemble si c'est fait pour toi, et quelle formule te correspond.")}
+${CTA_RDV}
+${SIG}`,
+    },
+    14: {
+      name: "J+3 matin",
+      subject: "Un truc que je dois te dire, cash",
+      preheader: "Je vais être direct sur un truc.",
+      body: `${p("Salam aleykoum,")}
+${p("Je vais être direct sur un truc.")}
+${p("Parmi les personnes présentes en direct pendant la conférence, plusieurs ont déjà réservé leur appel. Une offre spéciale a été annoncée pendant le live pour les 10 premiers inscrits, elle ne va pas rester disponible indéfiniment.")}
+${p("C'est pas une technique marketing pour te faire flipper. C'est juste ce qui a été dit en direct, devant tout le monde.")}
+${p("Maintenant, je vais te dire un truc encore plus cash.")}
+${p("Ça fait combien de temps que tu repousses ce genre de décision ? Que tu te dis \"je vais réfléchir\", \"je verrai plus tard\", \"c'est pas le bon moment\" ?")}
+${p("T'as deux choix. Tu continues à chercher seul, à galérer avec des vidéos YouTube et des conseils random. Ou tu réserves 20 minutes, on regarde ta situation ensemble, et tu sais concrètement ce qui est possible pour toi.")}
+${p("Y'a pas de troisième option où ça se débloque tout seul. Ça arrive jamais.")}
+${CTA_RDV}
+${SIG}`,
+    },
+    15: {
+      name: "J+3 soir",
+      subject: "Dernier message",
+      preheader: "Je vais pas te faire un roman.",
+      body: `${p("Salam aleykoum,")}
+${p("Je vais pas te faire un roman.")}
+${p("L'offre annoncée pour les premiers inscrits se termine ce soir. Pas de compte à rebours artificiel, pas de fausse deadline à minuit pile. Juste la réalité : plusieurs places sont déjà prises.")}
+${p("Si t'as encore des doutes après tout ce que je t'ai dit ces derniers jours, c'est normal. Mais les doutes, ça se règle pas en y repensant seul pour la centième fois. Ça se règle sur un appel de 20 minutes, où on regarde ta situation ensemble.")}
+${CTA_RDV}
+${p("C'était le dernier rappel.")}
 ${SIG}`,
     },
     5: {
@@ -312,7 +436,26 @@ serve(async (req) => {
 
   const recipients = await loadAll(supabase, "email_campaign_recipients", "email, first_name, position", { campaign_slug: fiche.campaign_slug }, "position");
 
-  const restants = recipients.filter((r: any) => !alreadySentSet.has(r.email.toLowerCase().trim()));
+  // Exclusions, évaluées AU MOMENT de l'envoi : quelqu'un qui réserve lundi ne
+  // doit plus recevoir « réserve ton appel » mardi. Toujours : adresses en
+  // erreur et plaintes pour spam. Après la conférence (seq 11 à 15) : aussi
+  // ceux qui ont réservé un appel ou acheté depuis le début du live.
+  const estPostConference = seq >= 11 && seq <= 15;
+  const { data: exclus, error: exclusErr } = await supabase.rpc("emails_a_exclure_conference", {
+    p_conference_date: fiche.conference_date,
+    p_post_conference: estPostConference,
+  });
+  if (exclusErr && estPostConference) {
+    // Sans la liste, on relancerait des gens qui ont déjà réservé ou acheté.
+    return new Response(JSON.stringify({ error: "exclusions_indisponibles", detail: exclusErr.message }), { status: 500 });
+  }
+  const exclusSet = new Set((exclus || []).map((e: any) => String(e.email).toLowerCase().trim()));
+
+  const restants = recipients.filter((r: any) => {
+    const email = r.email.toLowerCase().trim();
+    return !alreadySentSet.has(email) && !exclusSet.has(email);
+  });
+  const nbExclus = recipients.filter((r: any) => exclusSet.has(r.email.toLowerCase().trim())).length;
   const todo = restants.slice(0, maxRecipients);
 
   // Ce que la fonction ferait, sans le faire. À appeler avant tout envoi réel.
@@ -331,6 +474,8 @@ serve(async (req) => {
       objet: render(tpl.subject, { FIRST_NAME: "Prénom" }),
       liste_totale: recipients.length,
       deja_envoyes: alreadySentSet.size,
+      exclus: nbExclus,
+      exclusions_disponibles: !exclusErr,
       partiraient_maintenant: todo.length,
       resteraient_apres: Math.max(0, restants.length - todo.length),
     }), { status: 200 });
