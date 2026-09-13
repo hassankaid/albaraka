@@ -223,7 +223,7 @@ export function ContractSignaturePanel({
         throw new Error((result as any).error);
       }
 
-      toast.success("Contrat signé. Bienvenue dans la formation !");
+      toast.success("Contrat signé. Bienvenue dans l'écosystème AL BARAKA !");
       if (onSigned) {
         await onSigned();
       }

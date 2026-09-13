@@ -126,6 +126,26 @@ function sanitize(s: string): string {
     .replace(/['']/g, "'");
 }
 
+/**
+ * Libellé de la ligne de facture, à partir du produit de la vente.
+ *
+ * Depuis le 13/09/2026, les Pass sont facturés comme un accès à la plateforme :
+ * « Accès à la plateforme : Pass Al Baraka » ou « … : Pass Liberty ». Les
+ * anciens produits (Business Developer, Acompte…) gardent leur nom : ces
+ * clients n'ont pas acheté un Pass.
+ *
+ * Le libellé est FIGÉ sur la facture à sa création (`client_invoices.product`) :
+ * une régénération réutilise ce qui a été facturé, elle ne réécrit jamais une
+ * facture déjà émise avec un libellé qu'elle ne portait pas.
+ */
+function libelleFacture(produit: string | null | undefined): string {
+  const p = String(produit || "PASS AL BARAKA").trim();
+  const cle = p.toUpperCase();
+  if (cle === "PASS AL BARAKA") return "Accès à la plateforme : Pass Al Baraka";
+  if (cle === "PASS LIBERTY" || cle === "LIBERTY") return "Accès à la plateforme : Pass Liberty";
+  return p;
+}
+
 function uint8ToBase64(bytes: Uint8Array): string {
   let binary = "";
   for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
@@ -497,7 +517,7 @@ Deno.serve(async (req) => {
         amount: Number(payment.amount),
         payment_number: payment.payment_number,
         total_payments: payment.total_payments,
-        product: sale?.product || "PASS AL BARAKA",
+        product: libelleFacture(sale?.product),
         paid_at: payment.paid_at,
       }).select().single();
       if (insErr) return new Response(JSON.stringify({ error: "Failed to insert invoice row", detail: insErr }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -526,7 +546,9 @@ Deno.serve(async (req) => {
           amount: Number(payment.amount),
           paymentNumber: payment.payment_number,
           totalPayments: payment.total_payments,
-          product: sale?.product || "PASS AL BARAKA",
+          // Libellé figé sur la facture (voir libelleFacture) : une régénération
+          // garde celui d'origine.
+          product: invoiceRow.product || libelleFacture(sale?.product),
           saleType: sale?.sale_type || null,
           paymentCode: contact?.payment_code || null,
           client: {

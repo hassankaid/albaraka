@@ -12,6 +12,7 @@ import {
   EngagementsPass,
   GuaranteePass,
   InvestmentBlock,
+  ObjetContrat,
   PartiesBlock,
   Section,
   SignatureBlock,
@@ -60,9 +61,11 @@ export function ContractPassStandard({ data }: Props) {
       />
 
       {/* Inclusions */}
+      <ObjetContrat programme="AL BARAKA" />
+
       <Section title="Ce que tu reçois avec le Pass AL BARAKA">
         <Text style={styles.sectionLead}>
-          Six formations complètes pour acquérir les compétences essentielles :
+          Six modules complets pour acquérir les compétences essentielles :
         </Text>
         <BulletList
           items={[
@@ -110,15 +113,16 @@ export function ContractPassStandard({ data }: Props) {
               </Text>,
               <Text>
                 <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                  Formations complémentaires incluses :{" "}
+                  Modules complémentaires inclus :{" "}
                 </Text>
                 Muslim Mindset + Module Administratif
               </Text>,
               <Text>
                 <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                  Accompagnement :{" "}
+                  Accompagnement et consulting :{" "}
                 </Text>
-                4 sessions de coaching de groupe par semaine
+                4 sessions d'accompagnement en groupe par semaine, pendant 8
+                mois
               </Text>,
               <Text>
                 <Text style={{ fontFamily: "Helvetica-Bold" }}>

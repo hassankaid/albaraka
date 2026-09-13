@@ -480,6 +480,28 @@ export function PartiesBlock({
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Objet du contrat                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Depuis le 13/09/2026, le contrat ne parle plus de « formation » ni de
+ * « coaching » : il porte sur l'accès à un programme sur la plateforme, assorti
+ * d'un accompagnement et de consulting. Vocabulaire retenu dans tous les
+ * modèles : « modules » (ex-formations), « sessions d'accompagnement en groupe »
+ * (ex-coaching de groupe).
+ */
+export function ObjetContrat({ programme }: { programme: string }) {
+  return (
+    <Section title="Objet du contrat">
+      <Text style={styles.sectionLead}>
+        Le présent contrat a pour objet : accès au programme {programme} sur la
+        plateforme en ligne + accompagnement et consulting.
+      </Text>
+    </Section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Bloc investissement                                                       */
 /* -------------------------------------------------------------------------- */
 
@@ -687,8 +709,14 @@ export function ContractPage({
 /**
  * Bloc "Conditions importantes" — quasi identique entre Pass et Liberty,
  * seule la mention du montant total dans l'article "Paiement" diffère.
- * Liberty ajoute une phrase sur l'accès à vie aux futures formations dans
- * l'article "Durée".
+ * Liberty ajoute les reviews personnalisées et l'accès aux futurs modules
+ * dans l'article "Durée".
+ *
+ * DURÉE (13/09/2026) : l'accompagnement est limité à huit mois à compter de la
+ * signature ; l'accès à la plateforme reste à vie, pendant toute la durée
+ * d'exploitation de la plateforme. Avant cette date, l'accompagnement était
+ * accordé « pour une durée illimitée ». La garantie ne cite pas les huit mois :
+ * elle prolonge l'accompagnement dans ses propres conditions.
  */
 export function ConditionsBlock({
   amountTotal,
@@ -700,7 +728,7 @@ export function ConditionsBlock({
   return (
     <Section title="Conditions importantes">
       <Condition term="Accès immédiat.">
-        Ton accès à la plateforme et aux formations est activé dès la signature
+        Ton accès à la plateforme et à ses modules est activé dès la signature
         de ce contrat. Conformément à l'article L.221-28 du Code de la
         consommation, cet accès immédiat à des contenus numériques entraîne la
         renonciation au délai de rétractation de 14 jours. Aucun remboursement
@@ -730,11 +758,16 @@ export function ConditionsBlock({
         restant due.
       </Condition>
       <Condition term="Durée.">
-        L'accès aux contenus de formation sur la plateforme AL BARAKA est
-        accordé à vie.{" "}
         {libertyDurationExtra
-          ? "L'accès aux sessions de coaching de groupe, aux reviews personnalisées et à la communauté privée est accordé pour une durée illimitée, sous réserve du règlement complet du prix et du respect des conditions du présent contrat. L'accès aux futures formations ajoutées à l'écosystème est également garanti à vie."
-          : "L'accès aux sessions de coaching de groupe et à la communauté privée est également accordé pour une durée illimitée, sous réserve du règlement complet du prix et du respect des conditions du présent contrat."}
+          ? "L'accompagnement et le consulting (sessions d'accompagnement en groupe, reviews personnalisées et accès à la communauté privée) sont fournis pendant une durée de huit (8) mois à compter de la signature du présent contrat."
+          : "L'accompagnement et le consulting (sessions d'accompagnement en groupe et accès à la communauté privée) sont fournis pendant une durée de huit (8) mois à compter de la signature du présent contrat."}{" "}
+        L'accès à la plateforme AL BARAKA et à ses modules est accordé à vie,
+        c'est-à-dire pendant toute la durée d'exploitation de la plateforme,
+        sous réserve du règlement complet du prix et du respect des conditions
+        du présent contrat.
+        {libertyDurationExtra
+          ? " L'accès aux futurs modules ajoutés à l'écosystème est inclus dans les mêmes conditions."
+          : ""}
       </Condition>
       <Condition term="Données personnelles.">
         Tes données sont traitées conformément au RGPD et utilisées uniquement
@@ -776,8 +809,8 @@ export function EngagementsPass() {
       <BulletList
         items={[
           "Un accès fonctionnel et sécurisé à la plateforme AL BARAKA",
-          "Les six formations et le programme ESTIMACTION dans leur intégralité",
-          "Quatre sessions de coaching de groupe par semaine",
+          "Les six modules et le programme ESTIMACTION dans leur intégralité",
+          "Quatre sessions d'accompagnement en groupe par semaine",
           "Un espace communautaire actif et bienveillant",
           "La garantie de continuité d'accompagnement (voir conditions ci-dessus)",
           "La protection de tes données personnelles conformément au RGPD",
@@ -800,7 +833,7 @@ export function EngagementsPass() {
       <Text style={styles.sectionLead}>Ce que nous attendons de toi :</Text>
       <BulletList
         items={[
-          "T'investir sérieusement dans ton parcours et participer aux coachings",
+          "T'investir sérieusement dans ton parcours et participer aux sessions d'accompagnement",
           "Respecter la communauté et adopter un comportement bienveillant",
           "Honorer l'intégralité de tes échéances de paiement",
           "Garder confidentiels les contenus, stratégies et ressources de l'écosystème",
@@ -824,10 +857,10 @@ export function EngagementsLiberty() {
       <BulletList
         items={[
           "Un accès fonctionnel et sécurisé à la plateforme AL BARAKA",
-          "L'ensemble des neuf formations, le programme ESTIMACTION et les formations complémentaires",
-          "Quatre sessions de coaching de groupe par semaine",
+          "L'ensemble des neuf modules, le programme ESTIMACTION et les modules complémentaires",
+          "Quatre sessions d'accompagnement en groupe par semaine",
           "Les reviews personnalisées de tes travaux dans un délai raisonnable",
-          "L'accès aux futures formations ajoutées à l'écosystème, sans surcoût",
+          "L'accès aux futurs modules ajoutés à l'écosystème, sans surcoût",
           "Un espace communautaire actif et bienveillant",
           "La garantie de continuité d'accompagnement (voir conditions ci-dessus)",
           "La protection de tes données personnelles conformément au RGPD",
@@ -850,7 +883,7 @@ export function EngagementsLiberty() {
       <Text style={styles.sectionLead}>Ce que nous attendons de toi :</Text>
       <BulletList
         items={[
-          "T'investir sérieusement dans ton parcours et participer aux coachings",
+          "T'investir sérieusement dans ton parcours et participer aux sessions d'accompagnement",
           "Soumettre tes travaux pour review dans un format exploitable",
           "Respecter la communauté et adopter un comportement bienveillant",
           "Honorer l'intégralité de tes échéances de paiement",
@@ -875,19 +908,19 @@ export function GuaranteePass() {
         </Text>
         <Text style={styles.guaranteeBody}>
           Si, à l'issue d'une période de quatre-vingt-dix (90) jours suivant la
-          fin de ton parcours de formation, tu n'as pas généré au moins
+          fin de ton parcours d'accompagnement, tu n'as pas généré au moins
           3&nbsp;000€ de chiffre d'affaires grâce aux compétences acquises, le
-          Prestataire s'engage à poursuivre ton accompagnement (coaching de
-          groupe et accès à la communauté) jusqu'à l'obtention de ce résultat,
-          sans frais supplémentaires.
+          Prestataire s'engage à poursuivre ton accompagnement (sessions
+          d'accompagnement en groupe et accès à la communauté) jusqu'à
+          l'obtention de ce résultat, sans frais supplémentaires.
         </Text>
         <Text style={styles.guaranteeBody}>
           Cette garantie est conditionnée à la participation active du Client
-          aux sessions de coaching, à la mise en application des stratégies
+          aux sessions d'accompagnement, à la mise en application des stratégies
           enseignées et au règlement complet du prix de la formule. Le Client
           devra être en mesure de justifier de ses efforts et actions réalisées
-          au cours des 90 jours (participation aux coachings, contenus créés,
-          actions de prospection effectuées).
+          au cours des 90 jours (participation aux sessions d'accompagnement,
+          contenus créés, actions de prospection effectuées).
         </Text>
       </View>
     </Section>
@@ -909,18 +942,18 @@ export function GuaranteeLiberty() {
           Si, à l'issue d'une période de six (6) mois d'application stricte des
           process et stratégies enseignés, tu n'as pas généré au moins
           25&nbsp;000€ de chiffre d'affaires, le Prestataire s'engage à
-          poursuivre ton accompagnement (coaching de groupe, reviews
-          personnalisées et accès à la communauté) jusqu'à l'obtention de ce
-          résultat, sans frais supplémentaires.
+          poursuivre ton accompagnement (sessions d'accompagnement en groupe,
+          reviews personnalisées et accès à la communauté) jusqu'à l'obtention
+          de ce résultat, sans frais supplémentaires.
         </Text>
         <Text style={styles.guaranteeBody}>
           Cette garantie est conditionnée à l'application stricte et rigoureuse
           des process, stratégies et méthodologies enseignés pendant les six
-          (6) mois, à la participation active aux sessions de coaching et au
-          règlement complet du prix de la formule. Le Client devra être en
+          (6) mois, à la participation active aux sessions d'accompagnement et
+          au règlement complet du prix de la formule. Le Client devra être en
           mesure de justifier de la mise en œuvre concrète des process
-          (participation aux coachings, contenus créés, offres lancées, actions
-          de prospection, campagnes publicitaires menées).
+          (participation aux sessions d'accompagnement, contenus créés, offres
+          lancées, actions de prospection, campagnes publicitaires menées).
         </Text>
       </View>
     </Section>

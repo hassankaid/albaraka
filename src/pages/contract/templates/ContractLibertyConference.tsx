@@ -16,6 +16,7 @@ import {
   EngagementsLiberty,
   GuaranteeLiberty,
   InvestmentBlock,
+  ObjetContrat,
   PartiesBlock,
   Section,
   SignatureBlock,
@@ -60,9 +61,11 @@ export function ContractLibertyConference({ data }: Props) {
         clientPhone={data.clientPhone}
       />
 
+      <ObjetContrat programme="Liberty" />
+
       <Section title="Ce que tu reçois avec la formule LIBERTY">
         <Text style={styles.sectionLead}>
-          Neuf formations complètes — l'accès le plus complet de l'écosystème :
+          Neuf modules complets — l'accès le plus complet de l'écosystème :
         </Text>
         <Text
           style={{
@@ -72,7 +75,7 @@ export function ContractLibertyConference({ data }: Props) {
             marginBottom: 2,
           }}
         >
-          Les six formations du parcours terrain :
+          Les six modules du parcours terrain :
         </Text>
         <BulletList
           items={[
@@ -116,7 +119,7 @@ export function ContractLibertyConference({ data }: Props) {
             marginBottom: 2,
           }}
         >
-          Les trois formations exclusives LIBERTY :
+          Les trois modules exclusifs LIBERTY :
         </Text>
         <BulletList
           items={[
@@ -148,16 +151,17 @@ export function ContractLibertyConference({ data }: Props) {
               </Text>,
               <Text>
                 <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                  Formations complémentaires incluses :{" "}
+                  Modules complémentaires inclus :{" "}
                 </Text>
                 Muslim Mindset + Module Administratif
               </Text>,
               <Text>
                 <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                  Accompagnement premium :{" "}
+                  Accompagnement et consulting premium :{" "}
                 </Text>
-                4 sessions de coaching de groupe par semaine + review
-                personnalisée de tes offres, scripts et pages de vente
+                4 sessions d'accompagnement en groupe par semaine + review
+                personnalisée de tes offres, scripts et pages de vente, pendant
+                8 mois
               </Text>,
               <Text>
                 <Text style={{ fontFamily: "Helvetica-Bold" }}>
@@ -175,12 +179,12 @@ export function ContractLibertyConference({ data }: Props) {
                 <Text style={{ fontFamily: "Helvetica-Bold" }}>
                   Bonus exclusif LIBERTY :{" "}
                 </Text>
-                Accès automatique et gratuit à toutes les futures formations
+                Accès automatique et gratuit à tous les futurs modules
               </Text>,
               <Text>
                 <Text style={{ fontFamily: "Helvetica-Bold" }}>Outils : </Text>
                 Scripts, templates et ressources téléchargeables liés à
-                l'ensemble des formations
+                l'ensemble des modules
               </Text>,
             ]}
           />

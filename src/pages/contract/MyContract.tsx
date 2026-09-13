@@ -113,7 +113,7 @@ export default function MyContract() {
           <p className="text-muted-foreground text-sm mt-1">
             {isSigned
               ? "Ton contrat a bien été signé."
-              : "Lis attentivement, puis signe pour activer ta formation."}
+              : "Lis attentivement, puis signe pour activer ton accès."}
           </p>
         </div>
       </header>
@@ -141,7 +141,7 @@ export default function MyContract() {
                 Télécharger mon contrat
               </Button>
               <Button asChild>
-                <Link to={trainingTarget}>Aller sur ma formation</Link>
+                <Link to={trainingTarget}>Accéder à la plateforme</Link>
               </Button>
             </div>
           </CardContent>
