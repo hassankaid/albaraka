@@ -14,6 +14,7 @@ import {
 import { GraduationCap, Lock, Award, ArrowRight } from "lucide-react";
 import { useMyCertificates } from "@/hooks/useCertificates";
 import { useFormationEnrollments } from "@/hooks/useFormationEnrollments";
+import { useEffectifsFormations } from "@/hooks/useEffectifsFormations";
 import { useParcours } from "@/hooks/useParcours";
 import { useUserPass } from "@/hooks/useUserPass";
 import { useAppSetting } from "@/hooks/useAppSettings";
@@ -36,6 +37,7 @@ export default function TrainingList() {
       : null;
   const { parcours } = useParcours(parcoursSlug);
   const enrollments = useFormationEnrollments();
+  const { data: effectifs } = useEffectifsFormations(isCeo, userId);
 
   const { data: certificates } = useMyCertificates();
   const certifiedFormationIds = new Set((certificates ?? []).map((c) => c.formation_id));
@@ -199,9 +201,16 @@ export default function TrainingList() {
       {/* Catalogue formations — masqué tant que les early access sont en "coming soon" */}
       {!showComingSoon && (
       <div>
-        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-3">
-          Mes formations
-        </h3>
+        <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+            Mes formations
+          </h3>
+          {isCeo && effectifs && (
+            <span className="text-xs text-muted-foreground">
+              <strong className="text-foreground">{effectifs.total}</strong> élève{effectifs.total > 1 ? "s" : ""} inscrit{effectifs.total > 1 ? "s" : ""} à au moins une formation
+            </span>
+          )}
+        </div>
 
         {isLoading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -271,6 +280,7 @@ export default function TrainingList() {
                   nbChapitresDone={f.nbChapitresDone}
                   nbChapitresTotal={f.nbChapitresTotal}
                   isCeoView={isCeo}
+                  nbEleves={effectifs ? (effectifs.parFormation[f.id] ?? 0) : undefined}
                   hasCertificate={certifiedFormationIds.has(f.id)}
                   onOpen={() => navigate(`/training/${f.slug}`)}
                 />

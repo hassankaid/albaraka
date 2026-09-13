@@ -8,7 +8,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { GraduationCap, PlayCircle, BookOpen, CheckCircle2, EyeOff, Trophy, Award } from "lucide-react";
+import { GraduationCap, PlayCircle, BookOpen, CheckCircle2, EyeOff, Trophy, Award, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FormationCardProps {
@@ -25,6 +25,8 @@ interface FormationCardProps {
   nbChapitresTotal: number;
   isCeoView: boolean;
   hasCertificate?: boolean;
+  /** Vue CEO : nombre d'élèves inscrits à cette formation (non affiché si absent). */
+  nbEleves?: number;
   onOpen: () => void;
 }
 
@@ -35,6 +37,7 @@ export function FormationCard({
   nbChapitresTotal,
   isCeoView,
   hasCertificate = false,
+  nbEleves,
   onOpen,
 }: FormationCardProps) {
   const isDraft = formation.status === "draft";
@@ -111,6 +114,12 @@ export function FormationCard({
         <CardDescription className="line-clamp-2 text-xs">
           {formation.description}
         </CardDescription>
+        {isCeoView && nbEleves !== undefined && (
+          <div className="flex items-center gap-1.5 pt-1 text-xs font-medium text-foreground/80">
+            <Users className="h-3.5 w-3.5 text-primary" />
+            {nbEleves} élève{nbEleves > 1 ? "s" : ""} inscrit{nbEleves > 1 ? "s" : ""}
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="mt-auto space-y-3">
