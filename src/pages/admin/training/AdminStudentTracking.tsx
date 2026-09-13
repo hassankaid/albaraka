@@ -71,6 +71,19 @@ export default function AdminStudentTracking() {
     return Array.from(map.entries()).map(([id, titre]) => ({ id, titre }));
   }, [students]);
 
+  // KPI du haut de page. Le CEO n'est pas un élève : ses inscriptions servent à
+  // tester, il est donc retiré des compteurs (même règle que le catalogue
+  // Training). Les compteurs portent sur tous les élèves, filtres ignorés.
+  const kpis = useMemo(() => {
+    const eleves = (students || []).filter((s) => s.role !== "ceo");
+    const parEtat = { active: 0, moderate: 0, inactive: 0, completed: 0 } as Record<Exclude<ActivityFilter, "all">, number>;
+    eleves.forEach((s) => {
+      const f = getActivityStatus(s).filter;
+      if (f !== "all") parEtat[f] += 1;
+    });
+    return { total: eleves.length, ...parEtat };
+  }, [students]);
+
   // Filtered students
   const filteredStudents = useMemo(() => {
     if (!students) return [];
@@ -105,6 +118,43 @@ export default function AdminStudentTracking() {
             Vue d'ensemble des élèves enrôlés, leur progression et leurs quiz
           </p>
         </div>
+      </div>
+
+      {/* KPI */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="col-span-2 md:col-span-1">
+          <CardContent className="p-4">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Élèves inscrits
+            </p>
+            <p className="mt-1 text-3xl font-bold font-heading text-foreground">
+              {isLoading ? <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /> : kpis.total}
+            </p>
+            <p className="text-xs text-muted-foreground">Inscrits à au moins une formation</p>
+          </CardContent>
+        </Card>
+        {([
+          { cle: "active", label: "🟢 Actifs", aide: "Activité il y a moins de 7 jours" },
+          { cle: "moderate", label: "🟡 Modérés", aide: "Activité entre 7 et 30 jours" },
+          { cle: "inactive", label: "🔴 Inactifs", aide: "Plus de 30 jours ou jamais" },
+        ] as const).map((k) => (
+          <button
+            key={k.cle}
+            type="button"
+            onClick={() => setActivityFilter(activityFilter === k.cle ? "all" : k.cle)}
+            className="text-left"
+          >
+            <Card className={cn("h-full transition-colors hover:border-primary/40", activityFilter === k.cle && "border-primary")}>
+              <CardContent className="p-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{k.label}</p>
+                <p className="mt-1 text-2xl font-bold font-heading text-foreground">
+                  {isLoading ? "…" : kpis[k.cle]}
+                </p>
+                <p className="text-xs text-muted-foreground">{k.aide}</p>
+              </CardContent>
+            </Card>
+          </button>
+        ))}
       </div>
 
       {/* Filters */}

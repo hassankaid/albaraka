@@ -69,31 +69,71 @@ export interface StudentDetail {
   last_activity_at: string | null;
 }
 
+// ─── Lecture paginée ─────────────────────────────────────────
+
+const PAGE = 1000;
+
+/** Lit toutes les lignes d'une requête, page par page (plafond client : 1 000). */
+async function chargerTout(page: (de: number, a: number) => any): Promise<any[]> {
+  const lignes: any[] = [];
+  for (let de = 0; ; de += PAGE) {
+    const { data, error } = await page(de, de + PAGE - 1);
+    if (error) throw error;
+    lignes.push(...(data || []));
+    if (!data || data.length < PAGE) return lignes;
+  }
+}
+
+function grouperParUser(lignes: any[], garder: Set<string>): Map<string, any[]> {
+  const parUser = new Map<string, any[]>();
+  for (const l of lignes) {
+    if (!garder.has(l.user_id)) continue;
+    if (!parUser.has(l.user_id)) parUser.set(l.user_id, []);
+    parUser.get(l.user_id)!.push(l);
+  }
+  return parUser;
+}
+
 // ─── List of all students with aggregates ──────────────────
 
 export function useStudentsList() {
   return useQuery({
     queryKey: ["student-tracking", "list"],
     queryFn: async (): Promise<StudentSummary[]> => {
-      // 1. Active enrollments
-      const { data: enrollments, error: eErr } = await (supabase as any)
-        .from("formation_enrollments")
-        .select("user_id, formation_id, formations(id, slug, titre)")
-        .is("revoked_at", null);
-      if (eErr) throw eErr;
+      // Toutes les lectures sont paginées : le client Supabase plafonne à
+      // 1 000 lignes par requête. Sans pagination, la page ne lisait que
+      // 1 000 des ~5 800 lignes de progression (septembre 2026) : avancement,
+      // dernière activité et statut Actif/Inactif étaient faux pour la
+      // plupart des élèves, sans aucune erreur visible.
+      //
+      // Les filtres par liste d'identifiants (`.in("user_id", [...])`) sont
+      // évités pour la même raison d'échelle : 340 identifiants dans l'URL
+      // approchent la limite de longueur des requêtes. On lit tout, puis on
+      // filtre en mémoire.
 
-      const enrollmentsList = enrollments || [];
+      // 1. Active enrollments
+      const enrollmentsList = await chargerTout((de, a) =>
+        (supabase as any)
+          .from("formation_enrollments")
+          .select("id, user_id, formation_id, formations(id, slug, titre)")
+          .is("revoked_at", null)
+          .order("id", { ascending: true })
+          .range(de, a),
+      );
       if (enrollmentsList.length === 0) return [];
 
-      const userIds = Array.from(new Set(enrollmentsList.map((e: any) => e.user_id)));
+      const userIds = Array.from(new Set(enrollmentsList.map((e: any) => e.user_id))) as string[];
+      const userIdSet = new Set(userIds);
       const formationIds = Array.from(new Set(enrollmentsList.map((e: any) => e.formation_id)));
 
       // 2. Profiles
-      const { data: profiles, error: pErr } = await (supabase as any)
-        .from("profiles")
-        .select("id, email, full_name, role")
-        .in("id", userIds);
-      if (pErr) throw pErr;
+      const profiles = (await chargerTout((de, a) =>
+        (supabase as any)
+          .from("profiles")
+          .select("id, email, full_name, role")
+          .order("id", { ascending: true })
+          .range(de, a),
+      )).filter((p: any) => userIdSet.has(p.id));
 
       // 3. Total chapters per formation
       const { data: allChapters, error: cErr } = await (supabase as any)
@@ -117,27 +157,34 @@ export function useStudentsList() {
         chapterIdsByFormation.get(fId)!.add(c.id);
       });
 
-      // 4. Chapter progress for these users (all chapters)
-      const allChapterIds = publishedChapters.map((c: any) => c.id);
-      const { data: progress, error: prErr } = await (supabase as any)
-        .from("chapitre_progress")
-        .select("user_id, chapitre_id, completed_at")
-        .in("user_id", userIds)
-        .in("chapitre_id", allChapterIds);
-      if (prErr) throw prErr;
+      // 4. Chapter progress (all rows, grouped by user)
+      const progress = await chargerTout((de, a) =>
+        (supabase as any)
+          .from("chapitre_progress")
+          .select("id, user_id, chapitre_id, completed_at")
+          .order("id", { ascending: true })
+          .range(de, a),
+      );
+      const progressByUser = grouperParUser(progress, userIdSet);
 
-      // 5. Quiz attempts for these users
-      const { data: attempts, error: qErr } = await (supabase as any)
-        .from("quiz_attempts")
-        .select("user_id, quiz_id, validated, completed_at")
-        .in("user_id", userIds)
-        .order("completed_at", { ascending: false });
-      if (qErr) throw qErr;
+      // 5. Quiz attempts (most recent first per user)
+      const attempts = await chargerTout((de, a) =>
+        (supabase as any)
+          .from("quiz_attempts")
+          .select("id, user_id, quiz_id, validated, completed_at")
+          .order("id", { ascending: true })
+          .range(de, a),
+      );
+      const attemptsByUser = grouperParUser(attempts, userIdSet);
+      attemptsByUser.forEach((liste) =>
+        liste.sort((x: any, y: any) => String(y.completed_at).localeCompare(String(x.completed_at))),
+      );
+      const enrollmentsByUser = grouperParUser(enrollmentsList, userIdSet);
 
       // ─── Aggregate per user ──────
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
       const result: StudentSummary[] = userIds.map((uid: string) => {
-        const userEnrolls = enrollmentsList.filter((e: any) => e.user_id === uid);
+        const userEnrolls = enrollmentsByUser.get(uid) || [];
         const formations = userEnrolls
           .map((e: any) => e.formations)
           .filter(Boolean)
@@ -153,13 +200,13 @@ export function useStudentsList() {
         });
 
         // Chapters done by user (only counting those in enrolled formations)
-        const userProgress = (progress || []).filter(
-          (p: any) => p.user_id === uid && enrolledChapterIds.has(p.chapitre_id)
+        const userProgress = (progressByUser.get(uid) || []).filter(
+          (p: any) => enrolledChapterIds.has(p.chapitre_id)
         );
         const chaptersDone = userProgress.length;
 
         // Quiz stats - latest attempt per quiz
-        const userAttempts = (attempts || []).filter((a: any) => a.user_id === uid);
+        const userAttempts = attemptsByUser.get(uid) || [];
         const latestPerQuiz = new Map<string, any>();
         userAttempts.forEach((a: any) => {
           if (!latestPerQuiz.has(a.quiz_id)) {
