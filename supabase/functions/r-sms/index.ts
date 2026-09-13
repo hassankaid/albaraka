@@ -19,9 +19,13 @@
 // donc là où il se passe encore quelque chose.
 //
 // Effet de bord bienvenu : plus rien à mettre à jour ici chaque semaine.
+//
+// SAUF LE DIMANCHE ENTRE LE DÉBUT ET MIDI (depuis le 13/09/2026) : le lien sert
+// encore le groupe du jour, là où est posté le lien du direct. Voir `bascule.ts`.
 // ─────────────────────────────────────────────────────────────────────────
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { conferenceDuJourAvantMidi } from "./bascule.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
@@ -43,13 +47,32 @@ async function groupeCourant(supabase: any): Promise<string> {
   }
 }
 
+// Le dimanche avant midi, le groupe de la conférence du jour, même si elle a
+// déjà commencé ; sinon, celui de la conférence courante.
+async function groupeADesservir(supabase: any): Promise<string> {
+  const duJour = conferenceDuJourAvantMidi(new Date());
+  if (duJour) {
+    try {
+      const { data } = await supabase
+        .from("conferences")
+        .select("whatsapp_group_url")
+        .eq("conference_date", duJour)
+        .maybeSingle();
+      if (data?.whatsapp_group_url) return data.whatsapp_group_url;
+    } catch {
+      // Base injoignable ou dimanche sans conférence : règle habituelle.
+    }
+  }
+  return groupeCourant(supabase);
+}
+
 serve(async (req) => {
   const url = new URL(req.url);
   const token = url.searchParams.get("t");
   const seq = url.searchParams.get("s");
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  const destination = await groupeCourant(supabase);
+  const destination = await groupeADesservir(supabase);
 
   if (!token) {
     return Response.redirect(destination, 302);
