@@ -8,6 +8,10 @@
       "source": "/s/:token",
       "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/r-sms?t=:token"
     },
+    {
+      "source": "/stop/:token",
+      "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/desabonnement?t=:token"
+    },
 
     {
       "source": "/(webinaire|vsl|appel-conference|temoignages)",

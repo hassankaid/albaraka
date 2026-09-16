@@ -47,7 +47,11 @@ const HEURE_DEFAUT = "11h00";
 // n'existe pas dans l'application, et en mai 8 personnes ont cliqué dans le
 // vide avant que 11 plaintes pour spam ne tombent. Un mailto ne dépend d'aucun
 // déploiement.
-const UNSUB = "mailto:contact@albarakaecosysteme.com?subject=Desabonnement";
+// Désabonnement : une page réelle, un jeton par adresse. L'ancien « mailto »
+// pointait vers contact@albarakaecosysteme.com — un domaine sans MX, donc une
+// adresse qui ne reçoit rien. Personne ne pouvait se désabonner, et le seul
+// bouton restant était « Spam ».
+const UNSUB_BASE = "https://plateforme.albarakaecosysteme.com/stop";
 
 const DEFAULT_MAX = 150;
 const DELAY_MS = 230;
@@ -477,6 +481,7 @@ serve(async (req) => {
       exclus: nbExclus,
       exclusions_disponibles: !exclusErr,
       partiraient_maintenant: todo.length,
+      lien_desabonnement: `${UNSUB_BASE}/<jeton propre à chaque destinataire>`,
       resteraient_apres: Math.max(0, restants.length - todo.length),
     }), { status: 200 });
   }
@@ -487,14 +492,36 @@ serve(async (req) => {
 
   const htmlTemplate = wrap(tpl.preheader, tpl.body);
 
+  // Un jeton de désabonnement par destinataire, créé au besoin. Si la base ne
+  // répond pas, on envoie quand même : mieux vaut un message sans lien de
+  // désabonnement qu'une conférence annoncée à personne. Le cas est signalé
+  // dans la réponse.
+  const { data: jetons, error: jetonsErr } = await supabase.rpc("jetons_desabonnement_email", {
+    p_emails: todo.map((r: any) => r.email),
+  });
+  if (jetonsErr) console.error("[desabonnement] jetons indisponibles:", jetonsErr.message);
+  const jetonParEmail = new Map<string, string>(
+    (jetons || []).map((j: any) => [String(j.email).toLowerCase().trim(), j.token]),
+  );
+
   const logs: any[] = [];
   let okCount = 0;
   let failCount = 0;
 
   for (const r of todo) {
-    const vars = { FIRST_NAME: r.first_name || "frère/sœur", UNSUB_URL: UNSUB };
+    const jeton = jetonParEmail.get(String(r.email).toLowerCase().trim());
+    const lienStop = jeton ? `${UNSUB_BASE}/${jeton}` : UNSUB_BASE;
+    const vars = { FIRST_NAME: r.first_name || "frère/sœur", UNSUB_URL: lienStop };
     const subject = render(tpl.subject, vars);
     const html = render(htmlTemplate, vars);
+    // Gmail et Yahoo affichent leur propre bouton « Se désabonner » à partir de
+    // ces deux en-têtes (RFC 8058). C'est ce bouton, ou celui marqué « Spam ».
+    const entetes = jeton
+      ? {
+          "List-Unsubscribe": `<${lienStop}>`,
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        }
+      : undefined;
 
     let attempt = 0;
     let lastResp: any = null;
@@ -504,6 +531,7 @@ serve(async (req) => {
         to: [r.email],
         reply_to: REPLY_TO,
         subject, html,
+        ...(entetes ? { headers: entetes } : {}),
         tags: [
           { name: "campaign", value: fiche.campaign_slug },
           { name: "seq", value: String(seq) },
