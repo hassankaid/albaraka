@@ -30,6 +30,10 @@
     },
 
     {
+      "source": "/desabonnement",
+      "destination": "/desabonnement.html"
+    },
+    {
       "source": "/livraison-tunnels",
       "has": [
         {

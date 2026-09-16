@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Se désabonner — AL BARAKA</title>
+<style>
+  body { margin:0; background:#f5f3ee; color:#1a1a1a;
+         font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; }
+  .boite { max-width:520px; margin:0 auto; padding:64px 24px; text-align:center; }
+  .carte { background:#fff; border-radius:12px; padding:40px 32px; }
+  .marque { font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#C9A84C; font-weight:700; }
+  h1 { font-size:22px; margin:14px 0 10px; }
+  p { font-size:15px; line-height:1.6; color:#555; margin:0; }
+  button { margin-top:28px; background:#1a1a1a; color:#fff; border:0; border-radius:999px;
+           padding:14px 28px; font-size:15px; font-weight:600; cursor:pointer; }
+  button[disabled] { opacity:.5; cursor:default; }
+</style>
+</head>
+<body>
+<div class="boite"><div class="carte">
+  <div class="marque">AL BARAKA</div>
+  <h1 id="titre">Se désabonner</h1>
+  <p id="message">Tu ne recevras plus nos e-mails d'invitation aux conférences. Confirme ci-dessous.</p>
+  <button id="bouton" type="button">Confirmer le désabonnement</button>
+</div></div>
+<script>
+  // Le jeton voyage dans l'URL. La page fait elle-même l'appel et affiche le
+  // résultat : la passerelle des fonctions Supabase réécrit le type de contenu
+  // des réponses, une page servie depuis là s'afficherait en code source.
+  var jeton = new URLSearchParams(location.search).get("t") || "";
+  var titre = document.getElementById("titre");
+  var message = document.getElementById("message");
+  var bouton = document.getElementById("bouton");
+
+  function fin(t, m) { titre.textContent = t; message.textContent = m; bouton.style.display = "none"; }
+
+  if (!jeton) {
+    fin("Lien incomplet", "Ce lien de désabonnement est incomplet. Utilise celui reçu dans l'e-mail.");
+  }
+
+  bouton.addEventListener("click", function () {
+    bouton.disabled = true;
+    bouton.textContent = "Un instant…";
+    fetch("/stop/" + encodeURIComponent(jeton), {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "List-Unsubscribe=One-Click",
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error(r.status);
+        fin("C'est fait", "Tu ne recevras plus nos e-mails. Tu restes le bienvenu sur la plateforme.");
+      })
+      .catch(function () {
+        bouton.disabled = false;
+        bouton.textContent = "Réessayer";
+        message.textContent = "On n'a pas pu enregistrer ta demande. Réessaie dans quelques instants.";
+      });
+  });
+</script>
+</body>
+</html>
