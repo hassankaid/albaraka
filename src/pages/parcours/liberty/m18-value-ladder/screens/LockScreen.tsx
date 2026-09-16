@@ -7,6 +7,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useParcours, useCompleteChapitre } from "@/hooks/useParcours";
+import { useProchaineEtapeLiberty } from "@/hooks/useProchaineEtapeLiberty";
 import { supabase } from "@/integrations/supabase/client";
 import { type M18State, LEVELS, toIntPrice, fmtEur } from "../lib/types";
 import { computeLTV, hasLT, getNiv, getProgrammeNom, canEnterLock } from "../lib/validations";
@@ -17,6 +18,7 @@ interface Props { state: M18State; setState: (n: (p: M18State) => M18State) => v
 
 export function LockScreen({ state, setState, userId, onBack, onGoToContent, flushNow }: Props) {
   const navigate = useNavigate();
+  const prochaine = useProchaineEtapeLiberty();
   const [commit, setCommit] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const { parcours } = useParcours("liberty");
@@ -114,7 +116,7 @@ export function LockScreen({ state, setState, userId, onBack, onGoToContent, flu
           </AlertDialogHeader>
           <AlertDialogFooter>
             <button type="button" onClick={onGoToContent} className="mr-2 rounded-full px-4 py-2 text-[13px] font-medium" style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.4)", color: "#C9A84C" }}>Revenir au contenu</button>
-            <AlertDialogAction onClick={() => { setShowSuccess(false); navigate("/parcours/liberty"); }} style={{ background: "#C9A84C", color: "#080808" }}>Retour au parcours</AlertDialogAction>
+            <AlertDialogAction onClick={() => { setShowSuccess(false); navigate(prochaine.route); }} style={{ background: "#C9A84C", color: "#080808" }}>{prochaine.libelle}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

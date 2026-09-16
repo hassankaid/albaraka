@@ -9,6 +9,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useParcours, useCompleteChapitre } from "@/hooks/useParcours";
+import { useProchaineEtapeLiberty } from "@/hooks/useProchaineEtapeLiberty";
 import { supabase } from "@/integrations/supabase/client";
 import { pickAvatarName, type M2State } from "../lib/types";
 
@@ -24,6 +25,7 @@ const AVG_SCORE_THRESHOLD = 60;
 
 export function LockScreen({ state, setState, userId, onBack, flushNow }: LockProps) {
   const navigate = useNavigate();
+  const prochaine = useProchaineEtapeLiberty();
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const { parcours } = useParcours("liberty");
@@ -275,14 +277,14 @@ export function LockScreen({ state, setState, userId, onBack, flushNow }: LockPr
             <AlertDialogAction
               onClick={() => {
                 setShowSuccess(false);
-                navigate("/parcours/liberty");
+                navigate(prochaine.route);
               }}
               style={{
                 background: "linear-gradient(135deg, #C9A84C 0%, #E8C770 100%)",
                 color: "#FFFFFF",
               }}
             >
-              Retour au parcours
+              {prochaine.libelle}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

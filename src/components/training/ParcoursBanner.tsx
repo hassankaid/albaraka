@@ -6,6 +6,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { useParcours } from "@/hooks/useParcours";
 import { useUserPass } from "@/hooks/useUserPass";
 import { useAuth } from "@/hooks/useAuth";
+import { abregerTitreModule } from "@/lib/parcoursAcces";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function ParcoursBanner() {
@@ -67,6 +68,14 @@ function SingleParcoursBanner({ slug }: { slug: string }) {
     progress?.currentChapitreId
       ? parcours.phases.flatMap((p) => p.chapitres).find((c) => c.id === progress.currentChapitreId)
       : null;
+  // Quand le prochain pas est d'aller voir la théorie, on annonce le module de
+  // formation plutôt que l'outil, sinon l'élève cherche au mauvais endroit.
+  const theorieAVoir = progress?.currentChapitreId
+    ? progress.theorieManquante(progress.currentChapitreId)
+    : null;
+  const prochainLibelle = theorieAVoir
+    ? `${abregerTitreModule(theorieAVoir.titre)} (théorie)`
+    : nextChapitre?.titre ?? null;
 
   return (
     <div className="rounded-2xl border bg-gradient-to-br from-amber-500/10 via-card to-card p-5 md:p-6">
@@ -92,9 +101,9 @@ function SingleParcoursBanner({ slug }: { slug: string }) {
         <Progress value={percent} className="h-1.5" />
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{percent}%</span>
-          {nextChapitre && (
+          {prochainLibelle && (
             <span className="truncate ml-3 max-w-[60%] text-right">
-              Prochain : {nextChapitre.titre}
+              Prochain : {prochainLibelle}
             </span>
           )}
         </div>

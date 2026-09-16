@@ -10,6 +10,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useParcours, useCompleteChapitre } from "@/hooks/useParcours";
+import { useProchaineEtapeLiberty } from "@/hooks/useProchaineEtapeLiberty";
 import { pushM1ProfilePivot } from "../lib/profilePivot";
 import { exportM1PDF } from "../lib/exportPDF";
 import type { M1State } from "../lib/types";
@@ -26,6 +27,7 @@ export function LockScreen({
   state, setState, userId, onBack, flushNow,
 }: LockScreenProps) {
   const navigate = useNavigate();
+  const prochaine = useProchaineEtapeLiberty();
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const { parcours } = useParcours("liberty");
@@ -103,9 +105,9 @@ export function LockScreen({
     URL.revokeObjectURL(url);
   }
 
-  function goToM2() {
+  function allerEtapeSuivante() {
     setShowSuccess(false);
-    navigate("/parcours/liberty");
+    navigate(prochaine.route);
   }
 
   return (
@@ -249,13 +251,13 @@ export function LockScreen({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction
-              onClick={goToM2}
+              onClick={allerEtapeSuivante}
               style={{
                 background: "linear-gradient(135deg, #C9A84C 0%, #E8C770 100%)",
                 color: "#FFFFFF",
               }}
             >
-              Accéder au parcours Liberty
+              {prochaine.libelle}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

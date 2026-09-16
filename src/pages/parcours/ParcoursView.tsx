@@ -7,6 +7,7 @@ import {
   useUnlockFormation,
   type ParcoursChapitre,
   type ParcoursPhase,
+  type TheorieRequise,
 } from "@/hooks/useParcours";
 import { useUserPass } from "@/hooks/useUserPass";
 import { useAuth } from "@/hooks/useAuth";
@@ -117,6 +118,7 @@ export default function ParcoursView() {
             isCurrentPhase={progress?.currentPhaseNumero === phase.numero}
             completedIds={progress?.completedChapitreIds ?? new Set()}
             isAccessible={progress?.isChapitreAccessible ?? (() => false)}
+            theorieManquante={progress?.theorieManquante ?? (() => null)}
           />
         ))}
       </div>
@@ -176,12 +178,13 @@ function ParcoursHeader({
 }
 
 function PhaseBlock({
-  phase, isCurrentPhase, completedIds, isAccessible,
+  phase, isCurrentPhase, completedIds, isAccessible, theorieManquante,
 }: {
   phase: ParcoursPhase;
   isCurrentPhase: boolean;
   completedIds: Set<string>;
   isAccessible: (id: string) => boolean;
+  theorieManquante: (id: string) => TheorieRequise | null;
 }) {
   return (
     <section className={cn("space-y-3", !isCurrentPhase && "opacity-90")}>
@@ -203,6 +206,7 @@ function PhaseBlock({
             chapitre={ch}
             isCompleted={completedIds.has(ch.id)}
             isAccessible={isAccessible(ch.id)}
+            theorie={theorieManquante(ch.id)}
           />
         ))}
       </div>
@@ -211,11 +215,12 @@ function PhaseBlock({
 }
 
 function ChapitreRow({
-  chapitre, isCompleted, isAccessible,
+  chapitre, isCompleted, isAccessible, theorie,
 }: {
   chapitre: ParcoursChapitre;
   isCompleted: boolean;
   isAccessible: boolean;
+  theorie: TheorieRequise | null;
 }) {
   if (chapitre.type === "milestone") {
     return (
@@ -236,7 +241,12 @@ function ChapitreRow({
     );
   }
   return (
-    <VideoRow chapitre={chapitre} isCompleted={isCompleted} isAccessible={isAccessible} />
+    <VideoRow
+      chapitre={chapitre}
+      isCompleted={isCompleted}
+      isAccessible={isAccessible}
+      theorie={theorie}
+    />
   );
 }
 
@@ -267,11 +277,18 @@ function BaseRow({
 }
 
 function VideoRow({
-  chapitre, isCompleted, isAccessible,
-}: { chapitre: ParcoursChapitre; isCompleted: boolean; isAccessible: boolean }) {
+  chapitre, isCompleted, isAccessible, theorie,
+}: {
+  chapitre: ParcoursChapitre;
+  isCompleted: boolean;
+  isAccessible: boolean;
+  theorie: TheorieRequise | null;
+}) {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
-  const accent = isCompleted ? "done" : !isAccessible ? "locked" : "current";
+  // Un module dont la théorie n'est pas vue n'est pas "verrouillé plus loin" :
+  // c'est l'étape en cours, et l'élève a un pas précis à faire.
+  const accent = isCompleted ? "done" : theorie ? "current" : !isAccessible ? "locked" : "current";
   const openDetail = () => {
     if (!isAccessible) return;
     // Entrée directe dans l'outil si le module en a un (plus de page intermédiaire) ;
@@ -285,6 +302,8 @@ function VideoRow({
       <div className="shrink-0 mt-1">
         {isCompleted ? (
           <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+        ) : theorie ? (
+          <BookOpen className="h-5 w-5 text-amber-500" />
         ) : !isAccessible ? (
           <Lock className="h-5 w-5 text-muted-foreground" />
         ) : (
@@ -299,10 +318,23 @@ function VideoRow({
             <span className="text-xs text-muted-foreground">· {chapitre.duree_estimee_minutes} min</span>
           )}
         </div>
-        {chapitre.description && isAccessible && (
+        {chapitre.description && (isAccessible || !!theorie) && (
           <p className="mt-1 text-xs text-muted-foreground whitespace-pre-line line-clamp-2">
             {chapitre.description}
           </p>
+        )}
+        {theorie && (
+          <div className="mt-3 space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Vois d'abord la théorie : <span className="text-foreground">{theorie.titre}</span>
+            </p>
+            <Button size="sm" variant="outline" className="gap-2 border-amber-500/40 text-amber-600 hover:bg-amber-500/10"
+              onClick={(e) => { e.stopPropagation(); navigate(theorie.route); }}>
+              <BookOpen className="h-3.5 w-3.5" />
+              Voir le module
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         )}
         {isAccessible && (
           <div className="mt-2 text-xs text-primary font-medium">

@@ -8,6 +8,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useParcours, useCompleteChapitre } from "@/hooks/useParcours";
+import { useProchaineEtapeLiberty } from "@/hooks/useProchaineEtapeLiberty";
 import { supabase } from "@/integrations/supabase/client";
 import { exportM7PDF } from "../lib/exportPDF";
 import {
@@ -25,6 +26,7 @@ interface Props {
 
 export function LockScreen({ state, setState, userId, onBack, flushNow }: Props) {
   const navigate = useNavigate();
+  const prochaine = useProchaineEtapeLiberty();
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const { parcours } = useParcours("liberty");
@@ -262,9 +264,9 @@ export function LockScreen({ state, setState, userId, onBack, flushNow }: Props)
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction
-              onClick={() => { setShowSuccess(false); navigate("/parcours/liberty"); }}
+              onClick={() => { setShowSuccess(false); navigate(prochaine.route); }}
               style={{ background: "linear-gradient(135deg, #C9A84C 0%, #E8C770 100%)", color: "#FFFFFF" }}>
-              Retour au parcours
+              {prochaine.libelle}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

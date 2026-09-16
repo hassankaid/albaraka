@@ -14,6 +14,11 @@ interface ChapterCompletionModalProps {
   hasNextChapter: boolean;
   onGoToNext: () => void;
   onGoToFormation: () => void;
+  /**
+   * Outil interactif que ce chapitre vient de débloquer (parcours Liberty).
+   * Quand il existe, c'est le pas suivant à proposer en premier.
+   */
+  outil?: { nom: string; estOutil: boolean; onGo: () => void } | null;
 }
 
 export function ChapterCompletionModal({
@@ -23,6 +28,7 @@ export function ChapterCompletionModal({
   hasNextChapter,
   onGoToNext,
   onGoToFormation,
+  outil = null,
 }: ChapterCompletionModalProps) {
   const firedRef = useRef(false);
 
@@ -62,20 +68,32 @@ export function ChapterCompletionModal({
             </h2>
             <p className="text-sm text-muted-foreground">
               Tu as terminé <span className="font-medium text-foreground">{chapterTitle}</span>.
-              Continue sur ta lancée !
+              {outil && outil.estOutil
+                ? " À toi de jouer : l'outil est ouvert."
+                : " Continue sur ta lancée !"}
             </p>
           </div>
 
           {/* Actions */}
           <div className="flex flex-col gap-2 w-full mt-2 animate-in fade-in-0 duration-500 delay-300">
+            {outil && (
+              <Button onClick={outil.onGo} className="w-full gap-2">
+                {outil.estOutil ? `Passer à l'outil ${outil.nom}` : `Passer à ${outil.nom}`}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
             {hasNextChapter && (
-              <Button onClick={onGoToNext} className="w-full gap-2">
+              <Button
+                variant={outil ? "outline" : "default"}
+                onClick={onGoToNext}
+                className="w-full gap-2"
+              >
                 Chapitre suivant
                 <ArrowRight className="h-4 w-4" />
               </Button>
             )}
             <Button
-              variant={hasNextChapter ? "outline" : "default"}
+              variant={hasNextChapter || outil ? "outline" : "default"}
               onClick={onGoToFormation}
               className="w-full gap-2"
             >

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  ArrowLeft, ArrowRight, CheckCircle2, PlayCircle, Clock, Video, Sparkles,
+  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, PlayCircle, Clock, Video, Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useParcours, useCompleteChapitre } from "@/hooks/useParcours";
@@ -39,6 +39,8 @@ export default function ParcoursChapitreDetail() {
 
   const isCompleted = chapitre ? progress?.completedChapitreIds.has(chapitre.id) ?? false : false;
   const isAccessible = chapitre ? progress?.isChapitreAccessible(chapitre.id) ?? false : false;
+  // Module de théorie à voir avant ce chapitre (parcours Liberty).
+  const theorie = chapitre ? progress?.theorieManquante(chapitre.id) ?? null : null;
 
   if (isLoading || passLoading) {
     return (
@@ -148,8 +150,34 @@ export default function ParcoursChapitreDetail() {
         </Card>
       )}
 
+      {/* Théorie à voir d'abord : on propose le module plutôt que l'outil */}
+      {theorie && (
+        <Card className="border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/5 to-amber-500/0">
+          <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600">
+                <BookOpen className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="text-xs font-semibold uppercase tracking-wider text-amber-600">
+                  La théorie d'abord
+                </div>
+                <h3 className="font-semibold text-foreground">{theorie.titre}</h3>
+                <p className="text-sm text-muted-foreground">
+                  Vois ce module de la formation, puis reviens mettre en pratique ici.
+                </p>
+              </div>
+            </div>
+            <Button onClick={() => navigate(theorie.route)} className="shrink-0 gap-2 bg-amber-500 text-white hover:bg-amber-600">
+              Voir le module
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Outil interactif Liberty (si disponible pour ce chapitre) */}
-      {toolRoute && (
+      {toolRoute && (isAccessible || isCompleted) && (
         <Card className="border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/5 to-amber-500/0">
           <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
             <div className="flex items-start gap-3">
@@ -204,6 +232,10 @@ export default function ParcoursChapitreDetail() {
             <CheckCircle2 className="h-4 w-4" />
             Marquer terminé
           </Button>
+        ) : theorie ? (
+          <Badge variant="secondary" className="text-xs">
+            Vois d'abord {theorie.titre}
+          </Badge>
         ) : (
           <Badge variant="secondary" className="text-xs">
             Verrouillé — termine les chapitres précédents

@@ -7,6 +7,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useParcours, useCompleteChapitre } from "@/hooks/useParcours";
+import { useProchaineEtapeLiberty } from "@/hooks/useProchaineEtapeLiberty";
 import { supabase } from "@/integrations/supabase/client";
 import { type M16State, type FormatKey, FORMATS_LT, LIVRABLE_LABEL } from "../lib/types";
 import { ctx, pricingEval } from "../lib/validations";
@@ -17,6 +18,7 @@ interface Props { state: M16State; setState: (n: (p: M16State) => M16State) => v
 
 export function LockScreen({ state, setState, userId, onBack, onGoToGeneration, flushNow, toast }: Props) {
   const navigate = useNavigate();
+  const prochaine = useProchaineEtapeLiberty();
   const [showSuccess, setShowSuccess] = useState(false);
   const { parcours } = useParcours("liberty");
   const completeMutation = useCompleteChapitre();
@@ -98,7 +100,7 @@ export function LockScreen({ state, setState, userId, onBack, onGoToGeneration, 
             <AlertDialogDescription className="text-white/70">Ton produit d'entrée est gravé et transmis au module suivant (M17 boosters). Tu peux re-télécharger ton document éditable à tout moment depuis cet écran.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => { setShowSuccess(false); navigate("/parcours/liberty"); }} style={{ background: "#C9A84C", color: "#080808" }}>Retour au parcours</AlertDialogAction>
+            <AlertDialogAction onClick={() => { setShowSuccess(false); navigate(prochaine.route); }} style={{ background: "#C9A84C", color: "#080808" }}>{prochaine.libelle}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -29,7 +29,9 @@ import { isFormationCompleteForUser } from "@/lib/certificateEligibility";
 import { autoCompleteParcoursFormationChapter } from "@/lib/parcoursAutoComplete";
 import { ChapterQuizCard } from "@/components/training/QuizInFormation";
 import { useLockedChapitres } from "@/hooks/useQuizzes";
-import { Lock } from "lucide-react";
+import { useOutilLibertyDuChapitre } from "@/hooks/useOutilLiberty";
+import { useUserPass } from "@/hooks/useUserPass";
+import { Lock, Sparkles } from "lucide-react";
 
 interface ChapitreVideo {
   id: string;
@@ -57,6 +59,7 @@ export default function ChapterViewer() {
   const { profile } = useAuth();
   const userId = profile?.id;
   const isCeo = profile?.role === "ceo";
+  const { hasLiberty } = useUserPass();
   const [sidebarOpenMobile, setSidebarOpenMobile] = useState(false);
   const [completionModalOpen, setCompletionModalOpen] = useState(false);
   const [formationCompletionOpen, setFormationCompletionOpen] = useState(false);
@@ -131,6 +134,9 @@ export default function ChapterViewer() {
     },
   });
 
+  // ── Outil interactif que ce module de théorie débloque ──────
+  const { data: outilLie } = useOutilLibertyDuChapitre(chapitreId, hasLiberty || isCeo);
+
   // ── Video IDs for progress tracking ─────────────────────────
   const videoIds = useMemo(
     () => chapterData?.videos.map((v) => v.id) ?? [],
@@ -170,6 +176,7 @@ export default function ChapterViewer() {
       }
       refetchCompletion();
       queryClient.invalidateQueries({ queryKey: ["training"] });
+      queryClient.invalidateQueries({ queryKey: ["parcours-theories"] });
     },
     onError: () => {
       toast.error("Impossible de mettre à jour la progression.");
@@ -194,6 +201,7 @@ export default function ChapterViewer() {
       }
       refetchCompletion();
       queryClient.invalidateQueries({ queryKey: ["training"] });
+      queryClient.invalidateQueries({ queryKey: ["parcours-theories"] });
     },
     onError: () => {
       toast.error("Impossible de mettre à jour la progression.");
@@ -631,6 +639,40 @@ export default function ChapterViewer() {
             </Button>
           </div>
 
+          {/* Passage à la pratique : outil interactif Liberty lié à ce module */}
+          {outilLie && (
+            <div className="rounded-xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/5 to-transparent p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">
+                    {outilLie.estOutil ? "Place à la pratique" : "Étape suivante"}
+                  </p>
+                  <p className="text-sm text-foreground">
+                    {outilLie.estOutil
+                      ? isCompleted
+                        ? `Ce module ouvre l'outil ${outilLie.nom}. À toi de jouer.`
+                        : `Une fois ce module terminé, tu enchaînes sur l'outil ${outilLie.nom}.`
+                      : isCompleted
+                        ? `Ce module ouvre l'étape ${outilLie.nom} de ton parcours.`
+                        : `Une fois ce module terminé, tu passes à l'étape ${outilLie.nom}.`}
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                disabled={!isCompleted && !isCeo}
+                onClick={() => navigate(outilLie.route)}
+                className="shrink-0 gap-2 bg-amber-500 text-white hover:bg-amber-600"
+              >
+                {outilLie.estOutil ? `Ouvrir l'outil ${outilLie.nom}` : `Aller à ${outilLie.nom}`}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
           {/* Quiz de chapitre (si attaché) */}
           <ChapterQuizCard
             chapitreId={chapitre.id}
@@ -680,6 +722,18 @@ export default function ChapterViewer() {
         onOpenChange={setCompletionModalOpen}
         chapterTitle={chapitre.titre}
         hasNextChapter={!!navData?.next_chapitre_id}
+        outil={
+          outilLie
+            ? {
+                nom: outilLie.nom,
+                estOutil: outilLie.estOutil,
+                onGo: () => {
+                  setCompletionModalOpen(false);
+                  navigate(outilLie.route);
+                },
+              }
+            : null
+        }
         onGoToNext={() => {
           setCompletionModalOpen(false);
           if (navData?.next_chapitre_id) {

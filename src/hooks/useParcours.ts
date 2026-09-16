@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPass, type PassType } from "@/hooks/useUserPass";
+import { calculerAccesChapitres } from "@/lib/parcoursAcces";
 
 export type ChapitreType = "video" | "redirect_formation" | "milestone";
 
@@ -17,6 +18,8 @@ export interface ParcoursChapitre {
   vimeo_id: string | null;
   video_url: string | null;
   formation_id: string | null;
+  /** Module de théorie à valider avant d'ouvrir ce chapitre (null = aucun). */
+  theorie_chapitre_id: string | null;
   milestone_message: string | null;
   milestone_emoji: string | null;
   status: string;
@@ -42,6 +45,15 @@ export interface Parcours {
   phases: ParcoursPhase[];
 }
 
+/** Module de théorie exigé avant un chapitre, tel qu'affiché à l'élève. */
+export interface TheorieRequise {
+  chapitreId: string;
+  titre: string;
+  /** Page du module dans la formation. */
+  route: string;
+  faite: boolean;
+}
+
 export interface ParcoursProgress {
   completedChapitreIds: Set<string>;
   totalChapitres: number;
@@ -50,9 +62,27 @@ export interface ParcoursProgress {
   currentChapitreId: string | null;
   currentPhaseNumero: number | null;
   isChapitreAccessible: (chapitreId: string) => boolean;
+  /**
+   * Théorie qui bloque ce chapitre — seulement quand c'est l'étape courante,
+   * pour ne pas afficher le même appel à l'action sur dix lignes d'affilée.
+   */
+  theorieManquante: (chapitreId: string) => TheorieRequise | null;
+  /**
+   * Théorie rattachée à ce chapitre et pas encore validée, où qu'il se trouve
+   * dans le parcours. Sert à orienter l'élève vers son prochain pas sans
+   * dépendre de l'état exact de la progression au moment du clic.
+   */
+  theoriePour: (chapitreId: string) => TheorieRequise | null;
 }
 
-function computeProgress(parcours: Parcours, completedIds: Set<string>): ParcoursProgress {
+type CatalogueTheories = Map<string, TheorieRequise>;
+
+function computeProgress(
+  parcours: Parcours,
+  completedIds: Set<string>,
+  theories: CatalogueTheories,
+  estStaff: boolean,
+): ParcoursProgress {
   const ordered = parcours.phases
     .flatMap((ph) => ph.chapitres.map((c) => ({ ...c, phase_numero: ph.numero })));
   const total = ordered.length;
@@ -68,11 +98,26 @@ function computeProgress(parcours: Parcours, completedIds: Set<string>): Parcour
     }
   }
 
-  const accessibleUntil = new Map<string, boolean>();
-  let blocked = false;
-  for (const c of ordered) {
-    accessibleUntil.set(c.id, !blocked);
-    if (!completedIds.has(c.id)) blocked = true;
+  // Un module de théorie qu'on n'arrive pas à lire (droits, brouillon, lien
+  // cassé) ne doit jamais enfermer l'élève : dans ce cas il ne bloque rien.
+  // Le CEO et les coachs relisent le contenu : leur imposer la théorie les
+  // obligerait à valider dix-neuf modules pour ouvrir un outil.
+  const validees = new Set<string>();
+  for (const [id, t] of theories) {
+    if (estStaff || t.faite) validees.add(id);
+  }
+  const pourCalcul = ordered.map((c) => ({
+    id: c.id,
+    theorie_chapitre_id: c.theorie_chapitre_id && theories.has(c.theorie_chapitre_id)
+      ? c.theorie_chapitre_id
+      : null,
+  }));
+
+  const acces = calculerAccesChapitres(pourCalcul, completedIds, validees);
+
+  const theorieParChapitre = new Map<string, string>();
+  for (const c of pourCalcul) {
+    if (c.theorie_chapitre_id) theorieParChapitre.set(c.id, c.theorie_chapitre_id);
   }
 
   return {
@@ -82,7 +127,18 @@ function computeProgress(parcours: Parcours, completedIds: Set<string>): Parcour
     percent: total === 0 ? 0 : Math.round((done / total) * 100),
     currentChapitreId,
     currentPhaseNumero,
-    isChapitreAccessible: (id) => accessibleUntil.get(id) ?? false,
+    isChapitreAccessible: (id) => acces.get(id)?.accessible ?? false,
+    theorieManquante: (id) => {
+      const manquante = acces.get(id)?.theorieManquante;
+      return manquante ? theories.get(manquante) ?? null : null;
+    },
+    theoriePour: (id) => {
+      if (estStaff || completedIds.has(id)) return null;
+      const theorieId = theorieParChapitre.get(id);
+      if (!theorieId) return null;
+      const requise = theories.get(theorieId);
+      return requise && !requise.faite ? requise : null;
+    },
   };
 }
 
@@ -129,12 +185,69 @@ async function fetchParcours(slug: string): Promise<Parcours | null> {
   } as Parcours;
 }
 
+/**
+ * Les modules de théorie exigés par ce parcours : leur titre, leur page, et si
+ * l'élève les a validés. Un module illisible (non inscrit, dépublié) est
+ * simplement absent du catalogue et ne bloque alors plus rien.
+ */
+async function fetchTheories(parcours: Parcours, userId: string): Promise<CatalogueTheories> {
+  const ids = Array.from(
+    new Set(
+      parcours.phases
+        .flatMap((ph) => ph.chapitres)
+        .map((c) => c.theorie_chapitre_id)
+        .filter((id): id is string => !!id),
+    ),
+  );
+  const catalogue: CatalogueTheories = new Map();
+  if (ids.length === 0) return catalogue;
+
+  const { data: chapitres } = await supabase
+    .from("formation_chapitres")
+    .select("id, titre, module_id")
+    .in("id", ids);
+  if (!chapitres || chapitres.length === 0) return catalogue;
+
+  const moduleIds = Array.from(new Set(chapitres.map((c) => c.module_id)));
+  const { data: modules } = await supabase
+    .from("formation_modules")
+    .select("id, formation_id")
+    .in("id", moduleIds);
+  const formationParModule = new Map((modules ?? []).map((m) => [m.id, m.formation_id]));
+
+  const formationIds = Array.from(new Set((modules ?? []).map((m) => m.formation_id)));
+  const { data: formations } = formationIds.length
+    ? await supabase.from("formations").select("id, slug").in("id", formationIds)
+    : { data: [] };
+  const slugParFormation = new Map((formations ?? []).map((f) => [f.id, f.slug]));
+
+  const { data: progression } = await supabase
+    .from("chapitre_progress")
+    .select("chapitre_id")
+    .eq("user_id", userId)
+    .in("chapitre_id", ids);
+  const faites = new Set((progression ?? []).map((r) => r.chapitre_id));
+
+  for (const c of chapitres) {
+    const slug = slugParFormation.get(formationParModule.get(c.module_id) ?? "");
+    if (!slug) continue;
+    catalogue.set(c.id, {
+      chapitreId: c.id,
+      titre: c.titre,
+      route: `/training/${slug}/chapitre/${c.id}`,
+      faite: faites.has(c.id),
+    });
+  }
+  return catalogue;
+}
+
 export function useParcours(slug?: string | null) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { passLevel } = useUserPass();
   const userId = user?.id ?? null;
 
   const effectiveSlug = slug ?? (passLevel !== "none" ? passLevel.replace("_", "-") : null);
+  const estStaff = profile?.role === "ceo" || profile?.is_coach === true;
 
   const parcoursQuery = useQuery({
     queryKey: ["parcours", effectiveSlug],
@@ -160,14 +273,21 @@ export function useParcours(slug?: string | null) {
     },
   });
 
-  const progress = parcoursQuery.data && progressQuery.data
-    ? computeProgress(parcoursQuery.data, progressQuery.data)
+  const theoriesQuery = useQuery({
+    queryKey: ["parcours-theories", effectiveSlug, userId],
+    enabled: !!parcoursQuery.data && !!userId,
+    queryFn: () => fetchTheories(parcoursQuery.data!, userId!),
+  });
+
+  const progress = parcoursQuery.data && progressQuery.data && theoriesQuery.data
+    ? computeProgress(parcoursQuery.data, progressQuery.data, theoriesQuery.data, estStaff)
     : null;
 
   return {
     parcours: parcoursQuery.data ?? null,
     progress,
-    isLoading: parcoursQuery.isLoading || progressQuery.isLoading,
+    isLoading:
+      parcoursQuery.isLoading || progressQuery.isLoading || theoriesQuery.isLoading,
     isError: parcoursQuery.isError || progressQuery.isError,
   };
 }

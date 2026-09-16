@@ -8,6 +8,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useParcours, useCompleteChapitre } from "@/hooks/useParcours";
+import { useProchaineEtapeLiberty } from "@/hooks/useProchaineEtapeLiberty";
 import { supabase } from "@/integrations/supabase/client";
 import { exportM14PDF } from "../lib/exportPDF";
 import { buildM14Snapshot } from "../lib/snapshot";
@@ -18,6 +19,7 @@ interface Props { state: M14State; setState: (n: (p: M14State) => M14State) => v
 
 export function LockScreen({ state, setState, userId, onBack, flushNow }: Props) {
   const navigate = useNavigate();
+  const prochaine = useProchaineEtapeLiberty();
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const { parcours } = useParcours("liberty");
@@ -150,7 +152,7 @@ export function LockScreen({ state, setState, userId, onBack, flushNow }: Props)
             <AlertDialogDescription className="text-white/70">Ton architecture Middle-Ticket, ton prix et ton mémo sont gravés et transmis au module suivant (M15). Tu peux télécharger ton mémo PDF depuis cet écran.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => { setShowSuccess(false); navigate("/parcours/liberty"); }} style={{ background: "linear-gradient(135deg, #C9A84C 0%, #E8C770 100%)", color: "#FFFFFF" }}>Retour au parcours</AlertDialogAction>
+            <AlertDialogAction onClick={() => { setShowSuccess(false); navigate(prochaine.route); }} style={{ background: "linear-gradient(135deg, #C9A84C 0%, #E8C770 100%)", color: "#FFFFFF" }}>{prochaine.libelle}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

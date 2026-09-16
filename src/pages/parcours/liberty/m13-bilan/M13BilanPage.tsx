@@ -10,6 +10,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useParcours, useCompleteChapitre } from "@/hooks/useParcours";
+import { useProchaineEtapeLiberty } from "@/hooks/useProchaineEtapeLiberty";
 import { supabase } from "@/integrations/supabase/client";
 import { usePersistedM13State } from "./lib/usePersistedState";
 import { buildM13Snapshot } from "./lib/snapshot";
@@ -17,6 +18,7 @@ import { CRITERIA, countChecked, allChecked, type CritereId, type M13State } fro
 
 export default function M13BilanPage() {
   const navigate = useNavigate();
+  const prochaine = useProchaineEtapeLiberty();
   const { user, profile, isLoading: authLoading } = useAuth();
   const { hasLiberty, isLoading: passLoading } = useUserPass();
   const userId = user?.id ?? null;
@@ -137,8 +139,8 @@ export default function M13BilanPage() {
             <div className="rounded-[10px] p-5" style={{ background: "rgba(76,201,135,0.05)", border: "1px solid #4cc987" }}>
               <h3 className="mb-2 font-serif text-[18px] font-semibold text-[#4cc987]">Bilan verrouillé — tu peux poursuivre</h3>
               <p className="mb-3 text-[14px] leading-[1.6] text-white/85">Ta fiche est verrouillée et transmise à la suite. Ton coach reçoit la notification dans son tableau d'accompagnement.</p>
-              <p className="mb-4 text-[14px] leading-[1.6] text-white/85">La prochaine étape (mise en marché) arrive — en attendant, tu peux revenir au parcours.</p>
-              <button type="button" onClick={() => navigate("/parcours/liberty")} className="inline-block rounded-lg px-5 py-2.5 text-[14px] font-semibold text-[#080808]" style={{ background: "#C9A84C" }}>Retour au parcours →</button>
+              <p className="mb-4 text-[14px] leading-[1.6] text-white/85">Tu peux enchaîner sur la suite du parcours.</p>
+              <button type="button" onClick={() => navigate(prochaine.route)} className="inline-block rounded-lg px-5 py-2.5 text-[14px] font-semibold text-[#080808]" style={{ background: "#C9A84C" }}>{prochaine.libelle} →</button>
             </div>
           ) : all ? (
             <SignBlock onSign={sign} submitting={submitting} initialName={state.signed_by} />

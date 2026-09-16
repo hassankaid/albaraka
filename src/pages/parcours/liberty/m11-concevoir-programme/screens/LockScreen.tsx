@@ -8,6 +8,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useParcours, useCompleteChapitre } from "@/hooks/useParcours";
+import { useProchaineEtapeLiberty } from "@/hooks/useProchaineEtapeLiberty";
 import { supabase } from "@/integrations/supabase/client";
 import { exportM11PDF } from "../lib/exportPDF";
 import { buildM11Snapshot } from "../lib/snapshot";
@@ -51,6 +52,7 @@ function CoherencePanel({ title, warnings, score }: { title: string; warnings: C
 
 export function LockScreen({ state, setState, userId, onBack, flushNow }: Props) {
   const navigate = useNavigate();
+  const prochaine = useProchaineEtapeLiberty();
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const { parcours } = useParcours("liberty");
@@ -209,7 +211,7 @@ export function LockScreen({ state, setState, userId, onBack, flushNow }: Props)
             <AlertDialogDescription className="text-white/70">Ton architecture de programme est gravée et transmise aux modules suivants (M12 naming · M13 transition DIY · M18 value ladder).</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => { setShowSuccess(false); navigate("/parcours/liberty"); }} style={{ background: "linear-gradient(135deg, #C9A84C 0%, #E8C770 100%)", color: "#FFFFFF" }}>Retour au parcours</AlertDialogAction>
+            <AlertDialogAction onClick={() => { setShowSuccess(false); navigate(prochaine.route); }} style={{ background: "linear-gradient(135deg, #C9A84C 0%, #E8C770 100%)", color: "#FFFFFF" }}>{prochaine.libelle}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
