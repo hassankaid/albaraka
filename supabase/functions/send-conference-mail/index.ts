@@ -81,6 +81,7 @@ interface Fiche {
   whatsapp: string;
   zoom: string;
   zoom_code: string | null;
+  videos: (string | null)[];
   heure: string;
   campaign_slug: string;
   groupe_renseigne: boolean;
@@ -90,7 +91,7 @@ interface Fiche {
 async function resoudreFiche(supabase: any, demande?: string): Promise<Fiche | null> {
   let q = supabase
     .from("conferences")
-    .select("conference_date, whatsapp_group_url, zoom_url, zoom_passcode, starts_at_local");
+    .select("conference_date, whatsapp_group_url, zoom_url, zoom_passcode, starts_at_local, video1_url, video2_url, video3_url");
 
   if (demande) {
     q = q.eq("conference_date", demande);
@@ -111,6 +112,7 @@ async function resoudreFiche(supabase: any, demande?: string): Promise<Fiche | n
     whatsapp: row.whatsapp_group_url || WHATSAPP_DEFAUT,
     zoom: row.zoom_url || ZOOM_DEFAUT,
     zoom_code: row.zoom_passcode || null,
+    videos: [row.video1_url || null, row.video2_url || null, row.video3_url || null],
     heure: formatHeure(row.starts_at_local),
     campaign_slug: slugDe(row.conference_date),
     zoom_renseigne: Boolean(row.zoom_url),
@@ -189,6 +191,20 @@ ${bloc}
  */
 const ZOOM_DEFAUT = "https://us06web.zoom.us/j/85455284733?pwd=pab2uafmwoZ0E12svuaWTTiaAwLFEO.1";
 
+/**
+ * Bouton vers une vidéo de la séquence avant-conférence.
+ *
+ * Tant que l'URL n'est pas renseignée sur la fiche, on rend l'emplacement en
+ * clair : la relecture montre où le lien ira. Personne ne verra jamais ce
+ * texte dans sa boîte — l'envoi est refusé en amont quand l'URL manque.
+ */
+function ctaVideo(url: string | null, numero: number): string {
+  if (!url) {
+    return `<p style="text-align:center;font-size:15px;color:#7a7a7a;margin:24px 0;">(Lien vidéo ${numero})</p>`;
+  }
+  return ctaZoom(url, `&#128073; Voir la vidéo ${numero}`);
+}
+
 const SIG = `<p style="margin-top:24px;">Sidali<br><span style="color:#7a7a7a;">Fondateur de l'écosystème AL BARAKA</span></p>`;
 
 /** Prise de rendez-vous : parcours de qualification puis Calendly (route /rdv). */
@@ -208,6 +224,194 @@ interface Gabarit { name: string; subject: string; preheader: string; body: stri
 function gabarits(f: Fiche): Record<number, Gabarit> {
   const CTA = cta(f.whatsapp);
   return {
+    20: {
+      name: "Confirmation inscription",
+      subject: `🎟️ Ton inscription est confirmée`,
+      preheader: "Tu es inscrit. Le groupe WhatsApp t'attend.",
+      body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
+${p(`C'est officiel : tu es inscrit(e) à la conférence Al Baraka.`)}
+${p(`Et ce que je peux te dire, c'est que tu viens peut-être de faire le premier vrai pas vers une transformation profonde.`)}
+${p(`Une transformation qui dépend pas de ton diplôme. Ni de ton expérience actuelle. Ni même du salaire que tu gagnes aujourd'hui.`)}
+${p(`Mais simplement d'un changement de regard, et de la bonne méthode.`)}
+${p(`Pendant cette conférence, tu vas découvrir :`)}
+${puces([`➤ Ce que les Compagnons du Prophète ﷺ avaient compris sur l'argent, et pourquoi ça change tout pour toi`, `➤ Pourquoi la sécurité de ton CDI est en fait une fausse sécurité, et ce qui te rend réellement libre`, `➤ Comment générer tes premiers revenus en ligne, halal, même si tu pars de zéro`, `🗓 Rendez-vous ce dimanche à ${f.heure}`, `📍 Le lien d'accès te sera envoyé quelques heures avant l'événement.`])}
+${p(`Mais en attendant, rejoins dès maintenant le groupe WhatsApp privé. C'est là que tu recevras les rappels, les vidéos, et où tu pourras poser tes questions.`)}
+${CTA}
+${p(`Qu'Allah t'accorde la clarté et la baraka dans ce cheminement.`)}
+${p(`On se retrouve très vite.`)}
+${SIG}`,
+    },
+    21: {
+      name: "J-5 (vidéo 1)",
+      subject: `Tu n'imagines pas encore ce que ça peut changer pour toi`,
+      preheader: "Avant d'aller plus loin, je veux me présenter.",
+      body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
+${p(`Dans 5 jours, in shā Allāh, tu assisteras à une conférence qui pourrait changer ta façon de voir ta situation financière.`)}
+${p(`Et si je te disais que c'est pas toi le problème, mais le chemin qu'on t'a présenté comme étant le seul possible ?`)}
+${p(`On croit parfois qu'il faut :`)}
+${p(`Un diplôme spécifique Du capital de départ Ou être un profil particulier pour réussir en ligne`)}
+${p(`Mais c'est faux.`)}
+${p(`Ce que tu vas découvrir dans cette conférence, c'est comment construire ton indépendance financière à partir de là où tu es, avec ce que tu vis aujourd'hui.`)}
+${p(`Mais avant de t'en dire plus, je veux me présenter, et te raconter comment j'en suis arrivé là moi-même.`)}
+${ctaVideo(f.videos[0], 1)}
+${p(`Tu vas voir que mon parcours a pas été un long fleuve tranquille. Et je pense sincèrement que tu vas te reconnaître dans une partie de cette histoire.`)}
+${p(`Cette vidéo est courte, mais elle pourrait être le début d'un vrai tournant pour toi.`)}
+${p(`Regarde-la jusqu'au bout.`)}
+${p(`Et prépare-toi, la suite arrive vite.`)}
+${p(`Rejoins aussi le groupe WhatsApp si tu l'as pas encore fait`)}
+${CTA}
+${SIG}`,
+    },
+    22: {
+      name: "J-4",
+      subject: `Ce n'est pas toi le problème`,
+      preheader: "Ce n'est pas toi le problème.",
+      body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
+${p(`Depuis des années, j'entends la même chose :`)}
+${p(`"Je sais pas par où commencer." "J'ai peur de me lancer et de rien y gagner." "Je préfère ma sécurité, même si elle me convient pas vraiment."`)}
+${p(`Et très souvent, on finit par se dire que le problème vient de soi.`)}
+${p(`On se dit qu'on est pas fait pour ça. On abandonne avant même d'essayer.`)}
+${p(`Mais aujourd'hui, je veux te dire une chose : ce n'est pas toi le problème.`)}
+${puces([`❌ C'est pas parce que t'as pas le bon profil.`, `❌ C'est pas parce que t'as pas d'expérience.`, `❌ C'est pas parce que tu manques de compétence.`])}
+${p(`Le problème, c'est qu'on t'a jamais montré qu'il existe un autre chemin. On t'a appris à chercher la sécurité dans un contrat de travail, jamais dans une compétence que personne peut te retirer.`)}
+${p(`Demain, je t'enverrai une vidéo où je t'explique un secret là-dessus, qui va peut-être un peu te déranger.`)}
+${p(`Mais pour aujourd'hui, retiens ceci : peu importe ton parcours ou ta situation actuelle, tu as toute ta place dans cette conférence.`)}
+${p(`Le groupe WhatsApp si tu veux échanger avant`)}
+${CTA}
+${SIG}`,
+    },
+    23: {
+      name: "J-3 (vidéo 2)",
+      subject: `Ta sécurité est une illusion`,
+      preheader: "Ta vraie sécurité n'est pas ton contrat de travail.",
+      body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
+${p(`Il arrive un moment où on continue à travailler par obligation, pour un salaire fixe, mais où quelque chose en nous sait déjà que ça suffit pas.`)}
+${p(`On tient le rythme. Mais la vraie liberté semble toujours hors de portée.`)}
+${p(`Si tu as déjà ressenti ça, cette sensation d'avancer sans vraiment avancer, alors sache une chose : il n'est jamais trop tard pour changer de trajectoire.`)}
+${p(`Et cette conférence a été pensée exactement pour ça.`)}
+${p(`Je vais pas t'apprendre à mieux gérer ton salaire.`)}
+${p(`Je vais t'apprendre à en dépendre moins.`)}
+${p(`Parce que ta vraie sécurité, c'est pas ton contrat de travail. C'est ta compétence.`)}
+${p(`Et dimanche, je vais te montrer un chemin simple et clair, à travers 3 niveaux :`)}
+${p(`Identifier ce qui te maintient aujourd'hui dépendant d'un seul revenu`)}
+${p(`Comprendre pourquoi la compétence est la seule chose qu'on peut jamais te retirer`)}
+${p(`Et surtout, comment appliquer ça concrètement pour générer tes premiers revenus`)}
+${p(`Je t'explique tout ça en détail dans cette vidéo :`)}
+${ctaVideo(f.videos[1], 2)}
+${p(`Cette conférence n'est pas un simple rappel de motivation. C'est une méthode concrète pour construire une indépendance réelle, halal, et durable.`)}
+${p(`Et j'ai hâte de t'y retrouver.`)}
+${CTA}
+${SIG}`,
+    },
+    24: {
+      name: "J-2 (vidéo 3)",
+      subject: `Des musulmans comme toi…`,
+      preheader: "Des parcours qui ressemblent peut-être au tien.",
+      body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
+${p(`Tu fais ton CDI. Tu essaies de mettre un peu d'argent de côté. Tu te dis que ça va s'arranger.`)}
+${p(`Mais au fond, il y a ce vide. Cette sensation que ta situation financière n'est pas alignée avec ce que tu veux vraiment vivre — ta foi, ta liberté, tes projets.`)}
+${p(`Ce vide, je l'ai vu chez des dizaines de personnes que j'ai accompagnées.`)}
+${p(`Et aujourd'hui, al-ḥamdu liLlāh, ces mêmes personnes ont vécu un vrai basculement. Pas en changeant toute leur vie d'un coup, mais simplement en trouvant le bon cadre, et la bonne compétence.`)}
+${p(`J'aimerais que tu écoutes leur histoire. Peut-être qu'elle va résonner avec la tienne.`)}
+${ctaVideo(f.videos[2], 3)}
+${p(`Ce sont pas des gens exceptionnels. Ce sont des musulmans comme toi et moi, avec leurs doutes, leur emploi du temps chargé, leurs hauts et leurs bas.`)}
+${p(`Et pourtant, leur situation a changé. Et avec elle, tout leur quotidien s'est apaisé.`)}
+${p(`Dimanche, tu peux vivre la même chose.`)}
+${p(`Mais d'abord, prends un instant pour découvrir leur cheminement. Il se pourrait que le tien commence juste après.`)}
+${CTA}
+${SIG}`,
+    },
+    25: {
+      name: "J-1 (veille)",
+      subject: `Ne laisse pas passer ça`,
+      preheader: "La conférence commence demain matin.",
+      body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
+${p(`Demain matin, on se retrouve pour une conférence pas comme les autres.`)}
+${p(`Une conférence pensée pour toi.`)}
+${p(`Toi qui sens que ta situation financière n'est pas à la hauteur de ce qu'elle pourrait être.`)}
+${p(`Toi qui sais, au fond, que quelque chose doit changer, mais qui sait plus par où commencer.`)}
+${p(`T'as peut-être déjà essayé des formations. Regardé des vidéos. Lu des articles.`)}
+${p(`Mais malgré tout, tu tournes en rond.`)}
+${p(`Et si ce cycle continuait encore pendant des mois ? Des années ?`)}
+${puces([`👉 Combien de fois encore vas-tu repousser cette décision ?`, `👉 Combien de fois vas-tu te dire "l'année prochaine, quand j'aurai plus de temps" ?`, `👉 Combien de temps encore avant de prendre ta liberté financière au sérieux ?`])}
+${p(`Le vrai danger, c'est pas d'échouer.`)}
+${p(`C'est de s'habituer à cette dépendance. De croire que c'est normal. De se résigner.`)}
+${p(`Demain matin, je vais te montrer qu'un autre chemin est possible.`)}
+${p(`Un chemin simple, structuré, et accessible.`)}
+${p(`Un chemin dans lequel tu seras jamais seul.`)}
+${p(`Mais je peux pas t'y forcer. Je peux juste t'y inviter.`)}
+${puces([`📍 Rendez-vous demain, dimanche, à ${f.heure}.`])}
+${p(`Je t'enverrai un dernier message avec le lien quelques heures avant.`)}
+${CTA}
+${SIG}`,
+    },
+    26: {
+      name: "H-2",
+      subject: `Ça commence bientôt…`,
+      preheader: "Prépare un endroit calme et de quoi noter.",
+      body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
+${p(`Dans 2 heures, tu vas assister à une conférence unique. Un moment que j'ai préparé avec soin, pour t'aider à construire l'indépendance financière que tu n'aurais jamais dû laisser filer.`)}
+${p(`Et si tu ressens un peu d'excitation mêlée à de l'appréhension, c'est bon signe. Ça veut dire que cette décision compte vraiment pour toi.`)}
+${p(`Voici ce que tu vas découvrir ce matin, étape par étape :`)}
+${puces([`1️⃣ Ce que les Compagnons du Prophète ﷺ avaient compris sur l'argent`])}
+${p(`Tu comprendras pourquoi ta façon de voir la richesse doit peut-être changer complètement.`)}
+${puces([`2️⃣ Pourquoi la sécurité du salariat est une illusion, et ce qui te rend réellement libre`])}
+${p(`Même si t'as jamais entrepris, tu repartiras avec les clés pour comprendre où tu te situes exactement aujourd'hui.`)}
+${puces([`3️⃣ La méthode concrète pour générer tes premiers revenus en ligne, halal, à partir de zéro`])}
+${p(`C'est cette mise en pratique qui ouvre la porte à un vrai changement.`)}
+${p(`Si tu assistes pas à cette conférence, rien va changer.`)}
+${p(`Mais si t'es présent, il se pourrait que beaucoup de choses changent d'un coup.`)}
+${p(`Je t'enverrai un dernier message juste avant le début avec le lien de connexion.`)}
+${p(`Prépare un endroit calme. Prends un carnet. Et surtout, prépare-toi à remettre en question ce que tu croyais savoir.`)}
+${p(`À tout à l'heure, in shā Allāh.`)}
+${CTA}
+${SIG}`,
+    },
+    27: {
+      name: "M-15",
+      subject: `On commence dans 15 minutes`,
+      preheader: "On commence dans 15 minutes. Le lien est dans ce message.",
+      body: `${p(`Dans 15 minutes, on commence.`)}
+${p(`Clique sur ce lien pour nous rejoindre maintenant :`)}
+${ctaZoom(f.zoom, "&#128073; Je rejoins la conférence", f.zoom_code)}
+${p(`Je suis déjà en train de me préparer de mon côté.`)}
+${p(`Et je voulais t'envoyer ce message, juste avant.`)}
+${p(`Parce que ce que tu vas vivre ce matin, ça a rien d'une conférence classique.`)}
+${p(`C'est peut-être le moment où ta situation financière commence enfin à changer de direction.`)}
+${p(`Où tu vas comprendre ce qui te bloque vraiment.`)}
+${p(`Et surtout, comment construire ton indépendance, halal, malgré ton emploi actuel, ton expérience ou ton passé.`)}
+${p(`C'est un vrai basculement.`)}
+${p(`Alors clique ici pour nous rejoindre dès maintenant :`)}
+${ctaZoom(f.zoom, "&#128073; Accéder à la salle de conférence", f.zoom_code)}
+${p(`Je t'attends à l'intérieur.`)}
+${SIG}`,
+    },
+    28: {
+      name: "M+15",
+      subject: `Un problème ?`,
+      preheader: "On a démarré il y a 15 minutes. Tu peux encore entrer.",
+      body: `${p(`Un problème ?`)}
+${p(`Je te vois pas dans la salle de conférence.`)}
+${p(`Pourtant on a déjà démarré depuis 15 min.`)}
+${p(`Je te rassure, t'as pas encore raté l'essentiel. Mais ça va pas tarder.`)}
+${p(`Tu peux encore nous rejoindre maintenant.`)}
+${ctaZoom(f.zoom, "&#10145; Rejoins-nous avant qu'il soit trop tard", f.zoom_code)}
+${p(`On entre dans le cœur du sujet.`)}
+${p(`Tu peux encore vivre toute l'expérience avec nous.`)}
+${p(`Je t'attends. Et j'espère t'y voir dans les prochaines minutes.`)}
+${SIG}`,
+    },
+    29: {
+      name: "M+30",
+      subject: `Aïe aïe aïe…`,
+      preheader: "30 minutes de direct. Il est encore temps.",
+      body: `${p(`Aïe aïe aïe…`)}
+${p(`Ça fait déjà 30 min qu'on est en live, et les personnes présentes commencent déjà à comprendre ce qui les bloquait vraiment, et comment casser ça.`)}
+${p(`Malgré tout, c'est pas encore trop tard pour toi. Mais c'est limite, hein.`)}
+${p(`Dépêche-toi, on t'attend :`)}
+${ctaZoom(f.zoom, "&#128073; Accéder à la salle de conférence", f.zoom_code)}
+${SIG}`,
+    },
     4: {
       name: "T-2h",
       subject: "Plus que 2 heures ⏳",
@@ -484,6 +688,13 @@ serve(async (req) => {
     }), { status: okTest ? 200 : 502 });
   }
 
+  // Un mail de nurturing sans sa vidéo ne part pas : le destinataire recevrait
+  // un emplacement vide à la place du lien. L'envoi de contrôle, lui, reste
+  // possible — c'est justement à ça qu'il sert, voir le rendu avant l'heure.
+  const VIDEO_REQUISE: Record<number, number> = { 21: 0, 23: 1, 24: 2 };
+  const indexVideo = VIDEO_REQUISE[seq];
+  const videoManquante = indexVideo !== undefined && !fiche.videos[indexVideo];
+
   const maxParam = parseInt(body?.max);
   const maxRecipients = (Number.isFinite(maxParam) && maxParam > 0 && maxParam <= 300) ? maxParam : DEFAULT_MAX;
 
@@ -534,9 +745,19 @@ serve(async (req) => {
       exclus: nbExclus,
       exclusions_disponibles: !exclusErr,
       partiraient_maintenant: todo.length,
+      video_manquante: videoManquante,
       lien_desabonnement: `${UNSUB_BASE}/<jeton propre à chaque destinataire>`,
       resteraient_apres: Math.max(0, restants.length - todo.length),
     }), { status: 200 });
+  }
+
+  if (videoManquante) {
+    return new Response(JSON.stringify({
+      error: "video_manquante",
+      seq,
+      conference_date: fiche.conference_date,
+      detail: `La vidéo ${indexVideo + 1} n'est pas renseignée sur la fiche de la conférence. Rien n'a été envoyé.`,
+    }), { status: 409 });
   }
 
   if (todo.length === 0) {

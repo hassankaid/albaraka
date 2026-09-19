@@ -1,0 +1,24 @@
+-- Séquence avant-conférence, à partir du 27/09/2026.
+--
+-- Textes fournis par l'équipe marketing (« Email webi 20_30 ans »). Dix mails
+-- au lieu de cinq : une confirmation à l'inscription, quatre de nurturing,
+-- la veille, deux heures avant, quinze minutes avant, puis deux rattrapages
+-- pendant le direct. Les deux SMS ne bougent pas.
+--
+-- Trois décisions de structure :
+--
+-- 1. Numéros de séquence neufs (20 à 29) même là où le moment existait déjà.
+--    Réutiliser 8, 9 ou 10 mélangerait deux contenus différents sous une même
+--    étiquette dans l'historique des envois.
+--
+-- 2. La conférence du 20/09 garde l'ancien planning : elle est en cours quand
+--    ceci est écrit, changer son texte en plein vol n'aurait aucun sens.
+--
+-- 3. Le calendrier est calé sur la conférence (J-5, J-4, J-3, J-2) et non sur
+--    l'inscription. Décision assumée : 75 % des inscrits s'inscrivant à moins
+--    de cinq jours, ils ne recevront pas le début de la séquence.
+--
+-- Le contenu de cette migration a été appliqué par :
+--   videos_nurturing_conference, planning_sequence_complete,
+--   tick_confirmation_et_gardes_video
+-- Fichier conservé pour que le dépôt porte la trace du changement.
