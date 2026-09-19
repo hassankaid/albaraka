@@ -81,6 +81,8 @@ interface Fiche {
   whatsapp: string;
   zoom: string;
   zoom_code: string | null;
+  token: string;
+  replay_pret: boolean;
   videos: (string | null)[];
   heure: string;
   campaign_slug: string;
@@ -91,7 +93,7 @@ interface Fiche {
 async function resoudreFiche(supabase: any, demande?: string): Promise<Fiche | null> {
   let q = supabase
     .from("conferences")
-    .select("conference_date, whatsapp_group_url, zoom_url, zoom_passcode, starts_at_local, video1_url, video2_url, video3_url");
+    .select("conference_date, token, status, replay_url, whatsapp_group_url, zoom_url, zoom_passcode, starts_at_local, video1_url, video2_url, video3_url");
 
   if (demande) {
     q = q.eq("conference_date", demande);
@@ -112,6 +114,8 @@ async function resoudreFiche(supabase: any, demande?: string): Promise<Fiche | n
     whatsapp: row.whatsapp_group_url || WHATSAPP_DEFAUT,
     zoom: row.zoom_url || ZOOM_DEFAUT,
     zoom_code: row.zoom_passcode || null,
+    token: row.token,
+    replay_pret: row.status === 'ready' && !!row.replay_url,
     videos: [row.video1_url || null, row.video2_url || null, row.video3_url || null],
     heure: formatHeure(row.starts_at_local),
     campaign_slug: slugDe(row.conference_date),
@@ -211,6 +215,27 @@ const SIG = `<p style="margin-top:24px;">Sidali<br><span style="color:#7a7a7a;">
 const RDV_URL = "https://plateforme.albarakaecosysteme.com/rdv";
 const CTA_RDV = ctaZoom(RDV_URL, "JE RÉSERVE MON APPEL");
 
+/**
+ * Bouton des relances du lundi au mercredi.
+ *
+ * Il passe par la page de rediffusion et non par /rdv : le jour même, on
+ * envoie vers la prise de rendez-vous directe, mais les jours suivants le
+ * destinataire n'a pas forcément vu la conférence. La page de rediffusion lui
+ * montre le replay et porte la prise de rendez-vous dessous.
+ */
+const REDIF_BASE = "https://plateforme.albarakaecosysteme.com/redif/";
+
+/**
+ * Si le replay n'est pas encore en ligne — l'enregistrement Zoom met parfois
+ * quelques heures à être récupéré — on retombe sur la prise de rendez-vous
+ * directe plutôt que d'envoyer vers une page « bientôt disponible ». Le mail
+ * part quand même : mieux vaut un bouton qui mène ailleurs qu'un mail annulé.
+ */
+const ctaRedif = (f: Fiche) =>
+  f.replay_pret
+    ? ctaZoom(REDIF_BASE + f.token, "JE RÉSERVE MON APPEL")
+    : CTA_RDV;
+
 /** Paragraphe du document « Email webi 20_30 ans » : texte brut → <p>. */
 const p = (texte: string) => `<p>${texte}</p>`;
 /** Liste à puces dont la puce est un emoji du texte d'origine. */
@@ -249,7 +274,7 @@ ${SIG}`,
 ${p(`Dans 5 jours, in shā Allāh, tu assisteras à une conférence qui pourrait changer ta façon de voir ta situation financière.`)}
 ${p(`Et si je te disais que c'est pas toi le problème, mais le chemin qu'on t'a présenté comme étant le seul possible ?`)}
 ${p(`On croit parfois qu'il faut :`)}
-${p(`Un diplôme spécifique Du capital de départ Ou être un profil particulier pour réussir en ligne`)}
+${puces([`• Un diplôme spécifique`, `• Du capital de départ`, `• Ou être un profil particulier pour réussir en ligne`])}
 ${p(`Mais c'est faux.`)}
 ${p(`Ce que tu vas découvrir dans cette conférence, c'est comment construire ton indépendance financière à partir de là où tu es, avec ce que tu vis aujourd'hui.`)}
 ${p(`Mais avant de t'en dire plus, je veux me présenter, et te raconter comment j'en suis arrivé là moi-même.`)}
@@ -268,7 +293,7 @@ ${SIG}`,
       preheader: "Ce n'est pas toi le problème.",
       body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
 ${p(`Depuis des années, j'entends la même chose :`)}
-${p(`"Je sais pas par où commencer." "J'ai peur de me lancer et de rien y gagner." "Je préfère ma sécurité, même si elle me convient pas vraiment."`)}
+${puces([`« Je sais pas par où commencer. »`, `« J'ai peur de me lancer et de rien y gagner. »`, `« Je préfère ma sécurité, même si elle me convient pas vraiment. »`])}
 ${p(`Et très souvent, on finit par se dire que le problème vient de soi.`)}
 ${p(`On se dit qu'on est pas fait pour ça. On abandonne avant même d'essayer.`)}
 ${p(`Mais aujourd'hui, je veux te dire une chose : ce n'est pas toi le problème.`)}
@@ -293,9 +318,9 @@ ${p(`Je vais pas t'apprendre à mieux gérer ton salaire.`)}
 ${p(`Je vais t'apprendre à en dépendre moins.`)}
 ${p(`Parce que ta vraie sécurité, c'est pas ton contrat de travail. C'est ta compétence.`)}
 ${p(`Et dimanche, je vais te montrer un chemin simple et clair, à travers 3 niveaux :`)}
-${p(`Identifier ce qui te maintient aujourd'hui dépendant d'un seul revenu`)}
-${p(`Comprendre pourquoi la compétence est la seule chose qu'on peut jamais te retirer`)}
-${p(`Et surtout, comment appliquer ça concrètement pour générer tes premiers revenus`)}
+${puces([`1. Identifier ce qui te maintient aujourd'hui dépendant d'un seul revenu`])}
+${puces([`2. Comprendre pourquoi la compétence est la seule chose qu'on peut jamais te retirer`])}
+${puces([`3. Et surtout, comment appliquer ça concrètement pour générer tes premiers revenus`])}
 ${p(`Je t'explique tout ça en détail dans cette vidéo :`)}
 ${ctaVideo(f.videos[1], 2)}
 ${p(`Cette conférence n'est pas un simple rappel de motivation. C'est une méthode concrète pour construire une indépendance réelle, halal, et durable.`)}
@@ -519,7 +544,7 @@ ${puces([
 ])}
 ${p("Deux formules existent selon ta situation, Pass ou Liberty. On regarde ensemble laquelle te correspond pendant l'appel.")}
 ${p("⚠️ Une offre spéciale est réservée aux 10 premiers inscrits qui valident leur inscription.")}
-${CTA_RDV}
+${ctaRedif(f)}
 ${SIG}`,
     },
     13: {
@@ -542,7 +567,7 @@ ${puces([
   "✅ Un réseau de partenaires + missions freelance",
 ])}
 ${p("Réserve ton appel, on regarde ensemble si c'est fait pour toi, et quelle formule te correspond.")}
-${CTA_RDV}
+${ctaRedif(f)}
 ${SIG}`,
     },
     14: {
@@ -557,7 +582,7 @@ ${p("Maintenant, je vais te dire un truc encore plus cash.")}
 ${p("Ça fait combien de temps que tu repousses ce genre de décision ? Que tu te dis \"je vais réfléchir\", \"je verrai plus tard\", \"c'est pas le bon moment\" ?")}
 ${p("T'as deux choix. Tu continues à chercher seul, à galérer avec des vidéos YouTube et des conseils random. Ou tu réserves 20 minutes, on regarde ta situation ensemble, et tu sais concrètement ce qui est possible pour toi.")}
 ${p("Y'a pas de troisième option où ça se débloque tout seul. Ça arrive jamais.")}
-${CTA_RDV}
+${ctaRedif(f)}
 ${SIG}`,
     },
     15: {
@@ -568,7 +593,7 @@ ${SIG}`,
 ${p("Je vais pas te faire un roman.")}
 ${p("L'offre annoncée pour les premiers inscrits se termine ce soir. Pas de compte à rebours artificiel, pas de fausse deadline à minuit pile. Juste la réalité : plusieurs places sont déjà prises.")}
 ${p("Si t'as encore des doutes après tout ce que je t'ai dit ces derniers jours, c'est normal. Mais les doutes, ça se règle pas en y repensant seul pour la centième fois. Ça se règle sur un appel de 20 minutes, où on regarde ta situation ensemble.")}
-${CTA_RDV}
+${ctaRedif(f)}
 ${p("C'était le dernier rappel.")}
 ${SIG}`,
     },
@@ -645,6 +670,17 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "seq_inconnu", attendus: Object.keys(TEMPLATES) }), { status: 400 });
   }
   const tpl = TEMPLATES[seq];
+
+  // Aperçu : rend le message tel qu'il partirait, sans rien envoyer. Sert à
+  // relire la mise en forme — c'est la seule façon de vérifier autrement qu'à
+  // l'aveugle ce que donne un gabarit après modification.
+  if (body?.apercu === true) {
+    const varsA = { FIRST_NAME: body?.prenom_test || "Prénom", UNSUB_URL: UNSUB_BASE };
+    return new Response(render(wrap(tpl.preheader, tpl.body), varsA), {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  }
 
   // Envoi de contrôle vers UNE adresse (mail-tester, boîte témoin). Le message
   // est strictement identique à l'envoi réel — même expéditeur, même objet,
