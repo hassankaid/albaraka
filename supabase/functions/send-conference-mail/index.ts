@@ -168,11 +168,12 @@ function cta(whatsapp: string): string {
  */
 function ctaZoom(url: string, libelle: string, code?: string | null): string {
   const visible = url.replace(/^https?:\/\//, "");
-  // La salle demande un code depuis le 20/09/2026 : sans lui sous le bouton,
-  // le participant clique et se heurte à une demande de mot de passe. Le bloc
-  // disparaît de lui-même le jour où le lien portera le code en paramètre.
+  // Le lien porte le code en paramètre : un clic suffit. Le code reste affiché
+  // en repli, pour les deux cas où le paramètre ne sert à rien — celui qui tape
+  // l'identifiant de réunion à la main dans l'application Zoom, et celui à qui
+  // on a recopié le lien sans sa fin. Vider la colonne retire cette ligne.
   const bloc = code
-    ? `<p style="text-align:center;font-size:15px;line-height:1.6;color:#1a1a1a;margin:0 0 16px;">Code d'accès : <strong style="font-size:20px;letter-spacing:3px;">${code}</strong></p>`
+    ? `<p style="text-align:center;font-size:13px;line-height:1.5;color:#7a7a7a;margin:0 0 6px;">Si Zoom te demande un code : <strong style="color:#1a1a1a;letter-spacing:1px;">${code}</strong></p>`
     : "";
   return `<table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" style="margin:28px auto 10px;">
 <tr><td align="center" bgcolor="#C9A04E" style="background-color:#C9A04E;border:1px solid #C9A04E;border-radius:6px;">
@@ -186,7 +187,7 @@ ${bloc}
  * Filet si la fiche n'a pas de `zoom_url`. Comme pour le groupe WhatsApp :
  * mieux vaut un lien peut-etre perime qu'un e-mail sans bouton.
  */
-const ZOOM_DEFAUT = "https://us06web.zoom.us/j/85455284733";
+const ZOOM_DEFAUT = "https://us06web.zoom.us/j/85455284733?pwd=pab2uafmwoZ0E12svuaWTTiaAwLFEO.1";
 
 const SIG = `<p style="margin-top:24px;">Sidali<br><span style="color:#7a7a7a;">Fondateur de l'écosystème AL BARAKA</span></p>`;
 
