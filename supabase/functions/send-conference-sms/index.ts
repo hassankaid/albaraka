@@ -37,6 +37,19 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
 const FROM_ID = "Al Baraka";
+// La Belgique refuse les expéditeurs alphanumériques non enregistrés : sur les
+// 80 numéros belges de la base, 115 envois, 115 échecs, tous avec la même
+// erreur Twilio (« combination of To and From »). On y bascule sur un numéro.
+// Partout ailleurs on garde le nom : c'est « Al Baraka » qui s'affiche sur le
+// téléphone, et c'est nettement plus reconnaissable qu'un numéro américain.
+const FROM_NUMERO_HORS_ALPHA = "+19034184890";
+const INDICATIFS_SANS_ALPHA = ["+32"];
+
+function expediteurPour(telephone: string): string {
+  return INDICATIFS_SANS_ALPHA.some((i) => telephone.startsWith(i))
+    ? FROM_NUMERO_HORS_ALPHA
+    : FROM_ID;
+}
 const HEURE_DEFAUT = "11h00";
 
 // 250 et non 500 : au-delà, l'appel dépasse le temps d'exécution de la fonction.
@@ -242,7 +255,7 @@ serve(async (req) => {
     let lastResp: any = null;
     while (attempt < 3) {
       lastResp = await twilioSendSms(creds.sid, creds.token, {
-        to: r.phone, from: FROM_ID, body: messageBody, statusCallback: STATUS_CALLBACK,
+        to: r.phone, from: expediteurPour(r.phone), body: messageBody, statusCallback: STATUS_CALLBACK,
       });
       if ((lastResp.status >= 200 && lastResp.status < 300) || lastResp.status !== 429) break;
       attempt++; await sleep(500 * attempt);

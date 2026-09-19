@@ -80,6 +80,7 @@ interface Fiche {
   conference_date: string;
   whatsapp: string;
   zoom: string;
+  zoom_code: string | null;
   heure: string;
   campaign_slug: string;
   groupe_renseigne: boolean;
@@ -89,7 +90,7 @@ interface Fiche {
 async function resoudreFiche(supabase: any, demande?: string): Promise<Fiche | null> {
   let q = supabase
     .from("conferences")
-    .select("conference_date, whatsapp_group_url, zoom_url, starts_at_local");
+    .select("conference_date, whatsapp_group_url, zoom_url, zoom_passcode, starts_at_local");
 
   if (demande) {
     q = q.eq("conference_date", demande);
@@ -109,6 +110,7 @@ async function resoudreFiche(supabase: any, demande?: string): Promise<Fiche | n
     conference_date: row.conference_date,
     whatsapp: row.whatsapp_group_url || WHATSAPP_DEFAUT,
     zoom: row.zoom_url || ZOOM_DEFAUT,
+    zoom_code: row.zoom_passcode || null,
     heure: formatHeure(row.starts_at_local),
     campaign_slug: slugDe(row.conference_date),
     zoom_renseigne: Boolean(row.zoom_url),
@@ -164,12 +166,19 @@ function cta(whatsapp: string): string {
  * groupe reste le point de ralliement de la semaine, le lien Zoom ne vaut que
  * le jour meme, pendant la conference.
  */
-function ctaZoom(url: string, libelle: string): string {
+function ctaZoom(url: string, libelle: string, code?: string | null): string {
   const visible = url.replace(/^https?:\/\//, "");
+  // La salle demande un code depuis le 20/09/2026 : sans lui sous le bouton,
+  // le participant clique et se heurte à une demande de mot de passe. Le bloc
+  // disparaît de lui-même le jour où le lien portera le code en paramètre.
+  const bloc = code
+    ? `<p style="text-align:center;font-size:15px;line-height:1.6;color:#1a1a1a;margin:0 0 16px;">Code d'accès : <strong style="font-size:20px;letter-spacing:3px;">${code}</strong></p>`
+    : "";
   return `<table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" style="margin:28px auto 10px;">
 <tr><td align="center" bgcolor="#C9A04E" style="background-color:#C9A04E;border:1px solid #C9A04E;border-radius:6px;">
 <a href="${url}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:6px;">${libelle}</a>
 </td></tr></table>
+${bloc}
 <p style="text-align:center;font-size:13px;line-height:1.5;color:#7a7a7a;margin:0 0 22px;">Le bouton ne s'affiche pas ?<br><a href="${url}" target="_blank" style="color:#A8813A;text-decoration:underline;">${visible}</a></p>`;
 }
 
@@ -234,7 +243,7 @@ ${SIG}`,
 <li style="margin:8px 0;">Le plan EXACT en 5 étapes pour devenir business developer et atteindre l'indépendance</li>
 </ol>
 <p>Prépare un endroit calme, de quoi noter&hellip; et surtout ta concentration.</p>
-${ctaZoom(f.zoom, "&#128073; Je rejoins la conférence")}
+${ctaZoom(f.zoom, "&#128073; Je rejoins la conférence", f.zoom_code)}
 <p>On se retrouve tout à l'heure in shaa Allah,</p>
 ${SIG}`,
     },
@@ -246,7 +255,7 @@ ${SIG}`,
 <p>Nous venons tout juste de commencer la conférence en direct.</p>
 <p>Si tu veux enfin comprendre comment générer des revenus en ligne sans produit, sans audience, et de manière 100% halal&hellip;</p>
 <p>Et découvrir le métier méconnu qui permet à des frères et sœurs de gagner entre 2 000 et 6 000&euro;/mois en 90 jours&hellip;</p>
-${ctaZoom(f.zoom, "&#10145; Je rejoins maintenant")}
+${ctaZoom(f.zoom, "&#10145; Je rejoins maintenant", f.zoom_code)}
 ${SIG}`,
     },
     // ── Rappel J-1, texte fourni par Hassan le 13/09/2026 ─────────────
@@ -432,6 +441,48 @@ serve(async (req) => {
   }
   const tpl = TEMPLATES[seq];
 
+  // Envoi de contrôle vers UNE adresse (mail-tester, boîte témoin). Le message
+  // est strictement identique à l'envoi réel — même expéditeur, même objet,
+  // même HTML, mêmes liens, mêmes en-têtes — mais hors campagne : rien n'est
+  // écrit dans email_campaign_sends, donc les statistiques ne bougent pas et
+  // personne n'est marqué « déjà envoyé ».
+  const destTest = typeof body?.destinataire_test === "string" ? body.destinataire_test.trim() : "";
+  if (destTest) {
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(destTest)) {
+      return new Response(JSON.stringify({ error: "adresse_test_invalide", valeur: destTest }), { status: 400 });
+    }
+    const { data: jt } = await supabase.rpc("jetons_desabonnement_email", { p_emails: [destTest] });
+    const jetonTest = (jt || [])[0]?.token;
+    const lienStop = jetonTest ? `${UNSUB_BASE}/${jetonTest}` : UNSUB_BASE;
+    const varsTest = { FIRST_NAME: body?.prenom_test || "frère/sœur", UNSUB_URL: lienStop };
+    const sujetTest = render(tpl.subject, varsTest);
+    const htmlTest = render(wrap(tpl.preheader, tpl.body), varsTest);
+    const repTest = await resendSend({
+      from: FROM_ADDR,
+      to: [destTest],
+      reply_to: REPLY_TO,
+      subject: sujetTest,
+      html: htmlTest,
+      ...(jetonTest
+        ? { headers: { "List-Unsubscribe": `<${lienStop}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } }
+        : {}),
+      tags: [{ name: "campaign", value: "controle" }, { name: "seq", value: String(seq) }],
+    });
+    const okTest = repTest.status >= 200 && repTest.status < 300;
+    return new Response(JSON.stringify({
+      envoi_de_controle: true,
+      destinataire: destTest,
+      seq,
+      template_name: tpl.name,
+      objet: sujetTest,
+      conference_date: fiche.conference_date,
+      entetes_desabonnement: !!jetonTest,
+      statut_resend: repTest.status,
+      resend_email_id: okTest ? repTest.data?.id ?? null : null,
+      erreur: okTest ? null : repTest.data,
+    }), { status: okTest ? 200 : 502 });
+  }
+
   const maxParam = parseInt(body?.max);
   const maxRecipients = (Number.isFinite(maxParam) && maxParam > 0 && maxParam <= 300) ? maxParam : DEFAULT_MAX;
 
@@ -474,6 +525,7 @@ serve(async (req) => {
       groupe_whatsapp: fiche.whatsapp,
       groupe_renseigne_sur_la_fiche: fiche.groupe_renseigne,
       lien_zoom: fiche.zoom,
+      code_zoom: fiche.zoom_code,
       zoom_renseigne_sur_la_fiche: fiche.zoom_renseigne,
       objet: render(tpl.subject, { FIRST_NAME: "Prénom" }),
       liste_totale: recipients.length,
