@@ -7,18 +7,23 @@
 // Téléphone : utilise <PhoneInputField> (composant maison wrappant
 // react-phone-number-input) avec drapeau pays, indicateur téléphonique, et
 // masque de saisie automatique.
+//
+// Les chemins cités ci-dessus sont ceux de /rdv ; le parcours jumeau
+// /rdv-rediffusion suit exactement les mêmes étapes sous son propre
+// préfixe (cf. baseCourante / RDV_CALENDLY dans rdvShared).
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/al-baraka-logo-v2.png";
 import { PhoneInputField, isValidPhoneNumber } from "@/components/ui/PhoneInputField";
-import { THEME, setStoredLeadId, setStoredPrefill } from "./rdvShared";
+import { THEME, baseCourante, setStoredLeadId, setStoredPrefill } from "./rdvShared";
 
 const EMAIL_RX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
 
 export default function RdvCoordonnees() {
   const navigate = useNavigate();
+  const base = baseCourante(useLocation().pathname);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -103,7 +108,7 @@ export default function RdvCoordonnees() {
         phone: phone!,
       });
 
-      navigate("/rdv/questions");
+      navigate(`${base}/questions`);
     } catch (e: any) {
       console.error("[RdvCoordonnees] unexpected error", e);
       setError("Une erreur est survenue. Merci de réessayer.");

@@ -5,14 +5,19 @@
 // Important : on RESET le lead_id en sessionStorage à l'arrivée sur /rdv
 // pour permettre à un user de refaire un funnel complet depuis le début
 // (utile si on partage /rdv plusieurs fois sur le même appareil).
+//
+// Les chemins cités ci-dessus sont ceux de /rdv ; le parcours jumeau
+// /rdv-rediffusion suit exactement les mêmes étapes sous son propre
+// préfixe (cf. baseCourante / RDV_CALENDLY dans rdvShared).
 
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import logo from "@/assets/al-baraka-logo-v2.png";
-import { THEME, clearStoredLeadId } from "./rdvShared";
+import { THEME, baseCourante, clearStoredLeadId } from "./rdvShared";
 
 export default function RdvIntro() {
   const navigate = useNavigate();
+  const base = baseCourante(useLocation().pathname);
 
   useEffect(() => {
     // Nouveau parcours = on repart de zéro.
@@ -114,7 +119,7 @@ export default function RdvIntro() {
 
         <button
           type="button"
-          onClick={() => navigate("/rdv/coordonnees")}
+          onClick={() => navigate(`${base}/coordonnees`)}
           style={{
             background: `linear-gradient(180deg, ${THEME.goldBright} 0%, ${THEME.gold} 100%)`,
             color: "#1A1407",

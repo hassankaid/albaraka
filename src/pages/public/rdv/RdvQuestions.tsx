@@ -18,18 +18,23 @@
 // Cas spécial : le user peut atterrir ici depuis une page de disqualification
 // (bouton retour) via /rdv/questions?from=2 (ou autre index 1..5). Dans ce
 // cas, on positionne directement currentIdx sur cette question.
+//
+// Les chemins cités ci-dessus sont ceux de /rdv ; le parcours jumeau
+// /rdv-rediffusion suit exactement les mêmes étapes sous son propre
+// préfixe (cf. baseCourante / RDV_CALENDLY dans rdvShared).
 
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/al-baraka-logo-v2.png";
 import { ChevronLeft } from "lucide-react";
-import { THEME, QUESTIONS, getStoredLeadId, clearStoredLeadId } from "./rdvShared";
+import { THEME, QUESTIONS, baseCourante, getStoredLeadId, clearStoredLeadId } from "./rdvShared";
 
 type Phase = "asking" | "submitting" | "transitioning";
 
 export default function RdvQuestions() {
   const navigate = useNavigate();
+  const base = baseCourante(useLocation().pathname);
   const [searchParams] = useSearchParams();
   const fromParam = Number(searchParams.get("from") || "1");
   const initialIdx = Number.isInteger(fromParam) && fromParam >= 1 && fromParam <= 5 ? fromParam - 1 : 0;
@@ -44,11 +49,11 @@ export default function RdvQuestions() {
     const stored = getStoredLeadId();
     if (!stored) {
       // Pas de lead_id → on n'a pas fait le step coords, on redirige
-      navigate("/rdv", { replace: true });
+      navigate(base, { replace: true });
       return;
     }
     setLeadId(stored);
-  }, [navigate]);
+  }, [navigate, base]);
 
   const totalQuestions = QUESTIONS.length;
   const currentQ = QUESTIONS[currentIdx];
@@ -85,7 +90,7 @@ export default function RdvQuestions() {
       setPhase("transitioning");
       window.setTimeout(async () => {
         if (answer === "no") {
-          navigate(`/rdv/disqualification/${currentQ.disqualSlug}`);
+          navigate(`${base}/disqualification/${currentQ.disqualSlug}`);
           return;
         }
         // YES : question suivante ou finalisation
@@ -109,7 +114,7 @@ export default function RdvQuestions() {
               submittingRef.current = false;
               return;
             }
-            navigate("/rdv/calendly");
+            navigate(`${base}/calendly`);
           } catch (e) {
             console.error("[RdvQuestions] qualified unexpected", e);
             setError("Une erreur est survenue. Merci de réessayer.");
@@ -133,7 +138,7 @@ export default function RdvQuestions() {
 
   function goBack() {
     if (currentIdx === 0) {
-      navigate("/rdv/coordonnees");
+      navigate(`${base}/coordonnees`);
       return;
     }
     setCurrentIdx((idx) => idx - 1);

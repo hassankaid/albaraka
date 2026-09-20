@@ -179,3 +179,39 @@ export function setStoredPrefill(prefill: RdvPrefill): void {
     /* ignore */
   }
 }
+
+// ─── Deux parcours, une seule mécanique ──────────────────────────────────
+//
+// `/rdv` est proposé le jour de la conférence ; `/rdv-rediffusion` accompagne
+// les pages de rediffusion. Mêmes écrans, mêmes questions, même filtrage :
+// seul l'événement Calendly proposé à la fin change.
+//
+// Le préfixe est déduit de l'URL courante plutôt que stocké : un visiteur qui
+// ouvre les deux parcours dans deux onglets ne peut pas mélanger les deux, et
+// un lien partagé reste cohérent d'un bout à l'autre du parcours.
+
+export type ParcoursRdv = "standard" | "rediffusion";
+
+export const RDV_BASES: Record<ParcoursRdv, string> = {
+  standard: "/rdv",
+  rediffusion: "/rdv-rediffusion",
+};
+
+/** Événement Calendly de fin de parcours. */
+export const RDV_CALENDLY: Record<ParcoursRdv, string | undefined> = {
+  // Réglé côté Vercel (VITE_CALENDLY_URL) : « INSCRIPTION CONFÉRENCE ».
+  standard: (import.meta as any).env?.VITE_CALENDLY_URL as string | undefined,
+  // « REDIFFUSION CONFÉRENCE ». En dur : c'est le pendant du lien porté par
+  // chaque fiche de conférence, et il ne change pas d'une semaine à l'autre.
+  rediffusion: "https://calendly.com/d/dtgg-cbx-qtz/rediffusion-conference",
+};
+
+/** Parcours déduit de l'URL courante. */
+export function parcoursCourant(pathname: string): ParcoursRdv {
+  return pathname.startsWith(RDV_BASES.rediffusion) ? "rediffusion" : "standard";
+}
+
+/** Préfixe à utiliser pour toutes les navigations internes du parcours. */
+export function baseCourante(pathname: string): string {
+  return RDV_BASES[parcoursCourant(pathname)];
+}

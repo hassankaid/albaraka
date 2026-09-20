@@ -7,15 +7,26 @@
 //     (/rdv/questions?from=<index>) pour pouvoir corriger
 //
 // Si le slug est inconnu (URL forgée) → redirect /rdv.
+//
+// Les chemins cités ci-dessus sont ceux de /rdv ; le parcours jumeau
+// /rdv-rediffusion suit exactement les mêmes étapes sous son propre
+// préfixe (cf. baseCourante / RDV_CALENDLY dans rdvShared).
 
 import { useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { AlertCircle, ChevronLeft } from "lucide-react";
 import logo from "@/assets/al-baraka-logo-v2.png";
-import { THEME, DISQUALIFICATIONS, RDV_4_CONDITIONS, getStoredLeadId } from "./rdvShared";
+import {
+  THEME,
+  DISQUALIFICATIONS,
+  RDV_4_CONDITIONS,
+  baseCourante,
+  getStoredLeadId,
+} from "./rdvShared";
 
 export default function RdvDisqualification() {
   const navigate = useNavigate();
+  const base = baseCourante(useLocation().pathname);
   const { slug } = useParams<{ slug: string }>();
 
   const normalizedSlug = (slug || "").toLowerCase() as "a" | "b" | "c" | "d" | "e";
@@ -24,9 +35,9 @@ export default function RdvDisqualification() {
   useEffect(() => {
     // Sans lead_id ou slug invalide → on revient à l'intro
     if (!getStoredLeadId() || !config) {
-      navigate("/rdv", { replace: true });
+      navigate(base, { replace: true });
     }
-  }, [config, navigate]);
+  }, [config, navigate, base]);
 
   if (!config) return null;
 
@@ -171,7 +182,7 @@ export default function RdvDisqualification() {
         <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
           <button
             type="button"
-            onClick={() => navigate(`/rdv/questions?from=${config.questionIndex}`)}
+            onClick={() => navigate(`${base}/questions?from=${config.questionIndex}`)}
             style={{
               background: `linear-gradient(180deg, ${THEME.goldBright} 0%, ${THEME.gold} 100%)`,
               color: "#1A1407",

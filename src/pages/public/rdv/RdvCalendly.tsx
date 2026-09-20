@@ -8,34 +8,49 @@
 //   - Un récap des 3 étapes (Choisir un créneau / Recevoir la confirmation /
 //     L'appel stratégique).
 //
-// L'URL Calendly est lue depuis VITE_CALENDLY_URL (variable d'env Vercel).
+// L'URL Calendly dépend du parcours (cf. RDV_CALENDLY dans rdvShared) :
+// VITE_CALENDLY_URL pour /rdv, l'événement rediffusion pour /rdv-rediffusion.
 // Le booking confirmé déclenche le webhook Calendly existant qui alimente
 // la table `calls`, puis le trigger SQL rapproche automatiquement le lead
 // du funnel via email/téléphone pour passer status='booked'.
 //
 // Garde-fou : si pas de lead_id en sessionStorage → redirect /rdv.
+//
+// Les chemins cités ci-dessus sont ceux de /rdv ; le parcours jumeau
+// /rdv-rediffusion suit exactement les mêmes étapes sous son propre
+// préfixe (cf. baseCourante / RDV_CALENDLY dans rdvShared).
 
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { CheckCircle2 } from "lucide-react";
 import logo from "@/assets/al-baraka-logo-v2.png";
-import { THEME, getStoredLeadId, getStoredPrefill } from "./rdvShared";
-
-const CALENDLY_URL = (import.meta as any).env?.VITE_CALENDLY_URL as string | undefined;
+import {
+  THEME,
+  RDV_CALENDLY,
+  baseCourante,
+  getStoredLeadId,
+  getStoredPrefill,
+  parcoursCourant,
+} from "./rdvShared";
 
 export default function RdvCalendly() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const base = baseCourante(pathname);
+  // « INSCRIPTION CONFÉRENCE » sur /rdv, « REDIFFUSION CONFÉRENCE » sur
+  // /rdv-rediffusion : seule cette ligne distingue les deux parcours.
+  const CALENDLY_URL = RDV_CALENDLY[parcoursCourant(pathname)];
   const [ready, setReady] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const prefill = useMemo(() => getStoredPrefill(), []);
 
   useEffect(() => {
     if (!getStoredLeadId()) {
-      navigate("/rdv", { replace: true });
+      navigate(base, { replace: true });
       return;
     }
     setReady(true);
-  }, [navigate]);
+  }, [navigate, base]);
 
   // Injection du script officiel Calendly (widget inline)
   useEffect(() => {
@@ -76,7 +91,7 @@ export default function RdvCalendly() {
     // Masque les champs Calendly redondants (déjà remplis par notre form)
     url.searchParams.set("hide_gdpr_banner", "1");
     return url.toString();
-  }, [prefill]);
+  }, [prefill, CALENDLY_URL]);
 
   if (!ready) return null;
 

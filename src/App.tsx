@@ -205,6 +205,13 @@ const FullApp = () => (
               <Route path="/rdv/questions" element={<RdvQuestions />} />
               <Route path="/rdv/disqualification/:slug" element={<RdvDisqualification />} />
               <Route path="/rdv/calendly" element={<RdvCalendly />} />
+              {/* Même funnel, autre issue : /rdv-rediffusion accompagne les pages
+                  de rediffusion et débouche sur l'événement Calendly dédié. */}
+              <Route path="/rdv-rediffusion" element={<RdvIntro />} />
+              <Route path="/rdv-rediffusion/coordonnees" element={<RdvCoordonnees />} />
+              <Route path="/rdv-rediffusion/questions" element={<RdvQuestions />} />
+              <Route path="/rdv-rediffusion/disqualification/:slug" element={<RdvDisqualification />} />
+              <Route path="/rdv-rediffusion/calendly" element={<RdvCalendly />} />
               <Route path="/redif/:token" element={<RedifConference />} />
               {/* ── Tunnels natifs (remplacent Systeme.io) ──
                   Servis ici uniquement hors domaines de l'app (local, preview).
