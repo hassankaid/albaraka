@@ -81,8 +81,6 @@ interface Fiche {
   whatsapp: string;
   zoom: string;
   zoom_code: string | null;
-  token: string;
-  replay_pret: boolean;
   videos: (string | null)[];
   heure: string;
   campaign_slug: string;
@@ -93,7 +91,7 @@ interface Fiche {
 async function resoudreFiche(supabase: any, demande?: string): Promise<Fiche | null> {
   let q = supabase
     .from("conferences")
-    .select("conference_date, token, status, replay_url, whatsapp_group_url, zoom_url, zoom_passcode, starts_at_local, video1_url, video2_url, video3_url");
+    .select("conference_date, whatsapp_group_url, zoom_url, zoom_passcode, starts_at_local, video1_url, video2_url, video3_url");
 
   if (demande) {
     q = q.eq("conference_date", demande);
@@ -114,8 +112,6 @@ async function resoudreFiche(supabase: any, demande?: string): Promise<Fiche | n
     whatsapp: row.whatsapp_group_url || WHATSAPP_DEFAUT,
     zoom: row.zoom_url || ZOOM_DEFAUT,
     zoom_code: row.zoom_passcode || null,
-    token: row.token,
-    replay_pret: row.status === 'ready' && !!row.replay_url,
     videos: [row.video1_url || null, row.video2_url || null, row.video3_url || null],
     heure: formatHeure(row.starts_at_local),
     campaign_slug: slugDe(row.conference_date),
@@ -218,23 +214,21 @@ const CTA_RDV = ctaZoom(RDV_URL, "JE RÉSERVE MON APPEL");
 /**
  * Bouton des relances du lundi au mercredi.
  *
- * Il passe par la page de rediffusion et non par /rdv : le jour même, on
- * envoie vers la prise de rendez-vous directe, mais les jours suivants le
- * destinataire n'a pas forcément vu la conférence. La page de rediffusion lui
- * montre le replay et porte la prise de rendez-vous dessous.
+ * Même parcours de qualification que /rdv, mais il débouche sur l'agenda
+ * « rediffusion conférence » du coach et non sur celui du jour J. Le bouton
+ * tient donc sa promesse : on clique, on réserve.
+ *
+ * Le destinataire qui n'a pas vu la conférence répond « non » à la première
+ * question et se voit proposer la rediffusion — il n'est pas laissé sans
+ * issue, et il n'arrive pas sur l'agenda d'un coach sans avoir rien vu.
+ *
+ * Aucune dépendance au replay : contrairement à /redif/<jeton>, ce lien est
+ * valable même si l'enregistrement Zoom n'est pas encore récupéré.
  */
-const REDIF_BASE = "https://plateforme.albarakaecosysteme.com/redif/";
-
-/**
- * Si le replay n'est pas encore en ligne — l'enregistrement Zoom met parfois
- * quelques heures à être récupéré — on retombe sur la prise de rendez-vous
- * directe plutôt que d'envoyer vers une page « bientôt disponible ». Le mail
- * part quand même : mieux vaut un bouton qui mène ailleurs qu'un mail annulé.
- */
-const ctaRedif = (f: Fiche) =>
-  f.replay_pret
-    ? ctaZoom(REDIF_BASE + f.token, "JE RÉSERVE MON APPEL")
-    : CTA_RDV;
+const CTA_REDIFFUSION = ctaZoom(
+  "https://plateforme.albarakaecosysteme.com/rdv-rediffusion",
+  "JE RÉSERVE MON APPEL",
+);
 
 /** Paragraphe du document « Email webi 20_30 ans » : texte brut → <p>. */
 const p = (texte: string) => `<p>${texte}</p>`;
@@ -544,7 +538,7 @@ ${puces([
 ])}
 ${p("Deux formules existent selon ta situation, Pass ou Liberty. On regarde ensemble laquelle te correspond pendant l'appel.")}
 ${p("⚠️ Une offre spéciale est réservée aux 10 premiers inscrits qui valident leur inscription.")}
-${ctaRedif(f)}
+${CTA_REDIFFUSION}
 ${SIG}`,
     },
     13: {
@@ -567,7 +561,7 @@ ${puces([
   "✅ Un réseau de partenaires + missions freelance",
 ])}
 ${p("Réserve ton appel, on regarde ensemble si c'est fait pour toi, et quelle formule te correspond.")}
-${ctaRedif(f)}
+${CTA_REDIFFUSION}
 ${SIG}`,
     },
     14: {
@@ -582,7 +576,7 @@ ${p("Maintenant, je vais te dire un truc encore plus cash.")}
 ${p("Ça fait combien de temps que tu repousses ce genre de décision ? Que tu te dis \"je vais réfléchir\", \"je verrai plus tard\", \"c'est pas le bon moment\" ?")}
 ${p("T'as deux choix. Tu continues à chercher seul, à galérer avec des vidéos YouTube et des conseils random. Ou tu réserves 20 minutes, on regarde ta situation ensemble, et tu sais concrètement ce qui est possible pour toi.")}
 ${p("Y'a pas de troisième option où ça se débloque tout seul. Ça arrive jamais.")}
-${ctaRedif(f)}
+${CTA_REDIFFUSION}
 ${SIG}`,
     },
     15: {
@@ -593,7 +587,7 @@ ${SIG}`,
 ${p("Je vais pas te faire un roman.")}
 ${p("L'offre annoncée pour les premiers inscrits se termine ce soir. Pas de compte à rebours artificiel, pas de fausse deadline à minuit pile. Juste la réalité : plusieurs places sont déjà prises.")}
 ${p("Si t'as encore des doutes après tout ce que je t'ai dit ces derniers jours, c'est normal. Mais les doutes, ça se règle pas en y repensant seul pour la centième fois. Ça se règle sur un appel de 20 minutes, où on regarde ta situation ensemble.")}
-${ctaRedif(f)}
+${CTA_REDIFFUSION}
 ${p("C'était le dernier rappel.")}
 ${SIG}`,
     },

@@ -5,6 +5,9 @@
 //   - Le rappel global des 4 conditions à remplir pour réserver
 //   - Un bouton "Modifier ma réponse" qui ramène à la question concernée
 //     (/rdv/questions?from=<index>) pour pouvoir corriger
+//   - Page A uniquement : un lien vers la rediffusion en ligne du moment.
+//     Répondre "je n'ai pas regardé la conférence" ne doit pas être une
+//     impasse — on donne à la personne le moyen de remplir la condition.
 //
 // Si le slug est inconnu (URL forgée) → redirect /rdv.
 //
@@ -12,9 +15,10 @@
 // /rdv-rediffusion suit exactement les mêmes étapes sous son propre
 // préfixe (cf. baseCourante / RDV_CALENDLY dans rdvShared).
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { AlertCircle, ChevronLeft } from "lucide-react";
+import { AlertCircle, ChevronLeft, PlayCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/al-baraka-logo-v2.png";
 import {
   THEME,
@@ -38,6 +42,26 @@ export default function RdvDisqualification() {
       navigate(base, { replace: true });
     }
   }, [config, navigate, base]);
+
+  // Le funnel est générique : il ne sait pas de quelle conférence vient la
+  // personne. On propose donc la dernière rediffusion mise en ligne, qui est
+  // précisément celle dont on relance les inscrits.
+  const [jetonRedif, setJetonRedif] = useState<string | null>(null);
+  useEffect(() => {
+    if (normalizedSlug !== "a") return;
+    let annule = false;
+    (async () => {
+      // Fonction trop récente pour les types générés de Supabase.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await supabase.rpc("derniere_rediffusion_disponible" as any);
+      if (annule || error) return;
+      const ligne = Array.isArray(data) && data.length > 0 ? (data[0] as { token: string }) : null;
+      if (ligne?.token) setJetonRedif(ligne.token);
+    })();
+    return () => {
+      annule = true;
+    };
+  }, [normalizedSlug]);
 
   if (!config) return null;
 
@@ -180,19 +204,60 @@ export default function RdvDisqualification() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
+          {jetonRedif && (
+            <>
+              <a
+                href={`/redif/${jetonRedif}`}
+                style={{
+                  background: `linear-gradient(180deg, ${THEME.goldBright} 0%, ${THEME.gold} 100%)`,
+                  color: "#1A1407",
+                  fontWeight: 600,
+                  fontSize: 14.5,
+                  padding: "12px 28px",
+                  borderRadius: 999,
+                  textDecoration: "none",
+                  boxShadow: "0 8px 24px rgba(201,160,78,0.28), inset 0 1px 0 rgba(255,255,255,0.22)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontFamily: "inherit",
+                }}
+              >
+                <PlayCircle size={16} />
+                Voir la rediffusion
+              </a>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: THEME.creamDim,
+                  letterSpacing: "0.04em",
+                  marginBottom: 6,
+                  textAlign: "center",
+                }}
+              >
+                Une fois la conférence visionnée, revenez réserver votre appel.
+              </div>
+            </>
+          )}
           <button
             type="button"
             onClick={() => navigate(`${base}/questions?from=${config.questionIndex}`)}
             style={{
-              background: `linear-gradient(180deg, ${THEME.goldBright} 0%, ${THEME.gold} 100%)`,
-              color: "#1A1407",
+              // Sur la page A, la rediffusion devient l'action principale :
+              // ce bouton passe en second plan pour ne pas lui faire concurrence.
+              background: jetonRedif
+                ? "transparent"
+                : `linear-gradient(180deg, ${THEME.goldBright} 0%, ${THEME.gold} 100%)`,
+              color: jetonRedif ? THEME.cream : "#1A1407",
               fontWeight: 600,
               fontSize: 14.5,
               padding: "12px 28px",
               borderRadius: 999,
-              border: "none",
+              border: jetonRedif ? `1px solid ${THEME.goldLine}` : "none",
               cursor: "pointer",
-              boxShadow: "0 8px 24px rgba(201,160,78,0.28), inset 0 1px 0 rgba(255,255,255,0.22)",
+              boxShadow: jetonRedif
+                ? "none"
+                : "0 8px 24px rgba(201,160,78,0.28), inset 0 1px 0 rgba(255,255,255,0.22)",
               transition: "transform 120ms ease, box-shadow 120ms ease",
               display: "flex",
               alignItems: "center",
