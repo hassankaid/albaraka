@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, MessageCircle, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film, Hash, Mail, FlaskConical } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, MessageCircle, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film, Hash, Mail, FlaskConical, ClipboardList } from "lucide-react";
 import { isStudioAllowed } from "@/lib/studio-access";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
@@ -50,6 +50,7 @@ const adminNavItems: NavItem[] = [
   { title: "Annonces", path: "/admin/announcements", icon: Megaphone, roles: ["ceo"] },
   { title: "Quiz prospection", path: "/admin/quiz-lead", icon: Sparkles, roles: ["ceo"] },
   { title: "Lead Scoring", path: "/admin/lead-scoring", icon: Sparkles, roles: ["ceo"] },
+  { title: "Questionnaire client", path: "/admin/questionnaire", icon: ClipboardList, roles: ["ceo"] },
   { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"] },
   { title: "Liens de paiement", path: "/admin/payment-links", icon: Link2, roles: ["ceo"] },
   { title: "Conférences", path: "/admin/conferences", icon: Video, roles: ["ceo"] },
@@ -98,6 +99,7 @@ const pageTitles: Record<string, string> = {
   "/admin/announcements": "Annonces",
   "/admin/quiz-lead": "Quiz prospection",
   "/admin/lead-scoring": "Lead Scoring",
+  "/admin/questionnaire": "Questionnaire client",
   "/admin/invitations": "Invitations & Accès",
   "/admin/webhooks/calendly": "Webhooks Calendly",
   "/admin/discord": "Administration Discord",

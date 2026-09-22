@@ -35,7 +35,7 @@ const carte = (legende: string) =>
 
 /** L'en-tête de page, qui porte le compte de réponses. */
 const enTete = () =>
-  screen.getByText(/^Questionnaire clients$/).parentElement as HTMLElement;
+  screen.getByText(/^Questionnaire client$/).parentElement as HTMLElement;
 
 const base: Reponse = {
   invitation_id: "1", prenom: "Amina", formation_fichier: "al_baraka",
@@ -63,7 +63,7 @@ async function monter(reponses: Reponse[], avancement = { envoyes: 322, repondus
   render(<Page />);
   // Le chargement est asynchrone : on attend que le titre du premier thème
   // apparaisse, ou l'état vide.
-  await screen.findByText(/Questionnaire clients/);
+  await screen.findByText(/Questionnaire client/);
   await new Promise((r) => setTimeout(r, 60));
 }
 
