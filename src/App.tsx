@@ -80,6 +80,7 @@ import ScoringQuiz from "./pages/public/scoring/ScoringQuiz";
 import AdminLeadScoring from "./pages/admin/lead-scoring/AdminLeadScoring";
 import RedifConference from "./pages/public/redif/RedifConference";
 import AdminConferences from "./pages/admin/conferences/AdminConferences";
+import Questionnaire from "./pages/public/questionnaire/Questionnaire";
 import RdvIntro from "./pages/public/rdv/RdvIntro";
 import RdvCoordonnees from "./pages/public/rdv/RdvCoordonnees";
 import RdvQuestions from "./pages/public/rdv/RdvQuestions";
@@ -220,6 +221,9 @@ const FullApp = () => (
               <Route path="/echo" element={<Echo />} />
               <Route path="/scoring/start" element={<ScoringStart />} />
               <Route path="/scoring/quiz" element={<ScoringQuiz />} />
+              {/* Questionnaire clients : le jeton du lien identifie la personne,
+                  aucune connexion n'est demandée. */}
+              <Route path="/questionnaire/:token" element={<Questionnaire />} />
               <Route path="/rdv" element={<RdvIntro />} />
               <Route path="/rdv/coordonnees" element={<RdvCoordonnees />} />
               <Route path="/rdv/questions" element={<RdvQuestions />} />
