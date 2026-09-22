@@ -46,6 +46,12 @@ const TYPE_OPTIONS = [
   // Agenda sous la vidéo du tunnel VSL : le chemin de prise de RDV principal
   // du tunnel, absent d'ici alors que `webhook-calendly` l'écrit déjà.
   { value: "appel_vsl_tunnel", label: "VSL (tunnel)" },
+  // Les deux tunnels de vente et la rediffusion, branchés le 22/09/2026.
+  // Ces libellés doivent rester identiques à ceux de la vue `calls_enriched` :
+  // c'est elle qui nomme la ligne, ce filtre ne fait que la retrouver.
+  { value: "tunnel_liberty", label: "Tunnel Liberty" },
+  { value: "al_baraka_200", label: "Al Baraka 200€/mois" },
+  { value: "rediffusion_conference", label: "Rediffusion" },
 ];
 
 const TYPE_COLORS: Record<string, string> = {
@@ -56,6 +62,9 @@ const TYPE_COLORS: Record<string, string> = {
   appel_organique: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
   appel_temoignages: "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30",
   appel_vsl_tunnel: "bg-sky-500/20 text-sky-300 border-sky-500/30",
+  tunnel_liberty: "bg-violet-500/20 text-violet-300 border-violet-500/30",
+  al_baraka_200: "bg-teal-500/20 text-teal-300 border-teal-500/30",
+  rediffusion_conference: "bg-rose-500/20 text-rose-300 border-rose-500/30",
 };
 
 // Tabs are built dynamically — "Mes calls" only shown for CEO

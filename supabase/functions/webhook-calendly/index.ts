@@ -12,6 +12,15 @@ const EVENT_TYPE_MAPPING: Record<string, string> = {
   '2ce9ca9a-2bfd-435c-a1e6-87fc9716f2c7': 'appel_vsl_tunnel',       // agenda sous la video du tunnel VSL
   '5123cdb3-bf46-4492-910f-b958f7f99f06': 'appel_temoignages',      // bouton de la page /temoignages
 
+  // ── Agendas des tunnels de vente (releves le 22/09/2026) ──
+  // UUID lus sur l'API publique de reservation de Calendly, puis VERIFIES :
+  // la meme lecture rend 29475949-… pour « INSCRIPTION CONFERENCE », soit
+  // exactement l'UUID deja present ci-dessus. Les deux espaces d'identifiants
+  // coincident donc, et ceux-ci sont surs.
+  'db3f5dde-0a79-4130-9a28-709478fa9835': 'tunnel_liberty',         // event.../liberty
+  '7becdc54-4834-4863-8eab-fab2af2928c0': 'al_baraka_200',          // event.../al-baraka-200
+  'd81763ec-39d2-4ca0-be42-fc61f04fd484': 'rediffusion_conference', // /redif et /rdv-rediffusion
+
   // ── Agendas SUPPRIMES (round-robin perdus avec les licences, 08/2026) ──
   // Conserves VOLONTAIREMENT : `replay-calendly-webhook` peut rejouer un
   // ancien echec qui les reference encore. Ils ne matcheront aucun nouveau
