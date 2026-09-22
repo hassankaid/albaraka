@@ -302,7 +302,7 @@ export default function AdminQuestionnaire() {
       <Dialog open={fiche != null} onOpenChange={(o) => !o && setFiche(null)}>
         <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{fiche?.prenom ?? "Répondant"}</DialogTitle>
+            <DialogTitle>{fiche?.nom_complet ?? fiche?.prenom ?? "Répondant"}</DialogTitle>
           </DialogHeader>
           {fiche && (
             <div className="space-y-3 text-sm">
@@ -423,7 +423,7 @@ function BlocLibre({ titre, enAvant, reponses, champ, recherche, onOuvrir }: {
             >
               <Users className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <span className="min-w-0">
-                <span className="text-xs text-muted-foreground">{r.prenom ?? "—"} · </span>
+                <span className="text-xs text-muted-foreground">{r.nom_complet ?? r.prenom ?? "—"} · </span>
                 <span className="whitespace-pre-wrap">{String(r[champ])}</span>
               </span>
             </button>

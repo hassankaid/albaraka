@@ -13,6 +13,8 @@
 export interface Reponse {
   invitation_id: string;
   prenom: string | null;
+  /** Prénom et nom, remis en casse normale. Lu dans la fiche du client. */
+  nom_complet: string | null;
   formation_fichier: string;
   soumis_le: string;
   q1: string | null;  q2: string | null;  q3: string | null;  q4: string | null;
@@ -199,7 +201,7 @@ export const LIBRES: { champ: keyof Reponse; numero: number; titre: string; enAv
 
 /** Colonnes de l'export CSV, dans l'ordre du questionnaire. */
 export const COLONNES_CSV: (keyof Reponse)[] = [
-  "prenom", "formation_fichier", "soumis_le",
+  "nom_complet", "prenom", "formation_fichier", "soumis_le",
   "q1","q2","q3","q4","q5","q6","q7","q8","q9","q10","q11","q12","q13","q14","q15",
   "q16","q17","q18","q19","q20","q21","q22","q23","q24","q25","q26","q27","q28","q29",
 ];

@@ -7,7 +7,7 @@ import {
 } from "./stats";
 
 const vide: Reponse = {
-  invitation_id: "x", prenom: null, formation_fichier: "al_baraka", soumis_le: "2026-09-22T10:00:00Z",
+  invitation_id: "x", prenom: null, nom_complet: null, formation_fichier: "al_baraka", soumis_le: "2026-09-22T10:00:00Z",
   q1: null, q2: null, q3: null, q4: null, q5: null, q6: null, q7: null, q8: null, q9: null,
   q10: null, q11: null, q12: null, q13: null, q14: null, q15: null, q16: null, q17: null,
   q18: null, q19: null, q20: null, q21: null, q22: null, q23: null, q24: null, q25: null,
@@ -116,14 +116,14 @@ describe("croisement", () => {
 });
 
 describe("export CSV", () => {
-  const csv = versCSV([r({ prenom: "Hassan", q2: "France", q27: ["Lives", "Rôle-plays"] })]);
+  const csv = versCSV([r({ prenom: "Hassan", nom_complet: "Hassan Kaid", q2: "France", q27: ["Lives", "Rôle-plays"] })]);
 
   it("commence par le BOM, sans lequel Excel casse les accents", () => {
     expect(csv.startsWith("﻿")).toBe(true);
   });
 
   it("sépare par point-virgule, sinon Excel français met tout en une colonne", () => {
-    expect(csv.split("\r\n")[0]).toContain("prenom;formation_fichier");
+    expect(csv.split("\r\n")[0]).toContain("nom_complet;prenom;formation_fichier");
   });
 
   it("aplatit le choix multiple en une seule cellule lisible", () => {

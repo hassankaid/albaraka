@@ -38,7 +38,8 @@ const enTete = () =>
   screen.getByText(/^Questionnaire client$/).parentElement as HTMLElement;
 
 const base: Reponse = {
-  invitation_id: "1", prenom: "Amina", formation_fichier: "al_baraka",
+  invitation_id: "1", prenom: "Amina", nom_complet: "Amina Bahih",
+  formation_fichier: "al_baraka",
   soumis_le: "2026-09-22T10:00:00Z",
   q1: "25-34 ans", q2: "France", q3: "Célibataire", q4: "Bac",
   q5: "Salarié en CDI", q6: "Coiffure", q7: "1 000 - 2 000 €",
