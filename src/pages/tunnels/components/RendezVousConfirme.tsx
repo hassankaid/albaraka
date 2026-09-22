@@ -51,8 +51,13 @@ export default function RendezVousConfirme({ tunnel }: { tunnel?: TunnelConfig }
   const data = useMemo(() => {
     const sp = new URLSearchParams(window.location.search);
     const fullName = param(sp, "invitee_full_name");
-    const prefill = getTunnelPrefill();
-    const firstName = prefill?.firstName || (fullName ? fullName.split(" ")[0] : null);
+    // Le pré-remplissage vient du pop-in du tunnel. Sans tunnel — le parcours
+    // 200 €/mois, qui n'a pas d'opt-in — il n'y a rien à reprendre, et le lire
+    // quand même afficherait les coordonnées d'un AUTRE tunnel parcouru dans
+    // le même onglet. Constaté en recette : « Bravo Hassan » sur une
+    // réservation au nom de quelqu'un d'autre.
+    const prefill = tunnel ? getTunnelPrefill() : null;
+    const firstName = (fullName ? fullName.split(" ")[0] : null) || prefill?.firstName || null;
     return {
       firstName,
       fullName: fullName || (prefill?.firstName ?? null),
@@ -62,7 +67,7 @@ export default function RendezVousConfirme({ tunnel }: { tunnel?: TunnelConfig }
       eventType: param(sp, "event_type_name"),
       phone: param(sp, "answer_1") || prefill?.phone || null,
     };
-  }, []);
+  }, [tunnel]);
 
   useEffect(() => {
     ensureTunnelFonts();
