@@ -41,7 +41,13 @@ function formatWhen(raw: string | null): string | null {
   }
 }
 
-export default function RendezVousConfirme({ tunnel }: { tunnel: TunnelConfig }) {
+/**
+ * `tunnel` sert uniquement à rattacher la conversion au bon test A/B. Le
+ * tunnel 200 €/mois n'a ni opt-in ni test en cours : il n'en passe pas, et
+ * rien n'est mesuré — plutôt que de lui inventer une configuration dont la
+ * source ne serait jamais utilisée.
+ */
+export default function RendezVousConfirme({ tunnel }: { tunnel?: TunnelConfig }) {
   const data = useMemo(() => {
     const sp = new URLSearchParams(window.location.search);
     const fullName = param(sp, "invitee_full_name");
@@ -65,7 +71,7 @@ export default function RendezVousConfirme({ tunnel }: { tunnel: TunnelConfig })
     // La conversion du tunnel : le rendez-vous est pris. C'est l'étape que la
     // vidéo de la page précédente cherche à déclencher, donc ce que le test
     // A/B mesure. Sans test en cours, l'appel ne part pas.
-    enregistrerConversion(tunnel, "rendez_vous");
+    if (tunnel) enregistrerConversion(tunnel, "rendez_vous");
   }, [tunnel]);
 
   const rows: Array<{ icon: string; label: string; value: string | null }> = [

@@ -145,6 +145,7 @@ const AppelConfirmation = lazy(() => import("./pages/tunnels/appel/AppelConfirma
 // Page indépendante de témoignages (preuve sociale → CTA Calendly).
 const Temoignages = lazy(() => import("./pages/tunnels/temoignages/Temoignages"));
 const AlBaraka200 = lazy(() => import("./pages/tunnels/albaraka200/AlBaraka200"));
+const AlBaraka200Confirmation = lazy(() => import("./pages/tunnels/albaraka200/AlBaraka200Confirmation"));
 const LibertyLanding = lazy(() => import("./pages/tunnels/liberty/LibertyLanding"));
 const LibertyMerci = lazy(() => import("./pages/tunnels/liberty/LibertyMerci"));
 const LibertyConfirmation = lazy(() => import("./pages/tunnels/liberty/LibertyConfirmation"));
@@ -184,6 +185,7 @@ const tunnelRoutes = (
     {/* Tunnel « Al Baraka 200 €/mois » : page unique, prise d'appel directe
         (ni opt-in ni page de remerciement — la réservation se fait sur place). */}
     <Route path="/al-baraka-200" element={<Suspense fallback={<TunnelFallback />}><AlBaraka200 /></Suspense>} />
+    <Route path="/al-baraka-200/confirmation" element={<Suspense fallback={<TunnelFallback />}><AlBaraka200Confirmation /></Suspense>} />
   </>
 );
 
