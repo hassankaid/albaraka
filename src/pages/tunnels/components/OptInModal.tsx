@@ -24,6 +24,15 @@ interface Props {
   open: boolean;
   onClose: () => void;
   tunnel: TunnelConfig;
+  /**
+   * Copy du pop-in. Par défaut, celle des tunnels de conférence — titre, date
+   * du prochain direct, bouton d'inscription. Le tunnel Liberty ne vend pas
+   * une conférence datée : il passe la sienne, et la ligne de date disparaît.
+   */
+  titre?: string;
+  /** Ligne dorée sous le titre. `null` = pas de ligne (aucune date à annoncer). */
+  dateLigne?: string | null;
+  bouton?: string;
 }
 
 // Palette CLAIRE du pop-in (contraste fort sur la page sombre, comme la SIO).
@@ -42,7 +51,7 @@ const L = {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function OptInModal({ open, onClose, tunnel }: Props) {
+export default function OptInModal({ open, onClose, tunnel, titre, dateLigne, bouton }: Props) {
   const conference = useConference();
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState("");
@@ -142,11 +151,13 @@ export default function OptInModal({ open, onClose, tunnel }: Props) {
         </button>
 
         <h3 style={{ fontFamily: T.display, color: L.ink, fontSize: "clamp(1.4rem,5vw,1.8rem)", lineHeight: 1.15, textAlign: "center", margin: "0 0 10px", textTransform: "uppercase", letterSpacing: "0.005em" }}>
-          Inscris-toi gratuitement à la conférence
+          {titre ?? "Inscris-toi gratuitement à la conférence"}
         </h3>
-        <p style={{ fontFamily: T.body, color: L.goldText, fontWeight: 700, fontSize: "1rem", textAlign: "center", margin: "0 0 6px" }}>
-          {conference.dateLabel} · {CONFERENCE.tz}
-        </p>
+        {dateLigne !== null && (
+          <p style={{ fontFamily: T.body, color: L.goldText, fontWeight: 700, fontSize: "1rem", textAlign: "center", margin: "0 0 6px" }}>
+            {dateLigne ?? `${conference.dateLabel} · ${CONFERENCE.tz}`}
+          </p>
+        )}
         <p style={{ fontFamily: T.body, color: L.inkMuted, fontSize: "0.9rem", textAlign: "center", margin: "0 0 22px" }}>
           Veuillez renseigner les informations ci-dessous
         </p>
@@ -193,7 +204,7 @@ export default function OptInModal({ open, onClose, tunnel }: Props) {
               opacity: submitting ? 0.7 : 1,
             }}
           >
-            {submitting ? "Un instant…" : "Je valide mon inscription"}
+            {submitting ? "Un instant…" : bouton ?? "Je valide mon inscription"}
           </button>
 
           <p style={{ fontFamily: T.body, color: L.inkDim, fontSize: "0.72rem", textAlign: "center", margin: "6px 0 0", lineHeight: 1.5 }}>

@@ -3,7 +3,7 @@
 // Hassan) et le même socle (marque, pop-in, capture, pixel, edge fn).
 //
 // Ajouter un tunnel = ajouter une entrée ici + une route + sa page merci.
-export type TunnelKey = "wa" | "vsl";
+export type TunnelKey = "wa" | "vsl" | "liberty";
 
 export interface TunnelConfig {
   key: TunnelKey;
@@ -25,4 +25,13 @@ export const VSL_TUNNEL: TunnelConfig = {
   key: "vsl",
   merciPath: "/vsl/merci",
   srcPrefix: "webi_vsl",
+};
+
+// Tunnel Liberty : landing PROPRE (copy différente des deux autres) → merci
+// (VSL Liberty → agenda Liberty) → confirmation. Il ne vend pas la conférence
+// mais l'offre Liberty, d'où un préfixe de source à lui.
+export const LIBERTY_TUNNEL: TunnelConfig = {
+  key: "liberty",
+  merciPath: "/liberty/merci",
+  srcPrefix: "liberty",
 };

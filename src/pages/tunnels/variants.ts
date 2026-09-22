@@ -31,6 +31,12 @@ export const VARIANTS: Record<TunnelKey, TunnelVariant[]> = {
     { key: "5", label: "Variante 5 — Mixte Tenue Noire", vimeoId: "1206938046" },
     { key: "6", label: "Variante 6 — Mixte Tenue Blanche", vimeoId: "1206938052" },
   ],
+  // Une seule vidéo : pas de test en cours sur ce tunnel. Le hash est
+  // obligatoire — la vidéo est « masquée de Vimeo », sans lui le lecteur
+  // refuse de démarrer.
+  liberty: [
+    { key: "1", label: "VSL Liberty 1", vimeoId: "1226940509", vimeoHash: "78c6db11b5" },
+  ],
 };
 
 /** Résout la variante à afficher : ?v=<key> si valide, sinon la 1re (défaut). */

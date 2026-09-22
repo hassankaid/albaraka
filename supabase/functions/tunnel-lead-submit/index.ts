@@ -9,7 +9,8 @@
 //   - AUCUN email au prospect, AUCUNE notification interne
 //     (on ne met NI source='apporteur_quiz' NI apporteur_id → le trigger
 //      trg_notify_apporteur_lead_captured ne se déclenche pas).
-//   - source = webi_wa_ads | webi_wa_instagram_organic | webi_wa_tiktok_organic
+//   - source = liberty_* pour le tunnel Liberty ; sinon, pour les tunnels
+//     de conférence : webi_wa_ads | webi_wa_instagram_organic | webi_wa_tiktok_organic
 //     | webi_wa_youtube_organic (whitelist ; défaut webi_wa_direct).
 //     status = 'a_qualifier' OBLIGATOIRE
 //     (le default 'nouveau' violerait leads_status_check).
@@ -53,6 +54,12 @@ const ALLOWED_SOURCES = new Set([
   "webi_vsl_tiktok_organic",
   "webi_vsl_youtube_organic",
   "webi_vsl_direct",
+  // Tunnel Liberty
+  "liberty_ads",
+  "liberty_instagram_organic",
+  "liberty_tiktok_organic",
+  "liberty_youtube_organic",
+  "liberty_direct",
 ]);
 function safeSource(s: unknown): string {
   if (typeof s === "string" && ALLOWED_SOURCES.has(s)) return s;
@@ -65,6 +72,7 @@ function safeSource(s: unknown): string {
   // Toute nouvelle origine se pose ICI, dans `leads_source_check`, et dans
   // `marketing_canal` — les trois ensemble ou aucune.
   if (typeof s === "string" && s.startsWith("webi_vsl")) return "webi_vsl_direct";
+  if (typeof s === "string" && s.startsWith("liberty")) return "liberty_direct";
   return "webi_wa_direct";
 }
 

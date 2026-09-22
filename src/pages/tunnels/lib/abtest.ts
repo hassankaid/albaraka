@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { getAttribution } from "./source";
 import { resolveVariant, type TunnelVariant } from "../variants";
-import type { TunnelConfig } from "../config";
+import type { TunnelConfig, TunnelKey } from "../config";
 
 const CLE_VISITEUR = "alb_visitor_id";
 
@@ -124,7 +124,7 @@ export function enregistrerConversion(cfg: TunnelConfig, action: ActionAB): void
  * de la page de remerciement se voit pour la première fois. Dans le deuxième,
  * elle a déjà été comptée à l'arrivée sur la landing.
  */
-export function useVarianteAB(cfg: TunnelConfig, tunnelKey: "wa" | "vsl"): TunnelVariant {
+export function useVarianteAB(cfg: TunnelConfig, tunnelKey: TunnelKey): TunnelVariant {
   const parDefaut = resolveVariant(
     tunnelKey,
     (typeof window !== "undefined"
@@ -161,7 +161,7 @@ export function useVarianteAB(cfg: TunnelConfig, tunnelKey: "wa" | "vsl"): Tunne
  */
 export async function exposerLanding(
   cfg: TunnelConfig,
-  tunnelKey: "wa" | "vsl",
+  tunnelKey: TunnelKey,
 ): Promise<string | null> {
   const a = getAttribution(cfg);
   if (!a?.abCode) return null;

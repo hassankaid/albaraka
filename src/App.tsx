@@ -145,6 +145,9 @@ const AppelConfirmation = lazy(() => import("./pages/tunnels/appel/AppelConfirma
 // Page indépendante de témoignages (preuve sociale → CTA Calendly).
 const Temoignages = lazy(() => import("./pages/tunnels/temoignages/Temoignages"));
 const AlBaraka200 = lazy(() => import("./pages/tunnels/albaraka200/AlBaraka200"));
+const LibertyLanding = lazy(() => import("./pages/tunnels/liberty/LibertyLanding"));
+const LibertyMerci = lazy(() => import("./pages/tunnels/liberty/LibertyMerci"));
+const LibertyConfirmation = lazy(() => import("./pages/tunnels/liberty/LibertyConfirmation"));
 const TunnelNotFound = lazy(() => import("./pages/tunnels/components/TunnelNotFound"));
 const TunnelFallback = () => (
   <div style={{ minHeight: "100vh", background: "#060504" }} aria-hidden />
@@ -165,6 +168,10 @@ const tunnelRoutes = (
     {/* Page indépendante : réservation d'appel (lien partagé pendant/après la conf) */}
     <Route path="/appel-conference" element={<Suspense fallback={<TunnelFallback />}><AppelConference /></Suspense>} />
     <Route path="/appel-conference/confirmation" element={<Suspense fallback={<TunnelFallback />}><AppelConfirmation /></Suspense>} />
+    {/* Tunnel Liberty : landing (copy propre) → VSL + agenda → confirmation */}
+    <Route path="/liberty" element={<Suspense fallback={<TunnelFallback />}><LibertyLanding /></Suspense>} />
+    <Route path="/liberty/merci" element={<Suspense fallback={<TunnelFallback />}><LibertyMerci /></Suspense>} />
+    <Route path="/liberty/confirmation" element={<Suspense fallback={<TunnelFallback />}><LibertyConfirmation /></Suspense>} />
     {/* Page indépendante : témoignages (preuve sociale) */}
     <Route path="/temoignages" element={<Suspense fallback={<TunnelFallback />}><Temoignages /></Suspense>} />
     {/* Tunnel « Al Baraka 200 €/mois » : page unique, prise d'appel directe
