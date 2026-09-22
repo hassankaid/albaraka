@@ -78,6 +78,7 @@ import Echo from "./pages/public/Echo";
 import ScoringStart from "./pages/public/scoring/ScoringStart";
 import ScoringQuiz from "./pages/public/scoring/ScoringQuiz";
 import AdminLeadScoring from "./pages/admin/lead-scoring/AdminLeadScoring";
+import AdminQuestionnaire from "./pages/admin/questionnaire/AdminQuestionnaire";
 import RedifConference from "./pages/public/redif/RedifConference";
 import AdminConferences from "./pages/admin/conferences/AdminConferences";
 import Questionnaire from "./pages/public/questionnaire/Questionnaire";
@@ -285,6 +286,7 @@ const FullApp = () => (
                   <Route path="/admin/contracts/preview" element={<ContractPreview />} />
                   <Route path="/admin/contracts/preview/:templateKey" element={<ContractPreview />} />
                   <Route path="/admin/lead-scoring" element={<AdminLeadScoring />} />
+                  <Route path="/admin/questionnaire" element={<AdminQuestionnaire />} />
                   <Route path="/admin/invitations" element={<Navigate to="/admin/training/access" replace />} />
                   <Route path="/admin/invitations/campaign" element={<CampaignTracking />} />
                   <Route path="/admin/webhooks/calendly" element={<AdminCalendlyWebhooks />} />
