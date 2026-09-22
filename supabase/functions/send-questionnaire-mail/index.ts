@@ -10,10 +10,13 @@
 //   relance1 → les non-répondants seulement
 //   relance2 → les non-répondants seulement, dernier rappel
 //
-// ⚠️ LA DATE LIMITE N'EST PAS ÉCRITE EN DUR. Elle vaut 72 heures après le
-// PREMIER envoi, et les trois messages annoncent donc la même échéance quel
-// que soit le jour où on les déclenche. Avant le premier envoi, la fonction
-// la calcule à partir de maintenant — c'est ce qui rend l'aperçu honnête.
+// ⚠️ LA DATE LIMITE N'EST PAS ÉCRITE EN DUR. On prend le jour qui tombe
+// 72 heures après le PREMIER envoi, et la fermeture est fixée à 23h59 ce
+// jour-là, heure de Paris. Annoncer « vendredi à 13h11 » aurait été à la fois
+// bizarre à lire et injuste pour qui ouvre son mail le midi. Les trois
+// messages annoncent la même échéance, quel que soit le jour du
+// déclenchement ; avant le premier envoi elle se projette depuis maintenant,
+// ce qui rend l'aperçu honnête.
 //
 // ⚠️ Les invitations marquées `test` ou `exclu` ne partent jamais.
 //
@@ -48,15 +51,21 @@ function render(tpl: string, vars: Record<string, string>): string {
   return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
 }
 
-/** « mercredi 25 septembre à 11h00 », en heure de Paris. */
-function formatEcheance(d: Date): string {
-  const jour = new Intl.DateTimeFormat("fr-FR", {
+/**
+ * L'échéance : 23h59, heure de Paris, le jour qui tombe 72 h après `depart`.
+ *
+ * Le jour se lit en heure de Paris et non en UTC — sinon un envoi de fin de
+ * soirée décalerait la fermeture d'un jour entier pendant l'été.
+ */
+function echeance(depart: Date): { texte: string; iso: string } {
+  const plus72 = new Date(depart.getTime() + DELAI_HEURES * 3600 * 1000);
+  const jourParis = new Intl.DateTimeFormat("fr-CA", {
+    timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(plus72);
+  const texte = new Intl.DateTimeFormat("fr-FR", {
     timeZone: "Europe/Paris", weekday: "long", day: "numeric", month: "long",
-  }).format(d);
-  const heure = new Intl.DateTimeFormat("fr-FR", {
-    timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit",
-  }).format(d).replace(":", "h");
-  return `${jour} à ${heure}`;
+  }).format(plus72);
+  return { texte: `${texte} à 23h59`, iso: `${jourParis}T23:59` };
 }
 
 function wrap(preheader: string, body: string): string {
@@ -177,7 +186,7 @@ serve(async (req) => {
     .order("envoye_le", { ascending: true })
     .limit(1);
   const depart = premier?.[0]?.envoye_le ? new Date(premier[0].envoye_le) : new Date();
-  const dateLimite = formatEcheance(new Date(depart.getTime() + DELAI_HEURES * 3600 * 1000));
+  const dateLimite = echeance(depart).texte;
 
   const htmlTemplate = wrap(tpl.preheader, tpl.body);
 
