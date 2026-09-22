@@ -96,10 +96,14 @@ export const SECTIONS: Section[] = [
   {
     titre: "Ton arrivée chez AL BARAKA",
     questions: [
-      // Masquée quand la formation est connue par le lien : voir §4.1.
+      // Masquée quand la formation est connue par le lien : voir §4.1. Elle
+      // n'apparaît donc que pour les clients qui détiennent les DEUX formules,
+      // et c'est pour eux que la troisième option existe — le cahier des
+      // charges n'en prévoyait que deux, ce qui ne leur laissait aucune
+      // réponse juste (ajout demandé par Hassan le 22/09/2026).
       { id: "q10", numero: 10, obligatoire: true, type: "unique",
         titre: "Quelle formation as-tu rejoint ?",
-        options: ["PASS AL-BARAKA", "LIBERTY"] },
+        options: ["PASS AL-BARAKA", "LIBERTY", "Les deux"] },
       { id: "q11", numero: 11, obligatoire: true, type: "unique",
         titre: "Depuis combien de temps es-tu dans le programme ?",
         options: ["Moins d'1 mois", "1 à 3 mois", "3 à 6 mois", "Plus de 6 mois"] },

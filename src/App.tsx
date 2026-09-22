@@ -81,6 +81,7 @@ import AdminLeadScoring from "./pages/admin/lead-scoring/AdminLeadScoring";
 import RedifConference from "./pages/public/redif/RedifConference";
 import AdminConferences from "./pages/admin/conferences/AdminConferences";
 import Questionnaire from "./pages/public/questionnaire/Questionnaire";
+import QuestionnaireEntree from "./pages/public/questionnaire/QuestionnaireEntree";
 import RdvIntro from "./pages/public/rdv/RdvIntro";
 import RdvCoordonnees from "./pages/public/rdv/RdvCoordonnees";
 import RdvQuestions from "./pages/public/rdv/RdvQuestions";
@@ -224,6 +225,9 @@ const FullApp = () => (
               {/* Questionnaire clients : le jeton du lien identifie la personne,
                   aucune connexion n'est demandée. */}
               <Route path="/questionnaire/:token" element={<Questionnaire />} />
+              {/* Sans jeton : l'annonce Discord ne peut pas en porter un.
+                  On renvoie le lien personnel par e-mail. */}
+              <Route path="/questionnaire" element={<QuestionnaireEntree />} />
               <Route path="/rdv" element={<RdvIntro />} />
               <Route path="/rdv/coordonnees" element={<RdvCoordonnees />} />
               <Route path="/rdv/questions" element={<RdvQuestions />} />
