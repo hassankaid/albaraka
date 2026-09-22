@@ -168,7 +168,14 @@ const tunnelRoutes = (
     {/* Page indépendante : réservation d'appel (lien partagé pendant/après la conf) */}
     <Route path="/appel-conference" element={<Suspense fallback={<TunnelFallback />}><AppelConference /></Suspense>} />
     <Route path="/appel-conference/confirmation" element={<Suspense fallback={<TunnelFallback />}><AppelConfirmation /></Suspense>} />
-    {/* Tunnel Liberty : landing (copy propre) → VSL + agenda → confirmation */}
+    {/* Tunnel Liberty : landing (copy propre) → VSL + agenda → confirmation.
+        ⚠️ `/liberty` désigne DEUX pages selon le domaine : ce tunnel sur
+        event.albarakaecosysteme.com, et la page de PAIEMENT Liberty sur la
+        plateforme (plus bas dans ce fichier). C'est pour ça que `liberty` est
+        absent des règles « introuvable » de vercel.json, contrairement aux
+        autres tunnels — l'y ajouter remplacerait la page de paiement par une
+        page d'erreur. Verrouillé par liberty/routage.test.ts (vercel.json
+        n'accepte aucun commentaire, la note vit donc ici). */}
     <Route path="/liberty" element={<Suspense fallback={<TunnelFallback />}><LibertyLanding /></Suspense>} />
     <Route path="/liberty/merci" element={<Suspense fallback={<TunnelFallback />}><LibertyMerci /></Suspense>} />
     <Route path="/liberty/confirmation" element={<Suspense fallback={<TunnelFallback />}><LibertyConfirmation /></Suspense>} />

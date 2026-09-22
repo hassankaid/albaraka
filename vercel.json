@@ -45,7 +45,6 @@
     },
 
     {
-      "_commentaire": "`liberty` est absent de ces deux règles À DESSEIN : sur les domaines de l'app, /liberty est la page de PAIEMENT Liberty, qui doit continuer à être servie. Le tunnel Liberty ne vit que sur event.",
       "source": "/(webinaire|vsl|appel-conference|temoignages|al-baraka-200)",
       "has": [
         {
