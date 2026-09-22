@@ -10,19 +10,21 @@ alter table public.questionnaire_invitations
 comment on column public.questionnaire_invitations.exclu is
   'Écarté de la campagne (client perdu, demande de suppression…). Conserve son jeton.';
 
--- Les clients perdus : vente soldée « lost » et aucune vente vivante.
+-- Les clients perdus : une vente au statut « lost ».
 --
--- Un pass révoqué ne suffit PAS. Cinq clients en ont un, mais gardent un pass
--- ACTIF à côté — c'est un changement de formule, pas un départ. Les écarter
--- aurait privé de parole cinq élèves toujours en cours.
+-- Critère unique, posé par Hassan : une vente perdue est un échec de paiement,
+-- donc un dossier en recouvrement. On n'interroge pas quelqu'un sur sa
+-- satisfaction pendant qu'on le relance sur son impayé.
+--
+-- Un pass révoqué N'EST PAS un critère. Cinq clients en ont un, mais gardent
+-- un pass actif à côté — changement de formule, pas départ. Les écarter aurait
+-- privé de parole cinq élèves toujours en cours.
 update public.questionnaire_invitations i
-set exclu = true, motif_exclusion = 'client perdu — vente soldée « lost », aucune vente vivante'
+set exclu = true,
+    motif_exclusion = 'vente au statut « perdu » — échec de paiement, en recouvrement'
 from (
-  select lower(trim(c.email)) as email
+  select distinct lower(trim(c.email)) as email
   from public.sales s join public.contacts c on c.id = s.contact_id
-  where c.email is not null
-  group by 1
-  having count(*) filter (where s.payment_status = 'lost') > 0
-     and count(*) filter (where s.payment_status in ('paid','in_progress','late')) = 0
+  where s.payment_status = 'lost' and c.email is not null
 ) p
 where i.email = p.email and i.test = false;
