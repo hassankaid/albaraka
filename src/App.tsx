@@ -144,6 +144,7 @@ const AppelConference = lazy(() => import("./pages/tunnels/appel/AppelConference
 const AppelConfirmation = lazy(() => import("./pages/tunnels/appel/AppelConfirmation"));
 // Page indépendante de témoignages (preuve sociale → CTA Calendly).
 const Temoignages = lazy(() => import("./pages/tunnels/temoignages/Temoignages"));
+const AlBaraka200 = lazy(() => import("./pages/tunnels/albaraka200/AlBaraka200"));
 const TunnelNotFound = lazy(() => import("./pages/tunnels/components/TunnelNotFound"));
 const TunnelFallback = () => (
   <div style={{ minHeight: "100vh", background: "#060504" }} aria-hidden />
@@ -166,6 +167,9 @@ const tunnelRoutes = (
     <Route path="/appel-conference/confirmation" element={<Suspense fallback={<TunnelFallback />}><AppelConfirmation /></Suspense>} />
     {/* Page indépendante : témoignages (preuve sociale) */}
     <Route path="/temoignages" element={<Suspense fallback={<TunnelFallback />}><Temoignages /></Suspense>} />
+    {/* Tunnel « Al Baraka 200 €/mois » : page unique, prise d'appel directe
+        (ni opt-in ni page de remerciement — la réservation se fait sur place). */}
+    <Route path="/al-baraka-200" element={<Suspense fallback={<TunnelFallback />}><AlBaraka200 /></Suspense>} />
   </>
 );
 
