@@ -15,7 +15,7 @@
 // que soit le jour où on les déclenche. Avant le premier envoi, la fonction
 // la calcule à partir de maintenant — c'est ce qui rend l'aperçu honnête.
 //
-// ⚠️ Les invitations marquées `test` ne partent jamais.
+// ⚠️ Les invitations marquées `test` ou `exclu` ne partent jamais.
 //
 // ⚠️ TOUJOURS `dry_run` D'ABORD : il donne le nombre de destinataires et la
 // date limite retenue, sans rien envoyer.
@@ -198,7 +198,10 @@ serve(async (req) => {
   let q = supabase
     .from("questionnaire_invitations")
     .select("id, token, prenom, email, statut")
-    .eq("test", false);
+    .eq("test", false)
+    // Les clients perdus et ceux qui ont demandé la suppression de leurs
+    // données restent en base avec leur jeton, mais ne reçoivent rien.
+    .eq("exclu", false);
   if (envoi === "initial") {
     q = q.eq("statut", "non_envoye");
   } else {
