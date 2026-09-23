@@ -177,7 +177,7 @@ describe("quel évènement part de quelle page", () => {
   it("la confirmation de rendez-vous envoie PageView puis Schedule", async () => {
     const appels = poseFauxPixel();
     const { trackCalendlyBooked } = await import("./pixel");
-    trackCalendlyBooked();
+    trackCalendlyBooked("2026-10-01T09:00:00Z|client@example.com");
     expect(evenements(appels)).toEqual(["PageView", "Schedule"]);
   });
 });
@@ -212,5 +212,67 @@ describe("deux pixels, un par cible publicitaire", () => {
     // L'URL du document est event.…/webinaire (cf. en-tête du fichier).
     expect(new Set(pixelsVises(appels))).toEqual(new Set(["1499213912013386"]));
     expect(appels.some((a) => a[0] === "track"), "un `track` diffusant subsiste").toBe(false);
+  });
+});
+
+describe("garde-fou anti-doublon du « Schedule »", () => {
+  // Même oubli que sur le « Lead », corrigé le 23/09/2026. Ces pages
+  // s'ouvrent par URL directe : sans garde-fou, un rechargement ou un lien
+  // partagé comptait une réservation de plus. Nous en avons nous-mêmes
+  // déclenché deux en recette sans jamais prendre de rendez-vous. C'est
+  // l'évènement sur lequel les campagnes optimisent.
+  const RESA = "2026-10-01T09:00:00Z|client@example.com";
+
+  beforeEach(() => localStorage.clear());
+
+  it("ne compte RIEN si l'adresse ne porte aucune réservation", async () => {
+    const appels = poseFauxPixel();
+    const { trackCalendlyBooked } = await import("./pixel");
+    trackCalendlyBooked("");
+    expect(evenements(appels)).toEqual(["PageView"]);
+  });
+
+  it("compte une fois la réservation qui vient d'être prise", async () => {
+    const appels = poseFauxPixel();
+    const { trackCalendlyBooked } = await import("./pixel");
+    trackCalendlyBooked(RESA);
+    expect(evenements(appels)).toEqual(["PageView", "Schedule"]);
+  });
+
+  it("ne la recompte pas si la page est rechargée ou le lien rouvert", async () => {
+    const appels = poseFauxPixel();
+    const { trackCalendlyBooked } = await import("./pixel");
+    trackCalendlyBooked(RESA);  // arrivée depuis Calendly
+    trackCalendlyBooked(RESA);  // rechargement
+    trackCalendlyBooked(RESA);  // lien partagé, rouvert
+    expect(evenements(appels).filter((e) => e === "Schedule")).toHaveLength(1);
+    // Le PageView, lui, part bien à chaque fois : c'est une vraie vue.
+    expect(evenements(appels).filter((e) => e === "PageView")).toHaveLength(3);
+  });
+
+  it("compte bien DEUX réservations différentes", async () => {
+    const appels = poseFauxPixel();
+    const { trackCalendlyBooked } = await import("./pixel");
+    trackCalendlyBooked(RESA);
+    trackCalendlyBooked("2026-11-02T14:00:00Z|autre@example.com");
+    expect(evenements(appels).filter((e) => e === "Schedule")).toHaveLength(2);
+  });
+
+  it("n'écrit jamais l'e-mail en clair dans le navigateur", async () => {
+    poseFauxPixel();
+    const { trackCalendlyBooked } = await import("./pixel");
+    trackCalendlyBooked(RESA);
+    const tout = Object.keys(localStorage).join(" ") + " " + Object.values(localStorage).join(" ");
+    expect(tout).not.toContain("client@example.com");
+  });
+
+  it("compte plutôt que de perdre la conversion si le stockage est refusé", async () => {
+    // Choix inverse de celui du « Lead » : un rendez-vous réel est rare et
+    // cher, un doublon sur un cas de bord coûte moins qu'une conversion perdue.
+    const appels = poseFauxPixel();
+    const { trackCalendlyBooked } = await import("./pixel");
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("refusé"); });
+    trackCalendlyBooked(RESA);
+    expect(evenements(appels)).toEqual(["PageView", "Schedule"]);
   });
 });

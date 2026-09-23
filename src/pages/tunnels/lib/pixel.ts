@@ -165,12 +165,30 @@ export function trackWhatsappJoin(): void {
   }
 }
 
+/** Réservations déjà comptées, pour ne pas les compter deux fois. */
+const RDV_COMPTE = "alb_rdv_compte_";
+
 /**
- * À appeler quand un RDV Calendly est réservé (tunnel VSL) : event standard
- * « Schedule » — une réservation d'appel est une conversion forte pour Meta.
- * No-op hors prod.
+ * À appeler à l'arrivée sur une page de confirmation de rendez-vous :
+ * PageView, plus « Schedule » si le visiteur vient RÉELLEMENT de réserver.
+ *
+ * `reservation` identifie la réservation — en pratique la date de l'appel et
+ * l'e-mail, que Calendly passe dans l'adresse. Sans elle, aucun Schedule :
+ * on est sur la page sans avoir rien réservé.
+ *
+ * Même raisonnement que pour le « Lead », et le même oubli corrigé le
+ * 23/09/2026 : ces pages s'ouvrent par URL directe. Un rechargement, un
+ * retour arrière ou un lien de confirmation partagé comptaient chacun une
+ * réservation de plus. Constaté sur nous-mêmes en recette — deux Schedule
+ * déclenchés sans avoir pris le moindre rendez-vous. C'est l'évènement sur
+ * lequel les campagnes optimisent : le gonfler oriente un budget réel vers
+ * des conversions qui n'existent pas.
+ *
+ * Le marqueur est dans `localStorage` et non `sessionStorage` : un lien de
+ * confirmation rouvert demain, dans un autre onglet, désigne la même
+ * réservation et ne doit pas la recompter.
  */
-export function trackCalendlyBooked(): void {
+export function trackCalendlyBooked(reservation?: string | null): void {
   if (!isProdHost()) return;
   try {
     loadFbqScript();
@@ -178,10 +196,29 @@ export function trackCalendlyBooked(): void {
     const id = pixelCourant();
     assurerInit(id);
     window.fbq("trackSingle", id, "PageView");
+
+    const cle = (reservation ?? "").trim();
+    if (!cle) return; // pas de réservation dans l'adresse : rien à compter
+
+    const marqueur = RDV_COMPTE + empreinte(cle);
+    try {
+      if (localStorage.getItem(marqueur)) return; // déjà comptée
+      localStorage.setItem(marqueur, "1");
+    } catch {
+      // Stockage indisponible : on laisse passer. Perdre une conversion réelle
+      // serait pire que d'en compter une en double sur un cas de bord.
+    }
     window.fbq("trackSingle", id, "Schedule");
   } catch (err) {
     console.warn("[tunnel-pixel] schedule tracking failed (non-blocking):", err);
   }
+}
+
+/** Empreinte courte et stable, pour ne pas écrire un e-mail en clair. */
+function empreinte(texte: string): string {
+  let h = 5381;
+  for (let i = 0; i < texte.length; i++) h = ((h << 5) + h + texte.charCodeAt(i)) >>> 0;
+  return h.toString(36);
 }
 
 /** Marqueur d'inscription en attente, posé à la validation du formulaire. */
