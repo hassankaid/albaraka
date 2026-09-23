@@ -14,12 +14,12 @@
     },
 
     {
-      "source": "/(webinaire|vsl|appel-conference|temoignages|al-baraka-200|liberty)",
+      "source": "/(webinaire|vsl|appel-conference|temoignages|al-baraka-200|liberty|video-1|video-2|video-3)",
       "has": [{ "type": "host", "value": "event.albarakaecosysteme.com" }],
       "destination": "/index.html"
     },
     {
-      "source": "/(webinaire|vsl|appel-conference|temoignages|al-baraka-200|liberty)/(.*)",
+      "source": "/(webinaire|vsl|appel-conference|temoignages|al-baraka-200|liberty|video-1|video-2|video-3)/(.*)",
       "has": [{ "type": "host", "value": "event.albarakaecosysteme.com" }],
       "destination": "/index.html"
     },
@@ -45,7 +45,7 @@
     },
 
     {
-      "source": "/(webinaire|vsl|appel-conference|temoignages|al-baraka-200)",
+      "source": "/(webinaire|vsl|appel-conference|temoignages|al-baraka-200|video-1|video-2|video-3)",
       "has": [
         {
           "type": "host",
@@ -55,7 +55,7 @@
       "destination": "/introuvable.html"
     },
     {
-      "source": "/(webinaire|vsl|appel-conference|temoignages|al-baraka-200)/(.*)",
+      "source": "/(webinaire|vsl|appel-conference|temoignages|al-baraka-200|video-1|video-2|video-3)/(.*)",
       "has": [
         {
           "type": "host",

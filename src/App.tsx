@@ -148,6 +148,7 @@ const AppelConference = lazy(() => import("./pages/tunnels/appel/AppelConference
 const AppelConfirmation = lazy(() => import("./pages/tunnels/appel/AppelConfirmation"));
 // Page indépendante de témoignages (preuve sociale → CTA Calendly).
 const Temoignages = lazy(() => import("./pages/tunnels/temoignages/Temoignages"));
+const NurturingVideo = lazy(() => import("./pages/tunnels/nurturing/NurturingVideo"));
 const AlBaraka200 = lazy(() => import("./pages/tunnels/albaraka200/AlBaraka200"));
 const AlBaraka200Confirmation = lazy(() => import("./pages/tunnels/albaraka200/AlBaraka200Confirmation"));
 const LibertyLanding = lazy(() => import("./pages/tunnels/liberty/LibertyLanding"));
@@ -190,6 +191,13 @@ const tunnelRoutes = (
         (ni opt-in ni page de remerciement — la réservation se fait sur place). */}
     <Route path="/al-baraka-200" element={<Suspense fallback={<TunnelFallback />}><AlBaraka200 /></Suspense>} />
     <Route path="/al-baraka-200/confirmation" element={<Suspense fallback={<TunnelFallback />}><AlBaraka200Confirmation /></Suspense>} />
+    {/* Vidéos de nurturing d'avant-conférence, liées depuis les mails J-5,
+        J-3 et J-2 (séquences 21, 23 et 24 de send-conference-mail).
+        Chemins courts et stables : une fois le mail parti, on ne les
+        renomme plus. */}
+    <Route path="/video-1" element={<Suspense fallback={<TunnelFallback />}><NurturingVideo numero={1} /></Suspense>} />
+    <Route path="/video-2" element={<Suspense fallback={<TunnelFallback />}><NurturingVideo numero={2} /></Suspense>} />
+    <Route path="/video-3" element={<Suspense fallback={<TunnelFallback />}><NurturingVideo numero={3} /></Suspense>} />
   </>
 );
 
