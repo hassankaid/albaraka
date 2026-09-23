@@ -20,16 +20,30 @@
 // pendant le dev.
 // ─────────────────────────────────────────────────────────────────────────
 
-// Identifiant du Pixel Meta. Le compte publicitaire du client fait foi : un
-// pixel different de celui utilise dans le gestionnaire de publicites signifie
-// des pubs optimisees sur un pixel qui ne recoit rien, donc un budget depense
-// a l'aveugle. Verifie et corrige le 24/08/2026 sur l'extrait transmis par le
-// client (l'ancien, 1076753490786885, datait de la creation des tunnels le
-// 22/07 et ne correspondait pas a son compte).
+// ─── Les pixels Meta ─────────────────────────────────────────────────────
 //
-// UN SEUL pixel : en declarer deux dedouble les evenements et fausse
-// l'attribution.
-const PIXEL_ID = "1499213912013386";
+// Il y en a DEUX, et c'est voulu. Le tunnel Liberty vise une autre audience
+// que les tunnels conférence : le media buyer le pilote depuis un pixel
+// distinct, confirmé le 23/09/2026. Les mélanger reviendrait à optimiser deux
+// campagnes sur un seul jeu de conversions.
+//
+// Le compte publicitaire fait foi : un pixel qui n'est pas celui du
+// gestionnaire de publicités, ce sont des pubs optimisées sur un pixel qui ne
+// reçoit rien — donc un budget dépensé à l'aveugle. C'est arrivé une fois, en
+// août 2026, avec l'ancien 1076753490786885 hérité de la création des tunnels.
+//
+// Le pixel se déduit du CHEMIN et non d'un paramètre passé par chaque page :
+// la page de confirmation de rendez-vous est un composant partagé entre
+// plusieurs tunnels, et lui faire porter cette information aurait créé un
+// endroit de plus où se tromper. L'URL, elle, dit toujours la vérité.
+const PIXEL_CONFERENCE = "1499213912013386";
+const PIXEL_LIBERTY = "997717802550998";
+
+/** Le pixel du tunnel en cours. Tout ce qui est sous /liberty est Liberty. */
+export function pixelCourant(chemin?: string): string {
+  const p = chemin ?? (typeof window !== "undefined" ? window.location.pathname : "");
+  return /^\/liberty(\/|$)/.test(p) ? PIXEL_LIBERTY : PIXEL_CONFERENCE;
+}
 
 import { getTunnelPrefill } from "./source";
 
@@ -42,7 +56,23 @@ declare global {
   }
 }
 
-let initialized = false;
+// Quels pixels ont déjà été initialisés dans cette visite. Un booléen ne
+// suffisait plus dès lors qu'il y en a deux.
+const inities = new Set<string>();
+
+/** Initialise le pixel du tunnel courant si ce n'est pas déjà fait. */
+function assurerInit(id: string, donnees?: Record<string, string>): void {
+  if (donnees && Object.keys(donnees).length > 0) {
+    // L'Advanced Matching se pose par un `init` explicite, même si le pixel
+    // est déjà initialisé : sans ça les données ne partent jamais.
+    window.fbq("init", id, donnees);
+    inities.add(id);
+    return;
+  }
+  if (inities.has(id)) return;
+  window.fbq("init", id);
+  inities.add(id);
+}
 
 function isProdHost(): boolean {
   if (typeof window === "undefined") return false;
@@ -109,12 +139,10 @@ export function trackLandingView(): void {
   try {
     loadFbqScript();
     if (!window.fbq) return;
-    if (!initialized) {
-      window.fbq("init", PIXEL_ID);
-      initialized = true;
-    }
-    window.fbq("track", "PageView");
-    window.fbq("track", "ViewContent");
+    const id = pixelCourant();
+    assurerInit(id);
+    window.fbq("trackSingle", id, "PageView");
+    window.fbq("trackSingle", id, "ViewContent");
   } catch (err) {
     console.warn("[tunnel-pixel] view tracking failed (non-blocking):", err);
   }
@@ -129,11 +157,9 @@ export function trackWhatsappJoin(): void {
   try {
     loadFbqScript();
     if (!window.fbq) return;
-    if (!initialized) {
-      window.fbq("init", PIXEL_ID);
-      initialized = true;
-    }
-    window.fbq("trackCustom", "WhatsAppJoin");
+    const id = pixelCourant();
+    assurerInit(id);
+    window.fbq("trackSingleCustom", id, "WhatsAppJoin");
   } catch (err) {
     console.warn("[tunnel-pixel] whatsapp-join tracking failed (non-blocking):", err);
   }
@@ -149,12 +175,10 @@ export function trackCalendlyBooked(): void {
   try {
     loadFbqScript();
     if (!window.fbq) return;
-    if (!initialized) {
-      window.fbq("init", PIXEL_ID);
-      initialized = true;
-    }
-    window.fbq("track", "PageView");
-    window.fbq("track", "Schedule");
+    const id = pixelCourant();
+    assurerInit(id);
+    window.fbq("trackSingle", id, "PageView");
+    window.fbq("trackSingle", id, "Schedule");
   } catch (err) {
     console.warn("[tunnel-pixel] schedule tracking failed (non-blocking):", err);
   }
@@ -201,17 +225,15 @@ export async function trackTypLead(): Promise<void> {
       if (enAttente) sessionStorage.removeItem(LEAD_EN_ATTENTE);
     } catch { /* pas de stockage : pas de Lead */ }
 
-    if (!initialized) {
-      window.fbq("init", PIXEL_ID);
-      initialized = true;
-    }
-    window.fbq("track", "PageView");
+    const id = pixelCourant();
+    assurerInit(id);
+    window.fbq("trackSingle", id, "PageView");
     if (!enAttente) return;
 
     const p = getTunnelPrefill();
     const am = await buildAdvancedMatching({ firstName: p?.firstName, email: p?.email, phone: p?.phone });
-    if (Object.keys(am).length > 0) window.fbq("init", PIXEL_ID, am);
-    window.fbq("track", "Lead");
+    assurerInit(id, am);
+    window.fbq("trackSingle", id, "Lead");
   } catch (err) {
     console.warn("[tunnel-pixel] lead tracking failed (non-blocking):", err);
   }
