@@ -20,69 +20,17 @@ import { useColonnes } from "../lib/useColonnes";
 import TunnelBackground from "../components/TunnelBackground";
 import TestimonialTile from "../components/TestimonialTile";
 import CalendlyInline from "../components/CalendlyInline";
+import VimeoVideo from "../components/VimeoVideo";
 import {
   BANDEAU,
   TITRE,
   SOUS_TITRE,
+  VSL,
   RDV_TITRE,
   RDV_TEXTE,
   CALENDLY_URL,
   TEMOIGNAGES_200,
 } from "./content";
-
-/**
- * Emplacement de la vidéo, en attendant qu'elle soit fournie.
- *
- * Un cadre aux proportions définitives plutôt qu'un vide : la page garde sa
- * mise en page, et le jour où la vidéo arrive rien ne bouge autour.
- */
-function VideoAVenir() {
-  return (
-    <div
-      style={{
-        position: "relative",
-        width: "100%",
-        aspectRatio: "16 / 9",
-        borderRadius: 16,
-        overflow: "hidden",
-        border: `1px solid ${T.goldLine}`,
-        background: "linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015))",
-        boxShadow: "0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(201,160,78,0.08)",
-        display: "grid",
-        placeItems: "center",
-      }}
-    >
-      <div style={{ display: "grid", placeItems: "center", gap: 14, padding: 20, textAlign: "center" }}>
-        <div
-          style={{
-            width: 62,
-            height: 62,
-            borderRadius: "50%",
-            border: `1px solid ${T.goldLine}`,
-            background: "radial-gradient(circle, rgba(201,160,78,0.18), transparent 70%)",
-            display: "grid",
-            placeItems: "center",
-          }}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill={T.goldBright} aria-hidden>
-            <path d="M8 5v14l11-7z" />
-          </svg>
-        </div>
-        <div
-          style={{
-            fontFamily: T.body,
-            fontSize: "0.74rem",
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            color: T.creamDim,
-          }}
-        >
-          Vidéo à venir
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function AlBaraka200() {
   const colonnes = useColonnes({ deux: 900, une: 560 });
@@ -180,7 +128,7 @@ export default function AlBaraka200() {
 
         {/* Vidéo */}
         <section className="alb200-rise" style={{ animationDelay: "120ms", maxWidth: 860, margin: "0 auto clamp(48px,8vw,74px)" }}>
-          <VideoAVenir />
+          <VimeoVideo variant={VSL} titre="Al Baraka — 200 €/mois" />
         </section>
 
         {/* Étude de faisabilité → agenda Calendly */}

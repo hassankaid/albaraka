@@ -5,7 +5,8 @@
 // ajoute des bandes noires. Autant les attraper ici.
 import { describe, it, expect } from "vitest";
 import { testimonialKey } from "../lib/testimonials";
-import { TEMOIGNAGES_200, CALENDLY_URL } from "./content";
+import { vimeoEmbedUrl } from "../variants";
+import { TEMOIGNAGES_200, CALENDLY_URL, VSL } from "./content";
 
 describe("témoignages du tunnel 200 €/mois", () => {
   it("sont bien les neuf demandés", () => {
@@ -41,5 +42,21 @@ describe("agenda du tunnel 200 €/mois", () => {
     // Un lien partagé avec un autre tunnel rendrait les rendez-vous
     // indiscernables dans `calls.event_type`.
     expect(CALENDLY_URL).toBe("https://calendly.com/d/d3n4-p7g-trn/al-baraka-200-mois");
+  });
+});
+
+describe("VSL du tunnel 200 €/mois", () => {
+  it("est la vidéo fournie par Hassan le 23/09/2026", () => {
+    expect(VSL.vimeoId).toBe("1229186690");
+  });
+
+  it("porte son hash — la vidéo est masquée de Vimeo, sans lui rien ne démarre", () => {
+    expect(VSL.vimeoHash).toBe("074395f36e");
+  });
+
+  it("construit une URL de lecteur qui transporte bien le hash", () => {
+    const url = new URL(vimeoEmbedUrl(VSL));
+    expect(url.origin + url.pathname).toBe("https://player.vimeo.com/video/1229186690");
+    expect(url.searchParams.get("h")).toBe("074395f36e");
   });
 });

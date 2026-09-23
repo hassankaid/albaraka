@@ -4,7 +4,14 @@
 import { T } from "../theme";
 import { vimeoEmbedUrl, type TunnelVariant } from "../variants";
 
-export default function VimeoVideo({ variant }: { variant: TunnelVariant }) {
+export default function VimeoVideo({
+  variant,
+  titre = "Conférence Al Baraka",
+}: {
+  variant: TunnelVariant;
+  /** Titre de l'iframe, lu par les lecteurs d'écran. */
+  titre?: string;
+}) {
   return (
     <div
       style={{
@@ -24,7 +31,7 @@ export default function VimeoVideo({ variant }: { variant: TunnelVariant }) {
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen
-        title="Conférence Al Baraka"
+        title={titre}
       />
     </div>
   );

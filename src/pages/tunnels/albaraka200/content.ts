@@ -6,6 +6,7 @@
 // l'agenda et le mur de témoignages.
 // ─────────────────────────────────────────────────────────────────────────
 import type { VimeoTestimonial } from "../lib/testimonials";
+import type { TunnelVariant } from "../variants";
 
 export const BANDEAU =
   "Pour les musulmans de 20 à 35 ans qui veulent construire une activité en ligne halal, même sans expérience";
@@ -15,6 +16,25 @@ export const TITRE =
 
 export const SOUS_TITRE =
   "Découvre comment des centaines de musulmans exactement comme toi ont construit leur indépendance financière, halal, en partant de zéro, et comment tu peux commencer, toi aussi, sans sortir 3000 € d'un coup.";
+
+/**
+ * La VSL de l'offre (« VSL PASS 200€/MOIS », 7 min 04, 1920×1080).
+ *
+ * Une seule vidéo, donc pas de variante A/B : on réutilise juste la forme
+ * `TunnelVariant` pour passer par le lecteur commun. Le hash est
+ * OBLIGATOIRE — la vidéo est « masquée de Vimeo », sans lui le lecteur
+ * refuse de démarrer.
+ *
+ * ⚠️ `event.albarakaecosysteme.com` a été ajouté à ses domaines autorisés le
+ * 23/09/2026 : cette page n'est servie que depuis là, et une vidéo non
+ * autorisée y renvoie 403 sans que ça se voie nulle part ailleurs.
+ */
+export const VSL: TunnelVariant = {
+  key: "1",
+  label: "VSL Al Baraka 200 €/mois",
+  vimeoId: "1229186690",
+  vimeoHash: "074395f36e",
+};
 
 export const RDV_TITRE = "Réserve ton étude de faisabilité";
 
