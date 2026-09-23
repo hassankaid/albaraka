@@ -26,6 +26,7 @@ import {
   TITRE,
   SOUS_TITRE,
   VSL,
+  MODALITES,
   RDV_TITRE,
   RDV_TEXTE,
   CALENDLY_URL,
@@ -154,6 +155,24 @@ export default function AlBaraka200() {
           <div style={{ maxWidth: 860, margin: "0 auto" }}>
             <CalendlyInline url={CALENDLY_URL} />
           </div>
+          {/* Ce qu'on signe, écrit avant l'appel et non découvert au paiement. */}
+          <p
+            style={{
+              maxWidth: 720,
+              margin: "clamp(18px,3vw,26px) auto 0",
+              padding: "14px 18px",
+              borderRadius: 12,
+              border: `1px solid ${T.goldDim}`,
+              background: T.bgCard,
+              fontFamily: T.body,
+              fontSize: "clamp(0.78rem,2vw,0.88rem)",
+              lineHeight: 1.6,
+              textAlign: "center",
+              color: T.creamMuted,
+            }}
+          >
+            {MODALITES}
+          </p>
         </section>
 
         {/* Mur de témoignages */}

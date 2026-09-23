@@ -36,6 +36,20 @@ export const VSL: TunnelVariant = {
   vimeoHash: "074395f36e",
 };
 
+/**
+ * Les modalités, sous l'agenda.
+ *
+ * Placées APRÈS la vidéo, jamais avant : la copy garde le prix pour la vidéo
+ * et l'annoncer plus haut la désamorcerait. Mais au moment de réserver, ce
+ * qu'on signe doit être écrit — c'est un engagement sur douze mois, pas un
+ * abonnement qu'on arrête. Le découvrir à l'appel, ou pire au paiement,
+ * ferait perdre la confiance qu'on vient de gagner.
+ */
+export const MODALITES =
+  "2 400 € au total, réglés en 12 mensualités de 200 €. Ce n'est pas un abonnement : " +
+  "c'est un engagement sur douze mois, formalisé par un contrat et un bon de commande. " +
+  "Le règlement en moins de fois, ou comptant, reste possible — le total ne change pas.";
+
 export const RDV_TITRE = "Réserve ton étude de faisabilité";
 
 export const RDV_TEXTE =
