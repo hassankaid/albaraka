@@ -1228,8 +1228,12 @@ Deno.serve(async (req) => {
       // expected_coupon_category du lien. al_baraka -> "PASS AL BARAKA",
       // liberty -> "LIBERTY", sinon "" (a_la_carte ou lien custom CEO sans
       // categorie : pas de contrat genere cote webhook).
+      //
+      // 23/09/2026 : al_baraka_200 est une categorie distincte (pour isoler
+      // les codes promo AB1000/AB500, cf. migration), mais l'offre vendue
+      // reste le Pass AL BARAKA -> meme contrat, memes engagements.
       const customAgreementsFormula =
-        linkExpectedCategory === "al_baraka"
+        linkExpectedCategory === "al_baraka" || linkExpectedCategory === "al_baraka_200"
           ? "PASS AL BARAKA"
           : linkExpectedCategory === "liberty"
             ? "LIBERTY"

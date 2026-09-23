@@ -911,8 +911,11 @@ function PaymentLinkForm({
   // Refonte Sidali 19/05/2026 : 5 cases d'engagement pour les ventes Pass / Liberty
   // uniquement (pas pour les formations à la carte). On déduit la formule de
   // `lookup.expected_coupon_category` qui est défini à la création du lien.
+  // `al_baraka_200` a sa propre catégorie (pour isoler les codes promo du Pass
+  // à 3 000 €) mais vend bien le Pass AL BARAKA : mêmes engagements.
   const formula: CheckoutFormula | null =
-    lookup.expected_coupon_category === "al_baraka"
+    lookup.expected_coupon_category === "al_baraka" ||
+    lookup.expected_coupon_category === "al_baraka_200"
       ? "PASS AL BARAKA"
       : lookup.expected_coupon_category === "liberty"
         ? "LIBERTY"

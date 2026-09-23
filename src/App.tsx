@@ -20,6 +20,7 @@ import UpdateCard from "./pages/checkout/UpdateCard";
 import UpdateCardMerci from "./pages/checkout/UpdateCardMerci";
 import PaymentLinkCheckout from "./pages/checkout/PaymentLinkCheckout";
 import FormationCheckout from "./pages/checkout/FormationCheckout";
+import AlBaraka200Checkout from "./pages/checkout/AlBaraka200Checkout";
 import DashboardLayout from "./components/DashboardLayout";
 import ApporteurLayout from "./components/ApporteurLayout";
 import Dashboard from "./pages/Dashboard";
@@ -260,6 +261,12 @@ const FullApp = () => (
               <Route path="/pay/:token" element={<PaymentLinkCheckout />} />
               <Route path="/checkout/formation/:slug" element={<FormationCheckout />} />
               <Route path="/checkout/formation/:slug/:installments" element={<FormationCheckout />} />
+              {/* Offre « Al Baraka 200 €/mois » — 2 400 € en 1× à 12× (12 par
+                  défaut). Le chemin passe par /checkout/ et non /al-baraka-200/ :
+                  ce dernier préfixe est renvoyé vers introuvable.html sur le
+                  domaine de l'app (vercel.json), il n'existe que sur event. */}
+              <Route path="/checkout/al-baraka-200" element={<AlBaraka200Checkout />} />
+              <Route path="/checkout/al-baraka-200/:installments" element={<AlBaraka200Checkout />} />
               <Route element={<ProtectedRoute />}>
                 {/* Onboarding (no layout) */}
                 <Route path="/onboarding" element={<ApporteurOnboarding />} />

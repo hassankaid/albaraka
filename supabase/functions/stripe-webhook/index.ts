@@ -1120,8 +1120,9 @@ async function applyPaymentLinkGrants(
   }
 
   // ── Grants : Pass via offer (Sprint H) ──
-  // Lit la categorie de l'offre liee : 'al_baraka' ou 'liberty' (validee par
-  // la RPC create_payment_link → garantie de ne jamais avoir 'a_la_carte' ici).
+  // Lit la categorie de l'offre liee : 'al_baraka', 'al_baraka_200' ou
+  // 'liberty' (validee par la RPC create_payment_link → garantie de ne jamais
+  // avoir 'a_la_carte' ici).
   // Insert un user_pass idempotent : skip si le user a deja un pass actif du
   // meme type. Pattern aligne avec ensureBonCommandeOrder lignes 366-386.
   // Sprint T (18/05/2026) : trace le pass_type accorde pour adapter le mail
@@ -1135,8 +1136,17 @@ async function applyPaymentLinkGrants(
         .eq("id", grantsOfferId)
         .maybeSingle();
       const cat = offerRow?.category as string | undefined;
-      if (cat === "al_baraka" || cat === "liberty") {
-        const passType = cat;
+      // 23/09/2026 : l'offre « Al Baraka 200 €/mois » a sa propre categorie
+      // (al_baraka_200) pour que les codes promo du Pass a 3 000 € ne soient
+      // pas valables dessus. Ce qu'elle vend reste le Pass AL BARAKA :
+      // meme pass, meme onboarding, meme Discord.
+      const passType =
+        cat === "al_baraka" || cat === "al_baraka_200"
+          ? "al_baraka"
+          : cat === "liberty"
+            ? "liberty"
+            : null;
+      if (passType) {
         grantedPassType = passType;
         const { data: existingPass } = await supabase
           .from("user_passes")

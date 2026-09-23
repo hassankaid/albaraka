@@ -17,6 +17,13 @@ export const leadSourceConfig: Record<string, { label: string; color: string }> 
   webi_vsl_tiktok_organic: { label: "Tunnel VSL - TikTok", color: "slate" },
   webi_vsl_youtube_organic: { label: "Tunnel VSL - YouTube", color: "red" },
   webi_vsl_direct: { label: "Tunnel VSL - Direct", color: "gray" },
+  // Tunnel Liberty (22/09/2026). Même oubli que ci-dessus : les cinq valeurs
+  // sont passées en base et dans l'edge fn sans arriver jusqu'ici.
+  liberty_ads: { label: "Tunnel Liberty - Ads", color: "amber" },
+  liberty_instagram_organic: { label: "Tunnel Liberty - Instagram", color: "fuchsia" },
+  liberty_tiktok_organic: { label: "Tunnel Liberty - TikTok", color: "slate" },
+  liberty_youtube_organic: { label: "Tunnel Liberty - YouTube", color: "red" },
+  liberty_direct: { label: "Tunnel Liberty - Direct", color: "gray" },
   // ── Historique (Systeme.io + saisie manuelle) ──
   vsl_a: { label: "VSL A", color: "blue" },
   vsl_b: { label: "VSL B", color: "indigo" },
@@ -175,6 +182,7 @@ export const SOURCE_GROUPS = [
     sources: [
       "webi_wa_ads",
       "webi_vsl_ads",
+      "liberty_ads",
       "vsl_a",
       "vsl_b",
       "webi",
@@ -197,6 +205,10 @@ export const SOURCE_GROUPS = [
       "webi_vsl_tiktok_organic",
       "webi_vsl_youtube_organic",
       "webi_vsl_direct",
+      "liberty_instagram_organic",
+      "liberty_tiktok_organic",
+      "liberty_youtube_organic",
+      "liberty_direct",
       "instagram_organic",
       "apporteur_facebook",
       "apporteur_whatsapp",

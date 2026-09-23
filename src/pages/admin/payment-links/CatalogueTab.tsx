@@ -3,7 +3,7 @@
 // Affiche toutes les offres officielles classées en 3 catégories :
 // AL BARAKA · Liberty · À la carte (formations).
 //
-// Pour AL BARAKA et Liberty :
+// Pour AL BARAKA, Al Baraka 200 €/mois et Liberty :
 //   - Sélecteur de mensualités (chips 1× à max_installments_count)
 //   - Lien direct                → /checkout/N  ou  /liberty/N
 //   - Lien différé (date picker) → idem + ?start=YYYY-MM-DD
@@ -40,7 +40,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { getPublicAppOrigin } from "@/lib/impersonation";
 import {
-  Crown, Sparkles, GraduationCap, Copy, Calendar as CalendarIcon, Check, Loader2,
+  Crown, Sparkles, GraduationCap, Copy, Calendar as CalendarIcon, CalendarClock, Check, Loader2,
   FlaskConical, AlertTriangle, ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -70,8 +70,11 @@ type LinkBuildOptions = {
   startDate?: Date | null;    // si défini → variante "deferred"
 };
 
-function buildOfferPath(offer: Offer, installments: number): string {
+export function buildOfferPath(offer: Offer, installments: number): string {
   if (offer.category === "al_baraka") return `/checkout/${installments}`;
+  // Surtout pas `/al-baraka-200/...` : sur le domaine de l'app, ce préfixe est
+  // renvoyé vers introuvable.html par vercel.json (il n'existe que sur event.).
+  if (offer.category === "al_baraka_200") return `/checkout/al-baraka-200/${installments}`;
   if (offer.category === "liberty") return `/liberty/${installments}`;
   // a_la_carte → /checkout/formation/<slug>/<N> (Sprint S2 17/05/2026 :
   // le nombre de mensualites est defini par l'URL, plus d'ecran de choix).
@@ -90,11 +93,12 @@ function buildUrl({ offer, installments, testMode, startDate }: LinkBuildOptions
 // ─── Métadonnées par catégorie ───────────────────────────────────────────
 const CATEGORY_META: Record<OfferCategory, { label: string; icon: any; color: string; accent: string }> = {
   al_baraka:  { label: "AL BARAKA",  icon: Crown,         color: "text-amber-500",  accent: "from-amber-500/10 to-transparent" },
+  al_baraka_200: { label: "Al Baraka 200 €/mois", icon: CalendarClock, color: "text-amber-500", accent: "from-amber-500/10 to-transparent" },
   liberty:    { label: "Liberty",    icon: Sparkles,      color: "text-amber-400",  accent: "from-amber-400/10 to-transparent" },
   a_la_carte: { label: "À la carte", icon: GraduationCap, color: "text-sky-400",    accent: "from-sky-400/10 to-transparent" },
 };
 
-const CATEGORY_ORDER: OfferCategory[] = ["al_baraka", "liberty", "a_la_carte"];
+const CATEGORY_ORDER: OfferCategory[] = ["al_baraka", "al_baraka_200", "liberty", "a_la_carte"];
 
 // ─── Composant principal ────────────────────────────────────────────────
 export default function CatalogueTab() {
@@ -154,6 +158,7 @@ export default function CatalogueTab() {
 
   const offersByCategory: Record<OfferCategory, Offer[]> = {
     al_baraka: (offers ?? []).filter((o) => o.category === "al_baraka"),
+    al_baraka_200: (offers ?? []).filter((o) => o.category === "al_baraka_200"),
     liberty: (offers ?? []).filter((o) => o.category === "liberty"),
     a_la_carte: (offers ?? []).filter((o) => o.category === "a_la_carte"),
   };

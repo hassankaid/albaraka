@@ -5,7 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
  * Catalogue des offres officielles (AL BARAKA, Liberty, formations à la
  * carte). Source des prix et fourchettes de mensualités pour le checkout.
  */
-export type OfferCategory = "al_baraka" | "liberty" | "a_la_carte";
+// `al_baraka_200` = l'offre « Al Baraka 200 €/mois » (2 400 € en 1× à 12×).
+// Catégorie distincte de `al_baraka` pour que les codes promo du Pass à
+// 3 000 € ne s'y appliquent pas ; le Pass accordé reste le même.
+export type OfferCategory = "al_baraka" | "al_baraka_200" | "liberty" | "a_la_carte";
 
 export interface Offer {
   id: string;
