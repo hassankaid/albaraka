@@ -10,12 +10,15 @@
 // Le périmètre se charge dans `email_campaign_recipients` sous le slug
 // ci-dessous. Tant qu'il est vide, tout ceci tourne à vide sans rien casser.
 //
-// ⚠️ LE PRIX N'EST PAS DANS LES MAILS 1 ET 2, ET C'EST VOULU. La copy de
-// l'équipe marketing le garde pour la vidéo — « Je te donne pas le chiffre
-// ici » — et l'annoncer avant la détruirait. Il apparaît dans le mail 3,
-// qui traite justement de l'objection argent : là, dire les 2 400 € en douze
-// mensualités et l'engagement sur un an répond à la question au lieu de la
-// contourner. La page, la vidéo et le tunnel de paiement le disent aussi.
+// ⚠️ LA COPY EST CELLE DE L'ÉQUIPE MARKETING, MOT POUR MOT. On ne la
+// retouche pas : ni le prix qu'elle garde volontairement pour la vidéo, ni
+// les guillemets, ni la ponctuation, ni l'ordre des phrases. Le seul travail
+// fait ici est mécanique — transformer « [Regarde la vidéo ici] » et
+// « CLIQUE ICI » en liens cliquables.
+//
+// Les modalités (2 400 €, douze mensualités, engagement d'un an) se disent
+// donc AILLEURS : dans la vidéo, sur la page sous l'agenda, et au paiement.
+// Pas dans ces mails.
 //
 // ⚠️ Les exclusions sont recalculées À CHAQUE envoi : qui achète après le
 // mail 1 ne reçoit pas le mail 2 qui lui dit « regarde la vidéo ».
@@ -67,6 +70,7 @@ AL BARAKA — Écosystème de l'entrepreneuriat halal<br>
 </td></tr></table></td></tr></table></body></html>`;
 }
 
+/** Le lien de la copy, rendu cliquable. Le libellé est celui du document. */
 function cta(libelle: string): string {
   return `<table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" style="margin:28px auto 10px;">
 <tr><td align="center" bgcolor="#C9A04E" style="background-color:#C9A04E;border:1px solid #C9A04E;border-radius:6px;">
@@ -77,33 +81,27 @@ function cta(libelle: string): string {
 
 const p = (t: string) => `<p>${t}</p>`;
 
-const SIG = `<p style="margin-top:24px;">Sidali<br><span style="color:#7a7a7a;">Fondateur de l'Écosystème AL BARAKA</span></p>`;
+const SIG = `<p style="margin-top:24px;">Sidali,<br><span style="color:#7a7a7a;">Fondateur de l'Écosystème Al Baraka</span></p>`;
 
-/**
- * Les modalités, en clair.
- *
- * Encadré sobre et factuel, pas un argument de vente : ce que le client
- * signe doit être lisible avant qu'il clique, pas découvert au moment du
- * paiement. Réservé au mail 3 — voir l'avertissement en tête de fichier.
- */
-const MODALITES = `<div style="margin:26px 0 8px;padding:16px 18px;background-color:#faf8f3;border:1px solid #e5e1d7;border-radius:6px;font-size:14px;line-height:1.6;color:#4a4a4a;">
-<strong style="color:#1a1a1a;">Pour que ce soit clair :</strong> l'accès au Pass AL BARAKA est à <strong style="color:#1a1a1a;">2 400 €</strong>, réglés en <strong style="color:#1a1a1a;">12 mensualités de 200 €</strong>.
-Ce n'est pas un abonnement qu'on arrête quand on veut : c'est un engagement sur douze mois, formalisé par un contrat et un bon de commande, et les douze mensualités sont dues.
-Tu peux aussi régler en moins de fois, ou comptant — le total reste le même.
-</div>`;
+/** « CLIQUE ICI » rendu cliquable, sans toucher au reste de la phrase. */
+const cliqueIci = (suite: string) =>
+  `<p><a href="${LIEN_VIDEO}" target="_blank" style="color:#A8813A;font-weight:700;text-decoration:underline;">CLIQUE ICI</a> ${suite}</p>`;
 
 interface Gabarit { name: string; subject: string; preheader: string; body: string }
 
+// Les trois textes viennent du document de l'équipe marketing, sans un mot
+// de plus ni de moins. Les préheaders reprennent une phrase du mail lui-même
+// plutôt qu'une accroche inventée.
 const TEMPLATES: Record<number, Gabarit> = {
   1: {
     name: "Lancement 200 — mail 1 : l'annonce",
     subject: "J'ai cassé les prix pour t'aider (mais c'est limité !)",
-    preheader: "Le tarif le plus compétitif du marché pour ce niveau d'accompagnement.",
+    preheader: "Je te donne pas le chiffre ici. Tu vas le découvrir dans la vidéo.",
     body: [
       p("Salamou alaykoum c'est Sidali,"),
       p("Bon parlons franchement, aujourd'hui dans tout ce qui est business en ligne, la plupart des formateurs ayant un accompagnement sérieux en personal branding, marketing, closing, ou autre, facturent le prix fort, généralement entre 3000 et 4000 euros. Parfois beaucoup plus."),
       p("J'ai fait un choix différent."),
-      p("Parce que je pense que la communauté aujourd'hui a réellement besoin qu'on lui tende la main, qu'on l'aide vraiment à ouvrir les portes d'une activité en ligne halal, sans casquer 4 ou 5000&nbsp;€."),
+      p("Parce que je pense que la communauté aujourd'hui a réellement besoin qu'on lui tende la main, qu'on l'aide vraiment à ouvrir les portes d'une activité en ligne halal, sans casquer 4 ou 5000€."),
       p("J'ai décidé de t'offrir le Process Al Baraka qui a déjà permis à bon nombre de musulmans de générer leurs premiers milliers d'euros, au tarif le plus compétitif du marché pour ce niveau d'accompagnement."),
       p("Personne ne fait ça, et encore moins à ce prix. Je dis bien personne."),
       p("Je te donne pas le chiffre ici. Tu vas le découvrir dans la vidéo."),
@@ -111,30 +109,30 @@ const TEMPLATES: Record<number, Gabarit> = {
       p("Cette vidéo, elle est pas là pour tout le monde."),
       p("Elle est pour toi si tu souhaites nous rejoindre et que tu n'as pas encore pu, si t'es aligné avec l'écosystème Al Baraka et que tu veux construire ton indépendance financière, sans trahir tes valeurs."),
       p("Si c'est ton cas, regarde la vidéo."),
-      cta("REGARDE LA VIDÉO"),
+      cta("Regarde la vidéo ici"),
       SIG,
     ].join("\n"),
   },
 
   2: {
     name: "Lancement 200 — mail 2 : les 7 minutes",
-    subject: "« J'ai pas le temps » mais tu perds aussi de l'argent et même plus",
-    preheader: "7 minutes maintenant, ou continuer à tourner en rond.",
+    subject: '"J\'ai pas le temps" mais tu perds aussi de l\'argent et même plus',
+    preheader: "7 minutes maintenant, ou continuer à tourner en rond indéfiniment sans rien construire ?",
     body: [
       p("Salamou alaykoum c'est encore Sidali,"),
       p("Je t'ai parlé hier de l'offre à durée limitée qu'on propose avec l'écosystème Al Baraka, au tarif le plus compétitif du marché pour ce type d'accompagnement."),
       p("Si t'as pas encore regardé la vidéo, je devine ce que t'as pensé."),
-      p("« J'ai pas le temps pour ça maintenant. »"),
+      p('"J\'ai pas le temps pour ça maintenant."'),
       p("Je comprends. Vraiment."),
       p("Mais laisse-moi te dire un truc, honnêtement."),
       p("Cette vidéo dure 7 minutes. Et ce temps-là, il te permettra de comprendre exactement comment fonctionne un système qui a déjà permis à des centaines de personnes de construire leur indépendance, halal."),
       p("Le vrai coût, c'est pas ces 7 minutes."),
       p("C'est le temps que t'as déjà passé à hésiter."),
-      p("Depuis combien de jours, de semaines, tu portes ce projet sans jamais le lancer&nbsp;?"),
+      p("Depuis combien de jours, de semaines, tu portes ce projet sans jamais le lancer ?"),
       p("Et pendant que tu hésites, d'autres formateurs continuent de facturer 3000, 4000 euros pour un accompagnement comparable, sans jamais te proposer une alternative aussi accessible."),
-      p("7 minutes maintenant, ou continuer à tourner en rond indéfiniment sans rien construire&nbsp;?"),
-      cta("REGARDE LA VIDÉO"),
-      p("Fais les causes&nbsp;! Qu'Allah facilite"),
+      p("7 minutes maintenant, ou continuer à tourner en rond indéfiniment sans rien construire ?"),
+      cta("Regarde la vidéo ici"),
+      p("Fais les causes ! Qu'Allah facilite"),
       SIG,
     ].join("\n"),
   },
@@ -142,25 +140,24 @@ const TEMPLATES: Record<number, Gabarit> = {
   3: {
     name: "Lancement 200 — mail 3 : les deux blocages",
     subject: "C'est ça qui te bloque, lis ce mail !",
-    preheader: "« Je préfère pas dépenser » et « je vais réfléchir ».",
+    preheader: "À ce stade, je devine ce qui se passe dans ta tête. Deux pensées, probablement.",
     body: [
       p("Salamou alaykoum, c'est Sidali (encore)"),
       p("À ce stade, je devine ce qui se passe dans ta tête. Deux pensées, probablement."),
-      p("La première, « je préfère pas dépenser de l'argent là-dedans. »"),
-      p("Et je comprends. Mais sache que l'argent n'est pas fait pour être stocké mais plutôt pour être utilisé&nbsp;! Pour que tu puisses le travailler et qu'il te permette d'améliorer ta vie&nbsp;!"),
-      p("Ne laisse pas la peur et les waswas te paralyser toute ta vie&nbsp;!"),
+      p('La première, "je préfère pas dépenser de l\'argent là-dedans."'),
+      p("Et je comprends. Mais sache que l'argent n'est pas fait pour être stocké mais plutôt pour être utilisé ! Pour que tu puisses le travailler et qu'il te permette d'améliorer ta vie !"),
+      p("Ne laisse pas la peur et les waswas te paralyser toute ta vie !"),
       p("J'ai fait ma part pour aider la communauté, on propose le tarif le plus compétitif du marché, pour te permettre de créer ton activité en ligne."),
-      MODALITES,
       p("Tout ça, c'est expliqué en détail dans la vidéo."),
-      cta("REGARDE LA VIDÉO"),
-      p("La deuxième pensée, « je vais réfléchir. »"),
-      p("Celle-là, elle paraît raisonnable. Personne ne la remet en question. Mais laisse-moi te dire honnêtement ce qui se passe, la plupart du temps, derrière « je vais réfléchir. »"),
-      p("Ça veut rarement dire « je vais vraiment y repenser sérieusement cette semaine. »"),
-      p("Ça veut dire, le plus souvent, « je vais remettre ça de côté, et dans 3 mois je serai exactement là où je suis aujourd'hui. »"),
+      cliqueIci("pour la regarder si tu ne l'as pas encore fait."),
+      p('La deuxième pensée, "je vais réfléchir."'),
+      p('Celle-là, elle paraît raisonnable. Personne ne la remet en question. Mais laisse-moi te dire honnêtement ce qui se passe, la plupart du temps, derrière "je vais réfléchir."'),
+      p('Ça veut rarement dire "je vais vraiment y repenser sérieusement cette semaine."'),
+      p('Ça veut dire, le plus souvent, "je vais remettre ça de côté, et dans 3 mois je serai exactement là où je suis aujourd\'hui."'),
       p("Pas parce que t'as pas de volonté. Juste parce que sans décision claire, rien ne change, jamais."),
-      p("Alors avant de réfléchir dans le vide, regarde la vidéo et en 7 minutes, tu sauras exactement ce qu'on propose, comment ça fonctionne, et pourquoi c'est l'occasion que tu ne dois absolument pas louper&nbsp;!"),
+      p("Alors avant de réfléchir dans le vide, regarde la vidéo et en 7 minutes, tu sauras exactement ce qu'on propose, comment ça fonctionne, et pourquoi c'est l'occasion que tu ne dois absolument pas louper !"),
       p("Et à ce moment-là, ta réflexion aura enfin quelque chose de concret sur quoi se baser."),
-      cta("REGARDE LA VIDÉO"),
+      cta("Regarde la vidéo ici"),
       SIG,
     ].join("\n"),
   },
