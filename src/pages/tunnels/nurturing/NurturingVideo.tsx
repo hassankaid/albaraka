@@ -20,9 +20,20 @@ import { T, ensureTunnelFonts } from "../theme";
 import { useConference } from "../lib/conference";
 import TunnelBackground from "../components/TunnelBackground";
 import VimeoVideo from "../components/VimeoVideo";
-import { VIDEOS, BANDEAU, cheminVideo } from "./content";
+import { VIDEOS, BANDEAU, cheminVideo, estOuverte } from "./content";
 
-/** La barre des trois parties : où j'en suis, et où je peux aller. */
+/**
+ * La barre des trois parties : où j'en suis, et où je peux aller.
+ *
+ * Les vidéos arrivent une par une — J-5, J-3, J-2 — et racontent une histoire
+ * dans l'ordre. Ce qui n'a pas encore été envoyé reste donc gris et inerte :
+ * sur la partie 1, les deux suivantes sont fermées ; sur la partie 3, tout est
+ * ouvert. Revenir en arrière marche toujours, car qui arrive par le mail J-2
+ * n'a pas forcément vu les précédentes.
+ *
+ * Une partie fermée n'est pas un lien désactivé, c'est un non-lien : rien à
+ * cliquer, rien dans l'ordre de tabulation.
+ */
 function Parties({ courante }: { courante: number }) {
   return (
     <nav
@@ -37,45 +48,94 @@ function Parties({ courante }: { courante: number }) {
     >
       {VIDEOS.map((v) => {
         const active = v.numero === courante;
-        return (
-          <Link
-            key={v.numero}
-            to={cheminVideo(v.numero)}
-            aria-current={active ? "page" : undefined}
-            style={{
-              display: "block",
-              textDecoration: "none",
-              textAlign: "center",
-              borderRadius: 12,
-              padding: "clamp(10px,2vw,14px) clamp(6px,1.5vw,12px)",
-              border: `1px solid ${active ? T.gold : T.goldDim}`,
-              background: active ? T.goldDim : T.bgCard,
-              transition: "border-color .2s, background .2s",
-            }}
-          >
+        const ouverte = estOuverte(v.numero, courante);
+
+        const habillage: React.CSSProperties = {
+          display: "block",
+          textDecoration: "none",
+          textAlign: "center",
+          borderRadius: 12,
+          padding: "clamp(7px,1.5vw,10px)",
+          border: `1px solid ${active ? T.gold : ouverte ? T.goldDim : "transparent"}`,
+          background: active ? T.goldDim : ouverte ? T.bgCard : "rgba(255,255,255,0.015)",
+          transition: "border-color .2s, background .2s",
+        };
+
+        const contenu = (
+          <>
             <div
               style={{
-                fontFamily: T.body,
-                fontSize: "clamp(0.6rem,1.8vw,0.68rem)",
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: active ? T.goldBright : T.creamDim,
-                marginBottom: 5,
+                position: "relative",
+                aspectRatio: "16 / 9",
+                borderRadius: 8,
+                overflow: "hidden",
+                background: T.bgDeep,
               }}
             >
-              Partie {v.numero}
+              <img
+                src={v.miniature}
+                alt=""
+                loading="lazy"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
+                  // Le gris EST le signal « pas encore disponible ».
+                  filter: ouverte ? "none" : "grayscale(1) brightness(0.45)",
+                  transition: "filter .25s ease",
+                }}
+              />
+              <span
+                style={{
+                  position: "absolute",
+                  top: 5,
+                  left: 5,
+                  padding: "2px 7px",
+                  borderRadius: 999,
+                  fontFamily: T.body,
+                  fontSize: "clamp(0.52rem,1.5vw,0.6rem)",
+                  fontWeight: 700,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  background: active ? T.gold : "rgba(6,5,4,0.74)",
+                  color: active ? "#1A1407" : ouverte ? T.cream : T.creamDim,
+                }}
+              >
+                Partie {v.numero}
+              </span>
             </div>
             <div
               style={{
+                marginTop: 7,
                 fontFamily: T.display,
-                fontSize: "clamp(0.82rem,2.3vw,1rem)",
+                fontSize: "clamp(0.78rem,2.2vw,0.96rem)",
                 lineHeight: 1.25,
-                color: active ? T.cream : T.creamMuted,
+                color: active ? T.cream : ouverte ? T.creamMuted : T.creamDim,
               }}
             >
               {v.onglet}
             </div>
+          </>
+        );
+
+        return ouverte ? (
+          <Link
+            key={v.numero}
+            to={cheminVideo(v.numero)}
+            aria-current={active ? "page" : undefined}
+            style={habillage}
+          >
+            {contenu}
           </Link>
+        ) : (
+          <div
+            key={v.numero}
+            aria-label={`Partie ${v.numero}, ${v.onglet} — pas encore disponible`}
+            style={{ ...habillage, cursor: "default" }}
+          >
+            {contenu}
+          </div>
         );
       })}
     </nav>

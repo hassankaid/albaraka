@@ -9,7 +9,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { vimeoEmbedUrl } from "../variants";
-import { VIDEOS, cheminVideo } from "./content";
+import { VIDEOS, cheminVideo, estOuverte } from "./content";
 
 interface Rewrite {
   source: string;
@@ -86,5 +86,35 @@ describe("routage des pages de nurturing", () => {
     for (const chemin of chemins) {
       expect(app, `la route ${chemin} manque dans App.tsx`).toContain(`path="${chemin}"`);
     }
+  });
+});
+
+describe("ce qui est ouvert selon la partie où l'on est", () => {
+  // La règle demandée par Hassan le 23/09/2026 : on voit ce qu'on a déjà
+  // reçu, jamais ce qui n'est pas encore parti.
+  it("sur la partie 1, seule la première est ouverte", () => {
+    expect([1, 2, 3].map((n) => estOuverte(n, 1))).toEqual([true, false, false]);
+  });
+
+  it("sur la partie 2, la troisième reste fermée", () => {
+    expect([1, 2, 3].map((n) => estOuverte(n, 2))).toEqual([true, true, false]);
+  });
+
+  it("sur la partie 3, tout est ouvert", () => {
+    expect([1, 2, 3].map((n) => estOuverte(n, 3))).toEqual([true, true, true]);
+  });
+});
+
+describe("vignettes des trois parties", () => {
+  it("sont renseignées et servies par le CDN Vimeo", () => {
+    for (const v of VIDEOS) {
+      expect(v.miniature, `la vidéo ${v.numero} n'a pas de vignette`).toBeTruthy();
+      expect(v.miniature).toMatch(/^https:\/\/i\.vimeocdn\.com\/video\//);
+    }
+  });
+
+  it("sont trois images distinctes", () => {
+    const urls = VIDEOS.map((v) => v.miniature);
+    expect(new Set(urls).size).toBe(urls.length);
   });
 });
