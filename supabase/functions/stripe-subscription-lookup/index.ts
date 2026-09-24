@@ -149,6 +149,19 @@ serve(async (req) => {
               ? inv.payment_intent
               : (inv.payment_intent?.id ?? null),
           hosted_invoice_url: inv.hosted_invoice_url ?? null,
+          // ─── Le calendrier de relance (ajouté le 24/09/2026) ───
+          //
+          // Sans ces champs, on ne pouvait pas répondre à une question aussi
+          // simple que « le prélèvement est-il prévu demain ? ». On lisait la
+          // date d'échéance en base et on supposait que Stripe suivait — or
+          // Stripe a son propre calendrier de relances, qui n'a aucune raison
+          // de coïncider. `prochaine_tentative` est la seule date qui dise
+          // quand de l'argent va réellement bouger.
+          prochaine_tentative: tsToIso(inv.next_payment_attempt),
+          tentatives: inv.attempt_count ?? 0,
+          echeance_stripe: tsToIso(inv.due_date),
+          mode_encaissement: inv.collection_method ?? null,
+          relances_actives: inv.auto_advance === true,
         }));
 
         const facturesPayees = invoices.filter((i) => i.statut === "paid");
