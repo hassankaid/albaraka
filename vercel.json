@@ -14,12 +14,12 @@
     },
 
     {
-      "source": "/(webinaire|vsl|appel-conference|temoignages|al-baraka-200|liberty|video-1|video-2|video-3)",
+      "source": "/(webinaire|vsl|appel-conference|temoignages|al-baraka-200|liberty|video-1|video-2|video-3|mentions-legales|politique-de-confidentialite|conditions-generales-de-vente)",
       "has": [{ "type": "host", "value": "event.albarakaecosysteme.com" }],
       "destination": "/index.html"
     },
     {
-      "source": "/(webinaire|vsl|appel-conference|temoignages|al-baraka-200|liberty|video-1|video-2|video-3)/(.*)",
+      "source": "/(webinaire|vsl|appel-conference|temoignages|al-baraka-200|liberty|video-1|video-2|video-3|mentions-legales|politique-de-confidentialite|conditions-generales-de-vente)/(.*)",
       "has": [{ "type": "host", "value": "event.albarakaecosysteme.com" }],
       "destination": "/index.html"
     },

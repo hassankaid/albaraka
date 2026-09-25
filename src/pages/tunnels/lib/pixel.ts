@@ -46,6 +46,7 @@ export function pixelCourant(chemin?: string): string {
 }
 
 import { getTunnelPrefill } from "./source";
+import { consentPublicite, EVENEMENT_CHANGEMENT } from "@/lib/consentement";
 
 declare global {
   interface Window {
@@ -79,8 +80,51 @@ function isProdHost(): boolean {
   return /(?:^|\.)albarakaecosysteme\.com$/i.test(window.location.hostname);
 }
 
+/**
+ * Ce que le visiteur a demandé avant d'avoir répondu au bandeau.
+ *
+ * Une landing déclenche son évènement au montage, souvent plusieurs secondes
+ * avant que le visiteur ne clique sur « Accepter ». Sans file d'attente, ces
+ * vues seraient perdues : on mesurerait moins que la réalité, et le media
+ * buyer conclurait à une panne. On garde donc l'intention, sans rien envoyer.
+ */
+const enAttenteDeConsentement: Array<() => void> = [];
+
+if (typeof window !== "undefined") {
+  window.addEventListener(EVENEMENT_CHANGEMENT, () => {
+    if (!consentPublicite()) {
+      // Refus, ou retrait après coup : on jette ce qui attendait.
+      enAttenteDeConsentement.length = 0;
+      return;
+    }
+    const aRejouer = enAttenteDeConsentement.splice(0, enAttenteDeConsentement.length);
+    for (const f of aRejouer) {
+      try { f(); } catch { /* un évènement raté ne doit pas bloquer les autres */ }
+    }
+  });
+}
+
+/**
+ * Le garde-fou du consentement.
+ *
+ * Tant que le visiteur n'a pas accepté la catégorie « publicité », le script
+ * de Meta n'est PAS chargé — pas seulement muet. Le charger dépose déjà des
+ * identifiants, ce que la politique de confidentialité publiée interdit
+ * explicitement avant accord (§9).
+ *
+ * Renvoie `true` si l'appelant peut continuer.
+ */
+function consentementObtenu(differer: () => void): boolean {
+  if (consentPublicite()) return true;
+  enAttenteDeConsentement.push(differer);
+  return false;
+}
+
 function loadFbqScript(): void {
   if (typeof window === "undefined" || window.fbq) return;
+  // Deuxième verrou, au plus près du chargement : même si un appelant oublie
+  // de demander, le script ne part pas sans consentement.
+  if (!consentPublicite()) return;
   /* eslint-disable @typescript-eslint/no-explicit-any */
   (function (f: any, b: any, e: string, v: string) {
     if (f.fbq) return;
@@ -136,6 +180,7 @@ async function buildAdvancedMatching(c: PixelContact): Promise<Record<string, st
  */
 export function trackLandingView(): void {
   if (!isProdHost()) return;
+  if (!consentementObtenu(() => trackLandingView())) return;
   try {
     loadFbqScript();
     if (!window.fbq) return;
@@ -154,6 +199,7 @@ export function trackLandingView(): void {
  */
 export function trackWhatsappJoin(): void {
   if (!isProdHost()) return;
+  if (!consentementObtenu(() => trackWhatsappJoin())) return;
   try {
     loadFbqScript();
     if (!window.fbq) return;
@@ -190,6 +236,7 @@ const RDV_COMPTE = "alb_rdv_compte_";
  */
 export function trackCalendlyBooked(reservation?: string | null): void {
   if (!isProdHost()) return;
+  if (!consentementObtenu(() => trackCalendlyBooked(reservation))) return;
   try {
     loadFbqScript();
     if (!window.fbq) return;
@@ -252,6 +299,10 @@ export function markLeadPending(): void {
  */
 export async function trackTypLead(): Promise<void> {
   if (!isProdHost()) return;
+  // Le marqueur d'inscription est consommé À L'INTÉRIEUR : si on différait
+  // l'appel entier, il serait consommé deux fois. On ne diffère donc que
+  // l'envoi, et le marqueur reste posé tant que rien n'est parti.
+  if (!consentementObtenu(() => void trackTypLead())) return;
   try {
     loadFbqScript();
     if (!window.fbq) return;

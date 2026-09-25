@@ -21,6 +21,9 @@ import UpdateCardMerci from "./pages/checkout/UpdateCardMerci";
 import PaymentLinkCheckout from "./pages/checkout/PaymentLinkCheckout";
 import FormationCheckout from "./pages/checkout/FormationCheckout";
 import AlBaraka200Checkout from "./pages/checkout/AlBaraka200Checkout";
+import PiedDePageLegal from "./components/legal/PiedDePageLegal";
+import BandeauCookies from "./components/legal/BandeauCookies";
+import { MENTIONS_LEGALES, POLITIQUE_CONFIDENTIALITE, CGV } from "./pages/legal/textes";
 import DashboardLayout from "./components/DashboardLayout";
 import ApporteurLayout from "./components/ApporteurLayout";
 import Dashboard from "./pages/Dashboard";
@@ -149,6 +152,10 @@ const AppelConfirmation = lazy(() => import("./pages/tunnels/appel/AppelConfirma
 // Page indépendante de témoignages (preuve sociale → CTA Calendly).
 const Temoignages = lazy(() => import("./pages/tunnels/temoignages/Temoignages"));
 const NurturingVideo = lazy(() => import("./pages/tunnels/nurturing/NurturingVideo"));
+// Pages légales : servies sur LES DEUX domaines. Le pied de page des tunnels
+// y renvoie, et un lien qui sort du domaine au milieu d'un tunnel publicitaire
+// est exactement ce qu'un examen Meta sanctionne.
+const PageLegale = lazy(() => import("./pages/legal/PageLegale"));
 const AlBaraka200 = lazy(() => import("./pages/tunnels/albaraka200/AlBaraka200"));
 const AlBaraka200Confirmation = lazy(() => import("./pages/tunnels/albaraka200/AlBaraka200Confirmation"));
 const LibertyLanding = lazy(() => import("./pages/tunnels/liberty/LibertyLanding"));
@@ -162,6 +169,19 @@ const TunnelFallback = () => (
 // ── Segmentation par sous-domaine (voir src/lib/hosts.ts) ────────────────
 // Les routes des tunnels, isolées pour pouvoir être servies SEULES (sur
 // event.albarakaecosysteme.com) ou RETIRÉES (sur les domaines de l'app).
+/**
+ * Les trois pages légales. Déclarées une fois, montées dans les DEUX
+ * applications : le cahier des charges les veut accessibles sans connexion,
+ * et le pied de page y renvoie depuis n'importe quelle page, tunnel compris.
+ */
+const routesLegales = (
+  <>
+    <Route path={MENTIONS_LEGALES.chemin} element={<Suspense fallback={<TunnelFallback />}><PageLegale texte={MENTIONS_LEGALES} /></Suspense>} />
+    <Route path={POLITIQUE_CONFIDENTIALITE.chemin} element={<Suspense fallback={<TunnelFallback />}><PageLegale texte={POLITIQUE_CONFIDENTIALITE} /></Suspense>} />
+    <Route path={CGV.chemin} element={<Suspense fallback={<TunnelFallback />}><PageLegale texte={CGV} /></Suspense>} />
+  </>
+);
+
 const tunnelRoutes = (
   <>
     {/* Tunnel WhatsApp */}
@@ -207,8 +227,16 @@ const TunnelOnlyApp = () => (
   <BrowserRouter>
     <Routes>
       {tunnelRoutes}
+      {routesLegales}
       <Route path="*" element={<Suspense fallback={<TunnelFallback />}><TunnelNotFound /></Suspense>} />
     </Routes>
+    {/* Sur CHAQUE page, sans exception — y compris les pages de vente
+        épurées. C'est ce pied de page que Meta cherche quand il refuse
+        une publicité : identité de l'annonceur, non-affiliation, et un
+        accès à la politique de confidentialité sans connexion. */}
+    <PiedDePageLegal />
+    {/* Aucun traceur ne se charge avant qu'on ait cliqué ici. */}
+    <BandeauCookies />
   </BrowserRouter>
 );
 
@@ -393,8 +421,12 @@ const FullApp = () => (
                   <Route path="/studio/projects/:projectId" element={<StudioGate><StudioProject /></StudioGate>} />
                 </Route>
               </Route>
+              {routesLegales}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            {/* Même pied de page que sur les tunnels, même composant. */}
+            <PiedDePageLegal />
+            <BandeauCookies />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
