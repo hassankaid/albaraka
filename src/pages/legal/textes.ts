@@ -37,6 +37,20 @@ export interface PageLegale {
  */
 export const DATE_MISE_A_JOUR = "25/09/2026";
 
+/**
+ * Le PDF des CGV, daté et archivé.
+ *
+ * Le cahier des charges (§3.2) demande que le client puisse CONSERVER les
+ * CGV — la loi l'impose — et que chaque ancienne version reste accessible :
+ * en cas de litige, il faut pouvoir prouver quelle version il a acceptée.
+ * D'où un nom de fichier daté, et non un « cgv.pdf » qu'on écraserait.
+ *
+ * Il est engendré depuis CE fichier par `scripts/generer-cgv-pdf.mjs` : la
+ * page et le PDF ne peuvent donc pas diverger. Publier une version 2 suppose
+ * de régénérer le PDF sous un nouveau nom et de laisser l'ancien en place.
+ */
+export const PDF_CGV = "/cgv/cgv-2026-09-25.pdf";
+
 export const MENTIONS_LEGALES: PageLegale = {
   chemin: "/mentions-legales",
   titre: "Mentions légales",

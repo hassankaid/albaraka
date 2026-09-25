@@ -27,12 +27,86 @@ const BRAND = {
 
 type PassType = "al_baraka" | "liberty";
 
+
+// ─────────────────────────────────────────────────────────────────────────
+// La confirmation de commande (cahier des charges Ethicarena §4.5)
+//
+// La loi exige que le contrat conclu en ligne soit confirmé au client « sur
+// support durable » : un support qu'il conserve et que le vendeur ne peut
+// plus modifier. Une page web n'en est pas un — elle change. Un e-mail, si.
+//
+// Hassan a choisi de l'intégrer à l'e-mail de bienvenue plutôt que d'en
+// envoyer un troisième en cinq minutes (25/09/2026). Le risque de ce choix
+// est qu'on retouche un jour l'accueil et qu'on casse la pièce contractuelle
+// sans s'en apercevoir : c'est le test `confirmation.test.ts` qui l'empêche,
+// pas la séparation.
+//
+// ⚠️ CE BLOC NE PART QUE S'IL Y A UNE COMMANDE. Le même e-mail est envoyé
+// quand un accès est accordé À LA MAIN ou lors d'un upgrade offert :
+// y joindre les CGV et la phrase de renonciation affirmerait que la personne
+// a renoncé à un droit alors qu'elle n'a rien acheté.
+// ─────────────────────────────────────────────────────────────────────────
+
+/** L'adresse publique du PDF des CGV, daté et archivé. */
+const URL_CGV_PDF = "https://plateforme.albarakaecosysteme.com/cgv/cgv-2026-09-25.pdf";
+
+/** Texte imposé par le cahier des charges. Ne pas reformuler. */
+const PHRASE_RENONCIATION =
+  "Conformément à votre demande, vous avez eu accès immédiatement à la plateforme " +
+  "AL BARAKA et avez expressément renoncé à votre droit de rétractation " +
+  "(article L. 221-28 du Code de la consommation).";
+
+export interface Commande {
+  produit: string;
+  montantTotal: number;
+  mensualites: number;
+  date: string;
+  versionCgv: string | null;
+}
+
+const euros = (n: number) =>
+  new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n);
+
+/** Le récapitulatif contractuel, inséré dans l'e-mail de bienvenue. */
+export function blocConfirmationCommande(c: Commande): string {
+  const echeancier = c.mensualites > 1
+    ? `<tr><td style="padding:4px 0;color:#7a7a7a;">Règlement</td><td style="padding:4px 0;text-align:right;">${c.mensualites} mensualités, sans frais ni intérêts</td></tr>`
+    : `<tr><td style="padding:4px 0;color:#7a7a7a;">Règlement</td><td style="padding:4px 0;text-align:right;">Paiement comptant</td></tr>`;
+
+  return `
+<div style="margin:32px 0 0;padding:20px 22px;background-color:#faf8f3;border:1px solid #e5e1d7;border-radius:8px;font-size:14px;line-height:1.6;color:#3a3a3a;">
+  <p style="margin:0 0 14px;font-size:15px;color:#1a1a1a;"><strong>Confirmation de ta commande</strong></p>
+  <table role="presentation" cellspacing="0" cellpadding="0" width="100%" style="font-size:14px;">
+    <tr><td style="padding:4px 0;color:#7a7a7a;">Offre</td><td style="padding:4px 0;text-align:right;">${c.produit}</td></tr>
+    <tr><td style="padding:4px 0;color:#7a7a7a;">Montant total</td><td style="padding:4px 0;text-align:right;"><strong>${euros(c.montantTotal)}</strong> — TVA non applicable</td></tr>
+    ${echeancier}
+    <tr><td style="padding:4px 0;color:#7a7a7a;">Date</td><td style="padding:4px 0;text-align:right;">${c.date}</td></tr>
+  </table>
+
+  <p style="margin:16px 0 0;">${PHRASE_RENONCIATION}</p>
+
+  <p style="margin:14px 0 0;">
+    Les conditions générales de vente que tu as acceptées${c.versionCgv ? ` (version du ${c.versionCgv})` : ""}
+    sont jointes à cet e-mail, et consultables ici :
+    <a href="${URL_CGV_PDF}" style="color:#A8813A;">${URL_CGV_PDF}</a>
+  </p>
+
+  <p style="margin:16px 0 0;padding-top:14px;border-top:1px solid #e5e1d7;font-size:12.5px;color:#7a7a7a;">
+    ETHICARENA L.L.C-FZ — Licence n° 2422583.01<br>
+    Meydan Grandstand, 6th floor, Meydan Road, Nad Al Sheba, Dubaï, Émirats arabes unis<br>
+    contact@ethicarena.com
+  </p>
+</div>`;
+}
+
 function buildHtml(
   fullName: string,
   actionLink: string,
   passType: PassType = "al_baraka",
   includeDiscordButton: boolean = false,
   isUpgrade: boolean = false,
+  /** Le récapitulatif contractuel. Vide quand il n'y a pas de commande. */
+  confirmation: string = "",
 ): string {
   const firstName = (fullName || "").split(" ")[0] || "";
   const isLiberty = passType === "liberty";
@@ -156,6 +230,11 @@ function buildHtml(
               <!--<![endif]-->
             </td>
           </tr>` : ""}
+          ${confirmation ? `<tr>
+            <td class="bg-card" data-bg="card" bgcolor="${BRAND.cardBg}" style="background-color:${BRAND.cardBg};padding:0 32px 8px;">
+              ${confirmation}
+            </td>
+          </tr>` : ""}
           <tr>
             <td class="bg-card" data-bg="card" bgcolor="${BRAND.cardBg}" align="center" style="background-color:${BRAND.cardBg};padding:20px 32px;border-top:1px solid ${BRAND.goldSoft};">
               <p style="margin:0;font-size:11px;color:${BRAND.textSecondary};letter-spacing:0.5px;">
@@ -174,7 +253,34 @@ function buildHtml(
 </html>`;
 }
 
-async function sendResend(to: string, subject: string, html: string, apiKey: string) {
+/**
+ * Va chercher le PDF des CGV pour le joindre.
+ *
+ * La pièce jointe vaut mieux qu'un lien : le client garde le document même
+ * si le site change. Un échec de téléchargement ne doit pas empêcher
+ * l'e-mail de partir — il porte aussi le lien.
+ */
+async function piecesJointesCgv(): Promise<Array<{ filename: string; content: string }>> {
+  try {
+    const res = await fetch(URL_CGV_PDF);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const octets = new Uint8Array(await res.arrayBuffer());
+    let binaire = "";
+    for (let i = 0; i < octets.length; i++) binaire += String.fromCharCode(octets[i]);
+    return [{ filename: "CGV-AL-BARAKA.pdf", content: btoa(binaire) }];
+  } catch (e) {
+    console.error("[cgv] pièce jointe indisponible (non bloquant) :", e);
+    return [];
+  }
+}
+
+async function sendResend(
+  to: string,
+  subject: string,
+  html: string,
+  apiKey: string,
+  attachments: Array<{ filename: string; content: string }> = [],
+) {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -186,6 +292,7 @@ async function sendResend(to: string, subject: string, html: string, apiKey: str
       to: [to],
       subject,
       html,
+      ...(attachments.length > 0 ? { attachments } : {}),
     }),
   });
   if (!res.ok) {
@@ -263,6 +370,9 @@ Deno.serve(async (req) => {
     // Mail SANS action (pas de lien recovery) : il a déjà un compte/mot de passe,
     // il doit juste se reconnecter. Défaut false = onboarding standard.
     const isUpgrade: boolean = !!body.is_upgrade;
+    // La commande. Absente quand l'accès est accordé à la main ou offert :
+    // dans ce cas, aucun bloc contractuel ne part.
+    const saleId: string | null = typeof body.sale_id === "string" ? body.sale_id : null;
     // Phase 6 (19/05/2026) : la signature du contrat est désormais intégrée
     // dans le wizard /onboarding (étape 1/2). On n'envoie plus de CTA
     // "Signer mon contrat" dans cet email — un seul CTA "Activer mon compte".
@@ -312,7 +422,38 @@ Deno.serve(async (req) => {
           actionLink = parsed.toString();
         }
 
-        const html = buildHtml(profile.full_name || "", actionLink, passType, includeDiscordButton, isUpgrade);
+        // ── Le récapitulatif contractuel, s'il y a une commande ──
+        let confirmation = "";
+        let piecesJointes: Array<{ filename: string; content: string }> = [];
+        if (saleId) {
+          const { data: vente } = await adminClient
+            .from("sales")
+            .select("product, amount_ht, mensualites, sold_at")
+            .eq("id", saleId)
+            .maybeSingle();
+          if (vente) {
+            // La version des CGV vient de la preuve enregistrée au paiement :
+            // c'est celle que le client a réellement acceptée, pas la version
+            // en vigueur aujourd'hui.
+            const { data: preuve } = await adminClient
+              .from("preuves_consentement")
+              .select("version_cgv")
+              .eq("sale_id", saleId)
+              .maybeSingle();
+            confirmation = blocConfirmationCommande({
+              produit: String(vente.product ?? "Accès AL BARAKA"),
+              montantTotal: Number(vente.amount_ht ?? 0),
+              mensualites: Number(vente.mensualites ?? 1),
+              date: new Date(String(vente.sold_at ?? Date.now())).toLocaleDateString("fr-FR", {
+                day: "numeric", month: "long", year: "numeric",
+              }),
+              versionCgv: preuve?.version_cgv ?? null,
+            });
+            piecesJointes = await piecesJointesCgv();
+          }
+        }
+
+        const html = buildHtml(profile.full_name || "", actionLink, passType, includeDiscordButton, isUpgrade, confirmation);
         const toEmail = testMode ? BRAND.testEmail : profile.email;
         const subject = isUpgrade
           ? "Ton compte est passé au PASS LIBERTY"
@@ -321,7 +462,7 @@ Deno.serve(async (req) => {
             : "Bienvenue dans l'écosystème AL BARAKA";
 
         console.log(`[send-access] to=${toEmail} (real=${profile.email}) testMode=${testMode} serviceRole=${isServiceRoleCall}`);
-        await sendResend(toEmail, subject, html, resendKey);
+        await sendResend(toEmail, subject, html, resendKey, piecesJointes);
 
         await adminClient
           .from("profiles")

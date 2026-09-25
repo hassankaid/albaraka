@@ -14,7 +14,7 @@
 //     s'afficherait deux fois.
 // ─────────────────────────────────────────────────────────────────────────
 import { useEffect } from "react";
-import { DATE_MISE_A_JOUR, type PageLegale as Texte } from "./textes";
+import { CGV, DATE_MISE_A_JOUR, PDF_CGV, type PageLegale as Texte } from "./textes";
 
 /** Un titre d'article : « 1. Éditeur », « Article 7 – Paiement ». */
 function estTitre(ligne: string): boolean {
@@ -71,6 +71,28 @@ export default function PageLegale({ texte }: { texte: Texte }) {
           </p>
         )}
         {!texte.dateDeMiseAJour && <div style={{ height: 24 }} />}
+
+        {/* « La loi impose que le client puisse conserver les CGV » (§3.2).
+            Un lien vers une page web ne le permet pas : elle peut changer. */}
+        {texte.chemin === CGV.chemin && (
+          <a
+            href={PDF_CGV}
+            download
+            style={{
+              display: "inline-block",
+              margin: "0 0 30px",
+              padding: "10px 18px",
+              borderRadius: 8,
+              border: "1px solid rgba(201,168,76,0.4)",
+              background: "rgba(201,168,76,0.08)",
+              color: "#C9A84C",
+              fontSize: 14,
+              textDecoration: "none",
+            }}
+          >
+            ↓ Télécharger les CGV (PDF)
+          </a>
+        )}
 
         {texte.lignes.map((ligne, i) =>
           estTitre(ligne) ? (

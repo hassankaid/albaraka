@@ -720,6 +720,11 @@ async function ensureBonCommandeOrder(
           },
           body: JSON.stringify({
             user_ids: [profileId],
+            // La vente : elle déclenche le bloc contractuel de l'e-mail
+            // (récapitulatif, CGV, renonciation). Sans elle, l'e-mail reste
+            // un simple message d'accès — ce qui est le cas d'un accès
+            // accordé à la main ou d'un upgrade offert.
+            sale_id: sale.id,
             pass_type: productCfg.passType, // "al_baraka" ou "liberty"
             // Sprint T (18/05/2026) : bouton Discord pour tous les Pass
             include_discord_button: true,
@@ -1183,7 +1188,10 @@ async function applyPaymentLinkGrants(
   // Sprint T : si un Pass (AL BARAKA ou Liberty) a ete accorde, l'email
   // inclut un bouton "Rejoindre l'espace Discord" + le bon subject/wording.
   // Pour les formations a la carte (pas de pass), email generique sans Discord.
-  const emailBody: Record<string, unknown> = { user_ids: [profileId] };
+  // `saleId` déclenche le bloc contractuel de l'e-mail (récapitulatif, CGV en
+  // pièce jointe, phrase de renonciation). Il est toujours présent ici : ce
+  // chemin n'est emprunté qu'après une vente.
+  const emailBody: Record<string, unknown> = { user_ids: [profileId], sale_id: saleId };
   if (grantedPassType) {
     emailBody.pass_type = grantedPassType;
     emailBody.include_discord_button = true;
