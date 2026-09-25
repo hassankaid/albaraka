@@ -13,9 +13,21 @@
 // marque. Écrire « AL BARAKA » en raison sociale est le point 2 de la recette,
 // et c'est une erreur juridique, pas une approximation.
 //
-// Les couleurs et les tailles viennent du cahier des charges (§2.3) et ne sont
-// pas décoratives : en dessous de 12 px le texte est réputé illisible, donc
-// non opposable. Le contraste est tenu à 4,5:1 au minimum.
+// ⚠️ IL PEINT SON PROPRE FOND, ET N'A AUCUNE MARGE EXTÉRIEURE. Il est monté à
+// la racine, donc en dehors de la page affichée : une marge laisserait voir le
+// fond du `body`, qui est CRÈME en thème clair. Un trait blanc barrait ainsi
+// le bas des pages légales, constaté le 25/09/2026. L'espace demandé par le
+// cahier des charges (40 px au-dessus) est donc une marge INTÉRIEURE.
+//
+// ⚠️ IL EST POSITIONNÉ (`relative`, z-index 1). Les tunnels posent leur décor
+// en `position: fixed` : un élément positionné se peint au-dessus des
+// éléments statiques, donc le pied de page disparaissait derrière, tout en
+// existant dans la page. Constaté le 25/09/2026 sur /liberty.
+//
+// ⚠️ IL PORTE LA SIGNATURE « AL BARAKA ». Les pages de tunnel avaient chacune
+// leur mini-pied de page avec le même logo et le même copyright : on se
+// retrouvait avec deux pieds de page empilés, séparés par un vide. Ils ont été
+// retirés au profit de celui-ci.
 //
 // Autonome à dessein : ni thème, ni contexte, ni routeur. Il doit pouvoir être
 // posé aussi bien dans l'application connectée que dans les tunnels, qui sont
@@ -64,10 +76,11 @@ export const LIENS_LEGAUX = [
 
 const C = {
   fond: "#080808",
-  filet: "rgba(143,136,123,0.22)",
+  filet: "rgba(201,168,76,0.16)",
+  filetFin: "rgba(143,136,123,0.14)",
   texte: "#8F887B",
   lien: "#B5AE9F",
-  survol: "#C9A84C",
+  or: "#C9A84C",
 } as const;
 
 export interface PiedDePageLegalProps {
@@ -80,110 +93,120 @@ export interface PiedDePageLegalProps {
 }
 
 export default function PiedDePageLegal({ nouvelOnglet = false }: PiedDePageLegalProps) {
-  const cibleLien = nouvelOnglet
-    ? { target: "_blank", rel: "noopener noreferrer" as const }
-    : {};
-
-  const styleLien: React.CSSProperties = {
-    color: C.lien,
-    textDecoration: "none",
-    // 24 px de haut minimum : la zone doit rester cliquable au pouce.
-    display: "inline-block",
-    lineHeight: "24px",
-  };
+  const cible = nouvelOnglet ? { target: "_blank", rel: "noopener noreferrer" as const } : {};
 
   return (
     <footer
+      className="alb-pdp"
       style={{
-        flex: "0 0 auto",
         background: C.fond,
         borderTop: `1px solid ${C.filet}`,
-        marginTop: 40,
-        padding: "28px 24px 32px",
-        fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        fontSize: 12.5,
-        lineHeight: 1.6,
-        color: C.texte,
+        // Les tunnels posent leur décor en `position: fixed` sur tout l'écran.
+        // Un élément positionné se peint AU-DESSUS des éléments statiques :
+        // sans ce `relative`, le pied de page existait dans la page mais
+        // disparaissait derrière le fond. C'est la raison pour laquelle les
+        // anciens pieds de page des tunnels portaient déjà un z-index.
+        position: "relative",
+        zIndex: 1,
       }}
     >
       <style>{`
-        .alb-pdp a:hover { color: ${C.survol} !important; text-decoration: underline; }
-        .alb-pdp-grille {
-          max-width: 1120px; margin: 0 auto;
-          display: flex; gap: 24px; align-items: flex-end; justify-content: space-between;
+        .alb-pdp {
+          /* Aucune marge extérieure : elle laisserait voir le fond du body. */
+          margin: 0;
+          padding: 40px 24px 36px;
+          font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          font-size: 12.5px;
+          line-height: 1.65;
+          color: ${C.texte};
         }
-        .alb-pdp-liens { text-align: right; white-space: normal; }
+        .alb-pdp-inner { max-width: 1120px; margin: 0 auto; }
+
+        /* Signature : reprend celle des tunnels, qui avaient leur propre pied
+           de page avant qu'on les fusionne. */
+        .alb-pdp-marque {
+          font-family: "Cormorant Garamond", Georgia, serif;
+          letter-spacing: 0.3em; color: ${C.or}; font-size: 0.95rem;
+          text-align: center; margin: 0 0 22px;
+        }
+
+        .alb-pdp-cols {
+          display: grid; grid-template-columns: minmax(0,1fr) auto;
+          gap: 28px 40px; align-items: start;
+        }
+        .alb-pdp-liens {
+          display: flex; flex-wrap: wrap; gap: 0 6px;
+          justify-content: flex-end; align-items: center;
+        }
+        .alb-pdp a, .alb-pdp button.alb-lien {
+          color: ${C.lien}; text-decoration: none;
+          display: inline-block; line-height: 24px;
+          background: none; border: 0; padding: 0; font: inherit; cursor: pointer;
+        }
+        .alb-pdp a:hover, .alb-pdp button.alb-lien:hover {
+          color: ${C.or}; text-decoration: underline;
+        }
+        .alb-pdp-sep { color: ${C.texte}; opacity: .6; }
+
+        .alb-pdp-bas {
+          margin-top: 26px; padding-top: 18px;
+          border-top: 1px solid ${C.filetFin};
+        }
+        .alb-pdp-bas p { margin: 0; }
+        .alb-pdp-avert { margin: 0 0 10px !important; max-width: 900px; }
+
         @media (max-width: 1023px) {
-          .alb-pdp-grille { flex-direction: column; align-items: stretch; gap: 16px; }
-          .alb-pdp-liens { text-align: right; }
+          .alb-pdp-cols { grid-template-columns: 1fr; gap: 20px; }
+          .alb-pdp-liens { justify-content: flex-end; }
         }
         @media (max-width: 767px) {
-          .alb-pdp-grille { text-align: center; }
-          .alb-pdp-liens { text-align: center; }
+          .alb-pdp { padding: 32px 24px 28px; text-align: center; }
+          .alb-pdp-liens { justify-content: center; }
+          .alb-pdp-avert { margin-left: auto; margin-right: auto; }
         }
       `}</style>
 
-      <div className="alb-pdp">
-        {/* Les résultats ne sont pas des promesses. En tête, pas noyé. */}
-        <p
-          style={{
-            maxWidth: 1120,
-            margin: "0 auto 20px",
-            paddingBottom: 18,
-            borderBottom: `1px solid ${C.filet}`,
-            color: C.texte,
-          }}
-        >
-          {RESULTATS_NON_GARANTIS}
-        </p>
+      <div className="alb-pdp-inner">
+        <div className="alb-pdp-marque">AL&nbsp;BARAKA</div>
 
-        <div className="alb-pdp-grille">
+        <div className="alb-pdp-cols">
+          {/* Blocs 1 et 2 — identité, puis non-affiliation */}
           <div style={{ minWidth: 0 }}>
-            {/* Bloc 1 — identité */}
-            <p style={{ margin: 0 }}>
-              {SOCIETE.raisonSociale} – Licence n° {SOCIETE.licence}
+            <p style={{ margin: 0, color: "#A9A295" }}>
+              {SOCIETE.raisonSociale} · Licence n° {SOCIETE.licence}
             </p>
             <p style={{ margin: 0 }}>{SOCIETE.adresse}</p>
-            <p style={{ margin: "0 0 12px" }}>
-              Contact :{" "}
-              <a href={`mailto:${SOCIETE.contact}`} style={styleLien}>
-                {SOCIETE.contact}
-              </a>
+            <p style={{ margin: 0 }}>
+              <a href={`mailto:${SOCIETE.contact}`}>{SOCIETE.contact}</a>
             </p>
-
-            {/* Bloc 2 — Meta / Google */}
-            <p style={{ margin: "0 0 12px", maxWidth: 640 }}>{MENTION_META_GOOGLE}</p>
-
-            {/* Bloc 3 — droits réservés */}
-            <p style={{ margin: 0 }}>{DROITS_RESERVES}</p>
+            <p style={{ margin: "14px 0 0", maxWidth: 620 }}>{MENTION_META_GOOGLE}</p>
           </div>
 
-          {/* Bloc 4 — les liens, en bas à droite */}
-          <div className="alb-pdp-liens" style={{ flex: "0 0 auto" }}>
+          {/* Bloc 4 — les liens, en haut à droite de la colonne */}
+          <nav className="alb-pdp-liens" aria-label="Informations légales">
             {LIENS_LEGAUX.map((l, i) => (
               <span key={l.chemin}>
-                {i > 0 && <span style={{ color: C.texte, margin: "0 6px" }}>·</span>}
-                <a href={l.chemin} style={styleLien} {...cibleLien}>
+                {i > 0 && <span className="alb-pdp-sep">·</span>}{" "}
+                <a href={l.chemin} {...cible}>
                   {l.libelle}
-                </a>
+                </a>{" "}
               </span>
             ))}
-            <span style={{ color: C.texte, margin: "0 6px" }}>·</span>
+            <span className="alb-pdp-sep">·</span>{" "}
             <button
               type="button"
+              className="alb-lien"
               onClick={() => window.dispatchEvent(new CustomEvent("alb:cookies:ouvrir"))}
-              style={{
-                ...styleLien,
-                background: "none",
-                border: "none",
-                padding: 0,
-                font: "inherit",
-                cursor: "pointer",
-              }}
             >
               Gérer les cookies
             </button>
-          </div>
+          </nav>
+        </div>
+
+        {/* Le bas : ce qu'on ne promet pas, puis le copyright */}
+        <div className="alb-pdp-bas">
+          <p className="alb-pdp-avert">{RESULTATS_NON_GARANTIS}</p>
+          <p style={{ color: "#79736A" }}>{DROITS_RESERVES}</p>
         </div>
       </div>
     </footer>

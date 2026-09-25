@@ -67,12 +67,9 @@ export default function AppelConference() {
       </main>
 
       {/* Footer */}
-      <footer style={{ position: "relative", zIndex: 1, borderTop: `1px solid ${T.goldDim}`, padding: "24px 22px", textAlign: "center" }}>
-        <div style={{ fontFamily: T.display, letterSpacing: "0.3em", color: T.gold, fontSize: "0.9rem" }}>AL&nbsp;BARAKA</div>
-        <p style={{ fontFamily: T.body, fontSize: "0.72rem", color: T.creamDim, marginTop: 8 }}>
-          © {new Date().getFullYear()} Al Baraka. Tous droits réservés.
-        </p>
-      </footer>
+      {/* Le pied de page est celui de l'application, commun à toutes les
+          pages : identité de la société, mentions légales, cookies. Celui
+          qui vivait ici faisait doublon avec lui. */}
     </div>
   );
 }
