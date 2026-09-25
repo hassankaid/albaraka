@@ -64,12 +64,17 @@ export const DROITS_RESERVES = "© 2026 - www.albarakaecosysteme.com / Tous droi
  * La formulation dit ce qu'on ne promet pas ET de quoi le résultat dépend.
  * C'est ce second point qui vaut quelque chose : se contenter de se dédouaner
  * convainc moins un régulateur, et moins encore un client mécontent.
+ *
+ * Texte arrêté par Hassan le 25/09/2026. Il nomme les supports visés
+ * (témoignages, chiffres, parcours) et qualifie l'engagement en obligation de
+ * MOYENS : c'est la phrase qui compte juridiquement, à ne pas raboter.
  */
 export const RESULTATS_NON_GARANTIS =
-  "Les parcours et résultats présentés sur cette page sont ceux de personnes réelles " +
-  "et leur sont propres. Ils ne constituent ni une garantie, ni une promesse, ni une " +
-  "projection de revenus. Ce que vous obtiendrez dépend de votre travail, de vos " +
-  "compétences et de votre marché.";
+  "Les résultats mentionnés sur cette page (témoignages, chiffres, parcours) sont ceux " +
+  "de membres réels de l'écosystème Al Baraka. Ils ne constituent ni une garantie, ni " +
+  "une promesse, ni une projection de revenus. Les résultats dépendent de l'implication " +
+  "de chaque personne, de ses compétences, de sa situation de départ et du contexte de " +
+  "marché. L'accès à la plateforme relève d'une obligation de moyens, non de résultat.";
 
 export const LIENS_LEGAUX = [
   { libelle: "Mentions légales", chemin: "/mentions-legales" },
