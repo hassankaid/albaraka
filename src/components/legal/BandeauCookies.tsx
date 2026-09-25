@@ -11,10 +11,16 @@
 //      pas — pas seulement « n'envoie rien ».
 //   3. Refuser n'empêche pas d'accéder au site.
 //
+// ⚠️ IL RÉSERVE SA PLACE AU BAS DU DOCUMENT. Fixé en bas d'écran, il
+// recouvrait la fin de la page — donc le pied de page légal, celui qui porte
+// les liens qu'on demande justement de lire. Signalé par Hassan le
+// 25/09/2026. Tant qu'il est affiché, sa hauteur est ajoutée au bas du
+// document : le contenu reste atteignable en faisant défiler.
+//
 // Autonome à dessein : ni thème, ni contexte, ni routeur. Il est monté dans
 // les deux applications, qui n'ont rien en commun.
 // ─────────────────────────────────────────────────────────────────────────
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   lireConsentement,
   enregistrerConsentement,
@@ -48,6 +54,7 @@ const bouton = (principal: boolean): React.CSSProperties => ({
 });
 
 export default function BandeauCookies() {
+  const boite = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [detail, setDetail] = useState(false);
   const [mesure, setMesure] = useState(false);
@@ -68,6 +75,30 @@ export default function BandeauCookies() {
     return () => window.removeEventListener(EVENEMENT_OUVRIR, rouvrir);
   }, []);
 
+  // Le bandeau est fixé en bas : il recouvre la fin de la page, donc le pied
+  // de page légal — celui-là même qui porte les liens qu'on demande de lire.
+  // On réserve sa hauteur au bas du document tant qu'il est affiché, pour que
+  // le contenu reste atteignable en faisant défiler.
+  useEffect(() => {
+    if (!visible) {
+      document.body.style.paddingBottom = "";
+      return;
+    }
+    const ajuster = () => {
+      const h = boite.current?.offsetHeight ?? 0;
+      document.body.style.paddingBottom = `${h}px`;
+    };
+    ajuster();
+    const observateur = new ResizeObserver(ajuster);
+    if (boite.current) observateur.observe(boite.current);
+    window.addEventListener("resize", ajuster);
+    return () => {
+      observateur.disconnect();
+      window.removeEventListener("resize", ajuster);
+      document.body.style.paddingBottom = "";
+    };
+  }, [visible, detail]);
+
   if (!visible) return null;
 
   const repondre = (choix: { mesure: boolean; publicite: boolean }) => {
@@ -78,6 +109,7 @@ export default function BandeauCookies() {
 
   return (
     <div
+      ref={boite}
       role="dialog"
       aria-label="Gestion des cookies"
       style={{
