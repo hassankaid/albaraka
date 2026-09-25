@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { T, CONFERENCE } from "../theme";
 import { useConference } from "../lib/conference";
 import { markLeadPending } from "../lib/pixel";
-import { MentionFormulaire } from "@/components/legal/MentionFormulaire";
+import { CaseMarketing, MentionFormulaire } from "@/components/legal/MentionFormulaire";
 import { submitTunnelLead } from "../lib/api";
 import { getAttribution, setTunnelPrefill } from "../lib/source";
 import type { TunnelConfig } from "../config";
@@ -58,6 +58,10 @@ export default function OptInModal({ open, onClose, tunnel, titre, dateLigne, bo
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState<string | undefined>(undefined);
+  // Consentement à la prospection. Décoché par défaut, et l'inscription ne
+  // lui est PAS conditionnée : un consentement obtenu en échange de l'accès
+  // n'est pas libre, donc pas valable.
+  const [accepteMarketing, setAccepteMarketing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -85,7 +89,10 @@ export default function OptInModal({ open, onClose, tunnel, titre, dateLigne, bo
     setSubmitting(true);
     try {
       // 1) Création du lead dans le CRM (edge function), avec la source du tunnel.
-      await submitTunnelLead({ first_name: firstName.trim(), email: email.trim(), phone }, tunnel);
+      await submitTunnelLead(
+        { first_name: firstName.trim(), email: email.trim(), phone, consentement_marketing: accepteMarketing },
+        tunnel,
+      );
       // Mémorise les coordonnées pour pré-remplir le Calendly (tunnel VSL).
       setTunnelPrefill({ firstName: firstName.trim(), email: email.trim(), phone });
       // 2) Le « Lead » part de la PAGE DE REMERCIEMENT (montage voulu par le
@@ -211,6 +218,10 @@ export default function OptInModal({ open, onClose, tunnel, titre, dateLigne, bo
           <p style={{ fontFamily: T.body, color: L.inkDim, fontSize: "0.72rem", textAlign: "center", margin: "6px 0 0", lineHeight: 1.5 }}>
             Tes informations restent confidentielles. Zéro spam.
           </p>
+
+          {/* Consentement à la prospection (RGPD art. 7). Placée sous le bouton
+              à dessein : elle ne conditionne pas l'envoi, elle l'accompagne. */}
+          <CaseMarketing coche={accepteMarketing} onChange={setAccepteMarketing} couleur={L.inkDim} />
 
           {/* Information préalable exigée par l'article 13 du RGPD, reprise du
               cahier des charges §5. Sans elle, la collecte est irrégulière. */}

@@ -9,6 +9,7 @@
 // permettre de savoir qui est élève d'AL BARAKA.
 // ─────────────────────────────────────────────────────────────────────────
 import { useEffect, useState } from "react";
+import { MentionFormulaire } from "@/components/legal/MentionFormulaire";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import logo from "@/assets/al-baraka-logo-v2.png";
 import { THEME as T } from "./questions";
@@ -114,6 +115,11 @@ export default function QuestionnaireEntree() {
             >
               {etat === "envoi" ? "Un instant…" : "Recevoir mon lien"}
             </button>
+
+            {/* Information préalable exigée par l'article 13 du RGPD (cahier
+                des charges §5). Pas de case de prospection ici : l'adresse
+                sert uniquement à renvoyer le lien personnel demandé. */}
+            <MentionFormulaire style={{ textAlign: "center" }} />
           </>
         )}
       </div>

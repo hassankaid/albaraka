@@ -5,6 +5,7 @@
 // Le composant est autonome (ne dépend ni du theme ni du layout global).
 
 import { ReactNode, useState } from "react";
+import { CaseMarketing, MentionFormulaire } from "@/components/legal/MentionFormulaire";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import frLocale from "react-phone-number-input/locale/fr.json";
 import "react-phone-number-input/style.css";
@@ -503,6 +504,8 @@ export function FormPhase({
   onChangePhone,
   onSubmit,
   canSubmit,
+  accepteMarketing,
+  onChangeMarketing,
 }: {
   intro: QuizConfig["intro"];
   firstName: string;
@@ -517,6 +520,8 @@ export function FormPhase({
   onChangePhone: (v: string) => void;
   onSubmit: () => void;
   canSubmit: boolean;
+  accepteMarketing: boolean;
+  onChangeMarketing: (v: boolean) => void;
 }) {
   const phoneValid = phone && isValidPhoneNumber(phone);
   return (
@@ -600,8 +605,16 @@ export function FormPhase({
             {submitting ? "Un instant…" : intro.form_cta}
           </QuizCTAButton>
         </div>
+
+        {/* Consentement à la prospection (RGPD art. 7) — décoché, et absent de
+            canSubmit : le quiz reste accessible à qui refuse la publicité. */}
+        <CaseMarketing coche={accepteMarketing} onChange={onChangeMarketing} />
       </form>
       <p className="mt-4 text-center text-[11px] text-[#f4ecd8]/35">{intro.form_privacy}</p>
+
+      {/* Information préalable exigée par l'article 13 du RGPD (cahier des
+          charges §5). Sans elle, la collecte est irrégulière. */}
+      <MentionFormulaire taille={10.5} style={{ textAlign: "center" }} />
     </div>
   );
 }

@@ -49,6 +49,9 @@ export async function submitEmailCapture(params: {
   /** Phone facultatif côté API (rétrocompat). Le nouveau flow l'envoie
    *  systématiquement et l'edge function créera le lead CRM directement. */
   phone?: string | null;
+  /** Case « recevoir les offres ». Facultative, jamais requise pour le quiz. */
+  consentement_marketing?: boolean;
+  page?: string | null;
   referrer?: string | null;
 }): Promise<{ submission_id: string; lead_id?: string; contact_id?: string }> {
   return callFn({ action: "email_captured", ...params });

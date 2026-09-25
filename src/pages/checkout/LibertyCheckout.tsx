@@ -28,6 +28,7 @@ import { Lock, ShieldCheck, CheckCircle2, Tag, X, ArrowRight, ChevronDown } from
 import CheckoutCanvas from "./CheckoutCanvas";
 import { EngagementChecklist } from "@/components/checkout/EngagementChecklist";
 import { MentionsPaiement } from "@/components/checkout/MentionsPaiement";
+import { MentionFormulaire } from "@/components/legal/MentionFormulaire";
 import { initAgreements, allAgreed, type AgreementItem, LIBELLE_BOUTON_PAIEMENT } from "@/lib/checkout-agreements";
 
 const TOTAL_EUR = 5000;
@@ -1824,6 +1825,15 @@ function CheckoutForm({
       <MentionsPaiement
         mensualites={installments}
         couleurs={{ texte: THEME.cream, texteFaible: THEME.creamMuted }}
+      />
+
+      {/* Information préalable sur les données (RGPD art. 13, cahier des
+          charges §5). Pas de case de prospection au checkout : la relation
+          client repose sur le contrat, pas sur un consentement publicitaire. */}
+      <MentionFormulaire
+        couleur={THEME.creamMuted}
+        couleurLien={THEME.cream}
+        taille={10.5}
       />
       <EngagementChecklist
         agreements={agreements}

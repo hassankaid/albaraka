@@ -28,6 +28,7 @@ import "react-phone-number-input/style.css";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import logo from "@/assets/al-baraka-logo-v2.png";
+import { MentionFormulaire } from "@/components/legal/MentionFormulaire";
 import { Lock, ShieldCheck, ChevronDown } from "lucide-react";
 import CheckoutCanvas from "./CheckoutCanvas";
 
@@ -708,6 +709,16 @@ function AcompteForm({
         >
           {submitting ? "Traitement…" : `Payer ${formatEur(acompteAmount)}`}
         </button>
+
+        {/* Information préalable sur les données (RGPD art. 13, cahier des
+            charges §5). Pas de case de prospection au checkout : la relation
+            client repose sur le contrat, pas sur un consentement publicitaire. */}
+        <MentionFormulaire
+          couleur={THEME.creamMuted}
+          couleurLien={THEME.cream}
+          taille={10.5}
+          style={{ textAlign: "center" }}
+        />
       </div>
     </form>
   );

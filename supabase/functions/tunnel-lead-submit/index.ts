@@ -133,6 +133,46 @@ function extractErrorMessage(error: unknown): string {
   return String(error);
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Journal du consentement à la prospection (RGPD art. 7, cahier des charges §5).
+//
+// N'échoue JAMAIS l'appelant : un lead vaut plus qu'une ligne de journal. Et
+// on écrit aussi les REFUS — savoir qu'une personne a dit non est ce qui
+// permet de l'exclure d'un envoi, et de le démontrer.
+//
+// Copie identique dans rdv-funnel-submit et submit-quiz-lead : les fonctions
+// se déploient une par une, chacune doit être autonome.
+// ─────────────────────────────────────────────────────────────────────────
+
+/** Libellé exact soumis à la personne. Doit rester identique à
+ *  TEXTE_CONSENTEMENT_MARKETING dans src/components/legal/MentionFormulaire.tsx. */
+const LIBELLE_CONSENTEMENT =
+  "J'accepte de recevoir par email des informations et des offres d'AL BARAKA. " +
+  "Je peux me désinscrire à tout moment.";
+
+async function journaliserConsentement(
+  client: any,
+  req: Request,
+  params: { email: string; consenti: boolean; origine: string; page?: string | null },
+): Promise<void> {
+  try {
+    if (!params.email) return;
+    const entetes = req.headers;
+    await client.from("consentements_marketing").insert({
+      email: params.email.trim().toLowerCase(),
+      consenti: params.consenti === true,
+      origine: params.origine,
+      page: params.page ?? null,
+      libelle: LIBELLE_CONSENTEMENT,
+      // Derrière le proxy Supabase, l'IP réelle est en tête du x-forwarded-for.
+      adresse_ip: (entetes.get("x-forwarded-for") ?? "").split(",")[0].trim() || null,
+      navigateur: entetes.get("user-agent"),
+    });
+  } catch (e) {
+    console.warn("[consentement-marketing] non journalise :", e);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -180,6 +220,15 @@ serve(async (req) => {
     const varianteLanding = clip(body?.tunnel_variant, 8);
 
     const fullNameUpper = firstName.toUpperCase();
+
+    // Avant toute écriture CRM : le consentement est journalisé même si la
+    // fiche existe déjà et que la soumission finit fusionnée plus bas.
+    await journaliserConsentement(supabase, req, {
+      email,
+      consenti: body?.consentement_marketing === true,
+      origine: "tunnel_optin",
+      page: clip(body?.page, 200),
+    });
 
     // 1) Contact (dédup email/téléphone).
     const { data: contactId, error: contactError } = await supabase.rpc("find_or_create_contact", {

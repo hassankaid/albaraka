@@ -15,6 +15,8 @@ export interface TunnelLeadInput {
   first_name: string;
   email: string;
   phone: string; // E.164
+  /** Case « je veux recevoir vos offres ». Jamais requise pour s'inscrire. */
+  consentement_marketing?: boolean;
 }
 
 export interface TunnelLeadResult {
@@ -29,6 +31,10 @@ export async function submitTunnelLead(input: TunnelLeadInput, cfg: TunnelConfig
     first_name: input.first_name,
     email: input.email,
     phone: input.phone,
+    // Voyage avec le lead pour être journalisé côté serveur : une case cochée
+    // dans un navigateur ne prouve rien tant qu'elle n'est pas horodatée.
+    consentement_marketing: input.consentement_marketing === true,
+    page: typeof window !== "undefined" ? window.location.pathname : null,
     source: a?.source ?? `${cfg.srcPrefix}_direct`,
     src: a?.src ?? null,
     utm_source: a?.utm_source ?? null,

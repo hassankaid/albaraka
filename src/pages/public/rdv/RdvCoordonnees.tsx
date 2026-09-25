@@ -18,7 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/al-baraka-logo-v2.png";
 import { PhoneInputField, isValidPhoneNumber } from "@/components/ui/PhoneInputField";
 import { THEME, baseCourante, setStoredLeadId, setStoredPrefill } from "./rdvShared";
-import { MentionFormulaire } from "@/components/legal/MentionFormulaire";
+import { CaseMarketing, MentionFormulaire } from "@/components/legal/MentionFormulaire";
 
 const EMAIL_RX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
 
@@ -29,6 +29,9 @@ export default function RdvCoordonnees() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState<string | undefined>(undefined);
+  // Décochée par défaut, et sans effet sur la validation : prendre un rendez-vous
+  // ne doit jamais coûter un consentement publicitaire.
+  const [accepteMarketing, setAccepteMarketing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,6 +71,8 @@ export default function RdvCoordonnees() {
           last_name: lastName.trim(),
           email: email.trim().toLowerCase(),
           phone: phone,
+          consentement_marketing: accepteMarketing,
+          page: typeof window !== "undefined" ? window.location.pathname : null,
         },
       });
 
@@ -339,6 +344,9 @@ export default function RdvCoordonnees() {
           >
             {submitting ? "Validation en cours…" : "Continuer →"}
           </button>
+
+          {/* Consentement à la prospection (RGPD art. 7) — facultatif. */}
+          <CaseMarketing coche={accepteMarketing} onChange={setAccepteMarketing} />
 
           {/* Information préalable exigée par l'article 13 du RGPD, reprise du
               cahier des charges §5. Sans elle, la collecte est irrégulière. */}

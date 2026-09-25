@@ -77,6 +77,9 @@ interface State {
   submissionId: string | null;
   formErrors: Partial<Record<"firstName" | "lastName" | "email" | "phone", string>>;
   submittingForm: boolean;
+  /** Case de prospection. Hors de formErrors et de canSubmitForm : elle ne
+   *  bloque jamais l'accès au quiz. */
+  accepteMarketing: boolean;
   submittingPhone: boolean;
   phoneCaptured: boolean;
 }
@@ -97,6 +100,7 @@ const initialState: State = {
   submissionId: null,
   formErrors: {},
   submittingForm: false,
+  accepteMarketing: false,
   submittingPhone: false,
   phoneCaptured: false,
 };
@@ -106,6 +110,7 @@ type Action =
   | { type: "SET_CURRENT_Q"; q: number }
   | { type: "SET_FORM_FIELD"; field: "firstName" | "lastName" | "email" | "phone"; value: string }
   | { type: "SET_FORM_ERRORS"; errors: State["formErrors"] }
+  | { type: "SET_MARKETING"; value: boolean }
   | { type: "SET_SUBMITTING_FORM"; value: boolean }
   | { type: "SET_SUBMITTING_PHONE"; value: boolean }
   | { type: "SET_SUBMISSION_ID"; id: string }
@@ -130,6 +135,8 @@ function reducer(state: State, action: Action): State {
       };
     case "SET_FORM_ERRORS":
       return { ...state, formErrors: action.errors };
+    case "SET_MARKETING":
+      return { ...state, accepteMarketing: action.value };
     case "SET_SUBMITTING_FORM":
       return { ...state, submittingForm: action.value };
     case "SET_SUBMITTING_PHONE":
@@ -367,6 +374,8 @@ export default function LeadQuiz() {
         last_name: ln,
         email: em,
         phone: ph,
+        consentement_marketing: state.accepteMarketing,
+        page: typeof window !== "undefined" ? window.location.pathname : null,
         referrer: document.referrer || null,
       });
       dispatch({ type: "SET_SUBMISSION_ID", id: submission_id });
@@ -656,6 +665,8 @@ export default function LeadQuiz() {
           onChangeEmail={(v) => dispatch({ type: "SET_FORM_FIELD", field: "email", value: v })}
           onChangePhone={(v) => dispatch({ type: "SET_FORM_FIELD", field: "phone", value: v })}
           onSubmit={handleFormSubmit}
+          accepteMarketing={state.accepteMarketing}
+          onChangeMarketing={(v) => dispatch({ type: "SET_MARKETING", value: v })}
         />
       </QuizFrame>
     );

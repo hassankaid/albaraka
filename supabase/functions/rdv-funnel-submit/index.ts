@@ -61,6 +61,47 @@ const EMAIL_RX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
 const E164_RX = /^\+[1-9]\d{6,14}$/;
 const UUID_RX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// ─────────────────────────────────────────────────────────────────────────
+// Journal du consentement à la prospection (RGPD art. 7, cahier des charges §5).
+//
+// N'échoue JAMAIS l'appelant : un lead vaut plus qu'une ligne de journal. Et
+// on écrit aussi les REFUS — savoir qu'une personne a dit non est ce qui
+// permet de l'exclure d'un envoi, et de le démontrer.
+//
+// Copie identique dans tunnel-lead-submit, rdv-funnel-submit et
+// submit-quiz-lead : les fonctions se déploient une par une, chacune doit
+// rester autonome.
+// ─────────────────────────────────────────────────────────────────────────
+
+/** Libellé exact soumis à la personne. Doit rester identique à
+ *  TEXTE_CONSENTEMENT_MARKETING dans src/components/legal/MentionFormulaire.tsx. */
+const LIBELLE_CONSENTEMENT =
+  "J'accepte de recevoir par email des informations et des offres d'AL BARAKA. " +
+  "Je peux me désinscrire à tout moment.";
+
+async function journaliserConsentement(
+  client: any,
+  req: Request,
+  params: { email: string; consenti: boolean; origine: string; page?: string | null },
+): Promise<void> {
+  try {
+    if (!params.email) return;
+    const entetes = req.headers;
+    await client.from("consentements_marketing").insert({
+      email: params.email.trim().toLowerCase(),
+      consenti: params.consenti === true,
+      origine: params.origine,
+      page: params.page ?? null,
+      libelle: LIBELLE_CONSENTEMENT,
+      // Derrière le proxy Supabase, l'IP réelle est en tête du x-forwarded-for.
+      adresse_ip: (entetes.get("x-forwarded-for") ?? "").split(",")[0].trim() || null,
+      navigateur: entetes.get("user-agent"),
+    });
+  } catch (e) {
+    console.warn("[consentement-marketing] non journalise :", e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -97,6 +138,13 @@ Deno.serve(async (req) => {
 
       const clientIp = extractClientIp(req);
       const userAgent = req.headers.get("user-agent");
+
+      await journaliserConsentement(supabase, req, {
+        email,
+        consenti: body?.consentement_marketing === true,
+        origine: "rdv",
+        page: typeof body?.page === "string" ? body.page.slice(0, 200) : null,
+      });
 
       const { data: inserted, error: insertErr } = await supabase
         .from("rdv_funnel_leads")
