@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { T, CONFERENCE } from "../theme";
 import { useConference } from "../lib/conference";
 import { markLeadPending } from "../lib/pixel";
+import { MentionFormulaire } from "@/components/legal/MentionFormulaire";
 import { submitTunnelLead } from "../lib/api";
 import { getAttribution, setTunnelPrefill } from "../lib/source";
 import type { TunnelConfig } from "../config";
@@ -210,6 +211,10 @@ export default function OptInModal({ open, onClose, tunnel, titre, dateLigne, bo
           <p style={{ fontFamily: T.body, color: L.inkDim, fontSize: "0.72rem", textAlign: "center", margin: "6px 0 0", lineHeight: 1.5 }}>
             Tes informations restent confidentielles. Zéro spam.
           </p>
+
+          {/* Information préalable exigée par l'article 13 du RGPD, reprise du
+              cahier des charges §5. Sans elle, la collecte est irrégulière. */}
+          <MentionFormulaire couleur={L.inkDim} couleurLien={L.ink} taille={10.5} style={{ textAlign: "center" }} />
         </form>
       </div>
     </div>

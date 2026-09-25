@@ -1,5 +1,11 @@
 // ─────────────────────────────────────────────────────────────────────────
-// 5 cases d'engagement à cocher AVANT le paiement Pass AL BARAKA / Liberty.
+// Les cases d'engagement à cocher AVANT le paiement.
+//
+// Les DEUX PREMIÈRES sont exigées par le cahier des charges légal (§4.2) :
+// acceptation des CGV, et demande d'accès immédiat valant renonciation au
+// droit de rétractation. Elles conditionnent la validité de cette
+// renonciation — sans elles, un client qui conteste obtient le remboursement.
+// Les cinq suivantes sont celles demandées par Sidali le 19/05/2026.
 // Composant contrôlé : reçoit `agreements` + `onChange`. Tant qu'au moins une
 // case n'est pas cochée, le bouton « Payer » est désactivé côté parent.
 //
@@ -13,6 +19,34 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { toggleAgreement, type AgreementItem } from "@/lib/checkout-agreements";
+
+/**
+ * Rend le texte d'une case, en insérant le lien à la place de `{lien}`.
+ *
+ * Le cahier des charges veut « Conditions générales de vente » cliquable dans
+ * la case elle-même, ouvert dans un nouvel onglet : le client ne doit pas
+ * perdre sa saisie pour aller les lire. Le clic sur le lien ne doit pas non
+ * plus cocher la case — d'où le `stopPropagation`.
+ */
+function texteAvecLien(item: AgreementItem) {
+  if (!item.lien) return item.text;
+  const [avant, apres] = item.text.split("{lien}");
+  return (
+    <>
+      {avant}
+      <a
+        href={item.lien.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        style={{ color: "inherit", textDecoration: "underline" }}
+      >
+        {item.lien.texte}
+      </a>
+      {apres}
+    </>
+  );
+}
 
 export interface ChecklistTheme {
   gold: string;
@@ -89,7 +123,7 @@ export function EngagementChecklist({ agreements, onChange, theme, title }: Prop
                   accentColor: theme.gold,
                 }}
               />
-              <span>{item.text}</span>
+              <span>{texteAvecLien(item)}</span>
             </label>
           </li>
         ))}

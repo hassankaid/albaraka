@@ -21,6 +21,15 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+/**
+ * La version des CGV acceptée, fixée CÔTÉ SERVEUR.
+ *
+ * Elle n'est pas lue depuis la requête : le client ne doit pas pouvoir
+ * déclarer lui-même quelle version il a acceptée. À tenir à jour avec
+ * `src/lib/checkout-agreements.ts`.
+ */
+const VERSION_CGV = "25/09/2026";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -104,6 +113,56 @@ function splitIntoInstallmentsCents(totalCents: number, installments: number): n
  * Retourne "" si l'input est vide/invalide (pas d'erreur, le webhook le
  * traitera comme "pas de snapshot").
  */
+
+/**
+ * Enregistre la preuve opposable du consentement à la commande.
+ *
+ * Cahier des charges Ethicarena §4.4. Écrite ICI, à la création de
+ * l'intention de paiement, parce que c'est le seul instant où l'on dispose à
+ * la fois du consentement, de l'adresse IP et du navigateur : la vente
+ * n'existe pas encore, et le webhook ne verra jamais la requête du client.
+ *
+ * Le texte de chaque case est COPIÉ, pas référencé : le jour où on le
+ * reformule, la preuve doit rester celle du texte alors affiché.
+ *
+ * Ne fait jamais échouer un paiement : une preuve manquante se rattrape,
+ * un paiement refusé pour cause de journalisation, non.
+ */
+async function enregistrerPreuve(
+  req: Request,
+  intentId: string | null,
+  infos: {
+    email: string;
+    nomComplet?: string | null;
+    produit?: string | null;
+    montantTotal?: number | null;
+    mensualites?: number | null;
+    snapshot: unknown;
+  },
+): Promise<void> {
+  try {
+    if (!intentId || !Array.isArray(infos.snapshot) || infos.snapshot.length === 0) return;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    // Derrière un proxy, l'IP du client est le PREMIER élément de la chaîne.
+    const chaine = req.headers.get("x-forwarded-for") ?? "";
+    const ip = chaine.split(",")[0].trim() || null;
+    await supabase.from("preuves_consentement").upsert({
+      stripe_intent_id: intentId,
+      email: infos.email,
+      nom_complet: infos.nomComplet ?? null,
+      produit: infos.produit ?? null,
+      montant_total: infos.montantTotal ?? null,
+      mensualites: infos.mensualites ?? null,
+      version_cgv: VERSION_CGV,
+      engagements: infos.snapshot,
+      adresse_ip: ip,
+      navigateur: req.headers.get("user-agent"),
+    }, { onConflict: "stripe_intent_id" });
+  } catch (e) {
+    console.error("[preuve] enregistrement impossible (non bloquant) :", e);
+  }
+}
+
 function compactAgreements(
   snapshot: unknown,
 ): string {
@@ -426,6 +485,10 @@ Deno.serve(async (req) => {
         },
       );
 
+      // Preuve opposable du consentement (cahier des charges §4.4).
+      await enregistrerPreuve(req, pi.id, {
+        email, nomComplet: fullName, snapshot: input.agreements_snapshot,
+      });
       return new Response(
         JSON.stringify({
           client_secret: pi.client_secret,
@@ -577,6 +640,10 @@ Deno.serve(async (req) => {
             "payment_method_options[card][request_three_d_secure]": "automatic",
           },
         );
+        // Preuve opposable du consentement (cahier des charges §4.4).
+        await enregistrerPreuve(req, pi.id, {
+          email, nomComplet: fullName, snapshot: input.agreements_snapshot,
+        });
         return new Response(
           JSON.stringify({
             client_secret: pi.client_secret,
@@ -676,6 +743,10 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Preuve opposable du consentement (cahier des charges §4.4).
+      await enregistrerPreuve(req, libPi.id, {
+        email, nomComplet: fullName, snapshot: input.agreements_snapshot,
+      });
       return new Response(
         JSON.stringify({
           client_secret: libPi.client_secret,
@@ -890,6 +961,10 @@ Deno.serve(async (req) => {
             "payment_method_options[card][request_three_d_secure]": "automatic",
           },
         );
+        // Preuve opposable du consentement (cahier des charges §4.4).
+        await enregistrerPreuve(req, pi.id, {
+          email, nomComplet: fullName, snapshot: input.agreements_snapshot,
+        });
         return new Response(
           JSON.stringify({
             client_secret: pi.client_secret,
@@ -1050,6 +1125,10 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Preuve opposable du consentement (cahier des charges §4.4).
+      await enregistrerPreuve(req, intentId, {
+        email, nomComplet: fullName, snapshot: input.agreements_snapshot,
+      });
       return new Response(
         JSON.stringify({
           client_secret: clientSecret,
@@ -1293,6 +1372,10 @@ Deno.serve(async (req) => {
             "payment_method_options[card][request_three_d_secure]": "automatic",
           },
         );
+        // Preuve opposable du consentement (cahier des charges §4.4).
+        await enregistrerPreuve(req, pi.id, {
+          email, nomComplet: fullName, snapshot: input.agreements_snapshot,
+        });
         return new Response(
           JSON.stringify({
             client_secret: pi.client_secret,
@@ -1417,6 +1500,10 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Preuve opposable du consentement (cahier des charges §4.4).
+      await enregistrerPreuve(req, customIntentId, {
+        email, nomComplet: fullName, snapshot: input.agreements_snapshot,
+      });
       return new Response(
         JSON.stringify({
           client_secret: customClientSecret,
@@ -1582,6 +1669,10 @@ Deno.serve(async (req) => {
           "payment_method_options[card][request_three_d_secure]": "automatic",
         },
       );
+      // Preuve opposable du consentement (cahier des charges §4.4).
+      await enregistrerPreuve(req, pi.id, {
+        email, nomComplet: fullName, snapshot: input.agreements_snapshot,
+      });
       return new Response(
         JSON.stringify({
           client_secret: pi.client_secret,
@@ -1684,6 +1775,10 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Preuve opposable du consentement (cahier des charges §4.4).
+    await enregistrerPreuve(req, pi.id, {
+      email, nomComplet: fullName, snapshot: input.agreements_snapshot,
+    });
     return new Response(
       JSON.stringify({
         client_secret: pi.client_secret,

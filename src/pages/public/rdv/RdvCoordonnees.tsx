@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/al-baraka-logo-v2.png";
 import { PhoneInputField, isValidPhoneNumber } from "@/components/ui/PhoneInputField";
 import { THEME, baseCourante, setStoredLeadId, setStoredPrefill } from "./rdvShared";
+import { MentionFormulaire } from "@/components/legal/MentionFormulaire";
 
 const EMAIL_RX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
 
@@ -338,6 +339,10 @@ export default function RdvCoordonnees() {
           >
             {submitting ? "Validation en cours…" : "Continuer →"}
           </button>
+
+          {/* Information préalable exigée par l'article 13 du RGPD, reprise du
+              cahier des charges §5. Sans elle, la collecte est irrégulière. */}
+          <MentionFormulaire style={{ textAlign: "center" }} />
         </form>
       </div>
 

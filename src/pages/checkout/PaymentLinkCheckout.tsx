@@ -33,7 +33,8 @@ import { Lock, ShieldCheck, ChevronDown, AlertTriangle, Loader2, Tag, CheckCircl
 import CheckoutCanvas from "./CheckoutCanvas";
 import { ScheduleBlock, formatEur, formatFrDate, todayPlusISO } from "./ScheduleBlock";
 import { EngagementChecklist } from "@/components/checkout/EngagementChecklist";
-import { initAgreements, allAgreed, type AgreementItem, type CheckoutFormula } from "@/lib/checkout-agreements";
+import { MentionsPaiement } from "@/components/checkout/MentionsPaiement";
+import { initAgreements, allAgreed, type AgreementItem, type CheckoutFormula, LIBELLE_BOUTON_PAIEMENT } from "@/lib/checkout-agreements";
 
 const THEME = {
   bg: "#0A0A0A",
@@ -1095,7 +1096,7 @@ function PaymentLinkForm({
     ? "Traitement…"
     : schedule.isDeferred
       ? "Autoriser ma carte"
-      : `Payer ${formatEur(schedule.todayAmount)}`;
+      : LIBELLE_BOUTON_PAIEMENT;
 
   return (
     <form
@@ -1268,15 +1269,20 @@ function PaymentLinkForm({
           />
         </div>
 
-        {/* 5 engagements obligatoires Pass / Liberty (Sidali 19/05/2026).
-            Affichées uniquement pour les ventes Pass AL BARAKA / Liberty —
-            les liens de formations à la carte gardent uniquement la case d'autorisation. */}
+        {/* Mentions obligatoires du récapitulatif (cahier des charges §4.1).
+            Hors du bloc conditionnel : elles valent pour TOUTE commande, pas
+            seulement celles qui portent les engagements. */}
+        <MentionsPaiement
+          mensualites={lookup.installments_count}
+          couleurs={{ texte: THEME.cream, texteFaible: THEME.creamMuted }}
+        />
+
         {needsAgreements && (
           <EngagementChecklist
             agreements={agreements}
             onChange={setAgreements}
             theme={{ gold: THEME.gold, goldBright: THEME.goldBright, cream: THEME.cream, creamMuted: THEME.creamMuted }}
-            title="Avant de continuer — coche les 5 engagements"
+            title="Avant de continuer, coche chaque engagement"
           />
         )}
 

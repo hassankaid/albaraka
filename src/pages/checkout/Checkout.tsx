@@ -27,7 +27,8 @@ import logo from "@/assets/al-baraka-logo-v2.png";
 import { Lock, ShieldCheck, CheckCircle2, Tag, X, ArrowRight, ChevronDown } from "lucide-react";
 import CheckoutCanvas from "./CheckoutCanvas";
 import { EngagementChecklist } from "@/components/checkout/EngagementChecklist";
-import { initAgreements, allAgreed, type AgreementItem } from "@/lib/checkout-agreements";
+import { MentionsPaiement } from "@/components/checkout/MentionsPaiement";
+import { initAgreements, allAgreed, type AgreementItem, LIBELLE_BOUTON_PAIEMENT } from "@/lib/checkout-agreements";
 
 // Prix officiel Pass AL BARAKA (table public.offers, slug 'al-baraka').
 // Modifiable depuis l'admin /admin/payment-links → onglet "Codes promo
@@ -1404,10 +1405,9 @@ function CheckoutForm({
     }
   }
 
-  const buttonLabel =
-    installments === 1
-      ? `Payer ${formatEur(totalAfterDiscount)}`
-      : `Payer ${formatEur(perInstallment)} aujourd'hui`;
+  // Même libellé quel que soit le nombre de mensualités : c'est la formule
+  // imposée, pas un message commercial.
+  const buttonLabel = LIBELLE_BOUTON_PAIEMENT;
 
   return (
     <form
@@ -1763,12 +1763,16 @@ function CheckoutForm({
         )}
       </section>
 
-      {/* 5 engagements obligatoires (Sidali 19/05/2026 — CONSIGNES_IMPLEMENTATION) */}
+      {/* Mentions obligatoires du récapitulatif (cahier des charges §4.1) */}
+      <MentionsPaiement
+        mensualites={installments}
+        couleurs={{ texte: THEME.cream, texteFaible: THEME.creamMuted }}
+      />
       <EngagementChecklist
         agreements={agreements}
         onChange={setAgreements}
         theme={{ gold: THEME.gold, goldBright: THEME.goldBright, cream: THEME.cream, creamMuted: THEME.creamMuted }}
-        title="Avant de continuer — coche les 5 engagements"
+        title="Avant de continuer, coche chaque engagement"
       />
 
       {/* Bouton */}
