@@ -326,6 +326,40 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Aperçu : rend l'e-mail sans l'envoyer, et sans rien lire ──────────
+    //
+    // Les autres fonctions d'envoi en ont un. Il sert à voir le rendu réel
+    // avant qu'un client ne le reçoive — en particulier le bloc contractuel,
+    // qu'on ne peut vérifier qu'en le regardant.
+    //
+    // Placé AVANT le contrôle d'accès, et ne lisant RIEN en base : tout ce
+    // qu'il affiche vient de la requête. Il ne peut donc divulguer aucune
+    // commande réelle, et reste ouvert comme les aperçus des campagnes.
+    const corpsApercu = await req.clone().json().catch(() => ({} as Record<string, unknown>));
+    if (corpsApercu.apercu === true) {
+      const c = corpsApercu.commande as Record<string, unknown> | undefined;
+      const confirmationApercu = c
+        ? blocConfirmationCommande({
+            produit: String(c.produit ?? "Accès AL BARAKA"),
+            montantTotal: Number(c.montantTotal ?? 0),
+            mensualites: Number(c.mensualites ?? 1),
+            date: String(c.date ?? new Date().toLocaleDateString("fr-FR")),
+            versionCgv: typeof c.versionCgv === "string" ? c.versionCgv : null,
+          })
+        : "";
+      return new Response(
+        buildHtml(
+          typeof corpsApercu.prenom_test === "string" ? corpsApercu.prenom_test : "Prénom",
+          "https://plateforme.albarakaecosysteme.com/reset-password#exemple",
+          corpsApercu.pass_type === "liberty" ? "liberty" : "al_baraka",
+          !!corpsApercu.include_discord_button,
+          !!corpsApercu.is_upgrade,
+          confirmationApercu,
+        ),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } },
+      );
+    }
+
     const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
     const isServiceRoleCall = bearer === supabaseServiceKey;
 
