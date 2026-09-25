@@ -49,7 +49,12 @@ comment on table public.consentements_marketing is
   'Preuve du consentement à la prospection (RGPD art. 7). Ajout seul, jamais modifié.';
 
 -- Dernier état connu par adresse, pour exclure des envois commerciaux.
-create or replace view public.consentement_marketing_actuel as
+--
+-- security_invoker : sans cette option, la vue s'exécuterait avec les droits
+-- de son propriétaire et court-circuiterait la RLS de la table — n'importe
+-- quel compte connecté lirait les consentements de tout le monde.
+create or replace view public.consentement_marketing_actuel
+  with (security_invoker = true) as
 select distinct on (lower(email))
   lower(email) as email,
   consenti,
