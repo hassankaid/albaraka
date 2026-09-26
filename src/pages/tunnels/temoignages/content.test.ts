@@ -8,7 +8,7 @@
  *  - un hash Vimeo oublié → le lecteur refuse de démarrer, les vidéos du
  *    compte étant réglées « masquée de Vimeo » ;
  *  - une capture référencée mais absente de `public/` → cadre vide ;
- *  - un montant écrit avec une espace ordinaire → coupure en fin de ligne.
+ *  - un résultat chiffré réintroduit dans une légende → publicités refusées.
  */
 
 import { describe, it, expect } from "vitest";
@@ -52,18 +52,28 @@ describe("vidéos publiées", () => {
 
 describe("le mur", () => {
   it("porte une légende sur chaque tuile", () => {
-    for (const t of tous) expect(t.title.trim().length).toBeGreaterThan(5);
+    // Un prénom suffit — le mur a été ramené à ça le 26/09/2026. Le seuil
+    // vérifie qu'aucune tuile ne part sans légende du tout, pas la longueur.
+    for (const t of tous) expect(t.title.trim().length).toBeGreaterThanOrEqual(4);
   });
 
-  it("écrit les montants à la française — insécable avant l'euro", () => {
-    // Deux raisons : la règle typographique, et surtout qu'un montant ne se
-    // coupe pas en fin de ligne (« 6.656 » d'un côté, « € » de l'autre).
-    // Ce test vérifie aussi que la séquence `\u00A0` du fichier source est
-    // bien interprétée : une insécable écrite en clair se perd au premier
-    // copier-coller, et rien ne le signalerait autrement.
+  it("ne promet plus aucun résultat chiffré", () => {
+    // Retiré le 26/09/2026 : Meta refusait les publicités, et les montants
+    // affichés sous les vidéos étaient des affirmations d'AL BARAKA, pas des
+    // propos de membres.
+    //
+    // Ce test ne juge PAS le reste de la copy — seulement ces légendes, qui
+    // sont attachées au visage d'une personne identifiable. C'est là que le
+    // chiffre engage le plus.
+    const interdits = [
+      /\d[\d.\s\u00A0]*\s*€/,          // 13.500 €, 1.400 €…
+      /\bSMIC\b/i,                      // un montant déguisé
+      /\d+\s*(jours?|semaines?|mois)/i,  // « en moins de 40 jours »
+      /de\s*0\s*à/i,                     // « passée de 0 à… »
+    ];
     for (const t of tous) {
-      for (const m of t.title.matchAll(/(.)€/g)) {
-        expect(m[1], `« ${t.title} » : caractère ${JSON.stringify(m[1])} avant l'euro`).toBe("\u00A0");
+      for (const motif of interdits) {
+        expect(motif.test(t.title), `« ${t.title} » contient un résultat chiffré`).toBe(false);
       }
     }
   });
