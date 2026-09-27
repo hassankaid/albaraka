@@ -173,6 +173,36 @@ async function resendSend(payload: unknown): Promise<{ status: number; data: any
   return { status: res.status, data };
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Lecture paginée.
+//
+// PostgREST plafonne toute requête à 1 000 lignes (db-max-rows). Sans
+// pagination, et SANS LA MOINDRE ERREUR, on obtient une réponse tronquée :
+//
+//   • le périmètre s'arrête à 1 000 → les suivants ne reçoivent jamais rien ;
+//   • le journal des envois s'arrête à 1 000 → au-delà, la fonction ne sait
+//     plus qui a déjà reçu le message et le renvoie. C'est le pire des deux,
+//     parce qu'un doublon se plaint, et une plainte coûte le domaine ;
+//   • la liste d'exclusion s'arrête à 1 000 → on écrit à des clients.
+//
+// Découvert le 27/09/2026 par un dry_run qui annonçait 1 000 destinataires
+// au lieu de 5 431. Rien dans les journaux ne l'aurait signalé.
+// ─────────────────────────────────────────────────────────────────────────
+const PAGE = 1000;
+
+async function lireTout<T = any>(
+  construire: (de: number, a: number) => any,
+): Promise<{ data: T[] | null; error: any }> {
+  const tout: T[] = [];
+  for (let de = 0; ; de += PAGE) {
+    const { data, error } = await construire(de, de + PAGE - 1);
+    if (error) return { data: null, error };
+    const lot = (data ?? []) as T[];
+    tout.push(...lot);
+    if (lot.length < PAGE) return { data: tout, error: null };
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok");
 
@@ -195,20 +225,25 @@ serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   // ── Qui reste à servir ─────────────────────────────────────────────────
-  const { data: recipients, error: recErr } = await supabase
-    .from("email_campaign_recipients")
-    .select("email, first_name, position")
-    .eq("campaign_slug", CAMPAIGN_SLUG)
-    .order("position");
+  const { data: recipients, error: recErr } = await lireTout((de, a) =>
+    supabase
+      .from("email_campaign_recipients")
+      .select("email, first_name, position")
+      .eq("campaign_slug", CAMPAIGN_SLUG)
+      .order("position")
+      .range(de, a));
   if (recErr) {
     return new Response(JSON.stringify({ error: "perimetre_indisponible", detail: recErr.message }), { status: 500 });
   }
 
-  const { data: dejaEnvoyes, error: sendsErr } = await supabase
-    .from("email_campaign_sends")
-    .select("recipient_email")
-    .eq("campaign_slug", CAMPAIGN_SLUG)
-    .eq("email_seq", seq);
+  const { data: dejaEnvoyes, error: sendsErr } = await lireTout((de, a) =>
+    supabase
+      .from("email_campaign_sends")
+      .select("recipient_email")
+      .eq("campaign_slug", CAMPAIGN_SLUG)
+      .eq("email_seq", seq)
+      .order("recipient_email")
+      .range(de, a));
   if (sendsErr) {
     return new Response(JSON.stringify({ error: "journal_indisponible", detail: sendsErr.message }), { status: 500 });
   }
@@ -216,7 +251,8 @@ serve(async (req) => {
 
   // Sans la liste d'exclusion, on relancerait des gens qui ont acheté entre
   // deux messages : on refuse d'envoyer plutôt que de prendre le risque.
-  const { data: exclus, error: exclusErr } = await supabase.rpc("emails_a_exclure_albaraka_200");
+  const { data: exclus, error: exclusErr } = await lireTout((de, a) =>
+    supabase.rpc("emails_a_exclure_albaraka_200").select("email").range(de, a));
   if (exclusErr) {
     return new Response(JSON.stringify({ error: "exclusions_indisponibles", detail: exclusErr.message }), { status: 500 });
   }
