@@ -20,6 +20,13 @@
 --                        $$ select public.tick_albaraka_200_mail1() $$);
 --   select cron.unschedule('albaraka_200_mail1_lancement');
 -- (06h00–09h59 UTC = 08h00–11h59 Paris, le 28 septembre uniquement.)
+--
+-- Les mails 2 et 3 gardent une cadence UNIFORME de 5 minutes — leur cron est
+-- passé de */10 à */5 le 27/09. La rampe lente du mail 1 sert à découvrir ce
+-- que valent 4 160 adresses jamais contactées ; cette découverte n'a lieu
+-- qu'une fois. Dès le mail 2, les rebonds du mail 1 sont déjà dans la liste
+-- d'exclusion (webhook Resend → email_campaign_events, réévalué avant chaque
+-- envoi), donc refaire la phase lente coûterait 50 minutes pour rien.
 -- ─────────────────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.tick_albaraka_200_mail1()
  RETURNS TABLE(action text, detail text)
