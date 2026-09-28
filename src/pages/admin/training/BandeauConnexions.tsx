@@ -6,11 +6,15 @@
 // les jours sans rien terminer, et inversement terminer un chapitre puis
 // disparaître.
 //
+// « Présence » et non « connexion » : last_sign_in_at ne bouge qu'à la saisie
+// des identifiants, alors que la session se renouvelle toute seule. Mesuré le
+// 28/09/2026 — 125 élèves sur 185 avaient une session plus récente que leur
+// dernière connexion, 53 jours d'écart moyen. En s'y fiant, les actifs à
+// 7 jours tombaient de 72 à 19, et 50 élèves étaient déclarés inactifs à tort.
+//
 // Ce qu'on ne peut pas afficher : un historique. auth.audit_log_entries est
-// purgé par Supabase et se trouve vide ; on ne dispose donc que de la
-// DERNIÈRE connexion de chacun, pas d'une courbe dans le temps. Pour obtenir
-// un historique il faudrait enregistrer les connexions nous-mêmes à partir de
-// maintenant, et cela ne retrouverait pas le passé.
+// purgé par Supabase et se trouve vide ; on ne dispose donc que du dernier
+// passage de chacun, pas d'une courbe dans le temps.
 // ─────────────────────────────────────────────────────────────────────────
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,13 +51,13 @@ export default function BandeauConnexions() {
     data.eleves_total > 0 ? Math.round((n / data.eleves_total) * 100) : 0;
 
   const cases = [
-    { libelle: "Connectés aujourd'hui", valeur: data.connecte_24h, ton: "text-emerald-500" },
+    { libelle: "Vus aujourd'hui", valeur: data.connecte_24h, ton: "text-emerald-500" },
     { libelle: "Sur 7 jours", valeur: data.connecte_7j, ton: "text-emerald-500" },
     { libelle: "Sur 30 jours", valeur: data.connecte_30j, ton: "text-foreground" },
-    { libelle: "Sans connexion depuis 30 j", valeur: data.inactif_30j_plus, ton: "text-amber-500" },
+    { libelle: "Pas vus depuis 30 j", valeur: data.inactif_30j_plus, ton: "text-amber-500" },
     // Le chiffre qui compte vraiment : un compte créé mais jamais ouvert n'est
     // pas un élève inactif, c'est un élève qui n'a jamais commencé.
-    { libelle: "Ne se sont jamais connectés", valeur: data.jamais_connecte, ton: "text-destructive" },
+    { libelle: "Jamais connectés", valeur: data.jamais_connecte, ton: "text-destructive" },
   ];
 
   return (
@@ -61,7 +65,7 @@ export default function BandeauConnexions() {
       <CardContent className="p-4">
         <div className="mb-3 flex items-baseline justify-between">
           <h2 className="font-heading text-sm uppercase tracking-wider text-muted-foreground">
-            Connexions
+            Présence des élèves
           </h2>
           <span className="text-xs text-muted-foreground">{data.eleves_total} élèves</span>
         </div>

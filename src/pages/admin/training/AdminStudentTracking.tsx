@@ -196,7 +196,7 @@ export default function AdminStudentTracking() {
         <Select value={tri} onValueChange={(v) => setTri(v as any)}>
           <SelectTrigger className="w-[210px]"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="connexion">Connexion la plus récente</SelectItem>
+            <SelectItem value="connexion">Présence la plus récente</SelectItem>
             <SelectItem value="activite">Activité la plus récente</SelectItem>
             <SelectItem value="nom">Nom (A → Z)</SelectItem>
           </SelectContent>
@@ -247,7 +247,7 @@ export default function AdminStudentTracking() {
               <div className="col-span-1 text-center">Formations</div>
               <div className="col-span-3">Progression</div>
               <div className="col-span-1 text-center">Quiz</div>
-              <div className="col-span-3">Dernière connexion</div>
+              <div className="col-span-3">Dernière présence</div>
             </div>
 
             {/* Rows */}
@@ -320,8 +320,8 @@ export default function AdminStudentTracking() {
                   <div className="col-span-3 flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <div className="truncate text-xs text-foreground">
-                        {s.derniere_connexion
-                          ? formatDistanceToNow(new Date(s.derniere_connexion), {
+                        {s.derniere_presence
+                          ? formatDistanceToNow(new Date(s.derniere_presence), {
                               addSuffix: true,
                               locale: fr,
                             })

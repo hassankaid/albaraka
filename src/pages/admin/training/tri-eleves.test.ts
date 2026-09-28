@@ -14,7 +14,7 @@ import { trier, comparerDates } from "./tri-eleves";
 
 const e = (nom: string, connexion: string | null, activite: string | null = null) => ({
   full_name: nom, email: `${nom.toLowerCase()}@x.fr`,
-  derniere_connexion: connexion, last_activity_at: activite,
+  derniere_presence: connexion, last_activity_at: activite,
 });
 
 describe("tri par connexion", () => {
@@ -60,7 +60,7 @@ describe("tri par nom", () => {
   });
 
   it("retombe sur l'email quand le nom manque", () => {
-    const sansNom = { full_name: null, email: "aaa@x.fr", derniere_connexion: null };
+    const sansNom = { full_name: null, email: "aaa@x.fr", derniere_presence: null };
     const l = trier([e("Zoé", null), sansNom as any], "nom");
     expect(l[0].email).toBe("aaa@x.fr");
   });

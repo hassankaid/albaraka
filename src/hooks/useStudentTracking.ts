@@ -17,8 +17,13 @@ export interface StudentSummary {
   quiz_attempted_count: number;
   quiz_validated_count: number;
   last_activity_at: string | null;
-  /** Dernière CONNEXION (auth.users.last_sign_in_at) — à ne pas confondre
-   *  avec last_activity_at, qui est le dernier chapitre ou quiz. */
+  /** Dernière PRÉSENCE : la plus récente entre la connexion et le dernier
+   *  rafraîchissement de session. last_sign_in_at seul ne bouge qu'à la saisie
+   *  des identifiants — 125 élèves sur 185 avaient une session plus récente,
+   *  avec 53 jours d'écart moyen. À ne pas confondre non plus avec
+   *  last_activity_at, qui est le dernier chapitre ou quiz terminé. */
+  derniere_presence: string | null;
+  /** La connexion au sens strict, conservée pour information. */
   derniere_connexion: string | null;
   sessions_ouvertes: number;
 }
@@ -272,6 +277,7 @@ export function useStudentsList() {
           quiz_attempted_count: quizAttemptedCount,
           quiz_validated_count: quizValidatedCount,
           last_activity_at: lastActivity,
+          derniere_presence: connexion.derniere_presence ?? null,
           derniere_connexion: connexion.derniere_connexion ?? null,
           sessions_ouvertes: Number(connexion.sessions_ouvertes ?? 0),
         };

@@ -15,7 +15,7 @@ export type CritereTri = "connexion" | "activite" | "nom";
 export interface EleveTriable {
   full_name: string | null;
   email: string;
-  derniere_connexion?: string | null;
+  derniere_presence?: string | null;
   last_activity_at?: string | null;
 }
 
@@ -30,7 +30,7 @@ export function comparerDates(a?: string | null, b?: string | null): number {
 export function trier<T extends EleveTriable>(eleves: T[], critere: CritereTri): T[] {
   const copie = [...eleves];
   if (critere === "connexion") {
-    copie.sort((a, b) => comparerDates(a.derniere_connexion, b.derniere_connexion));
+    copie.sort((a, b) => comparerDates(a.derniere_presence, b.derniere_presence));
   } else if (critere === "activite") {
     copie.sort((a, b) => comparerDates(a.last_activity_at, b.last_activity_at));
   } else {
