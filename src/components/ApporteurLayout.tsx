@@ -11,6 +11,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPass } from "@/hooks/useUserPass";
+import { useFeatureUnlocks, type FeatureKey } from "@/hooks/useFeatureUnlock";
 import { useCanAccessPersonalBrand } from "@/hooks/useCanAccessPersonalBrand";
 import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 import { DiscordButton } from "@/components/DiscordButton";
@@ -23,6 +24,8 @@ interface NavItem {
   passRequired?: boolean;
   /** Studio Albaraka (B1, 20/05/2026) — visible uniquement pour CEO + Sidali Test. */
   studioOnly?: boolean;
+  /** Masque l'entree tant que la fonctionnalite n'est pas debloquee. */
+  featureRequired?: FeatureKey;
 }
 
 const workingNavItems: NavItem[] = [
@@ -33,7 +36,7 @@ const workingNavItems: NavItem[] = [
   { title: "Agent IA", path: "/working/agent", icon: Bot, passRequired: true },
   // L'espace apporteur a sa PROPRE barre laterale : ajouter l'entree dans
   // DashboardLayout ne suffit pas, un apporteur ne la voit jamais.
-  { title: "Liens de paiement", path: "/working/lien-de-paiement", icon: Link2, passRequired: true },
+  { title: "Liens de paiement", path: "/working/lien-de-paiement", icon: Link2, passRequired: true, featureRequired: "payment_links" },
   { title: "Dashboard", path: "/my-space", icon: BarChart3 },
   { title: "Mes Leads", path: "/my-space/leads", icon: Users },
   { title: "Mes Ventes", path: "/my-space/sales", icon: BadgeEuro },
@@ -92,6 +95,7 @@ export default function ApporteurLayout() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { profile, signOut } = useAuth();
   const { hasAnyPass } = useUserPass();
+  const { has: aDebloque } = useFeatureUnlocks();
   const { canAccess: canAccessPersonalBrand } = useCanAccessPersonalBrand();
 
   const currentSpace = detectSpace(location.pathname);
@@ -110,6 +114,9 @@ export default function ApporteurLayout() {
     }
     // working : on filtre les items studioOnly à CEO + Sidali Test.
     return workingNavItems.filter((item) => {
+      // Comme dans DashboardLayout : on ne montre pas une entree dont la page
+      // afficherait un ecran verrouille.
+      if (item.featureRequired && !aDebloque(item.featureRequired)) return false;
       if (item.studioOnly) return isStudioAllowed(profile);
       // Personal Brand (26/05/2026) : masqué pour AL BARAKA sans Marketing validé.
       if (item.path === "/working/personal-brand" && !canAccessPersonalBrand) {

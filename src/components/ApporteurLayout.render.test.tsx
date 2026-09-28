@@ -37,6 +37,13 @@ vi.mock("@/hooks/useUserPass", () => ({
   useUserPass: () => ({ hasAnyPass: false, hasLiberty: false, passLevel: null }),
 }));
 
+// Ajoute le 28/09/2026 : la barre laterale masque desormais les entrees dont
+// la fonctionnalite n'est pas debloquee, ce qui fait appeler useFeatureUnlocks
+// — et donc React Query, absent de ce test.
+vi.mock("@/hooks/useFeatureUnlock", () => ({
+  useFeatureUnlocks: () => ({ isLoading: false, has: () => false }),
+}));
+
 vi.mock("@/hooks/useCanAccessPersonalBrand", () => ({
   useCanAccessPersonalBrand: () => ({ canAccess: false, isLoading: false, needsMarketingCompletion: false }),
 }));

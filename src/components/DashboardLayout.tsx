@@ -7,6 +7,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPass } from "@/hooks/useUserPass";
+import { useFeatureUnlocks, type FeatureKey } from "@/hooks/useFeatureUnlock";
 import { useCanAccessPersonalBrand } from "@/hooks/useCanAccessPersonalBrand";
 import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 import { DiscordButton } from "@/components/DiscordButton";
@@ -26,6 +27,10 @@ interface NavItem {
   staffOrApporteurWithPass?: boolean;
   /** Studio Albaraka (B1, 20/05/2026) — visible uniquement pour CEO + Sidali Test. */
   studioOnly?: boolean;
+  /** Masque l'entree tant que la fonctionnalite n'est pas debloquee.
+   *  Different de passRequired : porte sur l'avancement de la formation,
+   *  pas sur la possession d'un pass. */
+  featureRequired?: FeatureKey;
 }
 
 const workingNavItems: NavItem[] = [
@@ -36,7 +41,7 @@ const workingNavItems: NavItem[] = [
   { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true },
   // Debloquee par la formation Setting a 100 %, comme le canal Discord Setting.
   // La page verifie elle-meme le pass actif ET le deblocage.
-  { title: "Liens de paiement", path: "/working/lien-de-paiement", icon: Link2, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true },
+  { title: "Liens de paiement", path: "/working/lien-de-paiement", icon: Link2, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true, featureRequired: "payment_links" },
   // After separator
   { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur", "agence"], adminSection: true },
   { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"], adminSection: true },
@@ -145,6 +150,7 @@ export default function DashboardLayout() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { profile, signOut } = useAuth();
   const { hasAnyPass } = useUserPass();
+  const { has: aDebloque } = useFeatureUnlocks();
   const { canAccess: canAccessPersonalBrand } = useCanAccessPersonalBrand();
 
   // Redirect pure apporteurs to their dedicated space (except coaching routes)
@@ -176,6 +182,10 @@ export default function DashboardLayout() {
   const filterItems = (items: NavItem[]) =>
     items.filter((item) => {
       if (!item.roles.includes(userRole)) return false;
+      // Verifie AVANT les autres regles : inutile de montrer une entree dont
+      // la page affichera un ecran verrouille. Pas de derogation early_access
+      // ici — la page n'en accorde pas non plus, l'entree mentirait.
+      if (item.featureRequired && !isCeo && !aDebloque(item.featureRequired)) return false;
       if (item.coachOnly) return profile?.is_coach || isCeo;
       if (item.apporteurOnly) return isApporteurLike || isCeo;
       if (item.passOrStaff) return hasAnyPass || profile?.is_coach || isCeo;
