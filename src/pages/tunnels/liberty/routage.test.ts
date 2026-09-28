@@ -27,7 +27,7 @@ const pourHote = (r: Rewrite) => r.has?.find((h) => h.type === "host")?.value ??
 describe("routage du chemin /liberty", () => {
   it("est servi comme tunnel sur le domaine des tunnels", () => {
     const regles = config.rewrites.filter(
-      (r) => pourHote(r) === "event.albarakaecosysteme.com" && r.destination === "/index.html",
+      (r) => pourHote(r) === "event.albarakaecosysteme.com" && r.destination === "/app.html",
     );
     expect(regles.length).toBeGreaterThan(0);
     expect(regles.some((r) => r.source.includes("liberty"))).toBe(true);

@@ -17,6 +17,34 @@ const siteVitrineEnDev = (): Plugin => ({
   },
 });
 
+/**
+ * La plateforme est publiée sous `app.html`, PAS sous `index.html`.
+ *
+ * Vercel sert les fichiers qui existent AVANT d'appliquer les réécritures de
+ * `vercel.json`, et `/` correspond à `index.html`. Avec un `index.html` à la
+ * racine, l'accueil du domaine principal ouvrait donc la plateforme au lieu
+ * du site vitrine — toutes les autres adresses étant bien aiguillées. Constaté
+ * le 28/09/2026 à la bascule du DNS.
+ *
+ * Sans fichier à la racine, `/` passe par les règles comme n'importe quelle
+ * adresse : le site vitrine sur `albarakaecosysteme.com`, `app.html` ailleurs.
+ * En développement rien ne change : le serveur de Vite lit toujours
+ * `index.html`, seul le fichier publié est renommé.
+ */
+const plateformeSousAppHtml = (): Plugin => ({
+  name: "plateforme-sous-app-html",
+  apply: "build",
+  enforce: "post",
+  generateBundle(_options, bundle) {
+    const html = bundle["index.html"];
+    if (!html || html.type !== "asset") {
+      this.error("index.html introuvable dans le build : la plateforme ne serait plus servie.");
+    }
+    this.emitFile({ type: "asset", fileName: "app.html", source: html.source });
+    delete bundle["index.html"];
+  },
+});
+
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
   server: {
@@ -26,7 +54,7 @@ export default defineConfig(() => ({
       overlay: false,
     },
   },
-  plugins: [react(), siteVitrineEnDev()],
+  plugins: [react(), siteVitrineEnDev(), plateformeSousAppHtml()],
   build: {
     rollupOptions: {
       // Deux applications, deux portes d'entrée : la plateforme (et les

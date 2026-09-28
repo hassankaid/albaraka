@@ -5,7 +5,7 @@
  * règle trop large enverrait la plateforme ou les tunnels vers le site de
  * marque, une règle trop étroite laisserait le domaine principal ouvrir la
  * plateforme. Et l'ordre compte : Vercel prend la première règle qui
- * correspond, donc la règle du site doit précéder le « tout vers index.html ».
+ * correspond, donc la règle du site doit précéder le « tout vers app.html ».
  */
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
@@ -46,9 +46,9 @@ describe("routage du site vitrine", () => {
       expect(correspond(motif, h), h).toBe(false);
   });
 
-  it("la règle du site précède le « tout vers index.html »", () => {
+  it("la règle du site précède le « tout vers app.html »", () => {
     const iSite = regles.indexOf(regleDomaine!);
-    const iTout = regles.findIndex((r) => r.source === "/(.*)" && !r.has && r.destination === "/index.html");
+    const iTout = regles.findIndex((r) => r.source === "/(.*)" && !r.has && r.destination === "/app.html");
     expect(iTout).toBeGreaterThan(iSite);
   });
 
@@ -62,6 +62,15 @@ describe("routage du site vitrine", () => {
         expect(correspond(exclus, h), h).toBe(true);
       expect(correspond(exclus, "albaraka-git-main-kaidconsulting.vercel.app")).toBe(false);
     }
+  });
+
+  it("aucune règle ne vise index.html : ce fichier n'est plus publié", () => {
+    // Vercel sert un fichier existant AVANT les réécritures : un index.html à
+    // la racine répondait à « / » et ouvrait la plateforme sur le domaine du
+    // site vitrine. La plateforme est publiée sous app.html (vite.config.ts).
+    for (const r of regles) expect(r.destination, r.source).not.toBe("/index.html");
+    const vite = readFileSync(resolve(racine, "vite.config.ts"), "utf-8");
+    expect(vite).toMatch(/plateformeSousAppHtml\(\)/);
   });
 
   it("vitrine.html est bien une porte d'entrée du build", () => {
