@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import BandeauConnexions from "./BandeauConnexions";
+import { trier, type CritereTri } from "./tri-eleves";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useStudentsList, type StudentSummary } from "@/hooks/useStudentTracking";
@@ -57,6 +59,9 @@ export default function AdminStudentTracking() {
   const [search, setSearch] = useState("");
   const [formationFilter, setFormationFilter] = useState<string>("all");
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
+  // Tri par defaut : la derniere CONNEXION, du plus recent au plus lointain.
+  // C'est la question qu'on se pose en ouvrant cette page — qui est encore la.
+  const [tri, setTri] = useState<CritereTri>("connexion");
 
   if (profile?.role !== "ceo") {
     return <Navigate to="/training" replace />;
@@ -105,6 +110,10 @@ export default function AdminStudentTracking() {
       return true;
     });
   }, [students, search, formationFilter, activityFilter]);
+
+  // Le tri s'applique APRES les filtres. La logique vit dans tri-eleves.ts
+  // pour etre testable — le piege est le traitement des valeurs absentes.
+  const studentsTries = useMemo(() => trier(filteredStudents, tri), [filteredStudents, tri]);
 
   return (
     <div className="space-y-6">
@@ -157,6 +166,9 @@ export default function AdminStudentTracking() {
         ))}
       </div>
 
+      {/* Vue d'ensemble des connexions — distincte de l'activité pédagogique. */}
+      <BandeauConnexions />
+
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[250px]">
@@ -181,6 +193,15 @@ export default function AdminStudentTracking() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={tri} onValueChange={(v) => setTri(v as any)}>
+          <SelectTrigger className="w-[210px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="connexion">Connexion la plus récente</SelectItem>
+            <SelectItem value="activite">Activité la plus récente</SelectItem>
+            <SelectItem value="nom">Nom (A → Z)</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Select value={activityFilter} onValueChange={(v) => setActivityFilter(v as ActivityFilter)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue />
@@ -225,12 +246,12 @@ export default function AdminStudentTracking() {
               <div className="col-span-4">Élève</div>
               <div className="col-span-1 text-center">Formations</div>
               <div className="col-span-3">Progression</div>
-              <div className="col-span-2 text-center">Quiz validés</div>
-              <div className="col-span-2">Dernière activité</div>
+              <div className="col-span-1 text-center">Quiz</div>
+              <div className="col-span-3">Dernière connexion</div>
             </div>
 
             {/* Rows */}
-            {filteredStudents.map((s) => {
+            {studentsTries.map((s) => {
               const status = getActivityStatus(s);
               return (
                 <div
@@ -294,16 +315,24 @@ export default function AdminStudentTracking() {
                     )}
                   </div>
 
-                  {/* Dernière activité */}
-                  <div className="col-span-2 flex items-center justify-between gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      {s.last_activity_at
-                        ? formatDistanceToNow(new Date(s.last_activity_at), {
-                            addSuffix: true,
-                            locale: fr,
-                          })
-                        : "—"}
-                    </span>
+                  {/* Connexion, puis activité — deux choses différentes, et
+                      c'est la connexion qu'on regarde en premier. */}
+                  <div className="col-span-3 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate text-xs text-foreground">
+                        {s.derniere_connexion
+                          ? formatDistanceToNow(new Date(s.derniere_connexion), {
+                              addSuffix: true,
+                              locale: fr,
+                            })
+                          : <span className="text-destructive">jamais connecté</span>}
+                      </div>
+                      <div className="truncate text-[11px] text-muted-foreground">
+                        {s.last_activity_at
+                          ? `activité ${formatDistanceToNow(new Date(s.last_activity_at), { addSuffix: true, locale: fr })}`
+                          : "aucune activité"}
+                      </div>
+                    </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </div>

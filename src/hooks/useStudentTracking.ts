@@ -17,6 +17,10 @@ export interface StudentSummary {
   quiz_attempted_count: number;
   quiz_validated_count: number;
   last_activity_at: string | null;
+  /** Dernière CONNEXION (auth.users.last_sign_in_at) — à ne pas confondre
+   *  avec last_activity_at, qui est le dernier chapitre ou quiz. */
+  derniere_connexion: string | null;
+  sessions_ouvertes: number;
 }
 
 export interface StudentDetailFormation {
@@ -183,6 +187,17 @@ export function useStudentsList() {
 
       // ─── Aggregate per user ──────
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+      // Les connexions viennent d'auth.users, que PostgREST n'expose pas :
+      // elles passent par une fonction réservée au CEO. Un échec ici ne doit
+      // pas priver la page de tout le reste — on continue sans.
+      let connexionMap = new Map<string, any>();
+      try {
+        const { data: cnx } = await (supabase as any).rpc("connexions_eleves");
+        connexionMap = new Map((cnx ?? []).map((c: any) => [c.user_id, c]));
+      } catch {
+        connexionMap = new Map();
+      }
       const result: StudentSummary[] = userIds.map((uid: string) => {
         const userEnrolls = enrollmentsByUser.get(uid) || [];
         const formations = userEnrolls
@@ -241,6 +256,7 @@ export function useStudentsList() {
             : lastQuizAt;
 
         const profile: any = profileMap.get(uid) || {};
+        const connexion: any = connexionMap.get(uid) || {};
 
         return {
           user_id: uid,
@@ -256,6 +272,8 @@ export function useStudentsList() {
           quiz_attempted_count: quizAttemptedCount,
           quiz_validated_count: quizValidatedCount,
           last_activity_at: lastActivity,
+          derniere_connexion: connexion.derniere_connexion ?? null,
+          sessions_ouvertes: Number(connexion.sessions_ouvertes ?? 0),
         };
       });
 

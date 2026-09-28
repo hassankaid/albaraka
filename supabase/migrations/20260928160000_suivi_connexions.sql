@@ -1,0 +1,21 @@
+-- ─────────────────────────────────────────────────────────────────────────
+-- Suivi des connexions des élèves. Appliqué en base le 28/09/2026.
+--
+-- La page de suivi triait déjà par « dernière activité » — mais c'est le
+-- dernier chapitre ou quiz terminé, pas la dernière CONNEXION. Deux notions
+-- distinctes : on peut se connecter tous les jours sans rien terminer.
+--
+-- La donnée vit dans auth.users, que PostgREST n'expose pas : d'où ces deux
+-- fonctions, réservées au CEO.
+--
+--   connexions_eleves()        dernière connexion + sessions ouvertes, par élève
+--   statistiques_connexions()  les compteurs globaux du bandeau
+--
+-- CE QU'ON NE PEUT PAS AVOIR : l'historique. auth.audit_log_entries est purgé
+-- par Supabase et se trouve vide (0 ligne au 28/09). On ne dispose donc que de
+-- la DERNIÈRE connexion de chacun, jamais d'une courbe. Un historique
+-- supposerait d'enregistrer les connexions nous-mêmes à partir de maintenant,
+-- et ne retrouverait pas le passé.
+--
+-- Définitions faisant foi en base (historique Supabase).
+-- ─────────────────────────────────────────────────────────────────────────
