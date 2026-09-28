@@ -24,6 +24,7 @@ import AlBaraka200Checkout from "./pages/checkout/AlBaraka200Checkout";
 import PiedDePageLegal from "./components/legal/PiedDePageLegal";
 import PiedDePageLegalApplication from "./components/legal/PiedDePageLegalApplication";
 import BandeauCookies from "./components/legal/BandeauCookies";
+import BandeauCookiesApplication from "./components/legal/BandeauCookiesApplication";
 import { MENTIONS_LEGALES, POLITIQUE_CONFIDENTIALITE, CGV } from "./pages/legal/textes";
 import DashboardLayout from "./components/DashboardLayout";
 import ApporteurLayout from "./components/ApporteurLayout";
@@ -431,7 +432,7 @@ const FullApp = () => (
                 back-office n'en a pas besoin, mais /checkout, /pay, /rdv,
                 /quiz et les pages légales, si. */}
             <PiedDePageLegalApplication />
-            <BandeauCookies />
+            <BandeauCookiesApplication />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
