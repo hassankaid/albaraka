@@ -3,7 +3,7 @@ import SpaceSwitcher from "./SpaceSwitcher";
 import {
   BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X,
   ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp, GraduationCap,
-  CalendarDays, Award, Sparkles, Bot, MessageSquare, Film,
+  CalendarDays, Award, Sparkles, Bot, MessageSquare, Film, Link2,
 } from "lucide-react";
 import { isStudioAllowed } from "@/lib/studio-access";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -31,6 +31,9 @@ const workingNavItems: NavItem[] = [
   { title: "Personal Brand", path: "/working/personal-brand", icon: Sparkles, passRequired: true },
   { title: "Studio", path: "/studio", icon: Film, studioOnly: true },
   { title: "Agent IA", path: "/working/agent", icon: Bot, passRequired: true },
+  // L'espace apporteur a sa PROPRE barre laterale : ajouter l'entree dans
+  // DashboardLayout ne suffit pas, un apporteur ne la voit jamais.
+  { title: "Liens de paiement", path: "/working/lien-de-paiement", icon: Link2, passRequired: true },
   { title: "Dashboard", path: "/my-space", icon: BarChart3 },
   { title: "Mes Leads", path: "/my-space/leads", icon: Users },
   { title: "Mes Ventes", path: "/my-space/sales", icon: BadgeEuro },

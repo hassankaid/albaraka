@@ -19,15 +19,29 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, cleanup, screen } from "@testing-library/react";
 
-const offre = {
-  id: "1", slug: "al-baraka", category: "al_baraka", label: "PASS AL BARAKA",
-  default_price_ht: 3000, min_installments_count: 1, max_installments_count: 8,
-  formation_id: null, status: "active", created_at: "", updated_at: "",
+const base = {
+  min_installments_count: 1, formation_id: null, status: "active",
+  created_at: "", updated_at: "",
 };
 
-function monter({ pass, debloque, role = "apporteur" }: { pass: boolean; debloque: boolean; role?: string }) {
+// Volontairement dans le DESORDRE : c'est la page qui doit les remettre
+// dans l'ordre, pas la base de donnees.
+const offres = [
+  { ...base, id: "9", slug: "closing", category: "a_la_carte", label: "Closing",
+    default_price_ht: 500, max_installments_count: 3 },
+  { ...base, id: "3", slug: "liberty", category: "liberty", label: "LIBERTY",
+    default_price_ht: 5000, max_installments_count: 10 },
+  { ...base, id: "1", slug: "al-baraka", category: "al_baraka", label: "PASS AL BARAKA",
+    default_price_ht: 3000, max_installments_count: 8 },
+  { ...base, id: "2", slug: "al-baraka-200", category: "al_baraka_200", label: "AL BARAKA 200",
+    default_price_ht: 2400, max_installments_count: 12 },
+];
+
+function monter({ pass, debloque, role = "apporteur", sansALaCarte = false }:
+  { pass: boolean; debloque: boolean; role?: string; sansALaCarte?: boolean }) {
+  const jeu = sansALaCarte ? offres.filter((o) => o.category !== "a_la_carte") : offres;
   vi.doMock("@/hooks/useAuth", () => ({ useAuth: () => ({ profile: { role }, user: { id: "u1" } }) }));
-  vi.doMock("@/hooks/useOffers", () => ({ useOffers: () => ({ data: [offre], isLoading: false }) }));
+  vi.doMock("@/hooks/useOffers", () => ({ useOffers: () => ({ data: jeu, isLoading: false }) }));
   vi.doMock("@/hooks/useUserPass", () => ({ useUserPass: () => ({ hasAnyPass: pass, isLoading: false }) }));
   vi.doMock("@/hooks/useFeatureUnlock", () => ({
     useFeatureUnlocks: () => ({ isLoading: false, has: (k: string) => debloque && k === "payment_links" }),
@@ -77,5 +91,28 @@ describe("les liens produits", () => {
     const { container } = render(<Page />);
     // Par défaut le maximum de l'offre, soit 8 mensualités.
     expect(container.textContent).toMatch(/\/checkout\/8/);
+  });
+});
+
+describe("l'ordre d'affichage", () => {
+  it("place les pass avant les formations à la carte", async () => {
+    // Demande de Hassan le 28/09 : un mur de douze cartes en vrac noyait les
+    // trois offres qui comptent, à 3 000 / 2 400 / 5 000 € contre 500 €.
+    const { default: Page } = await monter({ pass: true, debloque: true });
+    const { container } = render(<Page />);
+    const titres = [...container.querySelectorAll("h2")].map((h) => h.textContent);
+    expect(titres).toEqual([
+      "Pass AL BARAKA",
+      "Al Baraka 200 €/mois",
+      "Liberty",
+      "Formations à la carte",
+    ]);
+  });
+
+  it("n'affiche pas une section vide", async () => {
+    const { default: Page } = await monter({ pass: true, debloque: true, sansALaCarte: true });
+    const { container } = render(<Page />);
+    const titres = [...container.querySelectorAll("h2")].map((h) => h.textContent);
+    expect(titres).not.toContain("Formations à la carte");
   });
 });

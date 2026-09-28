@@ -42,6 +42,18 @@ const META: Record<OfferCategory, { label: string; icon: any; color: string }> =
   a_la_carte:    { label: "À la carte",            icon: GraduationCap, color: "text-sky-400" },
 };
 
+/**
+ * L'ordre d'affichage. Les pass d'abord, les formations à la carte ensuite :
+ * ce sont les offres à 3 000 / 2 400 / 5 000 € contre 500 €, et un mur de
+ * douze cartes en vrac noyait les trois qui comptent.
+ */
+const ORDRE: { categorie: OfferCategory; titre: string; sous_titre: string }[] = [
+  { categorie: "al_baraka",     titre: "Pass AL BARAKA",        sous_titre: "L'écosystème complet" },
+  { categorie: "al_baraka_200", titre: "Al Baraka 200 €/mois",  sous_titre: "Le même accès, réglé sur douze mois" },
+  { categorie: "liberty",       titre: "Liberty",               sous_titre: "L'accompagnement haut de gamme" },
+  { categorie: "a_la_carte",    titre: "Formations à la carte", sous_titre: "Une compétence à la fois" },
+];
+
 const ymd = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -54,8 +66,6 @@ function CarteOffre({ offre }: { offre: Offer }) {
   const [depart, setDepart] = useState("");
   const [copie, setCopie] = useState(false);
 
-  const meta = META[offre.category];
-  const Icone = meta.icon;
 
   const url = useMemo(() => {
     const base = `${getPublicAppOrigin()}${buildOfferPath(offre, mensualites)}`;
@@ -81,11 +91,7 @@ function CarteOffre({ offre }: { offre: Offer }) {
       <CardContent className="p-5 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className={`flex items-center gap-1.5 text-xs font-medium ${meta.color}`}>
-              <Icone className="h-3.5 w-3.5" />
-              {meta.label}
-            </div>
-            <h3 className="mt-1 font-heading text-lg text-foreground">{offre.label}</h3>
+            <h3 className="font-heading text-lg text-foreground">{offre.label}</h3>
           </div>
           <div className="text-right shrink-0">
             <div className="font-heading text-xl text-foreground">{euros(offre.default_price_ht)}</div>
@@ -209,11 +215,28 @@ export default function LienDePaiement() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {actives.map((o) => (
-          <CarteOffre key={o.id} offre={o} />
-        ))}
-      </div>
+      {ORDRE.map(({ categorie, titre, sous_titre }) => {
+        const offres = actives.filter((o) => o.category === categorie);
+        if (offres.length === 0) return null;
+        const Icone = META[categorie].icon;
+        return (
+          <section key={categorie} className="space-y-3">
+            <div className="flex items-baseline gap-2 border-b border-border pb-2">
+              <Icone className={`h-4 w-4 shrink-0 ${META[categorie].color}`} />
+              <h2 className="font-heading text-lg text-foreground">{titre}</h2>
+              <span className="text-xs text-muted-foreground">{sous_titre}</span>
+              {offres.length > 1 && (
+                <span className="ml-auto text-xs text-muted-foreground">{offres.length} formations</span>
+              )}
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {offres.map((o) => (
+                <CarteOffre key={o.id} offre={o} />
+              ))}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }
