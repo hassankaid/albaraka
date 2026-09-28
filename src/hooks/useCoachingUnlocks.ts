@@ -1,29 +1,44 @@
-// useCoachingUnlocks — détermine quels coachings hebdomadaires sont
-// déverrouillés pour l'utilisateur courant (demande CEO 20/05/2026).
+// ─────────────────────────────────────────────────────────────────────────
+// Quels coachings hebdomadaires sont ouverts à l'utilisateur courant.
 //
-// Règle : un coaching ne se débloque que si l'élève a TERMINÉ la formation
-// associée (cf. coachingUnlockRules.ts). Le verrou ne concerne QUE les élèves
-// (role = apporteur) — le CEO et le staff (collaborateur / coach) bypassent.
+// Réécrit le 28/09/2026 : la règle vivait ici, dans le navigateur. Elle est
+// descendue en base (public.coachings_de), pour deux raisons.
 //
-// On réutilise isFormationCompleteForUser (source de vérité de la complétion :
-// tous chapitres + tous quiz validés). Les 3 formations requises sont
-// vérifiées en parallèle, le résultat est caché 5 min par React Query.
-
+//  1. Les dérogations manuelles du CEO doivent pouvoir contredire
+//     l'automatique. Une règle calculée côté client ne peut pas les lire de
+//     façon fiable.
+//  2. Deux endroits qui décident finissent par diverger. C'était déjà le cas
+//     entre get_formation_progress >= 100 (Discord, fonctionnalités) et
+//     is_formation_complete_for_user (coachings, certificats).
+//
+// Le hook ne fait plus que lire et exposer. Aucune règle ici.
+// ─────────────────────────────────────────────────────────────────────────
 import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { isFormationCompleteForUser } from "@/lib/certificateEligibility";
 import {
   COACHING_UNLOCK_RULES,
-  REQUIRED_FORMATION_IDS,
   type CoachingUnlockRule,
 } from "@/config/coachingUnlockRules";
+
+/** Ce que la base renvoie pour un créneau. */
+export interface EtatCoaching {
+  slot_id: string;
+  titre: string;
+  deverrouille: boolean;
+  /** manuel · staff · libre · formation — d'où vient la décision. */
+  origine: "manuel" | "staff" | "libre" | "formation";
+  formation_requise: string | null;
+  motif_manuel: string | null;
+}
 
 export interface CoachingUnlocks {
   /** true si le créneau est verrouillé pour l'utilisateur courant. */
   isLocked: (slotId: string) => boolean;
   /** Règle de déverrouillage d'un créneau (formation requise), ou undefined. */
   getRule: (slotId: string) => CoachingUnlockRule | undefined;
-  /** Vérification de complétion en cours (élève uniquement). */
+  /** D'où vient la décision, pour l'affichage. */
+  getOrigine: (slotId: string) => EtatCoaching["origine"] | undefined;
   isLoading: boolean;
 }
 
@@ -31,44 +46,34 @@ export function useCoachingUnlocks(): CoachingUnlocks {
   const { profile } = useAuth();
   const userId = profile?.id;
 
-  // Le verrou ne s'applique qu'aux élèves apporteurs. CEO + collaborateur +
-  // coach voient tout déverrouillé.
-  const isStudent = profile?.role === "apporteur";
-
   const query = useQuery({
-    queryKey: ["coaching-unlocks", userId],
-    enabled: !!userId && isStudent,
+    queryKey: ["coachings-etat", userId],
+    enabled: !!userId,
     staleTime: 5 * 60_000,
-    queryFn: async (): Promise<Record<string, boolean>> => {
-      const results = await Promise.all(
-        REQUIRED_FORMATION_IDS.map(
-          async (fid) =>
-            [fid, await isFormationCompleteForUser(userId!, fid)] as const,
-        ),
-      );
-      return Object.fromEntries(results);
+    queryFn: async (): Promise<EtatCoaching[]> => {
+      const { data, error } = await (supabase as any).rpc("mes_coachings");
+      if (error) throw error;
+      return (data ?? []) as EtatCoaching[];
     },
   });
 
-  const completionByFormation = query.data ?? {};
-  const isLoadingForStudent = isStudent && query.isLoading;
+  const parSlot = new Map((query.data ?? []).map((e) => [e.slot_id, e]));
 
   function isLocked(slotId: string): boolean {
-    const rule = COACHING_UNLOCK_RULES[slotId];
-    if (!rule) return false; // pas de règle → coaching libre
-    if (!isStudent) return false; // CEO + staff bypassent
-
-    // Pendant le chargement on considère verrouillé : on évite de flasher un
-    // coaching déverrouillé avant la vérification (locked → unlocked est un
-    // sens de transition acceptable, l'inverse non).
-    if (isLoadingForStudent) return true;
-
-    return completionByFormation[rule.formationId] !== true;
+    // Pendant le chargement on considère verrouillé : mieux vaut ouvrir après
+    // coup que laisser entrevoir un coaching qu'on refermera. L'inverse serait
+    // perçu comme un accès retiré.
+    if (query.isLoading) return true;
+    const etat = parSlot.get(slotId);
+    if (!etat) return false; // créneau inconnu de la base → pas de verrou
+    return !etat.deverrouille;
   }
 
   return {
     isLocked,
+    // Les libellés d'affichage restent côté front ; seule la DÉCISION est en base.
     getRule: (slotId: string) => COACHING_UNLOCK_RULES[slotId],
-    isLoading: isLoadingForStudent,
+    getOrigine: (slotId: string) => parSlot.get(slotId)?.origine,
+    isLoading: query.isLoading,
   };
 }

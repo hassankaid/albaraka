@@ -1,11 +1,16 @@
-// Règles de déverrouillage des coachings hebdomadaires (demande CEO 20/05/2026).
+// Libellés d'affichage des règles de coaching.
 //
-// Chaque coaching du calendrier ne se débloque que lorsque l'élève a TERMINÉ
-// la formation associée (tous chapitres + tous quiz validés — cf.
-// isFormationCompleteForUser dans src/lib/certificateEligibility.ts).
+// ⚠️ CE FICHIER NE DÉCIDE PLUS RIEN depuis le 28/09/2026.
 //
-// Le verrou ne s'applique qu'aux ÉLÈVES (role = apporteur). Le CEO et le
-// staff (collaborateur / coach) voient tous les coachings déverrouillés.
+// La règle est descendue en base : coaching_weekly_slots.formation_requise_id
+// porte la condition, et public.coachings_de() la résout — dérogation manuelle
+// d'abord, complétion de la formation ensuite. Le hook useCoachingUnlocks lit
+// ce résultat et n'évalue plus rien.
+//
+// Ce qui reste ici : les libellés et les slugs, pour le message affiché à
+// l'élève (« Termine la formation Setting », lien vers /training/setting).
+// Si vous changez la formation requise d'un créneau, c'est en base qu'il faut
+// le faire — modifier ce fichier ne changerait que le texte.
 //
 // Clé = id du créneau dans coaching_weekly_slots (stable, lisible) :
 //   setting-telephonique · creation-contenus · setting-message · closing

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
+import PanneauAcces from "./PanneauAcces";
 import { useAuth } from "@/hooks/useAuth";
 import {
   useStudentDetail,
@@ -215,6 +216,11 @@ export default function StudentDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Accès — dérogations manuelles, tous domaines confondus. Placé avant
+          le bloc des formations : c'est la vue d'ensemble, le reste est le
+          détail. */}
+      {userId && <PanneauAcces userId={userId} />}
 
       {/* Formations enrôlées */}
       <Card>

@@ -33,6 +33,7 @@ import {
   type ManualEnrollment,
 } from "@/hooks/useAdminTrainingAccess";
 import { useGrantPass, useRevokePass } from "@/hooks/useAdminPasses";
+import DerogationsActives from "./DerogationsActives";
 import type { PassType } from "@/hooks/useUserPass";
 import {
   useAvailableFormationsForUser,
@@ -186,6 +187,10 @@ export default function AdminTrainingAccess() {
           </Button>
         </div>
       </div>
+
+      {/* Les derogations manuelles en vigueur, les plus anciennes d'abord.
+          Placee en haut : c'est ce qu'on doit voir avant de chercher un eleve. */}
+      <DerogationsActives />
 
       {/* Toggle mode test */}
       <Card className="border-amber-500/30 bg-amber-500/5">
