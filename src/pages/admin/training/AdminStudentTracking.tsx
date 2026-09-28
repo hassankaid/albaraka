@@ -243,8 +243,8 @@ export default function AdminStudentTracking() {
           <CardContent className="p-0">
             {/* Header */}
             <div className="hidden md:grid md:grid-cols-12 gap-3 px-4 py-3 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              <div className="col-span-4">Élève</div>
-              <div className="col-span-1 text-center">Formations</div>
+              <div className="col-span-3">Élève</div>
+              <div className="col-span-2 text-center">Formations</div>
               <div className="col-span-3">Progression</div>
               <div className="col-span-1 text-center">Quiz</div>
               <div className="col-span-3">Dernière présence</div>
@@ -260,7 +260,7 @@ export default function AdminStudentTracking() {
                   className="grid grid-cols-1 md:grid-cols-12 gap-3 px-4 py-4 border-b border-border last:border-0 hover:bg-muted/50 cursor-pointer transition-colors group"
                 >
                   {/* Élève */}
-                  <div className="col-span-4 flex items-center gap-3">
+                  <div className="col-span-3 flex items-center gap-3">
                     <span className="text-xl">{status.emoji}</span>
                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate">
@@ -271,7 +271,7 @@ export default function AdminStudentTracking() {
                   </div>
 
                   {/* Formations count */}
-                  <div className="col-span-1 flex items-center justify-start md:justify-center">
+                  <div className="col-span-2 flex items-center justify-start md:justify-center">
                     <Badge variant="outline" className="text-xs">
                       {s.enrollments_count}
                     </Badge>
@@ -294,7 +294,7 @@ export default function AdminStudentTracking() {
                   </div>
 
                   {/* Quiz */}
-                  <div className="col-span-2 flex items-center justify-start md:justify-center">
+                  <div className="col-span-1 flex items-center justify-start md:justify-center">
                     {s.quiz_attempted_count > 0 ? (
                       <Badge
                         variant={
