@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isTunnelHost, isAppHost, TUNNEL_HOST, APP_HOSTS } from "./hosts";
+import { isTunnelHost, isAppHost, isVitrineHost, TUNNEL_HOST, APP_HOSTS, VITRINE_HOSTS } from "./hosts";
 
 // Ces règles doublent celles de `vercel.json`. Si elles divergent, un domaine
 // pourrait servir des pages qu'il ne devrait pas → on les verrouille par test.
@@ -16,15 +16,22 @@ describe("segmentation par sous-domaine", () => {
     }
   });
 
-  it("couvre les 4 domaines de l'app réellement servis en prod", () => {
+  it("couvre les 2 domaines de l'app réellement servis en prod", () => {
     expect([...APP_HOSTS].sort()).toEqual(
-      [
-        "albarakaecosysteme.com",
-        "plateforme.albarakaecosysteme.com",
-        "view.albarakaecosysteme.com",
-        "www.albarakaecosysteme.com",
-      ].sort()
+      ["plateforme.albarakaecosysteme.com", "view.albarakaecosysteme.com"].sort()
     );
+  });
+
+  it("le domaine principal sert le site vitrine, et rien d'autre", () => {
+    expect([...VITRINE_HOSTS].sort()).toEqual(["albarakaecosysteme.com", "www.albarakaecosysteme.com"]);
+    for (const host of VITRINE_HOSTS) {
+      expect(isVitrineHost(host)).toBe(true);
+      expect(isAppHost(host)).toBe(false);
+      expect(isTunnelHost(host)).toBe(false);
+    }
+    for (const host of [...APP_HOSTS, TUNNEL_HOST]) expect(isVitrineHost(host)).toBe(false);
+    expect(isVitrineHost("WWW.AlBarakaEcosysteme.com:443")).toBe(true);
+    expect(isVitrineHost("albarakaecosysteme.com.attaquant.fr")).toBe(false);
   });
 
   it("ignore la casse et le port", () => {
@@ -43,6 +50,7 @@ describe("segmentation par sous-domaine", () => {
     for (const host of ["localhost:8080", "127.0.0.1:8080", "albaraka-git-feat-x.vercel.app"]) {
       expect(isTunnelHost(host)).toBe(false);
       expect(isAppHost(host)).toBe(false);
+      expect(isVitrineHost(host)).toBe(false);
     }
   });
 

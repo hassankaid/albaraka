@@ -1,0 +1,509 @@
+CAHIER DES CHARGES
+Intégration du site vitrine AL BARAKA Écosystème
+Mise en place sur la plateforme AL BARAKA, sous forme de funnel
+Émetteur : ETHICARENA L.L.C-FZ – Sidali
+Version 1.0 – 25 septembre 2026
+Documents liés : Cahier des charges légal (mentions légales, confidentialité, CGV)
+1. Objet et périmètre
+Ce document décrit le site vitrine AL BARAKA Écosystème à intégrer sur la plateforme AL BARAKA. Il se construit comme un funnel : une page d’accueil qui mène à une prise de rendez-vous, puis une page de confirmation.
+Objectif de la page : présenter la marque, créer la confiance (histoire du fondateur, mission, témoignages) et générer des demandes de rendez-vous qualifiées.
+1.1 Pages à créer
+Étape
+Page
+Adresse proposée
+Rôle
+1
+Page d’accueil (site vitrine)
+[À confirmer] www.albarakaecosysteme.com
+Présenter et convertir en demande de rendez-vous
+2
+Page de confirmation
+/merci
+Confirmer la demande, rassurer, déclencher le suivi
+–
+Mentions légales, Confidentialité, CGV
+/mentions-legales, /politique-de-confidentialite, /conditions-generales-de-vente
+Voir le cahier des charges légal (déjà transmis)
+1.2 Références de design
+Maquette de référence : canvas Claude Design « Site AL BARAKA Écosystème » (versions ordinateur 1440 px et mobile 390 px). Le lien est à partager par Sidali depuis le menu « Partager » du canvas.
+Fichiers joints (dossier « Pack prestataire ») : copies HTML statiques des deux maquettes, captures pleine page, logo et portrait.
+Les copies HTML sont une référence visuelle et de valeurs CSS (tailles, couleurs, espacements). Elles ne sont pas responsives et ne doivent pas être mises en ligne telles quelles.
+1.3 Principes
+Rendu premium, sobre, qui inspire confiance : fond noir, touches d’or, beaucoup d’espace.
+Une seule action principale répétée : « Prendre rendez-vous ».
+Les textes sont définitifs : les reprendre mot pour mot (chapitre 4).
+2. Charte graphique
+2.1 Couleurs
+Rôle
+Valeur
+Usage
+Fond principal
+#060606
+Fond de page
+Fond pied de page
+#040404
+Pied de page
+Fond de carte
+Dégradé #13110D → #0B0A08 (vertical)
+Cartes, témoignages
+Fond bloc rendez-vous
+#0C0B08
+Bloc « Prendre rendez-vous »
+Or principal
+#D8B85E
+Boutons, mots mis en valeur, icônes
+Or survol
+#EBD08A
+Survol des boutons et liens
+Or du logotype
+#E3C46E
+Texte « AL BARAKA » du menu
+Texte principal
+#F3EEE4
+Titres, texte important
+Texte secondaire
+#CFC8BA
+Paragraphes
+Texte discret
+#A7A196
+Légendes, descriptions
+Texte très discret
+#8F897E
+Mentions légales, libellés
+Bordures
+rgba(201,168,76,0.16) à 0.28 · #2B2720 · #221F19
+Contours de cartes, champs, séparateurs
+2.2 Typographies (Google Fonts)
+Police
+Graisses
+Usage
+Plus Jakarta Sans
+400, 500, 600, 700
+Tout le site (titres et textes)
+Cinzel
+500
+Uniquement le mot « AL BARAKA » dans le menu, pour rappeler le logo
+Allura
+400
+Uniquement la signature « Sidali » dans « Notre histoire »
+Élément
+Ordinateur
+Mobile
+Grand titre (H1)
+84 px · 600 · interlettrage −0,045 em · interligne 1,02
+44 px · 600 · −0,045 em · 1,05
+Titre de section (H2)
+56 px · 600 · −0,035 em · 1,06
+36 px · 600 · −0,035 em · 1,08
+Phrase de mission
+46 px · 500 · −0,03 em · 1,2
+28 px · 500 · −0,03 em · 1,22
+Sous-titre d’accueil
+20 px · interligne 1,6
+16 px · 1,6
+Paragraphe
+18 px · interligne 1,75
+16 px · 1,7
+Étiquette de section
+12 px · 600 · majuscules · interlettrage 0,14 em
+10 px · idem
+Bouton
+16 px · 600
+15 px · 600
+Mentions légales
+12 px · interligne 1,7
+12 px · 1,65
+2.3 Formes, ombres et espacements
+Largeur de contenu : 1200 px maximum, centrée. Marges latérales mobiles : 16 px.
+Arrondis : boutons et étiquettes 999 px (pilule) ; cartes 28 px (24 px mobile) ; bloc rendez-vous 36 px (28 px mobile) ; champs 14 px (12 px mobile).
+Ombre du bouton or : 0 10px 40px rgba(216,184,94,0.25).
+Espacement vertical des sections : 120 à 140 px sur ordinateur, 64 px sur mobile.
+Points de rupture : ordinateur ≥ 1024 px ; tablette 768–1023 px (reprendre la version ordinateur avec 2 colonnes au lieu de 3 et 2 vidéos visibles) ; mobile < 768 px.
+2.4 Composants réutilisables
+Composant
+Description
+Étiquette de section
+Pilule, hauteur 34 px, bordure or 28 % d’opacité, fond or 6 %, texte or en majuscules.
+Bouton principal
+Pilule or #D8B85E, texte #0A0907, hauteur 58 px (54 px mobile), flèche → à droite. Survol : #EBD08A et léger déplacement vers le haut (1 px).
+Bouton secondaire
+Pilule transparente, bordure blanche 18 %, texte clair. Survol : bordure or.
+Carte
+Fond dégradé, bordure or 16 %, arrondi 28 px.
+Champ de formulaire
+Hauteur 54 px, fond #0A0907, bordure #2B2720. Focus : bordure or + halo or 12 %.
+Pastille engagement
+Pilule 44 px, bordure #2B2720, icône ✓ or à gauche.
+3. Structure de la page d’accueil
+La page comporte 6 blocs, dans cet ordre. Les liens du menu font défiler la page jusqu’au bloc correspondant (défilement doux).
+#
+Bloc
+Ancre
+Contenu
+0
+Menu
+–
+Logo, 3 liens, bouton « Prendre rendez-vous »
+1
+Accueil
+#top
+Accroche, 2 boutons, preuve sociale
+2
+Notre histoire
+#histoire
+Portrait, texte, signature, 3 chiffres
+3
+Notre mission
+#mission
+Phrase de mission, 3 piliers, 4 engagements
+4
+Les retours de nos membres
+#retours
+Carrousel de 10 vidéos Vimeo
+5
+Prendre rendez-vous
+#rendez-vous
+Texte + formulaire
+6
+Pied de page
+#footer
+Logo, rappel, mentions légales
+4. Détail bloc par bloc (textes définitifs)
+Les mots indiqués entre {accolades} s’affichent en or (#D8B85E). Les accolades ne doivent pas apparaître sur le site.
+4.0 Menu
+Barre flottante en forme de pilule, largeur 1200 px, hauteur 68 px, à 28 px du haut. Fond rgba(17,15,12,0.72), bordure or 18 %.
+À gauche : emblème du logo (fichier logo_embleme.png, 46 px de large) + « AL BARAKA » en Cinzel 17 px, or #E3C46E, interlettrage 0,3 em, avec en dessous « ÉCOSYSTÈME BY ETHICARENA » en 8 px, interlettrage 0,34 em, #A7A196.
+Recommandé : rendre le menu fixe en haut de l’écran au défilement, avec un fond légèrement plus opaque.
+Mobile : hauteur 60 px, logo réduit (emblème 36 px, texte 13 px / 6 px), liens masqués, seul le bouton reste visible.
+Élément
+Texte exact
+Lien 1
+Notre histoire
+Lien 2
+Notre mission
+Lien 3
+Les retours de nos membres
+Bouton (ordinateur)
+Prendre rendez-vous
+Bouton (mobile)
+Réserver un appel
+4.1 Accueil
+Aperçu ordinateur
+Hauteur 900 px sur ordinateur. Contenu centré.
+Fond : halo or radial partant du bas-centre (dégradé radial #D8B85E à 34 % → transparent) et trois arches fines concentriques dorées, très discrètes, qui s’estompent vers le haut.
+Preuve sociale : 4 pastilles rondes superposées (40 px, chevauchement 12 px) puis une pastille or « 340+ ». Idéalement, remplacer les 4 pastilles par des photos de membres (avec leur accord).
+Élément
+Texte exact
+Étiquette
+Formation & accompagnement entrepreneurial (mobile : Accompagnement entrepreneurial)
+Grand titre (H1)
+Bâtissez une activité qui vous {ressemble.}
+Sous-titre
+Un accompagnement d’exception pour construire, lancer et développer votre activité digitale, de l’offre jusqu’à la vente.
+Bouton principal
+Prendre rendez-vous → (ancre #rendez-vous)
+Bouton secondaire
+Notre histoire (ancre #histoire)
+Preuve sociale
+Plus de 340 membres (gras)
+font confiance à AL BARAKA
+4.2 Notre histoire
+Aperçu ordinateur
+Deux colonnes : carte portrait à gauche (5 colonnes sur 12, hauteur 660 px), texte à droite (6 colonnes).
+Carte portrait : fond #040404, photo portrait_sidali.jpg en haut sur toute la largeur, encart en bas (fond noir 72 %, bordure or) avec nom et fonction.
+Signature « Sidali » en Allura 56 px, or.
+Chiffres : 3 colonnes séparées par des filets verticaux #221F19, chiffre 40 px 600, partie or sur « + » et « ans ».
+Mobile : titre, puis carte portrait (hauteur 440 px), puis textes, signature et chiffres.
+Élément
+Texte exact
+Étiquette
+Notre histoire
+Titre (H2)
+Née sur le terrain, {bâtie avec exigence.}
+Carte portrait
+Sidali
+Fondateur d’AL BARAKA Écosystème
+Paragraphe 1
+Avant AL BARAKA, Sidali est lui aussi passé par le salariat. Son parcours dans le digital ressemble au vôtre : il s’est formé à de multiples compétences, les a pratiquées, puis a évolué sur le terrain jusqu’à devenir coach prestataire pour des centres de formation. Il a ensuite décidé de créer son propre accompagnement, adapté aux musulmans et à notre foi.
+Paragraphe 2
+Plus de 4 ans plus tard, il a accompagné plusieurs centaines de musulmans dans la construction de leur activité en ligne. AL BARAKA Écosystème est né de cette expérience : transmettre ce qui fonctionne vraiment.
+Signature
+Sidali
+Chiffres
+340+ — membres actifs (mobile : membres)
+4 ans — d’expérience terrain (mobile : d’expérience)
+9 — expertises enseignées (mobile : expertises)
+4.3 Notre mission
+Aperçu ordinateur
+Phrase de mission centrée, largeur max. 1000 px. Léger halo or en haut de la section.
+3 cartes égales (padding 40 × 36 px), icône dans un carré arrondi 52 px (fond or 10 %, bordure or 25 %), titre 26 px, description, puis filet et liste de compétences en 13 px.
+Icônes (trait fin, or) : maison pour Construire, cible pour Attirer, coche pour Convertir.
+4 pastilles d’engagement centrées sous les cartes. Mobile : cartes empilées, engagements en liste.
+Élément
+Texte exact
+Étiquette
+Notre mission
+Phrase de mission
+Transmettre des compétences concrètes, avec éthique, et accompagner chaque membre {jusqu’au résultat.}
+Pilier 1
+Construire — Une offre claire et une identité de marque forte.
+Création d’offre · Personal branding · Storytelling
+Pilier 2
+Attirer — Une visibilité qualifiée, organique et payante.
+Copywriting · Marketing digital · Community management · Media buying
+Pilier 3
+Convertir — Transformer l’intérêt en clients, avec méthode et intégrité.
+Setting · Closing
+Engagements
+Aucune promesse de gains
+Aucun système pyramidal
+Paiements échelonnés sans riba
+Sessions en direct chaque semaine
+4.4 Les retours de nos membres (carrousel Vimeo)
+Aperçu ordinateur
+10 vidéos Vimeo, format vertical 9:16. Chaque carte : 285 × 507 px, arrondi 28 px, espacement 20 px.
+Ordinateur : 4 cartes visibles. Flèches précédent / suivant en bas à droite (52 px ; « suivant » en or), indicateur de position à gauche (point actif allongé en or). Défilement d’une carte à la fois, animation 0,5 s. Flèche grisée (opacité 35 %) en début et en fin de liste. Tablette : 2 ou 3 cartes visibles.
+Mobile : défilement horizontal au doigt avec aimantation (scroll-snap), cartes 240 × 427 px, et mention « Faites défiler pour voir les 10 témoignages ».
+Sur chaque carte, afficher la miniature Vimeo avec le bouton lecture or et l’encart prénom / activité. Voir les règles d’intégration Vimeo au chapitre 5.
+Élément
+Texte exact
+Étiquette
+Les retours
+Titre (H2)
+Ils nous ont fait {confiance.}
+Mention (petite, à droite du titre)
+Témoignages authentiques de nos membres. Les résultats présentés leur sont propres et ne constituent pas une garantie.
+Cartes 1 à 10
+Prénom + activité de chaque membre : [à fournir par Sidali avec les liens Vimeo]
+4.5 Prendre rendez-vous
+Aperçu ordinateur
+Grand bloc arrondi (36 px), fond #0C0B08, bordure or 22 %, halo or en haut à gauche. Deux colonnes : texte à gauche, formulaire à droite dans une carte plus sombre avec ombre portée.
+Mobile : une seule colonne, formulaire sous le texte, points rassurants masqués.
+Élément
+Texte exact
+Étiquette
+Prendre rendez-vous
+Titre (H2)
+Parlons de {votre projet.}
+Texte
+Laissez vos coordonnées. Notre équipe vous recontacte pour convenir d’un échange et étudier votre projet avec vous.
+Points rassurants (ordinateur)
+Un échange personnalisé
+Une étude sérieuse de votre situation
+Des recommandations adaptées à votre projet et à votre profil
+Formulaire
+Voir chapitre 6
+4.6 Pied de page
+Aperçu ordinateur
+Logo complet (logo_full.png, hauteur 150 px ; 120 px sur mobile) à gauche, lien « Prendre rendez-vous → » à droite.
+En dessous, séparé par un filet : le bloc légal exactement comme défini dans le cahier des charges légal (identité, mention Facebook / Google, © 2026, et les 4 liens légaux en bas à droite, en 12 px).
+Élément
+Texte exact
+Lien de rappel
+Prendre rendez-vous →
+Identité
+ETHICARENA L.L.C-FZ – Licence n° 2422583.01
+Meydan Grandstand, 6th floor, Meydan Road, Nad Al Sheba, Dubaï, Émirats arabes unis
+Contact : contact@ethicarena.com
+Mention Facebook / Google
+Ce site ne fait pas partie du site web Facebook ou de Meta Platforms, Inc., ni de Google LLC. En outre, ce site n’est pas endossé par Facebook en aucune façon, ni par Google LLC. Facebook est une marque déposée de Meta Platforms, Inc.
+Droits
+© 2026 - www.albarakaecosysteme.com / Tous droits réservés
+Liens (en bas à droite)
+Mentions légales · Politique de confidentialité · Conditions générales de vente · Gérer les cookies
+4.7 Version mobile
+Aperçu mobile complet (390 px), lu de gauche à droite
+5. Intégration des vidéos Vimeo
+Chargement au clic : afficher d’abord la miniature de la vidéo (récupérée via l’API oEmbed de Vimeo ou téléversée) et ne charger le lecteur Vimeo qu’au clic sur le bouton lecture. Cela garde la page rapide et évite de déposer des cookies Vimeo avant le consentement.
+Paramètres du lecteur : dnt=1 (pas de suivi), title=0, byline=0, portrait=0, autoplay=1 au clic, playsinline=1. Exemple : https://player.vimeo.com/video/[ID]?dnt=1&title=0&byline=0&portrait=0&autoplay=1&playsinline=1
+Format : conteneur 9:16 (aspect-ratio: 9 / 16), vidéo en « cover », arrondi 28 px conservé.
+Une seule vidéo lue à la fois : lancer une vidéo met en pause la précédente.
+Confidentialité Vimeo : régler chaque vidéo en « masquée de Vimeo » et autoriser l’intégration uniquement sur le domaine du site.
+Gestion des données : prévoir la liste des 10 vidéos comme une liste modifiable dans la plateforme (ID Vimeo, prénom, activité, ordre d’affichage), pour pouvoir en ajouter ou en retirer sans toucher au code.
+#
+Lien Vimeo
+Prénom
+Activité
+1
+[à fournir]
+[à fournir]
+[à fournir]
+2
+[à fournir]
+[à fournir]
+[à fournir]
+3
+[à fournir]
+[à fournir]
+[à fournir]
+4
+[à fournir]
+[à fournir]
+[à fournir]
+5
+[à fournir]
+[à fournir]
+[à fournir]
+6
+[à fournir]
+[à fournir]
+[à fournir]
+7
+[à fournir]
+[à fournir]
+[à fournir]
+8
+[à fournir]
+[à fournir]
+[à fournir]
+9
+[à fournir]
+[à fournir]
+[à fournir]
+10
+[à fournir]
+[à fournir]
+[à fournir]
+6. Formulaire de prise de rendez-vous
+Champ
+Type
+Obligatoire
+Règles
+Prénom
+Texte
+Oui
+2 caractères minimum
+Nom
+Texte
+Oui
+2 caractères minimum
+Email
+Email
+Oui
+Format email valide
+Téléphone (WhatsApp)
+Téléphone
+Oui
+Sélecteur d’indicatif pays (France par défaut), format international enregistré (+33…)
+Où en êtes-vous aujourd’hui ?
+Liste déroulante
+Oui
+Je n’ai pas de compétence et je souhaite me former
+Je souhaite lancer mon activité autour de ma passion ou de ma compétence
+J’ai déjà une activité et je veux la développer
+Consentement
+Case à cocher
+Oui
+Non pré-cochée. Texte : « J’accepte qu’AL BARAKA (by ETHICARENA L.L.C-FZ) utilise ces informations pour me recontacter, conformément à la politique de confidentialité. » — la parenthèse en petit (10 px) ; « politique de confidentialité » est un lien (nouvel onglet).
+Bouton d’envoi : Demander un rendez-vous (pleine largeur).
+6.1 Comportement
+Validation en direct, messages d’erreur courts sous chaque champ (ex. « Merci d’indiquer un email valide »), en or clair.
+Protection anti-spam invisible (champ piège ou équivalent), sans captcha visible.
+Pendant l’envoi : bouton désactivé avec indicateur de chargement, pour éviter les doubles envois.
+Après envoi réussi : redirection vers /merci (étape 2 du funnel).
+6.2 Destination des données
+Enregistrer chaque demande dans [outil à confirmer par Sidali : base de la plateforme / CRM] avec : date et heure, champs saisis, page d’origine, paramètres UTM de l’adresse (utm_source, utm_medium, utm_campaign, utm_content) et état du consentement.
+Notification immédiate à l’équipe de setting : [canal à confirmer : email, WhatsApp, Discord…].
+Ne pas envoyer de newsletter à ces contacts sans consentement marketing séparé.
+7. Étape 2 du funnel : page de confirmation (/merci)
+Même charte que l’accueil, menu et pied de page identiques. Contenu centré, court. Textes proposés, à valider par Sidali :
+Élément
+Texte proposé
+Étiquette
+Demande reçue
+Titre
+Merci, {votre demande est bien reçue.}
+Texte
+Notre équipe étudie votre projet et vous recontacte très prochainement par WhatsApp ou par téléphone.
+Bloc « Prochaines étapes »
+1. Nous étudions votre situation.
+2. Nous vous contactons pour convenir d’un échange.
+3. Nous définissons ensemble le parcours adapté à votre projet.
+Bouton
+Revoir les témoignages (retour vers /#retours)
+Option à valider : intégrer ici un agenda (type Calendly) pour que le prospect réserve directement son créneau.
+C’est sur cette page que se déclenche l’événement de conversion « Lead » (chapitre 8).
+8. Suivi, référencement et performance
+8.1 Cookies et suivi
+Bandeau cookies conforme au cahier des charges légal : Accepter / Refuser / Personnaliser, aucun traceur avant consentement.
+Événements à suivre (après consentement) : PageView ; clic sur un bouton « Prendre rendez-vous » ; lecture d’une vidéo ; Lead au chargement de /merci.
+Pixels : [à confirmer : Meta, Google Analytics 4, TikTok].
+8.2 Référencement et partage
+Élément
+Valeur
+Langue
+fr
+Balise title
+AL BARAKA Écosystème – Formation et accompagnement entrepreneurial
+Meta description
+Construisez, lancez et développez votre activité digitale avec un accompagnement éthique et exigeant. Plus de 340 membres accompagnés.
+Image de partage (Open Graph)
+1200 × 630 px, fond noir, logo complet centré (à produire à partir de logo_full.png)
+Favicon
+Emblème « B » (logo_embleme.png), versions 32 px et 180 px
+Titres
+Un seul H1 (accueil). Titres de sections en H2, piliers en H3.
+8.3 Performance et accessibilité
+Images en WebP, dimensionnées à la taille d’affichage (×2 pour écrans haute densité), chargement différé sous la ligne de flottaison.
+Polices chargées avec font-display: swap ; ne charger que les graisses utilisées.
+Objectif : score Lighthouse ≥ 90 en performance sur mobile.
+Textes alternatifs : portrait « Portrait de Sidali, fondateur d’AL BARAKA Écosystème » ; logo « AL BARAKA Écosystème by Ethicarena » ; éléments décoratifs ignorés.
+Navigation au clavier possible (flèches du carrousel, champs, boutons) avec contour de focus visible en or.
+Respect de la préférence « réduire les animations » du système.
+9. Recette avant mise en ligne
+#
+Point de contrôle
+OK
+1
+Rendu conforme à la maquette sur ordinateur (1440 px), tablette et mobile (390 px)
+☐
+2
+Tous les textes identiques au chapitre 4, mots en or au bon endroit
+☐
+3
+Liens du menu : défilement doux vers la bonne section
+☐
+4
+Carrousel : 10 vidéos, flèches, indicateur, défilement tactile sur mobile
+☐
+5
+Vidéos : lecture au clic, une seule à la fois, format 9:16, pas de cookie Vimeo avant le clic
+☐
+6
+Formulaire : validations, case non pré-cochée, anti-spam, redirection vers /merci
+☐
+7
+Demande test reçue dans l’outil + notification à l’équipe
+☐
+8
+Pied de page légal complet et liens légaux fonctionnels
+☐
+9
+Bandeau cookies et événements de suivi (Lead sur /merci)
+☐
+10
+Balises title, description, image de partage, favicon
+☐
+11
+Lighthouse mobile ≥ 90, aucune erreur dans la console
+☐
+9.1 Éléments à fournir par Sidali
+Les 10 liens Vimeo, avec le prénom et l’activité de chaque membre.
+L’adresse définitive du site (domaine).
+L’outil de destination des demandes et le canal de notification.
+La validation des textes de la page /merci.
+Le lien de partage du canvas Claude Design.
+Optionnel : 4 photos de membres pour la preuve sociale de l’accueil.
+9.2 Contenu du pack joint
+Fichier
+Description
+logo_full.png
+Logo complet, fond transparent (pied de page, image de partage)
+logo_embleme.png
+Emblème « B » seul, fond transparent (menu, favicon)
+portrait_sidali.jpg
+Portrait du fondateur (section Notre histoire)
+site_ordinateur.html / site_mobile.html
+Copies statiques de la maquette : référence des valeurs CSS
+site_ordinateur_complet.png / site_mobile_complet.png
+Captures pleine page de la maquette

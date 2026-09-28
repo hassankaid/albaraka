@@ -22,9 +22,22 @@ export const TUNNEL_HOST = "event.albarakaecosysteme.com";
 export const APP_HOSTS = [
   "plateforme.albarakaecosysteme.com",
   "view.albarakaecosysteme.com", // impersonation
-  "albarakaecosysteme.com",
-  "www.albarakaecosysteme.com",
 ] as const;
+
+/**
+ * Le domaine principal sert le SITE VITRINE (`vitrine.html`), une application
+ * à part — plus la plateforme. Décision de Hassan le 28/09/2026.
+ *
+ * Tant que le DNS de ce domaine pointe encore chez Hostinger, cette règle est
+ * sans effet : aucune requête vers ces hôtes n'atteint Vercel.
+ */
+export const VITRINE_HOSTS = ["albarakaecosysteme.com", "www.albarakaecosysteme.com"] as const;
+
+/**
+ * Hors du domaine principal (local, aperçus Vercel), le site vitrine est
+ * servi sous ce préfixe : la racine y appartient à la plateforme.
+ */
+export const VITRINE_PREFIXE = "/site-vitrine";
 
 function normalize(host: string | undefined | null): string {
   // On retire le port éventuel (dev/preview) et on passe en minuscules.
@@ -39,6 +52,12 @@ function currentHost(): string {
 /** Le domaine est-il celui des tunnels ? (→ ne servir QUE les tunnels) */
 export function isTunnelHost(host?: string | null): boolean {
   return normalize(host ?? currentHost()) === TUNNEL_HOST;
+}
+
+/** Le domaine est-il celui du site vitrine ? (→ le site est servi à la racine) */
+export function isVitrineHost(host?: string | null): boolean {
+  const h = normalize(host ?? currentHost());
+  return (VITRINE_HOSTS as readonly string[]).includes(h);
 }
 
 /** Le domaine est-il celui de l'application ? (→ ne PAS servir les tunnels) */

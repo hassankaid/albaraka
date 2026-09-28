@@ -65,6 +65,22 @@
       "destination": "/introuvable.html"
     },
 
+    {
+      "source": "/site-vitrine",
+      "missing": [{ "type": "host", "value": "^(plateforme\\.|view\\.|event\\.)albarakaecosysteme\\.com$" }],
+      "destination": "/vitrine.html"
+    },
+    {
+      "source": "/site-vitrine/(.*)",
+      "missing": [{ "type": "host", "value": "^(plateforme\\.|view\\.|event\\.)albarakaecosysteme\\.com$" }],
+      "destination": "/vitrine.html"
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "^(www\\.)?albarakaecosysteme\\.com$" }],
+      "destination": "/vitrine.html"
+    },
+
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

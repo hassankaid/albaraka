@@ -38,7 +38,7 @@
 // deux applications séparées.
 // ─────────────────────────────────────────────────────────────────────────
 
-const SOCIETE = {
+export const SOCIETE = {
   raisonSociale: "ETHICARENA L.L.C-FZ",
   licence: "2422583.01",
   adresse: "Meydan Grandstand, 6th floor, Meydan Road, Nad Al Sheba, Dubaï, Émirats arabes unis",
