@@ -22,6 +22,7 @@ import PaymentLinkCheckout from "./pages/checkout/PaymentLinkCheckout";
 import FormationCheckout from "./pages/checkout/FormationCheckout";
 import AlBaraka200Checkout from "./pages/checkout/AlBaraka200Checkout";
 import PiedDePageLegal from "./components/legal/PiedDePageLegal";
+import PiedDePageLegalApplication from "./components/legal/PiedDePageLegalApplication";
 import BandeauCookies from "./components/legal/BandeauCookies";
 import { MENTIONS_LEGALES, POLITIQUE_CONFIDENTIALITE, CGV } from "./pages/legal/textes";
 import DashboardLayout from "./components/DashboardLayout";
@@ -426,8 +427,10 @@ const FullApp = () => (
               {routesLegales}
               <Route path="*" element={<NotFound />} />
             </Routes>
-            {/* Même pied de page que sur les tunnels, même composant. */}
-            <PiedDePageLegal />
+            {/* Sur l'application, uniquement sur les pages PUBLIQUES : le
+                back-office n'en a pas besoin, mais /checkout, /pay, /rdv,
+                /quiz et les pages légales, si. */}
+            <PiedDePageLegalApplication />
             <BandeauCookies />
           </AuthProvider>
         </BrowserRouter>
