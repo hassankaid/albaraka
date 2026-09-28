@@ -17,6 +17,15 @@
 // item Stripe n'est PAS ce que le client paie ; seule la facture prévisionnelle
 // fait foi.
 //
+//   - les PRÉLÈVEMENTS HORS ABONNEMENT (payment intents sans facture), et la
+//     lecture d'un payment_intent precis par `{ "payment_intent": "pi_..." }`
+//
+// Ces deux derniers ajouts datent du 28/09/2026. Motif : sur la vente BAMAR
+// GUEYE, la plateforme enregistrait un versement de 500 € reference par un
+// payment_intent, absent de TOUTES les factures d'abonnement — il avait ete
+// preleve hors abonnement. On voyait l'abonnement, on ne voyait pas l'argent,
+// et rien ne permettait de verifier ce versement.
+//
 // Cette fonction NE MODIFIE RIEN — ni Stripe, ni la base. Elle sert à VOIR,
 // pour pouvoir ensuite rattacher en confiance les anciens clients (Systeme.io)
 // à leur abonnement Stripe.
@@ -70,6 +79,38 @@ function cents(amount: number | null | undefined): number | null {
   return Math.round(amount) / 100;
 }
 
+/**
+ * Résumé lisible d'un PaymentIntent.
+ *
+ * Ajouté le 28/09/2026. Motif : sur la vente BAMAR GUEYE, la plateforme
+ * enregistrait un versement de 500 € référencé par un payment_intent, mais
+ * ce prélèvement n'apparaissait dans AUCUNE facture d'abonnement — il avait
+ * été passé hors abonnement. Impossible alors de le vérifier : la fonction
+ * ne savait lire que les abonnements et leurs factures.
+ *
+ * `hors_abonnement` est le champ qui compte : un PaymentIntent sans facture
+ * rattachée est un prélèvement direct, invisible dans l'échéancier Stripe.
+ */
+function resumerPaymentIntent(pi: any) {
+  const charge = pi?.charges?.data?.[0] ?? pi?.latest_charge ?? null;
+  return {
+    id: pi.id,
+    statut: pi.status,
+    montant: cents(pi.amount),
+    montant_recu: cents(pi.amount_received),
+    devise: pi.currency,
+    cree_le: tsToIso(pi.created),
+    description: pi.description ?? null,
+    customer_id: typeof pi.customer === "string" ? pi.customer : pi.customer?.id ?? null,
+    facture_id: typeof pi.invoice === "string" ? pi.invoice : pi.invoice?.id ?? null,
+    hors_abonnement: !pi.invoice,
+    // `succeeded` ne suffit pas : un remboursement laisse le PI en succeeded.
+    rembourse: typeof charge === "object" && charge ? !!charge.refunded : null,
+    montant_rembourse: typeof charge === "object" && charge ? cents(charge.amount_refunded) : null,
+    echec: pi.last_payment_error?.message ?? null,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -82,12 +123,28 @@ serve(async (req) => {
   }
 
   const email = (body?.email as string | undefined)?.trim().toLowerCase();
+  const paymentIntent = (body?.payment_intent as string | undefined)?.trim();
   // mode: "live" (défaut) ou "test". Les anciens clients Systeme.io sont en live.
   const mode = body?.mode === "test" ? "test" : "live";
-  if (!email) return json({ error: "missing_email" }, 400);
+  if (!email && !paymentIntent) return json({ error: "missing_email_or_payment_intent" }, 400);
 
   const apiKey = mode === "test" ? STRIPE_KEY_TEST : STRIPE_KEY_LIVE;
   if (!apiKey) return json({ error: `no_stripe_key_${mode}` }, 500);
+
+  // ─── Lecture d'un PaymentIntent précis ───
+  // Sert à vérifier un prélèvement que la plateforme référence sans qu'il
+  // apparaisse dans les factures d'abonnement.
+  if (paymentIntent) {
+    try {
+      const pi = await stripeGet(
+        `payment_intents/${encodeURIComponent(paymentIntent)}?expand[]=latest_charge`,
+        apiKey,
+      );
+      return json({ mode, found: true, payment_intent: resumerPaymentIntent(pi) });
+    } catch (e: any) {
+      return json({ mode, found: false, error: "stripe_error", message: e?.message ?? String(e) }, 404);
+    }
+  }
 
   try {
     // ─── 1. Fiche(s) client Stripe par email ───
@@ -233,6 +290,26 @@ serve(async (req) => {
         });
       }
 
+      // Les prélèvements HORS abonnement. Sans eux, un versement encaissé
+      // directement (rattrapage, solde, échéance passée à la main) reste
+      // invisible : on voit l'abonnement, on ne voit pas l'argent.
+      let paiementsDirects: any[] = [];
+      try {
+        const pisRes = await stripeGet(
+          // expand indispensable : sans lui, `rembourse` vaut null dans la
+          // liste et un prelevement rembourse passerait pour de l'argent recu.
+          `payment_intents?customer=${encodeURIComponent(cust.id)}&limit=100` +
+            `&expand[]=data.latest_charge`,
+          apiKey,
+        );
+        paiementsDirects = (pisRes.data ?? [])
+          .map(resumerPaymentIntent)
+          .filter((pi: any) => pi.hors_abonnement);
+      } catch {
+        // Un échec ici ne doit pas priver l'appelant du reste de la fiche.
+        paiementsDirects = [];
+      }
+
       result.push({
         customer_id: cust.id,
         email: cust.email,
@@ -240,6 +317,12 @@ serve(async (req) => {
         cree_le: tsToIso(cust.created),
         nb_abonnements: subs.length,
         abonnements: subs,
+        nb_paiements_directs: paiementsDirects.length,
+        // Net des remboursements : c'est l'argent reellement conserve.
+        total_paiements_directs: paiementsDirects
+          .filter((p: any) => p.statut === "succeeded")
+          .reduce((s: number, p: any) => s + (p.montant_recu ?? 0) - (p.montant_rembourse ?? 0), 0),
+        paiements_directs: paiementsDirects,
       });
     }
 
