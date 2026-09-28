@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, MessageCircle, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film, Hash, Mail, FlaskConical, ClipboardList } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, MessageCircle, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film, Hash, Mail, FlaskConical, ClipboardList, Globe } from "lucide-react";
 import { isStudioAllowed } from "@/lib/studio-access";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
@@ -63,6 +63,7 @@ const adminNavItems: NavItem[] = [
   { title: "Commissions", path: "/admin/commissions", icon: Percent, roles: ["ceo"] },
   { title: "Liens de paiement", path: "/admin/payment-links", icon: Link2, roles: ["ceo"] },
   { title: "Conférences", path: "/admin/conferences", icon: Video, roles: ["ceo"] },
+  { title: "Site vitrine", path: "/admin/site-vitrine", icon: Globe, roles: ["ceo"] },
   { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
   { title: "Contrats clients", path: "/admin/contracts", icon: FileSignature, roles: ["ceo"] },
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
@@ -118,6 +119,7 @@ const pageTitles: Record<string, string> = {
   "/admin/commissions": "Commissions",
   "/admin/payment-links": "Liens de paiement",
   "/admin/conferences": "Conférences",
+  "/admin/site-vitrine": "Site vitrine",
   "/admin/data": "Gestion des données",
   "/admin/scripts": "Gestion des scripts",
   "/admin/role-play": "Gestion Rôle-Play",

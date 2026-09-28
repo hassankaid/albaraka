@@ -34,6 +34,21 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+/**
+ * Le réseau simulé. Le site fait deux sortes d'appels : la lecture des
+ * témoignages (REST) et l'envoi de la demande (edge function). On répond à
+ * chacun séparément, et on ne compte que les envois.
+ */
+function reseau(opts: { envoi?: () => Response; temoignages?: unknown[] } = {}) {
+  const espion = vi.spyOn(globalThis, "fetch").mockImplementation(async (entree) => {
+    const url = String(entree);
+    if (url.includes("/rest/v1/temoignages_vitrine")) return new Response(JSON.stringify(opts.temoignages ?? []), { status: 200 });
+    return opts.envoi ? opts.envoi() : new Response("{}", { status: 200 });
+  });
+  const envois = () => espion.mock.calls.filter(([u]) => String(u).includes("/functions/v1/tunnel-lead-submit"));
+  return { espion, envois };
+}
+
 async function remplir() {
   // Le formulaire est chargé à part : on attend qu'il soit là.
   await screen.findByLabelText("Prénom");
@@ -49,6 +64,7 @@ async function remplir() {
 
 describe("site vitrine", () => {
   it("affiche les six blocs dans l'ordre du cahier, avec leurs ancres", () => {
+    reseau();
     const { container } = render(<VitrineApp />);
     const ids = [...container.querySelectorAll("section[id], footer[id]")].map((e) => e.id);
     expect(ids).toEqual(["top", "histoire", "mission", "retours", "rendez-vous", "footer"]);
@@ -56,9 +72,10 @@ describe("site vitrine", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Bâtissez une activité qui vous ressemble.");
   });
 
-  it("montre dix cartes de témoignage, non lisibles tant qu'aucune vidéo n'est fournie", () => {
+  it("montre dix cartes de témoignage, non lisibles tant qu'aucune vidéo n'est fournie", async () => {
+    reseau();
     render(<VitrineApp />);
-    const cartes = screen.getAllByRole("button", { name: /Témoignage \d\d bientôt disponible/ });
+    const cartes = await screen.findAllByRole("button", { name: /Témoignage \d\d bientôt disponible/ });
     expect(cartes).toHaveLength(10);
     for (const c of cartes) expect((c as HTMLButtonElement).disabled).toBe(true);
     // Aucun lecteur Vimeo chargé avant un clic.
@@ -66,6 +83,7 @@ describe("site vitrine", () => {
   });
 
   it("le pied de page porte le bloc légal et les quatre liens", () => {
+    reseau();
     render(<VitrineApp />);
     const pied = document.getElementById("footer")!;
     expect(pied.textContent).toContain("ETHICARENA L.L.C-FZ – Licence n° 2422583.01");
@@ -80,7 +98,7 @@ describe("site vitrine", () => {
   });
 
   it("n'envoie rien tant que le formulaire est incomplet, et désigne les champs", async () => {
-    const envoi = vi.spyOn(globalThis, "fetch");
+    const { envois } = reseau();
     render(<VitrineApp />);
     await screen.findByLabelText("Prénom");
     // Rien d'affiché avant d'avoir quitté un champ.
@@ -88,19 +106,19 @@ describe("site vitrine", () => {
     fireEvent.click(screen.getByRole("button", { name: "Demander un rendez-vous" }));
     expect(await screen.findByText("Merci d’indiquer un email valide")).toBeTruthy();
     expect(screen.getByText("Merci de cocher cette case pour être recontacté")).toBeTruthy();
-    expect(envoi).not.toHaveBeenCalled();
+    expect(envois()).toHaveLength(0);
     // Le premier champ fautif reçoit le focus.
     expect(document.activeElement?.id).toBe("rdv-prenom");
   });
 
   it("envoie une demande valide comme un lead « site_vitrine », sans consentement marketing", async () => {
-    const envoi = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response('{"ok":true}', { status: 200 }));
+    const { envois } = reseau({ envoi: () => new Response('{"ok":true}', { status: 200 }) });
     render(<VitrineApp />);
     await remplir();
     fireEvent.click(screen.getByRole("button", { name: "Demander un rendez-vous" }));
 
-    await waitFor(() => expect(envoi).toHaveBeenCalledTimes(1));
-    const [url, init] = envoi.mock.calls[0] as [string, RequestInit];
+    await waitFor(() => expect(envois()).toHaveLength(1));
+    const [url, init] = envois()[0] as [string, RequestInit];
     expect(url).toBe(`${SUPABASE_URL}/functions/v1/tunnel-lead-submit`);
     const corps = JSON.parse(String(init.body));
     expect(corps).toMatchObject({
@@ -119,7 +137,7 @@ describe("site vitrine", () => {
   });
 
   it("garde la saisie et prévient si l'envoi échoue", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("boom", { status: 500 }));
+    reseau({ envoi: () => new Response("boom", { status: 500 }) });
     vi.spyOn(console, "error").mockImplementation(() => {});
     render(<VitrineApp />);
     await remplir();
@@ -130,25 +148,49 @@ describe("site vitrine", () => {
   });
 
   it("le champ piège arrête un robot sans rien envoyer", async () => {
-    const envoi = vi.spyOn(globalThis, "fetch");
+    const { envois } = reseau();
     const { container } = render(<VitrineApp />);
     await remplir();
     fireEvent.change(container.querySelector('input[name="site_web"]')!, { target: { value: "http://spam.example" } });
     fireEvent.click(screen.getByRole("button", { name: "Demander un rendez-vous" }));
     expect(await screen.findByText("Demande reçue")).toBeTruthy();
-    expect(envoi).not.toHaveBeenCalled();
+    expect(envois()).toHaveLength(0);
   });
 
   it("garde les UTM de l'arrivée pour les envoyer avec la demande", async () => {
     window.history.pushState({}, "", "/site-vitrine/?utm_source=instagram&utm_medium=bio");
-    const envoi = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
+    const { envois } = reseau();
     render(<VitrineApp />);
     await remplir();
     fireEvent.click(screen.getByRole("button", { name: "Demander un rendez-vous" }));
-    await waitFor(() => expect(envoi).toHaveBeenCalled());
-    const corps = JSON.parse(String((envoi.mock.calls[0] as [string, RequestInit])[1].body));
+    await waitFor(() => expect(envois()).toHaveLength(1));
+    const corps = JSON.parse(String((envois()[0] as [string, RequestInit])[1].body));
     expect(corps.utm_source).toBe("instagram");
     expect(corps.utm_medium).toBe("bio");
+  });
+});
+
+describe("témoignages publiés depuis la plateforme", () => {
+  it("remplacent les cartes de réserve, et le lecteur Vimeo n'arrive qu'au clic", async () => {
+    reseau({
+      temoignages: [
+        { vimeo_id: "123456789", hash: "abcdef1234", miniature: null, prenom: "Miradie", activite: "Setter" },
+      ],
+    });
+    render(<VitrineApp />);
+    const carte = await screen.findByRole("button", { name: "Lire le témoignage de Miradie, Setter" });
+    expect(screen.queryByText("[Prénom]")).toBeNull();
+    expect(document.querySelector("iframe")).toBeNull();
+    fireEvent.click(carte);
+    const lecteur = document.querySelector("iframe")!;
+    expect(lecteur.src).toContain("https://player.vimeo.com/video/123456789?h=abcdef1234&dnt=1");
+  });
+
+  it("ne montrent jamais « [Prénom] » pendant le chargement", () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(() => new Promise(() => {}));
+    render(<VitrineApp />);
+    expect(screen.queryByText("[Prénom]")).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Témoignage en cours de chargement" })).toHaveLength(10);
   });
 });
 

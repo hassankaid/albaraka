@@ -41,10 +41,11 @@ describe("sources des tunnels natifs", () => {
   // Témoin : si la lecture de l'edge fn cassait et renvoyait une liste vide,
   // tous les `it.each` ci-dessous passeraient sans rien vérifier. Ce compte est
   // donc volontairement écrit en dur, et doit être mis à jour sciemment.
-  // 3 tunnels x 5 origines (ads, instagram, tiktok, youtube, direct) = 15
+  // 3 tunnels x 5 origines (ads, instagram, tiktok, youtube, direct) = 15,
+  // plus le site vitrine (28/09/2026) = 16
   // depuis l'ajout du tunnel Liberty le 22/09/2026.
-  it("l'edge fn en déclare bien 15 — sinon ce test ne prouverait rien", () => {
-    expect(sources).toHaveLength(15);
+  it("l'edge fn en déclare bien 16 — sinon ce test ne prouverait rien", () => {
+    expect(sources).toHaveLength(16);
   });
 
   it.each(sources)("« %s » a un libellé lisible dans le CRM", (source) => {

@@ -1,7 +1,8 @@
 // La page d'accueil du site vitrine : six blocs, dans l'ordre du cahier (§3).
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { ACCUEIL, HISTOIRE, MISSION, RENDEZ_VOUS, RETOURS, REFERENCEMENT } from "../contenu";
-import { TEMOIGNAGES_DE_RESERVE } from "../temoignages";
+import { TEMOIGNAGES_DE_RESERVE, lireTemoignagesPublies, type Temoignage } from "../temoignages";
+import { SUPABASE_CLE_PUBLIQUE, SUPABASE_URL } from "../api";
 import Or from "../composants/Or";
 import Carrousel from "../composants/Carrousel";
 import { Coche, Etoile, Fleche, IconePilier } from "../composants/Icones";
@@ -54,7 +55,31 @@ function EnteteHistoire({ classe }: { classe: string }) {
   );
 }
 
+/**
+ * Les témoignages publiés depuis la plateforme. `null` tant qu'ils ne sont
+ * pas arrivés : le carrousel montre alors des cartes muettes, jamais les
+ * « [Prénom] » de réserve — sinon un visiteur les verrait clignoter avant les
+ * vrais noms. Liste vide ou erreur : cartes de réserve.
+ */
+function useTemoignages(): Temoignage[] | null {
+  const [liste, setListe] = useState<Temoignage[] | null>(null);
+  useEffect(() => {
+    let actif = true;
+    lireTemoignagesPublies(SUPABASE_URL, SUPABASE_CLE_PUBLIQUE)
+      .then((l) => actif && setListe(l.length ? l : TEMOIGNAGES_DE_RESERVE))
+      .catch((e) => {
+        console.warn("[site vitrine] témoignages indisponibles", e);
+        if (actif) setListe(TEMOIGNAGES_DE_RESERVE);
+      });
+    return () => {
+      actif = false;
+    };
+  }, []);
+  return liste;
+}
+
 export default function Accueil() {
+  const temoignages = useTemoignages();
   return (
     <main id="contenu">
       {/* ── 1. Accueil ─────────────────────────────────────────────── */}
@@ -183,7 +208,7 @@ export default function Accueil() {
             </div>
             <p className="v-retours-mention v-retours-mention--haut">{RETOURS.mention}</p>
           </div>
-          <Carrousel temoignages={TEMOIGNAGES_DE_RESERVE} />
+          <Carrousel temoignages={temoignages ?? TEMOIGNAGES_DE_RESERVE} enAttente={temoignages === null} />
           <p className="v-consigne">
             <Fleche couleur="#D8B85E" taille={14} />
             {RETOURS.consigneMobile}

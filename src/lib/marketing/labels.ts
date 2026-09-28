@@ -14,6 +14,7 @@ const SOURCE_LABELS: Record<string, string> = {
   webi_vsl_tiktok_organic: "Tunnel VSL (TikTok)",
   webi_vsl_youtube_organic: "Tunnel VSL (YouTube)",
   webi_vsl_direct: "Tunnel VSL (Direct)",
+  site_vitrine: "Site vitrine",
   webi: "Webinaire",
   vsl_a: "VSL A",
   vsl_b: "VSL B",

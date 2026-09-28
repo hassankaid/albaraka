@@ -35,6 +35,7 @@ function CarteVideo({
   t,
   rang,
   total,
+  enAttente,
   enLecture,
   onLire,
   onFocus,
@@ -42,6 +43,7 @@ function CarteVideo({
   t: Temoignage;
   rang: number;
   total: number;
+  enAttente: boolean;
   enLecture: boolean;
   onLire: () => void;
   onFocus: () => void;
@@ -64,8 +66,14 @@ function CarteVideo({
           className="v-video-bouton"
           onClick={onLire}
           onFocus={onFocus}
-          disabled={!url}
-          aria-label={url ? `Lire le témoignage de ${t.prenom}, ${t.activite}` : `Témoignage ${numero} bientôt disponible`}
+          disabled={!url || enAttente}
+          aria-label={
+            enAttente
+              ? "Témoignage en cours de chargement"
+              : url
+                ? `Lire le témoignage de ${t.prenom}, ${t.activite}`
+                : `Témoignage ${numero} bientôt disponible`
+          }
         >
           {t.miniature ? (
             <>
@@ -76,23 +84,29 @@ function CarteVideo({
           ) : (
             <>
               <span className="v-video-halo" />
-              <span className="v-video-numero">Vimeo · {numero}</span>
+              {/* Carte de réserve seulement : une vraie vidéo sans miniature
+                  n'a pas à afficher « Vimeo · 03 ». */}
+              <span className="v-video-numero">{!enAttente && !url ? `Vimeo · ${numero}` : ""}</span>
             </>
           )}
           <span className="v-video-lecture">
             <Lecture />
           </span>
-          <span className="v-video-encart">
-            <strong>{t.prenom}</strong>
-            <span>{t.activite}</span>
-          </span>
+          {enAttente ? (
+            <span />
+          ) : (
+            <span className="v-video-encart">
+              <strong>{t.prenom}</strong>
+              <span>{t.activite}</span>
+            </span>
+          )}
         </button>
       )}
     </li>
   );
 }
 
-export default function Carrousel({ temoignages }: { temoignages: Temoignage[] }) {
+export default function Carrousel({ temoignages, enAttente = false }: { temoignages: Temoignage[]; enAttente?: boolean }) {
   const fenetre = useRef<HTMLDivElement>(null);
   const [visibles, setVisibles] = useState(4);
   const [position, setPosition] = useState(0);
@@ -148,6 +162,7 @@ export default function Carrousel({ temoignages }: { temoignages: Temoignage[] }
               t={t}
               rang={i}
               total={temoignages.length}
+              enAttente={enAttente}
               enLecture={enLecture === i}
               onLire={() => setEnLecture(i)}
               onFocus={() => montrer(i)}

@@ -24,6 +24,9 @@ export const leadSourceConfig: Record<string, { label: string; color: string }> 
   liberty_tiktok_organic: { label: "Tunnel Liberty - TikTok", color: "slate" },
   liberty_youtube_organic: { label: "Tunnel Liberty - YouTube", color: "red" },
   liberty_direct: { label: "Tunnel Liberty - Direct", color: "gray" },
+  // Site vitrine (albarakaecosysteme.com, 28/09/2026) : demandes de rendez-vous
+  // du site de marque. Organique — aucune publicité n'y mène.
+  site_vitrine: { label: "Site vitrine", color: "amber" },
   // ── Historique (Systeme.io + saisie manuelle) ──
   vsl_a: { label: "VSL A", color: "blue" },
   vsl_b: { label: "VSL B", color: "indigo" },
@@ -209,6 +212,7 @@ export const SOURCE_GROUPS = [
       "liberty_tiktok_organic",
       "liberty_youtube_organic",
       "liberty_direct",
+      "site_vitrine",
       "instagram_organic",
       "apporteur_facebook",
       "apporteur_whatsapp",

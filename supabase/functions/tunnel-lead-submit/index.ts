@@ -23,6 +23,11 @@
 //     l'inscription. Seul cet endroit sait qu'un lead a réellement été créé.
 //   - Pas d'apporteur → lead non assigné (reste dans le pool), comme les
 //     anciens leads « webi ».
+//   - Sert aussi le SITE VITRINE (albarakaecosysteme.com, 28/09/2026) :
+//     source `site_vitrine`, avec en plus le nom de famille, la réponse
+//     « Où en êtes-vous aujourd'hui ? » (écrite dans les notes du lead) et le
+//     consentement à être recontacté. Même process que les tunnels, décision
+//     de Hassan : pas de notification, lead au pool.
 // ─────────────────────────────────────────────────────────────────────────
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -60,6 +65,19 @@ const ALLOWED_SOURCES = new Set([
   "liberty_tiktok_organic",
   "liberty_youtube_organic",
   "liberty_direct",
+  // Site vitrine — classé organique par `marketing_canal`.
+  "site_vitrine",
+]);
+
+/**
+ * Les trois réponses de la liste « Où en êtes-vous aujourd'hui ? » du site
+ * vitrine (cahier §6), mot pour mot. Toute autre valeur est ignorée : elle
+ * finirait sinon telle quelle dans les notes que lit le setter.
+ */
+const SITUATIONS_VITRINE = new Set([
+  "Je n’ai pas de compétence et je souhaite me former",
+  "Je souhaite lancer mon activité autour de ma passion ou de ma compétence",
+  "J’ai déjà une activité et je veux la développer",
 ]);
 function safeSource(s: unknown): string {
   if (typeof s === "string" && ALLOWED_SOURCES.has(s)) return s;
@@ -186,6 +204,14 @@ serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
 
+    // Champ piège du site vitrine : invisible, jamais rempli par un humain.
+    // Rempli, on répond « ok » sans rien écrire — un robot à qui l'on dit
+    // « refusé » réessaie autrement.
+    if (typeof body?.site_web === "string" && body.site_web.trim() !== "") {
+      console.log("[tunnel-lead-submit] champ piege rempli, demande ignoree");
+      return json({ ok: true });
+    }
+
     const firstName = normalizeName(body?.first_name as string);
     const email = normalizeEmail(body?.email as string);
     const rawPhone = body?.phone as string | undefined;
@@ -219,16 +245,35 @@ serve(async (req) => {
     const abTestCode = clip(body?.ab_test_code, 8);
     const varianteLanding = clip(body?.tunnel_variant, 8);
 
-    const fullNameUpper = firstName.toUpperCase();
+    const estVitrine = source === "site_vitrine";
+    // Le site vitrine demande le nom de famille ; les tunnels non.
+    const lastName = normalizeName(clip(body?.last_name, 80));
+    if (estVitrine && (!lastName || lastName.length < 2)) return json({ error: "invalid_last_name" }, 400);
+    // Le site vitrine ne part qu'avec la case « me recontacter » cochée.
+    if (estVitrine && body?.consentement_contact !== true) return json({ error: "consent_required" }, 400);
+    const situation =
+      estVitrine && typeof body?.situation === "string" && SITUATIONS_VITRINE.has(body.situation)
+        ? body.situation
+        : null;
+
+    const fullNameUpper = (lastName ? `${firstName} ${lastName}` : firstName).toUpperCase();
 
     // Avant toute écriture CRM : le consentement est journalisé même si la
     // fiche existe déjà et que la soumission finit fusionnée plus bas.
-    await journaliserConsentement(supabase, req, {
-      email,
-      consenti: body?.consentement_marketing === true,
-      origine: "tunnel_optin",
-      page: clip(body?.page, 200),
-    });
+    //
+    // Pas pour le site vitrine : il ne propose AUCUNE case de prospection, et
+    // ce journal enregistre la réponse à une case précise, avec son libellé.
+    // Y écrire un « non » à une question jamais posée serait faux. Sans ligne
+    // au journal, la personne est traitée comme n'ayant pas consenti — ce qui
+    // est exact. Son accord pour être RECONTACTÉE est tracé dans le lead.
+    if (!estVitrine) {
+      await journaliserConsentement(supabase, req, {
+        email,
+        consenti: body?.consentement_marketing === true,
+        origine: "tunnel_optin",
+        page: clip(body?.page, 200),
+      });
+    }
 
     // 1) Contact (dédup email/téléphone).
     const { data: contactId, error: contactError } = await supabase.rpc("find_or_create_contact", {
@@ -240,7 +285,15 @@ serve(async (req) => {
 
     // 2) Lead CRM. PAS d'apporteur_id / apporteur_source → aucune notif, lead au pool.
     const tunnelName = source.startsWith("webi_vsl") ? "VSL" : "WhatsApp";
-    const noteParts = [`Lead tunnel ${tunnelName} (conférence).`];
+    const noteParts = estVitrine
+      ? [
+          "Demande de rendez-vous du site vitrine.",
+          ...(situation ? [`Situation : ${situation}.`] : []),
+          // Horodaté ici : c'est la trace de l'accord à être recontacté
+          // (cahier §6.2, « état du consentement »).
+          `Accepte d'être recontacté (case cochée le ${new Date().toISOString()}).`,
+        ]
+      : [`Lead tunnel ${tunnelName} (conférence).`];
     if (src) noteParts.push(`src=${src}`);
     if (fbclid) noteParts.push(`fbclid=${fbclid}`);
     if (referrer) noteParts.push(`ref=${referrer}`);
@@ -294,7 +347,7 @@ serve(async (req) => {
       .from("leads")
       .insert({
         contact_id: contactId,
-        source, // webi_wa_*
+        source, // webi_wa_* | webi_vsl_* | liberty_* | site_vitrine
         source_detail: src, // ads | ig | tiktok | youtube | direct
         status: "a_qualifier", // OBLIGATOIRE (default 'nouveau' viole la CHECK)
         raw_full_name: fullNameUpper,

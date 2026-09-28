@@ -138,6 +138,7 @@ import StudioProject from "./pages/studio/StudioProject";
 import { StudioGate } from "./components/StudioGate";
 import DiscordCallback from "./pages/discord/DiscordCallback";
 import AdminDiscord from "./pages/admin/discord/AdminDiscord";
+import AdminSiteVitrine from "./pages/admin/site-vitrine/AdminSiteVitrine";
 import AdminEmailCampaign from "./pages/admin/email-campaigns/AdminEmailCampaign";
 import AdminSmsCampaign from "./pages/admin/email-campaigns/AdminSmsCampaign";
 import { WA_TUNNEL, VSL_TUNNEL } from "./pages/tunnels/config";
@@ -325,6 +326,7 @@ const FullApp = () => (
                   <Route path="/admin/commissions" element={<AdminCommissions />} />
                   <Route path="/admin/payment-links" element={<AdminPaymentLinks />} />
                   <Route path="/admin/conferences" element={<AdminConferences />} />
+                  <Route path="/admin/site-vitrine" element={<AdminSiteVitrine />} />
                   <Route path="/admin/team" element={<AdminTeam />} />
                   <Route path="/admin/announcements" element={<AdminAnnouncements />} />
                   <Route path="/admin/quiz-lead" element={<AdminQuizLead />} />
