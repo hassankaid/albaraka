@@ -52,6 +52,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { VimeoLinkInput } from "@/components/training/VimeoLinkInput";
+import RenvoisSection from "./RenvoisSection";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -210,6 +211,9 @@ export default function ChapitreEditor() {
         chapitreId={chapitreId!}
         onChanged={invalidate}
       />
+
+      {/* Section 4: Renvois vers d'autres chapitres */}
+      <RenvoisSection chapitreId={chapitreId!} videos={videos} />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +32,8 @@ import { useLockedChapitres } from "@/hooks/useQuizzes";
 import { useOutilLibertyDuChapitre } from "@/hooks/useOutilLiberty";
 import { useUserPass } from "@/hooks/useUserPass";
 import { Lock, Sparkles } from "lucide-react";
+import { useRenvoisDuChapitre, type Renvoi } from "@/hooks/useRenvois";
+import Renvois from "@/components/training/Renvois";
 
 interface ChapitreVideo {
   id: string;
@@ -54,6 +56,9 @@ interface ChapitreRessource {
 
 export default function ChapterViewer() {
   const { slug, chapitreId } = useParams();
+  // Un renvoi peut viser une vidéo précise : `?video=<id>` l'ouvre directement.
+  const [searchParams] = useSearchParams();
+  const videoDemandee = searchParams.get("video");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { profile } = useAuth();
@@ -105,6 +110,9 @@ export default function ChapterViewer() {
   // ── Liste des chapitres verrouillés dans cette formation ──────
   const formationIdForGate = (chapterData as any)?.formation?.id ?? null;
   const { data: lockedData } = useLockedChapitres(formationIdForGate);
+
+  // ── Renvois « pour aller plus loin » vers d'autres chapitres ──
+  const { data: renvois = [] } = useRenvoisDuChapitre(chapitreId);
 
   // ── Load navigation prev/next via RPC ───────────────────────
   const { data: navData } = useQuery({
@@ -347,6 +355,8 @@ export default function ChapterViewer() {
   const chapterRessources = ressources.filter((r) => !r.video_id);
   const getVideoRessources = (videoId: string) =>
     ressources.filter((r) => r.video_id === videoId);
+  const renvoisDuChapitre = renvois.filter((r) => !r.video_id);
+  const getVideoRenvois = (videoId: string) => renvois.filter((r) => r.video_id === videoId);
 
   // Gate : est-ce que le prochain chapitre est verrouillé par un quiz non validé ?
   const nextChapitreId = (navData as any)?.next_chapitre_id as string | undefined;
@@ -552,10 +562,17 @@ export default function ChapterViewer() {
                   <VideoExtras
                     notes={videos[0].notes}
                     ressources={getVideoRessources(videos[0].id)}
+                    renvois={getVideoRenvois(videos[0].id)}
                   />
                 </>
               ) : (
                 <MultiVideoPlayer
+                  // Remonté à chaque chapitre (et à chaque vidéo demandée) :
+                  // sinon la vidéo en cours du chapitre précédent restait
+                  // sélectionnée en arrivant par un renvoi.
+                  key={`${chapitre.id}:${videoDemandee ?? ""}`}
+                  initialVideoId={videoDemandee}
+                  getVideoRenvois={getVideoRenvois}
                   videos={videos}
                   videoProgressMap={videoProgressMap}
                   onNearEnd={handleVideoNearEnd}
@@ -697,6 +714,14 @@ export default function ChapterViewer() {
             </>
           )}
 
+          {/* Renvois vers d'autres chapitres (tout le chapitre) */}
+          {renvoisDuChapitre.length > 0 && (
+            <>
+              <Separator />
+              <Renvois renvois={renvoisDuChapitre} />
+            </>
+          )}
+
           {/* Ressources du chapitre (non liées à une vidéo) */}
           {chapterRessources.length > 0 && (
             <>
@@ -774,14 +799,20 @@ function MultiVideoPlayer({
   onNearEnd,
   onToggleVideo,
   getVideoRessources,
+  getVideoRenvois,
+  initialVideoId,
 }: {
   videos: ChapitreVideo[];
   videoProgressMap?: Map<string, { watched_seconds: number; completed: boolean }>;
   onNearEnd: (videoId: string, watchedSeconds: number) => void;
   onToggleVideo: (videoId: string, completed: boolean) => void;
   getVideoRessources: (videoId: string) => ChapitreRessource[];
+  getVideoRenvois: (videoId: string) => Renvoi[];
+  initialVideoId?: string | null;
 }) {
-  const [activeIdx, setActiveIdx] = useState(0);
+  const [activeIdx, setActiveIdx] = useState(() =>
+    Math.max(0, videos.findIndex((v) => v.id === initialVideoId)),
+  );
   const active = videos[activeIdx];
   const activeDone = !!videoProgressMap?.get(active.id)?.completed;
   const activeNum = String(activeIdx + 1).padStart(2, "0");
@@ -860,6 +891,7 @@ function MultiVideoPlayer({
       <VideoExtras
         notes={active.notes}
         ressources={getVideoRessources(active.id)}
+        renvois={getVideoRenvois(active.id)}
       />
 
       {/* Playlist du chapitre */}
@@ -984,11 +1016,13 @@ function VideoToggle({
 function VideoExtras({
   notes,
   ressources,
+  renvois = [],
 }: {
   notes: string | null;
   ressources: ChapitreRessource[];
+  renvois?: Renvoi[];
 }) {
-  if (!notes && ressources.length === 0) return null;
+  if (!notes && ressources.length === 0 && renvois.length === 0) return null;
   return (
     <div className="space-y-3">
       {notes && (
@@ -1003,6 +1037,7 @@ function VideoExtras({
           ))}
         </div>
       )}
+      <Renvois renvois={renvois} />
     </div>
   );
 }
