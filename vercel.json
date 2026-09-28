@@ -1,4 +1,34 @@
 {
+  "redirects": [
+    {
+      "source": "/livraison-tunnels(.html)?",
+      "has": [
+        {
+          "type": "host",
+          "value": "^((www\\.)?albarakaecosysteme\\.com|event\\.albarakaecosysteme\\.com)$"
+        }
+      ],
+      "destination": "https://plateforme.albarakaecosysteme.com/livraison-tunnels",
+      "permanent": false
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "^.+\\.vercel\\.app$"
+        }
+      ],
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/s/:token/:seq",
@@ -12,23 +42,36 @@
       "source": "/stop/:token",
       "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/desabonnement?t=:token"
     },
-
     {
       "source": "/(webinaire|vsl|appel-conference|temoignages|al-baraka-200|liberty|video-1|video-2|video-3|mentions-legales|politique-de-confidentialite|conditions-generales-de-vente)",
-      "has": [{ "type": "host", "value": "event.albarakaecosysteme.com" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "event.albarakaecosysteme.com"
+        }
+      ],
       "destination": "/app.html"
     },
     {
       "source": "/(webinaire|vsl|appel-conference|temoignages|al-baraka-200|liberty|video-1|video-2|video-3|mentions-legales|politique-de-confidentialite|conditions-generales-de-vente)/(.*)",
-      "has": [{ "type": "host", "value": "event.albarakaecosysteme.com" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "event.albarakaecosysteme.com"
+        }
+      ],
       "destination": "/app.html"
     },
     {
       "source": "/(.*)",
-      "has": [{ "type": "host", "value": "event.albarakaecosysteme.com" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "event.albarakaecosysteme.com"
+        }
+      ],
       "destination": "/introuvable.html"
     },
-
     {
       "source": "/desabonnement",
       "destination": "/desabonnement.html"
@@ -38,12 +81,11 @@
       "has": [
         {
           "type": "host",
-          "value": "(www\\.|plateforme\\.|view\\.)?albarakaecosysteme\\.com"
+          "value": "(plateforme\\.|view\\.)albarakaecosysteme\\.com"
         }
       ],
       "destination": "/livraison-tunnels.html"
     },
-
     {
       "source": "/(webinaire|vsl|appel-conference|temoignages|al-baraka-200|video-1|video-2|video-3)",
       "has": [
@@ -64,23 +106,39 @@
       ],
       "destination": "/introuvable.html"
     },
-
     {
       "source": "/site-vitrine",
-      "missing": [{ "type": "host", "value": "^(plateforme\\.|view\\.|event\\.)albarakaecosysteme\\.com$" }],
+      "missing": [
+        {
+          "type": "host",
+          "value": "^(plateforme\\.|view\\.|event\\.)albarakaecosysteme\\.com$"
+        }
+      ],
       "destination": "/vitrine.html"
     },
     {
       "source": "/site-vitrine/(.*)",
-      "missing": [{ "type": "host", "value": "^(plateforme\\.|view\\.|event\\.)albarakaecosysteme\\.com$" }],
+      "missing": [
+        {
+          "type": "host",
+          "value": "^(plateforme\\.|view\\.|event\\.)albarakaecosysteme\\.com$"
+        }
+      ],
       "destination": "/vitrine.html"
     },
     {
       "source": "/(.*)",
-      "has": [{ "type": "host", "value": "^(www\\.)?albarakaecosysteme\\.com$" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "^(www\\.)?albarakaecosysteme\\.com$"
+        }
+      ],
       "destination": "/vitrine.html"
     },
-
-    { "source": "/(.*)", "destination": "/app.html" }
+    {
+      "source": "/(.*)",
+      "destination": "/app.html"
+    }
   ]
 }

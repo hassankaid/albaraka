@@ -21,9 +21,21 @@ interface Rewrite {
   has?: Condition[];
   missing?: Condition[];
 }
+interface Redirection extends Rewrite {
+  permanent?: boolean;
+}
+interface Entete {
+  source: string;
+  has?: Condition[];
+  headers: { key: string; value: string }[];
+}
 
 const racine = process.cwd();
-const config = JSON.parse(readFileSync(resolve(racine, "vercel.json"), "utf-8")) as { rewrites: Rewrite[] };
+const config = JSON.parse(readFileSync(resolve(racine, "vercel.json"), "utf-8")) as {
+  rewrites: Rewrite[];
+  redirects: Redirection[];
+  headers: Entete[];
+};
 const regles = config.rewrites;
 
 const hote = (conds?: Condition[]) => conds?.find((c) => c.type === "host")?.value;
@@ -90,5 +102,34 @@ describe("routage du site vitrine", () => {
     expect(html).toContain('property="og:image"');
     // Aucune police ni aucun traceur chargé depuis un tiers.
     expect(html).not.toMatch(/fonts\.googleapis|googletagmanager|connect\.facebook|fbq\(/);
+  });
+});
+
+describe("cloisonnement des domaines", () => {
+  it("la page interne /livraison-tunnels n'est servie que sur plateforme et view", () => {
+    const regle = regles.find((r) => r.source === "/livraison-tunnels")!;
+    const motif = hote(regle.has)!;
+    for (const h of ["plateforme.albarakaecosysteme.com", "view.albarakaecosysteme.com"]) expect(correspond(motif, h), h).toBe(true);
+    for (const h of ["albarakaecosysteme.com", "www.albarakaecosysteme.com", "event.albarakaecosysteme.com"]) expect(correspond(motif, h), h).toBe(false);
+  });
+
+  it("…et son fichier .html, servi AVANT les réécritures, est renvoyé vers la plateforme depuis les domaines publics", () => {
+    // Une redirection s'applique avant les fichiers ; une réécriture, après.
+    const r = config.redirects.find((x) => x.source.startsWith("/livraison-tunnels"))!;
+    expect(r.destination).toBe("https://plateforme.albarakaecosysteme.com/livraison-tunnels");
+    expect(new RegExp(`^${r.source.replace("(.html)?", "(\\.html)?")}$`).test("/livraison-tunnels.html")).toBe(true);
+    const motif = hote(r.has)!;
+    for (const h of ["albarakaecosysteme.com", "www.albarakaecosysteme.com", "event.albarakaecosysteme.com"]) expect(correspond(motif, h), h).toBe(true);
+    for (const h of ["plateforme.albarakaecosysteme.com", "view.albarakaecosysteme.com"]) expect(correspond(motif, h), h).toBe(false);
+  });
+
+  it("les adresses techniques *.vercel.app ne sont jamais indexées, les domaines réels si", () => {
+    const e = config.headers.find((x) => x.headers.some((h) => h.key === "X-Robots-Tag"))!;
+    expect(e.source).toBe("/(.*)");
+    expect(e.headers.find((h) => h.key === "X-Robots-Tag")!.value).toContain("noindex");
+    const motif = hote(e.has)!;
+    for (const h of ["albaraka-lilac.vercel.app", "albaraka-kv1vlt44h-kaidconsulting.vercel.app"]) expect(correspond(motif, h), h).toBe(true);
+    for (const h of ["www.albarakaecosysteme.com", "event.albarakaecosysteme.com", "plateforme.albarakaecosysteme.com", "vercel.app.attaquant.fr"])
+      expect(correspond(motif, h), h).toBe(false);
   });
 });
