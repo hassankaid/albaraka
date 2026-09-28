@@ -1,0 +1,31 @@
+-- ─────────────────────────────────────────────────────────────────────────
+-- Les chiffres de la page Équipe, agrégés côté base. Appliqué le 28/09/2026.
+--
+-- Ils étaient calculés dans le navigateur par trois requêtes directes. Or
+-- PostgREST plafonne toute réponse à 1 000 lignes, sans erreur ni
+-- avertissement :
+--
+--   leads assignés    5 342 lignes → 1 000 lues → 81 % perdus
+--   commissions       2 217 lignes → 1 000 lues → 55 % perdus
+--   ventes               95 lignes → complètes
+--
+-- Les nombres affichés étaient donc faux, et faux de façon INCOHÉRENTE :
+-- PostgREST renvoie les 1 000 premières lignes dans un ordre arbitraire, donc
+-- certains membres étaient à peu près justes et d'autres à zéro, sans logique
+-- apparente. C'est ce qui donnait l'impression que « ça ne colle pas ».
+--
+-- Deux erreurs de définition s'y ajoutaient :
+--   • les commissions ANNULÉES étaient comptées (10 364 € au 28/09) ;
+--   • « leads traités » comptait les leads ASSIGNÉS, y compris les 170 jamais
+--     touchés (statut « a_qualifier »).
+--
+-- Définitions arrêtées avec Hassan, vérifiées sur les données :
+--   généré  = payées + payables + en attente   (tout sauf annulées)
+--   acquis  = payées + payables                (l'argent du client est arrivé)
+--   payable = statut « due » — 114 des 116 lignes ont bien un paiement encaissé
+--
+-- Contrôle à l'application : les six totaux de la fonction reproduisent
+-- exactement ceux calculés directement (5 342 / 5 172 / 95 / 117 711 €
+-- / 106 913 € / 101 839 €).
+--
+-- Définition faisant foi en base (historique Supabase).

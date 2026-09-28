@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -12,8 +14,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Search, RefreshCw, Users, UserCheck, UserX, ArrowUpRight,
   ShieldCheck, ShieldAlert, MoreHorizontal, ChevronDown, ChevronUp,
-  ToggleLeft, ToggleRight, Eye,
+  ToggleLeft, ToggleRight, Eye, EyeOff,
 } from "lucide-react";
+
+/** Montant en euros, sans decimales inutiles a l'ecran. */
+const eur = (n?: number) =>
+  (n ?? 0).toLocaleString("fr-FR", { maximumFractionDigits: 0 }) + " \u20AC";
 
 interface TeamMember {
   id: string;
@@ -26,9 +32,18 @@ interface TeamMember {
   is_also_apporteur: boolean | null;
   collaborateur_level: string | null;
   created_at: string | null;
-  lead_count?: number;
+  /** Leads assignés, et parmi eux ceux réellement travaillés (statut autre
+   *  que « a_qualifier »). L'écart entre les deux est l'information utile. */
+  leads_recus?: number;
+  leads_travailles?: number;
   sale_count?: number;
-  commission_total?: number;
+  /** Trois périmètres distincts : généré (hors annulées), acquis (l'argent du
+   *  client est arrivé), payé (l'apporteur a été réglé). */
+  commissions_generees?: number;
+  commissions_acquises?: number;
+  commissions_payees?: number;
+  derniere_presence?: string | null;
+  derniere_action?: string | null;
 }
 
 type Tab = "collaborateurs" | "apporteurs";
@@ -40,6 +55,9 @@ export default function AdminTeam() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<Tab>("collaborateurs");
+  // Les inactifs sont masques par defaut : ils representent 8 collaborateurs
+  // sur 19, soit 42 % de l'onglet, et n'ont plus de chiffres a suivre.
+  const [montrerInactifs, setMontrerInactifs] = useState(false);
 
   // Dialog states
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -59,30 +77,32 @@ export default function AdminTeam() {
 
     if (!profiles) { setLoading(false); return; }
 
-    const ids = profiles.map(p => p.id);
-    const [{ data: leadStats }, { data: saleStats }, { data: commissionStats }] = await Promise.all([
-      supabase.from("leads").select("assigned_to").in("assigned_to", ids),
-      supabase.from("sales").select("closed_by").in("closed_by", ids),
-      supabase.from("commissions").select("beneficiary_user_id, amount").in("beneficiary_user_id", ids),
-    ]);
+    // Les chiffres sont agrégés CÔTÉ BASE. Ils étaient auparavant calculés ici
+    // par trois requêtes directes — mais PostgREST plafonne toute réponse à
+    // 1 000 lignes, sans erreur : sur 5 342 leads assignés la page en lisait
+    // 1 000 (81 % perdus), sur 2 217 commissions elle en lisait 1 000 (55 %).
+    // Les nombres affichés étaient faux, et faux de façon incohérente selon
+    // les membres. Compter 5 000 lignes dans le navigateur pour afficher un
+    // total n'avait de toute façon aucun sens.
+    const { data: stats } = await (supabase as any).rpc("statistiques_equipe");
+    const parId = new Map<string, any>((stats ?? []).map((s: any) => [s.user_id, s]));
 
-    const leadMap: Record<string, number> = {};
-    leadStats?.forEach(l => { leadMap[l.assigned_to!] = (leadMap[l.assigned_to!] || 0) + 1; });
-    const saleMap: Record<string, number> = {};
-    saleStats?.forEach(s => { saleMap[s.closed_by!] = (saleMap[s.closed_by!] || 0) + 1; });
-    const commMap: Record<string, number> = {};
-    commissionStats?.forEach(c => {
-      commMap[c.beneficiary_user_id!] = (commMap[c.beneficiary_user_id!] || 0) + (Number(c.amount) || 0);
-    });
-
-    setMembers(profiles.map(p => ({
-      ...p,
-      is_active: (p as any).is_active ?? true,
-      collaborateur_level: (p as any).collaborateur_level ?? null,
-      lead_count: leadMap[p.id] || 0,
-      sale_count: saleMap[p.id] || 0,
-      commission_total: Math.round((commMap[p.id] || 0) * 100) / 100,
-    })));
+    setMembers(profiles.map(p => {
+      const st = parId.get(p.id) ?? {};
+      return {
+        ...p,
+        is_active: (p as any).is_active ?? true,
+        collaborateur_level: (p as any).collaborateur_level ?? null,
+        leads_recus: Number(st.leads_recus ?? 0),
+        leads_travailles: Number(st.leads_travailles ?? 0),
+        sale_count: Number(st.ventes ?? 0),
+        commissions_generees: Number(st.commissions_generees ?? 0),
+        commissions_acquises: Number(st.commissions_acquises ?? 0),
+        commissions_payees: Number(st.commissions_payees ?? 0),
+        derniere_presence: st.derniere_presence ?? null,
+        derniere_action: st.derniere_action ?? null,
+      };
+    }));
     setLoading(false);
   };
 
@@ -91,8 +111,15 @@ export default function AdminTeam() {
   const collaborateurs = useMemo(() => members.filter(m => m.role === "collaborateur"), [members]);
   const apporteurs = useMemo(() => members.filter(m => m.role === "apporteur"), [members]);
 
-  const displayed = useMemo(() => {
+  /** Inactifs de l'onglet courant — sert au compteur du bouton. */
+  const nbInactifs = useMemo(() => {
     const source = tab === "collaborateurs" ? collaborateurs : apporteurs;
+    return source.filter((m) => !m.is_active).length;
+  }, [tab, collaborateurs, apporteurs]);
+
+  const displayed = useMemo(() => {
+    let source = tab === "collaborateurs" ? collaborateurs : apporteurs;
+    if (!montrerInactifs) source = source.filter((m) => m.is_active);
     if (!search.trim()) return source;
     const q = search.toLowerCase();
     return source.filter(m =>
@@ -100,7 +127,7 @@ export default function AdminTeam() {
       m.email.toLowerCase().includes(q) ||
       (m.phone && m.phone.includes(q))
     );
-  }, [tab, collaborateurs, apporteurs, search]);
+  }, [tab, collaborateurs, apporteurs, search, montrerInactifs]);
 
   // Actions
   const confirmAction = (title: string, description: string, action: () => Promise<void>) => {
@@ -233,6 +260,22 @@ export default function AdminTeam() {
           />
         </div>
 
+        {/* Le compteur dans le libelle est deliberé : un filtre muet laisse
+            croire que la liste est complete. Ici on sait toujours ce qu'on
+            ne voit pas. */}
+        {nbInactifs > 0 && (
+          <Button
+            variant={montrerInactifs ? "default" : "outline"}
+            size="sm"
+            className="h-8 gap-1.5 text-xs"
+            onClick={() => setMontrerInactifs((v) => !v)}
+            aria-pressed={montrerInactifs}
+          >
+            {montrerInactifs ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            Inactifs ({nbInactifs})
+          </Button>
+        )}
+
         <Button variant="outline" size="icon" className="h-8 w-8" onClick={fetchMembers} disabled={loading}>
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
         </Button>
@@ -245,22 +288,23 @@ export default function AdminTeam() {
             <TableRow className="bg-muted/30">
               <TableHead>Membre</TableHead>
               {tab === "collaborateurs" && <TableHead>Niveau</TableHead>}
-              <TableHead className="text-center">Leads</TableHead>
+              <TableHead className="text-center">Leads<div className="text-[10px] font-normal normal-case opacity-60">travaillés / reçus</div></TableHead>
               <TableHead className="text-center">Ventes</TableHead>
-              <TableHead className="text-right">Commissions</TableHead>
+              <TableHead className="text-right">Commissions<div className="text-[10px] font-normal normal-case opacity-60">acquis / généré</div></TableHead>
+              <TableHead>Présence</TableHead>
               <TableHead className="w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={tab === "collaborateurs" ? 6 : 5} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={tab === "collaborateurs" ? 7 : 6} className="text-center py-12 text-muted-foreground">
                   Chargement...
                 </TableCell>
               </TableRow>
             ) : displayed.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={tab === "collaborateurs" ? 6 : 5} className="text-center py-12">
+                <TableCell colSpan={tab === "collaborateurs" ? 7 : 6} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2">
                     <Users className="h-8 w-8 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">Aucun {tab === "collaborateurs" ? "collaborateur" : "apporteur"} trouvé</p>
@@ -309,15 +353,42 @@ export default function AdminTeam() {
 
                 {/* Stats */}
                 <TableCell className="text-center">
-                  <span className="text-sm font-medium text-foreground">{member.lead_count}</span>
+                  <span className="text-sm font-medium text-foreground">{member.leads_travailles ?? 0}</span>
+                  <span className="text-xs text-muted-foreground"> / {member.leads_recus ?? 0}</span>
+                  {/* L'écart entre reçus et travaillés est l'information que
+                      Hassan cherchait : ce qu'on distribue contre ce qu'on traite. */}
+                  {(member.leads_recus ?? 0) > 0 && (
+                    <div className="text-[10px] text-muted-foreground">
+                      {Math.round(100 * (member.leads_travailles ?? 0) / (member.leads_recus ?? 1))} %
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell className="text-center">
                   <span className="text-sm font-medium text-foreground">{member.sale_count}</span>
                 </TableCell>
                 <TableCell className="text-right">
-                  <span className="text-sm font-medium text-foreground">
-                    {member.commission_total?.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
-                  </span>
+                  <div className="text-sm font-medium text-foreground">
+                    {eur(member.commissions_acquises)}
+                  </div>
+                  {/* Le généré en second : c'est le total du contrat, alors que
+                      l'acquis est ce que le client a réellement versé. */}
+                  {(member.commissions_generees ?? 0) !== (member.commissions_acquises ?? 0) && (
+                    <div className="text-[11px] text-muted-foreground">
+                      sur {eur(member.commissions_generees)}
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div className="text-xs text-foreground">
+                    {member.derniere_presence
+                      ? formatDistanceToNow(new Date(member.derniere_presence), { addSuffix: true, locale: fr })
+                      : <span className="text-destructive">jamais connecté</span>}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {member.derniere_action
+                      ? `activité ${formatDistanceToNow(new Date(member.derniere_action), { addSuffix: true, locale: fr })}`
+                      : "aucune activité"}
+                  </div>
                 </TableCell>
 
                 {/* Actions dropdown */}
