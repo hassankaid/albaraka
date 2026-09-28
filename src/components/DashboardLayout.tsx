@@ -34,6 +34,9 @@ const workingNavItems: NavItem[] = [
   { title: "Personal Brand", path: "/working/personal-brand", icon: Sparkles, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Studio", path: "/studio", icon: Film, roles: ["ceo", "collaborateur", "apporteur"], studioOnly: true },
   { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true },
+  // Debloquee par la formation Setting a 100 %, comme le canal Discord Setting.
+  // La page verifie elle-meme le pass actif ET le deblocage.
+  { title: "Liens de paiement", path: "/working/lien-de-paiement", icon: Link2, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true },
   // After separator
   { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur", "agence"], adminSection: true },
   { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"], adminSection: true },

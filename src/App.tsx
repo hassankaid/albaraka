@@ -120,6 +120,7 @@ import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import AdminAnnouncements from "./pages/admin/announcements/AdminAnnouncements";
 import AdminCalendlyWebhooks from "./pages/admin/webhooks/AdminCalendlyWebhooks";
 import AdminPaymentLinks from "./pages/admin/payment-links/AdminPaymentLinks";
+import LienDePaiement from "./pages/working/LienDePaiement";
 import CampaignTracking from "./pages/admin/invitations/CampaignTracking";
 import AdminParcoursList from "./pages/admin/parcours/AdminParcoursList";
 import ParcoursEditor from "./pages/admin/parcours/ParcoursEditor";
@@ -416,6 +417,7 @@ const FullApp = () => (
                   <Route path="/working/organisation" element={<FeatureGate feature="quiz_organisation"><OrganisationPage /></FeatureGate>} />
                   <Route path="/working/personal-brand" element={<MarketingGate><PersonalBrandPage /></MarketingGate>} />
                   <Route path="/working/agent" element={<FeatureGate feature="working_activity" lockedTitle="Agent IA verrouillé" lockedDescription="Termine la formation SETTING depuis ton parcours AL BARAKA pour débloquer l'Agent IA." unlockCtaLabel="Ouvrir mon parcours" unlockRoute="/parcours/al-baraka"><AgentIA /></FeatureGate>} />
+                  <Route path="/working/lien-de-paiement" element={<LienDePaiement />} />
                   {/* Studio Albaraka (B1 du 20/05/2026) — gaté à CEO + Sidali Test */}
                   <Route path="/studio" element={<StudioGate><StudioHome /></StudioGate>} />
                   <Route path="/studio/projects/:projectId" element={<StudioGate><StudioProject /></StudioGate>} />
