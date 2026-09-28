@@ -82,7 +82,13 @@ begin
   v_delai := case when v_envois < 1500 then interval '10 minutes' else interval '5 minutes' end;
 
   if v_dernier is not null and v_now < v_dernier + v_delai then
-    action := 'attend'; detail := 'prochain lot apres ' || to_char(v_dernier + v_delai at time zone 'Europe/Paris', 'HH24:MI');
+    -- Parentheses INDISPENSABLES : « at time zone » se lie plus fort que
+    -- « + », donc sans elles Postgres evalue (v_delai at time zone ...) et
+    -- echoue. Coquille corrigee le 28/09 : elle faisait echouer le tick
+    -- pendant les phases d'attente, sans bloquer les envois mais en
+    -- remplissant le journal des taches d'erreurs trompeuses.
+    action := 'attend';
+    detail := 'prochain lot apres ' || to_char((v_dernier + v_delai) at time zone 'Europe/Paris', 'HH24:MI');
     return next; return;
   end if;
 
