@@ -19,22 +19,25 @@ const FormulaireRdv = lazy(chargerFormulaire);
  * Halo or partant du bas-centre et trois arches concentriques qui
  * s'estompent vers le haut (cahier §4.1). Dessiné en 1440 × 900 comme la
  * maquette, et recadré par le navigateur à toute autre largeur.
+ *
+ * ⚠️ LA MAQUETTE COUPAIT NET. Le halo et les arches y sont à leur plus
+ * lumineux sur le bord bas de la section, puis la section suivante repart du
+ * noir : une ligne horizontale barrait la page (signalé par Hassan le
+ * 28/09/2026). Les arches s'éteignent donc avant le bord, et le halo n'est
+ * plus dessiné ici mais en CSS, en deux moitiés de part et d'autre du bord
+ * (`.v-accueil::before` / `::after`) qui partagent la même largeur : la
+ * jonction est continue par construction, quelle que soit la taille d'écran.
  */
 function DecorAccueil() {
   return (
     <svg className="v-decor" aria-hidden="true" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice">
       <defs>
-        <radialGradient id="v-aube" cx="50%" cy="100%" r="62%">
-          <stop offset="0" stopColor="#D8B85E" stopOpacity="0.34" />
-          <stop offset="0.35" stopColor="#8A6A22" stopOpacity="0.14" />
-          <stop offset="1" stopColor="#060606" stopOpacity="0" />
-        </radialGradient>
         <linearGradient id="v-arches" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#D8B85E" stopOpacity="0" />
-          <stop offset="1" stopColor="#D8B85E" stopOpacity="0.35" />
+          <stop offset="0.72" stopColor="#D8B85E" stopOpacity="0.35" />
+          <stop offset="1" stopColor="#D8B85E" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <rect width="1440" height="900" fill="url(#v-aube)" />
       <g fill="none" stroke="url(#v-arches)" strokeWidth="1">
         <path d="M420 900 V620 a300 300 0 0 1 600 0 V900" />
         <path d="M300 900 V620 a420 420 0 0 1 840 0 V900" strokeOpacity="0.6" />
