@@ -1,0 +1,25 @@
+-- ─────────────────────────────────────────────────────────────────────────
+-- « Ventes » comptait uniquement le closer. Appliqué le 28/09/2026.
+--
+-- La colonne lisait sales.closed_by. Or quatre rôles sont commissionnés —
+-- apporteur, closer, setter et agence_marketing — et rien ne justifiait de
+-- n'en compter qu'un. Constaté par Hassan, vérifié :
+--
+--   SKALESY            0 → 115
+--   SABRINA DA CUNHA  12 →  71
+--   HEDI Abrikh       29 →  66
+--   SABA MARSALL       0 →  21
+--   MIRADIE ASANI      0 →  14
+--
+-- Tous ceux qui ne closent jamais — setters, apporteurs, agence — affichaient
+-- zéro vente alors qu'ils en commissionnaient des dizaines.
+--
+-- Nouvelle définition : toute vente sur laquelle la personne perçoit une
+-- commission NON ANNULÉE, quel que soit son rôle. Si toutes ses commissions
+-- sur une vente sont annulées, elle n'en a rien tiré et la vente ne lui est
+-- pas comptée.
+--
+-- `ventes_closees` est conservé à part : c'est un indicateur différent, et le
+-- fondre dans le premier ferait disparaître la performance propre des closers.
+--
+-- Définition faisant foi en base (historique Supabase).

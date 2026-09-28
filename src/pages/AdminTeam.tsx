@@ -36,7 +36,15 @@ interface TeamMember {
    *  que « a_qualifier »). L'écart entre les deux est l'information utile. */
   leads_recus?: number;
   leads_travailles?: number;
-  sale_count?: number;
+  /** Toute vente sur laquelle la personne perçoit une commission, quel que
+   *  soit son rôle : apporteur, closer, setter ou agence. L'ancienne
+   *  définition ne comptait que sales.closed_by — un setter ayant qualifié
+   *  71 ventes en affichait 12, et ceux qui ne closent jamais affichaient 0. */
+  ventes?: number;
+  /** Les ventes closées par la personne, conservées à part : c'est un
+   *  indicateur distinct, et le fondre dans le précédent ferait disparaître
+   *  la performance propre des closers. */
+  ventes_closees?: number;
   /** Trois périmètres distincts : généré (hors annulées), acquis (l'argent du
    *  client est arrivé), payé (l'apporteur a été réglé). */
   commissions_generees?: number;
@@ -95,7 +103,8 @@ export default function AdminTeam() {
         collaborateur_level: (p as any).collaborateur_level ?? null,
         leads_recus: Number(st.leads_recus ?? 0),
         leads_travailles: Number(st.leads_travailles ?? 0),
-        sale_count: Number(st.ventes ?? 0),
+        ventes: Number(st.ventes ?? 0),
+        ventes_closees: Number(st.ventes_closees ?? 0),
         commissions_generees: Number(st.commissions_generees ?? 0),
         commissions_acquises: Number(st.commissions_acquises ?? 0),
         commissions_payees: Number(st.commissions_payees ?? 0),
@@ -289,7 +298,7 @@ export default function AdminTeam() {
               <TableHead>Membre</TableHead>
               {tab === "collaborateurs" && <TableHead>Niveau</TableHead>}
               <TableHead className="text-center">Leads<div className="text-[10px] font-normal normal-case opacity-60">travaillés / reçus</div></TableHead>
-              <TableHead className="text-center">Ventes</TableHead>
+              <TableHead className="text-center">Ventes<div className="text-[10px] font-normal normal-case opacity-60">commissionnées</div></TableHead>
               <TableHead className="text-right">Commissions<div className="text-[10px] font-normal normal-case opacity-60">acquis / généré</div></TableHead>
               <TableHead>Présence</TableHead>
               <TableHead className="w-[60px]"></TableHead>
@@ -364,7 +373,14 @@ export default function AdminTeam() {
                   )}
                 </TableCell>
                 <TableCell className="text-center">
-                  <span className="text-sm font-medium text-foreground">{member.sale_count}</span>
+                  <span className="text-sm font-medium text-foreground">{member.ventes ?? 0}</span>
+                  {/* Le detail des closees n'apparait que si la personne close :
+                      l'afficher a zero pour un setter serait un reproche muet. */}
+                  {(member.ventes_closees ?? 0) > 0 && (
+                    <div className="text-[10px] text-muted-foreground">
+                      dont {member.ventes_closees} closée{(member.ventes_closees ?? 0) > 1 ? "s" : ""}
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="text-sm font-medium text-foreground">
