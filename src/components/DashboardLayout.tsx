@@ -10,6 +10,7 @@ import { useUserPass } from "@/hooks/useUserPass";
 import { useCanAccessPersonalBrand } from "@/hooks/useCanAccessPersonalBrand";
 import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 import { DiscordButton } from "@/components/DiscordButton";
+import { DriveButton } from "@/components/DriveButton";
 
 interface NavItem {
   title: string;
@@ -292,6 +293,8 @@ export default function DashboardLayout() {
 
           <div className="flex items-center gap-3">
             <DiscordButton />
+
+            <DriveButton />
 
             <NotificationsBell />
 
