@@ -2,16 +2,12 @@
  * Le site vitrine, affiché pour de vrai.
  *
  *  • les six blocs du cahier sont là, dans l'ordre, avec leurs ancres ;
- *  • le formulaire ne part pas incomplet, et ne dit rien avant qu'on ait fini
- *    de remplir un champ ;
- *  • une demande valide part vers `tunnel-lead-submit` avec la source
- *    `site_vitrine`, un téléphone international, et SANS consentement
- *    marketing — la case autorise à recontacter, pas à prospecter ;
- *  • le champ piège arrête les robots sans rien envoyer ;
+ *  • la prise de rendez-vous passe par l'agenda Calendly du site (depuis le
+ *    29/09/2026), avec les UTM de l'arrivée ; plus aucun formulaire ;
  *  • les constantes Supabase recopiées restent celles du client.
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, cleanup, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, cleanup, screen, fireEvent } from "@testing-library/react";
 import VitrineApp from "./VitrineApp";
 import { SUPABASE_CLE_PUBLIQUE, SUPABASE_URL } from "./api";
 import { cartesVisibles, nombrePositions } from "./composants/Carrousel";
@@ -34,32 +30,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-/**
- * Le réseau simulé. Le site fait deux sortes d'appels : la lecture des
- * témoignages (REST) et l'envoi de la demande (edge function). On répond à
- * chacun séparément, et on ne compte que les envois.
- */
-function reseau(opts: { envoi?: () => Response; temoignages?: unknown[] } = {}) {
+/** Le réseau simulé : le site ne fait qu'une lecture, celle des témoignages. */
+function reseau(opts: { temoignages?: unknown[] } = {}) {
   const espion = vi.spyOn(globalThis, "fetch").mockImplementation(async (entree) => {
     const url = String(entree);
     if (url.includes("/rest/v1/temoignages_vitrine")) return new Response(JSON.stringify(opts.temoignages ?? []), { status: 200 });
-    return opts.envoi ? opts.envoi() : new Response("{}", { status: 200 });
+    return new Response("{}", { status: 200 });
   });
-  const envois = () => espion.mock.calls.filter(([u]) => String(u).includes("/functions/v1/tunnel-lead-submit"));
-  return { espion, envois };
-}
-
-async function remplir() {
-  // Le formulaire est chargé à part : on attend qu'il soit là.
-  await screen.findByLabelText("Prénom");
-  fireEvent.change(screen.getByLabelText("Prénom"), { target: { value: "Yasmine" } });
-  fireEvent.change(screen.getByLabelText("Nom"), { target: { value: "Benali" } });
-  fireEvent.change(screen.getByLabelText("Email"), { target: { value: "yasmine@example.com" } });
-  fireEvent.change(screen.getByLabelText("Téléphone (WhatsApp)"), { target: { value: "06 12 34 56 78" } });
-  fireEvent.change(screen.getByLabelText("Où en êtes-vous aujourd’hui ?"), {
-    target: { value: "J’ai déjà une activité et je veux la développer" },
-  });
-  fireEvent.click(screen.getByRole("checkbox", { name: /J’accepte qu’AL BARAKA/ }));
+  return { espion };
 }
 
 describe("site vitrine", () => {
@@ -79,7 +57,7 @@ describe("site vitrine", () => {
     expect(cartes).toHaveLength(10);
     for (const c of cartes) expect((c as HTMLButtonElement).disabled).toBe(true);
     // Aucun lecteur Vimeo chargé avant un clic.
-    expect(document.querySelector("iframe")).toBeNull();
+    expect(document.querySelector('iframe[src*="vimeo"]')).toBeNull();
   });
 
   it("le pied de page porte le bloc légal et les quatre liens", () => {
@@ -97,76 +75,25 @@ describe("site vitrine", () => {
     expect(mentions.getAttribute("target")).toBe("_blank");
   });
 
-  it("n'envoie rien tant que le formulaire est incomplet, et désigne les champs", async () => {
-    const { envois } = reseau();
+  it("propose l'agenda Calendly du site, et plus aucun formulaire", () => {
+    const { espion } = reseau();
     render(<VitrineApp />);
-    await screen.findByLabelText("Prénom");
-    // Rien d'affiché avant d'avoir quitté un champ.
-    expect(screen.queryByText("Merci d’indiquer un email valide")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Demander un rendez-vous" }));
-    expect(await screen.findByText("Merci d’indiquer un email valide")).toBeTruthy();
-    expect(screen.getByText("Merci de cocher cette case pour être recontacté")).toBeTruthy();
-    expect(envois()).toHaveLength(0);
-    // Le premier champ fautif reçoit le focus.
-    expect(document.activeElement?.id).toBe("rdv-prenom");
+    const agenda = screen.getByTitle("Choisir un créneau de rendez-vous") as HTMLIFrameElement;
+    expect(agenda.src.startsWith("https://calendly.com/d/dz73-r3j-q2v/site-web-al-baraka?")).toBe(true);
+    expect(agenda.getAttribute("loading")).toBe("lazy");
+    expect(screen.queryByRole("button", { name: "Demander un rendez-vous" })).toBeNull();
+    // Plus aucun envoi vers tunnel-lead-submit : c'est le webhook Calendly qui crée le lead.
+    expect(espion.mock.calls.some(([u]) => String(u).includes("tunnel-lead-submit"))).toBe(false);
   });
 
-  it("envoie une demande valide comme un lead « site_vitrine », sans consentement marketing", async () => {
-    const { envois } = reseau({ envoi: () => new Response('{"ok":true}', { status: 200 }) });
-    render(<VitrineApp />);
-    await remplir();
-    fireEvent.click(screen.getByRole("button", { name: "Demander un rendez-vous" }));
-
-    await waitFor(() => expect(envois()).toHaveLength(1));
-    const [url, init] = envois()[0] as [string, RequestInit];
-    expect(url).toBe(`${SUPABASE_URL}/functions/v1/tunnel-lead-submit`);
-    const corps = JSON.parse(String(init.body));
-    expect(corps).toMatchObject({
-      first_name: "Yasmine",
-      last_name: "Benali",
-      email: "yasmine@example.com",
-      phone: "+33612345678",
-      situation: "J’ai déjà une activité et je veux la développer",
-      source: "site_vitrine",
-      consentement_contact: true,
-      consentement_marketing: false,
-    });
-    // Puis la page de confirmation.
-    expect(await screen.findByText("Demande reçue")).toBeTruthy();
-    expect(window.location.pathname).toBe("/site-vitrine/merci");
-  });
-
-  it("garde la saisie et prévient si l'envoi échoue", async () => {
-    reseau({ envoi: () => new Response("boom", { status: 500 }) });
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    render(<VitrineApp />);
-    await remplir();
-    fireEvent.click(screen.getByRole("button", { name: "Demander un rendez-vous" }));
-    expect(await screen.findByRole("alert")).toBeTruthy();
-    expect((screen.getByLabelText("Prénom") as HTMLInputElement).value).toBe("Yasmine");
-    expect((screen.getByRole("button", { name: "Demander un rendez-vous" }) as HTMLButtonElement).disabled).toBe(false);
-  });
-
-  it("le champ piège arrête un robot sans rien envoyer", async () => {
-    const { envois } = reseau();
-    const { container } = render(<VitrineApp />);
-    await remplir();
-    fireEvent.change(container.querySelector('input[name="site_web"]')!, { target: { value: "http://spam.example" } });
-    fireEvent.click(screen.getByRole("button", { name: "Demander un rendez-vous" }));
-    expect(await screen.findByText("Demande reçue")).toBeTruthy();
-    expect(envois()).toHaveLength(0);
-  });
-
-  it("garde les UTM de l'arrivée pour les envoyer avec la demande", async () => {
+  it("transmet à Calendly les UTM de l'arrivée", () => {
     window.history.pushState({}, "", "/site-vitrine/?utm_source=instagram&utm_medium=bio");
-    const { envois } = reseau();
+    reseau();
     render(<VitrineApp />);
-    await remplir();
-    fireEvent.click(screen.getByRole("button", { name: "Demander un rendez-vous" }));
-    await waitFor(() => expect(envois()).toHaveLength(1));
-    const corps = JSON.parse(String((envois()[0] as [string, RequestInit])[1].body));
-    expect(corps.utm_source).toBe("instagram");
-    expect(corps.utm_medium).toBe("bio");
+    const src = new URL((screen.getByTitle("Choisir un créneau de rendez-vous") as HTMLIFrameElement).src);
+    expect(src.searchParams.get("utm_source")).toBe("instagram");
+    expect(src.searchParams.get("utm_medium")).toBe("bio");
+    expect(src.searchParams.get("embed_type")).toBe("Inline");
   });
 });
 
@@ -180,9 +107,9 @@ describe("témoignages publiés depuis la plateforme", () => {
     render(<VitrineApp />);
     const carte = await screen.findByRole("button", { name: "Lire le témoignage de Miradie, Setter" });
     expect(screen.queryByText("[Prénom]")).toBeNull();
-    expect(document.querySelector("iframe")).toBeNull();
+    expect(document.querySelector('iframe[src*="vimeo"]')).toBeNull();
     fireEvent.click(carte);
-    const lecteur = document.querySelector("iframe")!;
+    const lecteur = document.querySelector('iframe[src*="vimeo"]') as HTMLIFrameElement;
     expect(lecteur.src).toContain("https://player.vimeo.com/video/123456789?h=abcdef1234&dnt=1");
   });
 

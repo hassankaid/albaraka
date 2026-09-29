@@ -1,5 +1,5 @@
 // La page d'accueil du site vitrine : six blocs, dans l'ordre du cahier (§3).
-import { lazy, Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ACCUEIL, HISTOIRE, MISSION, RENDEZ_VOUS, RETOURS, REFERENCEMENT } from "../contenu";
 import { TEMOIGNAGES_DE_RESERVE, lireTemoignagesPublies, type Temoignage } from "../temoignages";
 import { SUPABASE_CLE_PUBLIQUE, SUPABASE_URL } from "../api";
@@ -8,12 +8,7 @@ import Carrousel from "../composants/Carrousel";
 import { Coche, Etoile, Fleche, IconePilier } from "../composants/Icones";
 import portrait from "../assets/portrait-sidali.webp";
 
-// Le formulaire est tout en bas de page, et il embarque la bibliothèque des
-// numéros de téléphone (la plus lourde du site). Chargé à part, il ne retarde
-// pas le premier affichage ; `VitrineApp` le précharge dès que la page est
-// au repos, pour qu'il soit prêt bien avant qu'on l'atteigne.
-export const chargerFormulaire = () => import("../composants/FormulaireRdv");
-const FormulaireRdv = lazy(chargerFormulaire);
+import AgendaCalendly from "../composants/AgendaCalendly";
 
 /**
  * Halo or partant du bas-centre et trois arches concentriques qui
@@ -242,10 +237,8 @@ export default function Accueil() {
                 ))}
               </ul>
             </div>
-            {/* Même hauteur que le formulaire : rien ne saute à son arrivée. */}
-            <Suspense fallback={<div className="v-formulaire" style={{ minHeight: 560 }} aria-busy="true" />}>
-              <FormulaireRdv />
-            </Suspense>
+            {/* Le formulaire a laissé place à l'agenda Calendly le 29/09/2026. */}
+            <AgendaCalendly />
           </div>
         </div>
       </section>

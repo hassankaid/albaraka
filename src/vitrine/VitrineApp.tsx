@@ -24,7 +24,7 @@ import { PRIMARY_APP_HOST } from "@/lib/impersonation";
 import { isVitrineHost, VITRINE_PREFIXE } from "@/lib/hosts";
 import Menu from "./composants/Menu";
 import PiedDePage from "./composants/PiedDePage";
-import Accueil, { chargerFormulaire } from "./pages/Accueil";
+import Accueil from "./pages/Accueil";
 import Merci from "./pages/Merci";
 import { capterAttribution } from "./api";
 
@@ -89,11 +89,6 @@ function Cadre({ children }: { children: React.ReactNode }) {
 export default function VitrineApp() {
   useEffect(() => {
     capterAttribution();
-    // Préchargement du formulaire une fois la page affichée et au repos.
-    const w = window as Window & { requestIdleCallback?: (f: () => void) => number };
-    const precharger = () => void chargerFormulaire();
-    if (w.requestIdleCallback) w.requestIdleCallback(precharger);
-    else window.setTimeout(precharger, 1500);
   }, []);
 
   const legale = (texte: typeof MENTIONS_LEGALES) => (

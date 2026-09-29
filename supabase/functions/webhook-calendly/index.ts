@@ -6,6 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const SITE_VITRINE = 'site_vitrine'
+
 const EVENT_TYPE_MAPPING: Record<string, string> = {
   // ── Agendas VIVANTS (verifies via l'API Calendly le 24/08/2026) ──
   '29475949-1729-46d9-a073-9587e8a655c5': 'inscription_conference', // /appel-conference
@@ -20,6 +22,11 @@ const EVENT_TYPE_MAPPING: Record<string, string> = {
   'db3f5dde-0a79-4130-9a28-709478fa9835': 'tunnel_liberty',         // event.../liberty
   '7becdc54-4834-4863-8eab-fab2af2928c0': 'al_baraka_200',          // event.../al-baraka-200
   'd81763ec-39d2-4ca0-be42-fc61f04fd484': 'rediffusion_conference', // /redif et /rdv-rediffusion
+
+  // ── Site vitrine (29/09/2026) : calendly.com/d/dz73-r3j-q2v/site-web-al-baraka ──
+  // Remplace le formulaire du site. UUID lu sur l'API publique de reservation
+  // (scheduling_links/dz73-r3j-q2v -> share 1376eaf2-… -> event_types/lookup).
+  '655fa72e-bde0-4a12-a6bf-b10cf1d5fe68': SITE_VITRINE,
 
   // ── Agendas SUPPRIMES (round-robin perdus avec les licences, 08/2026) ──
   // Conserves VOLONTAIREMENT : `replay-calendly-webhook` peut rejouer un
@@ -175,9 +182,50 @@ export async function processCalendlyPayload(payload: any, supabase: any): Promi
   }
 
   // Lead existant (le plus récent non converti)
-  const { data: existingLead } = await supabase
+  let { data: existingLead } = await supabase
     .from('leads').select('id').eq('contact_id', contactId).neq('status', 'converti')
     .order('created_at', { ascending: false }).limit(1).maybeSingle()
+
+  // Site vitrine : la réservation EST la demande. Elle doit apparaître dans les
+  // Leads sous « Site vitrine » (organique), comme le faisait le formulaire —
+  // décision Hassan du 28/09, reconduite le 29/09 avec l'agenda Calendly.
+  // Titulaire = le commercial que le round-robin a désigné pour l'appel : le
+  // lead et le rendez-vous restent chez la même personne. Une fiche site
+  // encore ouverte est réutilisée (replanification), pas dupliquée.
+  if (eventType === SITE_VITRINE) {
+    const { data: ficheSite } = await supabase
+      .from('leads').select('id').eq('contact_id', contactId).eq('source', SITE_VITRINE)
+      .not('status', 'in', '(close,perdu)')
+      .order('created_at', { ascending: false }).limit(1).maybeSingle()
+    if (ficheSite) {
+      existingLead = ficheSite
+      await supabase.from('leads').update({ status: 'call_booke' }).eq('id', ficheSite.id)
+    } else {
+      const tracking = data.tracking || {}
+      const quand = scheduledAt
+        ? new Date(scheduledAt).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'full', timeStyle: 'short' })
+        : 'date inconnue'
+      const { data: nouveau, error: leadError } = await supabase
+        .from('leads').insert({
+          contact_id: contactId,
+          source: SITE_VITRINE,
+          status: 'call_booke',
+          assigned_to: assignedTo,
+          assigned_at: assignedTo ? new Date().toISOString() : null,
+          raw_full_name: fullName,
+          raw_email: email,
+          raw_phone: phone,
+          notes: `Rendez-vous pris sur le site vitrine (Calendly) pour le ${quand}.`,
+          utm_source: tracking.utm_source || null,
+          utm_medium: tracking.utm_medium || null,
+          utm_campaign: tracking.utm_campaign || null,
+          utm_content: tracking.utm_content || null,
+          utm_term: tracking.utm_term || null,
+        }).select('id').single()
+      if (leadError) return { success: false, error: `Insert lead site vitrine: ${leadError.message}` }
+      existingLead = nouveau
+    }
+  }
 
   // Replanification ?
   const { data: canceledCall } = await supabase

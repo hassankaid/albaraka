@@ -1683,3 +1683,29 @@ select.v-saisie:invalid {
     animation: none !important;
   }
 }
+
+/* ── Agenda Calendly (remplace le formulaire le 29/09/2026) ──────────────
+   Hauteur d'attente proche de celle que Calendly annonce ensuite par
+   message : la section ne saute presque pas quand l'agenda s'affiche. */
+.v-agenda {
+  border-radius: 26px;
+  overflow: hidden;
+  background: #0c0b08;
+  border: 1px solid var(--v-bord);
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+}
+.v-agenda-cadre {
+  display: block;
+  width: 100%;
+  height: 700px;
+  border: 0;
+  background: #0c0b08;
+}
+@media (max-width: 767px) {
+  .v-agenda {
+    border-radius: 18px;
+  }
+  .v-agenda-cadre {
+    height: 1000px;
+  }
+}

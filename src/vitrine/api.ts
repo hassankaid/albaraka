@@ -1,20 +1,16 @@
 // ─────────────────────────────────────────────────────────────────────────
-// Envoi d'une demande de rendez-vous du site vitrine.
+// Ce que le site vitrine partage avec Supabase : lecture des témoignages et
+// attribution (UTM) de la visite.
 //
-// Même chemin que les tunnels (décision de Hassan le 28/09/2026) : l'edge
-// function publique `tunnel-lead-submit` crée le contact et le lead dans le
-// CRM, non assigné, au statut « à qualifier », dédoublonné, UTM compris.
-// La source est `site_vitrine` — libellé « Site vitrine », classée organique.
-//
-// ⚠️ LA FONCTION DOIT CONNAÎTRE `site_vitrine` AVANT LA MISE EN LIGNE. Son
-// filet est silencieux : une source inconnue n'échoue pas, elle est comptée
-// en `webi_wa_direct`, donc comme un inscrit à la conférence venu en direct.
-// Trois endroits vont ensemble : `leads_source_check` en base,
-// `ALLOWED_SOURCES` dans la fonction, et le libellé de `leadConfig.ts`.
+// Depuis le 29/09/2026, les rendez-vous passent par l'agenda Calendly
+// (composants/AgendaCalendly.tsx) et non plus par un formulaire : c'est le
+// webhook Calendly qui crée le lead `site_vitrine` (« Site vitrine »,
+// organique). `tunnel-lead-submit` accepte toujours cette source, sans usage
+// aujourd'hui.
 //
 // ⚠️ ON N'IMPORTE PAS `@/integrations/supabase/client`. Ce module crée le
 // client Supabase au chargement : tout le SDK partirait dans le site vitrine,
-// qui n'en a pas besoin pour un seul POST. L'URL et la clé publique sont
+// qui n'en a pas besoin pour une seule lecture. L'URL et la clé publique sont
 // recopiées ici — une clé « anon », publique par nature — et
 // `api.test.ts` vérifie qu'elles restent identiques à celles du client.
 // ─────────────────────────────────────────────────────────────────────────
@@ -40,7 +36,7 @@ const UTM = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_ter
 
 /**
  * Lue à l'arrivée sur le site, puis gardée pour la session : le visiteur
- * remplit souvent le formulaire après avoir fait défiler la page, et l'URL
+ * prend souvent rendez-vous après avoir fait défiler la page, et l'URL
  * peut avoir perdu ses paramètres entre-temps (clic sur une ancre).
  * Première touche : une arrivée sans UTM n'efface pas celle qui en avait.
  */
@@ -81,52 +77,5 @@ export function lireAttribution(): Attribution | null {
     return brut ? (JSON.parse(brut) as Attribution) : null;
   } catch {
     return null;
-  }
-}
-
-export interface DemandeRendezVous {
-  prenom: string;
-  nom: string;
-  email: string;
-  /** Format international E.164 (+33…). */
-  telephone: string;
-  situation: string;
-}
-
-export async function envoyerDemande(d: DemandeRendezVous): Promise<void> {
-  const a = lireAttribution();
-  const corps = {
-    first_name: d.prenom.trim(),
-    last_name: d.nom.trim(),
-    email: d.email.trim(),
-    phone: d.telephone,
-    situation: d.situation,
-    source: SOURCE_SITE_VITRINE,
-    // La case du formulaire autorise à RECONTACTER, pas à prospecter : ce
-    // n'est pas un consentement marketing (cahier §6.2 : « Ne pas envoyer de
-    // newsletter à ces contacts sans consentement marketing séparé »).
-    consentement_contact: true,
-    consentement_marketing: false,
-    page: typeof window !== "undefined" ? window.location.pathname : null,
-    utm_source: a?.utm_source ?? null,
-    utm_medium: a?.utm_medium ?? null,
-    utm_campaign: a?.utm_campaign ?? null,
-    utm_content: a?.utm_content ?? null,
-    utm_term: a?.utm_term ?? null,
-    referrer: a?.referrer ?? null,
-  };
-
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/tunnel-lead-submit`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: SUPABASE_CLE_PUBLIQUE,
-      Authorization: `Bearer ${SUPABASE_CLE_PUBLIQUE}`,
-    },
-    body: JSON.stringify(corps),
-  });
-  if (!res.ok) {
-    const texte = await res.text().catch(() => "");
-    throw new Error(`HTTP ${res.status} ${texte.slice(0, 200)}`);
   }
 }
