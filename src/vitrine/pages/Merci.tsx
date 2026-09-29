@@ -1,12 +1,11 @@
-// Étape 2 du funnel : la confirmation de la demande (cahier §7).
+// Étape 2 du funnel : la confirmation du rendez-vous (cahier §7).
 //
 // Même charte que l'accueil, menu et pied de page identiques, contenu court et
-// centré. Textes « proposés, à valider par Sidali », repris tels quels.
-//
-// Pas d'agenda Calendly ici (option du cahier) : le process des tunnels, retenu
-// par Hassan le 28/09/2026, veut que ce soit le setter qui rappelle.
-// Pas d'événement « Lead » non plus : aucun pixel sur ce site, faute de
-// publicité qui y mène.
+// centré. Depuis le 29/09/2026, on y arrive après une réservation dans
+// l'agenda Calendly (AgendaCalendly redirige ici sur `calendly.event_scheduled`) ;
+// ses textes ont été réécrits en conséquence (voir TEXTES_HORS_CAHIER).
+// Pas d'événement « Lead » : aucun pixel sur ce site, faute de publicité qui
+// y mène.
 import { useEffect } from "react";
 import { MERCI, REFERENCEMENT } from "../contenu";
 import Or from "../composants/Or";
@@ -16,7 +15,7 @@ export default function Merci() {
   const ancre = useAncre();
 
   useEffect(() => {
-    document.title = `Demande reçue – ${REFERENCEMENT.titre}`;
+    document.title = `${MERCI.etiquette} – ${REFERENCEMENT.titre}`;
     return () => {
       document.title = REFERENCEMENT.titre;
     };

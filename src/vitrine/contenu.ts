@@ -98,11 +98,17 @@ export const RETOURS = {
   consigneMobile: "Faites défiler pour voir les 10 témoignages",
 } as const;
 
+/**
+ * ⚠️ `texte` RÉÉCRIT le 29/09/2026 (demande de Hassan) : le formulaire a laissé
+ * place à l'agenda Calendly, et le texte du cahier (« Laissez vos coordonnées.
+ * Notre équipe vous recontacte pour convenir d'un échange… ») décrivait
+ * l'ancien parcours. Voir TEXTES_HORS_CAHIER.
+ */
 export const RENDEZ_VOUS = {
   etiquette: "Prendre rendez-vous",
   titre: "Parlons de {votre projet.}",
   texte:
-    "Laissez vos coordonnées. Notre équipe vous recontacte pour convenir d’un échange et étudier votre projet avec vous.",
+    "Choisissez le créneau qui vous convient. Un membre de notre équipe vous appelle à l’heure prévue pour échanger sur votre projet et l’étudier avec vous.",
   pointsRassurants: [
     "Un échange personnalisé",
     "Une étude sérieuse de votre situation",
@@ -148,15 +154,21 @@ export const FORMULAIRE = {
   },
 } as const;
 
-/** Chapitre 7 — « Textes proposés, à valider par Sidali ». Repris tels quels. */
+/**
+ * Chapitre 7. RÉÉCRIT le 29/09/2026 (demande de Hassan) pour l'agenda
+ * Calendly : la page s'affiche après une réservation, et non plus après une
+ * demande de rappel. Seuls la dernière étape et le bouton restent ceux du
+ * cahier. Voir TEXTES_HORS_CAHIER.
+ */
 export const MERCI = {
-  etiquette: "Demande reçue",
-  titre: "Merci, {votre demande est bien reçue.}",
+  etiquette: "Rendez-vous confirmé",
+  // Trait d'union INSÉCABLE (U+2011) : sinon « rendez- / vous » se coupe en fin de ligne.
+  titre: "Merci, {votre rendez‑vous est bien enregistré.}",
   texte:
-    "Notre équipe étudie votre projet et vous recontacte très prochainement par WhatsApp ou par téléphone.",
+    "Vous allez recevoir un email de confirmation. Un membre de notre équipe vous appellera au créneau choisi, au numéro que vous avez indiqué.",
   etapes: [
-    "Nous étudions votre situation.",
-    "Nous vous contactons pour convenir d’un échange.",
+    "Vous recevez la confirmation par email.",
+    "Nous vous appelons au créneau choisi.",
     "Nous définissons ensemble le parcours adapté à votre projet.",
   ],
   bouton: "Revoir les témoignages",
@@ -174,3 +186,18 @@ export const REFERENCEMENT = {
   altPortrait: "Portrait de Sidali, fondateur d’AL BARAKA Écosystème",
   altLogo: "AL BARAKA Écosystème by Ethicarena",
 } as const;
+
+/**
+ * Les seuls textes du site qui ne viennent pas du cahier de Sidali : réécrits
+ * le 29/09/2026 à la demande de Hassan, quand l'agenda Calendly a remplacé le
+ * formulaire. `contenu.test.ts` les exempte de la comparaison mot pour mot —
+ * et n'exempte qu'eux.
+ */
+export const TEXTES_HORS_CAHIER: readonly string[] = [
+  RENDEZ_VOUS.texte,
+  MERCI.etiquette,
+  MERCI.titre,
+  MERCI.texte,
+  MERCI.etapes[0],
+  MERCI.etapes[1],
+];

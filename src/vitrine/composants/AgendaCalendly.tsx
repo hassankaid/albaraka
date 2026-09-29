@@ -14,9 +14,12 @@
 //  • les UTM captés à l'arrivée sont transmis à Calendly, qui les renvoie dans
 //    le webhook (`tracking`) : l'origine du lead est conservée ;
 //  • Calendly signale la hauteur de sa page (`calendly.page_height`) : on s'y
-//    ajuste, pour éviter une barre de défilement dans la section.
+//    ajuste, pour éviter une barre de défilement dans la section ;
+//  • une fois le créneau réservé (`calendly.event_scheduled`), le visiteur
+//    arrive sur /merci, la confirmation aux couleurs du site.
 // ─────────────────────────────────────────────────────────────────────────
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { capterAttribution, type Attribution } from "../api";
 
 export const LIEN_AGENDA = "https://calendly.com/d/dz73-r3j-q2v/site-web-al-baraka";
@@ -47,7 +50,13 @@ export function hauteurCalendly(message: unknown): number | null {
   return Number.isFinite(h) && h > 200 && h < 3000 ? h : null;
 }
 
+/** Le message que Calendly envoie quand le créneau est réservé. */
+export function estReservation(message: unknown): boolean {
+  return (message as { event?: string } | null)?.event === "calendly.event_scheduled";
+}
+
 export default function AgendaCalendly() {
+  const naviguer = useNavigate();
   const [hauteur, setHauteur] = useState<number | null>(null);
   const cadre = useRef<HTMLIFrameElement>(null);
   // capterAttribution et non lireAttribution : l'agenda est rendu AVANT l'effet
@@ -59,12 +68,16 @@ export default function AgendaCalendly() {
   useEffect(() => {
     const ecouter = (e: MessageEvent) => {
       if (e.origin !== "https://calendly.com" || e.source !== cadre.current?.contentWindow) return;
+      if (estReservation(e.data)) {
+        naviguer("/merci");
+        return;
+      }
       const h = hauteurCalendly(e.data);
       if (h) setHauteur(h);
     };
     window.addEventListener("message", ecouter);
     return () => window.removeEventListener("message", ecouter);
-  }, []);
+  }, [naviguer]);
 
   return (
     <div className="v-agenda">

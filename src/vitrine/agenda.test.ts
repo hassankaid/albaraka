@@ -8,7 +8,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { LIEN_AGENDA, hauteurCalendly, urlAgenda } from "./composants/AgendaCalendly";
+import { LIEN_AGENDA, estReservation, hauteurCalendly, urlAgenda } from "./composants/AgendaCalendly";
 
 const WEBHOOK = readFileSync(resolve(process.cwd(), "supabase/functions/webhook-calendly/index.ts"), "utf-8");
 
@@ -39,5 +39,11 @@ describe("agenda Calendly du site", () => {
     expect(hauteurCalendly({ event: "calendly.event_scheduled", payload: {} })).toBeNull();
     expect(hauteurCalendly({ event: "calendly.page_height", payload: { height: "99999" } })).toBeNull();
     expect(hauteurCalendly(null)).toBeNull();
+  });
+
+  it("reconnaît la réservation, qui mène à la page de confirmation", () => {
+    expect(estReservation({ event: "calendly.event_scheduled", payload: {} })).toBe(true);
+    expect(estReservation({ event: "calendly.page_height", payload: { height: "600" } })).toBe(false);
+    expect(estReservation("calendly.event_scheduled")).toBe(false);
   });
 });

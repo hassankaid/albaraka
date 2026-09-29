@@ -52,10 +52,19 @@ describe("textes repris mot pour mot du cahier", () => {
       for (const t of chaines(bloc)) {
         if (["maison", "cible", "coche"].includes(t)) continue; // noms d'icônes
         if (["histoire", "mission", "retours"].includes(t)) continue; // ancres
+        if (C.TEXTES_HORS_CAHIER.includes(t)) continue; // réécrits le 29/09/2026 (agenda Calendly)
         expect(CAHIER.includes(t), `absent du cahier : « ${t} »`).toBe(true);
       }
     });
   }
+
+  it("l'exemption se limite aux textes réécrits pour l'agenda, et ceux-ci ne parlent plus de rappel", () => {
+    expect(C.TEXTES_HORS_CAHIER).toHaveLength(6);
+    for (const t of C.TEXTES_HORS_CAHIER) {
+      expect(CAHIER.includes(t), `déjà dans le cahier, l'exemption est inutile : « ${t} »`).toBe(false);
+      expect(t).not.toMatch(/coordonnées|recontacte|WhatsApp|convenir d’un échange/);
+    }
+  });
 
   it("les chiffres de « Notre histoire » recomposent les lignes du cahier", () => {
     for (const c of C.HISTOIRE.chiffres) {
