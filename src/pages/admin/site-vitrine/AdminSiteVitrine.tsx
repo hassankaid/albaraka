@@ -9,11 +9,17 @@
 // extraits. La miniature est récupérée ici, une fois pour toutes, et
 // enregistrée : le site ne contacte pas Vimeo avant le clic du visiteur.
 //
+// Côté Vimeo, chaque ajout est préparé par la fonction
+// `vimeo-preparer-temoignages` : domaines du site autorisés, hash et miniature
+// enregistrés. Sans cela, le lecteur affichait « changez les paramètres de
+// confidentialité » (29/09/2026). Le bouton « Vérifier sur Vimeo » rejoue le
+// tout sur l'ensemble de la liste.
+//
 // Réservé au CEO — la base l'impose aussi (politique `temoignages_vitrine_ceo`).
 // ─────────────────────────────────────────────────────────────────────────
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, ExternalLink, Globe, Loader2, Plus, Trash2, Video } from "lucide-react";
+import { ArrowDown, ArrowUp, ExternalLink, Globe, Loader2, Plus, RefreshCw, Trash2, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -73,6 +79,34 @@ async function chercherMiniature(vimeoId: string, hash: string | null): Promise<
   } catch {
     return null;
   }
+}
+
+interface BilanVimeo {
+  videos: { vimeo_id: string; prenoms: string[]; domaines_ajoutes: string[]; hash_enregistre: boolean; erreur: string | null }[];
+  erreurs: number;
+  doublons: Record<string, string[]>;
+}
+
+/** Autorise le site sur Vimeo et complète hash + miniature (une vidéo, ou toutes). */
+async function preparerSurVimeo(vimeoId?: string): Promise<BilanVimeo> {
+  const { data, error } = await supabase.functions.invoke("vimeo-preparer-temoignages", {
+    body: vimeoId ? { vimeo_id: vimeoId } : {},
+  });
+  if (error) throw error;
+  return data as BilanVimeo;
+}
+
+/** Une phrase lisible pour le CEO à partir du bilan. */
+function resumerBilan(b: BilanVimeo): string {
+  const erreurs = b.videos.filter((v) => v.erreur).map((v) => `${v.prenoms.join(" / ")} : ${v.erreur}`);
+  const corrigees = b.videos.filter((v) => !v.erreur && (v.domaines_ajoutes.length || v.hash_enregistre)).length;
+  const phrases = [
+    erreurs.length ? erreurs.join(" · ") : null,
+    corrigees ? `${corrigees} vidéo${corrigees > 1 ? "s" : ""} corrigée${corrigees > 1 ? "s" : ""} sur Vimeo.` : null,
+    !erreurs.length && !corrigees ? "Tout était déjà en ordre sur Vimeo." : null,
+    ...Object.values(b.doublons).map((p) => `${p.join(" et ")} utilisent la même vidéo.`),
+  ];
+  return phrases.filter(Boolean).join(" ");
 }
 
 function ChampModifiable({
@@ -143,21 +177,40 @@ export default function AdminSiteVitrine() {
         ordre,
       });
       if (error) throw error;
-      return { miniature, hash: lu.hash };
+      // Le témoignage est enregistré ; si Vimeo échoue, on le dit sans annuler l'ajout.
+      try {
+        return { bilan: await preparerSurVimeo(lu.vimeoId), erreurVimeo: null };
+      } catch (e) {
+        return { bilan: null, erreurVimeo: (e as Error)?.message ?? "échec" };
+      }
     },
-    onSuccess: ({ miniature, hash }) => {
+    onSuccess: ({ bilan, erreurVimeo }) => {
       setLien("");
       setPrenom("");
       setActivite("");
       rafraichir();
+      const erreur = erreurVimeo ?? bilan?.videos.find((v) => v.erreur)?.erreur;
       toast({
-        title: "Témoignage ajouté",
-        description: [
-          !hash && "Aucun hash dans le lien : si la vidéo est masquée de Vimeo, le lecteur refusera de démarrer.",
-          !miniature && "Miniature introuvable : la carte gardera son fond doré.",
-        ]
-          .filter(Boolean)
-          .join(" ") || undefined,
+        title: erreur ? "Témoignage ajouté, mais Vimeo n'est pas prêt" : "Témoignage ajouté et prêt sur le site",
+        description: erreur
+          ? `${erreur}. Le lecteur risque de refuser de s'ouvrir sur le site : réessayez avec « Vérifier sur Vimeo ».`
+          : bilan && Object.keys(bilan.doublons).length
+            ? resumerBilan({ ...bilan, videos: [] })
+            : undefined,
+        variant: erreur ? "destructive" : undefined,
+      });
+    },
+    onError: echec,
+  });
+
+  const verification = useMutation({
+    mutationFn: () => preparerSurVimeo(),
+    onSuccess: (bilan) => {
+      rafraichir();
+      toast({
+        title: bilan.erreurs ? "Vérification Vimeo : à corriger" : "Vérification Vimeo terminée",
+        description: resumerBilan(bilan),
+        variant: bilan.erreurs ? "destructive" : undefined,
       });
     },
     onError: echec,
@@ -207,6 +260,8 @@ export default function AdminSiteVitrine() {
   }
 
   const visibles = lignes.filter((l) => l.visible).length;
+  const parVideo = new Map<string, string[]>();
+  lignes.forEach((l) => parVideo.set(l.vimeo_id, [...(parVideo.get(l.vimeo_id) ?? []), l.prenom]));
 
   return (
     <div className="space-y-6">
@@ -263,9 +318,20 @@ export default function AdminSiteVitrine() {
             <CardTitle className="text-base">Témoignages</CardTitle>
             <CardDescription>Dans l'ordre d'affichage sur le site.</CardDescription>
           </div>
-          <Badge variant={visibles === NOMBRE_ANNONCE ? "secondary" : "outline"}>
-            {visibles} visible{visibles > 1 ? "s" : ""} sur {NOMBRE_ANNONCE} annoncés
-          </Badge>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Badge variant={visibles === NOMBRE_ANNONCE ? "secondary" : "outline"}>
+              {visibles} visible{visibles > 1 ? "s" : ""} sur {NOMBRE_ANNONCE} annoncés
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={verification.isPending || lignes.length === 0}
+              onClick={() => verification.mutate()}
+            >
+              {verification.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              Vérifier sur Vimeo
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           {visibles > 0 && visibles !== NOMBRE_ANNONCE && (
@@ -311,6 +377,11 @@ export default function AdminSiteVitrine() {
                     <ExternalLink className="h-3 w-3" />
                   </a>
                   {!l.hash && <Badge variant="outline">sans hash</Badge>}
+                  {(parVideo.get(l.vimeo_id)?.length ?? 0) > 1 && (
+                    <Badge variant="destructive">
+                      même vidéo que {parVideo.get(l.vimeo_id)!.filter((p) => p !== l.prenom).join(", ") || "un autre"}
+                    </Badge>
+                  )}
                   <label className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Switch checked={l.visible} onCheckedChange={(v) => maj.mutate({ id: l.id, champs: { visible: v } })} />
                     Visible
@@ -340,9 +411,8 @@ export default function AdminSiteVitrine() {
             </ol>
           )}
           <p className="pt-2 text-xs text-muted-foreground">
-            Côté Vimeo, chaque vidéo doit autoriser l'intégration sur <code>albarakaecosysteme.com</code> et{" "}
-            <code>www.albarakaecosysteme.com</code> (Paramètres de la vidéo → Intégration → domaines autorisés), sinon le
-            lecteur refuse de s'ouvrir sur le site.
+            À chaque ajout, la vidéo est automatiquement autorisée sur le site côté Vimeo. Si un visiteur voit « changez
+            les paramètres de confidentialité », cliquez sur « Vérifier sur Vimeo ».
           </p>
         </CardContent>
       </Card>

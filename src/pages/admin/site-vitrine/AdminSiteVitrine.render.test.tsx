@@ -14,6 +14,7 @@ const etat = vi.hoisted(() => ({
   role: "ceo",
   lignes: [] as Record<string, unknown>[],
   insertions: [] as Record<string, unknown>[],
+  appels: [] as { nom: string; body: unknown }[],
 }));
 
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ profile: { role: etat.role } }) }));
@@ -33,7 +34,13 @@ vi.mock("@/integrations/supabase/client", () => {
     b.then = (ok: (r: unknown) => unknown) => ok({ data: etat.lignes, error: null });
     return b;
   };
-  return { supabase: { from: () => constructeur() } };
+  const functions = {
+    invoke: (nom: string, { body }: { body: unknown }) => {
+      etat.appels.push({ nom, body });
+      return Promise.resolve({ data: { videos: [], erreurs: 0, doublons: {} }, error: null });
+    },
+  };
+  return { supabase: { from: () => constructeur(), functions } };
 });
 
 import AdminSiteVitrine from "./AdminSiteVitrine";
@@ -51,6 +58,7 @@ beforeEach(() => {
   etat.role = "ceo";
   etat.lignes = [];
   etat.insertions = [];
+  etat.appels = [];
   // L'oEmbed de Vimeo : on simule une miniature trouvée.
   vi.spyOn(globalThis, "fetch").mockResolvedValue(
     new Response(JSON.stringify({ thumbnail_url: "https://i.vimeocdn.com/video/1_640.jpg" }), { status: 200 }),
@@ -98,6 +106,19 @@ describe("administration du site vitrine", () => {
       activite: "Setter",
       ordre: 1,
     });
+    // Puis la vidéo est préparée sur Vimeo — sinon le site affiche l'écran de confidentialité.
+    await waitFor(() => expect(etat.appels).toHaveLength(1));
+    expect(etat.appels[0]).toEqual({ nom: "vimeo-preparer-temoignages", body: { vimeo_id: "987654321" } });
+  });
+
+  it("signale deux témoignages qui pointent sur la même vidéo", async () => {
+    etat.lignes = [
+      { id: "a", vimeo_id: "111111111", hash: "aaaaaa1111", miniature: null, prenom: "Aicha", activite: "Salariée", ordre: 1, visible: true },
+      { id: "b", vimeo_id: "111111111", hash: "aaaaaa1111", miniature: null, prenom: "Fatou", activite: "Etudiante", ordre: 2, visible: true },
+    ];
+    afficher();
+    expect(await screen.findByText("même vidéo que Fatou")).toBeTruthy();
+    expect(screen.getByText("même vidéo que Aicha")).toBeTruthy();
   });
 
   it("refuse un lien qui n'est pas un lien Vimeo, sans rien écrire", async () => {
