@@ -7,6 +7,11 @@
 // d'abord, complétion de la formation ensuite. Le hook useCoachingUnlocks lit
 // ce résultat et n'évalue plus rien.
 //
+// Depuis le 29/09/2026, AUCUN créneau n'exige de formation : les coachings
+// sont ouverts à tous les élèves (migration 20260929100000). Seule une
+// dérogation « bloqué » du CEO peut encore en fermer un. Les règles ci-dessous
+// ne servent qu'à rétablir une condition un jour, en base.
+//
 // Ce qui reste ici : les libellés et les slugs, pour le message affiché à
 // l'élève (« Termine la formation Setting », lien vers /training/setting).
 // Si vous changez la formation requise d'un créneau, c'est en base qu'il faut
