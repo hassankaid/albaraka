@@ -172,3 +172,14 @@ describe("GTM actif : mêmes garde-fous qu'avec le pixel", () => {
     expect(evenements().filter((e) => e === "alb_schedule")).toHaveLength(1);
   });
 });
+
+describe("la confirmation de /appel-conference compte le rendez-vous", () => {
+  it("identifie la réservation comme la confirmation du tunnel VSL (garde-fou actif)", async () => {
+    // Avant le 30/09/2026 elle appelait trackCalendlyBooked() sans réservation :
+    // aucun rendez-vous de cette page n'a jamais été compté.
+    const { readFileSync } = await import("node:fs");
+    const code = readFileSync(`${process.cwd()}/src/pages/tunnels/appel/AppelConfirmation.tsx`, "utf-8");
+    expect(code).not.toMatch(/trackCalendlyBooked\(\s*\)/);
+    expect(code).toMatch(/event_start_time[\s\S]*invitee_email/);
+  });
+});

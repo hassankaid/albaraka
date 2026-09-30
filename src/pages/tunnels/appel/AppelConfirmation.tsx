@@ -6,9 +6,14 @@
 // Redirect to an external site → https://event.albarakaecosysteme.com/appel-conference/confirmation,
 // avec « pass event details to your redirect » activé).
 //
-// Indépendante du tunnel VSL : PAS de prefill (aucun opt-in en amont) et PAS de
-// pixel Meta (trafic organique WhatsApp / conférence, hors funnel ads). On lit
+// Indépendante du tunnel VSL : PAS de prefill (aucun opt-in en amont). On lit
 // uniquement les paramètres que Calendly ajoute à l'URL de redirection.
+//
+// Le rendez-vous EST compté (« Schedule ») depuis le 30/09/2026 : ces appels
+// viennent de gens qui ont vu la conférence, souvent amenés par la pub, et
+// c'est la conversion la plus proche de la vente. Avant, l'appel se faisait
+// sans identifier la réservation — le garde-fou n'avait donc rien à compter,
+// et aucun rendez-vous de cette page n'a jamais remonté.
 // ─────────────────────────────────────────────────────────────────────────
 import { useEffect, useMemo } from "react";
 import { trackCalendlyBooked } from "../lib/pixel";
@@ -54,7 +59,11 @@ export default function AppelConfirmation() {
   }, []);
 
   useEffect(() => {
-    trackCalendlyBooked();
+    // L'identité de la réservation vient de Calendly, comme sur la
+    // confirmation du tunnel VSL : sans elle, rien n'est compté, et avec elle,
+    // un rechargement ne recompte pas.
+    const sp = new URLSearchParams(window.location.search);
+    trackCalendlyBooked([param(sp, "event_start_time"), param(sp, "invitee_email")].filter(Boolean).join("|"));
     ensureTunnelFonts();
     document.title = "Appel confirmé — Al Baraka";
   }, []);
