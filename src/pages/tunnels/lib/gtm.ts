@@ -32,6 +32,25 @@ import { TUNNEL_HOST } from "@/lib/hosts";
 
 export const GTM_ID = "GTM-K3VGV2PX";
 
+/**
+ * ⚠️ EN PAUSE depuis le 30/09/2026, quelques minutes après la mise en ligne.
+ *
+ * Le conteneur du media buyer contient déjà trois balises META, en plus de
+ * TikTok (lu dans gtm.js, public) :
+ *   - le pixel 1499213912013386 + PageView, sur toutes les pages ;
+ *   - ViewContent, sur toute adresse contenant « /webinaire » ;
+ *   - Lead, sur toute adresse contenant « /webinaire/merci » — donc à CHAQUE
+ *     affichage de la page de remerciement, inscription ou non.
+ * Avec notre pixel codé en dur (que Hassan a choisi de garder), Meta recevait
+ * tout en double, plus un faux Lead par rechargement : constaté en ligne,
+ * quatre requêtes au lieu de deux sur /webinaire.
+ *
+ * À repasser à `false` quand le media buyer aura retiré ses trois balises
+ * Meta du conteneur (TikTok peut rester). Vérifier alors dans gtm.js qu'il
+ * n'y a plus aucun « fbq ».
+ */
+export const GTM_EN_PAUSE = true;
+
 /** Les noms d'évènements communiqués au media buyer. Ne pas renommer sans le prévenir. */
 export const EVENEMENTS_GTM = {
   page: "alb_page_view",
@@ -68,7 +87,7 @@ export function tunnelDe(chemin: string): string {
 }
 
 function actif(chemin: string): boolean {
-  if (typeof window === "undefined") return false;
+  if (GTM_EN_PAUSE || typeof window === "undefined") return false;
   // Seulement sur le vrai domaine des tunnels : ni local, ni aperçu Vercel,
   // pour ne jamais polluer les données publicitaires pendant le développement.
   return window.location.hostname === TUNNEL_HOST && estPageGtm(chemin);

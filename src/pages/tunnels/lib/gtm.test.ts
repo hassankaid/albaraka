@@ -14,6 +14,7 @@
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { vi } from "vitest";
+import { GTM_EN_PAUSE } from "./gtm";
 
 const evenements = () => (window.dataLayer ?? []).map((e) => e.event).filter((e) => String(e).startsWith("alb_"));
 const allerSur = (chemin: string) => window.history.pushState({}, "", chemin);
@@ -61,7 +62,8 @@ describe("périmètre", () => {
   });
 });
 
-describe("chargement et évènements", () => {
+// Ces deux blocs décrivent GTM actif : ils reprennent dès que la pause est levée.
+describe.skipIf(GTM_EN_PAUSE)("chargement et évènements", () => {
   it("charge le bon conteneur, une seule fois, et signale chaque page", async () => {
     const { suivrePageGtm, GTM_ID } = await import("./gtm");
     suivrePageGtm("/webinaire");
@@ -85,7 +87,7 @@ describe("chargement et évènements", () => {
   });
 });
 
-describe("mêmes garde-fous que le pixel Meta", () => {
+describe.skipIf(GTM_EN_PAUSE)("mêmes garde-fous que le pixel Meta", () => {
   it("le Lead part une fois, puis plus au rechargement", async () => {
     allerSur("/vsl/merci");
     const { markLeadPending, trackTypLead } = await import("./pixel");
@@ -124,6 +126,17 @@ describe("mêmes garde-fous que le pixel Meta", () => {
     const { markLeadPending, trackTypLead } = await import("./pixel");
     markLeadPending();
     await trackTypLead();
+    expect(window.dataLayer).toBeUndefined();
+  });
+});
+
+describe.runIf(GTM_EN_PAUSE)("en pause", () => {
+  it("ne charge rien et ne pousse rien, même sur une page du périmètre", async () => {
+    const { suivrePageGtm } = await import("./gtm");
+    const { trackLandingView } = await import("./pixel");
+    suivrePageGtm("/webinaire");
+    trackLandingView();
+    expect(document.getElementById("alb-gtm")).toBeNull();
     expect(window.dataLayer).toBeUndefined();
   });
 });
