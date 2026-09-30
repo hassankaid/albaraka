@@ -34,7 +34,10 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
-const FROM_ADDR = "Sidali · AL BARAKA <conference@albarakaecosysteme.com>";
+// Expéditeur « personne » plutôt que « service » (29/09/2026, demande de
+// Hassan) : `conference@` faisait classer les mails dans l'onglet
+// Notifications de Gmail. Même domaine, donc même authentification.
+const FROM_ADDR = "Sidali <sidali@albarakaecosysteme.com>";
 const REPLY_TO = ["contact@albarakaecosysteme.com"];
 
 // Filets, utilisés seulement si la fiche est incomplète. Un e-mail sans bouton
@@ -120,69 +123,59 @@ async function resoudreFiche(supabase: any, demande?: string): Promise<Fiche | n
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// MISE EN PAGE SOBRE (29/09/2026, demande de Hassan).
+//
+// Les mails arrivaient dans l'onglet « Notifications » de Gmail : gabarit en
+// carte, gros boutons dorés, suivi Resend. On leur donne l'allure d'un mail
+// écrit par une personne — texte simple, liens texte — et une version texte
+// brut. Le suivi des ouvertures/clics est coupé chez Resend pour tout le
+// domaine. Le désabonnement en un clic RESTE (exigé par Gmail).
+//
+// Les anciens « boutons à toute épreuve » (bgcolor, bordure, adresse en clair
+// dessous) n'ont plus d'objet : un lien texte s'affiche partout.
+// La copy, elle, ne change pas d'un mot : les libellés des boutons deviennent
+// les textes des liens.
+// ─────────────────────────────────────────────────────────────────────────
 function wrap(preheader: string, body: string): string {
   return `<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>AL BARAKA</title></head>
-<body style="margin:0;padding:0;background-color:#f5f3ee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a;line-height:1.6;">
-<div style="display:none;font-size:1px;color:#f5f3ee;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${preheader}</div>
-<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#f5f3ee;padding:24px 0;">
-<tr><td align="center">
-<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width:600px;background-color:#ffffff;border-radius:8px;padding:32px 28px;">
-<tr><td style="font-size:15px;color:#1a1a1a;">
+<body style="margin:0;padding:16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#222222;line-height:1.55;">
+<div style="display:none;max-height:0;overflow:hidden;">${preheader}</div>
+<div style="max-width:600px;">
 ${body}
-<div style="margin-top:40px;padding-top:24px;border-top:1px solid #e5e1d7;font-size:12px;color:#7a7a7a;text-align:center;line-height:1.5;">
-AL BARAKA — Écosystème de l'entrepreneuriat halal<br>
-<a href="{{UNSUB_URL}}" style="color:#7a7a7a;text-decoration:underline;">Se désabonner</a>
+<p style="margin-top:32px;font-size:12px;color:#888888;">AL BARAKA — Écosystème de l'entrepreneuriat halal<br><a href="{{UNSUB_URL}}" style="color:#888888;">Se désabonner</a></p>
 </div>
-</td></tr></table></td></tr></table></body></html>`;
+</body></html>`;
 }
 
-// Bouton « à toute épreuve ».
-//
-// L'ancienne version était un simple <a> doré : `background-color` en CSS,
-// `color:#ffffff` par-dessus. Les clients qui filtrent le CSS des liens
-// (Outlook via le moteur Word, certains rendus en mode sombre) retiraient le
-// fond mais gardaient le texte blanc — bouton blanc sur carte blanche, donc
-// invisible, donc « pas cliquable » pour le lecteur.
-//
-// Trois protections :
-//   • l'attribut HTML `bgcolor` sur la cellule, qui survit là où le CSS tombe ;
-//   • une bordure de la même couleur, qui dessine le bouton même sans fond ;
-//   • sous le bouton, l'adresse en clair — un lecteur qui ne voit rien peut
-//     toujours la lire et la recopier. C'est le vrai filet.
+/** Version texte brut, tirée du HTML : un vrai mail personnel en a une. */
+function versionTexte(html: string): string {
+  return html
+    .replace(/<head>[\s\S]*?<\/head>/, "")
+    .replace(/<div style="display:none[^>]*>[\s\S]*?<\/div>/, "")
+    .replace(/<a href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g, (_, url, txt) => `${txt.replace(/<[^>]+>/g, "")} : ${url}`)
+    .replace(/<br\s*\/?>/g, "\n")
+    .replace(/<\/(p|li)>/g, "\n\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&#128073;/g, "👉").replace(/&#10145;/g, "➡").replace(/&hellip;/g, "…").replace(/&euro;/g, "€").replace(/&nbsp;/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/** Lien vers le groupe WhatsApp (ancien bouton, même libellé). */
 function cta(whatsapp: string): string {
-  const visible = whatsapp.replace(/^https?:\/\//, "");
-  return `<table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" style="margin:28px auto 10px;">
-<tr><td align="center" bgcolor="#C9A04E" style="background-color:#C9A04E;border:1px solid #C9A04E;border-radius:6px;">
-<a href="${whatsapp}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:6px;">► Je rejoins le groupe WhatsApp privé</a>
-</td></tr></table>
-<p style="text-align:center;font-size:13px;line-height:1.5;color:#7a7a7a;margin:0 0 22px;">Le bouton ne s'affiche pas ?<br><a href="${whatsapp}" target="_blank" style="color:#A8813A;text-decoration:underline;">${visible}</a></p>`;
+  return `<p><a href="${whatsapp}">► Je rejoins le groupe WhatsApp privé</a></p>`;
 }
-
 
 /**
- * Bouton vers le direct Zoom.
- *
- * Distinct de `cta()`, qui mene au groupe WhatsApp. Les deux coexistent : le
- * groupe reste le point de ralliement de la semaine, le lien Zoom ne vaut que
- * le jour meme, pendant la conference.
+ * Lien vers le direct Zoom, ou vers une autre page (vidéo, prise de rendez-vous).
+ * Le code Zoom reste affiché en repli, pour qui tape l'identifiant à la main.
  */
 function ctaZoom(url: string, libelle: string, code?: string | null): string {
-  const visible = url.replace(/^https?:\/\//, "");
-  // Le lien porte le code en paramètre : un clic suffit. Le code reste affiché
-  // en repli, pour les deux cas où le paramètre ne sert à rien — celui qui tape
-  // l'identifiant de réunion à la main dans l'application Zoom, et celui à qui
-  // on a recopié le lien sans sa fin. Vider la colonne retire cette ligne.
-  const bloc = code
-    ? `<p style="text-align:center;font-size:13px;line-height:1.5;color:#7a7a7a;margin:0 0 6px;">Si Zoom te demande un code : <strong style="color:#1a1a1a;letter-spacing:1px;">${code}</strong></p>`
-    : "";
-  return `<table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" style="margin:28px auto 10px;">
-<tr><td align="center" bgcolor="#C9A04E" style="background-color:#C9A04E;border:1px solid #C9A04E;border-radius:6px;">
-<a href="${url}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:6px;">${libelle}</a>
-</td></tr></table>
-${bloc}
-<p style="text-align:center;font-size:13px;line-height:1.5;color:#7a7a7a;margin:0 0 22px;">Le bouton ne s'affiche pas ?<br><a href="${url}" target="_blank" style="color:#A8813A;text-decoration:underline;">${visible}</a></p>`;
+  const bloc = code ? `\n<p>Si Zoom te demande un code : <strong>${code}</strong></p>` : "";
+  return `<p><a href="${url}">${libelle}</a></p>${bloc}`;
 }
 
 /**
@@ -200,12 +193,12 @@ const ZOOM_DEFAUT = "https://us06web.zoom.us/j/85455284733?pwd=pab2uafmwoZ0E12sv
  */
 function ctaVideo(url: string | null, numero: number): string {
   if (!url) {
-    return `<p style="text-align:center;font-size:15px;color:#7a7a7a;margin:24px 0;">(Lien vidéo ${numero})</p>`;
+    return `<p>(Lien vidéo ${numero})</p>`;
   }
   return ctaZoom(url, `&#128073; Voir la vidéo ${numero}`);
 }
 
-const SIG = `<p style="margin-top:24px;">Sidali<br><span style="color:#7a7a7a;">Fondateur de l'écosystème AL BARAKA</span></p>`;
+const SIG = `<p>Sidali<br>Fondateur de l'écosystème AL BARAKA</p>`;
 
 /** Prise de rendez-vous : parcours de qualification puis Calendly (route /rdv). */
 const RDV_URL = "https://plateforme.albarakaecosysteme.com/rdv";
@@ -698,6 +691,7 @@ serve(async (req) => {
       reply_to: REPLY_TO,
       subject: sujetTest,
       html: htmlTest,
+      text: versionTexte(htmlTest),
       ...(jetonTest
         ? { headers: { "List-Unsubscribe": `<${lienStop}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } }
         : {}),
@@ -834,7 +828,7 @@ serve(async (req) => {
         from: FROM_ADDR,
         to: [r.email],
         reply_to: REPLY_TO,
-        subject, html,
+        subject, html, text: versionTexte(html),
         ...(entetes ? { headers: entetes } : {}),
         tags: [
           { name: "campaign", value: fiche.campaign_slug },

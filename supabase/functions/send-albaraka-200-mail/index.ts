@@ -33,9 +33,11 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
-// Même expéditeur que les autres campagnes : c'est ce domaine dont
-// l'authentification (SPF, DKIM, DMARC) est établie et vérifiée.
-const FROM_ADDR = "Sidali · AL BARAKA <conference@albarakaecosysteme.com>";
+// Expéditeur « personne » plutôt que « service » (29/09/2026, demande de
+// Hassan) : `conference@` faisait classer les mails dans l'onglet
+// Notifications de Gmail. Même domaine, donc même authentification (SPF,
+// DKIM, DMARC) et même réputation.
+const FROM_ADDR = "Sidali <sidali@albarakaecosysteme.com>";
 const REPLY_TO = ["contact@albarakaecosysteme.com"];
 const UNSUB_BASE = "https://plateforme.albarakaecosysteme.com/stop";
 
@@ -52,40 +54,57 @@ function render(tpl: string, vars: Record<string, string>): string {
   return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// MISE EN PAGE SOBRE (29/09/2026, demande de Hassan).
+//
+// Les mails arrivaient dans l'onglet « Notifications » de Gmail : gabarit en
+// carte, gros boutons, suivi Resend. On leur donne l'allure d'un mail écrit
+// par une personne — texte simple, liens texte, pas de fond ni de bouton —
+// et une version texte brut. Le suivi des ouvertures/clics est coupé chez
+// Resend pour tout le domaine. Le lien de désabonnement en un clic RESTE :
+// Gmail l'exige au-delà de 5 000 mails par jour.
+//
+// La copy, elle, ne change pas d'un mot.
+// ─────────────────────────────────────────────────────────────────────────
 function wrap(preheader: string, body: string): string {
   return `<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>AL BARAKA</title></head>
-<body style="margin:0;padding:0;background-color:#f5f3ee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a;line-height:1.6;">
-<div style="display:none;font-size:1px;color:#f5f3ee;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${preheader}</div>
-<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#f5f3ee;padding:24px 0;">
-<tr><td align="center">
-<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width:600px;background-color:#ffffff;border-radius:8px;padding:32px 28px;">
-<tr><td style="font-size:15px;color:#1a1a1a;">
+<body style="margin:0;padding:16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#222222;line-height:1.55;">
+<div style="display:none;max-height:0;overflow:hidden;">${preheader}</div>
+<div style="max-width:600px;">
 ${body}
-<div style="margin-top:40px;padding-top:24px;border-top:1px solid #e5e1d7;font-size:12px;color:#7a7a7a;text-align:center;line-height:1.5;">
-AL BARAKA — Écosystème de l'entrepreneuriat halal<br>
-<a href="{{UNSUB_URL}}" style="color:#7a7a7a;text-decoration:underline;">Se désabonner</a>
+<p style="margin-top:32px;font-size:12px;color:#888888;">AL BARAKA — Écosystème de l'entrepreneuriat halal<br><a href="{{UNSUB_URL}}" style="color:#888888;">Se désabonner</a></p>
 </div>
-</td></tr></table></td></tr></table></body></html>`;
+</body></html>`;
 }
 
-/** Le lien de la copy, rendu cliquable. Le libellé est celui du document. */
+/** Le lien de la copy, en lien texte (plus de bouton). Le libellé est celui du document. */
 function cta(libelle: string): string {
-  return `<table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" style="margin:28px auto 10px;">
-<tr><td align="center" bgcolor="#C9A04E" style="background-color:#C9A04E;border:1px solid #C9A04E;border-radius:6px;">
-<a href="${LIEN_VIDEO}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:6px;">${libelle}</a>
-</td></tr></table>
-<p style="text-align:center;font-size:13px;line-height:1.5;color:#7a7a7a;margin:0 0 22px;">Le bouton ne s'affiche pas ?<br><a href="${LIEN_VIDEO}" target="_blank" style="color:#A8813A;text-decoration:underline;">Ouvrir la vidéo</a></p>`;
+  return `<p><a href="${LIEN_VIDEO}">${libelle}</a></p>`;
+}
+
+/** Version texte brut, tirée du HTML : un vrai mail personnel en a une. */
+export function versionTexte(html: string): string {
+  return html
+    .replace(/<head>[\s\S]*?<\/head>/, "")
+    .replace(/<div style="display:none[^>]*>[\s\S]*?<\/div>/, "")
+    .replace(/<a href="([^"]+)"[^>]*>([^<]*)<\/a>/g, (_, url, txt) => (txt === "Se désabonner" ? `Se désabonner : ${url}` : `${txt} : ${url}`))
+    .replace(/<br\s*\/?>/g, "\n")
+    .replace(/<\/p>/g, "\n\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 const p = (t: string) => `<p>${t}</p>`;
 
-const SIG = `<p style="margin-top:24px;">Sidali,<br><span style="color:#7a7a7a;">Fondateur de l'Écosystème Al Baraka</span></p>`;
+const SIG = `<p>Sidali,<br>Fondateur de l'Écosystème Al Baraka</p>`;
 
 /** « CLIQUE ICI » rendu cliquable, sans toucher au reste de la phrase. */
 const cliqueIci = (suite: string) =>
-  `<p><a href="${LIEN_VIDEO}" target="_blank" style="color:#A8813A;font-weight:700;text-decoration:underline;">CLIQUE ICI</a> ${suite}</p>`;
+  `<p><a href="${LIEN_VIDEO}">CLIQUE ICI</a> ${suite}</p>`;
 
 interface Gabarit { name: string; subject: string; preheader: string; body: string }
 
@@ -300,6 +319,7 @@ serve(async (req) => {
     const rep = await resendSend({
       from: FROM_ADDR, to: [destTest], reply_to: REPLY_TO,
       subject: tpl.subject, html: render(htmlTemplate, { UNSUB_URL: lienStop }),
+      text: versionTexte(render(htmlTemplate, { UNSUB_URL: lienStop })),
       ...(jeton ? { headers: { "List-Unsubscribe": `<${lienStop}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } } : {}),
       tags: [{ name: "campaign", value: CAMPAIGN_SLUG }, { name: "seq", value: String(seq) }],
     });
@@ -329,13 +349,14 @@ serve(async (req) => {
     const jeton = jetonParEmail.get(String(r.email).toLowerCase().trim());
     const lienStop = jeton ? `${UNSUB_BASE}/${jeton}` : UNSUB_BASE;
     const html = render(htmlTemplate, { UNSUB_URL: lienStop });
+    const text = versionTexte(html);
 
     let attempt = 0;
     let lastResp: any = null;
     while (attempt < 3) {
       lastResp = await resendSend({
         from: FROM_ADDR, to: [r.email], reply_to: REPLY_TO,
-        subject: tpl.subject, html,
+        subject: tpl.subject, html, text,
         ...(jeton ? { headers: { "List-Unsubscribe": `<${lienStop}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } } : {}),
         tags: [{ name: "campaign", value: CAMPAIGN_SLUG }, { name: "seq", value: String(seq) }],
       });
