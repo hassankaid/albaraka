@@ -53,18 +53,25 @@ const ALLOWED_SOURCES = new Set([
   "webi_wa_tiktok_organic",
   "webi_wa_youtube_organic",
   "webi_wa_direct",
+  "webi_wa_tiktok_ads",
+  "webi_wa_snap_ads",
   // Tunnel VSL
   "webi_vsl_ads",
   "webi_vsl_instagram_organic",
   "webi_vsl_tiktok_organic",
   "webi_vsl_youtube_organic",
   "webi_vsl_direct",
+  "webi_vsl_tiktok_ads",
+  "webi_vsl_snap_ads",
   // Tunnel Liberty
   "liberty_ads",
   "liberty_instagram_organic",
   "liberty_tiktok_organic",
   "liberty_youtube_organic",
   "liberty_direct",
+  // TikTok Ads et Snap Ads (30/09/2026), pour les trois tunnels.
+  "liberty_tiktok_ads",
+  "liberty_snap_ads",
   // Site vitrine — classé organique par `marketing_canal`.
   "site_vitrine",
 ]);

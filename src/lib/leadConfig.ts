@@ -12,11 +12,15 @@ export const leadSourceConfig: Record<string, { label: string; color: string }> 
   webi_wa_tiktok_organic: { label: "Tunnel WhatsApp - TikTok", color: "slate" },
   webi_wa_youtube_organic: { label: "Tunnel WhatsApp - YouTube", color: "red" },
   webi_wa_direct: { label: "Tunnel WhatsApp - Direct", color: "gray" },
+  webi_wa_tiktok_ads: { label: "Tunnel WhatsApp - TikTok Ads", color: "slate" },
+  webi_wa_snap_ads: { label: "Tunnel WhatsApp - Snap Ads", color: "yellow" },
   webi_vsl_ads: { label: "Tunnel VSL - Ads", color: "blue" },
   webi_vsl_instagram_organic: { label: "Tunnel VSL - Instagram", color: "fuchsia" },
   webi_vsl_tiktok_organic: { label: "Tunnel VSL - TikTok", color: "slate" },
   webi_vsl_youtube_organic: { label: "Tunnel VSL - YouTube", color: "red" },
   webi_vsl_direct: { label: "Tunnel VSL - Direct", color: "gray" },
+  webi_vsl_tiktok_ads: { label: "Tunnel VSL - TikTok Ads", color: "slate" },
+  webi_vsl_snap_ads: { label: "Tunnel VSL - Snap Ads", color: "yellow" },
   // Tunnel Liberty (22/09/2026). Même oubli que ci-dessus : les cinq valeurs
   // sont passées en base et dans l'edge fn sans arriver jusqu'ici.
   liberty_ads: { label: "Tunnel Liberty - Ads", color: "amber" },
@@ -24,6 +28,9 @@ export const leadSourceConfig: Record<string, { label: string; color: string }> 
   liberty_tiktok_organic: { label: "Tunnel Liberty - TikTok", color: "slate" },
   liberty_youtube_organic: { label: "Tunnel Liberty - YouTube", color: "red" },
   liberty_direct: { label: "Tunnel Liberty - Direct", color: "gray" },
+  // TikTok Ads et Snap Ads (30/09/2026) : liens ?src=tiktok_ads et ?src=snap_ads.
+  liberty_tiktok_ads: { label: "Tunnel Liberty - TikTok Ads", color: "slate" },
+  liberty_snap_ads: { label: "Tunnel Liberty - Snap Ads", color: "yellow" },
   // Site vitrine (albarakaecosysteme.com, 28/09/2026) : demandes de rendez-vous
   // du site de marque. Organique — aucune publicité n'y mène.
   site_vitrine: { label: "Site vitrine", color: "amber" },
@@ -186,6 +193,13 @@ export const SOURCE_GROUPS = [
       "webi_wa_ads",
       "webi_vsl_ads",
       "liberty_ads",
+      // TikTok Ads et Snap Ads (30/09/2026)
+      "webi_wa_tiktok_ads",
+      "webi_wa_snap_ads",
+      "webi_vsl_tiktok_ads",
+      "webi_vsl_snap_ads",
+      "liberty_tiktok_ads",
+      "liberty_snap_ads",
       "vsl_a",
       "vsl_b",
       "webi",

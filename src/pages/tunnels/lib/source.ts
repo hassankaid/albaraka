@@ -7,6 +7,8 @@
 //     ?src=ig      → Instagram organique
 //     ?src=tiktok  → TikTok organique
 //     ?src=youtube → YouTube organique
+//     ?src=tiktok_ads → TikTok Ads   (30/09/2026)
+//     ?src=snap_ads   → Snapchat Ads (30/09/2026)
 //
 // Le libellé CRM final = `${srcPrefix}_${suffixe}` (ex. webi_wa_ads,
 // webi_vsl_instagram_organic). Le préfixe vient de la config du tunnel.
@@ -32,6 +34,12 @@ const SRC_SUFFIX: Record<string, string> = {
   tiktok: "tiktok_organic",
   youtube: "youtube_organic",
   yt: "youtube_organic",
+  // Publicités TikTok et Snapchat (30/09/2026). Distinctes de `ads`, qui
+  // désigne Meta, et de `tiktok`, qui désigne le TikTok GRATUIT : sans elles,
+  // un lead payé par TikTok passerait pour de l'organique.
+  tiktok_ads: "tiktok_ads",
+  snap_ads: "snap_ads",
+  snapchat_ads: "snap_ads",
 };
 
 export interface TunnelAttribution {

@@ -16,6 +16,7 @@
 
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   leadSourceConfig,
   leadStatusConfig,
@@ -42,10 +43,10 @@ describe("sources des tunnels natifs", () => {
   // tous les `it.each` ci-dessous passeraient sans rien vérifier. Ce compte est
   // donc volontairement écrit en dur, et doit être mis à jour sciemment.
   // 3 tunnels x 5 origines (ads, instagram, tiktok, youtube, direct) = 15,
-  // plus le site vitrine (28/09/2026) = 16
-  // depuis l'ajout du tunnel Liberty le 22/09/2026.
-  it("l'edge fn en déclare bien 16 — sinon ce test ne prouverait rien", () => {
-    expect(sources).toHaveLength(16);
+  // plus le site vitrine (28/09/2026) = 16,
+  // plus TikTok Ads et Snap Ads sur les 3 tunnels (30/09/2026) = 22.
+  it("l'edge fn en déclare bien 22 — sinon ce test ne prouverait rien", () => {
+    expect(sources).toHaveLength(22);
   });
 
   it.each(sources)("« %s » a un libellé lisible dans le CRM", (source) => {
@@ -63,7 +64,8 @@ describe("sources des tunnels natifs", () => {
   it("classe en Ads ce qui vient des ads, et seulement cela", () => {
     for (const source of sources) {
       // Le suffixe `_ads` est posé par tunnels/lib/source.ts quand le lien
-      // porte `?src=ads` — c'est la seule provenance payante.
+      // porte `?src=ads` (Meta), `?src=tiktok_ads` ou `?src=snap_ads` — les
+      // seules provenances payantes.
       expect(isAdsSource(source), `${source} mal classé`).toBe(source.endsWith("_ads"));
     }
   });
@@ -120,5 +122,30 @@ describe("statuts de fiche proposés dans le menu", () => {
   it.each([...LEAD_MANUAL_STATUSES])("« %s » est accepté par la base et a un libellé", (statut) => {
     expect(acceptes).toContain(statut);
     expect(leadStatusConfig[statut]?.label, `aucun libellé pour ${statut}`).toBeTruthy();
+  });
+});
+
+describe("TikTok Ads et Snap Ads (30/09/2026)", () => {
+  // Sans ces sources, un lead payé par TikTok passait pour du TikTok organique
+  // (lien ?src=tiktok) ou pour du Meta (lien ?src=ads) : coût réel incalculable.
+  const base = readFileSync(resolve(process.cwd(), "supabase/migrations/20260930180000_sources_tiktok_snap_ads.sql"), "utf-8");
+
+  it.each(["webi_wa", "webi_vsl", "liberty"])("le tunnel %s a ses deux sources, rangées en Ads", (tunnel) => {
+    for (const regie of ["tiktok_ads", "snap_ads"]) {
+      const source = `${tunnel}_${regie}`;
+      expect(base, `${source} absente de leads_source_check`).toContain(`'${source}'`);
+      expect(isAdsSource(source)).toBe(true);
+      expect(getSourceLabel(source)).toMatch(regie === "tiktok_ads" ? /TikTok Ads/ : /Snap Ads/);
+    }
+  });
+
+  it("le classement marketing les distingue de Meta : leurs lignes passent AVANT « _ads »", () => {
+    const tiktok = base.indexOf("then 'tiktok_ads'");
+    const snap = base.indexOf("then 'snap_ads'");
+    const meta = base.indexOf("like '%\\_ads'");
+    expect(tiktok).toBeGreaterThan(0);
+    expect(snap).toBeGreaterThan(0);
+    expect(meta).toBeGreaterThan(tiktok);
+    expect(meta).toBeGreaterThan(snap);
   });
 });
