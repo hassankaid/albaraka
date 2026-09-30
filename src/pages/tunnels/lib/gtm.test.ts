@@ -71,14 +71,15 @@ describe("périmètre", () => {
   });
 });
 
-describe("en pause (état en production tant que le conteneur n'est pas prêt)", () => {
-  it("est bien en pause par défaut", async () => {
+describe("en pause (le filet de secours : remettre `enPause: true`)", () => {
+  it("est ACTIF en production depuis le 30/09/2026", async () => {
     const { reglageGtm } = await import("./gtm");
-    expect(reglageGtm.enPause).toBe(true);
+    expect(reglageGtm.enPause).toBe(false);
   });
 
-  it("GTM ne charge rien, et le pixel Meta du code continue de tout envoyer", async () => {
-    const { suivrePageGtm } = await import("./gtm");
+  it("en pause, GTM ne charge rien, et le pixel Meta du code reprend tout", async () => {
+    const { suivrePageGtm, reglageGtm } = await import("./gtm");
+    reglageGtm.enPause = true;
     const { trackLandingView, markLeadPending, trackTypLead } = await import("./pixel");
     suivrePageGtm("/webinaire");
     trackLandingView();

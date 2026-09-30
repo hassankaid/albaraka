@@ -33,28 +33,25 @@ import { TUNNEL_HOST } from "@/lib/hosts";
 export const GTM_ID = "GTM-K3VGV2PX";
 
 /**
- * ⚠️ EN PAUSE depuis le 30/09/2026.
+ * ACTIF depuis le 30/09/2026 (version 4 du conteneur, « Bascule tracking via
+ * événements du site »).
  *
  * DÉCISION (Hassan + media buyer, 30/09/2026) : sur ce tunnel, TOUT le suivi
- * passera par GTM — Meta compris. Quand GTM est actif sur une page, le pixel
+ * passe par GTM — Meta compris. Quand GTM est actif sur une page, le pixel
  * Meta codé en dur (pixel.ts) ne s'y charge plus : sinon Meta reçoit tout en
- * double (constaté en ligne : quatre requêtes au lieu de deux sur /webinaire).
+ * double (constaté en ligne le 30/09 : quatre requêtes au lieu de deux).
  *
- * POURQUOI ENCORE EN PAUSE : le conteneur (lu dans gtm.js, public) n'est pas
- * prêt à prendre le relais. Ses balises Meta se déclenchent sur des ADRESSES :
- *   - Lead sur « /webinaire/merci » : à chaque affichage, inscription ou non,
- *     et RIEN sur /vsl/merci — les leads du tunnel VSL disparaîtraient ;
- *   - ni Schedule, ni clic WhatsApp.
- * Basculer maintenant ferait perdre aux campagnes leur signal d'optimisation.
- *
- * AVANT DE LEVER LA PAUSE (`enPause: false`), vérifier dans gtm.js que les
- * balises sont branchées sur nos évènements (« alb_lead », « alb_schedule »…)
- * et non plus sur des adresses de page.
+ * Le conteneur a été vérifié avant activation (gtm.js, public) : 12 balises,
+ * toutes déclenchées par nos évènements (alb_*) ou par « Initialization »,
+ * aucune par une adresse de page. Si un jour une balise Meta se déclenche de
+ * nouveau sur une adresse (comme l'ancien Lead sur « /webinaire/merci »), les
+ * conversions seront faussées : remettre `enPause: true` rétablit aussitôt le
+ * pixel du code.
  *
  * Objet modifiable, et non constante, pour que les tests couvrent les deux
- * états sans attendre la levée de la pause.
+ * états.
  */
-export const reglageGtm = { enPause: true };
+export const reglageGtm = { enPause: false };
 
 /** Les noms d'évènements communiqués au media buyer. Ne pas renommer sans le prévenir. */
 export const EVENEMENTS_GTM = {
