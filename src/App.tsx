@@ -1,9 +1,10 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { suivrePageGtm } from "./pages/tunnels/lib/gtm";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute, PublicOnlyRoute } from "@/components/ProtectedRoute";
@@ -225,8 +226,21 @@ const tunnelRoutes = (
 
 // Sur le domaine des tunnels : application MINIMALE. Ni AuthProvider, ni thème
 // CRM, ni la moindre route de la plateforme — rien à quoi se connecter.
+/**
+ * Prévient Google Tag Manager à chaque changement de page. Sans effet hors du
+ * tunnel Al Baraka classique (voir tunnels/lib/gtm.ts pour le périmètre).
+ */
+function SuiviGtm() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    suivrePageGtm(pathname);
+  }, [pathname]);
+  return null;
+}
+
 const TunnelOnlyApp = () => (
   <BrowserRouter>
+    <SuiviGtm />
     <Routes>
       {tunnelRoutes}
       {routesLegales}
