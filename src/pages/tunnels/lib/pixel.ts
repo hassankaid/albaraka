@@ -46,7 +46,6 @@ export function pixelCourant(chemin?: string): string {
 }
 
 import { getTunnelPrefill } from "./source";
-import { consentPublicite, EVENEMENT_CHANGEMENT } from "@/lib/consentement";
 
 declare global {
   interface Window {
@@ -80,51 +79,28 @@ function isProdHost(): boolean {
   return /(?:^|\.)albarakaecosysteme\.com$/i.test(window.location.hostname);
 }
 
-/**
- * Ce que le visiteur a demandé avant d'avoir répondu au bandeau.
- *
- * Une landing déclenche son évènement au montage, souvent plusieurs secondes
- * avant que le visiteur ne clique sur « Accepter ». Sans file d'attente, ces
- * vues seraient perdues : on mesurerait moins que la réalité, et le media
- * buyer conclurait à une panne. On garde donc l'intention, sans rien envoyer.
- */
-const enAttenteDeConsentement: Array<() => void> = [];
-
-if (typeof window !== "undefined") {
-  window.addEventListener(EVENEMENT_CHANGEMENT, () => {
-    if (!consentPublicite()) {
-      // Refus, ou retrait après coup : on jette ce qui attendait.
-      enAttenteDeConsentement.length = 0;
-      return;
-    }
-    const aRejouer = enAttenteDeConsentement.splice(0, enAttenteDeConsentement.length);
-    for (const f of aRejouer) {
-      try { f(); } catch { /* un évènement raté ne doit pas bloquer les autres */ }
-    }
-  });
-}
-
-/**
- * Le garde-fou du consentement.
- *
- * Tant que le visiteur n'a pas accepté la catégorie « publicité », le script
- * de Meta n'est PAS chargé — pas seulement muet. Le charger dépose déjà des
- * identifiants, ce que la politique de confidentialité publiée interdit
- * explicitement avant accord (§9).
- *
- * Renvoie `true` si l'appelant peut continuer.
- */
-function consentementObtenu(differer: () => void): boolean {
-  if (consentPublicite()) return true;
-  enAttenteDeConsentement.push(differer);
-  return false;
+// ─────────────────────────────────────────────────────────────────────────
+// PAS DE CONDITION DE CONSENTEMENT (décision de Hassan, 30/09/2026).
+//
+// Du 25/09 au 30/09/2026, le pixel ne se chargeait qu'après un clic sur
+// « Accepter » dans le bandeau cookies. Quiconque refusait OU ignorait le
+// bandeau était invisible pour Meta : ni PageView, ni Lead, ni Schedule. Les
+// campagnes optimisaient sur une fraction des conversions réelles.
+//
+// Hassan a tranché : le suivi passe avant la conformité. Le bandeau est retiré
+// des tunnels et le pixel se charge pour tout le monde, comme avant le 25/09.
+//
+// ⚠️ La politique de confidentialité publiée (§9) dit encore le contraire
+// (« déposés qu'après votre consentement ») : à faire ajuster par Sidali.
+// Pour rétablir la condition : `git revert` du commit qui porte ce texte.
+// ─────────────────────────────────────────────────────────────────────────
+/** Conservé pour ne pas toucher aux appelants : répond toujours oui. */
+function consentementObtenu(_differer: () => void): boolean {
+  return true;
 }
 
 function loadFbqScript(): void {
   if (typeof window === "undefined" || window.fbq) return;
-  // Deuxième verrou, au plus près du chargement : même si un appelant oublie
-  // de demander, le script ne part pas sans consentement.
-  if (!consentPublicite()) return;
   /* eslint-disable @typescript-eslint/no-explicit-any */
   (function (f: any, b: any, e: string, v: string) {
     if (f.fbq) return;

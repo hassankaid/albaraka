@@ -49,27 +49,16 @@ beforeEach(() => {
   vi.resetModules();
   sessionStorage.clear();
   localStorage.clear();
-  // Depuis le 25/09/2026, RIEN ne part sans consentement publicitaire. Les
-  // tests qui vérifient les évènements doivent donc l'accorder : sinon ils
-  // passeraient sur un module muet, et ne prouveraient plus rien.
-  localStorage.setItem(
-    "alb_consentement_cookies",
-    JSON.stringify({ mesure: true, publicite: true, date: Date.now(), version: 1 }),
-  );
+  // Aucun consentement posé : depuis le 30/09/2026 le pixel n'en dépend plus
+  // (décision de Hassan). Les tests tournent donc dans le cas d'un visiteur
+  // qui n'a répondu à rien — le cas de tout le monde, le bandeau étant retiré.
   delete (window as unknown as { fbq?: unknown }).fbq;
   delete (window as unknown as { _fbq?: unknown })._fbq;
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
-  // Chaque `vi.resetModules()` crée une instance du module, qui s'abonne au
-  // changement de consentement. Les anciennes restent branchées sur `window`
-  // avec leur propre file d'attente. Sans ce nettoyage, un test qui accorde
-  // le consentement fait rejouer les intentions différées des tests
-  // précédents — on l'a constaté : six évènements au lieu de deux.
-  // Un refus vide toutes les files, y compris celles des anciennes instances.
   localStorage.clear();
-  window.dispatchEvent(new CustomEvent("alb:cookies:change"));
 });
 
 describe("le domaine de production est bien reconnu", () => {
@@ -124,11 +113,10 @@ describe("« Lead » sur la page de remerciement", () => {
     expect(sessionStorage.getItem("alb_tunnel_lead_pending")).toBeNull();
   });
 
-  it("n'envoie rien du tout quand le stockage est indisponible", async () => {
-    // Mode privé strict : le stockage lève à la lecture. On ne peut donc
-    // savoir ni si le visiteur vient de s'inscrire, ni s'il a consenti.
-    // Dans les deux cas la réponse sûre est la même : ne rien envoyer. On
-    // perd la mesure, on ne fabrique ni conversion ni traceur non consenti.
+  it("n'invente pas de Lead quand le stockage est indisponible", async () => {
+    // Mode privé strict : le stockage lève à la lecture. On ne peut pas
+    // savoir si le visiteur vient de s'inscrire : la vue de page part, le
+    // Lead non. On perd une conversion, on n'en fabrique pas.
     const appels = poseFauxPixel();
     const { markLeadPending, trackTypLead } = await import("./pixel");
     markLeadPending();
@@ -136,7 +124,7 @@ describe("« Lead » sur la page de remerciement", () => {
 
     await trackTypLead();
 
-    expect(evenements(appels)).toEqual([]);
+    expect(evenements(appels)).toEqual(["PageView"]);
   });
 });
 
@@ -290,95 +278,63 @@ describe("garde-fou anti-doublon du « Schedule »", () => {
     expect(tout).not.toContain("client@example.com");
   });
 
-  it("n'envoie rien si le stockage est refusé — le consentement devient illisible", async () => {
-    // Le garde-fou anti-doublon choisissait de compter plutôt que de perdre
-    // une conversion rare. Depuis le consentement, ce cas ne se présente plus :
-    // si le stockage lève, on ne peut pas non plus savoir si le visiteur a
-    // accepté. Ne rien envoyer est alors la seule réponse défendable.
+  it("compte quand même la réservation si le stockage est refusé", async () => {
+    // Sans stockage, impossible de savoir si elle a déjà été comptée. Le
+    // garde-fou choisit de compter : perdre une conversion réelle serait pire
+    // qu'un doublon sur un cas de bord.
     const appels = poseFauxPixel();
     const { trackCalendlyBooked } = await import("./pixel");
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("refusé"); });
     trackCalendlyBooked(RESA);
-    expect(evenements(appels)).toEqual([]);
+    expect(evenements(appels)).toEqual(["PageView", "Schedule"]);
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────
-// Le consentement commande tout.
+// Le pixel ne dépend plus du bandeau cookies.
 //
-// La politique de confidentialité publiée dit que les traceurs publicitaires
-// ne sont déposés qu'APRÈS accord. Ce n'est pas une intention : c'est un
-// texte qui nous engage. Si ce verrou saute un jour, la page continuera de
-// s'afficher normalement — seule la conformité tombera, en silence.
+// Du 25/09 au 30/09/2026, rien ne partait sans clic sur « Accepter » : Meta
+// ne voyait ni ceux qui refusaient, ni ceux qui ignoraient le bandeau, et les
+// campagnes optimisaient sur une fraction des conversions. Hassan a tranché
+// le 30/09/2026 : le suivi passe avant la conformité. Si quelqu'un rebranche
+// la condition sans le vouloir, ces tests le diront.
 // ─────────────────────────────────────────────────────────────────────────
-describe("aucun traceur avant le consentement", () => {
-  beforeEach(() => localStorage.clear());
-
-  it("n'envoie rien tant que le visiteur n'a pas répondu", async () => {
+describe("le pixel se charge sans condition de consentement", () => {
+  it("envoie la vue de page à un visiteur qui n'a répondu à rien", async () => {
     const appels = poseFauxPixel();
     const { trackLandingView } = await import("./pixel");
     trackLandingView();
-    expect(evenements(appels)).toEqual([]);
-  });
-
-  it("n'envoie rien si le visiteur a refusé", async () => {
-    const appels = poseFauxPixel();
-    const { enregistrerConsentement } = await import("@/lib/consentement");
-    const { trackLandingView } = await import("./pixel");
-    enregistrerConsentement({ mesure: false, publicite: false });
-    trackLandingView();
-    expect(evenements(appels)).toEqual([]);
-  });
-
-  it("ne charge même pas le script de Meta sans accord", async () => {
-    // « Ne rien envoyer » ne suffirait pas : charger fbevents.js dépose déjà
-    // des identifiants. Le script ne doit pas être injecté du tout.
-    delete (window as unknown as { fbq?: unknown }).fbq;
-    const avant = document.scripts.length;
-    const { trackLandingView } = await import("./pixel");
-    trackLandingView();
-    const ajoutes = [...document.scripts].slice(avant).map((s) => s.src);
-    expect(ajoutes.filter((s) => s.includes("facebook"))).toEqual([]);
-    expect((window as unknown as { fbq?: unknown }).fbq).toBeUndefined();
-  });
-
-  it("rattrape la vue de page quand le visiteur accepte ensuite", async () => {
-    // Une landing déclenche son évènement au montage, avant que le visiteur
-    // n'ait cliqué. Sans rattrapage, cette vue serait perdue et on mesurerait
-    // moins que la réalité.
-    const appels = poseFauxPixel();
-    const { enregistrerConsentement } = await import("@/lib/consentement");
-    const { trackLandingView } = await import("./pixel");
-
-    trackLandingView();                                  // avant le clic
-    expect(evenements(appels)).toEqual([]);
-
-    enregistrerConsentement({ mesure: true, publicite: true }); // le visiteur accepte
     expect(evenements(appels)).toEqual(["PageView", "ViewContent"]);
   });
 
-  it("n'invente pas de conversion si le visiteur refuse après coup", async () => {
+  it("envoie aussi quand un ancien refus traîne dans le navigateur", async () => {
+    // Les visiteurs venus entre le 25 et le 30/09 ont pu cliquer « Refuser ».
+    // Ce choix stocké ne doit plus rien bloquer.
+    localStorage.setItem(
+      "alb_consentement_cookies",
+      JSON.stringify({ mesure: false, publicite: false, date: Date.now(), version: 1 }),
+    );
     const appels = poseFauxPixel();
-    const { enregistrerConsentement } = await import("@/lib/consentement");
     const { trackLandingView } = await import("./pixel");
     trackLandingView();
-    enregistrerConsentement({ mesure: true, publicite: false });
-    expect(evenements(appels)).toEqual([]);
+    expect(evenements(appels)).toEqual(["PageView", "ViewContent"]);
   });
 
-  it("garde le marqueur d'inscription tant que le Lead n'est pas parti", async () => {
-    // Le marqueur est à usage unique. S'il était consommé avant le
-    // consentement, le Lead serait perdu pour de bon.
+  it("charge le script de Meta dès la première page", async () => {
+    delete (window as unknown as { fbq?: unknown }).fbq;
+    // jsdom n'a aucune balise <script> : le snippet de Meta s'insère devant la première.
+    document.head.appendChild(document.createElement("script"));
+    const { trackLandingView } = await import("./pixel");
+    trackLandingView();
+    expect([...document.scripts].some((sc) => sc.src.includes("connect.facebook.net"))).toBe(true);
+    expect((window as unknown as { fbq?: unknown }).fbq).toBeDefined();
+  });
+
+  it("le Lead part dès la page de remerciement, sans attendre un clic", async () => {
     const appels = poseFauxPixel();
-    const { enregistrerConsentement } = await import("@/lib/consentement");
     const { markLeadPending, trackTypLead } = await import("./pixel");
-
     markLeadPending();
-    await trackTypLead();                                // sans consentement
-    expect(sessionStorage.getItem("alb_tunnel_lead_pending")).toBe("1");
-
-    enregistrerConsentement({ mesure: true, publicite: true });
-    await new Promise((r) => setTimeout(r, 20));
-    expect(evenements(appels)).toContain("Lead");
+    await trackTypLead();
+    expect(evenements(appels)).toEqual(["PageView", "Lead"]);
   });
 });

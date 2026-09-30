@@ -23,8 +23,6 @@ import FormationCheckout from "./pages/checkout/FormationCheckout";
 import AlBaraka200Checkout from "./pages/checkout/AlBaraka200Checkout";
 import PiedDePageLegal from "./components/legal/PiedDePageLegal";
 import PiedDePageLegalApplication from "./components/legal/PiedDePageLegalApplication";
-import BandeauCookies from "./components/legal/BandeauCookies";
-import BandeauCookiesApplication from "./components/legal/BandeauCookiesApplication";
 import { MENTIONS_LEGALES, POLITIQUE_CONFIDENTIALITE, CGV } from "./pages/legal/textes";
 import DashboardLayout from "./components/DashboardLayout";
 import ApporteurLayout from "./components/ApporteurLayout";
@@ -239,8 +237,9 @@ const TunnelOnlyApp = () => (
         une publicité : identité de l'annonceur, non-affiliation, et un
         accès à la politique de confidentialité sans connexion. */}
     <PiedDePageLegal />
-    {/* Aucun traceur ne se charge avant qu'on ait cliqué ici. */}
-    <BandeauCookies />
+    {/* Bandeau cookies retiré le 30/09/2026 (décision de Hassan) : il
+        empêchait le pixel Meta de voir les visiteurs qui ne cliquaient pas
+        sur « Accepter ». Le pixel se charge désormais sans condition. */}
   </BrowserRouter>
 );
 
@@ -434,7 +433,6 @@ const FullApp = () => (
                 back-office n'en a pas besoin, mais /checkout, /pay, /rdv,
                 /quiz et les pages légales, si. */}
             <PiedDePageLegalApplication />
-            <BandeauCookiesApplication />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

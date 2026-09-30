@@ -15,7 +15,6 @@
 // Si on devait basculer sur un autre compte, c'est la seule constante à
 // changer.
 
-import { consentPublicite } from "./consentement";
 
 const PIXEL_ID = "1076753490786885";
 
@@ -37,10 +36,8 @@ let pixelInitialized = false;
 function loadFbqScript(): void {
   if (typeof window === "undefined") return;
   if (window.fbq) return;
-  // Aucun traceur avant consentement : la politique de confidentialité
-  // publiée (§9) l'interdit, et charger le script dépose déjà des
-  // identifiants — « ne rien envoyer » ne suffirait pas.
-  if (!consentPublicite()) return;
+  // Plus de condition de consentement depuis le 30/09/2026 (décision de
+  // Hassan : le suivi passe avant la conformité). Voir tunnels/lib/pixel.ts.
 
   // Snippet officiel Meta, traduit en TS (la version JS d'origine est dans le
   // dashboard Meta Pixel sous "Set up the Pixel manually").

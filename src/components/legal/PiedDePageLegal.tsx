@@ -177,14 +177,6 @@ export default function PiedDePageLegal() {
                 </a>
               </span>
             ))}
-            <Sep />
-            <button
-              type="button"
-              className="alb-lien"
-              onClick={() => window.dispatchEvent(new CustomEvent("alb:cookies:ouvrir"))}
-            >
-              Gérer les cookies
-            </button>
           </nav>
         </div>
 
