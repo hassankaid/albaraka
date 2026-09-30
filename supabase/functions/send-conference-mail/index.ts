@@ -38,7 +38,9 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "
 // Hassan) : `conference@` faisait classer les mails dans l'onglet
 // Notifications de Gmail. Même domaine, donc même authentification.
 const FROM_ADDR = "Sidali <sidali@albarakaecosysteme.com>";
-const REPLY_TO = ["contact@albarakaecosysteme.com"];
+// Les réponses arrivent dans la boîte de Sidali (créée chez Hostinger le
+// 30/09/2026). contact@albarakaecosysteme.com ne reçoit RIEN (aucun MX).
+const REPLY_TO = ["sidali@albarakaecosysteme.com"];
 
 // Filets, utilisés seulement si la fiche est incomplète. Un e-mail sans bouton
 // vaut moins qu'un e-mail dont le bouton mène au groupe de la semaine passée,
@@ -251,6 +253,7 @@ ${p(`Mais en attendant, rejoins dès maintenant le groupe WhatsApp privé. C'est
 ${CTA}
 ${p(`Qu'Allah t'accorde la clarté et la baraka dans ce cheminement.`)}
 ${p(`On se retrouve très vite.`)}
+${p(`Réponds simplement "OK" à ce mail pour être sûr de recevoir la suite.`)}
 ${SIG}`,
     },
     21: {

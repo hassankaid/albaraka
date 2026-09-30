@@ -42,7 +42,9 @@ const STRIPE_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 
 const FROM = "AL BARAKA <noreply@albarakaecosysteme.com>";
-const REPLY_TO = ["contact@albarakaecosysteme.com"];
+// Réponses vers la boîte de Sidali (30/09/2026) : contact@albarakaecosysteme.com
+// ne reçoit rien (aucun MX), et ce mail invite à « envoyer un message ».
+const REPLY_TO = ["sidali@albarakaecosysteme.com"];
 const DELAI_JOURS = 3;
 
 const json = (data: unknown, status = 200) =>

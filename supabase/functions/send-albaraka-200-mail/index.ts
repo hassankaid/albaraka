@@ -38,7 +38,10 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "
 // Notifications de Gmail. Même domaine, donc même authentification (SPF,
 // DKIM, DMARC) et même réputation.
 const FROM_ADDR = "Sidali <sidali@albarakaecosysteme.com>";
-const REPLY_TO = ["contact@albarakaecosysteme.com"];
+// Les réponses arrivent dans la boîte de Sidali (créée chez Hostinger le
+// 30/09/2026). contact@albarakaecosysteme.com ne reçoit RIEN : le domaine
+// n'avait aucun MX, toutes les réponses se perdaient.
+const REPLY_TO = ["sidali@albarakaecosysteme.com"];
 const UNSUB_BASE = "https://plateforme.albarakaecosysteme.com/stop";
 
 /** La page du tunnel : la vidéo, puis l'agenda. */
@@ -177,6 +180,9 @@ const TEMPLATES: Record<number, Gabarit> = {
       p("Alors avant de réfléchir dans le vide, regarde la vidéo et en 7 minutes, tu sauras exactement ce qu'on propose, comment ça fonctionne, et pourquoi c'est l'occasion que tu ne dois absolument pas louper !"),
       p("Et à ce moment-là, ta réflexion aura enfin quelque chose de concret sur quoi se baser."),
       cta("Regarde la vidéo ici"),
+      // Ajout du 30/09/2026 (Hassan) : une réponse est le signal le plus fort
+      // pour que Gmail range l'expéditeur dans l'onglet Principal.
+      p('Réponds simplement "OK" à ce mail pour être sûr de recevoir la suite.'),
       SIG,
     ].join("\n"),
   },
