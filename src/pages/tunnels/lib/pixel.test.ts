@@ -45,8 +45,15 @@ const evenements = (appels: Appel[]) =>
 const pixelsVises = (appels: Appel[]) =>
   appels.filter((a) => a[0] === "trackSingle" || a[0] === "trackSingleCustom").map((a) => a[1]);
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetModules();
+  // Ces tests couvrent le pixel Meta DU CODE : celui de Liberty et
+  // d'Al Baraka 200, et le filet de secours du tunnel conférence si GTM est
+  // remis en pause. Depuis le 30/09/2026, GTM a la main sur le tunnel
+  // conférence (voir gtm.test.ts) : on le met ici en pause pour exercer le
+  // pixel sur l'URL de test.
+  const gtm = await import("./gtm");
+  gtm.reglageGtm.enPause = true;
   sessionStorage.clear();
   localStorage.clear();
   // Aucun consentement posé : depuis le 30/09/2026 le pixel n'en dépend plus
