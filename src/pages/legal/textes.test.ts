@@ -22,6 +22,7 @@ import {
   CGV,
   PAGES_LEGALES,
   DATE_MISE_A_JOUR,
+  LIGNES_HORS_DOCUMENT,
 } from "./textes";
 
 const source = readFileSync(
@@ -39,7 +40,8 @@ describe("fidélité au document d'Ethicarena", () => {
     ["politique de confidentialité", POLITIQUE_CONFIDENTIALITE],
     ["conditions générales de vente", CGV],
   ])("chaque ligne des %s figure mot pour mot dans le document", (_nom, page) => {
-    const absentes = page.lignes.filter((l) => !presente(l));
+    // Les lignes réécrites le 30/09/2026 (retrait du bandeau cookies) sont exemptées — elles seules.
+    const absentes = page.lignes.filter((l) => !presente(l) && !(typeof l === "string" && LIGNES_HORS_DOCUMENT.includes(l)));
     expect(absentes, `lignes introuvables dans le document source :\n${absentes.join("\n")}`)
       .toEqual([]);
   });
@@ -67,6 +69,16 @@ describe("fidélité au document d'Ethicarena", () => {
 });
 
 describe("ce qui rendrait les pages juridiquement fausses", () => {
+  it("ne promet plus un consentement aux cookies que le site ne demande plus", () => {
+    // Depuis le 30/09/2026 le pixel Meta se charge sans bandeau (décision de
+    // Hassan). La politique doit dire ce que le site fait, pas l'inverse.
+    const texte = POLITIQUE_CONFIDENTIALITE.lignes.join("\n");
+    expect(texte).not.toMatch(/qu'après votre consentement|uniquement avec votre consentement|Gérer les cookies|bandeau/);
+    expect(texte).toContain("sans demande de consentement préalable");
+    expect(texte).toContain("Meta Platforms");
+    expect(POLITIQUE_CONFIDENTIALITE.miseAJour).toBe("30/09/2026");
+  });
+
   it("n'appelle jamais AL BARAKA une société", () => {
     // Point 2 de la recette. AL BARAKA est une marque d'Ethicarena ; la
     // présenter en raison sociale désigne au client une entité qui n'existe pas.

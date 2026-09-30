@@ -67,7 +67,7 @@ export default function PageLegale({ texte }: { texte: Texte }) {
 
         {texte.dateDeMiseAJour && (
           <p style={{ margin: "0 0 32px", fontSize: 14, color: "#8F887B" }}>
-            Dernière mise à jour : {DATE_MISE_A_JOUR}
+            Dernière mise à jour : {texte.miseAJour ?? DATE_MISE_A_JOUR}
           </p>
         )}
         {!texte.dateDeMiseAJour && <div style={{ height: 24 }} />}

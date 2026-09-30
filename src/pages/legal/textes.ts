@@ -27,6 +27,8 @@ export interface PageLegale {
   titreOnglet: string;
   /** Vrai si la page doit porter « Dernière mise à jour ». */
   dateDeMiseAJour: boolean;
+  /** Date propre à cette page, si elle a été révisée après les autres. */
+  miseAJour?: string;
   lignes: LigneLegale[];
 }
 
@@ -94,6 +96,7 @@ export const POLITIQUE_CONFIDENTIALITE: PageLegale = {
   titre: "Politique de confidentialité",
   titreOnglet: "Politique de confidentialité — AL BARAKA",
   dateDeMiseAJour: true,
+  miseAJour: "30/09/2026",
   lignes: [
     "La présente politique explique comment ETHICARENA L.L.C-FZ collecte, utilise, conserve et protège les données personnelles des utilisateurs de la plateforme AL BARAKA, accessible à l'adresse https://plateforme.albarakaecosysteme.com (ci-après la « Plateforme »). Elle couvre aussi l'ensemble des services de l'écosystème AL BARAKA : formations, accompagnements, communauté et rendez-vous.",
     "Elle est établie conformément au Règlement (UE) 2016/679 (RGPD), à la directive 2002/58/CE (« ePrivacy ») et, pour les utilisateurs résidant en France, à la loi Informatique et Libertés du 6 janvier 1978 modifiée.",
@@ -118,8 +121,8 @@ export const POLITIQUE_CONFIDENTIALITE: PageLegale = {
     "Envoyer des communications commerciales aux prospects : consentement.",
     "Envoyer des offres similaires à nos clients : intérêt légitime (vous pouvez vous y opposer à tout moment).",
     "Enregistrer des appels à des fins de qualité et de formation de l'équipe : intérêt légitime (vous pouvez vous y opposer).",
-    "Mesurer l'audience de la Plateforme : consentement.",
-    "Diffuser et mesurer nos publicités : consentement.",
+    "Mesurer l'audience de la Plateforme : intérêt légitime (vous pouvez vous y opposer, voir section 9).",
+    "Diffuser et mesurer nos publicités : intérêt légitime (vous pouvez vous y opposer, voir section 9).",
     "Prévenir la fraude et le partage illicite d'accès, faire valoir nos droits : intérêt légitime.",
     "Respecter nos obligations comptables, fiscales et légales : obligation légale.",
     "Chaque email commercial contient un lien de désinscription.",
@@ -133,7 +136,7 @@ export const POLITIQUE_CONFIDENTIALITE: PageLegale = {
     "emailing et gestion de la relation client ;",
     "prise de rendez-vous et visioconférence ;",
     "espace communautaire en ligne ;",
-    "mesure d'audience et régies publicitaires, uniquement avec votre consentement.",
+    "mesure d'audience et régies publicitaires, dont Meta Platforms (voir section 9).",
     "La liste nominative de nos sous-traitants est disponible sur simple demande à contact@ethicarena.com.",
     "Nous ne vendons ni ne louons vos données personnelles. Elles peuvent être communiquées aux autorités compétentes lorsque la loi l'impose.",
     "6. Transferts hors de l'Union européenne",
@@ -147,7 +150,7 @@ export const POLITIQUE_CONFIDENTIALITE: PageLegale = {
     "Clients : pendant toute la durée de la relation contractuelle, puis 3 ans à des fins commerciales. Les données utiles à la preuve d'un contrat sont conservées pendant le délai de prescription applicable.",
     "Données de facturation : pendant la durée légale de conservation des documents comptables et fiscaux applicable à ETHICARENA L.L.C-FZ.",
     "Enregistrements d'appels : 6 mois maximum.",
-    "Cookies et traceurs : 13 mois maximum. Votre choix (acceptation ou refus) est conservé 6 mois.",
+    "Cookies et traceurs : 13 mois maximum.",
     "Demandes d'exercice de droits : pendant le délai nécessaire pour y répondre et en justifier.",
     "À l'issue de ces durées, les données sont supprimées ou anonymisées de manière irréversible.",
     "8. Vos droits",
@@ -164,10 +167,11 @@ export const POLITIQUE_CONFIDENTIALITE: PageLegale = {
     "Vous pouvez introduire une réclamation auprès de l'autorité de contrôle de votre pays de résidence. En France, il s'agit de la CNIL (3 place de Fontenoy, TSA 80715, 75334 Paris Cedex 07 – www.cnil.fr).",
     "9. Cookies et traceurs",
     "La Plateforme utilise trois types de cookies :",
-    "Cookies strictement nécessaires : connexion, sécurité, mémorisation de vos choix. Ils sont exemptés de consentement.",
+    "Cookies strictement nécessaires : connexion, sécurité, mémorisation de vos choix.",
     "Cookies de mesure d'audience : pour comprendre l'utilisation de la Plateforme et l'améliorer.",
     "Cookies publicitaires : pour mesurer l'efficacité de nos publicités et vous proposer des contenus adaptés sur les réseaux sociaux.",
-    "Les cookies de mesure d'audience et publicitaires ne sont déposés qu'après votre consentement. Celui-ci est recueilli via le bandeau affiché lors de votre première visite, qui vous permet d'accepter, de refuser ou de personnaliser vos choix aussi facilement les uns que les autres. Refuser n'a aucune incidence sur votre accès à la Plateforme. Vous pouvez modifier vos choix à tout moment via le lien « Gérer les cookies » en bas de page.",
+    "Les cookies publicitaires, dont le pixel de Meta Platforms, sont déposés dès votre arrivée sur nos pages, sans demande de consentement préalable. Ils transmettent à Meta des informations sur votre visite (pages consultées, inscription, prise de rendez-vous), qui servent à mesurer et à cibler nos publicités.",
+    "Vous pouvez vous y opposer à tout moment : en bloquant les cookies tiers dans les réglages de votre navigateur, en utilisant une extension de blocage des traceurs, ou en réglant vos préférences publicitaires dans votre compte Meta. Ces réglages n'ont aucune incidence sur votre accès à la Plateforme. Vous pouvez aussi nous écrire à contact@ethicarena.com.",
     "10. Mineurs",
     "Les services AL BARAKA sont réservés aux personnes majeures. Nous ne collectons pas sciemment de données concernant des mineurs. Si nous apprenons qu'un mineur nous a transmis des données, nous les supprimons dans les meilleurs délais.",
     "11. Sécurité",
@@ -274,4 +278,24 @@ export const PAGES_LEGALES: PageLegale[] = [
   MENTIONS_LEGALES,
   POLITIQUE_CONFIDENTIALITE,
   CGV,
+];
+
+/**
+ * Les lignes de la politique de confidentialité qui ne viennent PAS du
+ * document d'Ethicarena : réécrites le 30/09/2026 à la demande de Hassan,
+ * quand le bandeau cookies a été retiré et que le pixel Meta s'est remis à
+ * se charger sans consentement. Le texte d'origine affirmait l'inverse ; une
+ * politique qui décrit ce que le site ne fait pas est pire qu'un texte franc.
+ *
+ * `textes.test.ts` les exempte de la comparaison mot pour mot — elles seules.
+ * ⚠️ Ces lignes décrivent la pratique ; elles ne la rendent pas conforme.
+ */
+export const LIGNES_HORS_DOCUMENT: readonly string[] = [
+  "Mesurer l'audience de la Plateforme : intérêt légitime (vous pouvez vous y opposer, voir section 9).",
+  "Diffuser et mesurer nos publicités : intérêt légitime (vous pouvez vous y opposer, voir section 9).",
+  "mesure d'audience et régies publicitaires, dont Meta Platforms (voir section 9).",
+  "Cookies et traceurs : 13 mois maximum.",
+  "Cookies strictement nécessaires : connexion, sécurité, mémorisation de vos choix.",
+  "Les cookies publicitaires, dont le pixel de Meta Platforms, sont déposés dès votre arrivée sur nos pages, sans demande de consentement préalable. Ils transmettent à Meta des informations sur votre visite (pages consultées, inscription, prise de rendez-vous), qui servent à mesurer et à cibler nos publicités.",
+  "Vous pouvez vous y opposer à tout moment : en bloquant les cookies tiers dans les réglages de votre navigateur, en utilisant une extension de blocage des traceurs, ou en réglant vos préférences publicitaires dans votre compte Meta. Ces réglages n'ont aucune incidence sur votre accès à la Plateforme. Vous pouvez aussi nous écrire à contact@ethicarena.com.",
 ];
