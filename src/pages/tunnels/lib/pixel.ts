@@ -46,7 +46,7 @@ export function pixelCourant(chemin?: string): string {
 }
 
 import { getTunnelPrefill } from "./source";
-import { EVENEMENTS_GTM, pousserGtm } from "./gtm";
+import { EVENEMENTS_GTM, gtmGereLaPage, pousserGtm } from "./gtm";
 
 declare global {
   interface Window {
@@ -157,6 +157,11 @@ async function buildAdvancedMatching(c: PixelContact): Promise<Record<string, st
  */
 export function trackLandingView(): void {
   if (!isProdHost()) return;
+  // Tunnel conférence, GTM actif : c'est le conteneur qui parle à Meta.
+  if (gtmGereLaPage()) {
+    pousserGtm(EVENEMENTS_GTM.contenu);
+    return;
+  }
   if (!consentementObtenu(() => trackLandingView())) return;
   try {
     loadFbqScript();
@@ -167,10 +172,6 @@ export function trackLandingView(): void {
     window.fbq("trackSingle", id, "ViewContent");
   } catch (err) {
     console.warn("[tunnel-pixel] view tracking failed (non-blocking):", err);
-  } finally {
-    // GTM (tunnel conférence seulement) : indépendant de Meta, il part même
-    // si le pixel est bloqué par le navigateur.
-    pousserGtm(EVENEMENTS_GTM.contenu);
   }
 }
 
@@ -180,6 +181,10 @@ export function trackLandingView(): void {
  */
 export function trackWhatsappJoin(): void {
   if (!isProdHost()) return;
+  if (gtmGereLaPage()) {
+    pousserGtm(EVENEMENTS_GTM.whatsapp);
+    return;
+  }
   if (!consentementObtenu(() => trackWhatsappJoin())) return;
   try {
     loadFbqScript();
@@ -189,8 +194,6 @@ export function trackWhatsappJoin(): void {
     window.fbq("trackSingleCustom", id, "WhatsAppJoin");
   } catch (err) {
     console.warn("[tunnel-pixel] whatsapp-join tracking failed (non-blocking):", err);
-  } finally {
-    pousserGtm(EVENEMENTS_GTM.whatsapp);
   }
 }
 
@@ -221,11 +224,17 @@ export function trackCalendlyBooked(reservation?: string | null): void {
   if (!isProdHost()) return;
   if (!consentementObtenu(() => trackCalendlyBooked(reservation))) return;
   try {
-    loadFbqScript();
-    if (!window.fbq) return;
-    const id = pixelCourant();
-    assurerInit(id);
-    window.fbq("trackSingle", id, "PageView");
+    // Tunnel conférence, GTM actif : le garde-fou reste ICI, seul le
+    // destinataire change (le conteneur au lieu du pixel).
+    const parGtm = gtmGereLaPage();
+    let id = "";
+    if (!parGtm) {
+      loadFbqScript();
+      if (!window.fbq) return;
+      id = pixelCourant();
+      assurerInit(id);
+      window.fbq("trackSingle", id, "PageView");
+    }
 
     const cle = (reservation ?? "").trim();
     if (!cle) return; // pas de réservation dans l'adresse : rien à compter
@@ -238,9 +247,8 @@ export function trackCalendlyBooked(reservation?: string | null): void {
       // Stockage indisponible : on laisse passer. Perdre une conversion réelle
       // serait pire que d'en compter une en double sur un cas de bord.
     }
-    window.fbq("trackSingle", id, "Schedule");
-    // Même garde-fou pour GTM : la réservation n'y est comptée qu'une fois.
-    pousserGtm(EVENEMENTS_GTM.rendezVous);
+    if (parGtm) pousserGtm(EVENEMENTS_GTM.rendezVous);
+    else window.fbq("trackSingle", id, "Schedule");
   } catch (err) {
     console.warn("[tunnel-pixel] schedule tracking failed (non-blocking):", err);
   }
@@ -289,8 +297,13 @@ export async function trackTypLead(): Promise<void> {
   // l'envoi, et le marqueur reste posé tant que rien n'est parti.
   if (!consentementObtenu(() => void trackTypLead())) return;
   try {
-    loadFbqScript();
-    if (!window.fbq) return;
+    // Tunnel conférence, GTM actif : le garde-fou reste ICI, seul le
+    // destinataire change (le conteneur au lieu du pixel).
+    const parGtm = gtmGereLaPage();
+    if (!parGtm) {
+      loadFbqScript();
+      if (!window.fbq) return;
+    }
 
     let enAttente = false;
     try {
@@ -298,15 +311,15 @@ export async function trackTypLead(): Promise<void> {
       if (enAttente) sessionStorage.removeItem(LEAD_EN_ATTENTE);
     } catch { /* pas de stockage : pas de Lead */ }
 
+    if (parGtm) {
+      if (enAttente) pousserGtm(EVENEMENTS_GTM.inscription);
+      return;
+    }
+
     const id = pixelCourant();
     assurerInit(id);
     window.fbq("trackSingle", id, "PageView");
     if (!enAttente) return;
-
-    // Le marqueur vient d'être consommé : c'est une vraie inscription. GTM
-    // est prévenu ICI, avant le calcul de l'Advanced Matching de Meta, pour
-    // ne pas dépendre de lui.
-    pousserGtm(EVENEMENTS_GTM.inscription);
 
     const p = getTunnelPrefill();
     const am = await buildAdvancedMatching({ firstName: p?.firstName, email: p?.email, phone: p?.phone });

@@ -16,9 +16,9 @@
 // résultat est le même. Le bloc <noscript> n'est pas installé : sans
 // JavaScript, l'application ne s'affiche pas du tout, il ne mesurerait rien.
 //
-// LE PIXEL META RESTE CODÉ EN DUR (pixel.ts), sur décision de Hassan.
-// ⚠️ Tant que c'est le cas, le media buyer ne doit PAS ajouter Meta dans GTM :
-// chaque conversion serait comptée deux fois.
+// META PASSE AUSSI PAR GTM sur ce périmètre (décision du 30/09/2026) : dès
+// que GTM est actif sur une page, le pixel codé en dur (pixel.ts) s'y tait.
+// Liberty et Al Baraka 200 gardent leur pixel dans le code.
 //
 // Les évènements poussés ici le sont aux mêmes endroits protégés que ceux de
 // Meta (pixel.ts) : un Lead seulement pour qui vient de s'inscrire, un
@@ -33,23 +33,28 @@ import { TUNNEL_HOST } from "@/lib/hosts";
 export const GTM_ID = "GTM-K3VGV2PX";
 
 /**
- * ⚠️ EN PAUSE depuis le 30/09/2026, quelques minutes après la mise en ligne.
+ * ⚠️ EN PAUSE depuis le 30/09/2026.
  *
- * Le conteneur du media buyer contient déjà trois balises META, en plus de
- * TikTok (lu dans gtm.js, public) :
- *   - le pixel 1499213912013386 + PageView, sur toutes les pages ;
- *   - ViewContent, sur toute adresse contenant « /webinaire » ;
- *   - Lead, sur toute adresse contenant « /webinaire/merci » — donc à CHAQUE
- *     affichage de la page de remerciement, inscription ou non.
- * Avec notre pixel codé en dur (que Hassan a choisi de garder), Meta recevait
- * tout en double, plus un faux Lead par rechargement : constaté en ligne,
- * quatre requêtes au lieu de deux sur /webinaire.
+ * DÉCISION (Hassan + media buyer, 30/09/2026) : sur ce tunnel, TOUT le suivi
+ * passera par GTM — Meta compris. Quand GTM est actif sur une page, le pixel
+ * Meta codé en dur (pixel.ts) ne s'y charge plus : sinon Meta reçoit tout en
+ * double (constaté en ligne : quatre requêtes au lieu de deux sur /webinaire).
  *
- * À repasser à `false` quand le media buyer aura retiré ses trois balises
- * Meta du conteneur (TikTok peut rester). Vérifier alors dans gtm.js qu'il
- * n'y a plus aucun « fbq ».
+ * POURQUOI ENCORE EN PAUSE : le conteneur (lu dans gtm.js, public) n'est pas
+ * prêt à prendre le relais. Ses balises Meta se déclenchent sur des ADRESSES :
+ *   - Lead sur « /webinaire/merci » : à chaque affichage, inscription ou non,
+ *     et RIEN sur /vsl/merci — les leads du tunnel VSL disparaîtraient ;
+ *   - ni Schedule, ni clic WhatsApp.
+ * Basculer maintenant ferait perdre aux campagnes leur signal d'optimisation.
+ *
+ * AVANT DE LEVER LA PAUSE (`enPause: false`), vérifier dans gtm.js que les
+ * balises sont branchées sur nos évènements (« alb_lead », « alb_schedule »…)
+ * et non plus sur des adresses de page.
+ *
+ * Objet modifiable, et non constante, pour que les tests couvrent les deux
+ * états sans attendre la levée de la pause.
  */
-export const GTM_EN_PAUSE = true;
+export const reglageGtm = { enPause: true };
 
 /** Les noms d'évènements communiqués au media buyer. Ne pas renommer sans le prévenir. */
 export const EVENEMENTS_GTM = {
@@ -87,10 +92,18 @@ export function tunnelDe(chemin: string): string {
 }
 
 function actif(chemin: string): boolean {
-  if (GTM_EN_PAUSE || typeof window === "undefined") return false;
+  if (reglageGtm.enPause || typeof window === "undefined") return false;
   // Seulement sur le vrai domaine des tunnels : ni local, ni aperçu Vercel,
   // pour ne jamais polluer les données publicitaires pendant le développement.
   return window.location.hostname === TUNNEL_HOST && estPageGtm(chemin);
+}
+
+/**
+ * GTM a-t-il la main sur cette page ? Si oui, le pixel Meta codé en dur doit
+ * s'abstenir : c'est le conteneur qui parle à Meta.
+ */
+export function gtmGereLaPage(chemin?: string): boolean {
+  return actif(chemin ?? (typeof window !== "undefined" ? window.location.pathname : ""));
 }
 
 /** Injecte le conteneur une seule fois (équivalent du snippet officiel). */

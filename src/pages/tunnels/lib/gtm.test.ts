@@ -12,12 +12,21 @@
  *
  * L'URL est forcée sur le domaine des tunnels : ailleurs, tout est sans effet.
  */
-import { describe, it, expect, beforeEach } from "vitest";
-import { vi } from "vitest";
-import { GTM_EN_PAUSE } from "./gtm";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
 const evenements = () => (window.dataLayer ?? []).map((e) => e.event).filter((e) => String(e).startsWith("alb_"));
 const allerSur = (chemin: string) => window.history.pushState({}, "", chemin);
+
+/** Les appels au pixel Meta, pour vérifier qu'il se tait quand GTM a la main. */
+let meta: unknown[][] = [];
+const evenementsMeta = () => meta.filter((a) => String(a[0]).startsWith("trackSingle")).map((a) => a[2]);
+
+/** Charge le module avec la pause levée — l'état visé après la bascule. */
+async function gtmActif() {
+  const gtm = await import("./gtm");
+  gtm.reglageGtm.enPause = false;
+  return gtm;
+}
 
 beforeEach(() => {
   vi.resetModules();
@@ -25,9 +34,9 @@ beforeEach(() => {
   localStorage.clear();
   delete window.dataLayer;
   document.getElementById("alb-gtm")?.remove();
-  delete (window as unknown as { fbq?: unknown }).fbq;
   // Faux pixel Meta : sans lui, pixel.ts injecterait le script de Facebook.
-  (window as unknown as { fbq: unknown }).fbq = () => {};
+  meta = [];
+  (window as unknown as { fbq: unknown }).fbq = (...args: unknown[]) => { meta.push(args); };
   allerSur("/webinaire");
 });
 
@@ -51,8 +60,8 @@ describe("périmètre", () => {
     ]) expect(estPageGtm(p), p).toBe(false);
   });
 
-  it("ne charge pas le conteneur sur Liberty ni sur Al Baraka 200", async () => {
-    const { suivrePageGtm } = await import("./gtm");
+  it("ne charge pas le conteneur sur Liberty ni sur Al Baraka 200, même GTM actif", async () => {
+    const { suivrePageGtm } = await gtmActif();
     for (const p of ["/liberty", "/al-baraka-200"]) {
       allerSur(p);
       suivrePageGtm(p);
@@ -62,13 +71,32 @@ describe("périmètre", () => {
   });
 });
 
-// Ces deux blocs décrivent GTM actif : ils reprennent dès que la pause est levée.
-describe.skipIf(GTM_EN_PAUSE)("chargement et évènements", () => {
+describe("en pause (état en production tant que le conteneur n'est pas prêt)", () => {
+  it("est bien en pause par défaut", async () => {
+    const { reglageGtm } = await import("./gtm");
+    expect(reglageGtm.enPause).toBe(true);
+  });
+
+  it("GTM ne charge rien, et le pixel Meta du code continue de tout envoyer", async () => {
+    const { suivrePageGtm } = await import("./gtm");
+    const { trackLandingView, markLeadPending, trackTypLead } = await import("./pixel");
+    suivrePageGtm("/webinaire");
+    trackLandingView();
+    allerSur("/webinaire/merci");
+    markLeadPending();
+    await trackTypLead();
+    expect(document.getElementById("alb-gtm")).toBeNull();
+    expect(window.dataLayer).toBeUndefined();
+    expect(evenementsMeta()).toEqual(["PageView", "ViewContent", "PageView", "Lead"]);
+  });
+});
+
+describe("GTM actif : chargement et évènements", () => {
   it("charge le bon conteneur, une seule fois, et signale chaque page", async () => {
-    const { suivrePageGtm, GTM_ID } = await import("./gtm");
+    const { suivrePageGtm, GTM_ID } = await gtmActif();
     suivrePageGtm("/webinaire");
     suivrePageGtm("/webinaire/merci");
-    const scripts = [...document.querySelectorAll("script")].filter((s) => s.src.includes("googletagmanager"));
+    const scripts = [...document.querySelectorAll("script")].filter((sc) => sc.src.includes("googletagmanager"));
     expect(scripts).toHaveLength(1);
     expect(GTM_ID).toBe("GTM-K3VGV2PX");
     expect(scripts[0].src).toBe("https://www.googletagmanager.com/gtm.js?id=GTM-K3VGV2PX");
@@ -77,6 +105,7 @@ describe.skipIf(GTM_EN_PAUSE)("chargement et évènements", () => {
   });
 
   it("ne pousse aucune donnée personnelle", async () => {
+    await gtmActif();
     sessionStorage.setItem("alb_tunnel_lead_pending", "1");
     allerSur("/webinaire/merci");
     const { trackTypLead } = await import("./pixel");
@@ -87,17 +116,46 @@ describe.skipIf(GTM_EN_PAUSE)("chargement et évènements", () => {
   });
 });
 
-describe.skipIf(GTM_EN_PAUSE)("mêmes garde-fous que le pixel Meta", () => {
-  it("le Lead part une fois, puis plus au rechargement", async () => {
+describe("GTM actif : le pixel Meta du code se tait sur le tunnel conférence", () => {
+  it("n'envoie plus rien à Meta depuis le code — sinon tout serait compté deux fois", async () => {
+    await gtmActif();
+    const { trackLandingView, markLeadPending, trackTypLead, trackWhatsappJoin, trackCalendlyBooked } = await import("./pixel");
+    trackLandingView();
+    allerSur("/webinaire/merci");
+    markLeadPending();
+    await trackTypLead();
+    trackWhatsappJoin();
+    allerSur("/vsl/confirmation");
+    trackCalendlyBooked("2026-10-05T10:00|client@example.com");
+    expect(meta).toEqual([]);
+    expect(evenements()).toEqual(["alb_view_content", "alb_lead", "alb_whatsapp_join", "alb_schedule"]);
+  });
+
+  it("Liberty garde son pixel Meta dans le code, et n'envoie rien à GTM", async () => {
+    await gtmActif();
+    allerSur("/liberty/merci");
+    const { markLeadPending, trackTypLead } = await import("./pixel");
+    markLeadPending();
+    await trackTypLead();
+    expect(evenementsMeta()).toEqual(["PageView", "Lead"]);
+    expect(window.dataLayer).toBeUndefined();
+  });
+});
+
+describe("GTM actif : mêmes garde-fous qu'avec le pixel", () => {
+  it("le Lead part une fois, puis plus au rechargement — y compris sur le tunnel VSL", async () => {
+    await gtmActif();
     allerSur("/vsl/merci");
     const { markLeadPending, trackTypLead } = await import("./pixel");
     markLeadPending();
     await trackTypLead();
     await trackTypLead(); // rechargement de la page de remerciement
     expect(evenements().filter((e) => e === "alb_lead")).toHaveLength(1);
+    expect(window.dataLayer!.find((e) => e.event === "alb_lead")).toMatchObject({ tunnel: "vsl" });
   });
 
   it("aucun Lead pour qui ouvre la page de remerciement sans s'être inscrit", async () => {
+    await gtmActif();
     allerSur("/webinaire/merci");
     const { trackTypLead } = await import("./pixel");
     await trackTypLead();
@@ -105,38 +163,12 @@ describe.skipIf(GTM_EN_PAUSE)("mêmes garde-fous que le pixel Meta", () => {
   });
 
   it("le rendez-vous est compté une fois par réservation, et pas sans réservation", async () => {
+    await gtmActif();
     allerSur("/vsl/confirmation");
     const { trackCalendlyBooked } = await import("./pixel");
     trackCalendlyBooked(null);
     trackCalendlyBooked("2026-10-05T10:00|client@example.com");
     trackCalendlyBooked("2026-10-05T10:00|client@example.com");
     expect(evenements().filter((e) => e === "alb_schedule")).toHaveLength(1);
-  });
-
-  it("la landing et le clic WhatsApp sont signalés", async () => {
-    const { trackLandingView, trackWhatsappJoin } = await import("./pixel");
-    trackLandingView();
-    allerSur("/webinaire/merci");
-    trackWhatsappJoin();
-    expect(evenements()).toEqual(["alb_view_content", "alb_whatsapp_join"]);
-  });
-
-  it("un Lead du tunnel Liberty ne part jamais vers GTM", async () => {
-    allerSur("/liberty/merci");
-    const { markLeadPending, trackTypLead } = await import("./pixel");
-    markLeadPending();
-    await trackTypLead();
-    expect(window.dataLayer).toBeUndefined();
-  });
-});
-
-describe.runIf(GTM_EN_PAUSE)("en pause", () => {
-  it("ne charge rien et ne pousse rien, même sur une page du périmètre", async () => {
-    const { suivrePageGtm } = await import("./gtm");
-    const { trackLandingView } = await import("./pixel");
-    suivrePageGtm("/webinaire");
-    trackLandingView();
-    expect(document.getElementById("alb-gtm")).toBeNull();
-    expect(window.dataLayer).toBeUndefined();
   });
 });
