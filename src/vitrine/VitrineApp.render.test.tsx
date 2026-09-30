@@ -60,15 +60,18 @@ describe("site vitrine", () => {
     expect(document.querySelector('iframe[src*="vimeo"]')).toBeNull();
   });
 
-  it("le pied de page porte le bloc légal et les quatre liens", () => {
+  it("le pied de page porte le bloc légal et les trois liens, sans bandeau cookies", () => {
     reseau();
     render(<VitrineApp />);
     const pied = document.getElementById("footer")!;
     expect(pied.textContent).toContain("ETHICARENA L.L.C-FZ – Licence n° 2422583.01");
     expect(pied.textContent).toContain("Meta Platforms, Inc.");
     expect(pied.textContent).toContain("© 2026 - www.albarakaecosysteme.com / Tous droits réservés");
-    for (const l of ["Mentions légales", "Politique de confidentialité", "Conditions générales de vente", "Gérer les cookies"])
+    for (const l of ["Mentions légales", "Politique de confidentialité", "Conditions générales de vente"])
       expect(screen.getAllByText(l).length).toBeGreaterThan(0);
+    // Bandeau et lien « Gérer les cookies » retirés le 30/09/2026 (décision de Hassan).
+    expect(screen.queryByText("Gérer les cookies")).toBeNull();
+    expect(screen.queryByText("Accepter")).toBeNull();
     // Les liens légaux ouvrent un nouvel onglet, sous le préfixe de l'aperçu.
     const mentions = screen.getByRole("link", { name: "Mentions légales" });
     expect(mentions.getAttribute("href")).toBe("/site-vitrine/mentions-legales");

@@ -22,7 +22,6 @@ import {
   RESULTATS_NON_GARANTIS,
   SOCIETE,
 } from "@/components/legal/PiedDePageLegal";
-import { EVENEMENT_OUVRIR } from "@/lib/consentement";
 import { PIED_DE_PAGE, REFERENCEMENT } from "../contenu";
 import { useAncre } from "../liens";
 import logoComplet from "../assets/logo-complet.webp";
@@ -66,9 +65,6 @@ export default function PiedDePage() {
             {LIENS_LEGAUX.map((l) => (
               <LienLegal key={l.chemin} chemin={l.chemin} libelle={l.libelle} />
             ))}
-            <button type="button" onClick={() => window.dispatchEvent(new CustomEvent(EVENEMENT_OUVRIR))}>
-              Gérer les cookies
-            </button>
           </nav>
         </div>
       </div>

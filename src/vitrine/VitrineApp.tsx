@@ -12,13 +12,12 @@
 //     racine de ces domaines appartient à la plateforme.
 //
 // Aucun pixel : aucune publicité ne mène ici (décision de Hassan le
-// 28/09/2026). Le bandeau cookies est tout de même monté, pour que le lien
-// « Gérer les cookies » du pied de page fasse ce que la politique de
-// confidentialité (§9) annonce.
+// 28/09/2026). Plus de bandeau cookies non plus depuis le 30/09/2026 : il a
+// été retiré de tous les sites (décision de Hassan), et la politique de
+// confidentialité (§9) n'annonce plus de demande de consentement.
 // ─────────────────────────────────────────────────────────────────────────
 import { lazy, Suspense, useEffect, useLayoutEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
-import BandeauCookies from "@/components/legal/BandeauCookies";
 import { MENTIONS_LEGALES, POLITIQUE_CONFIDENTIALITE, CGV } from "@/pages/legal/textes";
 import { PRIMARY_APP_HOST } from "@/lib/impersonation";
 import { isVitrineHost, VITRINE_PREFIXE } from "@/lib/hosts";
@@ -111,7 +110,6 @@ export default function VitrineApp() {
         <Route path={CGV.chemin} element={legale(CGV)} />
         <Route path="*" element={<VersPlateforme />} />
       </Routes>
-      <BandeauCookies />
     </BrowserRouter>
   );
 }
