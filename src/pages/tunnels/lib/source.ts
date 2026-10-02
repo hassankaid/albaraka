@@ -67,10 +67,29 @@ function readParam(params: URLSearchParams, key: string): string | null {
   return v && v.trim() ? v.trim() : null;
 }
 
-function sourceLabel(cfg: TunnelConfig, src: string | null): string {
+/**
+ * Filet de sécurité (02/10/2026) : le lien Meta (`?src=ads`) collé dans une
+ * pub Snapchat ou TikTok. Le premier jour de Snap Ads, 7 leads sont arrivés
+ * avec `?src=ads&utm_source=snapchat` et ont été comptés comme du Meta — Snap
+ * affichait 0 dans le tableau marketing. Quand `utm_source` désigne sans
+ * ambiguïté une autre régie payante, c'est elle qui l'emporte.
+ */
+function regieDepuisUtm(utmSource: string | null): string | null {
+  const u = (utmSource ?? "").toLowerCase();
+  if (/snap/.test(u)) return "snap_ads";
+  if (/tiktok/.test(u)) return "tiktok_ads";
+  return null;
+}
+
+function sourceLabel(cfg: TunnelConfig, src: string | null, utmSource: string | null = null): string {
   if (!src) return `${cfg.srcPrefix}_direct`;
   const s = src.toLowerCase();
-  return `${cfg.srcPrefix}_${SRC_SUFFIX[s] ?? s}`;
+  const suffixe = SRC_SUFFIX[s] ?? s;
+  if (suffixe === "ads") {
+    const regie = regieDepuisUtm(utmSource);
+    if (regie) return `${cfg.srcPrefix}_${regie}`;
+  }
+  return `${cfg.srcPrefix}_${suffixe}`;
 }
 
 /**
@@ -101,7 +120,7 @@ export function captureAttribution(cfg: TunnelConfig): TunnelAttribution {
   const attrib: TunnelAttribution = {
     src,
     abCode: abCode ? abCode.toUpperCase() : null,
-    source: sourceLabel(cfg, src),
+    source: sourceLabel(cfg, src, utm_source),
     variant,
     utm_source,
     utm_medium: readParam(params, "utm_medium"),

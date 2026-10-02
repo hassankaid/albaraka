@@ -44,3 +44,23 @@ describe("liens d'entrée des régies publicitaires", () => {
     for (const regie of ["tiktok_ads", "snap_ads"]) expect(FONCTION).toContain(`"${tunnel}_${regie}"`);
   });
 });
+
+describe("filet de sécurité : le lien Meta collé dans une pub Snap ou TikTok", () => {
+  // Constaté le 02/10/2026 : 7 leads Snap avec ?src=ads&utm_source=snapchat,
+  // comptés comme du Meta. utm_source désigne la vraie régie : elle l'emporte.
+  it.each([
+    ["?src=ads&utm_source=snapchat&utm_medium=paid", "webi_wa_snap_ads"],
+    ["?src=ads&utm_source=Snap", "webi_wa_snap_ads"],
+    ["?src=ads&utm_source=tiktok", "webi_wa_tiktok_ads"],
+    ["?src=ads&utm_source=facebook", "webi_wa_ads"],
+    ["?src=ads&utm_source=instagram", "webi_wa_ads"],
+    ["?src=ads", "webi_wa_ads"],
+  ])("%s → %s", (recherche, attendu) => {
+    expect(sourcePour(WA_TUNNEL, recherche)).toBe(attendu);
+  });
+
+  it("ne touche pas au trafic gratuit : ?src=tiktok reste organique, même avec utm_source=tiktok", () => {
+    expect(sourcePour(WA_TUNNEL, "?src=tiktok&utm_source=tiktok")).toBe("webi_wa_tiktok_organic");
+    expect(sourcePour(VSL_TUNNEL, "?src=ads&utm_source=snapchat")).toBe("webi_vsl_snap_ads");
+  });
+});
