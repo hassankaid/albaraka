@@ -1,0 +1,93 @@
+// @vitest-environment-options { "url": "https://event.albarakabyethicarena.com/webinaire" }
+
+/**
+ * Second domaine des tunnels, `event.albarakabyethicarena.com` (04/10/2026) :
+ * il porte les pubs Meta, bloquées sur `event.albarakaecosysteme.com`.
+ *
+ * Il doit se comporter EXACTEMENT comme le premier. Un oubli ne casserait rien
+ * à l'écran — la page s'affiche — mais Meta, TikTok et Snap ne recevraient
+ * plus aucune conversion des pubs : la panne la plus coûteuse, et la plus
+ * silencieuse.
+ */
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { isTunnelHost, isAppHost, isVitrineHost, TUNNEL_HOSTS } from "@/lib/hosts";
+
+const NOUVEAU = "event.albarakabyethicarena.com";
+
+const evenements = () => (window.dataLayer ?? []).map((e) => e.event).filter((e) => String(e).startsWith("alb_"));
+const allerSur = (chemin: string) => window.history.pushState({}, "", chemin);
+let meta: unknown[][] = [];
+const evenementsMeta = () => meta.filter((a) => String(a[0]).startsWith("trackSingle")).map((a) => a[2]);
+
+beforeEach(() => {
+  vi.resetModules();
+  sessionStorage.clear();
+  localStorage.clear();
+  delete window.dataLayer;
+  document.getElementById("alb-gtm")?.remove();
+  meta = [];
+  (window as unknown as { fbq: unknown }).fbq = (...args: unknown[]) => { meta.push(args); };
+  allerSur("/webinaire");
+});
+
+describe("le nouveau domaine est un domaine de tunnels, et seulement ça", () => {
+  it("sert les tunnels, jamais l'application ni le site vitrine", () => {
+    expect(TUNNEL_HOSTS).toContain(NOUVEAU);
+    expect(isTunnelHost(NOUVEAU)).toBe(true);
+    expect(isAppHost(NOUVEAU)).toBe(false);
+    expect(isVitrineHost(NOUVEAU)).toBe(false);
+  });
+
+  it("le domaine racine et les imitations ne sont pas des domaines de tunnels", () => {
+    for (const h of ["albarakabyethicarena.com", "www.albarakabyethicarena.com", "event.albarakabyethicarena.com.attaquant.fr", "event.alabarakabyethicarena.com"]) {
+      expect(isTunnelHost(h), h).toBe(false);
+    }
+  });
+
+  it("vercel.json lui sert les mêmes pages, et l'introuvable pour tout le reste", () => {
+    const config = JSON.parse(readFileSync(resolve(process.cwd(), "vercel.json"), "utf-8")) as {
+      rewrites: Array<{ source: string; destination: string; has?: Array<{ type: string; value: string }> }>;
+    };
+    const regles = config.rewrites.filter((r) => {
+      const motif = r.has?.find((c) => c.type === "host")?.value;
+      return motif && new RegExp(motif).test(NOUVEAU) && new RegExp(motif).test("event.albarakaecosysteme.com");
+    });
+    expect(regles.map((r) => r.destination)).toEqual(["/app.html", "/app.html", "/introuvable.html"]);
+    expect(regles[0].source).toContain("webinaire");
+    expect(regles[0].source).toContain("vsl");
+    for (const r of regles) {
+      const motif = r.has!.find((c) => c.type === "host")!.value;
+      for (const h of ["albarakabyethicarena.com", "plateforme.albarakaecosysteme.com", "event.albarakabyethicarena.com.attaquant.fr"]) {
+        expect(new RegExp(motif).test(h), h).toBe(false);
+      }
+    }
+  });
+});
+
+describe("le suivi pub fonctionne sur le nouveau domaine", () => {
+  it("GTM s'y charge et reçoit les conversions, le pixel du code s'y tait", async () => {
+    const gtm = await import("./gtm");
+    gtm.reglageGtm.enPause = false;
+    const { trackLandingView, markLeadPending, trackTypLead } = await import("./pixel");
+    gtm.suivrePageGtm("/webinaire");
+    trackLandingView();
+    allerSur("/webinaire/merci");
+    markLeadPending();
+    await trackTypLead();
+    expect([...document.querySelectorAll("script")].some((s) => s.src.includes("GTM-K3VGV2PX"))).toBe(true);
+    expect(evenements()).toEqual(["alb_page_view", "alb_view_content", "alb_lead"]);
+    expect(meta).toEqual([]);
+  });
+
+  it("si GTM est en pause, le pixel Meta du code y reprend la main", async () => {
+    const gtm = await import("./gtm");
+    gtm.reglageGtm.enPause = true;
+    allerSur("/webinaire/merci");
+    const { markLeadPending, trackTypLead } = await import("./pixel");
+    markLeadPending();
+    await trackTypLead();
+    expect(evenementsMeta()).toEqual(["PageView", "Lead"]);
+  });
+});

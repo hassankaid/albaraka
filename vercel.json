@@ -47,7 +47,7 @@
       "has": [
         {
           "type": "host",
-          "value": "event.albarakaecosysteme.com"
+          "value": "^event\\.(albarakaecosysteme|albarakabyethicarena)\\.com$"
         }
       ],
       "destination": "/app.html"
@@ -57,7 +57,7 @@
       "has": [
         {
           "type": "host",
-          "value": "event.albarakaecosysteme.com"
+          "value": "^event\\.(albarakaecosysteme|albarakabyethicarena)\\.com$"
         }
       ],
       "destination": "/app.html"
@@ -67,7 +67,7 @@
       "has": [
         {
           "type": "host",
-          "value": "event.albarakaecosysteme.com"
+          "value": "^event\\.(albarakaecosysteme|albarakabyethicarena)\\.com$"
         }
       ],
       "destination": "/introuvable.html"

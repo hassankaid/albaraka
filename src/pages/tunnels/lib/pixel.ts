@@ -77,7 +77,8 @@ function assurerInit(id: string, donnees?: Record<string, string>): void {
 
 function isProdHost(): boolean {
   if (typeof window === "undefined") return false;
-  return /(?:^|\.)albarakaecosysteme\.com$/i.test(window.location.hostname);
+  // Deux domaines de production : le second porte les pubs Meta (04/10/2026).
+  return /(?:^|\.)(albarakaecosysteme|albarakabyethicarena)\.com$/i.test(window.location.hostname);
 }
 
 // ─────────────────────────────────────────────────────────────────────────

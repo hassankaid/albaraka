@@ -28,7 +28,7 @@
 // Aucune donnée personnelle n'est poussée (ni e-mail, ni téléphone, même
 // hachés) : à ajouter seulement sur décision explicite.
 // ─────────────────────────────────────────────────────────────────────────
-import { TUNNEL_HOST } from "@/lib/hosts";
+import { isTunnelHost } from "@/lib/hosts";
 
 export const GTM_ID = "GTM-K3VGV2PX";
 
@@ -90,9 +90,10 @@ export function tunnelDe(chemin: string): string {
 
 function actif(chemin: string): boolean {
   if (reglageGtm.enPause || typeof window === "undefined") return false;
-  // Seulement sur le vrai domaine des tunnels : ni local, ni aperçu Vercel,
-  // pour ne jamais polluer les données publicitaires pendant le développement.
-  return window.location.hostname === TUNNEL_HOST && estPageGtm(chemin);
+  // Seulement sur les vrais domaines des tunnels (les deux, depuis le
+  // 04/10/2026) : ni local, ni aperçu Vercel, pour ne jamais polluer les
+  // données publicitaires pendant le développement.
+  return isTunnelHost(window.location.hostname) && estPageGtm(chemin);
 }
 
 /**

@@ -15,8 +15,19 @@
 // accessible, pour ne pas gêner le développement.
 // ─────────────────────────────────────────────────────────────────────────
 
-/** Domaine public des tunnels (funnels de pub). */
+/** Domaine public des tunnels (funnels de pub). Celui des liens partagés, e-mails et SMS. */
 export const TUNNEL_HOST = "event.albarakaecosysteme.com";
+
+/**
+ * Tous les domaines qui servent les tunnels. Le second sert EXACTEMENT les
+ * mêmes pages : il porte les pubs Meta, bloquées sur le premier (demande de
+ * Hassan le 04/10/2026). Les autres canaux restent sur `TUNNEL_HOST`.
+ *
+ * ⚠️ Un domaine ajouté ici doit l'être aussi dans `vercel.json` (règles
+ * « tunnels »), dans `isProdHost` (pixel.ts) et dans les domaines autorisés
+ * de chaque vidéo Vimeo des tunnels.
+ */
+export const TUNNEL_HOSTS = [TUNNEL_HOST, "event.albarakabyethicarena.com"] as const;
 
 /** Domaines qui servent l'application (CRM, espaces membres, checkout…). */
 export const APP_HOSTS = [
@@ -51,7 +62,7 @@ function currentHost(): string {
 
 /** Le domaine est-il celui des tunnels ? (→ ne servir QUE les tunnels) */
 export function isTunnelHost(host?: string | null): boolean {
-  return normalize(host ?? currentHost()) === TUNNEL_HOST;
+  return (TUNNEL_HOSTS as readonly string[]).includes(normalize(host ?? currentHost()));
 }
 
 /** Le domaine est-il celui du site vitrine ? (→ le site est servi à la racine) */

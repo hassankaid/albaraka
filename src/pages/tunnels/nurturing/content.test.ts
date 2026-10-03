@@ -70,7 +70,7 @@ describe("routage des pages de nurturing", () => {
 
   it("les sert bien depuis le domaine des tunnels", () => {
     const regles = config.rewrites.filter(
-      (r) => pourHote(r) === "event.albarakaecosysteme.com" && r.destination === "/app.html",
+      (r) => new RegExp(pourHote(r) || "^$").test("event.albarakaecosysteme.com") && r.destination === "/app.html",
     );
     expect(regles.length).toBeGreaterThan(0);
     for (const chemin of chemins) {
