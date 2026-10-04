@@ -90,6 +90,50 @@ const SITUATIONS_VITRINE = new Set([
   "Je souhaite lancer mon activité autour de ma passion ou de ma compétence",
   "J’ai déjà une activité et je veux la développer",
 ]);
+/**
+ * Lead scoring (04/10/2026) : le quiz suit l'inscription sur les tunnels
+ * WhatsApp et VSL. On crée ici le jeton qui rattachera les réponses à ce
+ * contact — submit-scoring-quiz le lit, comme du temps de Systeme.io.
+ *
+ * Créé déjà « consommé » : il n'a pas à passer par le rapprochement par IP de
+ * match-scoring-token, qui ne doit jamais le proposer à quelqu'un d'autre.
+ *
+ * Ne fait jamais échouer une inscription : sans jeton, le site saute le quiz.
+ */
+const QUIZ_PAR_PREFIXE: Array<[string, string]> = [
+  ["webi_wa_", "tunnel-wa"],
+  ["webi_vsl_", "tunnel-vsl"],
+];
+
+async function jetonQuiz(
+  supabase: ReturnType<typeof createClient>,
+  source: string,
+  contact: { email: string | null; firstName: string | null; phone: string },
+): Promise<string | null> {
+  const funnel = QUIZ_PAR_PREFIXE.find(([prefixe]) => source.startsWith(prefixe))?.[1];
+  if (!funnel || !contact.email) return null;
+  try {
+    const { data, error } = await supabase
+      .from("pending_scoring_tokens")
+      .insert({
+        funnel_slug: funnel,
+        contact_email: contact.email,
+        contact_first_name: contact.firstName,
+        contact_phone: contact.phone,
+        consumed: true,
+        consumed_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 86_400_000).toISOString(),
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    return data.id as string;
+  } catch (e) {
+    console.error("[tunnel-lead-submit] jeton du quiz non cree (non bloquant):", e);
+    return null;
+  }
+}
+
 function safeSource(s: unknown): string {
   if (typeof s === "string" && ALLOWED_SOURCES.has(s)) return s;
   // Filet de sécurité si le client envoie une source non reconnue.
@@ -353,7 +397,8 @@ serve(async (req) => {
       combler.notes = dejaLa.notes ? `${dejaLa.notes} ${trace}` : trace;
       await supabase.from("leads").update(combler).eq("id", dejaLa.id);
       console.log(`[tunnel-lead-submit] doublon fusionne dans le lead ${dejaLa.id}`);
-      return json({ ok: true, lead_id: dejaLa.id, contact_id: contactId, fusionne: true });
+      const scoring_token = await jetonQuiz(supabase, source, { email, firstName, phone: phoneE164 ?? "" });
+      return json({ ok: true, lead_id: dejaLa.id, contact_id: contactId, fusionne: true, scoring_token });
     }
 
     const { data: lead, error: leadErr } = await supabase
@@ -416,7 +461,8 @@ serve(async (req) => {
       }
     }
 
-    return json({ ok: true, lead_id: lead.id, contact_id: contactId });
+    const scoring_token = await jetonQuiz(supabase, source, { email, firstName, phone: phoneE164 ?? "" });
+    return json({ ok: true, lead_id: lead.id, contact_id: contactId, scoring_token });
   } catch (error) {
     const message = extractErrorMessage(error);
     console.error("[tunnel-lead-submit] error", JSON.stringify(error, null, 2));

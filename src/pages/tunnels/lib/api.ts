@@ -23,6 +23,8 @@ export interface TunnelLeadResult {
   ok: boolean;
   lead_id: string;
   contact_id: string;
+  /** Jeton du quiz de lead scoring (tunnels WhatsApp et VSL), sinon null. */
+  scoring_token?: string | null;
 }
 
 export async function submitTunnelLead(input: TunnelLeadInput, cfg: TunnelConfig): Promise<TunnelLeadResult> {

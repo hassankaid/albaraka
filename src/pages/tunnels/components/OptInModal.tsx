@@ -9,7 +9,8 @@
 //
 // À la validation : POST vers l'edge function
 // tunnel-lead-submit (find_or_create_contact + INSERT leads, source webi_wa_*)
-// → redirection vers la page de remerciement /webinaire/merci.
+// → quiz de lead scoring /webinaire/quiz (obligatoire, 04/10/2026)
+// → page de remerciement /webinaire/merci.
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { T, CONFERENCE } from "../theme";
@@ -18,6 +19,7 @@ import { markLeadPending } from "../lib/pixel";
 import { CaseMarketing, MentionFormulaire } from "@/components/legal/MentionFormulaire";
 import { submitTunnelLead } from "../lib/api";
 import { getAttribution, setTunnelPrefill } from "../lib/source";
+import { avecVariante, memoriserJetonQuiz } from "../lib/quiz";
 import type { TunnelConfig } from "../config";
 import PhoneField, { isValidPhoneNumber } from "./PhoneField";
 
@@ -89,20 +91,23 @@ export default function OptInModal({ open, onClose, tunnel, titre, dateLigne, bo
     setSubmitting(true);
     try {
       // 1) Création du lead dans le CRM (edge function), avec la source du tunnel.
-      await submitTunnelLead(
+      const lead = await submitTunnelLead(
         { first_name: firstName.trim(), email: email.trim(), phone, consentement_marketing: accepteMarketing },
         tunnel,
       );
       // Mémorise les coordonnées pour pré-remplir le Calendly (tunnel VSL).
       setTunnelPrefill({ firstName: firstName.trim(), email: email.trim(), phone });
-      // 2) Le « Lead » part de la PAGE DE REMERCIEMENT (montage voulu par le
-      //    client). On pose ici un marqueur a usage unique : sans lui, les
-      //    pages de remerciement etant accessibles par URL directe, chaque
-      //    rechargement compterait une conversion.
+      // 2) Le « Lead » part de la page qui SUIT l'inscription (montage voulu
+      //    par le client). On pose ici un marqueur a usage unique : sans lui,
+      //    ces pages etant accessibles par URL directe, chaque rechargement
+      //    compterait une conversion.
       markLeadPending();
-      // 3) Page de remerciement propre au tunnel (en portant la variante A/B).
+      // 3) Tunnels WhatsApp et VSL : le quiz de lead scoring d'abord,
+      //    obligatoire (04/10/2026). Sinon, ou sans jeton, la page de
+      //    remerciement propre au tunnel. La variante A/B suit dans les deux cas.
       const variant = getAttribution(tunnel)?.variant;
-      navigate(variant ? `${tunnel.merciPath}?v=${encodeURIComponent(variant)}` : tunnel.merciPath);
+      const suite = tunnel.quiz && memoriserJetonQuiz(tunnel, lead.scoring_token) ? tunnel.quiz.path : tunnel.merciPath;
+      navigate(avecVariante(suite, variant));
     } catch (err) {
       console.warn("[tunnel] soumission échouée :", err);
       setSubmitting(false);

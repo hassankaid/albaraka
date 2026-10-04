@@ -165,6 +165,7 @@ const LibertyLanding = lazy(() => import("./pages/tunnels/liberty/LibertyLanding
 const LibertyMerci = lazy(() => import("./pages/tunnels/liberty/LibertyMerci"));
 const LibertyConfirmation = lazy(() => import("./pages/tunnels/liberty/LibertyConfirmation"));
 const TunnelNotFound = lazy(() => import("./pages/tunnels/components/TunnelNotFound"));
+const TunnelQuiz = lazy(() => import("./pages/tunnels/components/TunnelQuiz"));
 const TunnelFallback = () => (
   <div style={{ minHeight: "100vh", background: "#060504" }} aria-hidden />
 );
@@ -189,9 +190,12 @@ const tunnelRoutes = (
   <>
     {/* Tunnel WhatsApp */}
     <Route path="/webinaire" element={<Suspense fallback={<TunnelFallback />}><TunnelLanding tunnel={WA_TUNNEL} /></Suspense>} />
+    {/* Quiz de lead scoring, obligatoire entre l'inscription et le remerciement (04/10/2026) */}
+    <Route path="/webinaire/quiz" element={<Suspense fallback={<TunnelFallback />}><TunnelQuiz tunnel={WA_TUNNEL} /></Suspense>} />
     <Route path="/webinaire/merci" element={<Suspense fallback={<TunnelFallback />}><WebinaireMerci /></Suspense>} />
     {/* Tunnel VSL (même landing) */}
     <Route path="/vsl" element={<Suspense fallback={<TunnelFallback />}><TunnelLanding tunnel={VSL_TUNNEL} /></Suspense>} />
+    <Route path="/vsl/quiz" element={<Suspense fallback={<TunnelFallback />}><TunnelQuiz tunnel={VSL_TUNNEL} /></Suspense>} />
     <Route path="/vsl/merci" element={<Suspense fallback={<TunnelFallback />}><VslMerci /></Suspense>} />
     <Route path="/vsl/confirmation" element={<Suspense fallback={<TunnelFallback />}><VslConfirmation /></Suspense>} />
     {/* Page indépendante : réservation d'appel (lien partagé pendant/après la conf) */}
