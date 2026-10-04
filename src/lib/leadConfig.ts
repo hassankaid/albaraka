@@ -14,6 +14,7 @@ export const leadSourceConfig: Record<string, { label: string; color: string }> 
   webi_wa_direct: { label: "Tunnel WhatsApp - Direct", color: "gray" },
   webi_wa_tiktok_ads: { label: "Tunnel WhatsApp - TikTok Ads", color: "slate" },
   webi_wa_snap_ads: { label: "Tunnel WhatsApp - Snap Ads", color: "yellow" },
+  webi_wa_google_ads: { label: "Tunnel WhatsApp - Google Ads", color: "indigo" },
   webi_vsl_ads: { label: "Tunnel VSL - Ads", color: "blue" },
   webi_vsl_instagram_organic: { label: "Tunnel VSL - Instagram", color: "fuchsia" },
   webi_vsl_tiktok_organic: { label: "Tunnel VSL - TikTok", color: "slate" },
@@ -21,6 +22,7 @@ export const leadSourceConfig: Record<string, { label: string; color: string }> 
   webi_vsl_direct: { label: "Tunnel VSL - Direct", color: "gray" },
   webi_vsl_tiktok_ads: { label: "Tunnel VSL - TikTok Ads", color: "slate" },
   webi_vsl_snap_ads: { label: "Tunnel VSL - Snap Ads", color: "yellow" },
+  webi_vsl_google_ads: { label: "Tunnel VSL - Google Ads", color: "indigo" },
   // Tunnel Liberty (22/09/2026). Même oubli que ci-dessus : les cinq valeurs
   // sont passées en base et dans l'edge fn sans arriver jusqu'ici.
   liberty_ads: { label: "Tunnel Liberty - Ads", color: "amber" },
@@ -31,6 +33,8 @@ export const leadSourceConfig: Record<string, { label: string; color: string }> 
   // TikTok Ads et Snap Ads (30/09/2026) : liens ?src=tiktok_ads et ?src=snap_ads.
   liberty_tiktok_ads: { label: "Tunnel Liberty - TikTok Ads", color: "slate" },
   liberty_snap_ads: { label: "Tunnel Liberty - Snap Ads", color: "yellow" },
+  // Google Ads (04/10/2026) : lien ?src=google_ads, ou clic Google (gclid).
+  liberty_google_ads: { label: "Tunnel Liberty - Google Ads", color: "indigo" },
   // Site vitrine (albarakaecosysteme.com, 28/09/2026) : demandes de rendez-vous
   // du site de marque. Organique — aucune publicité n'y mène.
   site_vitrine: { label: "Site vitrine", color: "amber" },
@@ -200,6 +204,9 @@ export const SOURCE_GROUPS = [
       "webi_vsl_snap_ads",
       "liberty_tiktok_ads",
       "liberty_snap_ads",
+      "webi_wa_google_ads",
+      "webi_vsl_google_ads",
+      "liberty_google_ads",
       "vsl_a",
       "vsl_b",
       "webi",

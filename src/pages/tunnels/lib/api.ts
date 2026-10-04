@@ -43,6 +43,7 @@ export async function submitTunnelLead(input: TunnelLeadInput, cfg: TunnelConfig
     utm_content: a?.utm_content ?? null,
     utm_term: a?.utm_term ?? null,
     fbclid: a?.fbclid ?? null,
+    gclid: a?.gclid ?? null,
     referrer: a?.referrer ?? null,
     // Le visiteur et le test voyagent avec l'inscrit : c'est ce qui permettra
     // plus tard de rattacher une VENTE à la variante qui l'a précédée. La

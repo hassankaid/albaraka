@@ -44,9 +44,10 @@ describe("sources des tunnels natifs", () => {
   // donc volontairement écrit en dur, et doit être mis à jour sciemment.
   // 3 tunnels x 5 origines (ads, instagram, tiktok, youtube, direct) = 15,
   // plus le site vitrine (28/09/2026) = 16,
-  // plus TikTok Ads et Snap Ads sur les 3 tunnels (30/09/2026) = 22.
-  it("l'edge fn en déclare bien 22 — sinon ce test ne prouverait rien", () => {
-    expect(sources).toHaveLength(22);
+  // plus TikTok Ads et Snap Ads sur les 3 tunnels (30/09/2026) = 22,
+  // plus Google Ads sur les 3 tunnels (04/10/2026) = 25.
+  it("l'edge fn en déclare bien 25 — sinon ce test ne prouverait rien", () => {
+    expect(sources).toHaveLength(25);
   });
 
   it.each(sources)("« %s » a un libellé lisible dans le CRM", (source) => {
@@ -147,5 +148,35 @@ describe("TikTok Ads et Snap Ads (30/09/2026)", () => {
     expect(snap).toBeGreaterThan(0);
     expect(meta).toBeGreaterThan(tiktok);
     expect(meta).toBeGreaterThan(snap);
+  });
+});
+
+describe("Google Ads (04/10/2026)", () => {
+  // Même piège que TikTok et Snap : sans source dédiée, un lead payé par Google
+  // tombait en « Direct » ou en « Meta Ads ».
+  const base = readFileSync(resolve(process.cwd(), "supabase/migrations/20261004120000_source_google_ads.sql"), "utf-8");
+
+  it.each(["webi_wa", "webi_vsl", "liberty"])("le tunnel %s a sa source Google Ads, rangée en Ads", (tunnel) => {
+    const source = `${tunnel}_google_ads`;
+    expect(base, `${source} absente de leads_source_check`).toContain(`'${source}'`);
+    expect(isAdsSource(source)).toBe(true);
+    expect(getSourceLabel(source)).toMatch(/Google Ads/);
+  });
+
+  it("garde toutes les sources existantes dans la contrainte", () => {
+    const avant = readFileSync(resolve(process.cwd(), "supabase/migrations/20260930180000_sources_tiktok_snap_ads.sql"), "utf-8");
+    const liste = (sql: string) => [...sql.match(/check \(([\s\S]*?)\)\s*\);/)![1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+    const nouvelles = liste(base);
+    for (const source of liste(avant)) expect(nouvelles, source).toContain(source);
+    expect(nouvelles.length - liste(avant).length).toBe(3);
+  });
+
+  it("le classement marketing la distingue de Meta : sa ligne passe AVANT « _ads »", () => {
+    const google = base.indexOf("then 'google_ads'");
+    const meta = base.indexOf("like '%\\_ads'");
+    expect(google).toBeGreaterThan(0);
+    expect(meta).toBeGreaterThan(google);
+    expect(base.indexOf("then 'tiktok_ads'")).toBeGreaterThan(0);
+    expect(base.indexOf("then 'snap_ads'")).toBeGreaterThan(0);
   });
 });

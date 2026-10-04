@@ -9,6 +9,7 @@
 //     ?src=youtube → YouTube organique
 //     ?src=tiktok_ads → TikTok Ads   (30/09/2026)
 //     ?src=snap_ads   → Snapchat Ads (30/09/2026)
+//     ?src=google_ads → Google Ads   (04/10/2026)
 //
 // Le libellé CRM final = `${srcPrefix}_${suffixe}` (ex. webi_wa_ads,
 // webi_vsl_instagram_organic). Le préfixe vient de la config du tunnel.
@@ -40,6 +41,9 @@ const SRC_SUFFIX: Record<string, string> = {
   tiktok_ads: "tiktok_ads",
   snap_ads: "snap_ads",
   snapchat_ads: "snap_ads",
+  // Google Ads (04/10/2026), même logique : distinct de `ads` (Meta).
+  google_ads: "google_ads",
+  gads: "google_ads",
 };
 
 export interface TunnelAttribution {
@@ -54,6 +58,8 @@ export interface TunnelAttribution {
   utm_content: string | null;
   utm_term: string | null;
   fbclid: string | null;
+  /** Clic Google Ads (gclid, ou gbraid/wbraid sur iOS) : ajouté par Google seul. */
+  gclid: string | null;
   referrer: string | null;
   landedAt: string; // ISO
 }
@@ -78,14 +84,22 @@ function regieDepuisUtm(utmSource: string | null): string | null {
   const u = (utmSource ?? "").toLowerCase();
   if (/snap/.test(u)) return "snap_ads";
   if (/tiktok/.test(u)) return "tiktok_ads";
+  if (/google|adwords|gads/.test(u)) return "google_ads";
   return null;
 }
 
-function sourceLabel(cfg: TunnelConfig, src: string | null, utmSource: string | null = null): string {
-  if (!src) return `${cfg.srcPrefix}_direct`;
+/**
+ * `clicGoogle` : l'URL porte un gclid/gbraid/wbraid. Google Ads l'ajoute
+ * lui-même à chaque clic (taggage automatique) : c'est la preuve d'une pub
+ * Google, même si le lien a été posé sans `?src=` ou avec celui de Meta.
+ * Un `?src=` explicite d'une autre origine garde la main.
+ */
+function sourceLabel(cfg: TunnelConfig, src: string | null, utmSource: string | null = null, clicGoogle = false): string {
+  if (!src) return clicGoogle ? `${cfg.srcPrefix}_google_ads` : `${cfg.srcPrefix}_direct`;
   const s = src.toLowerCase();
   const suffixe = SRC_SUFFIX[s] ?? s;
   if (suffixe === "ads") {
+    if (clicGoogle) return `${cfg.srcPrefix}_google_ads`;
     const regie = regieDepuisUtm(utmSource);
     if (regie) return `${cfg.srcPrefix}_${regie}`;
   }
@@ -114,13 +128,14 @@ export function captureAttribution(cfg: TunnelConfig): TunnelAttribution {
   // Aucune requête réseau sur la landing, donc aucun coût pour le trafic
   // ordinaire — le dispositif peut rester branché en permanence.
   const abCode = readParam(params, "ab");
+  const gclid = readParam(params, "gclid") ?? readParam(params, "gbraid") ?? readParam(params, "wbraid");
 
-  if (!src && !utm_source && !variant && !abCode && existing) return existing;
+  if (!src && !utm_source && !variant && !abCode && !gclid && existing) return existing;
 
   const attrib: TunnelAttribution = {
     src,
     abCode: abCode ? abCode.toUpperCase() : null,
-    source: sourceLabel(cfg, src, utm_source),
+    source: sourceLabel(cfg, src, utm_source, gclid !== null),
     variant,
     utm_source,
     utm_medium: readParam(params, "utm_medium"),
@@ -128,6 +143,7 @@ export function captureAttribution(cfg: TunnelConfig): TunnelAttribution {
     utm_content: readParam(params, "utm_content"),
     utm_term: readParam(params, "utm_term"),
     fbclid: readParam(params, "fbclid"),
+    gclid,
     referrer: typeof document !== "undefined" ? document.referrer || null : null,
     landedAt: new Date().toISOString(),
   };

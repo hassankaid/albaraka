@@ -55,6 +55,7 @@ const ALLOWED_SOURCES = new Set([
   "webi_wa_direct",
   "webi_wa_tiktok_ads",
   "webi_wa_snap_ads",
+  "webi_wa_google_ads",
   // Tunnel VSL
   "webi_vsl_ads",
   "webi_vsl_instagram_organic",
@@ -63,6 +64,7 @@ const ALLOWED_SOURCES = new Set([
   "webi_vsl_direct",
   "webi_vsl_tiktok_ads",
   "webi_vsl_snap_ads",
+  "webi_vsl_google_ads",
   // Tunnel Liberty
   "liberty_ads",
   "liberty_instagram_organic",
@@ -72,6 +74,8 @@ const ALLOWED_SOURCES = new Set([
   // TikTok Ads et Snap Ads (30/09/2026), pour les trois tunnels.
   "liberty_tiktok_ads",
   "liberty_snap_ads",
+  // Google Ads (04/10/2026), pour les trois tunnels.
+  "liberty_google_ads",
   // Site vitrine — classé organique par `marketing_canal`.
   "site_vitrine",
 ]);
@@ -240,6 +244,7 @@ serve(async (req) => {
       utm_term: clip(body?.utm_term, 200),
     };
     const fbclid = clip(body?.fbclid, 255);
+    const gclid = clip(body?.gclid, 255);
     const referrer = clip(body?.referrer, 300);
     // A/B testing : le visiteur, le test et la variante de landing suivent
     // l'inscrit. `tunnel_variant` n'est renseigné que sur un test de LANDING —
@@ -303,6 +308,7 @@ serve(async (req) => {
       : [`Lead tunnel ${tunnelName} (conférence).`];
     if (src) noteParts.push(`src=${src}`);
     if (fbclid) noteParts.push(`fbclid=${fbclid}`);
+    if (gclid) noteParts.push(`gclid=${gclid}`);
     if (referrer) noteParts.push(`ref=${referrer}`);
 
     // UNE SEULE FICHE PAR (CONTACT, SOURCE) ET PAR JOUR.

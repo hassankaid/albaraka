@@ -11,6 +11,7 @@ const SOURCE_LABELS: Record<string, string> = {
   webi_wa_direct: "Tunnel WhatsApp (Direct)",
   webi_wa_tiktok_ads: "Tunnel WhatsApp (TikTok Ads)",
   webi_wa_snap_ads: "Tunnel WhatsApp (Snap Ads)",
+  webi_wa_google_ads: "Tunnel WhatsApp (Google Ads)",
   webi_vsl_ads: "Tunnel VSL (Ads)",
   webi_vsl_instagram_organic: "Tunnel VSL (Instagram)",
   webi_vsl_tiktok_organic: "Tunnel VSL (TikTok)",
@@ -18,8 +19,10 @@ const SOURCE_LABELS: Record<string, string> = {
   webi_vsl_direct: "Tunnel VSL (Direct)",
   webi_vsl_tiktok_ads: "Tunnel VSL (TikTok Ads)",
   webi_vsl_snap_ads: "Tunnel VSL (Snap Ads)",
+  webi_vsl_google_ads: "Tunnel VSL (Google Ads)",
   liberty_tiktok_ads: "Tunnel Liberty (TikTok Ads)",
   liberty_snap_ads: "Tunnel Liberty (Snap Ads)",
+  liberty_google_ads: "Tunnel Liberty (Google Ads)",
   site_vitrine: "Site vitrine",
   webi: "Webinaire",
   vsl_a: "VSL A",
@@ -119,6 +122,7 @@ export function sourceColor(raw: string): string {
   if (k.includes("whatsapp")) return "#25d366"; // vert whatsapp
   if (k.includes("tiktok")) return "#000000"; // noir tiktok
   if (k.includes("snap")) return "#e6c800"; // jaune snapchat (assombri pour rester lisible)
+  if (k.includes("google")) return "#4285f4"; // bleu google
   if (k.includes("facebook")) return "#1877f2"; // bleu fb
   if (k.includes("telegram")) return "#26a5e4";
   if (k.includes("linkedin")) return "#0a66c2";

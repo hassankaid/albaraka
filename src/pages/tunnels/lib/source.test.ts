@@ -41,7 +41,7 @@ describe("liens d'entrée des régies publicitaires", () => {
 
   it.each(["webi_wa", "webi_vsl", "liberty"])("tunnel-lead-submit accepte les sources payantes de %s", (tunnel) => {
     // Sinon le filet silencieux de la fonction les rangerait en « direct ».
-    for (const regie of ["tiktok_ads", "snap_ads"]) expect(FONCTION).toContain(`"${tunnel}_${regie}"`);
+    for (const regie of ["tiktok_ads", "snap_ads", "google_ads"]) expect(FONCTION).toContain(`"${tunnel}_${regie}"`);
   });
 });
 
@@ -62,5 +62,41 @@ describe("filet de sécurité : le lien Meta collé dans une pub Snap ou TikTok"
   it("ne touche pas au trafic gratuit : ?src=tiktok reste organique, même avec utm_source=tiktok", () => {
     expect(sourcePour(WA_TUNNEL, "?src=tiktok&utm_source=tiktok")).toBe("webi_wa_tiktok_organic");
     expect(sourcePour(VSL_TUNNEL, "?src=ads&utm_source=snapchat")).toBe("webi_vsl_snap_ads");
+  });
+});
+
+describe("Google Ads (04/10/2026)", () => {
+  it.each([
+    ["?src=google_ads", "webi_wa_google_ads"],
+    ["?src=gads", "webi_wa_google_ads"],
+    // Taggage automatique : Google ajoute gclid (gbraid/wbraid sur iOS) à
+    // chaque clic. C'est la preuve d'une pub Google, même avec le lien Meta
+    // ou sans aucun ?src=.
+    ["?gclid=abc", "webi_wa_google_ads"],
+    ["?src=ads&gclid=abc", "webi_wa_google_ads"],
+    ["?src=ads&gbraid=abc", "webi_wa_google_ads"],
+    ["?wbraid=abc", "webi_wa_google_ads"],
+    ["?src=ads&utm_source=google", "webi_wa_google_ads"],
+    // Un ?src= explicite d'une autre origine garde la main.
+    ["?src=tiktok_ads&gclid=abc", "webi_wa_tiktok_ads"],
+    ["?src=youtube&gclid=abc", "webi_wa_youtube_organic"],
+  ])("%s → %s", (recherche, attendu) => {
+    expect(sourcePour(WA_TUNNEL, recherche)).toBe(attendu);
+  });
+
+  it("vaut pour les trois tunnels", () => {
+    expect(sourcePour(VSL_TUNNEL, "?src=google_ads")).toBe("webi_vsl_google_ads");
+    expect(sourcePour(LIBERTY_TUNNEL, "?gclid=abc")).toBe("liberty_google_ads");
+  });
+
+  it("garde le clic Google sur l'attribution, et la fonction l'inscrit dans les notes du lead", () => {
+    window.history.pushState({}, "", "/x?src=google_ads&gclid=Cj0KCQ");
+    expect(captureAttribution(WA_TUNNEL).gclid).toBe("Cj0KCQ");
+    expect(FONCTION).toContain("noteParts.push(`gclid=${gclid}`)");
+  });
+
+  it("une visite sans paramètre ne remplace pas une arrivée par clic Google", () => {
+    sourcePour(WA_TUNNEL, "?gclid=abc");
+    expect(sourcePour(WA_TUNNEL, "")).toBe("webi_wa_google_ads");
   });
 });
