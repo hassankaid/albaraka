@@ -38,15 +38,23 @@
 // endroit de plus où se tromper. L'URL, elle, dit toujours la vérité.
 const PIXEL_CONFERENCE = "1499213912013386";
 const PIXEL_LIBERTY = "997717802550998";
+// Nouveau BM Meta (07/10/2026), sur le domaine des pubs Meta uniquement. Il ne
+// sert ici que de SECOURS : sur le tunnel conférence, c'est le conteneur GTM
+// de ce domaine qui parle à Meta ; ce pixel ne part du code que si GTM est mis
+// en pause (`reglageGtm.enPause`). Liberty et Al Baraka 200 n'y sont pas.
+const PIXEL_CONFERENCE_DOMAINE_META = "963833956185104";
 
 /** Le pixel du tunnel en cours. Tout ce qui est sous /liberty est Liberty. */
-export function pixelCourant(chemin?: string): string {
+export function pixelCourant(chemin?: string, hote?: string): string {
   const p = chemin ?? (typeof window !== "undefined" ? window.location.pathname : "");
-  return /^\/liberty(\/|$)/.test(p) ? PIXEL_LIBERTY : PIXEL_CONFERENCE;
+  if (/^\/liberty(\/|$)/.test(p)) return PIXEL_LIBERTY;
+  const h = (hote ?? (typeof window !== "undefined" ? window.location.hostname : "")).toLowerCase();
+  if (h === "event.albarakabyethicarena.com" && estPageGtm(p)) return PIXEL_CONFERENCE_DOMAINE_META;
+  return PIXEL_CONFERENCE;
 }
 
 import { getTunnelPrefill } from "./source";
-import { EVENEMENTS_GTM, gtmGereLaPage, pousserGtm } from "./gtm";
+import { EVENEMENTS_GTM, estPageGtm, gtmGereLaPage, pousserGtm } from "./gtm";
 
 declare global {
   interface Window {

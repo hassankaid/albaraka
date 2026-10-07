@@ -30,7 +30,21 @@
 // ─────────────────────────────────────────────────────────────────────────
 import { isTunnelHost } from "@/lib/hosts";
 
+/** Conteneur du domaine historique (Meta ancien BM, TikTok, Snap, Google Ads). */
 export const GTM_ID = "GTM-K3VGV2PX";
+
+/**
+ * Nouveau BM Meta (07/10/2026) : le domaine des pubs Meta a SON conteneur,
+ * qui ne contient que Meta et le nouveau pixel 963833956185104 — aucun lien
+ * avec l'ancien BM, ni Google Ads, TikTok ou Snap. Mêmes évènements alb_*.
+ */
+export const GTM_ID_DOMAINE_META = "GTM-M8CSVXHK";
+const DOMAINE_META = "event.albarakabyethicarena.com";
+
+/** Le conteneur à charger pour ce domaine. */
+export function conteneurPour(hote: string): string {
+  return hote.toLowerCase().split(":")[0] === DOMAINE_META ? GTM_ID_DOMAINE_META : GTM_ID;
+}
 
 /**
  * ACTIF depuis le 30/09/2026 (version 4 du conteneur, « Bascule tracking via
@@ -112,7 +126,7 @@ function charger(): void {
   const s = document.createElement("script");
   s.id = "alb-gtm";
   s.async = true;
-  s.src = `https://www.googletagmanager.com/gtm.js?id=${GTM_ID}`;
+  s.src = `https://www.googletagmanager.com/gtm.js?id=${conteneurPour(window.location.hostname)}`;
   document.head.appendChild(s);
 }
 

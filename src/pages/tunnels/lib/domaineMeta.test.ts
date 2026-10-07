@@ -76,7 +76,9 @@ describe("le suivi pub fonctionne sur le nouveau domaine", () => {
     allerSur("/webinaire/merci");
     markLeadPending();
     await trackTypLead();
-    expect([...document.querySelectorAll("script")].some((s) => s.src.includes("GTM-K3VGV2PX"))).toBe(true);
+    // Son propre conteneur (nouveau BM, 07/10/2026), jamais celui de l'ancien domaine.
+    const scripts = [...document.querySelectorAll("script")].map((s) => s.src).filter((u) => u.includes("googletagmanager"));
+    expect(scripts).toEqual(["https://www.googletagmanager.com/gtm.js?id=GTM-M8CSVXHK"]);
     expect(evenements()).toEqual(["alb_page_view", "alb_view_content", "alb_lead"]);
     expect(meta).toEqual([]);
   });
@@ -89,5 +91,26 @@ describe("le suivi pub fonctionne sur le nouveau domaine", () => {
     markLeadPending();
     await trackTypLead();
     expect(evenementsMeta()).toEqual(["PageView", "Lead"]);
+  });
+});
+
+describe("nouveau BM Meta (07/10/2026)", () => {
+  it("chaque domaine charge son conteneur", async () => {
+    const { conteneurPour } = await import("./gtm");
+    expect(conteneurPour("event.albarakabyethicarena.com")).toBe("GTM-M8CSVXHK");
+    expect(conteneurPour("EVENT.albarakabyethicarena.com:443")).toBe("GTM-M8CSVXHK");
+    expect(conteneurPour("event.albarakaecosysteme.com")).toBe("GTM-K3VGV2PX");
+    expect(conteneurPour("event.alabarakabyethicarena.com")).toBe("GTM-K3VGV2PX");
+  });
+
+  it("le pixel de secours suit le domaine, sur le tunnel conférence seulement", async () => {
+    const { pixelCourant } = await import("./pixel");
+    const nouveau = "event.albarakabyethicarena.com";
+    expect(pixelCourant("/webinaire/merci", nouveau)).toBe("963833956185104");
+    expect(pixelCourant("/vsl/quiz", nouveau)).toBe("963833956185104");
+    expect(pixelCourant("/webinaire", "event.albarakaecosysteme.com")).toBe("1499213912013386");
+    // Liberty et Al Baraka 200 gardent leurs pixels, quel que soit le domaine.
+    expect(pixelCourant("/liberty/merci", nouveau)).toBe("997717802550998");
+    expect(pixelCourant("/al-baraka-200", nouveau)).toBe("1499213912013386");
   });
 });
