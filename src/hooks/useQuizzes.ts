@@ -10,6 +10,8 @@ export interface QuizQuestion {
   options: string[];
   correct_index: number;
   explication: string;
+  /** Une explication par réponse, alignée sur `options` (null = format historique). */
+  explications?: string[] | null;
   ordre: number;
 }
 
@@ -535,6 +537,7 @@ export function useCreateQuestion() {
       options: string[];
       correct_index: number;
       explication?: string;
+      explications?: string[] | null;
     }) => {
       // Calcul du prochain ordre : on ignore les questions archivées pour que
       // la nouvelle question prenne place juste après les actives (ex. 100

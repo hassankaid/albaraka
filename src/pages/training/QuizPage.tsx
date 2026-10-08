@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Loader2, CheckCircle2, XCircle, RotateCcw, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { explicationAffichee, quizAuNouveauFormat, scoreQuiz } from "@/lib/quizExplications";
 import { toast } from "sonner";
 
 type AnswerRecord = { question_id: string; selected: number; correct: boolean };
@@ -74,6 +75,12 @@ export default function QuizPage() {
   const errorsCount = answers.filter((a) => !a.correct).length;
   const maxErrors = quiz.max_errors;
   const progress = ((currentIdx + (finished ? 1 : 0)) / questions.length) * 100;
+  // Quiz dont chaque réponse a sa propre explication (parcours setter/closer) :
+  // on y affiche aussi le score. Les autres quiz gardent l'affichage d'avant.
+  const nouveauFormat = quizAuNouveauFormat(questions);
+  const explicationCourante = showExplanation && selectedOption !== null
+    ? explicationAffichee(currentQuestion, selectedOption)
+    : null;
 
   const handleSelect = (optionIdx: number) => {
     if (showExplanation) return;
@@ -173,6 +180,7 @@ export default function QuizPage() {
   if (finished) {
     const finalErrors = answers.filter((a) => !a.correct).length;
     const validated = finalErrors <= maxErrors;
+    const score = scoreQuiz(questions.length, finalErrors, maxErrors);
 
     return (
       <div className="max-w-2xl mx-auto py-12 space-y-6">
@@ -183,10 +191,23 @@ export default function QuizPage() {
               <h2 className="text-2xl font-bold font-heading">
                 {validated ? "Quiz validé !" : "À refaire"}
               </h2>
+              {nouveauFormat ? (
+                <>
+                  <p className="text-3xl font-bold font-heading mt-3" data-testid="quiz-score">
+                    {score.bonnes}/{score.total} bonnes réponses · {score.pourcentage} %
+                  </p>
+                  <p className={cn("mt-3 text-sm", validated ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400")}>
+                    {validated
+                      ? `✅ Validé : ${score.minimum} bonnes réponses minimum. Bien joué !`
+                      : `Il faut au moins ${score.minimum} bonnes réponses sur ${score.total} pour valider. Tu peux le repasser autant de fois que nécessaire.`}
+                  </p>
+                </>
+              ) : (
               <p className="text-muted-foreground mt-2">
                 {finalErrors} erreur{finalErrors !== 1 ? "s" : ""} sur {questions.length} question{questions.length !== 1 ? "s" : ""}
               </p>
-              {validated ? (
+              )}
+              {nouveauFormat ? null : validated ? (
                 <p className="text-emerald-600 dark:text-emerald-400 mt-3 text-sm">
                   ✅ Maximum {maxErrors} erreurs autorisées. Bien joué !
                 </p>
@@ -284,13 +305,27 @@ export default function QuizPage() {
             )}
           </div>
 
-          {showExplanation && currentQuestion.explication && (
+          {explicationCourante?.parReponse ? (
+            // Explication de LA réponse choisie, affichée telle qu'écrite.
+            <Card
+              data-testid="explication-reponse"
+              className={cn(
+                selectedOption === currentQuestion.correct_index
+                  ? "bg-emerald-500/5 border-emerald-500/30"
+                  : "bg-red-500/5 border-red-500/30"
+              )}
+            >
+              <CardContent className="p-4">
+                <p className="text-sm leading-relaxed whitespace-pre-line">{explicationCourante.texte}</p>
+              </CardContent>
+            </Card>
+          ) : explicationCourante && (
             <Card className="bg-blue-500/5 border-blue-500/30">
               <CardContent className="p-4">
                 <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2">
                   💡 Explication
                 </p>
-                <p className="text-sm leading-relaxed">{currentQuestion.explication}</p>
+                <p className="text-sm leading-relaxed">{explicationCourante.texte}</p>
               </CardContent>
             </Card>
           )}

@@ -40,6 +40,7 @@ import { Plus, Pencil, Trash2, X, Loader2, ArrowLeft, CheckCircle2, Dumbbell, La
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { nettoyerQuestion } from "@/lib/quizExplications";
 
 // ─── Auto-resize Textarea ───
 
@@ -286,6 +287,8 @@ function QuestionDialog({ open, onOpenChange, quizId, initial }: {
   const [options, setOptions] = useState<string[]>(["", "", "", ""]);
   const [correctIndex, setCorrectIndex] = useState(0);
   const [explication, setExplication] = useState("");
+  // Une explication par réponse (facultatif), alignée sur `options`.
+  const [explications, setExplications] = useState<string[]>(["", "", "", ""]);
 
   useEffect(() => {
     if (!open) return;
@@ -294,6 +297,8 @@ function QuestionDialog({ open, onOpenChange, quizId, initial }: {
     setOptions(initial?.options ?? ["", "", "", ""]);
     setCorrectIndex(initial?.correct_index ?? 0);
     setExplication(initial?.explication ?? "");
+    const opts: string[] = initial?.options ?? ["", "", "", ""];
+    setExplications(opts.map((_, i) => initial?.explications?.[i] ?? ""));
   }, [open, initial]);
 
   const saving = create.isPending || update.isPending;
@@ -303,15 +308,12 @@ function QuestionDialog({ open, onOpenChange, quizId, initial }: {
       toast.error("La question est requise.");
       return;
     }
-    const filledOptions = options.filter((o) => o.trim());
-    if (filledOptions.length < 2) {
-      toast.error("Au moins 2 options requises.");
+    const propre = nettoyerQuestion(options, explications, correctIndex);
+    if ("erreur" in propre) {
+      toast.error(propre.erreur);
       return;
     }
-    if (correctIndex >= filledOptions.length) {
-      toast.error("L'option correcte doit exister.");
-      return;
-    }
+    const { options: filledOptions, explications: filledExplications, correct_index } = propre;
     try {
       if (initial) {
         await update.mutateAsync({
@@ -320,7 +322,8 @@ function QuestionDialog({ open, onOpenChange, quizId, initial }: {
           question: question.trim(),
           contexte: contexte.trim(),
           options: filledOptions,
-          correct_index: correctIndex,
+          explications: filledExplications,
+          correct_index,
           explication: explication.trim(),
         });
         toast.success("Question mise à jour.");
@@ -330,7 +333,8 @@ function QuestionDialog({ open, onOpenChange, quizId, initial }: {
           question: question.trim(),
           contexte: contexte.trim(),
           options: filledOptions,
-          correct_index: correctIndex,
+          explications: filledExplications,
+          correct_index,
           explication: explication.trim(),
         });
         toast.success("Question créée.");
@@ -375,12 +379,19 @@ function QuestionDialog({ open, onOpenChange, quizId, initial }: {
                   >
                     {correctIndex === idx ? <CheckCircle2 className="h-4 w-4" /> : <span className="text-xs font-mono">{String.fromCharCode(65 + idx)}</span>}
                   </button>
-                  <AutoTextarea
-                    value={opt}
-                    onChange={(v) => setOptions(options.map((o, i) => i === idx ? v : o))}
-                    placeholder={`Option ${String.fromCharCode(65 + idx)}...`}
-                    className="flex-1"
-                  />
+                  <div className="flex-1 space-y-1.5">
+                    <AutoTextarea
+                      value={opt}
+                      onChange={(v) => setOptions(options.map((o, i) => i === idx ? v : o))}
+                      placeholder={`Option ${String.fromCharCode(65 + idx)}...`}
+                    />
+                    <AutoTextarea
+                      value={explications[idx] ?? ""}
+                      onChange={(v) => setExplications(options.map((_, i) => i === idx ? v : explications[i] ?? ""))}
+                      placeholder="Explication affichée si l'élève choisit cette réponse (optionnel)"
+                      className="text-xs"
+                    />
+                  </div>
                   {options.length > 2 && (
                     <Button
                       type="button"
@@ -389,6 +400,7 @@ function QuestionDialog({ open, onOpenChange, quizId, initial }: {
                       className="shrink-0 text-muted-foreground hover:text-destructive h-9 w-9"
                       onClick={() => {
                         setOptions(options.filter((_, i) => i !== idx));
+                        setExplications(options.map((_, i) => explications[i] ?? "").filter((_, i) => i !== idx));
                         if (correctIndex >= idx && correctIndex > 0) setCorrectIndex(correctIndex - 1);
                       }}
                     >
@@ -398,14 +410,14 @@ function QuestionDialog({ open, onOpenChange, quizId, initial }: {
                 </div>
               ))}
               {options.length < 6 && (
-                <Button type="button" variant="outline" size="sm" onClick={() => setOptions([...options, ""])} className="gap-1.5">
+                <Button type="button" variant="outline" size="sm" onClick={() => { setExplications([...options.map((_, i) => explications[i] ?? ""), ""]); setOptions([...options, ""]); }} className="gap-1.5">
                   <Plus className="h-3.5 w-3.5" />
                   Ajouter une option
                 </Button>
               )}
             </div>
             <div className="space-y-1.5">
-              <Label>Explication (affichée après validation)</Label>
+              <Label>Explication générale (affichée après validation, si la réponse choisie n'a pas la sienne)</Label>
               <AutoTextarea value={explication} onChange={setExplication} placeholder="Pourquoi cette réponse est correcte..." />
             </div>
           </div>
