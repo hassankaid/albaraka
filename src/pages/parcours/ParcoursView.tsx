@@ -92,7 +92,10 @@ export default function ParcoursView() {
     );
   }
 
-  if (parcours.status !== "published" || parcours.phases.length === 0) {
+  // Un parcours en brouillon n'est lisible que par le CEO (RLS) : il peut le
+  // prévisualiser avant ouverture. Pour tous les autres, il « arrive bientôt ».
+  const apercuBrouillon = parcours.status !== "published" && profile?.role === "ceo";
+  if ((parcours.status !== "published" && !apercuBrouillon) || parcours.phases.length === 0) {
     return (
       <div className="max-w-2xl mx-auto py-20 text-center space-y-3">
         <h2 className="font-heading text-2xl">{parcours.titre}</h2>
@@ -108,6 +111,14 @@ export default function ParcoursView() {
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-8">
+      {apercuBrouillon && (
+        <div
+          data-testid="apercu-brouillon"
+          className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400"
+        >
+          Brouillon : aperçu réservé à l'admin. Aucun élève ne voit ce parcours.
+        </div>
+      )}
       <ParcoursHeader parcours={parcours} progress={progress} />
 
       <div className="space-y-10">
