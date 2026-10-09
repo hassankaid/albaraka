@@ -46,6 +46,17 @@ const SRC_SUFFIX: Record<string, string> = {
   gads: "google_ads",
 };
 
+/**
+ * Le lien porte-t-il `?src=google_ads` (ou son alias `gads`) ? C'est ce qui
+ * affiche la version Google Ads de la landing (09/10/2026). Le `src` SEUL
+ * décide, jamais le gclid : Google l'ajoute aux seuls clics, son vérificateur
+ * verrait alors une autre page que les visiteurs (« cloaking », interdit).
+ */
+export function estLienGoogleAds(search: string): boolean {
+  const src = new URLSearchParams(search).get("src")?.trim().toLowerCase() ?? "";
+  return SRC_SUFFIX[src] === "google_ads";
+}
+
 export interface TunnelAttribution {
   src: string | null; // valeur brute du lien (ads | ig | tiktok | youtube)
   /** Code du test A/B porté par le lien (?ab=CODE), s'il y en a un. */

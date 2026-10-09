@@ -10,9 +10,10 @@
 // (direction luxe éditorial noir & or). Module autonome (aucune dépendance vers
 // quiz / rdv / redif / conferences).
 // ─────────────────────────────────────────────────────────────────────────
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { T, ensureTunnelFonts } from "../theme";
-import { captureAttribution } from "../lib/source";
+import { captureAttribution, estLienGoogleAds } from "../lib/source";
 import { exposerLanding } from "../lib/abtest";
 import { trackLandingView } from "../lib/pixel";
 import type { TunnelConfig } from "../config";
@@ -41,6 +42,60 @@ const DISCOVERIES = [
   },
 ];
 
+// ─── Version Google Ads (09/10/2026) ─────────────────────────────────────
+// Les pubs Google ont été refusées, très probablement pour les promesses de
+// revenus (« Remplace ton salaire en moins de 6 mois », « en moins de 90
+// jours »). Le media buyer a fourni un copy sans ces promesses, à servir
+// UNIQUEMENT aux liens `?src=google_ads` : même page, même structure, même
+// tunnel derrière ; seuls ces textes changent. Repris mot pour mot.
+const DISCOVERIES_GOOGLE = [
+  {
+    n: "01",
+    title: "Pourquoi les compétences comptent plus que le diplôme",
+    body: "Tout le monde autour de toi te parle de sécurité, de diplôme, de patience. Aujourd'hui, il existe des compétences que tu peux apprendre et pratiquer depuis chez toi. On t'explique lesquelles, et pourquoi elles valent la peine qu'on s'y intéresse.",
+  },
+  {
+    n: "02",
+    title: "La compétence qui sert de point de départ",
+    body: "On te présente la compétence que nos membres ont apprise et le parcours qu'ils ont suivi, étape par étape. Chaque parcours est différent : les résultats dépendent de l'implication de chacun, de sa situation de départ et du contexte.",
+  },
+  {
+    n: "03",
+    title: "Comment avancer sans trahir ce que tu es",
+    body: "Pas besoin de te vendre ni de mentir, et encore moins de mettre ta foi de côté. On te montre comment des membres ont construit leur activité de façon alignée avec leurs valeurs, dans la méthode, pas juste dans l'intention.",
+  },
+];
+
+interface CopyLanding {
+  bandeau: string;
+  titre: string;
+  sousTitre: ReactNode;
+  suite: string;
+  cta: string;
+  decouvertes: typeof DISCOVERIES;
+  temoignages: string;
+}
+
+const COPY_STANDARD: CopyLanding = {
+  bandeau: "Pour les musulmans de 20 à 30 ans qui veulent vivre librement sans sacrifier leur foi",
+  titre: "Remplace ton salaire en moins de 6 mois grâce à l'Écosystème Al Baraka",
+  sousTitre: <>La 1<sup style={{ fontSize: "0.6em" }}>ère</sup> plateforme de business en ligne construite par des musulmans, pour des musulmans.</>,
+  suite: "En moins de 90 jours, certains ont généré leurs premiers revenus en ligne. Sans expérience. Sans réseau. Juste les bonnes compétences dans le bon environnement. Cette conférence te montre lequel.",
+  cta: "Je m'inscris à la conférence",
+  decouvertes: DISCOVERIES,
+  temoignages: "Ils l'ont fait avant toi",
+};
+
+const COPY_GOOGLE: CopyLanding = {
+  bandeau: "Pour celles et ceux qui veulent construire une activité en ligne alignée avec leurs valeurs",
+  titre: "Découvre comment construire une activité en ligne halal, qui te ressemble",
+  sousTitre: "Une plateforme de business en ligne construite par des musulmans, pour des musulmans.",
+  suite: "Une conférence gratuite pour comprendre les compétences recherchées en ligne et comment les apprendre dans un cadre qui respecte tes valeurs.",
+  cta: "Je m'inscris à la conférence gratuite",
+  decouvertes: DISCOVERIES_GOOGLE,
+  temoignages: "Ils racontent leur parcours",
+};
+
 // Témoignages vidéo. Ce sont les MÊMES fichiers que six des vidéos de la page
 // /temoignages (empreintes identiques), avec la légende de la landing : elle
 // annonce un résultat chiffré plutôt qu'une citation, ce qui convient au
@@ -68,6 +123,9 @@ export const LANDING_TESTIMONIALS: VideoTestimonial[] = [
 
 export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
   const [open, setOpen] = useState(false);
+  // Décidé dès le premier affichage, à partir de l'adresse : aucun clignotement.
+  const { search } = useLocation();
+  const copy = estLienGoogleAds(search) ? COPY_GOOGLE : COPY_STANDARD;
   // Mêmes proportions disparates que sur la page témoignages : une grille
   // laisserait un trou sous les vidéos les plus courtes (mesuré : la tuile
   // d'Anissa, en 4/3, flottait au-dessus d'un vide de plusieurs centaines de
@@ -135,7 +193,7 @@ export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
       {/* ── BANDEAU — fond doré plein, fort contraste, gros sur mobile ── */}
       <div style={{ position: "relative", zIndex: 1, background: `linear-gradient(90deg, ${T.goldDeep}, ${T.gold} 44%, ${T.goldBright} 50%, ${T.gold} 56%, ${T.goldDeep})`, boxShadow: "0 3px 22px rgba(201,160,78,0.30)" }}>
         <p style={{ margin: "0 auto", maxWidth: 960, textAlign: "center", padding: "clamp(13px,3.6vw,18px) 18px", fontSize: "clamp(0.84rem,3.4vw,1.02rem)", lineHeight: 1.35, letterSpacing: "0.005em", color: "#1A1206", fontWeight: 700 }}>
-          Pour les musulmans de 20 à 30 ans qui veulent vivre librement sans sacrifier leur foi
+          {copy.bandeau}
         </p>
       </div>
 
@@ -153,17 +211,15 @@ export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
         {/* ── HERO ─────────────────────────────────────────────────── */}
         <section style={{ textAlign: "center", padding: "clamp(28px,6vw,60px) 0 clamp(30px,6vw,56px)", maxWidth: 860, margin: "0 auto" }}>
           <h1 className="albt-rise" style={{ animationDelay: "40ms", fontFamily: T.display, fontWeight: 600, fontSize: "clamp(2.15rem,6.4vw,3.7rem)", lineHeight: 1.08, letterSpacing: "-0.01em", color: T.cream, margin: "0 0 20px" }}>
-            Remplace ton salaire en moins de 6 mois grâce à l'Écosystème Al Baraka
+            {copy.titre}
           </h1>
 
           <p className="albt-rise" style={{ animationDelay: "150ms", fontFamily: T.display, fontStyle: "italic", fontSize: "clamp(1.05rem,3vw,1.4rem)", lineHeight: 1.4, color: T.goldBright, margin: "0 auto 26px", maxWidth: 680 }}>
-            La 1<sup style={{ fontSize: "0.6em" }}>ère</sup> plateforme de business en ligne construite par des musulmans, pour des musulmans.
+            {copy.sousTitre}
           </p>
 
           <p className="albt-rise" style={{ animationDelay: "220ms", fontFamily: T.body, fontSize: "clamp(1rem,2.6vw,1.14rem)", lineHeight: 1.6, color: T.creamMuted, margin: "0 auto 34px", maxWidth: 620 }}>
-            En moins de 90 jours, certains ont généré leurs premiers revenus en ligne.
-            Sans expérience. Sans réseau. Juste les bonnes compétences dans le bon
-            environnement. Cette conférence te montre lequel.
+            {copy.suite}
           </p>
 
           <div className="albt-rise" style={{ animationDelay: "300ms", display: "flex", alignItems: "center", justifyContent: "center", gap: 14, margin: "8px 0 34px" }} aria-hidden>
@@ -172,14 +228,14 @@ export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
             <span style={{ height: 1, width: "clamp(30px,12vw,64px)", background: `linear-gradient(90deg, ${T.goldLine}, transparent)` }} />
           </div>
 
-          {cta("Je m'inscris à la conférence", 360)}
+          {cta(copy.cta, 360)}
         </section>
 
         {/* ── CE QUE TU VAS DÉCOUVRIR ──────────────────────────────── */}
         <section style={{ padding: "clamp(30px,6vw,56px) 0" }}>
           <SectionLabel>Ce que tu vas découvrir</SectionLabel>
           <div className="albt-grid3">
-            {DISCOVERIES.map((d) => (
+            {copy.decouvertes.map((d) => (
               <article
                 key={d.n}
                 className="albt-disc-card albt-rise"
@@ -197,12 +253,12 @@ export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
               </article>
             ))}
           </div>
-          <div style={{ textAlign: "center", marginTop: 40 }}>{cta("Je m'inscris à la conférence")}</div>
+          <div style={{ textAlign: "center", marginTop: 40 }}>{cta(copy.cta)}</div>
         </section>
 
         {/* ── TÉMOIGNAGES VIDÉO ────────────────────────────────────── */}
         <section style={{ padding: "clamp(30px,6vw,56px) 0" }}>
-          <SectionLabel grand>Ils l'ont fait avant toi</SectionLabel>
+          <SectionLabel grand>{copy.temoignages}</SectionLabel>
           {/* Trafic froid : une seule pièce à regarder, pas six choix à faire.
               Les six parcours détaillés viennent après, pour qui veut creuser.
               Aucun intitulé propre : le libellé de section ci-dessus suffit. */}
@@ -223,7 +279,7 @@ export default function TunnelLanding({ tunnel }: { tunnel: TunnelConfig }) {
         {/* ── CTA FINAL — juste le CTA (aucun texte inventé) ────────── */}
         <section style={{ padding: "clamp(6px,2vw,20px) 0 clamp(64px,11vw,100px)", textAlign: "center" }}>
           <div aria-hidden style={{ height: 1, width: "min(200px, 60%)", margin: "0 auto clamp(32px,7vw,52px)", background: `linear-gradient(90deg, transparent, ${T.goldLine}, transparent)` }} />
-          {cta("Je m'inscris à la conférence")}
+          {cta(copy.cta)}
         </section>
       </div>
 
