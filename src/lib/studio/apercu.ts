@@ -271,9 +271,56 @@ function arrondi(ctx: CanvasRenderingContext2D, x: number, y: number, w: number,
   ctx.roundRect(x, y, w, h, r);
 }
 
+/** Couleur principale éclaircie (mot clé des sous-titres, prénom), comme studio/hf/assembler.py. */
+export function principaleClaire(principale: string): string {
+  const p = rvb(principale);
+  if (lum(p) >= 0.75) return principale;
+  return `rgb(${p.map((v) => Math.round(v + (255 - v) * 0.45)).join(",")})`;
+}
+
 /**
- * Allure du motion design (studio/animations.py) : barre de progression, carte de
- * présentation et une icône. Le placement réel évite le visage ; ici, positions types.
+ * Sous-titres du motion design (studio/hf/socle.css) : petite ligne en capitales espacées
+ * à y 1160, mot clé en italique dans la couleur principale éclaircie.
+ */
+export function dessinerSousTitreAnime(
+  ctx: CanvasRenderingContext2D,
+  petit: string,
+  grand: string,
+  c: Reglages["sous_titres"],
+  principale: string,
+) {
+  const p = petit.toUpperCase();
+  const fp = taille(ctx, p, "900 {t}px StudioMontserrat", 64, 7);
+  const fg = taille(ctx, grand, "italic {t}px StudioSerif", 172);
+  const lignes: [string, string, number, number, string][] = [
+    [p, `900 ${fp}px StudioMontserrat`, 1160 + fp * 0.55, 7, c.texte],
+    [grand, `italic ${fg}px StudioSerif`, 1160 + fp * 1.1 + 4 + fg * 0.5, 0, principaleClaire(principale)],
+  ];
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  for (const [texte, police, y, esp, couleur] of lignes) {
+    ctx.font = police;
+    (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = `${esp}px`;
+    ctx.save();
+    ctx.shadowColor = c.ombre;
+    ctx.shadowBlur = 24;
+    ctx.shadowOffsetY = 6;
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = c.contour;
+    ctx.strokeText(texte, W / 2, y);
+    ctx.restore();
+    ctx.fillStyle = couleur;
+    ctx.fillText(texte, W / 2, y);
+  }
+  ctx.restore();
+}
+
+/**
+ * Allure du motion design (studio/hf) : carte de présentation (prénom en italique au-dessus
+ * des sous-titres) et une carte d'icône aux couleurs choisies. Le placement réel évite le
+ * visage ; ici, positions types.
  */
 export function dessinerDesign(
   ctx: CanvasRenderingContext2D,
@@ -282,60 +329,51 @@ export function dessinerDesign(
   titre: string,
 ) {
   ctx.save();
-  ctx.fillStyle = "rgba(0,0,0,0.45)";
-  ctx.fillRect(0, 0, W, 10);
-  ctx.fillStyle = c.principale;
-  ctx.fillRect(0, 0, W * 0.4, 10);
-  ctx.shadowColor = "rgba(0,0,0,0.45)";
-  ctx.shadowBlur = 30;
-  ctx.shadowOffsetY = 8;
+  ctx.textBaseline = "top";
   if (prenom.trim()) {
-    ctx.font = "900 52px StudioMontserrat";
-    const l1 = ctx.measureText(prenom.toUpperCase()).width;
-    ctx.font = "italic 40px StudioSerif";
-    const l2 = titre ? ctx.measureText(titre).width : 0;
-    const w = Math.max(360, Math.min(900, Math.max(l1, l2) + 90));
-    const h = titre ? 150 : 104;
-    ctx.globalAlpha = 0.84;
-    ctx.fillStyle = c.fond;
-    arrondi(ctx, 50, 170, w, h, 26);
-    ctx.fill();
-    ctx.globalAlpha = 1;
+    ctx.shadowColor = "rgba(0,0,0,0.6)";
+    ctx.shadowBlur = 24;
+    ctx.shadowOffsetY = 6;
+    ctx.fillStyle = principaleClaire(c.principale);
+    ctx.font = "italic 88px StudioSerif";
+    ctx.fillText(prenom, 70, 960);
+    if (titre) {
+      ctx.fillStyle = "#f4ecdd";
+      ctx.font = "900 22px StudioMontserrat";
+      (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = "6px";
+      ctx.fillText(titre.toUpperCase(), 70, 1058);
+      (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = "0px";
+    }
     ctx.shadowColor = "transparent";
     ctx.fillStyle = c.principale;
-    arrondi(ctx, 50, 170, 14, h, 7);
-    ctx.fill();
-    ctx.textBaseline = "top";
-    ctx.fillStyle = c.texte;
-    ctx.font = "900 52px StudioMontserrat";
-    ctx.fillText(prenom.toUpperCase(), 94, 192);
-    if (titre) {
-      ctx.fillStyle = principaleLisible(c.principale, c.fond);
-      ctx.font = "italic 40px StudioSerif";
-      ctx.fillText(titre, 96, 254);
-    }
+    ctx.fillRect(70, titre ? 1094 : 1062, 220, 4);
   }
-  // une icône animée type (étoile), à droite
+  // une carte d'icône type (étoile au trait), en haut à gauche
   ctx.shadowColor = "rgba(0,0,0,0.45)";
-  const cx = W - 165;
-  const cy = 320;
+  ctx.shadowBlur = 40;
+  ctx.shadowOffsetY = 18;
   ctx.fillStyle = c.fond;
-  ctx.globalAlpha = 0.9;
-  ctx.beginPath();
-  ctx.arc(cx, cy, 95, 0, Math.PI * 2);
+  arrondi(ctx, 60, 260, 250, 270, 28);
   ctx.fill();
-  ctx.globalAlpha = 1;
   ctx.shadowColor = "transparent";
-  ctx.lineWidth = 9;
-  ctx.strokeStyle = c.principale;
+  ctx.lineWidth = 3;
+  const [r, g, b] = rvb(c.principale);
+  ctx.strokeStyle = `rgba(${r},${g},${b},0.34)`;
   ctx.stroke();
-  ctx.fillStyle = c.principale;
+  ctx.strokeStyle = c.principale;
+  ctx.lineWidth = 9;
+  ctx.lineJoin = "round";
   ctx.beginPath();
-  for (let j = 0; j < 10; j++) {
+  for (let j = 0; j <= 10; j++) {
     const a = (j / 10) * Math.PI * 2 - Math.PI / 2;
-    const r = j % 2 === 0 ? 52 : 23;
-    ctx.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+    const rayon = j % 2 === 0 ? 62 : 27;
+    ctx.lineTo(185 + rayon * Math.cos(a), 360 + rayon * Math.sin(a));
   }
-  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = c.texte;
+  ctx.font = "900 26px StudioMontserrat";
+  ctx.textAlign = "center";
+  (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = "3px";
+  ctx.fillText("ICÔNE", 185, 460);
   ctx.restore();
 }

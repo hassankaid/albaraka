@@ -3,7 +3,16 @@
 // en attendant, une image tirée du fichier local, sans repérage du visage.
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { chargerPolices, dessinerCadre, dessinerDesign, dessinerFloutage, dessinerSousTitre, H, W } from "@/lib/studio/apercu";
+import {
+  chargerPolices,
+  dessinerCadre,
+  dessinerDesign,
+  dessinerFloutage,
+  dessinerSousTitre,
+  dessinerSousTitreAnime,
+  H,
+  W,
+} from "@/lib/studio/apercu";
 import { couleursDesign, type Reglages } from "@/lib/studio/reglages";
 
 export function ApercuStudio({
@@ -56,10 +65,12 @@ export function ApercuStudio({
     ctx.clearRect(0, 0, W, H);
     ctx.drawImage(source, 0, 0);
     if (flou && reglages.visage.flouter && visages?.length) dessinerFloutage(ctx, source, visages, reglages.visage);
-    if (sousTitre && polices) dessinerSousTitre(ctx, "voici tes", "sous-titres", reglages.sous_titres);
+    // avec le motion design, les sous-titres sont animés par Hyperframes (autre place, autre taille)
     if (sousTitre && polices && reglages.design?.actif) {
-      dessinerDesign(ctx, couleursDesign(reglages.design), reglages.design.prenom, reglages.design.titre);
-    }
+      const couleurs = couleursDesign(reglages.design);
+      dessinerDesign(ctx, couleurs, reglages.design.prenom, reglages.design.titre);
+      dessinerSousTitreAnime(ctx, "voici tes", "sous-titres", reglages.sous_titres, couleurs.principale);
+    } else if (sousTitre && polices) dessinerSousTitre(ctx, "voici tes", "sous-titres", reglages.sous_titres);
   }, [source, visages, reglages, flou, sousTitre, polices]);
 
   const attenteVisage = flou && reglages.visage.flouter && !visages;
