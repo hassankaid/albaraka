@@ -79,6 +79,25 @@ export function dessinerFloutage(
     const b = { x: nx * W, y: ny * H, w: nw * W, h: nh * H };
     const cx = b.x + b.w / 2;
     const cy = b.y + b.h / 2;
+    if (v.style === "naturel") {
+      // comme flou_naturel (studio/travail.py) : plein au centre, fondu vers l'extérieur
+      const ax = b.w * 0.62;
+      const ay = b.h * 0.78;
+      const calque = calqueFlou(source, rayonFlou(b, lvl));
+      const x = calque.getContext("2d")!;
+      x.globalCompositeOperation = "destination-in";
+      x.translate(cx, cy + b.h * 0.03);
+      x.scale(ax * 1.25, ay * 1.25);
+      const g = x.createRadialGradient(0, 0, 0, 0, 0, 1);
+      g.addColorStop(0, "rgba(0,0,0,1)");
+      g.addColorStop(0.64, "rgba(0,0,0,1)");
+      g.addColorStop(0.82, "rgba(0,0,0,0.5)");
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      x.fillStyle = g;
+      x.fillRect(-1, -1, 2, 2);
+      ctx.drawImage(calque, 0, 0);
+      continue;
+    }
     ctx.save();
     if (v.style === "mosaique") {
       const px = Math.max(4, b.w / [7, 6, 5, 4.5, 4][lvl - 1]);

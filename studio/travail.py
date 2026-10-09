@@ -217,6 +217,32 @@ def transcrire_par_prises(wav):
         return [w for ws in ex.map(une, prises(wav)) for w in ws]
 
 
+# ---------------------------------------------------------------- floutage naturel
+def flou_naturel(frame, box, intensite):
+    """Correctif 5 (demande de Hassan, 09/10) : seul le visage est flouté, sans bulle.
+    Pas de couleur, pas de contour, et un bord qui se fond dans l'image : le cœur du
+    visage est entièrement flouté, puis le flou s'estompe progressivement autour.
+    Les 6 styles de Sidali (face_effects.py) restent disponibles mais ne sont plus proposés."""
+    import cv2
+    import face_effects as fx
+    H, W = frame.shape[:2]
+    x, y, w, h = box
+    cx, cy = x + w / 2, y + h / 2 + h * 0.03
+    ax, ay = w * 0.62, h * 0.78          # le visage, cheveux et menton compris
+    pad = int(max(ax, ay) * 0.5)
+    x0, y0 = int(max(0, cx - ax - pad)), int(max(0, cy - ay - pad))
+    x1, y1 = int(min(W, cx + ax + pad)), int(min(H, cy + ay + pad))
+    if x1 <= x0 or y1 <= y0:
+        return
+    roi = frame[y0:y1, x0:x1]
+    flou = fx._blur(roi, w, intensite)
+    yy, xx = np.mgrid[y0:y1, x0:x1].astype(np.float32)
+    d = np.sqrt(((xx - cx) / ax) ** 2 + ((yy - cy) / ay) ** 2)
+    m = np.clip((1.25 - d) / 0.45, 0, 1)  # plein jusqu'à 0,8 du rayon, nul à 1,25
+    m = (m * m * (3 - 2 * m))[..., None]  # transition douce, sans arête
+    frame[y0:y1, x0:x1] = (flou.astype(np.float32) * m + roi.astype(np.float32) * (1 - m)).astype(np.uint8)
+
+
 # ---------------------------------------------------------------- floutage en parallèle
 CHAUFFE = 15  # images lues avant chaque morceau, pour que la détection soit déjà « accrochée »
 
@@ -257,7 +283,10 @@ def _masquer_morceau(args):
                 sans += 1
             if last is not None and miss < HOLD:
                 for box in last:
-                    fx.apply(frame, box, opts["style"], opts["couleur"], opts["intensite"], opts["intensite_couleur"], n)
+                    if opts["style"] == "naturel":
+                        flou_naturel(frame, box, opts["intensite"])
+                    else:
+                        fx.apply(frame, box, opts["style"], opts["couleur"], opts["intensite"], opts["intensite_couleur"], n)
             enc.stdin.write(frame.tobytes())
         n += 1
     dec.stdout.close()
@@ -407,7 +436,8 @@ def rendre(dossier, liens, reglages, travail):
     etape_video = cut
     if v.get("flouter"):
         etape("floutage")
-        opts = {"style": v.get("style") if v.get("style") in ("flou", "mosaique", "verre", "marqueur", "sticker", "neon") else "flou",
+        styles = ("naturel", "flou", "mosaique", "verre", "marqueur", "sticker", "neon")
+        opts = {"style": v.get("style") if v.get("style") in styles else "naturel",
                 "couleur": couleur(v.get("couleur"), "#C9A45C"),
                 "intensite": int(min(5, max(1, int(v.get("intensite") or 3)))),
                 "intensite_couleur": int(min(5, max(1, int(v.get("intensite_couleur") or 3))))}

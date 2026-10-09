@@ -4,7 +4,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { NIVEAUX_SON, STYLES_FLOU, type Reglages } from "@/lib/studio/reglages";
+import { NIVEAUX_SON, type Reglages } from "@/lib/studio/reglages";
 import { SelecteurCouleur } from "./SelecteurCouleur";
 
 type Maj = (r: Reglages) => void;
@@ -21,7 +21,7 @@ function Curseur({ label, valeur, onChange }: { label: string; valeur: number; o
   );
 }
 
-/** « Veux-tu flouter ton visage ? » puis, si oui, style, couleur et intensités. */
+/** « Veux-tu flouter ton visage ? » puis, si oui, l'intensité du flou naturel. */
 export function BlocVisage({ reglages, onChange, question = true }: { reglages: Reglages; onChange: Maj; question?: boolean }) {
   const v = reglages.visage;
   const maj = (p: Partial<Reglages["visage"]>) => onChange({ ...reglages, visage: { ...v, ...p } });
@@ -53,35 +53,9 @@ export function BlocVisage({ reglages, onChange, question = true }: { reglages: 
       )}
       {v.flouter && (
         <div className="space-y-5">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">Style</p>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {STYLES_FLOU.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => maj({ style: s.id })}
-                  aria-pressed={v.style === s.id}
-                  className={cn(
-                    "rounded-lg border px-3 py-2 text-left transition-colors",
-                    v.style === s.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/50",
-                  )}
-                >
-                  <span className="block text-sm font-semibold text-foreground">{s.nom}</span>
-                  <span className="block text-[11px] text-muted-foreground">{s.description}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <SelecteurCouleur label="Couleur du floutage" valeur={v.couleur} onChange={(couleur) => maj({ couleur })} />
           <Curseur label="Intensité du floutage" valeur={v.intensite} onChange={(intensite) => maj({ intensite })} />
-          <Curseur
-            label="Intensité de la couleur"
-            valeur={v.intensite_couleur}
-            onChange={(intensite_couleur) => maj({ intensite_couleur })}
-          />
           <p className="text-xs text-muted-foreground">
-            Même au niveau 1, ton visage reste méconnaissable.
+            Seul ton visage est flouté, sans forme ni couleur autour. Même au niveau 1, il reste méconnaissable.
           </p>
         </div>
       )}

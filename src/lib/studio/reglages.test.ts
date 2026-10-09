@@ -28,7 +28,9 @@ describe("réglages", () => {
   it("complète les réglages enregistrés avec les valeurs par défaut du cahier des charges", () => {
     expect(completerReglages({})).toEqual(REGLAGES_PAR_DEFAUT);
     const r = completerReglages({ visage: { flouter: true } as never });
-    expect(r.visage).toMatchObject({ flouter: true, style: "flou", couleur: "#C9A45C", intensite: 3 });
+    expect(r.visage).toMatchObject({ flouter: true, style: "naturel", intensite: 3 });
+    // un montage réglé avec une ancienne bulle colorée repasse au flou naturel
+    expect(completerReglages({ visage: { flouter: true, style: "sticker" } as never }).visage.style).toBe("naturel");
     expect(r.son).toEqual({ ameliorer: true, niveau: "normal" });
     expect(r.sous_titres).toEqual({ texte: "#FFFFFF", contour: "#000000", ombre: "#000000" });
   });

@@ -2,7 +2,9 @@
 // l'élève, valeurs par défaut et libellés. Tout le reste (format, polices,
 // position des sous-titres, coupes…) est imposé dans le moteur.
 
-export type StyleFlou = "flou" | "mosaique" | "verre" | "marqueur" | "sticker" | "neon";
+// « naturel » : seul le visage est flouté, sans bulle ni couleur (choix de Hassan, 09/10).
+// Les 6 styles du cahier des charges restent connus du moteur mais ne sont plus proposés.
+export type StyleFlou = "naturel" | "flou" | "mosaique" | "verre" | "marqueur" | "sticker" | "neon";
 export type NiveauSon = "leger" | "normal" | "fort";
 
 export interface Reglages {
@@ -14,7 +16,7 @@ export interface Reglages {
 export const REGLAGES_PAR_DEFAUT: Reglages = {
   son: { ameliorer: true, niveau: "normal" },
   sous_titres: { texte: "#FFFFFF", contour: "#000000", ombre: "#000000" },
-  visage: { flouter: false, style: "flou", couleur: "#C9A45C", intensite: 3, intensite_couleur: 3 },
+  visage: { flouter: false, style: "naturel", couleur: "#C9A45C", intensite: 3, intensite_couleur: 3 },
 };
 
 /** Les 10 teintes proposées partout où l'élève choisit une couleur. */
@@ -91,7 +93,8 @@ export function completerReglages(r: Partial<Reglages> | null | undefined): Regl
   return {
     son: { ...REGLAGES_PAR_DEFAUT.son, ...(r?.son ?? {}) },
     sous_titres: { ...REGLAGES_PAR_DEFAUT.sous_titres, ...(r?.sous_titres ?? {}) },
-    visage: { ...REGLAGES_PAR_DEFAUT.visage, ...(r?.visage ?? {}) },
+    // les montages faits avec un ancien style (bulle colorée) repassent au flou naturel
+    visage: { ...REGLAGES_PAR_DEFAUT.visage, ...(r?.visage ?? {}), style: "naturel" },
   };
 }
 
