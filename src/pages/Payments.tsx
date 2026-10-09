@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
-import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare, MoreHorizontal, Clock, XCircle, CalendarIcon, ListOrdered, Save, X as XIcon, Loader2, FileText, Link as LinkIcon, Download, Archive, Zap, Copy, ExternalLink, ArrowRight } from "lucide-react";
+import { RefreshCw, Check, CreditCard, AlertTriangle, CircleDollarSign, Search, Inbox, ChevronLeft, ChevronRight, Phone, MessageSquare, MoreHorizontal, Clock, XCircle, CalendarIcon, ListOrdered, Save, X as XIcon, Loader2, FileText, Link as LinkIcon, Download, Archive, Zap, Copy, ExternalLink, ArrowRight, Scale } from "lucide-react";
 import JSZip from "jszip";
 import { formatDateOnly } from "@/lib/formatDate";
 import { format } from "date-fns";
@@ -21,6 +21,7 @@ import { useUpdatePaymentAdmin, useTriggerInstallment } from "@/hooks/usePayment
 import { abonnementStripeEnCours } from "@/lib/abonnementStripe";
 import PaymentScheduleModal from "@/components/payments/PaymentScheduleModal";
 import ClientInvoiceModal from "@/components/payments/ClientInvoiceModal";
+import RecouvrementDialog from "@/components/payments/RecouvrementDialog";
 
 // Soustrait 1 mois calendaire d'un YYYY-MM-DD (clamp sur le dernier jour si
 // jour absent du mois précédent). Aligné sur l'edge function trigger-installment-now.
@@ -177,6 +178,7 @@ export default function Payments() {
   // Modale "Téléchargement factures du mois" : pour la compta, génère un ZIP
   // de toutes les factures clients (PDF) encaissées sur le mois sélectionné.
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [recouvrementOpen, setRecouvrementOpen] = useState(false);
   const [bulkMonth, setBulkMonth] = useState<string>(() => {
     // Default au mois précédent (le plus utile pour la compta : "transmettre
     // les factures du mois écoulé au comptable")
@@ -954,6 +956,18 @@ export default function Payments() {
               Factures du mois
             </Button>
           )}
+          {isCeo && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={() => setRecouvrementOpen(true)}
+              title="Factures REC transmises au cabinet d'avocats : téléchargement et fichier Excel du cabinet"
+            >
+              <Scale className="h-3.5 w-3.5" />
+              Recouvrement
+            </Button>
+          )}
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefresh} disabled={refreshing} title="Actualiser">
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
@@ -1491,6 +1505,9 @@ export default function Payments() {
         saleId={scheduleModal?.saleId ?? null}
         contactName={scheduleModal?.contactName ?? null}
       />
+
+      {/* Factures de recouvrement REC — CEO only */}
+      <RecouvrementDialog open={recouvrementOpen} onClose={() => setRecouvrementOpen(false)} />
 
       {/* Modale "Facture client" — CEO only, sur paid */}
       <ClientInvoiceModal

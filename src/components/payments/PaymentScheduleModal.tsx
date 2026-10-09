@@ -23,6 +23,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CalendarIcon, Plus, Trash2, RefreshCw, AlertTriangle, Loader2, Save, X, Zap, Copy, ExternalLink, ArrowRight, Wrench } from "lucide-react";
+import { useFacturesDeVente, type FactureFAC, type FactureREC } from "@/hooks/useRecouvrement";
+import { CelluleFacture, ConfirmRecouvrementDialog } from "@/components/payments/FacturesEcheance";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatDateOnly } from "@/lib/formatDate";
@@ -102,6 +104,9 @@ export default function PaymentScheduleModal({ open, onClose, saleId, contactNam
   } | null>(null);
   const [recalcCount, setRecalcCount] = useState<number>(2);
   const [addingRow, setAddingRow] = useState(false);
+  // Recouvrement (09/10/2026) : factures REC et FAC de chaque échéance.
+  const factures = useFacturesDeVente(open ? saleId : null);
+  const [confirmRec, setConfirmRec] = useState<SchedulePayment | null>(null);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["schedule", saleId],
@@ -424,6 +429,7 @@ export default function PaymentScheduleModal({ open, onClose, saleId, contactNam
                     <TableHead>Montant</TableHead>
                     <TableHead>Statut</TableHead>
                     <TableHead>Payé le</TableHead>
+                    <TableHead>Facture</TableHead>
                     <TableHead className="w-[80px] text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -436,6 +442,9 @@ export default function PaymentScheduleModal({ open, onClose, saleId, contactNam
                       onAskTrigger={() => setConfirmTrigger(p)}
                       onUpdate={handleUpdate}
                       onAskDelete={() => setConfirmDelete(p)}
+                      rec={factures.data?.recParEcheance.get(p.id)}
+                      fac={factures.data?.facParEcheance.get(p.id)}
+                      onAskRecouvrement={() => setConfirmRec(p)}
                     />
                   ))}
                   {addingRow && (
@@ -457,6 +466,8 @@ export default function PaymentScheduleModal({ open, onClose, saleId, contactNam
       </Dialog>
 
       {/* Confirm delete */}
+      <ConfirmRecouvrementDialog echeance={confirmRec} contactName={contactName} onClose={() => setConfirmRec(null)} />
+
       <Dialog open={!!confirmDelete} onOpenChange={(v) => !v && setConfirmDelete(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -650,17 +661,26 @@ function ScheduleRow({
   onAskTrigger,
   onUpdate,
   onAskDelete,
+  rec,
+  fac,
+  onAskRecouvrement,
 }: {
   p: SchedulePayment;
   isNextTriggerable: boolean;
   onAskTrigger: () => void;
   onUpdate: (p: SchedulePayment, patch: Partial<{ due_date: string; amount: number }>) => Promise<void>;
   onAskDelete: () => void;
+  rec?: FactureREC;
+  fac?: FactureFAC;
+  onAskRecouvrement: () => void;
 }) {
   const [editingDate, setEditingDate] = useState(false);
   const [editingAmount, setEditingAmount] = useState(false);
   const [amountValue, setAmountValue] = useState<string>(String(p.amount));
   const isPaid = p.status === "paid";
+  // Une échéance transmise au cabinet (facture REC) est figée : sa facture
+  // porte cette date et ce montant.
+  const fige = isPaid || !!rec;
   const status = STATUS_BADGE[p.status] ?? { label: p.status, className: "bg-muted text-muted-foreground" };
 
   return (
@@ -669,7 +689,7 @@ function ScheduleRow({
         {p.payment_number}/{p.total_payments}
       </TableCell>
       <TableCell>
-        {isPaid ? (
+        {fige ? (
           <span className="text-xs">{formatDateOnly(p.due_date)}</span>
         ) : (
           <Popover open={editingDate} onOpenChange={setEditingDate}>
@@ -697,7 +717,7 @@ function ScheduleRow({
         )}
       </TableCell>
       <TableCell>
-        {isPaid ? (
+        {fige ? (
           <span className="text-sm font-semibold">{p.amount.toLocaleString("fr-FR")} €</span>
         ) : editingAmount ? (
           <div className="flex items-center gap-1">
@@ -760,6 +780,9 @@ function ScheduleRow({
       <TableCell className="text-xs text-muted-foreground">
         {p.paid_at ? formatDateOnly(p.paid_at) : "—"}
       </TableCell>
+      <TableCell>
+        <CelluleFacture p={p} rec={rec} fac={fac} onAskRecouvrement={onAskRecouvrement} />
+      </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-1">
           {isNextTriggerable && (
@@ -774,7 +797,7 @@ function ScheduleRow({
               Déclencher
             </Button>
           )}
-          {!isPaid && (
+          {!fige && (
             <Button
               variant="ghost"
               size="sm"

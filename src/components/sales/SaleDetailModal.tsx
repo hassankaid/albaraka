@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { FacturesVenteSection } from "@/components/payments/FacturesEcheance";
+import { useFacturesDeVente } from "@/hooks/useRecouvrement";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -73,6 +75,11 @@ export default function SaleDetailModal({
   const { profile } = useAuth();
   const { toast } = useToast();
   const isCeo = profile?.role === "ceo";
+  // Recouvrement (09/10/2026) : une échéance qui a sa facture REC est figée
+  // (ni modifiée, ni supprimée) — sa facture, transmise au cabinet, porte ce
+  // montant et cette date.
+  const facturesVente = useFacturesDeVente(isCeo && open ? saleId : null);
+  const estFigee = (paymentId: string) => !!facturesVente.data?.recParEcheance.has(paymentId);
   const userTz = profile?.timezone || "Europe/Paris";
 
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -821,6 +828,8 @@ export default function SaleDetailModal({
                                 </PopoverContent>
                               </Popover>
                             )}
+                            {!estFigee(p.id) && (
+                            <>
                             <Button variant="ghost" size="sm" title="Modifier" onClick={() => startEdit(p)}>
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -845,6 +854,8 @@ export default function SaleDetailModal({
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
+                            </>
+                            )}
                           </div>
                         </TableCell>
                       )}
@@ -1084,6 +1095,8 @@ export default function SaleDetailModal({
                             </PopoverContent>
                           </Popover>
                         )}
+                        {!estFigee(p.id) && (
+                        <>
                         <Button variant="outline" size="sm" className="h-9 flex-1 gap-1.5 text-xs" onClick={() => startEdit(p)}>
                           <Pencil className="h-3.5 w-3.5" /> Modifier
                         </Button>
@@ -1108,6 +1121,8 @@ export default function SaleDetailModal({
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
+                        </>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1193,6 +1208,14 @@ export default function SaleDetailModal({
             </>
           )}
         </div>
+
+        {/* Factures de la vente : FAC (payées), REC (recouvrement) — CEO uniquement */}
+        {isCeo && saleId && payments.length > 0 && (
+          <>
+            <Separator />
+            <FacturesVenteSection saleId={saleId} contactName={contactName || "—"} echeances={payments} />
+          </>
+        )}
 
         {/* Danger zone — Supprimer la vente (CEO uniquement) */}
         {isCeo && saleId && (
