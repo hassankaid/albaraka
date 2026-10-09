@@ -33,7 +33,12 @@ vi.mock("@/hooks/useQuizzes", () => ({
 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: null }) }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
-vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({ invalidateQueries: vi.fn() }) }));
+let suite: { id: string; titre: string; slug: string } | null = null;
+vi.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+  // Le chapitre suivant, une fois un quiz de fin de chapitre réussi.
+  useQuery: ({ enabled }: { enabled: boolean }) => ({ data: enabled ? suite : undefined }),
+}));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 import QuizPage from "./QuizPage";
@@ -50,6 +55,7 @@ function repondre(texte: string): string {
 }
 
 beforeEach(() => {
+  suite = null;
   quiz = { id: "z", titre: "Quiz de fin de formation — Setting", description: "", max_errors: 1, formation_id: null, chapitre_id: null, questions: QUESTIONS };
   mutateAsync.mockClear();
 });
@@ -89,5 +95,31 @@ describe("explication par réponse", () => {
     fireEvent.click(screen.getByText("Voir les résultats"));
     expect(await screen.findByText("1 erreur sur 2 questions")).toBeTruthy();
     expect(screen.queryByTestId("quiz-score")).toBeNull();
+  });
+});
+
+describe("parcours linéaire : après un quiz de fin de chapitre réussi", () => {
+  it("propose « Continuer » vers le chapitre suivant", async () => {
+    quiz = { ...quiz, chapitre_id: "chap-16" };
+    suite = { id: "chap-17", titre: "PARTIE 1 — Introduction", slug: "parcours-setter-closer" };
+    monter();
+    repondre("Jaune");
+    fireEvent.click(screen.getByText("Question suivante"));
+    repondre("Un");
+    fireEvent.click(screen.getByText("Voir les résultats"));
+    const bouton = await screen.findByTestId("quiz-continuer");
+    expect(bouton.textContent).toContain("Continuer : PARTIE 1 — Introduction");
+  });
+
+  it("ne propose rien si le quiz est raté", async () => {
+    quiz = { ...quiz, chapitre_id: "chap-16", max_errors: 0 };
+    suite = { id: "chap-17", titre: "Suite", slug: "parcours-setter-closer" };
+    monter();
+    repondre("Jaune");
+    fireEvent.click(screen.getByText("Question suivante"));
+    repondre("Un");
+    fireEvent.click(screen.getByText("Voir les résultats"));
+    await screen.findByText("À refaire");
+    expect(screen.queryByTestId("quiz-continuer")).toBeNull();
   });
 });

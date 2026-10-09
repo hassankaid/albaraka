@@ -1,3 +1,5 @@
+import { Fragment } from "react";
+import { debutEtape } from "@/lib/etapes";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +42,8 @@ interface Module {
   description: string | null;
   ordre: number;
   status: string;
+  /** Étape du parcours (« ÉTAPE 1 — SETTING »), null pour une formation classique. */
+  etape?: string | null;
   chapitres: Chapitre[];
 }
 
@@ -65,7 +69,7 @@ export default function FormationDetail() {
       const { data: modules, error: mErr } = await supabase
         .from("formation_modules")
         .select(
-          "id, titre, description, ordre, status, formation_chapitres(id, titre, ordre, status, duree_estimee_minutes)"
+          "id, titre, description, ordre, status, etape, formation_chapitres(id, titre, ordre, status, duree_estimee_minutes)"
         )
         .eq("formation_id", formation.id)
         .order("ordre", { ascending: true });
@@ -263,16 +267,25 @@ export default function FormationDetail() {
                 (c) => c.status === "published"
               ).length;
 
+              const etape = debutEtape(modules, idx);
               return (
+                <Fragment key={module.id}>
+                {etape && (
+                  <h3
+                    data-testid="titre-etape"
+                    className={`text-xs font-bold uppercase tracking-[0.14em] text-primary ${idx > 0 ? "pt-4" : ""}`}
+                  >
+                    {etape}
+                  </h3>
+                )}
                 <AccordionItem
-                  key={module.id}
                   value={module.id}
                   className="border border-border rounded-lg bg-card px-4"
                 >
                   <AccordionTrigger className="hover:no-underline py-4">
                     <div className="flex items-center gap-3 text-left">
                       <span className="flex items-center justify-center h-7 w-7 rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0">
-                        {idx + 1}
+                        {module.etape ? "•" : idx + 1}
                       </span>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -393,6 +406,7 @@ export default function FormationDetail() {
                     />
                   </AccordionContent>
                 </AccordionItem>
+                </Fragment>
               );
             })}
           </Accordion>

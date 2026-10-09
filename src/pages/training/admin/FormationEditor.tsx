@@ -47,9 +47,11 @@ export default function FormationEditor() {
     queryKey: ["admin-training", "modules-tree", formation?.id],
     enabled: !!formation?.id,
     queryFn: async () => {
-      const { data: mods, error } = await supabase
+      // `etape` (étapes d'un parcours) n'est pas encore dans les types générés.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: mods, error } = await (supabase as any)
         .from("formation_modules")
-        .select("id, titre, description, ordre, status")
+        .select("id, titre, description, ordre, status, etape")
         .eq("formation_id", formation!.id)
         .order("ordre", { ascending: true });
       if (error) throw error;

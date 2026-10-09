@@ -1,3 +1,5 @@
+import { Fragment } from "react";
+import { debutEtape } from "@/lib/etapes";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,7 +46,7 @@ export function ChapterSidebar({
         supabase.from("formations").select("id, titre").eq("id", formationId).maybeSingle(),
         supabase
           .from("formation_modules")
-          .select("id, titre, ordre, status, formation_chapitres(id, titre, ordre, status)")
+          .select("id, titre, ordre, status, etape, formation_chapitres(id, titre, ordre, status)")
           .eq("formation_id", formationId)
           .order("ordre", { ascending: true }),
       ]);
@@ -118,16 +120,22 @@ export function ChapterSidebar({
               (c: any) => c.status === "published"
             ).length;
 
+            const etape = debutEtape(data.modules, idx);
             return (
+              <Fragment key={module.id}>
+              {etape && (
+                <div className={`px-2 text-[10px] font-bold uppercase tracking-[0.14em] text-primary ${idx > 0 ? "pt-3" : ""}`}>
+                  {etape}
+                </div>
+              )}
               <AccordionItem
-                key={module.id}
                 value={module.id}
                 className="border-none"
               >
                 <AccordionTrigger className="hover:no-underline py-2 px-2 rounded-md hover:bg-secondary text-xs">
                   <div className="flex items-center gap-2 text-left">
                     <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold shrink-0">
-                      {idx + 1}
+                      {module.etape ? "•" : idx + 1}
                     </span>
                     <div className="min-w-0">
                       <span className="font-medium text-foreground line-clamp-1">
@@ -183,6 +191,7 @@ export function ChapterSidebar({
                   </div>
                 </AccordionContent>
               </AccordionItem>
+              </Fragment>
             );
           })}
         </Accordion>

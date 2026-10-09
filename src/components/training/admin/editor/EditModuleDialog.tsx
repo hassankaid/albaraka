@@ -30,6 +30,7 @@ interface EditModuleDialogProps {
     titre: string;
     description: string | null;
     status: string;
+    etape?: string | null;
   };
   onUpdated?: () => void;
 }
@@ -38,20 +39,24 @@ export function EditModuleDialog({ open, onOpenChange, module, onUpdated }: Edit
   const [titre, setTitre] = useState(module.titre);
   const [description, setDescription] = useState(module.description ?? "");
   const [status, setStatus] = useState(module.status);
+  const [etape, setEtape] = useState(module.etape ?? "");
 
   useEffect(() => {
     if (open) {
       setTitre(module.titre);
       setDescription(module.description ?? "");
       setStatus(module.status);
+      setEtape(module.etape ?? "");
     }
   }, [open, module]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      // `etape` n'est pas encore dans les types générés.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from("formation_modules")
-        .update({ titre, description: description || null, status })
+        .update({ titre, description: description || null, status, etape: etape.trim() || null })
         .eq("id", module.id);
       if (error) throw error;
     },
@@ -83,6 +88,18 @@ export function EditModuleDialog({ open, onOpenChange, module, onUpdated }: Edit
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-mod-etape">Étape du parcours (facultatif)</Label>
+            <Input
+              id="edit-mod-etape"
+              value={etape}
+              onChange={(e) => setEtape(e.target.value)}
+              placeholder="ÉTAPE 1 — SETTING"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Titre affiché au-dessus du module. Les modules qui se suivent avec la même étape sont regroupés. Vide = pas d'étape.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-mod-status">Statut</Label>

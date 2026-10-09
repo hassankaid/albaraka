@@ -72,7 +72,13 @@ export interface FormationWithModules {
   titre: string;
   slug: string;
   ordre: number;
-  modules: { id: string; titre: string; ordre: number }[];
+  modules: {
+    id: string;
+    titre: string;
+    ordre: number;
+    /** Chapitres du module, pour rattacher un quiz à la fin d'un chapitre. */
+    chapitres: { id: string; titre: string; ordre: number; status: string }[];
+  }[];
 }
 
 export function useFormationsWithModules() {
@@ -89,7 +95,7 @@ export function useFormationsWithModules() {
       if (ids.length === 0) return [];
       const { data: modules, error: mErr } = await (supabase as any)
         .from("formation_modules")
-        .select("id, titre, ordre, formation_id")
+        .select("id, titre, ordre, formation_id, formation_chapitres(id, titre, ordre, status)")
         .in("formation_id", ids)
         .neq("status", "archived")
         .order("ordre", { ascending: true });
@@ -97,7 +103,10 @@ export function useFormationsWithModules() {
       const byFormation = new Map<string, any[]>();
       for (const m of modules || []) {
         if (!byFormation.has(m.formation_id)) byFormation.set(m.formation_id, []);
-        byFormation.get(m.formation_id)!.push({ id: m.id, titre: m.titre, ordre: m.ordre });
+        const chapitres = [...(m.formation_chapitres ?? [])]
+          .filter((c: any) => c.status !== "archived")
+          .sort((a: any, b: any) => a.ordre - b.ordre);
+        byFormation.get(m.formation_id)!.push({ id: m.id, titre: m.titre, ordre: m.ordre, chapitres });
       }
       return (formations || []).map((f: any) => ({
         ...f,

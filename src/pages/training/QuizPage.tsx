@@ -5,12 +5,12 @@ import { autoCompleteParcoursFormationChapter } from "@/lib/parcoursAutoComplete
 import { isFormationCompleteForUser } from "@/lib/certificateEligibility";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Loader2, CheckCircle2, XCircle, RotateCcw, Trophy } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, CheckCircle2, XCircle, RotateCcw, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { explicationAffichee, quizAuNouveauFormat, scoreQuiz } from "@/lib/quizExplications";
 import { toast } from "sonner";
@@ -32,6 +32,23 @@ export default function QuizPage() {
   const [finished, setFinished] = useState(false);
   // Incrémenté à chaque tentative → force un nouveau shuffle
   const [attemptSeed, setAttemptSeed] = useState(0);
+
+  // Parcours linéaire (09/10/2026) : un quiz de fin de chapitre réussi mène
+  // directement au chapitre suivant, sans repasser par la page de la formation.
+  const chapitreDuQuiz = (quiz as { chapitre_id?: string | null } | undefined)?.chapitre_id ?? null;
+  const reussi = finished && answers.filter((a) => !a.correct).length <= (quiz?.max_errors ?? 0);
+  const { data: suite } = useQuery({
+    queryKey: ["training", "chapter-nav", chapitreDuQuiz, "apres-quiz"],
+    enabled: !!chapitreDuQuiz && reussi,
+    queryFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any).rpc("get_chapter_navigation", { p_chapitre_id: chapitreDuQuiz });
+      const nav = data?.[0];
+      return nav?.next_chapitre_id
+        ? { id: nav.next_chapitre_id as string, titre: nav.next_chapitre_titre as string, slug: nav.current_formation_slug as string }
+        : null;
+    },
+  });
 
   // Permutation des options par question. shuffledOrders[q.id][displayPos] = realOptionIdx.
   // Regénéré à chaque nouvelle tentative (attemptSeed change sur "Recommencer").
@@ -217,12 +234,23 @@ export default function QuizPage() {
                 </p>
               )}
             </div>
+            {validated && suite && (
+              <Button
+                size="lg"
+                className="mt-2 gap-2"
+                data-testid="quiz-continuer"
+                onClick={() => navigate(`/training/${suite.slug}/chapitre/${suite.id}`)}
+              >
+                Continuer : {suite.titre}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
             <div className="flex gap-3 justify-center pt-4">
               <Button variant="outline" onClick={() => navigate(-1)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Retour
               </Button>
-              <Button onClick={handleRestart}>
+              <Button variant={validated && suite ? "outline" : "default"} onClick={handleRestart}>
                 <RotateCcw className="mr-2 h-4 w-4" />
                 Recommencer
               </Button>

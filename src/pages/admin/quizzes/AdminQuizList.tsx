@@ -36,7 +36,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, X, Loader2, ArrowLeft, CheckCircle2, Dumbbell, Layers, Trophy } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Loader2, ArrowLeft, CheckCircle2, Dumbbell, Layers, Trophy, ListEnd } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -75,7 +75,7 @@ function AutoTextarea({ value, onChange, placeholder, className }: {
 
 // ─── Quiz Dialog ───
 
-type AttachmentKind = "training" | "module" | "formation_final";
+type AttachmentKind = "training" | "module" | "chapitre" | "formation_final";
 
 function QuizDialog({ open, onOpenChange, initial }: {
   open: boolean;
@@ -92,6 +92,9 @@ function QuizDialog({ open, onOpenChange, initial }: {
   const [attachmentKind, setAttachmentKind] = useState<AttachmentKind>("training");
   const [formationId, setFormationId] = useState<string>("");
   const [moduleId, setModuleId] = useState<string>("");
+  // Fin de chapitre (09/10/2026) : le quiz s'affiche sous le chapitre et
+  // bloque la suite tant qu'il n'est pas réussi.
+  const [chapitreId, setChapitreId] = useState<string>("");
 
   useEffect(() => {
     if (!open) return;
@@ -99,7 +102,15 @@ function QuizDialog({ open, onOpenChange, initial }: {
     setDescription(initial?.description ?? "");
     setMaxErrors(initial?.max_errors ?? 3);
     // Détermine le type de rattachement initial
-    if (initial?.module_id) {
+    setChapitreId("");
+    if (initial?.chapitre_id) {
+      setAttachmentKind("chapitre");
+      setChapitreId(initial.chapitre_id);
+      const f = (formations ?? []).find((fm) => fm.modules.some((m) => m.chapitres.some((c) => c.id === initial.chapitre_id)));
+      const m = f?.modules.find((mm) => mm.chapitres.some((c) => c.id === initial.chapitre_id));
+      setFormationId(f?.id ?? "");
+      setModuleId(m?.id ?? "");
+    } else if (initial?.module_id) {
       setAttachmentKind("module");
       setModuleId(initial.module_id);
       // Retrouve la formation du module sélectionné
@@ -121,10 +132,15 @@ function QuizDialog({ open, onOpenChange, initial }: {
   const saving = create.isPending || update.isPending;
 
   const selectedFormation = (formations ?? []).find((f) => f.id === formationId);
+  const selectedModule = selectedFormation?.modules.find((m) => m.id === moduleId);
 
   const handleSave = async () => {
     if (!titre.trim()) {
       toast.error("Le titre est requis.");
+      return;
+    }
+    if (attachmentKind === "chapitre" && !chapitreId) {
+      toast.error("Choisis le chapitre après lequel placer ce quiz.");
       return;
     }
     if (attachmentKind === "module" && !moduleId) {
@@ -141,6 +157,7 @@ function QuizDialog({ open, onOpenChange, initial }: {
       max_errors: maxErrors,
       module_id: attachmentKind === "module" ? moduleId : null,
       formation_id: attachmentKind === "formation_final" ? formationId : null,
+      chapitre_id: attachmentKind === "chapitre" ? chapitreId : null,
     };
     try {
       if (initial) {
@@ -179,9 +196,10 @@ function QuizDialog({ open, onOpenChange, initial }: {
 
           <div className="space-y-3">
             <Label>Rattachement du quiz</Label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {([
                 { kind: "training" as const, icon: Dumbbell, label: "Entraînement", hint: "Page /training/quiz" },
+                { kind: "chapitre" as const, icon: ListEnd, label: "Fin de chapitre", hint: "Sous un chapitre, bloque la suite" },
                 { kind: "module" as const, icon: Layers, label: "Quiz de module", hint: "Dans une formation" },
                 { kind: "formation_final" as const, icon: Trophy, label: "Validation finale", hint: "Fin de formation" },
               ]).map((opt) => {
@@ -193,8 +211,9 @@ function QuizDialog({ open, onOpenChange, initial }: {
                     type="button"
                     onClick={() => {
                       setAttachmentKind(opt.kind);
-                      if (opt.kind === "training") { setFormationId(""); setModuleId(""); }
-                      if (opt.kind === "formation_final") { setModuleId(""); }
+                      if (opt.kind === "training") { setFormationId(""); setModuleId(""); setChapitreId(""); }
+                      if (opt.kind === "formation_final") { setModuleId(""); setChapitreId(""); }
+                      if (opt.kind === "module") { setChapitreId(""); }
                     }}
                     className={cn(
                       "flex flex-col items-start gap-1 p-3 rounded-lg border text-left transition-colors",
@@ -215,12 +234,12 @@ function QuizDialog({ open, onOpenChange, initial }: {
               })}
             </div>
 
-            {(attachmentKind === "module" || attachmentKind === "formation_final") && (
+            {(attachmentKind === "module" || attachmentKind === "chapitre" || attachmentKind === "formation_final") && (
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Formation</Label>
                 <Select
                   value={formationId}
-                  onValueChange={(v) => { setFormationId(v); setModuleId(""); }}
+                  onValueChange={(v) => { setFormationId(v); setModuleId(""); setChapitreId(""); }}
                 >
                   <SelectTrigger><SelectValue placeholder="Choisis une formation…" /></SelectTrigger>
                   <SelectContent>
@@ -232,10 +251,10 @@ function QuizDialog({ open, onOpenChange, initial }: {
               </div>
             )}
 
-            {attachmentKind === "module" && selectedFormation && (
+            {(attachmentKind === "module" || attachmentKind === "chapitre") && selectedFormation && (
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Module</Label>
-                <Select value={moduleId} onValueChange={setModuleId}>
+                <Select value={moduleId} onValueChange={(v) => { setModuleId(v); setChapitreId(""); }}>
                   <SelectTrigger><SelectValue placeholder="Choisis un module…" /></SelectTrigger>
                   <SelectContent>
                     {selectedFormation.modules.map((m) => (
@@ -250,6 +269,25 @@ function QuizDialog({ open, onOpenChange, initial }: {
                     Cette formation n'a pas encore de modules.
                   </p>
                 )}
+              </div>
+            )}
+
+            {attachmentKind === "chapitre" && selectedModule && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Chapitre (le quiz s'affiche sous lui)</Label>
+                <Select value={chapitreId} onValueChange={setChapitreId}>
+                  <SelectTrigger><SelectValue placeholder="Choisis un chapitre…" /></SelectTrigger>
+                  <SelectContent>
+                    {selectedModule.chapitres.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.titre}{c.status === "draft" ? " (brouillon)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Les chapitres suivants restent verrouillés tant que l'élève n'a pas réussi ce quiz.
+                </p>
               </div>
             )}
           </div>
@@ -437,6 +475,15 @@ function QuestionDialog({ open, onOpenChange, quizId, initial }: {
 // ─── Main Component ───
 
 function attachmentBadge(q: any, formations: FormationWithModules[] | undefined) {
+  if (q.chapitre_id) {
+    const formation = (formations ?? []).find((f) => f.modules.some((m) => m.chapitres.some((c) => c.id === q.chapitre_id)));
+    const chap = formation?.modules.flatMap((m) => m.chapitres).find((c) => c.id === q.chapitre_id);
+    return {
+      label: `Fin de chapitre · ${formation?.titre ?? "?"}${chap ? " / " + chap.titre : ""}`,
+      variant: "default" as const,
+      className: "bg-violet-600 hover:bg-violet-600 text-white border-0",
+    };
+  }
   if (q.module_id) {
     const formation = (formations ?? []).find((f) => f.modules.some((m) => m.id === q.module_id));
     const mod = formation?.modules.find((m) => m.id === q.module_id);
