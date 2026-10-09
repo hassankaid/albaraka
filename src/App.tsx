@@ -135,6 +135,10 @@ import ContractLandingPage from "./pages/contract/ContractLandingPage";
 import DiscordCallback from "./pages/discord/DiscordCallback";
 import AdminDiscord from "./pages/admin/discord/AdminDiscord";
 import AdminSiteVitrine from "./pages/admin/site-vitrine/AdminSiteVitrine";
+import StudioGate from "./pages/studio/StudioGate";
+import StudioAccueil from "./pages/studio/StudioAccueil";
+import StudioFaceCamera from "./pages/studio/StudioFaceCamera";
+import StudioMontage from "./pages/studio/StudioMontage";
 import AdminEmailCampaign from "./pages/admin/email-campaigns/AdminEmailCampaign";
 import AdminSmsCampaign from "./pages/admin/email-campaigns/AdminSmsCampaign";
 import { WA_TUNNEL, VSL_TUNNEL } from "./pages/tunnels/config";
@@ -341,6 +345,10 @@ const FullApp = () => (
                   <Route path="/admin/payment-links" element={<AdminPaymentLinks />} />
                   <Route path="/admin/conferences" element={<AdminConferences />} />
                   <Route path="/admin/site-vitrine" element={<AdminSiteVitrine />} />
+                  {/* Studio vidéo (phase 1, 10/10/2026) : CEO uniquement */}
+                  <Route path="/studio" element={<StudioGate><StudioAccueil /></StudioGate>} />
+                  <Route path="/studio/face-camera" element={<StudioGate><StudioFaceCamera /></StudioGate>} />
+                  <Route path="/studio/montage/:id" element={<StudioGate><StudioMontage /></StudioGate>} />
                   <Route path="/admin/team" element={<AdminTeam />} />
                   <Route path="/admin/announcements" element={<AdminAnnouncements />} />
                   <Route path="/admin/quiz-lead" element={<AdminQuizLead />} />

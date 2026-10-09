@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, MessageCircle, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Hash, Mail, FlaskConical, ClipboardList, Globe } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, MessageCircle, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film, Hash, Mail, FlaskConical, ClipboardList, Globe } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -38,6 +38,8 @@ const workingNavItems: NavItem[] = [
   // Debloquee par la formation Setting a 100 %, comme le canal Discord Setting.
   // La page verifie elle-meme le pass actif ET le deblocage.
   { title: "Liens de paiement", path: "/working/lien-de-paiement", icon: Link2, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true, featureRequired: "payment_links" },
+  // Studio vidéo (phase 1) : CEO uniquement le temps des essais.
+  { title: "Studio", path: "/studio", icon: Film, roles: ["ceo"] },
   // After separator
   { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur", "agence"], adminSection: true },
   { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"], adminSection: true },
@@ -135,6 +137,7 @@ const pageTitles: Record<string, string> = {
   "/working/organisation": "Mon Organisation",
   "/working/personal-brand": "Personal Brand",
   "/working/agent": "Agent IA",
+  "/studio": "Studio · Mes vidéos",
   "/training/scripts": "Scripts",
   "/training": "Formation",
   "/admin/training": "Gestion des formations",

@@ -1,4 +1,10 @@
 {
+  "functions": {
+    "api/studio/demarrer.ts": {
+      "includeFiles": "studio/**",
+      "maxDuration": 60
+    }
+  },
   "redirects": [
     {
       "source": "/livraison-tunnels(.html)?",
