@@ -8,20 +8,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { demarrer, lienStudio, signalerProbleme, useMontage, useRafraichirStudio } from "@/hooks/useStudio";
-import { completerReglages, enTraitement, etapesDuMontage, type Montage, type Reglages } from "@/lib/studio/reglages";
+import { completerReglages, enTraitement, etapesAffichees, type Montage, type Reglages } from "@/lib/studio/reglages";
 import { ApercuStudio } from "@/components/studio/ApercuStudio";
 import { Bloc, BlocDesign, BlocSon, BlocSousTitres, BlocVisage } from "@/components/studio/Reglages";
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 function Etapes({ m }: { m: Montage }) {
-  const etapes = etapesDuMontage(m.reglages);
-  const i = etapes.findIndex((e) => e.id === m.etape);
+  const { etapes, courant: i } = etapesAffichees(m);
   return (
     <ol className="space-y-2" data-testid="etapes-montage">
       {etapes.map((e, k) => {
         const fait = i > k;
-        const courant = i === k || (i === -1 && k === 0);
+        const courant = i === k;
         return (
           <li key={e.id} className="flex items-center gap-3 text-sm">
             <span

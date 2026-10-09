@@ -73,6 +73,7 @@ export interface Montage {
   source_nom: string | null;
   source_path: string | null;
   travail_pret: boolean;
+  audio_prepare: string | null;
   apercu: { t: number; visages: number[][]; fichier?: string } | null;
   version: number;
   sortie_path: string | null;
@@ -98,6 +99,28 @@ export function completerReglages(r: Partial<Reglages> | null | undefined): Regl
 export function etapesDuMontage(reglages: Partial<Reglages> | null | undefined) {
   const flouter = completerReglages(reglages).visage.flouter;
   return ETAPES.filter((e) => e.id !== "floutage" || flouter);
+}
+
+/** Clé du réglage du son, comme la calcule la base (studio_lancer). */
+export function cleSon(reglages: Partial<Reglages> | null | undefined): string {
+  const s = completerReglages(reglages).son;
+  return s.ameliorer ? s.niveau : "off";
+}
+
+const ETAPES_PREPARATION = ["reception", "son", "transcription", "phrases_ratees", "coupes", "montage", "sous_titres"];
+
+/**
+ * Étapes à afficher pendant le montage. Quand la préparation est réutilisée
+ * (seul le rendu est relancé), elle apparaît d'emblée comme faite.
+ */
+export function etapesAffichees(m: Pick<Montage, "reglages" | "etape" | "travail_pret" | "audio_prepare">) {
+  const etapes = etapesDuMontage(m.reglages);
+  const renduSeul = m.travail_pret && m.audio_prepare === cleSon(m.reglages);
+  let courant = etapes.findIndex((e) => e.id === m.etape);
+  if (renduSeul && (courant === -1 || ETAPES_PREPARATION.includes(m.etape ?? ""))) {
+    courant = etapes.findIndex((e) => !ETAPES_PREPARATION.includes(e.id));
+  }
+  return { etapes, courant: Math.max(0, courant) };
 }
 
 /** Le montage est-il en train de tourner (écran d'attente) ? */

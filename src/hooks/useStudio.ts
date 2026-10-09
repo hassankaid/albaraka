@@ -38,8 +38,9 @@ export function useMontage(id: string | undefined) {
       if (error) throw error;
       return data;
     },
-    // l'écran d'attente suit les étapes de la machine
+    // l'écran d'attente suit les étapes de la machine, même si l'onglet passe en arrière-plan
     refetchInterval: (q) => (q.state.data && EN_MOUVEMENT.includes(q.state.data.statut) ? 2500 : false),
+    refetchIntervalInBackground: true,
   });
 }
 

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  cleSon,
   completerReglages,
   enTraitement,
+  etapesAffichees,
   etapesDuMontage,
   lienDuMontage,
   REGLAGES_PAR_DEFAUT,
@@ -52,5 +54,28 @@ describe("parcours d'un montage", () => {
     expect(lienDuMontage({ id: "x", statut: "preparation", lance: false })).toBe("/studio/face-camera?id=x");
     expect(lienDuMontage({ id: "x", statut: "preparation", lance: true })).toBe("/studio/montage/x");
     expect(lienDuMontage({ id: "x", statut: "termine", lance: false })).toBe("/studio/montage/x");
+  });
+});
+
+describe("écran d'attente", () => {
+  const base = { reglages: {}, travail_pret: false, audio_prepare: null };
+  it("suit l'étape en cours de la machine", () => {
+    const { etapes, courant } = etapesAffichees({ ...base, etape: "transcription" });
+    expect(etapes[courant].id).toBe("transcription");
+  });
+
+  it("quand seul le rendu est relancé, la préparation est déjà cochée", () => {
+    const m = { ...base, travail_pret: true, audio_prepare: "normal" };
+    expect(etapesAffichees({ ...m, etape: "file" }).etapes[etapesAffichees({ ...m, etape: "file" }).courant].id).toBe(
+      "incrustation",
+    );
+    const flou = { ...m, reglages: { visage: { ...REGLAGES_PAR_DEFAUT.visage, flouter: true } }, etape: "reception" };
+    expect(etapesAffichees(flou).etapes[etapesAffichees(flou).courant].id).toBe("floutage");
+  });
+
+  it("si le son a changé, tout est refait", () => {
+    const m = { ...base, travail_pret: true, audio_prepare: "normal", reglages: { son: { ameliorer: true, niveau: "fort" as const } } };
+    expect(cleSon(m.reglages)).toBe("fort");
+    expect(etapesAffichees({ ...m, etape: "son" }).etapes[etapesAffichees({ ...m, etape: "son" }).courant].id).toBe("son");
   });
 });

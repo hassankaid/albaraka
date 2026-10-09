@@ -32,6 +32,7 @@ import io
 import json
 import multiprocessing as mp
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -99,20 +100,58 @@ def openrouter(chemin, corps, essais=3):
             time.sleep(2 * (k + 1))
 
 
-def llm(prompt, essais=2):
-    """Renvoie le premier objet JSON de la réponse : Claude ajoute parfois une
-    explication après, que le moteur ne sait pas lire."""
+REPONSES_IA = []  # gardées dans travail.json pour comprendre un montage raté
+
+
+def objets_json(texte):
+    """Tous les objets JSON lisibles du texte (Claude ajoute parfois du texte autour)."""
+    dec, out, i = json.JSONDecoder(), [], 0
+    while (i := texte.find("{", i)) != -1:
+        try:
+            objet, fin = dec.raw_decode(texte, i)
+            if isinstance(objet, dict):
+                out.append(objet)
+            i = fin
+        except ValueError:
+            i += 1
+    return out
+
+
+def reponse_valide(prompt, objet):
+    """La réponse couvre-t-elle bien les mots du prompt ? (sous-titres : tous les mots,
+    dans l'ordre, sans trou ; phrases ratées : des plages d'index existants)."""
+    n = len(re.findall(r"^\d+: \S", prompt, re.M))  # lignes « index: mot »
+    if '"captions"' in prompt:
+        caps = objet.get("captions")
+        if not isinstance(caps, list) or not caps:
+            return False
+        attendu = 0
+        for c in caps:
+            if not isinstance(c, dict) or int(c.get("first", -1)) != attendu or int(c.get("last", -1)) < attendu:
+                return False
+            attendu = int(c["last"]) + 1
+        return attendu == n
+    plages = objet.get("remove")
+    return isinstance(plages, list) and all(
+        isinstance(p, list) and len(p) == 2 and 0 <= int(p[0]) <= int(p[1]) < n for p in plages)
+
+
+def llm(prompt, essais=3):
+    """Appel à Claude ; la réponse n'est acceptée que si elle est complète (voir reponse_valide)."""
     for k in range(essais):
         d = openrouter("/chat/completions", {"model": LLM, "max_tokens": 8000,
                                              "messages": [{"role": "user", "content": prompt}]})
         COUT["ia"] += (d.get("usage") or {}).get("cost") or 0
-        texte = d["choices"][0]["message"]["content"]
-        try:
-            objet, _ = json.JSONDecoder().raw_decode(texte[texte.index("{"):])
-            return json.dumps(objet, ensure_ascii=False)
-        except ValueError:
-            if k == essais - 1:
-                raise ValueError("L'IA n'a pas renvoyé de réponse lisible. Relance le montage.")
+        texte = d["choices"][0]["message"]["content"] or ""
+        REPONSES_IA.append(texte[:6000])
+        for objet in objets_json(texte):
+            try:
+                if reponse_valide(prompt, objet):
+                    return json.dumps(objet, ensure_ascii=False)
+            except (TypeError, ValueError):
+                continue
+        print(f"réponse IA incomplète (essai {k + 1}) : {texte[:300]!r}", flush=True)
+    raise ValueError("L'IA n'a pas renvoyé de réponse complète. Relance le montage.")
 
 
 # ---------------------------------------------------------------- corrections du moteur
@@ -338,6 +377,7 @@ def preparer(src, dossier, liens, reglages, avec_apercu):
         "meta": meta, "audio": cle_son, "duree_sortie": round(total, 2), "coupes": cuts,
         "mots": [dataclasses.asdict(w) for w in words], "retires": sorted(removed),
         "sous_titres": [dataclasses.asdict(c) for c in caps], "chrono": chrono,
+        "cout_usd": dict(COUT), "reponses_ia": REPONSES_IA[-4:],
     }
     chemin = os.path.join(dossier, "travail.json")
     with open(chemin, "w", encoding="utf-8") as f:
@@ -423,7 +463,9 @@ def main():
             "morceaux": len(travail["coupes"]), "sous_titres": len(travail["sous_titres"]),
             "mots_retires": len(travail["retires"]), "chrono_preparation": travail.get("chrono"),
             **rendu, "total_s": round(time.time() - debut, 1),
-            "cout_usd": {k: round(v, 5) for k, v in COUT.items()},
+            # en « rendu », la préparation a été payée par une autre machine
+            "cout_usd": {k: round(v + (travail.get("cout_usd") or {}).get(k, 0) * (mode == "rendu"), 5)
+                         for k, v in COUT.items()},
         }
         rpc("studio_job_terminer", p_id=MONTAGE, p_jeton=JETON, p_sortie_path=liens["sortie_path"], p_rapport=rapport)
         print(json.dumps(rapport, ensure_ascii=False), flush=True)
