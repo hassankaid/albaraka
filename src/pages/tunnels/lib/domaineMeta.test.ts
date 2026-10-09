@@ -101,6 +101,10 @@ describe("nouveau BM Meta (07/10/2026)", () => {
     expect(conteneurPour("EVENT.albarakabyethicarena.com:443")).toBe("GTM-M8CSVXHK");
     expect(conteneurPour("event.albarakaecosysteme.com")).toBe("GTM-K3VGV2PX");
     expect(conteneurPour("event.alabarakabyethicarena.com")).toBe("GTM-K3VGV2PX");
+    // Liberty a son conteneur sur les deux domaines (09/10/2026).
+    expect(conteneurPour("event.albarakabyethicarena.com", "/liberty")).toBe("GTM-T3JXSPVB");
+    expect(conteneurPour("event.albarakaecosysteme.com", "/liberty/merci")).toBe("GTM-T3JXSPVB");
+    expect(conteneurPour("event.albarakaecosysteme.com", "/liberty-autre")).toBe("GTM-K3VGV2PX");
   });
 
   it("le pixel de secours suit le domaine, sur le tunnel conférence seulement", async () => {

@@ -27,6 +27,11 @@
 //
 // Aucune donnée personnelle n'est poussée (ni e-mail, ni téléphone, même
 // hachés) : à ajouter seulement sur décision explicite.
+//
+// LIBERTY (09/10/2026, Snap Ads Liberty) : le tunnel Liberty charge SON
+// conteneur, GTM-T3JXSPVB, et rien d'autre. Il reçoit les mêmes évènements
+// alb_* (tunnel « liberty »). Aucune balise Al Baraka n'y part, et le pixel
+// Meta Liberty reste dans le code : GTM n'y gère que ce qu'on y met.
 // ─────────────────────────────────────────────────────────────────────────
 import { isTunnelHost } from "@/lib/hosts";
 
@@ -41,8 +46,15 @@ export const GTM_ID = "GTM-K3VGV2PX";
 export const GTM_ID_DOMAINE_META = "GTM-M8CSVXHK";
 const DOMAINE_META = "event.albarakabyethicarena.com";
 
-/** Le conteneur à charger pour ce domaine. */
-export function conteneurPour(hote: string): string {
+/**
+ * Tunnel Liberty (09/10/2026) : son propre conteneur, sur les deux domaines.
+ * Il n'y a que Snap Liberty dedans ; Meta Liberty reste dans le code.
+ */
+export const GTM_ID_LIBERTY = "GTM-T3JXSPVB";
+
+/** Le conteneur à charger pour ce domaine et cette page. */
+export function conteneurPour(hote: string, chemin = ""): string {
+  if (estPageLiberty(chemin)) return GTM_ID_LIBERTY;
   return hote.toLowerCase().split(":")[0] === DOMAINE_META ? GTM_ID_DOMAINE_META : GTM_ID;
 }
 
@@ -91,8 +103,16 @@ export function estPageGtm(chemin: string): boolean {
   return PERIMETRE.test(chemin);
 }
 
+const PERIMETRE_LIBERTY = /^\/liberty(\/|$)/;
+
+/** Ce chemin fait-il partie du tunnel Liberty ? */
+export function estPageLiberty(chemin: string): boolean {
+  return PERIMETRE_LIBERTY.test(chemin);
+}
+
 /** À quelle entrée du tunnel appartient la page — utile pour segmenter dans GTM. */
 export function tunnelDe(chemin: string): string {
+  if (estPageLiberty(chemin)) return "liberty";
   const m = PERIMETRE.exec(chemin);
   if (!m) return "";
   if (m[1] === "webinaire") return "whatsapp";
@@ -107,27 +127,43 @@ function actif(chemin: string): boolean {
   // Seulement sur les vrais domaines des tunnels (les deux, depuis le
   // 04/10/2026) : ni local, ni aperçu Vercel, pour ne jamais polluer les
   // données publicitaires pendant le développement.
-  return isTunnelHost(window.location.hostname) && estPageGtm(chemin);
+  return isTunnelHost(window.location.hostname) && (estPageGtm(chemin) || estPageLiberty(chemin));
+}
+
+/** Un conteneur GTM se charge-t-il sur cette page (conférence ou Liberty) ? */
+export function gtmChargeLaPage(chemin?: string): boolean {
+  return actif(chemin ?? (typeof window !== "undefined" ? window.location.pathname : ""));
 }
 
 /**
  * GTM a-t-il la main sur cette page ? Si oui, le pixel Meta codé en dur doit
- * s'abstenir : c'est le conteneur qui parle à Meta.
+ * s'abstenir : c'est le conteneur qui parle à Meta. Vrai sur le tunnel
+ * conférence seulement : sur Liberty, Meta reste dans le code.
  */
 export function gtmGereLaPage(chemin?: string): boolean {
-  return actif(chemin ?? (typeof window !== "undefined" ? window.location.pathname : ""));
+  const p = chemin ?? (typeof window !== "undefined" ? window.location.pathname : "");
+  return actif(p) && estPageGtm(p);
 }
 
-/** Injecte le conteneur une seule fois (équivalent du snippet officiel). */
-function charger(): void {
-  if (document.getElementById("alb-gtm")) return;
+/**
+ * Injecte le conteneur une seule fois (équivalent du snippet officiel).
+ * Répond faux si la page en a déjà chargé UN AUTRE (passage d'un tunnel à
+ * l'autre sans recharger) : tous les conteneurs lisent le même dataLayer, ce
+ * conteneur-là recevrait alors les conversions d'un autre tunnel.
+ */
+function charger(chemin: string): boolean {
+  const id = conteneurPour(window.location.hostname, chemin);
+  const deja = document.getElementById("alb-gtm");
+  if (deja) return deja.getAttribute("data-conteneur") === id;
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
   const s = document.createElement("script");
   s.id = "alb-gtm";
+  s.setAttribute("data-conteneur", id);
   s.async = true;
-  s.src = `https://www.googletagmanager.com/gtm.js?id=${conteneurPour(window.location.hostname)}`;
+  s.src = `https://www.googletagmanager.com/gtm.js?id=${id}`;
   document.head.appendChild(s);
+  return true;
 }
 
 /**
@@ -138,7 +174,7 @@ export function pousserGtm(evenement: NomEvenement, chemin?: string): void {
   try {
     const p = chemin ?? window.location.pathname;
     if (!actif(p)) return;
-    charger();
+    if (!charger(p)) return;
     window.dataLayer!.push({ event: evenement, tunnel: tunnelDe(p), page_path: p });
   } catch (err) {
     console.warn("[tunnel-gtm] évènement non transmis (non bloquant):", err);

@@ -54,7 +54,7 @@ export function pixelCourant(chemin?: string, hote?: string): string {
 }
 
 import { getTunnelPrefill } from "./source";
-import { EVENEMENTS_GTM, estPageGtm, gtmGereLaPage, pousserGtm } from "./gtm";
+import { EVENEMENTS_GTM, estPageGtm, gtmChargeLaPage, gtmGereLaPage, pousserGtm } from "./gtm";
 
 declare global {
   interface Window {
@@ -171,6 +171,9 @@ export function trackLandingView(): void {
     pousserGtm(EVENEMENTS_GTM.contenu);
     return;
   }
+  // Liberty : son conteneur reçoit l'évènement (Snap), Meta reste dans le
+  // code juste en dessous. Sans effet sur les pages sans conteneur.
+  pousserGtm(EVENEMENTS_GTM.contenu);
   if (!consentementObtenu(() => trackLandingView())) return;
   try {
     loadFbqScript();
@@ -235,15 +238,20 @@ export function trackCalendlyBooked(reservation?: string | null): void {
   try {
     // Tunnel conférence, GTM actif : le garde-fou reste ICI, seul le
     // destinataire change (le conteneur au lieu du pixel).
+    // Liberty : le conteneur Liberty ET le pixel Meta du code.
     const parGtm = gtmGereLaPage();
     let id = "";
+    let meta = false;
     if (!parGtm) {
-      loadFbqScript();
-      if (!window.fbq) return;
-      id = pixelCourant();
-      assurerInit(id);
-      window.fbq("trackSingle", id, "PageView");
+      try { loadFbqScript(); } catch { /* Meta en panne : le conteneur Liberty compte quand même */ }
+      if (window.fbq) {
+        id = pixelCourant();
+        assurerInit(id);
+        window.fbq("trackSingle", id, "PageView");
+        meta = true;
+      }
     }
+    if (!parGtm && !meta && !gtmChargeLaPage()) return; // personne à prévenir
 
     const cle = (reservation ?? "").trim();
     if (!cle) return; // pas de réservation dans l'adresse : rien à compter
@@ -256,8 +264,8 @@ export function trackCalendlyBooked(reservation?: string | null): void {
       // Stockage indisponible : on laisse passer. Perdre une conversion réelle
       // serait pire que d'en compter une en double sur un cas de bord.
     }
-    if (parGtm) pousserGtm(EVENEMENTS_GTM.rendezVous);
-    else window.fbq("trackSingle", id, "Schedule");
+    pousserGtm(EVENEMENTS_GTM.rendezVous); // conférence ou Liberty ; sans effet ailleurs
+    if (meta) window.fbq("trackSingle", id, "Schedule");
   } catch (err) {
     console.warn("[tunnel-pixel] schedule tracking failed (non-blocking):", err);
   }
@@ -308,10 +316,13 @@ export async function trackTypLead(): Promise<void> {
   try {
     // Tunnel conférence, GTM actif : le garde-fou reste ICI, seul le
     // destinataire change (le conteneur au lieu du pixel).
+    // Liberty : le conteneur Liberty ET le pixel Meta du code.
     const parGtm = gtmGereLaPage();
+    let meta = false;
     if (!parGtm) {
-      loadFbqScript();
-      if (!window.fbq) return;
+      try { loadFbqScript(); } catch { /* Meta en panne : le conteneur Liberty compte quand même */ }
+      meta = !!window.fbq;
+      if (!meta && !gtmChargeLaPage()) return; // personne à prévenir
     }
 
     let enAttente = false;
@@ -320,10 +331,8 @@ export async function trackTypLead(): Promise<void> {
       if (enAttente) sessionStorage.removeItem(LEAD_EN_ATTENTE);
     } catch { /* pas de stockage : pas de Lead */ }
 
-    if (parGtm) {
-      if (enAttente) pousserGtm(EVENEMENTS_GTM.inscription);
-      return;
-    }
+    if (enAttente) pousserGtm(EVENEMENTS_GTM.inscription); // conférence ou Liberty
+    if (!meta) return;
 
     const id = pixelCourant();
     assurerInit(id);

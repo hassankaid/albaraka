@@ -4,9 +4,11 @@
  * Google Tag Manager, tunnel Al Baraka classique uniquement.
  *
  * Deux choses silencieuses à verrouiller :
- *  • le PÉRIMÈTRE — GTM ne doit jamais se charger sur Liberty ni sur
- *    Al Baraka 200, qui ont leurs propres audiences : le media buyer y
- *    optimiserait TikTok et Snap sur des conversions d'un autre tunnel ;
+ *  • le PÉRIMÈTRE — le conteneur Al Baraka ne doit jamais se charger sur
+ *    Liberty ni sur Al Baraka 200, qui ont leurs propres audiences : le media
+ *    buyer y optimiserait TikTok et Snap sur des conversions d'un autre
+ *    tunnel. Depuis le 09/10/2026, Liberty charge SON conteneur (Snap
+ *    Liberty), et Meta Liberty reste dans le code ;
  *  • les GARDE-FOUS — un Lead ou un rendez-vous ne part vers GTM que dans les
  *    cas où il part vers Meta : jamais au rechargement d'une page.
  *
@@ -60,14 +62,33 @@ describe("périmètre", () => {
     ]) expect(estPageGtm(p), p).toBe(false);
   });
 
-  it("ne charge pas le conteneur sur Liberty ni sur Al Baraka 200, même GTM actif", async () => {
+  it("ne charge aucun conteneur sur Al Baraka 200, même GTM actif", async () => {
     const { suivrePageGtm } = await gtmActif();
-    for (const p of ["/liberty", "/al-baraka-200"]) {
-      allerSur(p);
-      suivrePageGtm(p);
-    }
+    allerSur("/al-baraka-200");
+    suivrePageGtm("/al-baraka-200");
     expect(document.getElementById("alb-gtm")).toBeNull();
     expect(window.dataLayer).toBeUndefined();
+  });
+
+  it("charge sur Liberty le conteneur Liberty, jamais celui d'Al Baraka", async () => {
+    const { suivrePageGtm, GTM_ID_LIBERTY } = await gtmActif();
+    allerSur("/liberty");
+    suivrePageGtm("/liberty");
+    const scripts = [...document.querySelectorAll("script")].map((sc) => sc.src).filter((u) => u.includes("googletagmanager"));
+    expect(GTM_ID_LIBERTY).toBe("GTM-T3JXSPVB");
+    expect(scripts).toEqual(["https://www.googletagmanager.com/gtm.js?id=GTM-T3JXSPVB"]);
+    expect(window.dataLayer!.at(-1)).toMatchObject({ event: "alb_page_view", tunnel: "liberty", page_path: "/liberty" });
+  });
+
+  it("ne mélange jamais deux tunnels dans un même conteneur (passage sans rechargement)", async () => {
+    const { suivrePageGtm } = await gtmActif();
+    suivrePageGtm("/webinaire");
+    allerSur("/liberty");
+    suivrePageGtm("/liberty");
+    const scripts = [...document.querySelectorAll("script")].filter((sc) => sc.src.includes("googletagmanager"));
+    expect(scripts).toHaveLength(1);
+    expect(evenements()).toEqual(["alb_page_view"]);
+    expect(window.dataLayer!.some((e) => e.tunnel === "liberty")).toBe(false);
   });
 });
 
@@ -132,14 +153,51 @@ describe("GTM actif : le pixel Meta du code se tait sur le tunnel conférence", 
     expect(evenements()).toEqual(["alb_view_content", "alb_lead", "alb_whatsapp_join", "alb_schedule"]);
   });
 
-  it("Liberty garde son pixel Meta dans le code, et n'envoie rien à GTM", async () => {
+  it("Liberty garde son pixel Meta dans le code ET prévient son conteneur", async () => {
     await gtmActif();
     allerSur("/liberty/merci");
     const { markLeadPending, trackTypLead } = await import("./pixel");
     markLeadPending();
     await trackTypLead();
     expect(evenementsMeta()).toEqual(["PageView", "Lead"]);
-    expect(window.dataLayer).toBeUndefined();
+    expect(meta.every((a) => a[0] !== "trackSingle" || a[1] === "997717802550998")).toBe(true);
+    expect(evenements()).toEqual(["alb_lead"]);
+    expect(window.dataLayer!.find((e) => e.event === "alb_lead")).toMatchObject({ tunnel: "liberty" });
+  });
+});
+
+describe("Liberty (09/10/2026) : les trois évènements du media buyer", () => {
+  it("ViewContent, Lead et rendez-vous partent vers le conteneur Liberty, avec les mêmes garde-fous", async () => {
+    await gtmActif();
+    const { trackLandingView, markLeadPending, trackTypLead, trackCalendlyBooked } = await import("./pixel");
+    allerSur("/liberty");
+    trackLandingView();
+    allerSur("/liberty/merci");
+    await trackTypLead(); // ouverte sans inscription : pas de Lead
+    markLeadPending();
+    await trackTypLead();
+    await trackTypLead(); // rechargement : pas de second Lead
+    allerSur("/liberty/confirmation");
+    trackCalendlyBooked(null); // sans réservation : rien
+    trackCalendlyBooked("2026-10-10T10:00|client@example.com");
+    trackCalendlyBooked("2026-10-10T10:00|client@example.com"); // rechargement
+    expect(evenements()).toEqual(["alb_view_content", "alb_lead", "alb_schedule"]);
+    expect(evenementsMeta()).toEqual(["PageView", "ViewContent", "PageView", "PageView", "Lead", "PageView", "PageView", "PageView", "Schedule", "PageView"]);
+    const scripts = [...document.querySelectorAll("script")].map((sc) => sc.src).filter((u) => u.includes("googletagmanager"));
+    expect(scripts).toEqual(["https://www.googletagmanager.com/gtm.js?id=GTM-T3JXSPVB"]);
+  });
+
+  it("une panne du script Meta n'empêche pas le conteneur Liberty de compter Lead et rendez-vous", async () => {
+    await gtmActif();
+    // Sans fbq et sans balise <script> dans la page, l'injection du script Meta lève.
+    delete (window as unknown as { fbq?: unknown }).fbq;
+    const { markLeadPending, trackTypLead, trackCalendlyBooked } = await import("./pixel");
+    allerSur("/liberty/merci");
+    markLeadPending();
+    await trackTypLead();
+    allerSur("/liberty/confirmation");
+    trackCalendlyBooked("2026-10-10T10:00|client@example.com");
+    expect(evenements()).toEqual(["alb_lead", "alb_schedule"]);
   });
 });
 
