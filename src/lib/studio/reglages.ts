@@ -148,7 +148,8 @@ export function etapesAffichees(m: Pick<Montage, "reglages" | "etape" | "travail
   const etapes = etapesDuMontage(m.reglages);
   const renduSeul = m.travail_pret && m.audio_prepare === cleSon(m.reglages);
   let courant = etapes.findIndex((e) => e.id === m.etape);
-  if (renduSeul && (courant === -1 || ETAPES_PREPARATION.includes(m.etape ?? ""))) {
+  // si la machine refait quand même la préparation (son changé), on suit ses vraies étapes
+  if (renduSeul && (courant === -1 || m.etape === "reception")) {
     courant = etapes.findIndex((e) => !ETAPES_PREPARATION.includes(e.id));
   }
   return { etapes, courant: Math.max(0, courant) };

@@ -564,6 +564,10 @@ def main():
             telecharger(liens["lire"]["travail/travail.json"], os.path.join(dossier, "travail.json"))
             with open(os.path.join(dossier, "travail.json"), encoding="utf-8") as f:
                 travail = json.load(f)
+            # la préparation gardée a-t-elle le réglage du son demandé ? Sinon, tout est refait.
+            if travail.get("audio") != options_son(reglages)[1] and liens.get("source"):
+                telecharger(liens["source"], src)
+                travail, _ = preparer(src, dossier, liens, reglages, avec_apercu=False)
         rendu = rendre(dossier, liens, reglages, travail)
         rapport = {
             "entree_s": round(travail["meta"]["duration"], 2), "sortie_s": travail["duree_sortie"],

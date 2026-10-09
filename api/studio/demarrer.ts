@@ -124,7 +124,8 @@ export async function POST(request: Request): Promise<Response> {
       deposer[nom] = data.signedUrl;
     }
     const liens = {
-      source: mode === "rendu" ? null : await signer(m.source_path!),
+      // aussi en « rendu » : la machine refait tout si la préparation n'a pas le bon réglage du son
+      source: await signer(m.source_path!),
       lire:
         mode === "rendu"
           ? {
