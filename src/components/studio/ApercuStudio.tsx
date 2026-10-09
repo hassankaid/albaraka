@@ -3,8 +3,8 @@
 // en attendant, une image tirée du fichier local, sans repérage du visage.
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { chargerPolices, dessinerCadre, dessinerFloutage, dessinerSousTitre, H, W } from "@/lib/studio/apercu";
-import type { Reglages } from "@/lib/studio/reglages";
+import { chargerPolices, dessinerCadre, dessinerDesign, dessinerFloutage, dessinerSousTitre, H, W } from "@/lib/studio/apercu";
+import { couleursDesign, type Reglages } from "@/lib/studio/reglages";
 
 export function ApercuStudio({
   image,
@@ -57,6 +57,9 @@ export function ApercuStudio({
     ctx.drawImage(source, 0, 0);
     if (flou && reglages.visage.flouter && visages?.length) dessinerFloutage(ctx, source, visages, reglages.visage);
     if (sousTitre && polices) dessinerSousTitre(ctx, "voici tes", "sous-titres", reglages.sous_titres);
+    if (sousTitre && polices && reglages.design?.actif) {
+      dessinerDesign(ctx, couleursDesign(reglages.design), reglages.design.prenom, reglages.design.titre);
+    }
   }, [source, visages, reglages, flou, sousTitre, polices]);
 
   const attenteVisage = flou && reglages.visage.flouter && !visages;

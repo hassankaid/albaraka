@@ -14,8 +14,10 @@ pour l'avancement. Le moteur de Sidali (studio/moteur) est utilisé tel quel ;
 les corrections de la plateforme sont ici :
   1. transcription par prises (voir transcrire_par_prises) ;
   2. seuil de voix à -24 dB (voir seuil_voix) ;
-  3. floutage réparti sur tous les processeurs (voir masquer_en_parallele) ;
-  4. mot clé des sous-titres en minuscules, comme l'aperçu validé.
+  3. floutage et animations en une passe répartie sur tous les processeurs (voir rendre_images) ;
+  4. mot clé des sous-titres en minuscules, comme l'aperçu validé ;
+  5. flou naturel du visage (sans bulle) ;
+  6. motion design piloté par un plan d'animation de l'IA (voir animations.py).
 
   preparation : son (réglage « normal »), aperçu, transcription, phrases ratées,
                 coupes, montage brut, sous-titres. Si l'élève a déjà lancé le
@@ -121,6 +123,8 @@ def reponse_valide(prompt, objet):
     """La réponse couvre-t-elle bien les mots du prompt ? (sous-titres : tous les mots,
     dans l'ordre, sans trou ; phrases ratées : des plages d'index existants)."""
     n = len(re.findall(r"^\d+: \S", prompt, re.M))  # lignes « index: mot »
+    if '"zooms"' in prompt:  # plan d'animation : le détail est filtré par nettoyer_plan
+        return isinstance(objet.get("zooms"), list) and isinstance(objet.get("icones", []), list)
     if '"captions"' in prompt:
         caps = objet.get("captions")
         if not isinstance(caps, list) or not caps:
@@ -243,34 +247,21 @@ def flou_naturel(frame, box, intensite):
     frame[y0:y1, x0:x1] = (flou.astype(np.float32) * m + roi.astype(np.float32) * (1 - m)).astype(np.uint8)
 
 
-# ---------------------------------------------------------------- floutage en parallèle
-CHAUFFE = 15  # images lues avant chaque morceau, pour que la détection soit déjà « accrochée »
-
-
-def _masquer_morceau(args):
+# ---------------------------------------------------------------- passe image : floutage + motion design
+def analyser_visages(src):
+    """Visages image par image, en une lecture rapide (image réduite au tiers, comme la
+    détection du moteur), avec le lissage et le maintien de 0,5 s du moteur. Fait une
+    seule fois avant la passe parallèle : chaque morceau utilise exactement les mêmes boîtes."""
     import cv2
-    import face_effects as fx
-    cv2.setNumThreads(1)
-    src, dst, debut, fin, opts = args
-    W, H, FPS = P.OUT_W, P.OUT_H, P.OUT_FPS
-    lecture = max(0, debut - CHAUFFE)
-    dec = subprocess.Popen(["ffmpeg", "-v", "error", "-ss", f"{max(0, lecture / FPS - 0.5 / FPS):.4f}", "-i", src,
-                            "-frames:v", str(fin - lecture), "-f", "rawvideo", "-pix_fmt", "bgr24", "-"],
-                           stdout=subprocess.PIPE)
-    enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{W}x{H}",
-                            "-r", str(FPS), "-i", "-", "-an", "-c:v", "libx264", "-preset", "fast", "-crf", "17",
-                            "-pix_fmt", "yuv420p", dst], stdin=subprocess.PIPE)
-    DS = 3
-    det = cv2.FaceDetectorYN.create(P.YUNET_MODEL, "", (W // DS, H // DS), 0.6, 0.3, 50)
-    last, miss, sans, n = None, 0, 0, lecture
+    W, H, FPS, DS = P.OUT_W, P.OUT_H, P.OUT_FPS, 3
+    w, h = W // DS, H // DS
+    dec = subprocess.Popen(["ffmpeg", "-v", "error", "-i", src, "-vf", f"scale={w}:{h}:flags=area",
+                            "-f", "rawvideo", "-pix_fmt", "bgr24", "-"], stdout=subprocess.PIPE)
+    det = cv2.FaceDetectorYN.create(P.YUNET_MODEL, "", (w, h), 0.6, 0.3, 50)
+    visages, last, miss, sans = [], None, 0, 0
     HOLD = int(FPS * 0.5)
-    taille = W * H * 3
-    while n < fin:
-        brut = dec.stdout.read(taille)
-        if len(brut) < taille:
-            break
-        frame = np.frombuffer(brut, np.uint8).reshape(H, W, 3).copy()
-        _, faces = det.detect(cv2.resize(frame, (W // DS, H // DS), interpolation=cv2.INTER_AREA))
+    while len(brut := dec.stdout.read(w * h * 3)) == w * h * 3:
+        _, faces = det.detect(np.frombuffer(brut, np.uint8).reshape(h, w, 3))
         boxes = [] if faces is None else [np.array(fc[:4], float) * DS for fc in faces]
         if boxes:
             if last is not None and len(last) == len(boxes):
@@ -278,22 +269,50 @@ def _masquer_morceau(args):
             last, miss = boxes, 0
         else:
             miss += 1
-        if n >= debut:
-            if not boxes:
-                sans += 1
-            if last is not None and miss < HOLD:
-                for box in last:
-                    if opts["style"] == "naturel":
-                        flou_naturel(frame, box, opts["intensite"])
-                    else:
-                        fx.apply(frame, box, opts["style"], opts["couleur"], opts["intensite"], opts["intensite_couleur"], n)
-            enc.stdin.write(frame.tobytes())
+            sans += 1
+        visages.append([list(map(float, b)) for b in last] if last is not None and miss < HOLD else [])
+    dec.wait()
+    return visages, sans
+
+
+def _images_morceau(args):
+    import cv2
+    import face_effects as fx
+    import animations as A
+    cv2.setNumThreads(1)
+    src, dst, debut, fin, flou, scene_args, visages = args
+    W, H, FPS = P.OUT_W, P.OUT_H, P.OUT_FPS
+    scene = A.Scene(**scene_args) if scene_args else None
+    dec = subprocess.Popen(["ffmpeg", "-v", "error", "-ss", f"{max(0, debut / FPS - 0.5 / FPS):.4f}", "-i", src,
+                            "-frames:v", str(fin - debut), "-f", "rawvideo", "-pix_fmt", "bgr24", "-"],
+                           stdout=subprocess.PIPE)
+    enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{W}x{H}",
+                            "-r", str(FPS), "-i", "-", "-an", "-c:v", "libx264", "-preset", "fast", "-crf", "17",
+                            "-pix_fmt", "yuv420p", dst], stdin=subprocess.PIPE)
+    n, taille = debut, W * H * 3
+    while n < fin:
+        brut = dec.stdout.read(taille)
+        if len(brut) < taille:
+            break
+        frame = np.frombuffer(brut, np.uint8).reshape(H, W, 3).copy()
+        boites = visages[n] if n < len(visages) else []
+        if flou:
+            for box in boites:
+                if flou["style"] == "naturel":
+                    flou_naturel(frame, box, flou["intensite"])
+                else:
+                    fx.apply(frame, box, flou["style"], flou["couleur"], flou["intensite"], flou["intensite_couleur"], n)
+        if scene:
+            t = n / FPS
+            frame = scene.transformer(frame, t)
+            scene.dessiner(frame, t)
+        enc.stdin.write(frame.tobytes())
         n += 1
     dec.stdout.close()
     dec.wait()
     enc.stdin.close()
     enc.wait()
-    return {"images": n - debut, "sans_visage": sans}
+    return n - debut
 
 
 def nombre_images(chemin):
@@ -302,24 +321,42 @@ def nombre_images(chemin):
     return int(out.strip().splitlines()[0])
 
 
-def masquer_en_parallele(src, dst, opts, dossier):
-    """Correctif 3 : le floutage d'origine tourne sur un seul processeur (57 s pour 9 s
-    de vidéo). Les images sont réparties en morceaux traités en même temps."""
+def principal(boites):
+    """Le visage principal (le plus grand) d'une image, ou None."""
+    return max(boites, key=lambda b: b[2] * b[3]) if boites else None
+
+
+def rendre_images(src, dst, flou, scene_args, dossier):
+    """Correctif 3 : le floutage d'origine tournait sur un seul processeur (57 s pour 9 s
+    de vidéo). Floutage, recadrage et animations se font en une passe, répartie en
+    morceaux traités en même temps sur tous les processeurs."""
     total = nombre_images(src)
+    visages, sans = analyser_visages(src)
+    if scene_args is not None:
+        scene_args = {**scene_args, "visages": [principal(v) for v in visages]}
     parts = max(1, min(os.cpu_count() or 1, total // 30))
     bornes = [round(total * k / parts) for k in range(parts + 1)]
-    morceaux = [(src, os.path.join(dossier, f"m{k:02d}.mp4"), bornes[k], bornes[k + 1], opts) for k in range(parts)]
+    morceaux = [(src, os.path.join(dossier, f"m{k:02d}.mp4"), bornes[k], bornes[k + 1], flou, scene_args, visages)
+                for k in range(parts)]
     with mp.get_context("spawn").Pool(parts) as pool:
-        stats = pool.map(_masquer_morceau, morceaux)
+        images = sum(pool.map(_images_morceau, morceaux))
+    if images != total:
+        raise RuntimeError(f"Passe image incomplète : {images} images sur {total}")
     liste = os.path.join(dossier, "morceaux.txt")
     with open(liste, "w") as f:
         f.writelines(f"file '{m[1]}'\n" for m in morceaux)
-    P.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", liste, "-i", src,
-           "-map", "0:v", "-map", "1:a", "-c", "copy", dst])
-    images = sum(s["images"] for s in stats)
-    if images != total:
-        raise RuntimeError(f"Floutage incomplet : {images} images sur {total}")
-    return {"images": images, "images_sans_visage": sum(s["sans_visage"] for s in stats), "morceaux": parts}
+    if scene_args is not None:
+        import animations as A
+        sfx = os.path.join(dossier, "bruitages.wav")
+        A.bruitages(scene_args["plan"], scene_args["duree"], sfx,
+                    carte=bool((scene_args["design"].get("prenom") or "").strip()))
+        P.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", liste, "-i", src, "-i", sfx,
+               "-filter_complex", "[1:a][2:a]amix=inputs=2:duration=first:normalize=0[a]",
+               "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", dst])
+    else:
+        P.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", liste, "-i", src,
+               "-map", "0:v", "-map", "1:a", "-c", "copy", dst])
+    return {"images": images, "images_sans_visage": sans, "morceaux": parts}
 
 
 # ---------------------------------------------------------------- les deux temps du montage
@@ -402,10 +439,15 @@ def preparer(src, dossier, liens, reglages, avec_apercu):
     for c in caps:
         c.big = casse_mot_cle(c.big)
     t = top("sous_titres", t)
+    etape("animations")
+    gardes = [dataclasses.asdict(w) for w in kept]
+    plan = plan_animation(gardes, total)
+    t = top("animations", t)
     travail = {
         "meta": meta, "audio": cle_son, "duree_sortie": round(total, 2), "coupes": cuts,
         "mots": [dataclasses.asdict(w) for w in words], "retires": sorted(removed),
         "sous_titres": [dataclasses.asdict(c) for c in caps], "chrono": chrono,
+        "mots_gardes": gardes, "plan": plan,
         "cout_usd": dict(COUT), "reponses_ia": REPONSES_IA[-4:],
     }
     chemin = os.path.join(dossier, "travail.json")
@@ -414,6 +456,27 @@ def preparer(src, dossier, liens, reglages, avec_apercu):
     deposer(liens["deposer"]["travail/cut.mp4"], cut, "video/mp4")
     deposer(liens["deposer"]["travail/travail.json"], chemin, "application/json")
     return travail, cle_son
+
+
+def plan_animation(gardes, duree):
+    """Plan du motion design (zooms, icônes, listes…) demandé à Claude, puis filtré."""
+    import animations as A
+    brut = json.loads(llm(A.prompt_plan(gardes, duree)))
+    return A.nettoyer_plan(brut, gardes, duree)
+
+
+def mots_gardes(travail):
+    """Mots de la vidéo montée (temps de sortie) ; recalculés pour les montages d'avant la phase 2."""
+    if travail.get("mots_gardes"):
+        return travail["mots_gardes"]
+    retires, coupes = set(travail["retires"]), [tuple(c) for c in travail["coupes"]]
+    out = []
+    for i, w in enumerate(travail["mots"]):
+        if i in retires:
+            continue
+        s, e = P.map_time(w["start"], coupes, "start"), P.map_time(w["end"], coupes, "end")
+        out.append({"text": w["text"], "start": s, "end": max(e, s + 0.05)})
+    return out
 
 
 def couleur(v, defaut):
@@ -432,23 +495,37 @@ def rendre(dossier, liens, reglages, travail):
         f.write(P.build_ass(caps, style))
     cut = os.path.join(dossier, "cut.mp4")
     v = (reglages or {}).get("visage") or {}
-    stats = None
-    etape_video = cut
+    flou = None
     if v.get("flouter"):
-        etape("floutage")
         styles = ("naturel", "flou", "mosaique", "verre", "marqueur", "sticker", "neon")
-        opts = {"style": v.get("style") if v.get("style") in styles else "naturel",
+        flou = {"style": v.get("style") if v.get("style") in styles else "naturel",
                 "couleur": couleur(v.get("couleur"), "#C9A45C"),
                 "intensite": int(min(5, max(1, int(v.get("intensite") or 3)))),
                 "intensite_couleur": int(min(5, max(1, int(v.get("intensite_couleur") or 3))))}
-        etape_video = os.path.join(dossier, "masque.mp4")
-        stats = masquer_en_parallele(cut, etape_video, opts, dossier)
+    # motion design : activé par défaut (cahier des charges, section 4)
+    d = (reglages or {}).get("design") or {}
+    scene = None
+    if d.get("actif", True) is not False:
+        design = {"palette": d.get("palette") or "or_noir", "principale": couleur(d.get("principale"), ""),
+                  "fond": couleur(d.get("fond"), ""), "texte": couleur(d.get("texte"), ""),
+                  "prenom": str(d.get("prenom") or "")[:24], "titre": str(d.get("titre") or "")[:40]}
+        plan = travail.get("plan")
+        if plan is None:  # montage préparé avant la phase 2
+            plan = travail["plan"] = plan_animation(mots_gardes(travail), travail["duree_sortie"])
+        scene = {"plan": plan, "design": design, "coupes": travail["coupes"], "duree": travail["duree_sortie"]}
+    stats = None
+    etape_video = cut
+    if flou or scene:
+        etape("motion_design" if scene else "floutage")
+        etape_video = os.path.join(dossier, "images.mp4")
+        stats = rendre_images(cut, etape_video, flou, scene, dossier)
     etape("incrustation")
     sortie = os.path.join(dossier, "sortie.mp4")
     P.burn(etape_video, ass, sortie)
     etape("envoi")
     deposer(liens["deposer"]["sortie.mp4"], sortie, "video/mp4")
-    return {"floutage": stats, "rendu_s": round(time.time() - t0, 1)}
+    return {"passe_image": stats, "motion_design": scene["plan"] if scene else None,
+            "rendu_s": round(time.time() - t0, 1)}
 
 
 # ---------------------------------------------------------------- orchestration

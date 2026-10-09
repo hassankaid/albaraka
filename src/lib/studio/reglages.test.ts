@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   cleSon,
   completerReglages,
+  couleursDesign,
   enTraitement,
   etapesAffichees,
   etapesDuMontage,
@@ -37,8 +38,18 @@ describe("réglages", () => {
 
   it("n'affiche l'étape de floutage que si l'élève l'a demandé", () => {
     expect(etapesDuMontage({}).map((e) => e.id)).not.toContain("floutage");
-    expect(etapesDuMontage({ visage: { ...REGLAGES_PAR_DEFAUT.visage, flouter: true } }).map((e) => e.id)).toContain(
+    const sansDesign = { ...REGLAGES_PAR_DEFAUT.design, actif: false };
+    expect(etapesDuMontage({ visage: { ...REGLAGES_PAR_DEFAUT.visage, flouter: true }, design: sansDesign }).map((e) => e.id)).toContain(
       "floutage",
+    );
+  });
+
+  it("floutage et animations ne font qu'une étape : « Animations » quand le motion design est actif", () => {
+    const ids = etapesDuMontage({ visage: { ...REGLAGES_PAR_DEFAUT.visage, flouter: true } }).map((e) => e.id);
+    expect(ids).toContain("motion_design");
+    expect(ids).not.toContain("floutage");
+    expect(etapesDuMontage({ design: { ...REGLAGES_PAR_DEFAUT.design, actif: false } }).map((e) => e.id)).not.toContain(
+      "motion_design",
     );
   });
 });
@@ -69,15 +80,33 @@ describe("écran d'attente", () => {
   it("quand seul le rendu est relancé, la préparation est déjà cochée", () => {
     const m = { ...base, travail_pret: true, audio_prepare: "normal" };
     expect(etapesAffichees({ ...m, etape: "file" }).etapes[etapesAffichees({ ...m, etape: "file" }).courant].id).toBe(
-      "incrustation",
+      "motion_design",
     );
+    const sansDesign = { ...m, reglages: { design: { ...REGLAGES_PAR_DEFAUT.design, actif: false } }, etape: "file" };
+    expect(etapesAffichees(sansDesign).etapes[etapesAffichees(sansDesign).courant].id).toBe("incrustation");
     const flou = { ...m, reglages: { visage: { ...REGLAGES_PAR_DEFAUT.visage, flouter: true } }, etape: "reception" };
-    expect(etapesAffichees(flou).etapes[etapesAffichees(flou).courant].id).toBe("floutage");
+    expect(etapesAffichees(flou).etapes[etapesAffichees(flou).courant].id).toBe("motion_design");
   });
 
   it("si le son a changé, tout est refait", () => {
     const m = { ...base, travail_pret: true, audio_prepare: "normal", reglages: { son: { ameliorer: true, niveau: "fort" as const } } };
     expect(cleSon(m.reglages)).toBe("fort");
     expect(etapesAffichees({ ...m, etape: "son" }).etapes[etapesAffichees({ ...m, etape: "son" }).courant].id).toBe("son");
+  });
+});
+
+describe("motion design", () => {
+  it("est actif par défaut, palette Or & Noir, sans carte tant qu'aucun prénom n'est donné", () => {
+    expect(REGLAGES_PAR_DEFAUT.design).toMatchObject({ actif: true, palette: "or_noir", prenom: "" });
+  });
+
+  it("donne les couleurs de la palette choisie, ou les couleurs libres en « Personnalisé »", () => {
+    const d = REGLAGES_PAR_DEFAUT.design;
+    expect(couleursDesign({ ...d, palette: "emeraude" })).toMatchObject({ principale: "#10B981", fond: "#0B2E24" });
+    expect(couleursDesign({ ...d, palette: "personnalise", principale: "#123456", fond: "#FFFFFF", texte: "#000000" })).toEqual({
+      principale: "#123456",
+      fond: "#FFFFFF",
+      texte: "#000000",
+    });
   });
 });

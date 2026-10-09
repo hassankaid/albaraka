@@ -2,9 +2,9 @@
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { NIVEAUX_SON, type Reglages } from "@/lib/studio/reglages";
+import { NIVEAUX_SON, PALETTES, type Reglages } from "@/lib/studio/reglages";
 import { SelecteurCouleur } from "./SelecteurCouleur";
 
 type Maj = (r: Reglages) => void;
@@ -112,18 +112,87 @@ export function BlocSousTitres({ reglages, onChange }: { reglages: Reglages; onC
   );
 }
 
-export function BlocDesign() {
+/** Motion design : oui / non, code couleur (6 palettes ou personnalisé), carte de présentation. */
+export function BlocDesign({ reglages, onChange }: { reglages: Reglages; onChange: Maj }) {
+  const d = reglages.design;
+  const maj = (p: Partial<Reglages["design"]>) => onChange({ ...reglages, design: { ...d, ...p } });
   return (
-    <div className="flex items-start justify-between gap-3 rounded-lg border border-dashed border-border p-3">
-      <div>
-        <p className="text-sm font-medium text-foreground">Motion design</p>
-        <p className="text-xs text-muted-foreground">
-          Zooms, carte de présentation, icônes animées, bouton d'appel à l'action.
-        </p>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between gap-3">
+        <Label htmlFor="studio-design" className="text-sm font-medium">
+          Motion design
+          <span className="block text-xs font-normal text-muted-foreground">
+            Zooms, carte de présentation, icônes et listes animées, bouton d'appel à l'action
+          </span>
+        </Label>
+        <Switch id="studio-design" checked={d.actif} onCheckedChange={(actif) => maj({ actif })} />
       </div>
-      <Badge variant="outline" className="shrink-0">
-        Bientôt
-      </Badge>
+      {d.actif && (
+        <>
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">Code couleur</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {PALETTES.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => maj({ palette: p.id })}
+                  aria-pressed={d.palette === p.id}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs font-medium transition-colors",
+                    d.palette === p.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/50",
+                  )}
+                >
+                  <span className="flex shrink-0 overflow-hidden rounded-full border border-border">
+                    {[p.principale, p.fond, p.texte].map((c, k) => (
+                      <span key={k} className="h-5 w-3" style={{ backgroundColor: c }} />
+                    ))}
+                  </span>
+                  {p.nom}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => maj({ palette: "personnalise" })}
+                aria-pressed={d.palette === "personnalise"}
+                className={cn(
+                  "rounded-lg border px-2.5 py-2 text-left text-xs font-medium transition-colors",
+                  d.palette === "personnalise" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50",
+                )}
+              >
+                Personnalisé
+              </button>
+            </div>
+          </div>
+          {d.palette === "personnalise" && (
+            <div className="space-y-4">
+              <SelecteurCouleur label="Couleur principale" valeur={d.principale} onChange={(principale) => maj({ principale })} />
+              <SelecteurCouleur label="Fond des encadrés" valeur={d.fond} onChange={(fond) => maj({ fond })} />
+              <SelecteurCouleur label="Texte des encadrés" valeur={d.texte} onChange={(texte) => maj({ texte })} />
+            </div>
+          )}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">
+              Carte de présentation <span className="font-normal text-muted-foreground">(facultatif)</span>
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Input
+                value={d.prenom}
+                onChange={(e) => maj({ prenom: e.target.value.slice(0, 24) })}
+                placeholder="Ton prénom"
+                aria-label="Prénom"
+              />
+              <Input
+                value={d.titre}
+                onChange={(e) => maj({ titre: e.target.value.slice(0, 40) })}
+                placeholder="Ton titre (ex. Coach business)"
+                aria-label="Titre"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">Sans prénom, la vidéo n'a pas de carte de présentation.</p>
+          </div>
+        </>
+      )}
     </div>
   );
 }

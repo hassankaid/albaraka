@@ -7,17 +7,39 @@
 export type StyleFlou = "naturel" | "flou" | "mosaique" | "verre" | "marqueur" | "sticker" | "neon";
 export type NiveauSon = "leger" | "normal" | "fort";
 
+export type PaletteId = "or_noir" | "emeraude" | "rose_poudre" | "bleu_electrique" | "rouge_passion" | "blanc_minimal" | "personnalise";
+
 export interface Reglages {
   son: { ameliorer: boolean; niveau: NiveauSon };
   sous_titres: { texte: string; contour: string; ombre: string };
   visage: { flouter: boolean; style: StyleFlou; couleur: string; intensite: number; intensite_couleur: number };
+  /** Motion design (phase 2) : palette, et prénom + titre pour la carte de présentation. */
+  design: { actif: boolean; palette: PaletteId; principale: string; fond: string; texte: string; prenom: string; titre: string };
 }
 
 export const REGLAGES_PAR_DEFAUT: Reglages = {
   son: { ameliorer: true, niveau: "normal" },
   sous_titres: { texte: "#FFFFFF", contour: "#000000", ombre: "#000000" },
   visage: { flouter: false, style: "naturel", couleur: "#C9A45C", intensite: 3, intensite_couleur: 3 },
+  // activé par défaut (cahier des charges, section 4)
+  design: { actif: true, palette: "or_noir", principale: "#C9A45C", fond: "#0F0F0F", texte: "#FFFFFF", prenom: "", titre: "" },
 };
+
+/** Les 6 palettes prêtes (couleur principale / fond des encadrés / texte des encadrés). */
+export const PALETTES: { id: Exclude<PaletteId, "personnalise">; nom: string; principale: string; fond: string; texte: string }[] = [
+  { id: "or_noir", nom: "Or & Noir", principale: "#C9A45C", fond: "#0F0F0F", texte: "#FFFFFF" },
+  { id: "emeraude", nom: "Émeraude", principale: "#10B981", fond: "#0B2E24", texte: "#FFFFFF" },
+  { id: "rose_poudre", nom: "Rose poudré", principale: "#F4A6B8", fond: "#FFFFFF", texte: "#1F1F1F" },
+  { id: "bleu_electrique", nom: "Bleu électrique", principale: "#3B82F6", fond: "#0B1530", texte: "#FFFFFF" },
+  { id: "rouge_passion", nom: "Rouge passion", principale: "#E11D48", fond: "#1A0A0F", texte: "#FFFFFF" },
+  { id: "blanc_minimal", nom: "Blanc minimal", principale: "#111111", fond: "#FFFFFF", texte: "#111111" },
+];
+
+/** Les trois couleurs réellement utilisées (palette prête, ou couleurs libres). */
+export function couleursDesign(d: Reglages["design"]): { principale: string; fond: string; texte: string } {
+  const p = PALETTES.find((x) => x.id === d.palette);
+  return p && d.palette !== "personnalise" ? p : { principale: d.principale, fond: d.fond, texte: d.texte };
+}
 
 /** Les 10 teintes proposées partout où l'élève choisit une couleur. */
 export const PALETTE: { nom: string; hex: string }[] = [
@@ -57,7 +79,9 @@ export const ETAPES: { id: string; nom: string }[] = [
   { id: "coupes", nom: "Coupe des blancs" },
   { id: "montage", nom: "Montage" },
   { id: "sous_titres", nom: "Sous-titres" },
+  { id: "animations", nom: "Plan des animations" },
   { id: "floutage", nom: "Floutage du visage" },
+  { id: "motion_design", nom: "Animations" },
   { id: "incrustation", nom: "Incrustation des sous-titres" },
   { id: "envoi", nom: "Finalisation" },
 ];
@@ -95,13 +119,17 @@ export function completerReglages(r: Partial<Reglages> | null | undefined): Regl
     sous_titres: { ...REGLAGES_PAR_DEFAUT.sous_titres, ...(r?.sous_titres ?? {}) },
     // les montages faits avec un ancien style (bulle colorée) repassent au flou naturel
     visage: { ...REGLAGES_PAR_DEFAUT.visage, ...(r?.visage ?? {}), style: "naturel" },
+    design: { ...REGLAGES_PAR_DEFAUT.design, ...(r?.design ?? {}) },
   };
 }
 
 /** Étapes réellement parcourues : le floutage n'apparaît que s'il est demandé. */
 export function etapesDuMontage(reglages: Partial<Reglages> | null | undefined) {
-  const flouter = completerReglages(reglages).visage.flouter;
-  return ETAPES.filter((e) => e.id !== "floutage" || flouter);
+  const r = completerReglages(reglages);
+  // floutage et animations se font dans la même passe : une seule étape affichée
+  return ETAPES.filter(
+    (e) => (e.id !== "floutage" || (r.visage.flouter && !r.design.actif)) && (e.id !== "motion_design" || r.design.actif),
+  );
 }
 
 /** Clé du réglage du son, comme la calcule la base (studio_lancer). */
@@ -110,7 +138,7 @@ export function cleSon(reglages: Partial<Reglages> | null | undefined): string {
   return s.ameliorer ? s.niveau : "off";
 }
 
-const ETAPES_PREPARATION = ["reception", "son", "transcription", "phrases_ratees", "coupes", "montage", "sous_titres"];
+const ETAPES_PREPARATION = ["reception", "son", "transcription", "phrases_ratees", "coupes", "montage", "sous_titres", "animations"];
 
 /**
  * Étapes à afficher pendant le montage. Quand la préparation est réutilisée

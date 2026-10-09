@@ -202,7 +202,7 @@ export default function StudioMontage() {
               <BlocSousTitres reglages={r} onChange={setReglages} />
             </Bloc>
             <Bloc titre="Design">
-              <BlocDesign />
+              <BlocDesign reglages={r} onChange={setReglages} />
             </Bloc>
             {sonChange && (
               <p className="text-xs text-amber-300">

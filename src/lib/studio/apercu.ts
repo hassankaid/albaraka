@@ -252,3 +252,90 @@ export function dessinerSousTitre(
   }
   ctx.restore();
 }
+
+function rvb(hex: string): [number, number, number] {
+  const h = hex.replace("#", "");
+  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) || 0) as [number, number, number];
+}
+const lum = ([r, g, b]: number[]) => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+
+/** Couleur principale lisible sur l'encadré (assombrie sur un fond clair), comme le moteur. */
+export function principaleLisible(principale: string, fond: string): string {
+  const p = rvb(principale);
+  if (lum(rvb(fond)) > 0.6 && lum(p) > 0.45) return `rgb(${p.map((v) => Math.round(v * 0.55)).join(",")})`;
+  return principale;
+}
+
+function arrondi(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+}
+
+/**
+ * Allure du motion design (studio/animations.py) : barre de progression, carte de
+ * présentation et une icône. Le placement réel évite le visage ; ici, positions types.
+ */
+export function dessinerDesign(
+  ctx: CanvasRenderingContext2D,
+  c: { principale: string; fond: string; texte: string },
+  prenom: string,
+  titre: string,
+) {
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.45)";
+  ctx.fillRect(0, 0, W, 10);
+  ctx.fillStyle = c.principale;
+  ctx.fillRect(0, 0, W * 0.4, 10);
+  ctx.shadowColor = "rgba(0,0,0,0.45)";
+  ctx.shadowBlur = 30;
+  ctx.shadowOffsetY = 8;
+  if (prenom.trim()) {
+    ctx.font = "900 52px StudioMontserrat";
+    const l1 = ctx.measureText(prenom.toUpperCase()).width;
+    ctx.font = "italic 40px StudioSerif";
+    const l2 = titre ? ctx.measureText(titre).width : 0;
+    const w = Math.max(360, Math.min(900, Math.max(l1, l2) + 90));
+    const h = titre ? 150 : 104;
+    ctx.globalAlpha = 0.84;
+    ctx.fillStyle = c.fond;
+    arrondi(ctx, 50, 170, w, h, 26);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.shadowColor = "transparent";
+    ctx.fillStyle = c.principale;
+    arrondi(ctx, 50, 170, 14, h, 7);
+    ctx.fill();
+    ctx.textBaseline = "top";
+    ctx.fillStyle = c.texte;
+    ctx.font = "900 52px StudioMontserrat";
+    ctx.fillText(prenom.toUpperCase(), 94, 192);
+    if (titre) {
+      ctx.fillStyle = principaleLisible(c.principale, c.fond);
+      ctx.font = "italic 40px StudioSerif";
+      ctx.fillText(titre, 96, 254);
+    }
+  }
+  // une icône animée type (étoile), à droite
+  ctx.shadowColor = "rgba(0,0,0,0.45)";
+  const cx = W - 165;
+  const cy = 320;
+  ctx.fillStyle = c.fond;
+  ctx.globalAlpha = 0.9;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 95, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.shadowColor = "transparent";
+  ctx.lineWidth = 9;
+  ctx.strokeStyle = c.principale;
+  ctx.stroke();
+  ctx.fillStyle = c.principale;
+  ctx.beginPath();
+  for (let j = 0; j < 10; j++) {
+    const a = (j / 10) * Math.PI * 2 - Math.PI / 2;
+    const r = j % 2 === 0 ? 52 : 23;
+    ctx.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+  }
+  ctx.fill();
+  ctx.restore();
+}

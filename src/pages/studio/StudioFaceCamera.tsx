@@ -191,7 +191,7 @@ export default function StudioFaceCamera() {
                   <BlocSousTitres reglages={reglages} onChange={setReglages} />
                 </Bloc>
                 <Bloc titre="Design">
-                  <BlocDesign />
+                  <BlocDesign reglages={reglages} onChange={setReglages} />
                 </Bloc>
                 <div className="flex flex-wrap justify-between gap-2">
                   <Button variant="outline" onClick={() => setEcran("visage")}>
