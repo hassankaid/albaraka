@@ -3,9 +3,8 @@ import SpaceSwitcher from "./SpaceSwitcher";
 import {
   BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X,
   ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp, GraduationCap,
-  CalendarDays, Award, Sparkles, Bot, MessageSquare, Film, Link2,
+  CalendarDays, Award, Sparkles, Bot, MessageSquare, Link2,
 } from "lucide-react";
-import { isStudioAllowed } from "@/lib/studio-access";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -22,8 +21,6 @@ interface NavItem {
   path: string;
   icon: React.ElementType;
   passRequired?: boolean;
-  /** Studio Albaraka (B1, 20/05/2026) — visible uniquement pour CEO + Sidali Test. */
-  studioOnly?: boolean;
   /** Masque l'entree tant que la fonctionnalite n'est pas debloquee. */
   featureRequired?: FeatureKey;
 }
@@ -32,7 +29,6 @@ const workingNavItems: NavItem[] = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp },
   { title: "Mon Organisation", path: "/working/organisation", icon: CalendarDays },
   { title: "Personal Brand", path: "/working/personal-brand", icon: Sparkles, passRequired: true },
-  { title: "Studio", path: "/studio", icon: Film, studioOnly: true },
   { title: "Agent IA", path: "/working/agent", icon: Bot, passRequired: true },
   // L'espace apporteur a sa PROPRE barre laterale : ajouter l'entree dans
   // DashboardLayout ne suffit pas, un apporteur ne la voit jamais.
@@ -70,7 +66,6 @@ const pageTitles: Record<string, string> = {
   "/working/organisation": "Mon Organisation",
   "/working/personal-brand": "Personal Brand",
   "/working/agent": "Agent IA",
-  "/studio": "Studio · Mes vidéos",
   "/training": "Formation",
   "/training/certificats": "Mes Certificats",
   "/training/scripts": "Scripts",
@@ -112,12 +107,11 @@ export default function ApporteurLayout() {
     if (currentSpace === "coaching") {
       return coachingNavItems.filter((item) => !item.passRequired || hasAnyPass);
     }
-    // working : on filtre les items studioOnly à CEO + Sidali Test.
+    // working : on filtre les entrées verrouillées.
     return workingNavItems.filter((item) => {
       // Comme dans DashboardLayout : on ne montre pas une entree dont la page
       // afficherait un ecran verrouille.
       if (item.featureRequired && !aDebloque(item.featureRequired)) return false;
-      if (item.studioOnly) return isStudioAllowed(profile);
       // Personal Brand (26/05/2026) : masqué pour AL BARAKA sans Marketing validé.
       if (item.path === "/working/personal-brand" && !canAccessPersonalBrand) {
         return false;

@@ -132,9 +132,6 @@ import ContractPreview from "./pages/admin/contracts/ContractPreview";
 import AdminContracts from "./pages/admin/contracts/AdminContracts";
 import MyContract from "./pages/contract/MyContract";
 import ContractLandingPage from "./pages/contract/ContractLandingPage";
-import StudioHome from "./pages/studio/StudioHome";
-import StudioProject from "./pages/studio/StudioProject";
-import { StudioGate } from "./components/StudioGate";
 import DiscordCallback from "./pages/discord/DiscordCallback";
 import AdminDiscord from "./pages/admin/discord/AdminDiscord";
 import AdminSiteVitrine from "./pages/admin/site-vitrine/AdminSiteVitrine";
@@ -439,9 +436,6 @@ const FullApp = () => (
                   <Route path="/working/personal-brand" element={<MarketingGate><PersonalBrandPage /></MarketingGate>} />
                   <Route path="/working/agent" element={<FeatureGate feature="working_activity" lockedTitle="Agent IA verrouillé" lockedDescription="Termine la formation SETTING depuis ton parcours AL BARAKA pour débloquer l'Agent IA." unlockCtaLabel="Ouvrir mon parcours" unlockRoute="/parcours/al-baraka"><AgentIA /></FeatureGate>} />
                   <Route path="/working/lien-de-paiement" element={<LienDePaiement />} />
-                  {/* Studio Albaraka (B1 du 20/05/2026) — gaté à CEO + Sidali Test */}
-                  <Route path="/studio" element={<StudioGate><StudioHome /></StudioGate>} />
-                  <Route path="/studio/projects/:projectId" element={<StudioGate><StudioProject /></StudioGate>} />
                 </Route>
               </Route>
               {routesLegales}

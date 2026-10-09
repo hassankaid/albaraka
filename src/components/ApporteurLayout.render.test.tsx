@@ -52,10 +52,6 @@ vi.mock("@/components/ThemeProvider", () => ({
   useTheme: () => ({ theme: "dark", toggleTheme: vi.fn() }),
 }));
 
-vi.mock("@/lib/studio-access", () => ({
-  isStudioAllowed: () => false,
-}));
-
 vi.mock("@/components/notifications/NotificationsBell", () => ({
   NotificationsBell: () => null,
 }));
