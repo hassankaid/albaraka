@@ -24,19 +24,20 @@ type Ecran = "import" | "visage" | "reglages";
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
+/** Durée lue par le navigateur, ou null s'il ne sait pas lire la vidéo (ex. HEVC) :
+ *  le moteur vérifie de toute façon. Jamais plus de 5 s d'attente avant l'envoi. */
 function dureeVideo(f: File): Promise<number | null> {
   return new Promise((ok) => {
     const url = URL.createObjectURL(f);
     const v = document.createElement("video");
+    const fin = (d: number | null) => {
+      URL.revokeObjectURL(url);
+      ok(d);
+    };
     v.preload = "metadata";
-    v.onloadedmetadata = () => {
-      URL.revokeObjectURL(url);
-      ok(Number.isFinite(v.duration) ? v.duration : null);
-    };
-    v.onerror = () => {
-      URL.revokeObjectURL(url);
-      ok(null); // format non lisible par le navigateur (ex. HEVC) : le moteur vérifiera
-    };
+    v.onloadedmetadata = () => fin(Number.isFinite(v.duration) ? v.duration : null);
+    v.onerror = () => fin(null);
+    setTimeout(() => fin(null), 5000);
     v.src = url;
   });
 }
