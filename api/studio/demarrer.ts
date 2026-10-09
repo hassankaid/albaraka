@@ -32,7 +32,7 @@ function fichiersDuMoteur(): { path: string; content: Buffer }[] {
     readdirSync(join(racine, dossier), { withFileTypes: true }).flatMap((e) => {
       const rel = dossier ? `${dossier}/${e.name}` : e.name;
       if (e.isDirectory()) return lire(rel);
-      if (!/\.(py|onnx|rnnn|ttf)$/.test(e.name)) return [];
+      if (!/\.(py|onnx|rnnn|ttf|json|js|css|mp3)$/.test(e.name)) return [];
       return [{ path: `studio/${rel}`, content: readFileSync(join(racine, rel)) }];
     });
   return lire("");
@@ -159,6 +159,8 @@ export async function POST(request: Request): Promise<Response> {
         SUPABASE_URL: url,
         SUPABASE_ANON: anon,
         OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY!,
+        // bruitages de la bibliothèque Hyperframes (licence Pixabay), installés dans le snapshot
+        STUDIO_SONS: "/opt/studio-sons",
         STOP_URL: `https://vercel.com/api/v2/sandboxes/sessions/${sbx.currentSession().sessionId}/stop?teamId=${arret.teamId}`,
         STOP_TOKEN: arret.token,
       },

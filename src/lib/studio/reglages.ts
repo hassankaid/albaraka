@@ -7,14 +7,26 @@
 export type StyleFlou = "naturel" | "flou" | "mosaique" | "verre" | "marqueur" | "sticker" | "neon";
 export type NiveauSon = "leger" | "normal" | "fort";
 
+/** Ton du montage : « auto » laisse l'IA choisir selon le sujet (grave, par défaut, motivation). */
+export type StyleMontage = "auto" | "sobre" | "signature" | "energique";
+
 export type PaletteId = "or_noir" | "emeraude" | "rose_poudre" | "bleu_electrique" | "rouge_passion" | "blanc_minimal" | "personnalise";
 
 export interface Reglages {
   son: { ameliorer: boolean; niveau: NiveauSon };
   sous_titres: { texte: string; contour: string; ombre: string };
   visage: { flouter: boolean; style: StyleFlou; couleur: string; intensite: number; intensite_couleur: number };
-  /** Motion design (phase 2) : palette, et prénom + titre pour la carte de présentation. */
-  design: { actif: boolean; palette: PaletteId; principale: string; fond: string; texte: string; prenom: string; titre: string };
+  /** Motion design : style, palette, et prénom + titre pour la carte de présentation. */
+  design: {
+    actif: boolean;
+    style: StyleMontage;
+    palette: PaletteId;
+    principale: string;
+    fond: string;
+    texte: string;
+    prenom: string;
+    titre: string;
+  };
 }
 
 export const REGLAGES_PAR_DEFAUT: Reglages = {
@@ -22,8 +34,15 @@ export const REGLAGES_PAR_DEFAUT: Reglages = {
   sous_titres: { texte: "#FFFFFF", contour: "#000000", ombre: "#000000" },
   visage: { flouter: false, style: "naturel", couleur: "#C9A45C", intensite: 3, intensite_couleur: 3 },
   // activé par défaut (cahier des charges, section 4)
-  design: { actif: true, palette: "or_noir", principale: "#C9A45C", fond: "#0F0F0F", texte: "#FFFFFF", prenom: "", titre: "" },
+  design: { actif: true, style: "auto", palette: "or_noir", principale: "#C9A45C", fond: "#0F0F0F", texte: "#FFFFFF", prenom: "", titre: "" },
 };
+
+export const STYLES_MONTAGE: { id: StyleMontage; nom: string; description: string }[] = [
+  { id: "auto", nom: "Auto", description: "L'IA choisit selon ton sujet" },
+  { id: "sobre", nom: "Sobre", description: "Discret, pour un sujet grave ou intime" },
+  { id: "signature", nom: "Signature", description: "Le style AL BARAKA" },
+  { id: "energique", nom: "Énergique", description: "Rythmé, pour motiver" },
+];
 
 /** Les 6 palettes prêtes (couleur principale / fond des encadrés / texte des encadrés). */
 export const PALETTES: { id: Exclude<PaletteId, "personnalise">; nom: string; principale: string; fond: string; texte: string }[] = [
@@ -82,9 +101,51 @@ export const ETAPES: { id: string; nom: string }[] = [
   { id: "animations", nom: "Plan des animations" },
   { id: "floutage", nom: "Floutage du visage" },
   { id: "motion_design", nom: "Animations" },
-  { id: "incrustation", nom: "Incrustation des sous-titres" },
+  { id: "verification", nom: "Vérification de la mise en page" },
+  { id: "incrustation", nom: "Rendu de la vidéo" },
   { id: "envoi", nom: "Finalisation" },
 ];
+
+/** L'équipe virtuelle montrée sur l'écran d'attente : qui travaille, et sur quoi, à chaque étape. */
+export const EQUIPE: { id: string; nom: string }[] = [
+  { id: "son", nom: "Ingé son" },
+  { id: "monteur", nom: "Monteur" },
+  { id: "sous_titres", nom: "Sous-titreur" },
+  { id: "da", nom: "Directeur artistique" },
+  { id: "motion", nom: "Motion designer" },
+  { id: "verif", nom: "Vérificateur" },
+];
+
+export const ROLE_DE_L_ETAPE: Record<string, { role: string; action: string }> = {
+  reception: { role: "monteur", action: "reçoit ta vidéo" },
+  son: { role: "son", action: "nettoie ta voix et retire les bruits de fond" },
+  transcription: { role: "sous_titres", action: "écoute chaque mot que tu prononces" },
+  phrases_ratees: { role: "monteur", action: "repère les phrases que tu as recommencées" },
+  coupes: { role: "monteur", action: "coupe les blancs" },
+  montage: { role: "monteur", action: "assemble les meilleures prises" },
+  sous_titres: { role: "sous_titres", action: "découpe tes sous-titres et choisit les mots clés" },
+  animations: { role: "da", action: "choisit le moment fort et les animations" },
+  floutage: { role: "monteur", action: "floute ton visage" },
+  motion_design: { role: "motion", action: "anime ta vidéo et place les bruitages" },
+  verification: { role: "verif", action: "vérifie que rien ne cache ton visage ni tes sous-titres" },
+  incrustation: { role: "monteur", action: "fabrique la vidéo finale" },
+  envoi: { role: "monteur", action: "met ta vidéo dans ton espace" },
+};
+
+/** Rôles de l'équipe : déjà passés, au travail, ou pas encore intervenus. */
+export function equipeAuTravail(etapes: { id: string }[], courant: number) {
+  const actuel = ROLE_DE_L_ETAPE[etapes[courant]?.id] ?? ROLE_DE_L_ETAPE.reception;
+  const passes = new Set(etapes.slice(0, courant).map((e) => ROLE_DE_L_ETAPE[e.id]?.role));
+  const presents = new Set(etapes.map((e) => ROLE_DE_L_ETAPE[e.id]?.role));
+  return {
+    actuel,
+    nomActuel: EQUIPE.find((r) => r.id === actuel.role)?.nom ?? "Monteur",
+    roles: EQUIPE.filter((r) => presents.has(r.id)).map((r) => ({
+      ...r,
+      etat: r.id === actuel.role ? ("travaille" as const) : passes.has(r.id) ? ("fait" as const) : ("attend" as const),
+    })),
+  };
+}
 
 export type Statut = "import" | "preparation" | "pret" | "en_cours" | "termine" | "erreur";
 
@@ -128,7 +189,9 @@ export function etapesDuMontage(reglages: Partial<Reglages> | null | undefined) 
   const r = completerReglages(reglages);
   // floutage et animations se font dans la même passe : une seule étape affichée
   return ETAPES.filter(
-    (e) => (e.id !== "floutage" || (r.visage.flouter && !r.design.actif)) && (e.id !== "motion_design" || r.design.actif),
+    (e) =>
+      (e.id !== "floutage" || (r.visage.flouter && !r.design.actif)) &&
+      ((e.id !== "motion_design" && e.id !== "verification") || r.design.actif),
   );
 }
 

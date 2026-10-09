@@ -17,7 +17,9 @@ les corrections de la plateforme sont ici :
   3. floutage et animations en une passe répartie sur tous les processeurs (voir rendre_images) ;
   4. mot clé des sous-titres en minuscules, comme l'aperçu validé ;
   5. flou naturel du visage (sans bulle) ;
-  6. motion design piloté par un plan d'animation de l'IA (voir animations.py).
+  6. motion design piloté par un plan d'animation de l'IA (voir animations.py) ;
+  7. motion design Hyperframes (dossier hf/) : l'IA choisit des recettes dans la bibliothèque
+     AL BARAKA, la composition est vérifiée puis rendue. animations.py reste en secours.
 
   preparation : son (réglage « normal »), aperçu, transcription, phrases ratées,
                 coupes, montage brut, sous-titres. Si l'élève a déjà lancé le
@@ -35,6 +37,7 @@ import json
 import multiprocessing as mp
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -44,6 +47,7 @@ import urllib.request
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(ICI, "moteur"))
+sys.path.insert(0, os.path.join(ICI, "hf"))
 
 import numpy as np  # noqa: E402
 import soundfile as sf  # noqa: E402
@@ -123,6 +127,8 @@ def reponse_valide(prompt, objet):
     """La réponse couvre-t-elle bien les mots du prompt ? (sous-titres : tous les mots,
     dans l'ordre, sans trou ; phrases ratées : des plages d'index existants)."""
     n = len(re.findall(r"^\d+: \S", prompt, re.M))  # lignes « index: mot »
+    if '"appuis"' in prompt:  # plan Hyperframes : le détail est filtré par hf/catalogue.nettoyer
+        return isinstance(objet.get("fort"), dict) and isinstance(objet.get("appuis", []), list)
     if '"zooms"' in prompt:  # plan d'animation : le détail est filtré par nettoyer_plan
         return isinstance(objet.get("zooms"), list) and isinstance(objet.get("icones", []), list)
     if '"captions"' in prompt:
@@ -441,13 +447,18 @@ def preparer(src, dossier, liens, reglages, avec_apercu):
     t = top("sous_titres", t)
     etape("animations")
     gardes = [dataclasses.asdict(w) for w in kept]
-    plan = plan_animation(gardes, total)
+    sous_titres = [dataclasses.asdict(c) for c in caps]
+    try:
+        plan = plan_hf(gardes, sous_titres, total)
+    except Exception:  # le plan sera redemandé au rendu (ou le motion design classique prendra le relais)
+        traceback.print_exc()
+        plan = None
     t = top("animations", t)
     travail = {
         "meta": meta, "audio": cle_son, "duree_sortie": round(total, 2), "coupes": cuts,
         "mots": [dataclasses.asdict(w) for w in words], "retires": sorted(removed),
-        "sous_titres": [dataclasses.asdict(c) for c in caps], "chrono": chrono,
-        "mots_gardes": gardes, "plan": plan,
+        "sous_titres": sous_titres, "chrono": chrono,
+        "mots_gardes": gardes, "plan_hf": plan,
         "cout_usd": dict(COUT), "reponses_ia": REPONSES_IA[-4:],
     }
     chemin = os.path.join(dossier, "travail.json")
@@ -456,6 +467,50 @@ def preparer(src, dossier, liens, reglages, avec_apercu):
     deposer(liens["deposer"]["travail/cut.mp4"], cut, "video/mp4")
     deposer(liens["deposer"]["travail/travail.json"], chemin, "application/json")
     return travail, cle_son
+
+
+def plan_hf(gardes, sous_titres, duree):
+    """Plan du motion design Hyperframes : l'IA choisit dans la bibliothèque (hf/catalogue.py)."""
+    import catalogue as HC
+    brut = json.loads(llm(HC.prompt(gardes, sous_titres, duree)))
+    return HC.nettoyer(brut, gardes, sous_titres, duree)
+
+
+def hyperframes_present():
+    return shutil.which("hyperframes") is not None or bool(os.environ.get("HYPERFRAMES"))
+
+
+def rendre_hf(dossier, liens, reglages, travail, flou):
+    """Motion design Hyperframes : composition, vérification, rendu (sous-titres compris)."""
+    import assembler as HA
+    t0 = time.time()
+    etape("motion_design")
+    cut = video = os.path.join(dossier, "cut.mp4")
+    stats = None
+    if flou:  # le visage est flouté d'abord ; visages et détourage se calculent sur l'original
+        floute = os.path.join(dossier, "floute.mp4")
+        stats = rendre_images(cut, floute, flou, None, dossier)
+        video = floute
+    visages, _ = analyser_visages(cut)
+    mots = mots_gardes(travail)
+    plan = travail.get("plan_hf")
+    if plan is None:
+        plan = travail["plan_hf"] = plan_hf(mots, travail["sous_titres"], travail["duree_sortie"])
+    compo = os.path.join(dossier, "hf")
+    donnees = HA.construire(compo, video, travail, plan, reglages, visages, mots, original=cut if flou else None)
+    etape("verification")
+    problemes = HA.verifier(compo)
+    bloquants = [p for p in problemes if p.get("partie") in ("lint", "runtime")]
+    if bloquants:
+        raise RuntimeError(f"composition invalide : {json.dumps(bloquants, ensure_ascii=False)[:400]}")
+    etape("incrustation")
+    sortie = os.path.join(dossier, "sortie.mp4")
+    HA.rendre(compo, sortie)
+    etape("envoi")
+    deposer(liens["deposer"]["sortie.mp4"], sortie, "video/mp4")
+    return {"moteur": "hyperframes", "passe_image": stats, "style": donnees["style"],
+            "motion_design": donnees["elements"], "cta": donnees["cta"], "verification": problemes,
+            "rendu_s": round(time.time() - t0, 1)}
 
 
 def plan_animation(gardes, duree):
@@ -502,8 +557,16 @@ def rendre(dossier, liens, reglages, travail):
                 "couleur": couleur(v.get("couleur"), "#C9A45C"),
                 "intensite": int(min(5, max(1, int(v.get("intensite") or 3)))),
                 "intensite_couleur": int(min(5, max(1, int(v.get("intensite_couleur") or 3))))}
-    # motion design : activé par défaut (cahier des charges, section 4)
+    # motion design : activé par défaut (cahier des charges, section 4). Hyperframes d'abord ;
+    # en cas d'échec, le motion design classique (animations.py) : l'élève a toujours sa vidéo.
     d = (reglages or {}).get("design") or {}
+    secours = None
+    if d.get("actif", True) is not False and hyperframes_present():
+        try:
+            return rendre_hf(dossier, liens, reglages, travail, flou)
+        except Exception as e:
+            traceback.print_exc()
+            secours = f"{type(e).__name__}: {e}"[:400]
     scene = None
     if d.get("actif", True) is not False:
         design = {"palette": d.get("palette") or "or_noir", "principale": couleur(d.get("principale"), ""),
@@ -524,8 +587,8 @@ def rendre(dossier, liens, reglages, travail):
     P.burn(etape_video, ass, sortie)
     etape("envoi")
     deposer(liens["deposer"]["sortie.mp4"], sortie, "video/mp4")
-    return {"passe_image": stats, "motion_design": scene["plan"] if scene else None,
-            "rendu_s": round(time.time() - t0, 1)}
+    return {"moteur": "classique", "passe_image": stats, "motion_design": scene["plan"] if scene else None,
+            "secours_hyperframes": secours, "rendu_s": round(time.time() - t0, 1)}
 
 
 # ---------------------------------------------------------------- orchestration

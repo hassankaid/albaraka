@@ -2,17 +2,83 @@
 // lecteur, téléchargement, « Changer les réglages » et « Signaler un problème ».
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, Check, Download, Flag, Loader2, RotateCcw, Settings2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  AudioLines,
+  Captions,
+  Check,
+  Download,
+  Flag,
+  Loader2,
+  Palette,
+  RotateCcw,
+  ScanEye,
+  Scissors,
+  Settings2,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { demarrer, lienStudio, signalerProbleme, useMontage, useRafraichirStudio } from "@/hooks/useStudio";
-import { completerReglages, enTraitement, etapesAffichees, type Montage, type Reglages } from "@/lib/studio/reglages";
+import {
+  completerReglages,
+  enTraitement,
+  equipeAuTravail,
+  etapesAffichees,
+  type Montage,
+  type Reglages,
+} from "@/lib/studio/reglages";
 import { ApercuStudio } from "@/components/studio/ApercuStudio";
 import { Bloc, BlocDesign, BlocSon, BlocSousTitres, BlocVisage } from "@/components/studio/Reglages";
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+const ICONES_ROLES: Record<string, LucideIcon> = {
+  son: AudioLines,
+  monteur: Scissors,
+  sous_titres: Captions,
+  da: Palette,
+  motion: Sparkles,
+  verif: ScanEye,
+};
+
+/** L'équipe au travail : qui s'occupe de la vidéo en ce moment, et ce qu'il fait. */
+function Equipe({ m }: { m: Montage }) {
+  const { etapes, courant } = etapesAffichees(m);
+  const { actuel, nomActuel, roles } = equipeAuTravail(etapes, courant);
+  const Icone = ICONES_ROLES[actuel.role] ?? Scissors;
+  return (
+    <div className="space-y-4" data-testid="equipe-montage">
+      <div className="flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/5 p-3">
+        <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+          <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+          <Icone className="relative h-5 w-5" />
+        </span>
+        <p className="text-sm text-foreground">
+          <span className="font-semibold">Le {nomActuel.toLowerCase()}</span> {actuel.action}…
+        </p>
+      </div>
+      <ul className="flex flex-wrap gap-2">
+        {roles.map((r) => {
+          const I = ICONES_ROLES[r.id] ?? Scissors;
+          return (
+            <li
+              key={r.id}
+              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs ${r.etat === "travaille" ? "border-primary text-primary" : r.etat === "fait" ? "border-emerald-500/50 text-emerald-400" : "border-border text-muted-foreground"}`}
+            >
+              {r.etat === "fait" ? <Check className="h-3 w-3" /> : <I className="h-3 w-3" />}
+              {r.nom}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
 
 function Etapes({ m }: { m: Montage }) {
   const { etapes, courant: i } = etapesAffichees(m);
@@ -121,6 +187,9 @@ export default function StudioMontage() {
             <p className="text-sm text-muted-foreground">
               Compte quelques minutes. Tu peux fermer cette page : tu recevras une notification quand ta vidéo sera prête.
             </p>
+            <div className="pt-2">
+              <Equipe m={m} />
+            </div>
           </div>
           <Etapes m={m} />
         </div>

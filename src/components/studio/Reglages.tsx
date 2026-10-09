@@ -4,7 +4,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { NIVEAUX_SON, PALETTES, type Reglages } from "@/lib/studio/reglages";
+import { NIVEAUX_SON, PALETTES, STYLES_MONTAGE, type Reglages } from "@/lib/studio/reglages";
 import { SelecteurCouleur } from "./SelecteurCouleur";
 
 type Maj = (r: Reglages) => void;
@@ -122,13 +122,33 @@ export function BlocDesign({ reglages, onChange }: { reglages: Reglages; onChang
         <Label htmlFor="studio-design" className="text-sm font-medium">
           Motion design
           <span className="block text-xs font-normal text-muted-foreground">
-            Zooms, carte de présentation, icônes et listes animées, bouton d'appel à l'action
+            Mot géant derrière toi, zooms, icônes et listes animées, bruitages, carte de présentation
           </span>
         </Label>
         <Switch id="studio-design" checked={d.actif} onCheckedChange={(actif) => maj({ actif })} />
       </div>
       {d.actif && (
         <>
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">Style</p>
+            <div className="grid grid-cols-2 gap-2">
+              {STYLES_MONTAGE.map((st) => (
+                <button
+                  key={st.id}
+                  type="button"
+                  onClick={() => maj({ style: st.id })}
+                  aria-pressed={d.style === st.id}
+                  className={cn(
+                    "rounded-lg border px-2.5 py-2 text-left transition-colors",
+                    d.style === st.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/50",
+                  )}
+                >
+                  <span className="block text-xs font-medium text-foreground">{st.nom}</span>
+                  <span className="block text-[11px] text-muted-foreground">{st.description}</span>
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="space-y-2">
             <p className="text-sm font-medium text-foreground">Code couleur</p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">

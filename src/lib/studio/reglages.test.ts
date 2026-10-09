@@ -110,3 +110,21 @@ describe("motion design", () => {
     });
   });
 });
+
+describe("motion design Hyperframes", () => {
+  it("laisse l'IA choisir le style par défaut, et garde un style choisi par l'élève", () => {
+    expect(REGLAGES_PAR_DEFAUT.design.style).toBe("auto");
+    expect(completerReglages({ design: { ...REGLAGES_PAR_DEFAUT.design, style: "sobre" } }).design.style).toBe("sobre");
+    // un montage enregistré avant l'arrivée du style passe en « auto »
+    const ancien = { ...REGLAGES_PAR_DEFAUT.design } as Partial<typeof REGLAGES_PAR_DEFAUT.design>;
+    delete ancien.style;
+    expect(completerReglages({ design: ancien as typeof REGLAGES_PAR_DEFAUT.design }).design.style).toBe("auto");
+  });
+
+  it("affiche la vérification de la mise en page seulement avec le motion design", () => {
+    expect(etapesDuMontage({}).map((e) => e.id)).toContain("verification");
+    const sans = etapesDuMontage({ design: { ...REGLAGES_PAR_DEFAUT.design, actif: false } }).map((e) => e.id);
+    expect(sans).not.toContain("verification");
+    expect(sans).not.toContain("motion_design");
+  });
+});
