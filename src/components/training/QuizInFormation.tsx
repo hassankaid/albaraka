@@ -41,7 +41,7 @@ export function ModuleQuizCard({
   const erreursPermises = Number(quiz.max_errors ?? 0);
   const seuil = erreursPermises > 0
     ? `${erreursPermises} erreur${erreursPermises > 1 ? "s" : ""} au plus`
-    : "sans aucune erreur";
+    : "sans erreur";
 
   return (
     <div
@@ -145,7 +145,7 @@ export function ChapterQuizCard({
   const erreursPermises = Number(quiz.max_errors ?? 0);
   const seuil = erreursPermises > 0
     ? `${erreursPermises} erreur${erreursPermises > 1 ? "s" : ""} au plus`
-    : "sans aucune erreur";
+    : "sans erreur";
 
   return (
     <Card
@@ -201,7 +201,7 @@ export function ChapterQuizCard({
             ) : !validated ? (
               <p className="text-xs text-muted-foreground mt-1">
                 {navigationLibre
-                  ? `Teste tes acquis : le quiz est validé ${seuil}.`
+                  ? `Teste tes acquis : le quiz est validé ${erreursPermises > 0 ? `avec ${seuil}` : "sans aucune erreur"}.`
                   : `Valide ce quiz (${seuil}) pour débloquer le chapitre suivant.`}
               </p>
             ) : (
@@ -265,7 +265,7 @@ export function FormationFinalQuizCard({
   const erreursPermises = Number(quiz.max_errors ?? 0);
   const seuil = erreursPermises > 0
     ? `${erreursPermises} erreur${erreursPermises > 1 ? "s" : ""} au plus`
-    : "sans aucune erreur";
+    : "sans erreur";
 
   return (
     <Card
