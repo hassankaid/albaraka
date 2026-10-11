@@ -53,6 +53,8 @@ import {
 import { toast } from "sonner";
 import { VimeoLinkInput } from "@/components/training/VimeoLinkInput";
 import RenvoisSection from "./RenvoisSection";
+import { RessourcesEditeur } from "./RessourcesEditeur";
+import { supprimerFichiersStockes } from "@/lib/ressourcesStockage";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -366,8 +368,11 @@ function VideosSection({
 
   const deleteVideoMutation = useMutation({
     mutationFn: async (videoId: string) => {
+      const fichiers = ressources.filter((r) => r.video_id === videoId);
       const { error } = await supabase.from("chapitre_videos").delete().eq("id", videoId);
       if (error) throw error;
+      // les ressources partent avec la vidéo (cascade) : leurs fichiers aussi
+      await supprimerFichiersStockes(fichiers);
     },
     onSuccess: () => {
       toast.success("Vidéo supprimée");
@@ -423,6 +428,7 @@ function VideosSection({
               <VideoItem
                 key={video.id}
                 video={video}
+                chapitreId={chapitreId}
                 ressources={ressources.filter((r) => r.video_id === video.id)}
                 isFirst={idx === 0}
                 isLast={idx === videos.length - 1}
@@ -463,6 +469,7 @@ function VideosSection({
 
 function VideoItem({
   video,
+  chapitreId,
   ressources,
   isFirst,
   isLast,
@@ -471,6 +478,7 @@ function VideoItem({
   onChanged,
 }: {
   video: Video;
+  chapitreId: string;
   ressources: Ressource[];
   isFirst: boolean;
   isLast: boolean;
@@ -607,7 +615,7 @@ function VideoItem({
         <VideoRessourcesSection
           ressources={ressources}
           videoId={video.id}
-          chapitreId=""
+          chapitreId={chapitreId}
           onChanged={onChanged}
         />
       </AccordionContent>
@@ -620,6 +628,7 @@ function VideoItem({
 function VideoRessourcesSection({
   ressources,
   videoId,
+  chapitreId,
   onChanged,
 }: {
   ressources: Ressource[];
@@ -628,30 +637,16 @@ function VideoRessourcesSection({
   onChanged: () => void;
 }) {
   return (
-    <RessourcesList
-      ressources={ressources}
-      label="Ressources liées à cette vidéo"
-      onAdd={async () => {
-        const maxOrdre = ressources.length > 0 ? Math.max(...ressources.map((r) => r.ordre)) + 1 : 0;
-        // We need chapitre_id — get it from the video
-        const { data: vid } = await supabase
-          .from("chapitre_videos")
-          .select("chapitre_id")
-          .eq("id", videoId)
-          .single();
-        if (!vid) return;
-        const { error } = await supabase.from("chapitre_ressources").insert({
-          chapitre_id: vid.chapitre_id,
-          video_id: videoId,
-          titre: "Nouvelle ressource",
-          type: "link",
-          url: "",
-          ordre: maxOrdre,
-        });
-        if (error) throw error;
-      }}
-      onChanged={onChanged}
-    />
+    <div className="space-y-2">
+      <p className="text-sm font-medium text-foreground">Ressources sous cette vidéo</p>
+      <RessourcesEditeur
+        ressources={ressources}
+        chapitreId={chapitreId}
+        videoId={videoId}
+        vide="Aucune ressource sous cette vidéo pour l'instant."
+        onChanged={onChanged}
+      />
+    </div>
   );
 }
 
@@ -675,20 +670,11 @@ function ChapterRessourcesSection({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <RessourcesList
+        <RessourcesEditeur
           ressources={ressources}
-          label="Ressources de synthèse (non liées à une vidéo)"
-          onAdd={async () => {
-            const maxOrdre = ressources.length > 0 ? Math.max(...ressources.map((r) => r.ordre)) + 1 : 0;
-            const { error } = await supabase.from("chapitre_ressources").insert({
-              chapitre_id: chapitreId,
-              titre: "Nouvelle ressource",
-              type: "link",
-              url: "",
-              ordre: maxOrdre,
-            });
-            if (error) throw error;
-          }}
+          chapitreId={chapitreId}
+          videoId={null}
+          vide="Ressources de synthèse du chapitre (non liées à une vidéo) : aucune pour l'instant."
           onChanged={onChanged}
         />
       </CardContent>
@@ -696,248 +682,3 @@ function ChapterRessourcesSection({
   );
 }
 
-// ── Generic ressources list (reused for video & chapter) ──────
-
-function RessourcesList({
-  ressources,
-  label,
-  onAdd,
-  onChanged,
-}: {
-  ressources: Ressource[];
-  label: string;
-  onAdd: () => Promise<void>;
-  onChanged: () => void;
-}) {
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-
-  const addMutation = useMutation({
-    mutationFn: onAdd,
-    onSuccess: () => {
-      toast.success("Ressource ajoutée");
-      onChanged();
-    },
-    onError: () => toast.error("Erreur lors de l'ajout"),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("chapitre_ressources").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Ressource supprimée");
-      setDeleteId(null);
-      onChanged();
-    },
-  });
-
-  return (
-    <div className="space-y-3">
-      {ressources.length === 0 && (
-        <p className="text-sm text-muted-foreground">{label} — aucune pour l'instant.</p>
-      )}
-      {ressources.map((r) => (
-        <RessourceItem key={r.id} ressource={r} onDelete={() => setDeleteId(r.id)} onChanged={onChanged} />
-      ))}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => addMutation.mutate()}
-        disabled={addMutation.isPending}
-        className="gap-2"
-      >
-        <Plus className="h-4 w-4" />
-        Ajouter une ressource
-      </Button>
-
-      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer cette ressource ?</AlertDialogTitle>
-            <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteId && deleteMutation.mutate(deleteId)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
-}
-
-// ── Single ressource item ─────────────────────────────────────
-
-function RessourceItem({
-  ressource,
-  onDelete,
-  onChanged,
-}: {
-  ressource: Ressource;
-  onDelete: () => void;
-  onChanged: () => void;
-}) {
-  const [titre, setTitre] = useState(ressource.titre);
-  const [type, setType] = useState(ressource.type);
-  const [url, setUrl] = useState(ressource.url);
-
-  useEffect(() => {
-    setTitre(ressource.titre);
-    setType(ressource.type);
-    setUrl(ressource.url);
-  }, [ressource]);
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from("chapitre_ressources")
-        .update({ titre, type, url })
-        .eq("id", ressource.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Ressource enregistrée");
-      onChanged();
-    },
-    onError: () => toast.error("Erreur"),
-  });
-
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useState<HTMLInputElement | null>(null)[0];
-
-  const Icon = type === "pdf" ? FileText : type === "image" ? ImageIcon : LinkIcon;
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate type
-    const isPdf = file.type === "application/pdf";
-    const isImage = file.type.startsWith("image/");
-    if (!isPdf && !isImage) {
-      toast.error("Format non supporté. Utilise PDF ou image.");
-      return;
-    }
-
-    // Validate size (10 MB max)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Fichier trop volumineux. Maximum 10 MB.");
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const ext = file.name.split(".").pop() || (isPdf ? "pdf" : "jpg");
-      const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-      const filePath = `${ressource.id}/${Date.now()}-${safeName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("formation-resources")
-        .upload(filePath, file, { upsert: true, contentType: file.type });
-
-      if (uploadError) throw uploadError;
-
-      const { data: publicUrl } = supabase.storage
-        .from("formation-resources")
-        .getPublicUrl(filePath);
-
-      // Update local state
-      const newType = isPdf ? "pdf" : "image";
-      const newTitre = titre || file.name.replace(/\.[^.]+$/, "");
-      setUrl(publicUrl.publicUrl);
-      setType(newType);
-      if (!titre) setTitre(newTitre);
-
-      // Save to DB immediately
-      const { error: dbError } = await supabase
-        .from("chapitre_ressources")
-        .update({
-          titre: newTitre,
-          type: newType,
-          url: publicUrl.publicUrl,
-        })
-        .eq("id", ressource.id);
-
-      if (dbError) throw dbError;
-      toast.success("Fichier uploadé !");
-      onChanged();
-    } catch (err: any) {
-      toast.error("Erreur upload : " + (err.message || "inconnue"));
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  return (
-    <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card">
-      <Icon className="h-4 w-4 text-primary mt-2.5 shrink-0" />
-      <div className="flex-1 grid gap-2 sm:grid-cols-3">
-        <Input
-          value={titre}
-          onChange={(e) => setTitre(e.target.value)}
-          placeholder="Titre"
-          className="sm:col-span-1"
-        />
-        <Select value={type} onValueChange={setType}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="link">Lien</SelectItem>
-            <SelectItem value="pdf">PDF</SelectItem>
-            <SelectItem value="image">Image</SelectItem>
-          </SelectContent>
-        </Select>
-        <Input
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://... ou upload"
-          className="sm:col-span-1"
-        />
-      </div>
-      <div className="flex items-center gap-1 shrink-0 mt-1">
-        <input
-          type="file"
-          accept="application/pdf,image/*"
-          id={`upload-${ressource.id}`}
-          className="hidden"
-          onChange={handleFileUpload}
-          disabled={uploading}
-        />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => document.getElementById(`upload-${ressource.id}`)?.click()}
-          disabled={uploading}
-          title="Uploader un fichier (PDF/image, max 10 MB)"
-        >
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => saveMutation.mutate()}
-          disabled={saveMutation.isPending}
-        >
-          <Save className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-destructive hover:text-destructive"
-          onClick={onDelete}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
-}

@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 import { EditFormationDialog } from "@/components/training/admin/EditFormationDialog";
 import { ModuleCard } from "@/components/training/admin/editor/ModuleCard";
 import { CreateModuleDialog } from "@/components/training/admin/editor/CreateModuleDialog";
@@ -42,6 +44,33 @@ export default function FormationEditor() {
     },
     enabled: !!slug && isCeo,
   });
+
+  // Navigation libre (parcours) : les quiz ne verrouillent pas la suite. Lu à part :
+  // la colonne n'est pas encore dans les types générés.
+  const { data: navigationLibre } = useQuery({
+    queryKey: ["admin-training", "navigation-libre", formation?.id],
+    enabled: !!formation?.id,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("formations")
+        .select("navigation_libre")
+        .eq("id", formation!.id)
+        .maybeSingle();
+      if (error) return null; // colonne absente : l'interrupteur n'est pas proposé
+      return Boolean(data?.navigation_libre);
+    },
+  });
+
+  async function changerNavigationLibre(valeur: boolean) {
+    const { error } = await (supabase as any).from("formations").update({ navigation_libre: valeur }).eq("id", formation!.id);
+    if (error) {
+      toast.error("Réglage non enregistré.");
+      return;
+    }
+    queryClient.setQueryData(["admin-training", "navigation-libre", formation!.id], valeur);
+    queryClient.invalidateQueries({ queryKey: ["training", "locked-chapitres"] });
+    toast.success(valeur ? "Navigation libre activée" : "Les quiz verrouillent à nouveau la suite");
+  }
 
   const { data: modules, isLoading: loadingModules } = useQuery({
     queryKey: ["admin-training", "modules-tree", formation?.id],
@@ -164,6 +193,19 @@ export default function FormationEditor() {
           </Button>
         </div>
       </div>
+
+      {typeof navigationLibre === "boolean" && (
+        <Card className="flex items-center justify-between gap-4 p-4">
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium text-foreground">Navigation libre</p>
+            <p className="text-xs text-muted-foreground">
+              L'élève circule librement entre les chapitres : les quiz restent en fin de partie mais ne bloquent pas la
+              suite. La progression est toujours suivie.
+            </p>
+          </div>
+          <Switch checked={navigationLibre} onCheckedChange={changerNavigationLibre} aria-label="Navigation libre" />
+        </Card>
+      )}
 
       {/* Modules tree with DnD */}
       {totalModules === 0 ? (
