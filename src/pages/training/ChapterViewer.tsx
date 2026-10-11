@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { isFormationCompleteForUser } from "@/lib/certificateEligibility";
 import { autoCompleteParcoursFormationChapter } from "@/lib/parcoursAutoComplete";
 import { ChapterQuizCard } from "@/components/training/QuizInFormation";
-import { useLockedChapitres } from "@/hooks/useQuizzes";
+import { useLockedChapitres, useQuizByChapitre } from "@/hooks/useQuizzes";
 import { useOutilLibertyDuChapitre } from "@/hooks/useOutilLiberty";
 import { useUserPass } from "@/hooks/useUserPass";
 import { Lock, Sparkles } from "lucide-react";
@@ -112,6 +112,10 @@ export default function ChapterViewer() {
 
   // ── Renvois « pour aller plus loin » vers d'autres chapitres ──
   const { data: renvois = [] } = useRenvoisDuChapitre(chapitreId);
+
+  // ── Quiz du chapitre : un chapitre sans vidéo mais avec quiz (validation finale
+  // d'une partie) montre son quiz en tête, pas l'encart « Vidéo à venir ».
+  const { data: quizDuChapitre } = useQuizByChapitre(chapitreId ?? null);
 
   // ── Load navigation prev/next via RPC ───────────────────────
   const { data: navData } = useQuery({
@@ -580,6 +584,8 @@ export default function ChapterViewer() {
                 />
               )}
             </div>
+          ) : quizDuChapitre ? (
+            <ChapterQuizCard chapitreId={chapitre.id} videosCompleted={allVideosWatched} />
           ) : (
             <div className="aspect-video bg-muted rounded-lg flex flex-col items-center justify-center gap-3">
               <PlayCircle className="h-16 w-16 text-muted-foreground/30" />
@@ -689,11 +695,13 @@ export default function ChapterViewer() {
             </div>
           )}
 
-          {/* Quiz de chapitre (si attaché) */}
-          <ChapterQuizCard
-            chapitreId={chapitre.id}
-            videosCompleted={allVideosWatched}
-          />
+          {/* Quiz de chapitre (si attaché ; déjà en tête si le chapitre n'a pas de vidéo) */}
+          {(hasPlayableVideo || !quizDuChapitre) && (
+            <ChapterQuizCard
+              chapitreId={chapitre.id}
+              videosCompleted={allVideosWatched}
+            />
+          )}
 
           {/* Notes formateur (synthèse chapitre) */}
           {chapitre.notes_formateur && (
