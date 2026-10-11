@@ -729,7 +729,7 @@ export default function ChapterViewer() {
                 <h3 className="text-sm font-semibold text-foreground">
                   Ressources ({chapterRessources.length})
                 </h3>
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-2">
                   {chapterRessources.map((r) => (
                     <RessourceEleve key={r.id} ressource={r} />
                   ))}
@@ -1030,7 +1030,7 @@ function VideoExtras({
         </div>
       )}
       {ressources.length > 0 && (
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2">
           {ressources.map((r) => (
             <RessourceEleve key={r.id} ressource={r} />
           ))}
