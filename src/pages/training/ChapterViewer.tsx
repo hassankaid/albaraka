@@ -78,7 +78,7 @@ export default function ChapterViewer() {
         .select(
           `id, titre, description, ordre, status, duree_estimee_minutes, notes_formateur,
           formation_modules!inner(id, titre, formation_id,
-            formations!inner(id, slug, titre)
+            formations!inner(id, slug, titre, navigation_libre)
           ),
           chapitre_videos(id, titre, url, vimeo_id, ordre, duree_secondes, notes),
           chapitre_ressources(id, titre, type, url, ordre, video_id)`
@@ -585,7 +585,11 @@ export default function ChapterViewer() {
               )}
             </div>
           ) : quizDuChapitre ? (
-            <ChapterQuizCard chapitreId={chapitre.id} videosCompleted={allVideosWatched} />
+            <ChapterQuizCard
+              chapitreId={chapitre.id}
+              videosCompleted={allVideosWatched}
+              navigationLibre={!!(formation as { navigation_libre?: boolean }).navigation_libre}
+            />
           ) : (
             <div className="aspect-video bg-muted rounded-lg flex flex-col items-center justify-center gap-3">
               <PlayCircle className="h-16 w-16 text-muted-foreground/30" />
@@ -700,6 +704,7 @@ export default function ChapterViewer() {
             <ChapterQuizCard
               chapitreId={chapitre.id}
               videosCompleted={allVideosWatched}
+              navigationLibre={!!(formation as { navigation_libre?: boolean }).navigation_libre}
             />
           )}
 

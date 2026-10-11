@@ -38,6 +38,10 @@ export function ModuleQuizCard({
 
   const validated = !!lastAttempt?.validated;
   const hasAttempted = !!lastAttempt;
+  const erreursPermises = Number(quiz.max_errors ?? 0);
+  const seuil = erreursPermises > 0
+    ? `${erreursPermises} erreur${erreursPermises > 1 ? "s" : ""} au plus`
+    : "sans aucune erreur";
 
   return (
     <div
@@ -122,10 +126,13 @@ export function ModuleQuizCard({
 export function ChapterQuizCard({
   chapitreId,
   videosCompleted,
+  navigationLibre = false,
 }: {
   chapitreId: string;
   /** true si toutes les vidéos du chapitre sont vues (ou s'il n'y en a pas) */
   videosCompleted: boolean;
+  /** formation en navigation libre : le quiz ne verrouille rien, on ne parle pas de « débloquer » */
+  navigationLibre?: boolean;
 }) {
   const navigate = useNavigate();
   const { data: quiz, isLoading } = useQuizByChapitre(chapitreId);
@@ -135,6 +142,10 @@ export function ChapterQuizCard({
 
   const validated = !!lastAttempt?.validated;
   const hasAttempted = !!lastAttempt;
+  const erreursPermises = Number(quiz.max_errors ?? 0);
+  const seuil = erreursPermises > 0
+    ? `${erreursPermises} erreur${erreursPermises > 1 ? "s" : ""} au plus`
+    : "sans aucune erreur";
 
   return (
     <Card
@@ -189,11 +200,13 @@ export function ChapterQuizCard({
               </p>
             ) : !validated ? (
               <p className="text-xs text-muted-foreground mt-1">
-                Valide ce quiz (100 % de bonnes réponses) pour débloquer le chapitre suivant.
+                {navigationLibre
+                  ? `Teste tes acquis : le quiz est validé ${seuil}.`
+                  : `Valide ce quiz (${seuil}) pour débloquer le chapitre suivant.`}
               </p>
             ) : (
               <p className="text-xs text-muted-foreground mt-1">
-                Bravo ! Le chapitre suivant est débloqué.
+                {navigationLibre ? "Bravo, quiz validé !" : "Bravo ! Le chapitre suivant est débloqué."}
               </p>
             )}
           </div>
@@ -249,6 +262,10 @@ export function FormationFinalQuizCard({
 
   const validated = !!lastAttempt?.validated;
   const hasAttempted = !!lastAttempt;
+  const erreursPermises = Number(quiz.max_errors ?? 0);
+  const seuil = erreursPermises > 0
+    ? `${erreursPermises} erreur${erreursPermises > 1 ? "s" : ""} au plus`
+    : "sans aucune erreur";
 
   return (
     <Card
