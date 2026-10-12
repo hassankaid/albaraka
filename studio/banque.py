@@ -14,7 +14,7 @@ Pour chaque vidéo :
   2. découpage en plans aux changements de scène (filtre « scene » de FFmpeg), plans de
      moins de 1,2 s écartés ;
   3. 3 images clés par plan (25, 50, 75 %) ;
-  4. fiche par Claude (vision) : description, 1 à 3 thèmes AL BARAKA, 10 mots-clés, lieu,
+  4. fiche par Claude (vision), avec le dossier de Sidali (CASH, WORKING…) comme indice : description, 1 à 3 thèmes AL BARAKA, 10 mots-clés, lieu,
      ambiance, personnes, visage reconnaissable, texte ou logo à l'écran, qualité ;
   5. vecteur de sens de la fiche (qwen3-embedding, 1024), pour la recherche « par le sens ».
 """
@@ -55,6 +55,7 @@ THEMES = {
 FICHE = """Tu décris un plan vidéo de la banque AL BARAKA (vidéos de stock utilisées pour illustrer
 des vidéos « voix off » sur l'argent, l'entrepreneuriat, la foi, la discipline…).
 Voici 3 images du plan (à 25 %, 50 % et 75 % de sa durée).
+{categorie}
 
 Thèmes possibles (identifiants) :
 {themes}
@@ -171,8 +172,14 @@ def objet_json(texte):
     return None
 
 
-def fiche(imgs):
-    contenu = [{"type": "text", "text": FICHE.format(themes="\n".join(f"- {k} : {v}" for k, v in THEMES.items()))}]
+def indice_categorie(dossier):
+    return (f"Le plan est rangé dans le dossier « {dossier} » de la banque (classement de l'équipe) : "
+            "c'est un indice sur le sujet, fie-toi d'abord aux images.\n") if dossier else ""
+
+
+def fiche(imgs, dossier=None):
+    contenu = [{"type": "text", "text": FICHE.format(themes="\n".join(f"- {k} : {v}" for k, v in THEMES.items()),
+                                                     categorie=indice_categorie(dossier))}]
     for img in imgs:
         with open(img, "rb") as f:
             contenu.append({"type": "image_url",
@@ -203,10 +210,12 @@ def nettoyer_fiche(o):
     }
 
 
-def texte_de_fiche(f):
+def texte_de_fiche(f, dossier=None):
     """Ce qui est transformé en vecteur : tout ce qui décrit le plan, en clair."""
     themes = ", ".join(THEMES[t] for t in f["themes"])
-    return f"{f['description']} Thèmes : {themes}. Mots-clés : {', '.join(f['mots_cles'])}. Lieu : {f['lieu']}. Ambiance : {f['ambiance']}."
+    categorie = f" Catégorie : {dossier.lower()}." if dossier else ""
+    return (f"{f['description']} Thèmes : {themes}. Mots-clés : {', '.join(f['mots_cles'])}. "
+            f"Lieu : {f['lieu']}. Ambiance : {f['ambiance']}.{categorie}")
 
 
 def vecteurs(textes):
@@ -238,8 +247,8 @@ def indexer(v, dossier):
     for c, local in chemins.items():
         deposer(depots[c], local, "video/mp4" if c.endswith(".mp4") else "image/jpeg")
     with cf.ThreadPoolExecutor(6) as ex:
-        fiches = list(ex.map(lambda r: fiche(imgs[r]), range(len(morceaux))))
-    vecs = vecteurs([texte_de_fiche(f) for f in fiches])
+        fiches = list(ex.map(lambda r: fiche(imgs[r], v.get("dossier")), range(len(morceaux))))
+    vecs = vecteurs([texte_de_fiche(f, v.get("dossier")) for f in fiches])
     sortie = [{**f, "rang": r, "debut": round(a, 3), "fin": round(b, 3),
                "images": [f"images/{vid}/{os.path.basename(i)}" for i in imgs[r]], "embedding": vecs[r]}
               for r, ((a, b), f) in enumerate(zip(morceaux, fiches))]

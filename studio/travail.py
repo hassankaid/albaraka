@@ -658,8 +658,12 @@ def choisir_plans(gardes, sous_titres, total):
     import voixoff as V
     from banque import THEMES
     liste = V.moments(gardes, sous_titres, total)
-    demandes = json.loads(llm(V.prompt_plans(SCRIPT, THEME_NOM or THEMES.get(THEME, ""), liste, THEMES)))["moments"]
+    categories = rpc("studio_job_categories", p_id=MONTAGE, p_jeton=JETON) or []
+    noms = {c["dossier"] for c in categories}
+    demandes = json.loads(llm(V.prompt_plans(SCRIPT, THEME_NOM or THEMES.get(THEME, ""), liste, THEMES,
+                                             categories)))["moments"]
     for d in demandes:
+        d["categories"] = [c for c in d.get("categories") or [] if c in noms][:2]
         d["themes"] = [t for t in d.get("themes") or [] if t in THEMES][:2] or ([THEME] if THEME in THEMES else [])
         d["mots_cles"] = [str(m).lower()[:40] for m in d.get("mots_cles") or []][:5]
     vecs = V.vecteurs([f"{d['requete']}. Mots-clés : {', '.join(d['mots_cles'])}." for d in demandes], openrouter, COUT)
@@ -667,7 +671,8 @@ def choisir_plans(gardes, sous_titres, total):
     def chercher(i):
         return rpc("studio_job_chercher_plans", p_id=MONTAGE, p_jeton=JETON, p_embedding=json.dumps(vecs[i]),
                    p_mots=demandes[i]["mots_cles"], p_themes=demandes[i]["themes"],
-                   p_duree=round(liste[i]["fin"] - liste[i]["debut"], 3), p_exclure=[], p_limite=20) or []
+                   p_duree=round(liste[i]["fin"] - liste[i]["debut"], 3), p_exclure=[], p_limite=20,
+                   p_dossiers=demandes[i]["categories"]) or []
 
     with cf.ThreadPoolExecutor(6) as ex:
         candidats = list(ex.map(chercher, range(len(liste))))

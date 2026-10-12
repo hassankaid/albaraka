@@ -43,17 +43,18 @@ Moments de la voix (index, début-fin en secondes, mots prononcés) :
 
 Thèmes possibles (identifiants) :
 {themes}
-
+{categories}
 Pour CHAQUE moment, décris le plan à montrer :
 - "requete" : ce qu'on voit, concret et filmable, en français (« homme fatigué dans les transports le matin »),
   pas d'idée abstraite ni de texte à l'écran ;
 - "mots_cles" : 3 à 5 mots-clés concrets ;
-- "themes" : 1 ou 2 identifiants de la liste.
+- "themes" : 1 ou 2 identifiants de la liste ;
+- "categories" : 0 à 2 dossiers de la banque où ce plan a le plus de chances de se trouver (noms exacts), ou [].
 Tiens compte du contexte : « et là, tout a changé » doit montrer le changement dont parle le script.
 Varie les images d'un moment à l'autre ; garde une ambiance cohérente.
 {reglage_religieux}
 Réponds UNIQUEMENT en JSON, exactement {n} éléments dans l'ordre des moments :
-{{"moments": [{{"requete": "...", "mots_cles": ["...", "..."], "themes": ["..."]}}, ...]}}"""
+{{"moments": [{{"requete": "...", "mots_cles": ["...", "..."], "themes": ["..."], "categories": ["..."]}}, ...]}}"""
 
 RELIGIEUX = ("Sujet religieux : images sobres et respectueuses (nature, lumière, lieux de prière), "
              "jamais de représentation de Dieu ni d'image décorative sur Son nom.")
@@ -127,12 +128,21 @@ def moments(gardes, sous_titres, total):
 
 
 # ---------------------------------------------------------------- ce qu'il faut montrer
-def prompt_plans(script, theme_nom, liste, themes):
+def texte_categories(categories):
+    """Les dossiers de la banque (classement de Sidali) et leur nombre de plans."""
+    if not categories:
+        return ""
+    return ("\nDossiers de la banque (classement de l'équipe, nombre de plans) :\n"
+            + "\n".join(f"- {c['dossier']} ({c['plans']})" for c in categories) + "\n")
+
+
+def prompt_plans(script, theme_nom, liste, themes, categories=None):
     echapper = lambda s: s.replace("{", "{{").replace("}", "}}")
     lignes = "\n".join(f"M{i} [{m['debut']:.1f}-{m['fin']:.1f}] : {m['texte'] or '(silence)'}" for i, m in enumerate(liste))
     religieux = RELIGIEUX if any(k in (script or "").lower() for k in ("allah", "dieu", "invocation", "prière", "coran")) else ""
     return PROMPT_PLANS.format(theme=echapper(theme_nom or "non précisé"), script=echapper((script or "")[:5000]),
                                moments=echapper(lignes), themes="\n".join(f"- {k} : {v}" for k, v in themes.items()),
+                               categories=echapper(texte_categories(categories)),
                                reglage_religieux=religieux, n=len(liste))
 
 

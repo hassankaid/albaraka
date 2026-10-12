@@ -7,13 +7,18 @@
 // POST { action: "depots", job, jeton, chemins: [...] }
 //   → liens de dépôt, seulement sous travail/<vidéo>.mp4 et images/<vidéo>/ des vidéos du job.
 // POST { action: "montage", montage_id, jeton, chemins: [...] }
-//   → liens de lecture des versions de travail (plans choisis pour un montage Voix off).
+//   → liens de lecture des versions de travail (plans choisis pour un montage Voix off)
+//     et du fond sonore.
+// POST { action: "import", job, jeton, chemins: [...] }
+//   → job d'import (lot venu du OneDrive de Sidali) : liens de dépôt, seulement sous
+//     originaux/<empreinte>.<ext> et sons/<empreinte>.<ext>.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 
 const BUCKET = "studio-banque";
 const DUREE_LIEN = 3 * 3600;
+const IMPORT = /^(originaux|sons)\/[0-9a-f]{64}\.(mp4|mov|m4v|webm|mp3|m4a|wav|aac|ogg)$/;
 const supabase = createClient(Deno.env.get("SUPABASE_URL") || "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "");
 
 const reponse = (status: number, corps: unknown) =>
@@ -25,15 +30,25 @@ async function empreinte(jeton: string): Promise<string> {
 }
 
 async function jobValide(job: string, jeton: string) {
-  const { data } = await supabase.from("studio_banque_jobs").select("id, jeton_hash, statut, videos").eq("id", job).maybeSingle();
+  const { data } = await supabase.from("studio_banque_jobs").select("id, jeton_hash, statut, videos, type").eq("id", job).maybeSingle();
   if (!data || data.statut !== "en_cours" || data.jeton_hash !== (await empreinte(jeton))) return null;
-  return data as { id: string; videos: string[] };
+  return data as { id: string; videos: string[]; type: "indexation" | "import" };
 }
 
 async function montageValide(id: string, jeton: string) {
   const { data } = await supabase.from("studio_montages").select("id, jeton_hash, statut, outil").eq("id", id).maybeSingle();
   if (!data || !["preparation", "en_cours"].includes(data.statut) || data.jeton_hash !== (await empreinte(jeton))) return null;
   return data;
+}
+
+async function deposer(chemins: string[]) {
+  const depots: Record<string, string> = {};
+  for (const c of chemins) {
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(c, { upsert: true });
+    if (error) throw error;
+    depots[c] = data.signedUrl;
+  }
+  return depots;
 }
 
 async function lire(chemins: string[]) {
@@ -51,13 +66,21 @@ serve(async (req) => {
   }
   const jeton = String(corps.jeton ?? "");
   try {
+    if (corps.action === "import") {
+      const job = await jobValide(String(corps.job ?? ""), jeton);
+      if (!job || job.type !== "import") return reponse(403, { error: "Jeton invalide" });
+      const chemins = [...new Set((corps.chemins ?? []).slice(0, 500))];
+      if (!chemins.length || !chemins.every((c) => IMPORT.test(c))) return reponse(403, { error: "Chemin refusé" });
+      return reponse(200, { depots: await deposer(chemins) });
+    }
+
     if (corps.action === "indexation" || corps.action === "depots") {
       const job = await jobValide(String(corps.job ?? ""), jeton);
-      if (!job) return reponse(403, { error: "Jeton invalide" });
+      if (!job || job.type !== "indexation") return reponse(403, { error: "Jeton invalide" });
       if (corps.action === "indexation") {
         const { data: videos, error } = await supabase
           .from("studio_banque_videos")
-          .select("id, nom, chemin_original")
+          .select("id, nom, dossier, chemin_original")
           .in("id", job.videos);
         if (error) throw error;
         const liens = await lire((videos ?? []).map((v) => v.chemin_original));
@@ -67,26 +90,25 @@ serve(async (req) => {
       const permis = (c: string) =>
         job.videos.some((v) => c === `travail/${v}.mp4` || (c.startsWith(`images/${v}/`) && /^[\w./-]+\.jpg$/.test(c)));
       if (!chemins.length || !chemins.every(permis)) return reponse(403, { error: "Chemin refusé" });
-      const depots: Record<string, string> = {};
-      for (const c of chemins) {
-        const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(c, { upsert: true });
-        if (error) throw error;
-        depots[c] = data.signedUrl;
-      }
-      return reponse(200, { depots });
+      return reponse(200, { depots: await deposer(chemins) });
     }
 
     if (corps.action === "montage") {
       const m = await montageValide(String(corps.montage_id ?? ""), jeton);
       if (!m) return reponse(403, { error: "Jeton invalide" });
       const chemins = [...new Set((corps.chemins ?? []).slice(0, 200))];
-      const { data: connus, error } = await supabase
-        .from("studio_banque_videos")
-        .select("chemin_travail")
-        .in("chemin_travail", chemins)
-        .eq("statut", "indexee");
-      if (error) throw error;
-      if ((connus ?? []).length !== chemins.length) return reponse(403, { error: "Chemin refusé" });
+      const plans = chemins.filter((c) => !c.startsWith("sons/"));
+      const sons = chemins.filter((c) => c.startsWith("sons/"));
+      const [v, s] = await Promise.all([
+        plans.length
+          ? supabase.from("studio_banque_videos").select("chemin_travail").in("chemin_travail", plans).eq("statut", "indexee")
+          : { data: [], error: null },
+        sons.length ? supabase.from("studio_sons").select("chemin").in("chemin", sons).eq("actif", true) : { data: [], error: null },
+      ]);
+      if (v.error) throw v.error;
+      if (s.error) throw s.error;
+      if ((v.data ?? []).length !== plans.length || (s.data ?? []).length !== sons.length)
+        return reponse(403, { error: "Chemin refusé" });
       return reponse(200, { liens: await lire(chemins) });
     }
 
