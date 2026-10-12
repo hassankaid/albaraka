@@ -32,3 +32,6 @@ supabase/.temp/
 
 # Secrets locaux (token Supabase CLI) — jamais commite
 .env.local
+
+# Python (tests locaux du moteur du Studio)
+__pycache__/
