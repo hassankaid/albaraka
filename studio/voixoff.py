@@ -69,8 +69,22 @@ def sonder_audio(chemin):
     out = subprocess.run(["ffprobe", "-v", "error", "-print_format", "json", "-show_streams", "-show_format", chemin],
                          check=True, capture_output=True, text=True).stdout
     info = json.loads(out)
-    return {"width": W, "height": H, "duration": float(info["format"]["duration"]), "hdr": False,
+    duree = (info.get("format") or {}).get("duration")
+    if duree is None:  # enregistré dans le navigateur (WebM en flux) : l'en-tête n'a pas de durée
+        duree = mesurer_duree(chemin)
+    return {"width": W, "height": H, "duration": float(duree), "hdr": False,
             "has_audio": any(s["codec_type"] == "audio" for s in info["streams"]), "audio_seul": True}
+
+
+def mesurer_duree(chemin):
+    """Durée réelle en lisant tout le fichier (dernier « time= » de FFmpeg)."""
+    err = subprocess.run(["ffmpeg", "-v", "info", "-nostats", "-stats", "-i", chemin, "-vn", "-f", "null", "-"],
+                         capture_output=True, text=True).stderr
+    temps = re.findall(r"time=(\d+):(\d+):(\d+(?:\.\d+)?)", err)
+    if not temps:
+        raise ValueError("Durée de l'enregistrement illisible.")
+    h, m, sec = temps[-1]
+    return int(h) * 3600 + int(m) * 60 + float(sec)
 
 
 def couper_audio(clean, coupes, dst, lufs=-14):
