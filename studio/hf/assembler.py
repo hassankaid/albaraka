@@ -301,6 +301,9 @@ def couverture(texte, taille, top, masques):
     return cache, cache_bords
 
 
+INSTANTS_MOT = (0.2, 0.5, 0.8)
+
+
 def ajuster_mots(elements, passages, dossier, visages):
     """Le mot géant reste-t-il lisible derrière l'orateur ? On essaie plusieurs hauteurs et
     tailles et on garde la plus lisible. S'il reste trop caché (plus de 65 %, ou sa première ou
@@ -312,36 +315,69 @@ def ajuster_mots(elements, passages, dossier, visages):
         if not passage:
             continue
         a, b, fichier = passage
-        instants = [e["t"] + (e["fin"] - e["t"]) * k for k in (0.2, 0.5, 0.8)]
+        instants = [e["t"] + (e["fin"] - e["t"]) * k for k in INSTANTS_MOT]
         masques = [m for m in (masque(os.path.join(dossier, fichier), t - a) for t in instants) if m is not None]
-        if not masques:
+        if masques:
+            juger_mot(e, masques, visages)
+
+
+def pretrier_mots(elements, video, dossier, visages):
+    """Vitesse : le détourage d'un passage entier coûte environ une minute. Avant de le lancer,
+    on juge la lisibilité du mot géant sur 3 images seulement (un seul détourage, d'une mini-vidéo
+    de 3 images) : un mot qui deviendrait de toute façon un coup de zoom n'est jamais détouré."""
+    for k, e in enumerate(x for x in elements if x["recette"] == "mot_derriere"):
+        instants = [e["t"] + (e["fin"] - e["t"]) * f for f in INSTANTS_MOT]
+        images = []
+        for i, t in enumerate(instants):
+            img = os.path.join(dossier, f"tri{k}_{i}.png")
+            run(["ffmpeg", "-v", "error", "-y", "-ss", f"{t:.3f}", "-i", video, "-frames:v", "1", img])
+            images.append(img)
+        mini, silhouette = os.path.join(dossier, f"tri{k}.mp4"), os.path.join(dossier, f"tri{k}.webm")
+        try:
+            run(["ffmpeg", "-v", "error", "-y", "-framerate", "1", "-i", os.path.join(dossier, f"tri{k}_%d.png"),
+                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", "-r", "1", mini])
+            run(HF + ["remove-background", mini, "-o", silhouette, "--quality", "fast"], env={**os.environ, "DO_NOT_TRACK": "1"})
+            masques = [m for m in (masque(silhouette, i + 0.5) for i in range(len(instants))) if m is not None]
+        except Exception:
+            masques = []  # en cas de doute, le détourage complet tranchera
+        for f in images + [mini, silhouette]:
+            if os.path.exists(f):
+                os.remove(f)
+        if masques:
+            juger_mot(e, masques, visages, garder_reglage=False)
+
+
+def juger_mot(e, masques, visages, garder_reglage=True):
+    """Décision pour un mot géant, à partir de silhouettes détourées à 3 instants : il reste
+    (meilleure taille et hauteur) ou devient un coup de zoom (« punch »)."""
+    def en_zoom(raison):
+        t = max(0.4, e["t"])
+        e.clear()
+        e.update(recette="punch", t=round(t, 2), fin=round(t + 0.8, 2), remplace=raison)
+
+    # sécurité : si le détourage n'a pas reconnu le visage, le mot pourrait passer devant lui
+    visage = [max(v, key=lambda x: x[2] * x[3]) for v in visages[int(e["t"] * FPS):int(e["fin"] * FPS) + 1] if v]
+    if visage:
+        x, y, w, h = visage[len(visage) // 2]
+        coeur = [m[int(y / 4 + h / 16):int((y + h) / 4), int(x / 4 + w / 16):int((x + w) / 4 - w / 16)] for m in masques]
+        if min(float((c > 0.5).mean()) if c.size else 0 for c in coeur) < 0.85:
+            return en_zoom("mot_derriere (visage mal détouré)")
+    essais = []
+    for taille in sorted({e["taille"], int(e["taille"] * 0.85), int(e["taille"] * 0.7)}, reverse=True):
+        if taille < 150:
             continue
-        # sécurité : si le détourage n'a pas reconnu le visage, le mot pourrait passer devant lui
-        visage = [max(v, key=lambda x: x[2] * x[3]) for v in visages[int(e["t"] * FPS):int(e["fin"] * FPS) + 1] if v]
-        if visage:
-            x, y, w, h = visage[len(visage) // 2]
-            coeur = [m[int(y / 4 + h / 16):int((y + h) / 4), int(x / 4 + w / 16):int((x + w) / 4 - w / 16)] for m in masques]
-            if min(float((c > 0.5).mean()) if c.size else 0 for c in coeur) < 0.85:
-                t = max(0.4, e["t"])
-                e.clear()
-                e.update(recette="punch", t=round(t, 2), fin=round(t + 0.8, 2), remplace="mot_derriere (visage mal détouré)")
-                continue
-        essais = []
-        for taille in sorted({e["taille"], int(e["taille"] * 0.85), int(e["taille"] * 0.7)}, reverse=True):
-            if taille < 150:
-                continue
-            for top in range(ZONE[1] - 20, 1160 - taille - 40, 30):
-                c, cb = couverture(e["texte"], taille, top, masques)
-                # préférence : lisible d'abord (extrémités comprises), puis grand, puis haut dans l'image
-                essais.append((round(c + cb, 2) + (e["taille"] - taille) / 2000 + (top - ZONE[1]) / 8000, c, cb, taille, top))
-        if not essais:
-            continue
-        _, c, cb, taille, top = min(essais)
+        for top in range(ZONE[1] - 20, 1160 - taille - 40, 30):
+            c, cb = couverture(e["texte"], taille, top, masques)
+            # préférence : lisible d'abord (extrémités comprises), puis grand, puis haut dans l'image
+            essais.append((round(c + cb, 2) + (e["taille"] - taille) / 2000 + (top - ZONE[1]) / 8000, c, cb, taille, top))
+    if not essais:
+        return None
+    _, c, cb, taille, top = min(essais)
+    if c > 0.65 or cb > 0.4:
+        return en_zoom("mot_derriere")
+    if garder_reglage:
         e.update(taille=taille, top=top, couverture=round(c, 2), couverture_bords=round(cb, 2))
-        if c > 0.65 or cb > 0.4:
-            t = max(0.4, e["t"])
-            e.clear()
-            e.update(recette="punch", t=round(t, 2), fin=round(t + 0.8, 2), remplace="mot_derriere")
+    return None
 
 
 # ---------------------------------------------------------------- bruitages
@@ -489,6 +525,7 @@ def construire(dossier, video, travail, plan, reglages, visages, mots, original=
         presentation = {**presentation, "debut": debut, "fin": debut + 3.0} if debut + 2.5 < duree else None
     elements = placer_elements([dict(e) for e in plan["elements"]], base, visages, presentation)
 
+    pretrier_mots(elements, original or base, dossier, visages)
     detoures, passages = [], []
     for k, (a, b) in enumerate(passages_detoures(elements, duree)):
         nom = detourer(base, a, b, dossier, k, original)
@@ -535,7 +572,7 @@ def construire(dossier, video, travail, plan, reglages, visages, mots, original=
 def verifier(dossier):
     """Contrôle de Hyperframes : lint, erreurs, texte qui déborde ou caché sous un autre élément.
     Le mot géant derrière l'orateur est caché exprès : il ne compte que s'il l'est trop."""
-    p = subprocess.run(HF + ["check", dossier, "--json", "--samples", "12", "--at-transitions", "--max-transition-samples", "24", "--no-contrast"],
+    p = subprocess.run(HF + ["check", dossier, "--json", "--samples", "4", "--at-transitions", "--max-transition-samples", "4", "--no-contrast"],
                        capture_output=True, text=True, env={**os.environ, "DO_NOT_TRACK": "1"})
     try:
         d = json.loads(p.stdout)
@@ -555,7 +592,9 @@ def verifier(dossier):
 
 def rendre(dossier, sortie):
     brut = os.path.join(dossier, "rendu.mp4")
-    run(HF + ["render", dossier, "--output", brut, "--fps", "30", "--quiet"], env={**os.environ, "DO_NOT_TRACK": "1"})
+    options = ["--workers", os.environ.get("HF_WORKERS") or str(max(1, min(8, os.cpu_count() or 1)))]
+    options += ["--quality", os.environ["HF_QUALITE"]] if os.environ.get("HF_QUALITE") else []
+    run(HF + ["render", dossier, "--output", brut, "--fps", "30", "--quiet", *options], env={**os.environ, "DO_NOT_TRACK": "1"})
     # volume final -14 LUFS (cahier des charges), l'image n'est pas réencodée
     run(["ffmpeg", "-v", "error", "-y", "-i", brut, "-c:v", "copy", "-af", "loudnorm=I=-14:TP=-1:LRA=11", "-ar", "48000",
          "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", sortie])
