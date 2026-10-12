@@ -44,6 +44,9 @@ const ICONES: Record<string, LucideIcon> = {
   ZIP: FileArchive,
   Image: ImageIcon,
   Audio: FileAudio,
+  Pages: FileText,
+  Numbers: FileSpreadsheet,
+  Keynote: Presentation,
 };
 
 async function lienSigne(chemin: string, telechargement?: string) {

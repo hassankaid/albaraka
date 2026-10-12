@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   cheminStockage,
+  typeDuFichier,
   estFichierStocke,
   libelleFormat,
   nomDeStockage,
@@ -44,5 +45,16 @@ describe("ressources de formation en fichiers", () => {
     expect(libelleFormat("abc/inconnu.xyz")).toBe("Fichier");
     expect(tailleLisible(300 * 1024)).toBe("300 Ko");
     expect(tailleLisible(2.5 * 1024 * 1024)).toBe("2,5 Mo");
+  });
+});
+
+describe("formats modifiables par l'élève", () => {
+  it("accepte Word, Excel, LibreOffice et les fichiers Mac, avec leur type déduit de l'extension", () => {
+    for (const nom of ["fiche.docx", "plan.xlsx", "notes.odt", "budget.ods", "cours.pages", "suivi.numbers", "slides.key", "texte.rtf"]) {
+      expect(verifierRessource({ name: nom, size: 1000 })).toBeNull();
+    }
+    expect(typeDuFichier("Fiche.DOCX")).toBe("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    expect(typeDuFichier("cours.pages")).toBe("application/vnd.apple.pages");
+    expect(libelleFormat("abc/cours.pages")).toBe("Pages");
   });
 });

@@ -45,8 +45,23 @@ const plateformeSousAppHtml = (): Plugin => ({
   },
 });
 
+/**
+ * Identifiant du build, publié dans /version.json et intégré au code : un onglet
+ * resté ouvert sur une ancienne version le compare et propose de recharger
+ * (src/components/NouvelleVersion.tsx).
+ */
+const BUILD_ID = (process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString(36)).slice(0, 12);
+const versionPubliee = (): Plugin => ({
+  name: "version-publiee",
+  apply: "build",
+  generateBundle() {
+    this.emitFile({ type: "asset", fileName: "version.json", source: JSON.stringify({ build: BUILD_ID }) });
+  },
+});
+
 // https://vitejs.dev/config/
-export default defineConfig(() => ({
+export default defineConfig(({ command }) => ({
+  define: command === "build" ? { "import.meta.env.VITE_BUILD_ID": JSON.stringify(BUILD_ID) } : {},
   server: {
     host: "::",
     port: 8080,
@@ -54,7 +69,7 @@ export default defineConfig(() => ({
       overlay: false,
     },
   },
-  plugins: [react(), siteVitrineEnDev(), plateformeSousAppHtml()],
+  plugins: [react(), siteVitrineEnDev(), plateformeSousAppHtml(), versionPubliee()],
   build: {
     rollupOptions: {
       // Deux applications, deux portes d'entrée : la plateforme (et les

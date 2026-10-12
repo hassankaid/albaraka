@@ -20,6 +20,7 @@ import {
   Presentation,
   RefreshCw,
   Trash2,
+  Upload,
   UploadCloud,
   type LucideIcon,
 } from "lucide-react";
@@ -48,6 +49,7 @@ import {
   nomDeStockage,
   nomDeTelechargement,
   titreDepuisNom,
+  typeDuFichier,
   verifierRessource,
 } from "@/lib/ressourcesFormation";
 import { supprimerFichiersStockes } from "@/lib/ressourcesStockage";
@@ -70,13 +72,16 @@ const ICONES: Record<string, LucideIcon> = {
   ZIP: FileArchive,
   Image: ImageIcon,
   Audio: FileAudio,
+  Pages: FileText,
+  Numbers: FileSpreadsheet,
+  Keynote: Presentation,
 };
 
 async function deposer(fichier: File, chapitreId: string): Promise<string> {
   const chemin = `${chapitreId}/${crypto.randomUUID().slice(0, 8)}-${nomDeStockage(fichier.name)}`;
   const { error } = await supabase.storage
     .from(STOCKAGE_RESSOURCES)
-    .upload(chemin, fichier, { contentType: fichier.type || undefined, upsert: false });
+    .upload(chemin, fichier, { contentType: typeDuFichier(fichier.name), upsert: false });
   if (error) throw error;
   return chemin;
 }
@@ -211,7 +216,7 @@ export function RessourcesEditeur({
         <UploadCloud className="h-6 w-6 text-primary" />
         <span className="text-sm font-medium text-foreground">Importer des fichiers</span>
         <span className="text-xs text-muted-foreground">
-          Clique ou glisse tes fichiers ici · PDF, Word, Excel, PowerPoint, ZIP, image, audio · 50 Mo max
+          Clique ou glisse tes fichiers ici · PDF, Word, Excel, PowerPoint, Pages, ZIP, image, audio… · 50 Mo max
         </span>
       </button>
       <input
@@ -336,7 +341,7 @@ function LigneRessource({
         throw error;
       }
       await supprimerFichiersStockes([r]);
-      toast.success("Fichier remplacé");
+      toast.success(fichier ? "Fichier remplacé" : "Lien remplacé par un fichier");
       onChanged();
     } catch {
       toast.error("Le fichier n'a pas pu être remplacé.");
@@ -377,31 +382,35 @@ function LigneRessource({
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={ouvrir} title={fichier ? "Télécharger" : "Ouvrir le lien"}>
           {fichier ? <Download className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
         </Button>
-        {fichier && (
-          <>
-            <input
-              ref={champ}
-              type="file"
-              accept={ACCEPT_RESSOURCE}
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) remplacer(f);
-                e.target.value = "";
-              }}
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => champ.current?.click()}
-              disabled={remplacement}
-              title="Remplacer le fichier"
-            >
-              {remplacement ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            </Button>
-          </>
-        )}
+        <input
+          ref={champ}
+          type="file"
+          accept={ACCEPT_RESSOURCE}
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) remplacer(f);
+            e.target.value = "";
+          }}
+        />
+        <Button
+          variant="ghost"
+          size={fichier ? "icon" : "sm"}
+          className={fichier ? "h-8 w-8" : "h-8 gap-1.5 px-2 text-xs"}
+          onClick={() => champ.current?.click()}
+          disabled={remplacement}
+          title={fichier ? "Remplacer le fichier" : "Remplacer ce lien par un fichier (titre et place gardés)"}
+        >
+          {remplacement ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : fichier ? (
+            <RefreshCw className="h-4 w-4" />
+          ) : (
+            <>
+              <Upload className="h-4 w-4" /> Remplacer par un fichier
+            </>
+          )}
+        </Button>
         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={onSupprimer} title="Supprimer">
           <Trash2 className="h-4 w-4" />
         </Button>
