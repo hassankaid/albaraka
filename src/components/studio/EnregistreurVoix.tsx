@@ -35,6 +35,10 @@ export function EnregistreurVoix({ script, onValider }: { script: string; onVali
   const contexte = useRef<AudioContext | null>(null);
   const analyseur = useRef<AnalyserNode | null>(null);
   const phaseRef = useRef<Phase>("pret");
+  // durée réelle : début du passage en cours + temps des passages d'avant (Pause / Reprendre).
+  // On ne cumule pas le temps entre deux images : un onglet en arrière-plan n'en dessine plus.
+  const debutPassage = useRef<number | null>(null);
+  const cumul = useRef(0);
   const vitesseRef = useRef(vitesse);
   phaseRef.current = phase;
   vitesseRef.current = vitesse;
@@ -45,15 +49,14 @@ export function EnregistreurVoix({ script, onValider }: { script: string; onVali
     let avant = performance.now();
     const tampon = new Float32Array(2048);
     const tick = (maintenant: number) => {
-      const dt = (maintenant - avant) / 1000;
+      // au retour d'un onglet en arrière-plan, le prompteur reprend sans sauter tout le texte
+      const dt = Math.min(0.1, Math.max(0, (maintenant - avant) / 1000));
       avant = maintenant;
       if (phaseRef.current === "enregistrement") {
         if (prompteur.current) prompteur.current.scrollTop += vitesseRef.current * dt;
-        setDuree((d) => {
-          const n = d + dt;
-          if (n >= ENREGISTREMENT_MAX_S) terminer();
-          return n;
-        });
+        const n = dureeEcoulee();
+        setDuree(n);
+        if (n >= ENREGISTREMENT_MAX_S) terminer();
       }
       const a = analyseur.current;
       if (a && phaseRef.current !== "fini") {
@@ -65,7 +68,7 @@ export function EnregistreurVoix({ script, onValider }: { script: string; onVali
     };
     id = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(id);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- terminer ne lit que des refs
 
   // libère le micro en quittant
   useEffect(
@@ -75,6 +78,10 @@ export function EnregistreurVoix({ script, onValider }: { script: string; onVali
     },
     [],
   );
+
+  function dureeEcoulee() {
+    return cumul.current + (debutPassage.current !== null ? (performance.now() - debutPassage.current) / 1000 : 0);
+  }
 
   async function micro(): Promise<MediaStream | null> {
     if (flux.current) return flux.current;
@@ -111,22 +118,31 @@ export function EnregistreurVoix({ script, onValider }: { script: string; onVali
     rec.start(1000);
     enregistreur.current = rec;
     if (prompteur.current) prompteur.current.scrollTop = 0;
+    cumul.current = 0;
+    debutPassage.current = performance.now();
     setDuree(0);
     setPhase("enregistrement");
   }
 
   function pause() {
     enregistreur.current?.pause();
+    cumul.current = dureeEcoulee();
+    debutPassage.current = null;
+    setDuree(cumul.current);
     setPhase("pause");
   }
 
   function reprendre() {
     enregistreur.current?.resume();
+    debutPassage.current = performance.now();
     setPhase("enregistrement");
   }
 
   function terminer() {
     if (enregistreur.current && enregistreur.current.state !== "inactive") enregistreur.current.stop();
+    cumul.current = dureeEcoulee();
+    debutPassage.current = null;
+    setDuree(cumul.current);
     setPhase("fini");
   }
 
@@ -138,6 +154,8 @@ export function EnregistreurVoix({ script, onValider }: { script: string; onVali
     if (ecoute) URL.revokeObjectURL(ecoute);
     setEcoute(null);
     blob.current = null;
+    cumul.current = 0;
+    debutPassage.current = null;
     setDuree(0);
     if (prompteur.current) prompteur.current.scrollTop = 0;
     setPhase("pret");
