@@ -130,7 +130,12 @@ export function nomDeStockage(nom: string): string {
 /** Nom du fichier téléchargé par l'élève : le titre de la ressource + l'extension d'origine. */
 export function nomDeTelechargement(titre: string, chemin: string): string {
   const ext = extension(chemin);
-  const base = titre.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim() || "ressource";
+  const base =
+    titre
+      .replace(/[\\/:*?"<>|]+/g, " ")
+      .replace(/\s+/g, " ")
+      .replace(/[.\s]+$/, "") // « Fiche. » → « Fiche.docx », pas « Fiche..docx »
+      .trim() || "ressource";
   return ext && !base.toLowerCase().endsWith(`.${ext}`) ? `${base}.${ext}` : base;
 }
 

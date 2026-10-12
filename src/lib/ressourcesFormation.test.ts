@@ -38,6 +38,7 @@ describe("ressources de formation en fichiers", () => {
     expect(nomDeTelechargement("Script d'appel", "abc/123-script.docx")).toBe("Script d'appel.docx");
     expect(nomDeTelechargement("Plan: v2", "abc/plan.pdf")).toBe("Plan v2.pdf");
     expect(nomDeTelechargement("deja.pdf", "abc/plan.pdf")).toBe("deja.pdf");
+    expect(nomDeTelechargement("Fiche_Fondements. ", "abc/fiche.docx")).toBe("Fiche_Fondements.docx");
   });
 
   it("affiche le format et la taille en français", () => {
