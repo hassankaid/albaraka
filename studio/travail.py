@@ -502,6 +502,21 @@ def apercu(src, meta, dossier):
     return image, {"t": t, "visages": visages}
 
 
+def recoller_mots(words):
+    """Whisper coupe « C'est » en « C » + « 'est », « ta'ala » en « ta » + « 'ala », « Nourris-les »
+    en « Nourris » + « -les » : on recolle avant que quoi que ce soit ne numérote les mots
+    (sous-titres, coupes, moments), sinon un sous-titre ou un plan commencerait par « 'ala »."""
+    out = []
+    for w in words:
+        t = w.text.strip()
+        colle = t[:1] in ("'", "’") or (t[:1] == "-" and t[1:2].isalpha())
+        if out and t and (colle or out[-1].text.strip()[-1:] in ("'", "’")):
+            out[-1] = dataclasses.replace(out[-1], text=out[-1].text.strip() + t, end=w.end)
+        else:
+            out.append(w)
+    return out
+
+
 def preparer(src, dossier, liens, reglages, avec_apercu):
     chrono = {}
 
@@ -526,7 +541,7 @@ def preparer(src, dossier, liens, reglages, avec_apercu):
     P.enhance_audio(src, clean, wav, son)
     t = top("son", t)
     etape("transcription")
-    words = transcrire_par_prises(wav)
+    words = recoller_mots(transcrire_par_prises(wav))
     if not words:
         raise ValueError("Aucune parole n'a été entendue dans la vidéo.")
     cales = None
