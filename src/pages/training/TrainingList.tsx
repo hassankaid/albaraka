@@ -254,7 +254,7 @@ export default function TrainingList() {
                 || (!isLibertyLocked && enrollments.has(f.id));
 
               if (!hasAccess) {
-                const reason: LockReason = isLibertyLocked ? "liberty_only" : "parcours";
+                const reason: LockReason = isLibertyLocked ? "liberty_only" : f.access_mode === "pass" ? "pass" : "parcours";
                 const unlockInfo = formationUnlockMap.get(f.id);
                 const phaseLabel = reason === "parcours" && unlockInfo
                   ? `Phase ${unlockInfo.phaseNum} · ${unlockInfo.phaseTitre}`
@@ -310,6 +310,14 @@ export default function TrainingList() {
                     <strong> pass Liberty</strong>. Si tu souhaites évoluer vers cette
                     formule, contacte ton référent AL BARAKA.
                   </span>
+                </>
+              ) : lockedModal?.reason === "pass" ? (
+                <>
+                  <span className="block">
+                    <span className="font-medium text-foreground">{lockedModal.titre}</span> est inclus dans le
+                    <strong> Pass AL BARAKA</strong> (et le Pass Liberty).
+                  </span>
+                  <span className="block">Pour y accéder, contacte ton référent AL BARAKA.</span>
                 </>
               ) : (
                 <>

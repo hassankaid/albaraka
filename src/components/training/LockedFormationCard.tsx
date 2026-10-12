@@ -7,8 +7,9 @@ import { Lock, GraduationCap, Sparkles } from "lucide-react";
  *   - 'parcours'     : formation à débloquer via le parcours AL BARAKA en
  *                      complétant les étapes/formations précédentes
  *   - 'liberty_only' : formation réservée aux membres pass Liberty
+ *   - 'pass'         : parcours donné par le Pass AL BARAKA (ou Liberty)
  */
-export type LockReason = "parcours" | "liberty_only";
+export type LockReason = "parcours" | "liberty_only" | "pass";
 
 interface Props {
   titre: string;
@@ -48,7 +49,9 @@ export function LockedFormationCard({
   // Sous-titre court sur la carte (le détail complet est dans la modale au clic)
   const subtitle = isLiberty
     ? "Réservée aux membres Liberty"
-    : "Termine les étapes précédentes pour la débloquer";
+    : lockReason === "pass"
+      ? "Inclus dans le Pass AL BARAKA"
+      : "Termine les étapes précédentes pour la débloquer";
 
   return (
     <Card
