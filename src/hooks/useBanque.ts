@@ -14,12 +14,19 @@ export function useVideosBanque() {
   return useQuery({
     queryKey: ["banque", "videos"],
     queryFn: async (): Promise<VideoBanque[]> => {
-      const { data, error } = await db
-        .from("studio_banque_videos")
-        .select("id, nom, dossier, statut, erreur, exclue, duree, created_at")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
+      // par lots de 1000 : la base n'en renvoie pas plus d'un coup (la banque en compte 1 600+)
+      const toutes: VideoBanque[] = [];
+      for (let de = 0; ; de += 1000) {
+        const { data, error } = await db
+          .from("studio_banque_videos")
+          .select("id, nom, dossier, statut, erreur, exclue, duree, created_at")
+          .order("created_at", { ascending: false })
+          .order("id")
+          .range(de, de + 999);
+        if (error) throw error;
+        toutes.push(...(data ?? []));
+        if (!data || data.length < 1000) return toutes;
+      }
     },
     // pendant une indexation, la liste se met à jour toute seule
     refetchInterval: (q) => ((q.state.data ?? []).some((v) => v.statut === "indexation") ? 5000 : false),
