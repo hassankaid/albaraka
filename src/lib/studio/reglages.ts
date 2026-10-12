@@ -32,6 +32,8 @@ export interface Reglages {
   };
   /** Coupes des blancs : rythme automatique, ou passages gardés ajustés à la main (secondes). */
   coupes: { rythme: RythmeCoupes; plages: [number, number][] | null };
+  /** Voix off : « Changer ce plan » (index du moment → plan choisi parmi les propositions). */
+  voix_off: { remplacements: Record<string, string> };
 }
 
 export const REGLAGES_PAR_DEFAUT: Reglages = {
@@ -41,6 +43,7 @@ export const REGLAGES_PAR_DEFAUT: Reglages = {
   // activé par défaut (cahier des charges, section 4)
   design: { actif: true, style: "auto", palette: "or_noir", principale: "#C9A45C", fond: "#0F0F0F", texte: "#FFFFFF", prenom: "", titre: "" },
   coupes: { rythme: "naturel", plages: null },
+  voix_off: { remplacements: {} },
 };
 
 export const RYTHMES_COUPES: { id: RythmeCoupes; nom: string; description: string }[] = [
@@ -110,6 +113,7 @@ export const ETAPES: { id: string; nom: string }[] = [
   { id: "coupes", nom: "Coupe des blancs" },
   { id: "montage", nom: "Montage" },
   { id: "sous_titres", nom: "Sous-titres" },
+  { id: "plans", nom: "Choix des plans" },
   { id: "animations", nom: "Plan des animations" },
   { id: "floutage", nom: "Floutage du visage" },
   { id: "motion_design", nom: "Animations" },
@@ -136,6 +140,7 @@ export const ROLE_DE_L_ETAPE: Record<string, { role: string; action: string }> =
   coupes: { role: "monteur", action: "coupe les blancs" },
   montage: { role: "monteur", action: "assemble les meilleures prises" },
   sous_titres: { role: "sous_titres", action: "découpe tes sous-titres et choisit les mots clés" },
+  plans: { role: "da", action: "choisit dans la banque un plan pour chaque moment de ta voix" },
   animations: { role: "da", action: "choisit le moment fort et les animations" },
   floutage: { role: "monteur", action: "floute ton visage" },
   motion_design: { role: "motion", action: "anime ta vidéo et place les bruitages" },
@@ -165,6 +170,8 @@ export interface Montage {
   id: string;
   user_id: string;
   outil: "face_camera" | "voix_off";
+  script?: string | null;
+  theme?: string | null;
   statut: Statut;
   etape: string | null;
   lance: boolean;
@@ -194,16 +201,18 @@ export function completerReglages(r: Partial<Reglages> | null | undefined): Regl
     visage: { ...REGLAGES_PAR_DEFAUT.visage, ...(r?.visage ?? {}), style: "naturel" },
     design: { ...REGLAGES_PAR_DEFAUT.design, ...(r?.design ?? {}) },
     coupes: { ...REGLAGES_PAR_DEFAUT.coupes, ...(r?.coupes ?? {}) },
+    voix_off: { remplacements: { ...(r?.voix_off?.remplacements ?? {}) } },
   };
 }
 
-/** Étapes réellement parcourues : le floutage n'apparaît que s'il est demandé. */
-export function etapesDuMontage(reglages: Partial<Reglages> | null | undefined) {
+/** Étapes réellement parcourues : le floutage n'apparaît que s'il est demandé, le choix des plans qu'en Voix off. */
+export function etapesDuMontage(reglages: Partial<Reglages> | null | undefined, outil: Montage["outil"] = "face_camera") {
   const r = completerReglages(reglages);
   // floutage et animations se font dans la même passe : une seule étape affichée
   return ETAPES.filter(
     (e) =>
-      (e.id !== "floutage" || (r.visage.flouter && !r.design.actif)) &&
+      (e.id !== "floutage" || (outil === "face_camera" && r.visage.flouter && !r.design.actif)) &&
+      (e.id !== "plans" || outil === "voix_off") &&
       ((e.id !== "motion_design" && e.id !== "verification") || r.design.actif),
   );
 }
@@ -214,14 +223,14 @@ export function cleSon(reglages: Partial<Reglages> | null | undefined): string {
   return s.ameliorer ? s.niveau : "off";
 }
 
-const ETAPES_PREPARATION = ["reception", "son", "transcription", "phrases_ratees", "coupes", "montage", "sous_titres", "animations"];
+const ETAPES_PREPARATION = ["reception", "son", "transcription", "phrases_ratees", "coupes", "montage", "sous_titres", "plans", "animations"];
 
 /**
  * Étapes à afficher pendant le montage. Quand la préparation est réutilisée
  * (seul le rendu est relancé), elle apparaît d'emblée comme faite.
  */
-export function etapesAffichees(m: Pick<Montage, "reglages" | "etape" | "travail_pret" | "audio_prepare">) {
-  const etapes = etapesDuMontage(m.reglages);
+export function etapesAffichees(m: Pick<Montage, "reglages" | "etape" | "travail_pret" | "audio_prepare"> & { outil?: Montage["outil"] }) {
+  const etapes = etapesDuMontage(m.reglages, m.outil ?? "face_camera");
   const renduSeul = m.travail_pret && m.audio_prepare === cleSon(m.reglages);
   let courant = etapes.findIndex((e) => e.id === m.etape);
   // si la machine refait quand même la préparation (son changé), on suit ses vraies étapes
@@ -260,7 +269,8 @@ export function verifierFichier(f: { name: string; type: string; size: number })
 }
 
 /** Où mène un montage de la liste : réglages à finir, ou écran du montage. */
-export function lienDuMontage(m: Pick<Montage, "id" | "statut" | "lance">) {
-  if ((m.statut === "preparation" && !m.lance) || m.statut === "pret") return `/studio/face-camera?id=${m.id}`;
+export function lienDuMontage(m: Pick<Montage, "id" | "statut" | "lance"> & { outil?: Montage["outil"] }) {
+  const reglages = m.outil === "voix_off" ? "/studio/voix-off" : "/studio/face-camera";
+  if ((m.statut === "preparation" && !m.lance) || m.statut === "pret") return `${reglages}?id=${m.id}`;
   return `/studio/montage/${m.id}`;
 }

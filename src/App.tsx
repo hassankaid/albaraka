@@ -140,6 +140,8 @@ import StudioGate from "./pages/studio/StudioGate";
 import StudioAccueil from "./pages/studio/StudioAccueil";
 import StudioFaceCamera from "./pages/studio/StudioFaceCamera";
 import StudioMontage from "./pages/studio/StudioMontage";
+import StudioBanque from "./pages/studio/StudioBanque";
+import StudioVoixOff from "./pages/studio/StudioVoixOff";
 import AdminEmailCampaign from "./pages/admin/email-campaigns/AdminEmailCampaign";
 import AdminSmsCampaign from "./pages/admin/email-campaigns/AdminSmsCampaign";
 import { WA_TUNNEL, VSL_TUNNEL } from "./pages/tunnels/config";
@@ -351,6 +353,8 @@ const FullApp = () => (
                   <Route path="/studio" element={<StudioGate><StudioAccueil /></StudioGate>} />
                   <Route path="/studio/face-camera" element={<StudioGate><StudioFaceCamera /></StudioGate>} />
                   <Route path="/studio/montage/:id" element={<StudioGate><StudioMontage /></StudioGate>} />
+                  <Route path="/studio/banque" element={<StudioGate><StudioBanque /></StudioGate>} />
+                  <Route path="/studio/voix-off" element={<StudioGate><StudioVoixOff /></StudioGate>} />
                   <Route path="/admin/team" element={<AdminTeam />} />
                   <Route path="/admin/announcements" element={<AdminAnnouncements />} />
                   <Route path="/admin/quiz-lead" element={<AdminQuizLead />} />

@@ -80,7 +80,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const { data: m, error: eM } = await sb
     .from("studio_montages")
-    .select("id, user_id, source_path, source_nom")
+    .select("id, user_id, source_path, source_nom, outil, script, theme")
     .eq("id", id)
     .maybeSingle();
   if (eM || !m || m.user_id !== user.user.id) return repondre(404, { error: "Montage introuvable" });
@@ -137,6 +137,13 @@ export async function POST(request: Request): Promise<Response> {
       sortie_path: `${dossier}/sortie.mp4`,
     };
 
+    // Voix off : le script lu et le nom du thème (pour l'IA qui choisit les plans)
+    let themeNom = "";
+    if (m.outil === "voix_off" && m.theme) {
+      const { data: t } = await sb.from("studio_banque_themes").select("nom").eq("id", m.theme).maybeSingle();
+      themeNom = t?.nom ?? "";
+    }
+
     const sbx = await Sandbox.create({
       ...identifiants(),
       source: { type: "snapshot", snapshotId: process.env.STUDIO_SNAPSHOT_ID! },
@@ -154,6 +161,11 @@ export async function POST(request: Request): Promise<Response> {
         MONTAGE_ID: id,
         JETON: jeton,
         MODE: mode,
+        OUTIL: m.outil ?? "face_camera",
+        SCRIPT: m.outil === "voix_off" ? (m.script ?? "") : "",
+        THEME: m.theme ?? "",
+        THEME_NOM: themeNom,
+        FONCTION_BANQUE: `${url}/functions/v1/studio-banque`,
         REGLAGES: JSON.stringify(reglages ?? {}),
         LIENS: JSON.stringify(liens),
         SUPABASE_URL: url,

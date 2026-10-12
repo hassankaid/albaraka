@@ -1,6 +1,6 @@
 // Studio vidéo : accueil (les deux outils) et « Mes vidéos ».
 import { Link } from "react-router-dom";
-import { Camera, Clock, Film, Mic, Loader2 } from "lucide-react";
+import { Camera, Clock, Database, Film, Mic, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,11 +28,18 @@ export default function StudioAccueil() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-8 p-4 md:p-6">
-      <header className="space-y-1">
-        <h1 className="font-heading text-3xl text-foreground">Studio</h1>
-        <p className="text-sm text-muted-foreground">
-          Des vidéos 9:16 prêtes à publier, sans toucher au montage.
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="font-heading text-3xl text-foreground">Studio</h1>
+          <p className="text-sm text-muted-foreground">
+            Des vidéos 9:16 prêtes à publier, sans toucher au montage.
+          </p>
+        </div>
+        <Button asChild variant="outline" size="sm" className="gap-2">
+          <Link to="/studio/banque">
+            <Database className="h-4 w-4" /> Banque de vidéos
+          </Link>
+        </Button>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -51,17 +58,17 @@ export default function StudioAccueil() {
             </Button>
           </CardContent>
         </Card>
-        <Card className="opacity-70">
+        <Card className="border-primary/40">
           <CardContent className="flex h-full flex-col gap-4 p-6">
-            <Mic className="h-8 w-8 text-muted-foreground" />
+            <Mic className="h-8 w-8 text-primary" />
             <div className="flex-1 space-y-1">
               <h2 className="text-xl font-semibold text-foreground">Voix off</h2>
               <p className="text-sm text-muted-foreground">
                 Lis ton script au micro : l'IA monte des plans de la banque AL BARAKA choisis selon tes mots.
               </p>
             </div>
-            <Button disabled variant="outline" className="w-full">
-              Bientôt
+            <Button asChild className="w-full">
+              <Link to="/studio/voix-off">Commencer</Link>
             </Button>
           </CardContent>
         </Card>

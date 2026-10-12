@@ -86,6 +86,13 @@ def rpc(fonction, **params):
 
 MONTAGE, JETON = os.environ.get("MONTAGE_ID", ""), os.environ.get("JETON", "")
 
+# Outil Voix off (cahier des charges, sections 3 et 8) : la source est un enregistrement
+# de la voix, le script lu sert aux phrases ratées et à l'orthographe des sous-titres,
+# l'image est faite de plans de la banque (voir voixoff.py).
+VOIX_OFF = os.environ.get("OUTIL") == "voix_off"
+SCRIPT = os.environ.get("SCRIPT") or ""
+THEME, THEME_NOM = os.environ.get("THEME") or "", os.environ.get("THEME_NOM") or ""
+
 
 def etape(nom, apercu=None):
     print(f"[{time.strftime('%H:%M:%S')}] {nom}", flush=True)
@@ -136,6 +143,9 @@ def reponse_valide(prompt, objet):
     """La réponse couvre-t-elle bien les mots du prompt ? (sous-titres : tous les mots,
     dans l'ordre, sans trou ; phrases ratées : des plages d'index existants)."""
     n = len(re.findall(r"^\d+: \S", prompt, re.M))  # lignes « index: mot »
+    if '"requete"' in prompt:  # Voix off : ce qu'il faut montrer, un élément par moment
+        import voixoff as V
+        return V.requetes_valides(objet, len(re.findall(r"^M\d+ \[", prompt, re.M)))
     if '"appuis"' in prompt:  # plan Hyperframes : le détail est filtré par hf/catalogue.nettoyer
         return isinstance(objet.get("fort"), dict) and isinstance(objet.get("appuis", []), list)
     if '"zooms"' in prompt:  # plan d'animation : le détail est filtré par nettoyer_plan
@@ -256,6 +266,26 @@ def grouper_sous_titres(kept):
 def caler_sous_titres(textes, groupes, kept, total):
     caps = [P.Caption(t["small"], t["big"], kept[f].start, kept[l].end) for t, (f, l) in zip(textes, groupes)]
     return P.finalize_timing(P.finalize_timing(caps), total)  # comme le moteur (group_captions puis préparation)
+
+
+def prompts_voix_off(script):
+    """Voix off : le script lu aide à repérer les phrases ratées (on sait ce que l'élève voulait
+    dire) et donne l'orthographe exacte des sous-titres (cahier, section 6). Chaque ligne est
+    citée (« > ») pour ne jamais être prise pour un mot numéroté de la transcription."""
+    cite = "\n".join("> " + l for l in script.strip().splitlines() if l.strip())
+    cite = cite.replace("{", "{{").replace("}", "}}")
+    P.RETAKE_PROMPT = P.RETAKE_PROMPT.replace(
+        "Mots (index: texte [début-fin]) :",
+        "Le texte vient d'une voix off : l'élève lisait ce script (le texte voulu, il a pu le reprendre "
+        "ou s'en écarter un peu) :\n" + cite + "\n\nMots (index: texte [début-fin]) :")
+    P.CAPTION_PROMPT = P.CAPTION_PROMPT.replace(
+        "Mots (index: texte) :",
+        "Le texte lu suit ce script : reprends son orthographe exacte (noms propres, accents, chiffres), "
+        "sans changer le nombre de mots :\n" + cite + "\n\nMots (index: texte) :")
+
+
+if VOIX_OFF and SCRIPT.strip():
+    prompts_voix_off(SCRIPT)
 
 
 def casse_mot_cle(texte):
@@ -479,13 +509,13 @@ def preparer(src, dossier, liens, reglages, avec_apercu):
         chrono[cle] = round(time.time() - t0, 1)
         return time.time()
 
-    meta = P.probe(src)
+    meta = __import__("voixoff").sonder_audio(src) if VOIX_OFF else P.probe(src)
     if meta["duration"] > DUREE_MAX:
         raise ValueError("La vidéo dépasse 5 minutes. Coupe-la en plusieurs parties.")
     if not meta["has_audio"]:
         raise ValueError("La vidéo n'a pas de son.")
     t = time.time()
-    if avec_apercu and "apercu.jpg" in liens["deposer"]:
+    if avec_apercu and not VOIX_OFF and "apercu.jpg" in liens["deposer"]:
         image, infos = apercu(src, meta, dossier)
         deposer(liens["deposer"]["apercu.jpg"], image, "image/jpeg")
         etape("son", {**infos, "fichier": "apercu.jpg"})
@@ -508,7 +538,9 @@ def preparer(src, dossier, liens, reglages, avec_apercu):
                "retires_ia": sorted(removed), "chrono": chrono}
     if "travail/apercu.mp4" in liens["deposer"]:
         try:  # vidéo légère pour « Vérifier les coupes » (la source peut faire 1 Go)
-            deposer(liens["deposer"]["travail/apercu.mp4"], video_apercu(src, clean, meta, dossier), "video/mp4")
+            fichier = (__import__("voixoff").apercu_audio(clean, os.path.join(dossier, "apercu.mp4")) if VOIX_OFF
+                       else video_apercu(src, clean, meta, dossier))
+            deposer(liens["deposer"]["travail/apercu.mp4"], fichier, "video/mp4")
             travail["apercu_video"] = True
         except Exception:
             traceback.print_exc()
@@ -567,7 +599,11 @@ def monter(src, dossier, liens, travail, reglages, chrono=None, precedent=None):
     top("coupes")
     etape("montage")
     cut = os.path.join(dossier, "cut.mp4")
-    P.render_cut(src, clean, cuts, meta, cut)
+    voix = os.path.join(dossier, "voix.wav")
+    if VOIX_OFF:  # la vidéo est faite plus bas, avec les plans de la banque
+        __import__("voixoff").couper_audio(clean, cuts, voix)
+    else:
+        P.render_cut(src, clean, cuts, meta, cut)
     total = sum(b - a for a, b in cuts)
     top("montage")
     etape("sous_titres")
@@ -579,9 +615,15 @@ def monter(src, dossier, liens, travail, reglages, chrono=None, precedent=None):
         textes, groupes = grouper_sous_titres(kept)
     caps = caler_sous_titres(textes, groupes, kept, total)
     top("sous_titres")
-    etape("animations")
     gardes = [dataclasses.asdict(w) for w in kept]
     sous_titres = [dataclasses.asdict(c) for c in caps]
+    if VOIX_OFF:
+        etape("plans")
+        travail["moments"] = choisir_plans(gardes, sous_titres, total)
+        travail["remplacements"] = {}
+        monter_plans_banque(travail["moments"], voix, dossier, cut)
+        top("plans")
+    etape("animations")
     brut = precedent.get("plan_hf_brut") if memes_mots else None
     try:
         brut, plan = plan_hf(gardes, sous_titres, total, brut)
@@ -601,6 +643,78 @@ def monter(src, dossier, liens, travail, reglages, chrono=None, precedent=None):
     deposer(liens["deposer"]["travail/cut.mp4"], cut, "video/mp4")
     deposer(liens["deposer"]["travail/travail.json"], chemin, "application/json")
     return travail
+
+
+def liens_banque(chemins):
+    """Liens signés des plans de la banque (edge function studio-banque, jeton du montage)."""
+    rep = json.loads(_http(os.environ["FONCTION_BANQUE"],
+                           {"action": "montage", "montage_id": MONTAGE, "jeton": JETON, "chemins": sorted(set(chemins))},
+                           entetes={"Content-Type": "application/json"}))
+    return rep["liens"]
+
+
+def choisir_plans(gardes, sous_titres, total):
+    """Voix off : moments → ce qu'il faut montrer (Claude) → recherche par le sens → choix."""
+    import voixoff as V
+    from banque import THEMES
+    liste = V.moments(gardes, sous_titres, total)
+    demandes = json.loads(llm(V.prompt_plans(SCRIPT, THEME_NOM or THEMES.get(THEME, ""), liste, THEMES)))["moments"]
+    for d in demandes:
+        d["themes"] = [t for t in d.get("themes") or [] if t in THEMES][:2] or ([THEME] if THEME in THEMES else [])
+        d["mots_cles"] = [str(m).lower()[:40] for m in d.get("mots_cles") or []][:5]
+    vecs = V.vecteurs([f"{d['requete']}. Mots-clés : {', '.join(d['mots_cles'])}." for d in demandes], openrouter, COUT)
+
+    def chercher(i):
+        return rpc("studio_job_chercher_plans", p_id=MONTAGE, p_jeton=JETON, p_embedding=json.dumps(vecs[i]),
+                   p_mots=demandes[i]["mots_cles"], p_themes=demandes[i]["themes"],
+                   p_duree=round(liste[i]["fin"] - liste[i]["debut"], 3), p_exclure=[], p_limite=20) or []
+
+    with cf.ThreadPoolExecutor(6) as ex:
+        candidats = list(ex.map(chercher, range(len(liste))))
+
+    def secours(i, exclus):
+        return [c for c in rpc("studio_job_plans_secours", p_id=MONTAGE, p_jeton=JETON,
+                                p_duree=round(liste[i]["fin"] - liste[i]["debut"], 3), p_exclure=exclus) or []]
+
+    return V.choisir(liste, demandes, lambda i: [dict(c) for c in candidats[i]], secours)
+
+
+def monter_plans_banque(liste, voix, dossier, dst):
+    import voixoff as V
+    chemins = [m["plan"]["chemin_travail"] for m in liste]
+    return V.monter_plans(liste, liens_banque(chemins), voix, dossier, dst)
+
+
+def plans_a_refaire(travail, reglages):
+    """Voix off : l'élève a-t-il changé un plan (« Changer ce plan ») depuis la préparation ?"""
+    voulus = ((reglages or {}).get("voix_off") or {}).get("remplacements") or {}
+    return VOIX_OFF and bool(travail.get("moments")) and voulus != (travail.get("remplacements") or {})
+
+
+def refaire_plans(src, dossier, liens, travail, reglages):
+    """« Changer ce plan » : seul le montage des plans est refait (pas de transcription ni d'IA)."""
+    import voixoff as V
+    etape("plans")
+    clean = os.path.join(dossier, "clean48k.wav")
+    if not os.path.exists(clean):
+        if not os.path.exists(src):
+            telecharger(liens["source"], src)
+        P.enhance_audio(src, clean, os.path.join(dossier, "a.wav"), options_son(reglages)[0])
+    voix = os.path.join(dossier, "voix.wav")
+    V.couper_audio(clean, [tuple(c) for c in travail["coupes"]], voix)
+    voulus = ((reglages or {}).get("voix_off") or {}).get("remplacements") or {}
+    # on repart des plans choisis par la préparation, puis on applique les choix de l'élève
+    moments = json.loads(json.dumps(travail.get("moments_ia") or travail["moments"]))
+    travail["moments_ia"] = travail.get("moments_ia") or json.loads(json.dumps(travail["moments"]))
+    travail["moments"] = V.appliquer_remplacements(moments, voulus)
+    travail["remplacements"] = voulus
+    cut = os.path.join(dossier, "cut.mp4")
+    monter_plans_banque(travail["moments"], voix, dossier, cut)
+    chemin = os.path.join(dossier, "travail.json")
+    with open(chemin, "w", encoding="utf-8") as f:
+        json.dump(travail, f, ensure_ascii=False)
+    deposer(liens["deposer"]["travail/cut.mp4"], cut, "video/mp4")
+    deposer(liens["deposer"]["travail/travail.json"], chemin, "application/json")
 
 
 def plan_hf(gardes, sous_titres, duree, brut=None):
@@ -778,6 +892,8 @@ def main():
                                 options_son(reglages)[0])
             precedent = json.loads(json.dumps(travail))
             monter(src, dossier, liens, travail, reglages, precedent=precedent)
+        if plans_a_refaire(travail, reglages):
+            refaire_plans(src, dossier, liens, travail, reglages)
         rendu = rendre(dossier, liens, reglages, travail)
         rapport = {
             "entree_s": round(travail["meta"]["duration"], 2), "sortie_s": travail["duree_sortie"],

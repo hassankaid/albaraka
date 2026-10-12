@@ -29,12 +29,14 @@ import {
   enTraitement,
   equipeAuTravail,
   etapesAffichees,
+  lienDuMontage,
   type Montage,
   type Reglages,
 } from "@/lib/studio/reglages";
 import { ApercuStudio } from "@/components/studio/ApercuStudio";
 import { Bloc, BlocCoupes, BlocDesign, BlocSon, BlocSousTitres, BlocVisage } from "@/components/studio/Reglages";
 import { VerifierCoupes } from "@/components/studio/VerifierCoupes";
+import { PlansVoixOff } from "@/components/studio/PlansVoixOff";
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -202,7 +204,7 @@ export default function StudioMontage() {
         <div className="space-y-3 rounded-2xl border border-border p-6">
           <p className="text-sm text-foreground">Ta vidéo est importée : il reste à choisir tes réglages.</p>
           <Button asChild>
-            <Link to={`/studio/face-camera?id=${m.id}`}>Choisir mes réglages</Link>
+            <Link to={lienDuMontage(m)}>Choisir mes réglages</Link>
           </Button>
         </div>
       )}
@@ -264,12 +266,24 @@ export default function StudioMontage() {
         </div>
       )}
 
+      {m.statut === "termine" && !modifier && m.outil === "voix_off" && (
+        <PlansVoixOff
+          montage={m}
+          envoi={envoi}
+          onChanger={(i, planId) =>
+            relancer({ ...r, voix_off: { remplacements: { ...r.voix_off.remplacements, [String(i)]: planId } } })
+          }
+        />
+      )}
+
       {m.statut === "termine" && modifier && (
-        <div className="grid gap-6 md:grid-cols-[1fr_300px]">
+        <div className={`grid gap-6 ${m.outil === "voix_off" ? "" : "md:grid-cols-[1fr_300px]"}`}>
           <div className="space-y-4">
-            <Bloc titre="Visage">
-              <BlocVisage reglages={r} onChange={setReglages} />
-            </Bloc>
+            {m.outil !== "voix_off" && (
+              <Bloc titre="Visage">
+                <BlocVisage reglages={r} onChange={setReglages} />
+              </Bloc>
+            )}
             <Bloc titre="Son">
               <BlocSon reglages={r} onChange={setReglages} />
             </Bloc>
@@ -302,9 +316,11 @@ export default function StudioMontage() {
               </Button>
             </div>
           </div>
-          <div className="md:sticky md:top-4 md:self-start">
-            <ApercuStudio image={apercu} visages={m.apercu?.visages ?? []} reglages={r} flou />
-          </div>
+          {m.outil !== "voix_off" && (
+            <div className="md:sticky md:top-4 md:self-start">
+              <ApercuStudio image={apercu} visages={m.apercu?.visages ?? []} reglages={r} flou />
+            </div>
+          )}
         </div>
       )}
 
