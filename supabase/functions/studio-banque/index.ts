@@ -51,10 +51,18 @@ async function deposer(chemins: string[]) {
   return depots;
 }
 
+// par lots de 100 : au-delà, la requête (identifiants dans l'URL) devient trop longue
+const LOT = 100;
+const lots = <T>(liste: T[]) => Array.from({ length: Math.ceil(liste.length / LOT) }, (_, k) => liste.slice(k * LOT, (k + 1) * LOT));
+
 async function lire(chemins: string[]) {
-  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrls(chemins, DUREE_LIEN);
-  if (error) throw error;
-  return Object.fromEntries((data ?? []).map((d) => [d.path, d.signedUrl]));
+  const out: Record<string, string> = {};
+  for (const lot of lots(chemins)) {
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrls(lot, DUREE_LIEN);
+    if (error) throw error;
+    for (const d of data ?? []) out[d.path] = d.signedUrl;
+  }
+  return out;
 }
 
 serve(async (req) => {
@@ -78,13 +86,14 @@ serve(async (req) => {
       const job = await jobValide(String(corps.job ?? ""), jeton);
       if (!job || job.type !== "indexation") return reponse(403, { error: "Jeton invalide" });
       if (corps.action === "indexation") {
-        const { data: videos, error } = await supabase
-          .from("studio_banque_videos")
-          .select("id, nom, dossier, chemin_original")
-          .in("id", job.videos);
-        if (error) throw error;
-        const liens = await lire((videos ?? []).map((v) => v.chemin_original));
-        return reponse(200, { videos: (videos ?? []).map((v) => ({ ...v, lire: liens[v.chemin_original] })) });
+        const videos: { id: string; nom: string; dossier: string | null; chemin_original: string }[] = [];
+        for (const lot of lots(job.videos)) {
+          const { data, error } = await supabase.from("studio_banque_videos").select("id, nom, dossier, chemin_original").in("id", lot);
+          if (error) throw error;
+          videos.push(...(data ?? []));
+        }
+        const liens = await lire(videos.map((v) => v.chemin_original));
+        return reponse(200, { videos: videos.map((v) => ({ ...v, lire: liens[v.chemin_original] })) });
       }
       const chemins = (corps.chemins ?? []).slice(0, 500);
       const permis = (c: string) =>
