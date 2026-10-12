@@ -3,6 +3,10 @@
     "api/studio/demarrer.ts": {
       "includeFiles": "studio/**",
       "maxDuration": 60
+    },
+    "api/studio/banque-indexer.ts": {
+      "includeFiles": "studio/*.py",
+      "maxDuration": 60
     }
   },
   "redirects": [
