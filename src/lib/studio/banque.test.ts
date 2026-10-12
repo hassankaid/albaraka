@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { couvertureThemes, filtrerPlans, planUtilisable, verifierVideoBanque, type PlanBanque } from "./banque";
+import {
+  analyserMotsCles,
+  couvertureCategories,
+  couvertureThemes,
+  filtrerPlans,
+  planUtilisable,
+  verifierVideoBanque,
+  type PlanBanque,
+} from "./banque";
 
 const plan = (p: Partial<PlanBanque>): PlanBanque => ({
   id: "p",
@@ -60,5 +68,43 @@ describe("banque de vidéos", () => {
     expect(verifierVideoBanque({ name: "plan.MOV", size: 10 })).toBeNull();
     expect(verifierVideoBanque({ name: "plan.avi", size: 10 })).toMatch(/format/);
     expect(verifierVideoBanque({ name: "plan.mp4", size: 3 * 1024 ** 3 })).toMatch(/2 Go/);
+  });
+
+  it("compte les plans utilisables par catégorie (dossier de Sidali)", () => {
+    const videos = [
+      { id: "a", dossier: "CASH", exclue: false },
+      { id: "b", dossier: "WORKING", exclue: false },
+      { id: "c", dossier: "CASH", exclue: true },
+      { id: "d", dossier: null, exclue: false },
+    ];
+    const plans = [
+      plan({ video_id: "a" }),
+      plan({ video_id: "a" }),
+      plan({ video_id: "a", exclu: true }),
+      plan({ video_id: "b" }),
+      plan({ video_id: "c" }),
+      plan({ video_id: "d" }),
+    ];
+    expect(couvertureCategories(videos, plans)).toEqual([
+      { nom: "CASH", plans: 2 },
+      { nom: "Sans dossier", plans: 1 },
+      { nom: "WORKING", plans: 1 },
+    ]);
+  });
+
+  it("filtre par catégorie", () => {
+    const categories = new Map([
+      ["a", "CASH"],
+      ["b", "WORKING"],
+    ]);
+    const plans = [plan({ id: "1", video_id: "a" }), plan({ id: "2", video_id: "b" })];
+    const f = { theme: null, recherche: "", voir: "tous" as const, categories };
+    expect(filtrerPlans(plans, { ...f, categorie: "WORKING" }).map((p) => p.id)).toEqual(["2"]);
+    expect(filtrerPlans(plans, { ...f, categorie: null })).toHaveLength(2);
+  });
+
+  it("lit les mots-clés saisis à la main", () => {
+    expect(analyserMotsCles("Billets,  liasse ; main\nBILLETS, , ")).toEqual(["billets", "liasse", "main"]);
+    expect(analyserMotsCles(Array.from({ length: 20 }, (_, i) => `m${i}`).join(","))).toHaveLength(12);
   });
 });

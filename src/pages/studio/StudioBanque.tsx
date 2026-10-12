@@ -4,7 +4,7 @@
 // AL BARAKA », et le rapport des thèmes qui manquent de plans.
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, Ban, LifeBuoy, Loader2, RefreshCw, Search, Sparkles, Upload } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Ban, Check, LifeBuoy, Loader2, Pencil, RefreshCw, Search, Sparkles, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,8 @@ import {
   useVideosBanque,
 } from "@/hooks/useBanque";
 import {
+  analyserMotsCles,
+  couvertureCategories,
   couvertureThemes,
   filtrerPlans,
   LIBELLE_STATUT_VIDEO,
@@ -39,6 +41,7 @@ import {
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const PAR_PAGE = 48;
+type ChampsPlan = Partial<Pick<PlanBanque, "exclu" | "secours" | "mots_cles">>;
 
 const COULEUR_STATUT: Record<StatutVideo, string> = {
   a_indexer: "border-amber-500/30 bg-amber-500/15 text-amber-300",
@@ -60,14 +63,21 @@ function Chiffre({ titre, valeur, detail, alerte }: { titre: string; valeur: str
 function CartePlan({
   p,
   image,
+  categorie,
   nomTheme,
   onChange,
 }: {
   p: PlanBanque;
   image?: string;
+  categorie?: string | null;
   nomTheme: (id: string) => string;
-  onChange: (champs: Partial<Pick<PlanBanque, "exclu" | "secours">>) => void;
+  onChange: (champs: ChampsPlan) => void;
 }) {
+  const [edition, setEdition] = useState<string | null>(null);
+  const valider = () => {
+    if (edition !== null) onChange({ mots_cles: analyserMotsCles(edition) });
+    setEdition(null);
+  };
   return (
     <div className={cn("overflow-hidden rounded-xl border bg-card", p.exclu ? "border-red-500/30 opacity-60" : "border-border")}>
       <div className="relative aspect-[9/16] bg-black">
@@ -89,6 +99,7 @@ function CartePlan({
       <div className="space-y-2 p-2.5">
         <p className="line-clamp-3 text-xs text-foreground">{p.description}</p>
         <div className="flex flex-wrap gap-1">
+          {categorie && <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] text-foreground">{categorie}</span>}
           {p.themes.map((t) => (
             <span key={t} className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
               {nomTheme(t)}
@@ -96,7 +107,35 @@ function CartePlan({
           ))}
           {p.ambiance && <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{p.ambiance}</span>}
         </div>
-        <p className="line-clamp-2 text-[10px] text-muted-foreground">{p.mots_cles.join(" · ")}</p>
+        {edition === null ? (
+          <button
+            type="button"
+            onClick={() => setEdition(p.mots_cles.join(", "))}
+            className="group flex w-full items-start gap-1 text-left"
+            title="Corriger les mots-clés"
+          >
+            <span className="line-clamp-2 flex-1 text-[10px] text-muted-foreground">{p.mots_cles.join(" · ") || "Aucun mot-clé"}</span>
+            <Pencil className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground opacity-60 group-hover:opacity-100" />
+          </button>
+        ) : (
+          <div className="flex gap-1">
+            <Input
+              autoFocus
+              value={edition}
+              onChange={(e) => setEdition(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") valider();
+                if (e.key === "Escape") setEdition(null);
+              }}
+              placeholder="billets, liasse, main…"
+              className="h-7 px-2 text-[11px]"
+              aria-label="Mots-clés, séparés par des virgules"
+            />
+            <Button size="icon" className="h-7 w-7 shrink-0" onClick={valider} aria-label="Enregistrer les mots-clés">
+              <Check className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
         <div className="flex gap-1.5">
           <Button
             size="sm"
@@ -129,6 +168,7 @@ export default function StudioBanque() {
   const [envois, setEnvois] = useState<{ nom: string; pourcent: number; erreur?: string }[]>([]);
   const [lancement, setLancement] = useState(false);
   const [theme, setTheme] = useState<string | null>(null);
+  const [categorie, setCategorie] = useState<string | null>(null);
   const [recherche, setRecherche] = useState("");
   const [voir, setVoir] = useState<"tous" | "utilisables" | "exclus" | "secours">("tous");
   const [page, setPage] = useState(1);
@@ -136,7 +176,19 @@ export default function StudioBanque() {
   const [local, setLocal] = useState<Record<string, Partial<PlanBanque>>>({});
 
   const tousPlans = useMemo(() => (plans ?? []).map((p) => ({ ...p, ...local[p.id] })), [plans, local]);
-  const filtres = useMemo(() => filtrerPlans(tousPlans, { theme, recherche, voir }), [tousPlans, theme, recherche, voir]);
+  const categories = useMemo(() => new Map((videos ?? []).map((v) => [v.id, v.dossier])), [videos]);
+  const filtres = useMemo(
+    () =>
+      filtrerPlans(tousPlans, {
+        theme,
+        recherche,
+        voir,
+        categorie,
+        categories,
+      }),
+    [tousPlans, theme, recherche, voir, categorie, categories],
+  );
+  const parCategorie = useMemo(() => couvertureCategories(videos ?? [], tousPlans), [videos, tousPlans]);
   const visibles = filtres.slice(0, page * PAR_PAGE);
   const couverture = useMemo(() => couvertureThemes(themes ?? [], tousPlans), [themes, tousPlans]);
   const nomTheme = (id: string) => themes?.find((t) => t.id === id)?.nom ?? id;
@@ -165,14 +217,17 @@ export default function StudioBanque() {
   async function importer(fichiers: FileList | null) {
     const liste = Array.from(fichiers ?? []);
     const refus = liste.map(verifierVideoBanque).filter(Boolean) as string[];
-    if (refus.length) toast({ title: "Vidéos refusées", description: refus.join(" "), variant: "destructive" });
+    if (refus.length)
+      toast({
+        title: "Vidéos refusées",
+        description: refus.join(" "),
+        variant: "destructive",
+      });
     const ok = liste.filter((f) => !verifierVideoBanque(f));
     setEnvois(ok.map((f) => ({ nom: f.name, pourcent: 0 })));
     for (let i = 0; i < ok.length; i++) {
       try {
-        await importerDansBanque(ok[i], (pourcent) =>
-          setEnvois((e) => e.map((x, k) => (k === i ? { ...x, pourcent } : x))),
-        );
+        await importerDansBanque(ok[i], (pourcent) => setEnvois((e) => e.map((x, k) => (k === i ? { ...x, pourcent } : x))));
       } catch (e) {
         setEnvois((liste) => liste.map((x, k) => (k === i ? { ...x, erreur: message(e) } : x)));
       }
@@ -190,19 +245,33 @@ export default function StudioBanque() {
       });
       rafraichir();
     } catch (e) {
-      toast({ title: "Indexation impossible", description: message(e), variant: "destructive" });
+      toast({
+        title: "Indexation impossible",
+        description: message(e),
+        variant: "destructive",
+      });
     } finally {
       setLancement(false);
     }
   }
 
-  async function changerPlan(p: PlanBanque, champs: Partial<Pick<PlanBanque, "exclu" | "secours">>) {
+  async function changerPlan(p: PlanBanque, champs: ChampsPlan) {
     setLocal((l) => ({ ...l, [p.id]: { ...l[p.id], ...champs } }));
     try {
       await majPlan(p.id, champs);
     } catch (e) {
-      setLocal((l) => ({ ...l, [p.id]: { ...l[p.id], ...Object.fromEntries(Object.keys(champs).map((k) => [k, p[k as "exclu"]])) } }));
-      toast({ title: "Modification impossible", description: message(e), variant: "destructive" });
+      setLocal((l) => ({
+        ...l,
+        [p.id]: {
+          ...l[p.id],
+          ...Object.fromEntries(Object.keys(champs).map((k) => [k, p[k as "exclu"]])),
+        },
+      }));
+      toast({
+        title: "Modification impossible",
+        description: message(e),
+        variant: "destructive",
+      });
     }
   }
 
@@ -229,13 +298,13 @@ export default function StudioBanque() {
           detail={`${(videos ?? []).filter((v) => v.statut === "indexee").length} indexées`}
         />
         <Chiffre titre="Plans utilisables" valeur={chargePlans ? "…" : utilisables} detail={`sur ${tousPlans.length} plans`} />
-        <Chiffre titre="Plans de secours" valeur={`${secours} / ${OBJECTIF_SECOURS}`} detail="« ambiance AL BARAKA »" alerte={secours < OBJECTIF_SECOURS} />
         <Chiffre
-          titre="Thèmes à compléter"
-          valeur={themesEnManque}
-          detail={`moins de ${SEUIL_THEME} plans`}
-          alerte={themesEnManque > 0}
+          titre="Plans de secours"
+          valeur={`${secours} / ${OBJECTIF_SECOURS}`}
+          detail="« ambiance AL BARAKA »"
+          alerte={secours < OBJECTIF_SECOURS}
         />
+        <Chiffre titre="Thèmes à compléter" valeur={themesEnManque} detail={`moins de ${SEUIL_THEME} plans`} alerte={themesEnManque > 0} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-[1fr_280px]">
@@ -286,11 +355,7 @@ export default function StudioBanque() {
           {envois.map((e, k) => (
             <li key={k} className="flex items-center gap-3 text-sm">
               <span className="min-w-0 flex-1 truncate text-foreground">{e.nom}</span>
-              {e.erreur ? (
-                <span className="text-xs text-red-300">{e.erreur}</span>
-              ) : (
-                <Progress value={e.pourcent} className="h-2 w-40" />
-              )}
+              {e.erreur ? <span className="text-xs text-red-300">{e.erreur}</span> : <Progress value={e.pourcent} className="h-2 w-40" />}
             </li>
           ))}
         </ul>
@@ -336,6 +401,19 @@ export default function StudioBanque() {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={categorie ?? "toutes"} onValueChange={(v) => setCategorie(v === "toutes" ? null : v)}>
+              <SelectTrigger className="w-52">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="toutes">Toutes les catégories</SelectItem>
+                {parCategorie.map((c) => (
+                  <SelectItem key={c.nom} value={c.nom}>
+                    {c.nom} ({c.plans})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={voir} onValueChange={(v) => setVoir(v as typeof voir)}>
               <SelectTrigger className="w-44">
                 <SelectValue />
@@ -362,6 +440,7 @@ export default function StudioBanque() {
                     key={p.id}
                     p={p}
                     image={images[p.images[1] ?? p.images[0]]}
+                    categorie={categories.get(p.video_id)}
                     nomTheme={nomTheme}
                     onChange={(champs) => changerPlan(p, champs)}
                   />
@@ -422,25 +501,51 @@ export default function StudioBanque() {
           )}
         </TabsContent>
 
-        <TabsContent value="themes" className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Plans utilisables par thème. Sous {SEUIL_THEME}, le thème manque de plans : c'est ce qu'il faut ajouter en priorité.
-          </p>
-          <div className="space-y-1.5">
-            {couverture.map((t) => (
-              <div key={t.id} className="flex items-center gap-3 text-sm">
-                <span className="w-64 shrink-0 truncate text-foreground">{t.nom}</span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className={cn("h-full rounded-full", t.manque ? "bg-amber-500" : "bg-primary")}
-                    style={{ width: `${Math.min(100, (t.plans / (SEUIL_THEME * 3)) * 100)}%` }}
-                  />
+        <TabsContent value="themes" className="space-y-6">
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Plans utilisables par catégorie : les dossiers de la banque (classement de l'équipe). L'IA s'en sert comme indice.
+            </p>
+            <div className="space-y-1.5" data-testid="banque-categories">
+              {parCategorie.map((c) => (
+                <div key={c.nom} className="flex items-center gap-3 text-sm">
+                  <span className="w-64 shrink-0 truncate text-foreground">{c.nom}</span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{
+                        width: `${Math.min(100, (c.plans / Math.max(1, parCategorie[0]?.plans ?? 1)) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="w-16 text-right tabular-nums text-muted-foreground">{c.plans}</span>
                 </div>
-                <span className={cn("w-16 text-right tabular-nums", t.manque ? "text-amber-300" : "text-muted-foreground")}>
-                  {t.plans}
-                </span>
-              </div>
-            ))}
+              ))}
+              {parCategorie.length === 0 && <p className="text-sm text-muted-foreground">Aucun plan indexé pour l'instant.</p>}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Plans utilisables par thème. Sous {SEUIL_THEME}, le thème manque de plans : c'est ce qu'il faut ajouter en priorité.
+            </p>
+            <div className="space-y-1.5">
+              {couverture.map((t) => (
+                <div key={t.id} className="flex items-center gap-3 text-sm">
+                  <span className="w-64 shrink-0 truncate text-foreground">{t.nom}</span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={cn("h-full rounded-full", t.manque ? "bg-amber-500" : "bg-primary")}
+                      style={{
+                        width: `${Math.min(100, (t.plans / (SEUIL_THEME * 3)) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <span className={cn("w-16 text-right tabular-nums", t.manque ? "text-amber-300" : "text-muted-foreground")}>
+                    {t.plans}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </TabsContent>
       </Tabs>

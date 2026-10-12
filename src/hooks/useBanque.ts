@@ -64,7 +64,7 @@ export function useRafraichirBanque() {
   return () => qc.invalidateQueries({ queryKey: ["banque"] });
 }
 
-export async function majPlan(id: string, champs: Partial<Pick<PlanBanque, "exclu" | "secours">>) {
+export async function majPlan(id: string, champs: Partial<Pick<PlanBanque, "exclu" | "secours" | "mots_cles">>) {
   const { error } = await db.from("studio_banque_plans").update(champs).eq("id", id);
   if (error) throw error;
 }

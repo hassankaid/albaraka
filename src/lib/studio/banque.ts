@@ -81,14 +81,46 @@ export function verifierVideoBanque(f: { name: string; size: number }): string |
   return null;
 }
 
+/** Plans utilisables par catégorie (dossier de Sidali : CASH, WORKING…), du plus riche au plus pauvre. */
+export function couvertureCategories(
+  videos: Pick<VideoBanque, "id" | "dossier" | "exclue">[],
+  plans: Pick<PlanBanque, "video_id" | "exclu" | "qualite">[],
+) {
+  const dossier = new Map(videos.filter((v) => !v.exclue).map((v) => [v.id, v.dossier ?? "Sans dossier"]));
+  const compte = new Map<string, number>();
+  for (const p of plans) {
+    const d = dossier.get(p.video_id);
+    if (d && planUtilisable(p)) compte.set(d, (compte.get(d) ?? 0) + 1);
+  }
+  return [...compte].map(([nom, plans]) => ({ nom, plans })).sort((a, b) => b.plans - a.plans || a.nom.localeCompare(b.nom));
+}
+
+/** Mots-clés saisis à la main (« billets, main, liasse ») : en minuscules, sans doublon, 12 au plus. */
+export function analyserMotsCles(texte: string): string[] {
+  const out: string[] = [];
+  for (const brut of texte.split(/[,;\n]/)) {
+    const m = brut.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 40);
+    if (m && !out.includes(m)) out.push(m);
+  }
+  return out.slice(0, 12);
+}
+
 /** Filtre de la grille des plans. */
 export function filtrerPlans(
   plans: PlanBanque[],
-  f: { theme: string | null; recherche: string; voir: "tous" | "utilisables" | "exclus" | "secours" },
+  f: {
+    theme: string | null;
+    recherche: string;
+    voir: "tous" | "utilisables" | "exclus" | "secours";
+    /** catégorie demandée et catégorie de chaque vidéo (id → dossier) */
+    categorie?: string | null;
+    categories?: Map<string, string | null>;
+  },
 ) {
   const mots = f.recherche.trim().toLowerCase().split(/\s+/).filter(Boolean);
   return plans.filter((p) => {
     if (f.theme && !p.themes.includes(f.theme)) return false;
+    if (f.categorie && (f.categories?.get(p.video_id) ?? "Sans dossier") !== f.categorie) return false;
     if (f.voir === "utilisables" && !planUtilisable(p)) return false;
     if (f.voir === "exclus" && !p.exclu) return false;
     if (f.voir === "secours" && !p.secours) return false;
