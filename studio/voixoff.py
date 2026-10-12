@@ -19,6 +19,7 @@ import concurrent.futures as cf
 import json
 import math
 import os
+import re
 import subprocess
 
 FPS = 30
@@ -103,6 +104,13 @@ def _decouper(a, b, debuts):
     return [(a, t)] + _decouper(t, b, debuts)
 
 
+def recoller(texte):
+    """Whisper coupe « C'est » en « C » + « 'est » et « est-à-dire » en « est -à -dire » :
+    on recolle apostrophes et traits d'union."""
+    texte = re.sub(r"\s+(?=['’-])", "", texte)
+    return re.sub(r"(['’])\s+", r"\1", texte).strip()
+
+
 def moments(gardes, sous_titres, total):
     """Moments de 1,2 à 4 s qui couvrent toute la voix, calés sur les sous-titres
     (un changement de plan tombe sur une pause ou un début de phrase), puis sur les mots."""
@@ -122,7 +130,7 @@ def moments(gardes, sous_titres, total):
     out = []
     for a, b in morceaux:
         for x, y in _decouper(a, b, debuts):
-            texte = " ".join(w["text"] for w in gardes if x - 0.05 <= w["start"] < y - 0.05)
+            texte = recoller(" ".join(w["text"] for w in gardes if x - 0.05 <= w["start"] < y - 0.05))
             out.append({"debut": round(x, 3), "fin": round(y, 3), "texte": texte})
     return out
 
