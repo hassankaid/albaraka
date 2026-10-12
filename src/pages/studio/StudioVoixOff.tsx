@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { demarrer, detecterTheme, importerVoix, useMontage, useThemes } from "@/hooks/useStudio";
-import { completerReglages, REGLAGES_PAR_DEFAUT, type Reglages } from "@/lib/studio/reglages";
+import { completerReglages, messageErreur, REGLAGES_PAR_DEFAUT, type Reglages } from "@/lib/studio/reglages";
 import { compterMots, dureeLecture, SCRIPT_MAX, verifierAudio } from "@/lib/studio/voixoff";
 import { EnregistreurVoix } from "@/components/studio/EnregistreurVoix";
 import { VerifierCoupes } from "@/components/studio/VerifierCoupes";
@@ -19,6 +19,13 @@ import { Bloc, BlocCoupes, BlocDesign, BlocSon, BlocSousTitres } from "@/compone
 
 type Ecran = "script" | "voix" | "reglages";
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+/** « Voix off — T'as vu Allah, subhanahu wa… » plutôt que « voix-off.webm » dans « Mes vidéos ». */
+function titreEnregistrement(script: string) {
+  const mots = script.replace(/\s+/g, " ").trim().split(" ");
+  const debut = mots.slice(0, 6).join(" ").slice(0, 48);
+  return `Voix off — ${debut}${mots.length > 6 ? "…" : ""}.webm`;
+}
 
 export default function StudioVoixOff() {
   const navigate = useNavigate();
@@ -187,7 +194,7 @@ export default function StudioVoixOff() {
                   <Headphones className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> Des écouteurs avec micro, si tu en as.
                 </p>
               </div>
-              <EnregistreurVoix script={script} onValider={(voix) => envoyer(voix, "voix-off.webm")} />
+              <EnregistreurVoix script={script} onValider={(voix) => envoyer(voix, titreEnregistrement(script))} />
               <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground hover:border-primary/60">
                 <Upload className="h-4 w-4" /> Ou importe un enregistrement déjà fait (MP3, M4A, WAV…)
                 <input
@@ -216,7 +223,7 @@ export default function StudioVoixOff() {
         <div className="space-y-4">
           {montage?.statut === "erreur" && (
             <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
-              {montage.erreur ?? "La préparation a échoué."} Tu peux quand même lancer le montage : il reprendra depuis le début.
+              {montage.erreur ? messageErreur(montage.erreur).texte : "La préparation a échoué."} Tu peux quand même lancer le montage : il reprendra depuis le début.
             </div>
           )}
           <p className="text-sm text-muted-foreground">

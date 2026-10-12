@@ -271,6 +271,20 @@ export const LIBELLE_STATUT: Record<Statut, string> = {
   erreur: "Échec",
 };
 
+/** Erreur du montage pour l'élève : les messages prévus (vidéo trop longue, pas de son…) tels quels,
+ * les pannes techniques en phrase simple, le détail gardé à part pour l'équipe. */
+export function messageErreur(erreur: string | null | undefined): { texte: string; detail: string | null } {
+  const e = (erreur ?? "").trim();
+  const technique = e.match(/^Erreur pendant le montage \((.*)\)$/s);
+  if (technique || !e) {
+    return {
+      texte: "Un souci technique a interrompu le montage. Relance-le : la plupart du temps, ça passe. Si ça recommence, signale-le, l'équipe regardera.",
+      detail: technique ? technique[1] : null,
+    };
+  }
+  return { texte: e, detail: null };
+}
+
 export const FORMATS_ACCEPTES = ["video/mp4", "video/quicktime"];
 export const TAILLE_MAX = 1024 * 1024 * 1024; // 1 Go
 export const DUREE_MAX_S = 5 * 60;

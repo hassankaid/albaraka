@@ -30,6 +30,7 @@ import {
   equipeAuTravail,
   etapesAffichees,
   lienDuMontage,
+  messageErreur,
   type Montage,
   type Reglages,
 } from "@/lib/studio/reglages";
@@ -225,7 +226,10 @@ export default function StudioMontage() {
           <p className="flex items-center gap-2 font-semibold text-red-200">
             <AlertTriangle className="h-4 w-4" /> Le montage n'a pas abouti
           </p>
-          <p className="text-sm text-red-100/80">{m.erreur}</p>
+          <p className="text-sm text-red-100/80">{messageErreur(m.erreur).texte}</p>
+          {messageErreur(m.erreur).detail && (
+            <p className="font-mono text-[10px] text-red-100/40">Détail pour l'équipe : {messageErreur(m.erreur).detail}</p>
+          )}
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => relancer(r)} disabled={envoi} className="gap-2">
               {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />} Relancer le montage

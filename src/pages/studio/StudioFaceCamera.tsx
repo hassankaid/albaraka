@@ -12,6 +12,7 @@ import { demarrer, importerVideo, lienStudio, useMontage } from "@/hooks/useStud
 import {
   completerReglages,
   DUREE_MAX_S,
+  messageErreur,
   REGLAGES_PAR_DEFAUT,
   verifierFichier,
   type Reglages,
@@ -171,7 +172,7 @@ export default function StudioFaceCamera() {
           <div className="space-y-4">
             {preparationEchouee && (
               <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
-                {montage?.erreur ?? "La préparation a échoué."} Tu peux quand même lancer le montage : il reprendra depuis le
+                {montage?.erreur ? messageErreur(montage.erreur).texte : "La préparation a échoué."} Tu peux quand même lancer le montage : il reprendra depuis le
                 début.
               </div>
             )}

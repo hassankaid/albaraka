@@ -7,6 +7,7 @@ import {
   etapesAffichees,
   etapesDuMontage,
   lienDuMontage,
+  messageErreur,
   REGLAGES_PAR_DEFAUT,
   verifierFichier,
 } from "./reglages";
@@ -142,5 +143,17 @@ describe("motion design Hyperframes", () => {
     expect(ids[0].nom).toBe("Réception de ta voix");
     expect(ids.map((e) => e.id)).toContain("plans");
     expect(etapesDuMontage({}).map((e) => e.id)).not.toContain("plans");
+  });
+});
+
+describe("erreurs du montage", () => {
+  it("garde les messages prévus et simplifie les pannes techniques", () => {
+    expect(messageErreur("La vidéo dépasse 5 minutes. Coupe-la en plusieurs parties.")).toEqual({
+      texte: "La vidéo dépasse 5 minutes. Coupe-la en plusieurs parties.",
+      detail: null,
+    });
+    const t = messageErreur("Erreur pendant le montage (KeyError: 'duration')");
+    expect(t.texte).toMatch(/souci technique/);
+    expect(t.detail).toBe("KeyError: 'duration'");
   });
 });
