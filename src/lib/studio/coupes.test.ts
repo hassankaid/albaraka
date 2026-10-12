@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  joindre,
+  motsAffiches,
   coupesEntre,
   deplacerBord,
   dureeGardee,
@@ -90,5 +92,21 @@ describe("vérification des coupes", () => {
     expect(memesPlages(null, undefined)).toBe(true);
     expect(minutage(72.44)).toBe("1:12,4");
     expect(minutage(3)).toBe("0:03,0");
+  });
+
+  it("recolle apostrophes et traits d'union à l'affichage", () => {
+    expect(joindre(["C", "'est", "quoi", "?"])).toBe("C'est quoi ?");
+    expect(joindre(["Nourris", "-les", "et", "remercie", "-les"])).toBe("Nourris-les et remercie-les");
+    expect(joindre(["d", "'avancer."])).toBe("d'avancer.");
+    expect(joindre(["l'", "envie"])).toBe("l'envie");
+    const mots = motsAffiches([
+      { text: "C", start: 0, end: 0.2 },
+      { text: "'est", start: 0.2, end: 0.4 },
+      { text: "le", start: 0.5, end: 0.6 },
+    ]);
+    expect(mots).toEqual([
+      { text: "C'est", start: 0, end: 0.4 },
+      { text: "le", start: 0.5, end: 0.6 },
+    ]);
   });
 });

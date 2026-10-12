@@ -227,8 +227,9 @@ export default function StudioMontage() {
       )}
 
       {m.statut === "termine" && !modifier && (
-        <div className="grid gap-6 md:grid-cols-[320px_1fr]">
-          <div className="mx-auto aspect-[9/16] w-full max-w-[320px] overflow-hidden rounded-2xl border border-border bg-black">
+        <div className="grid gap-6 md:grid-cols-[auto_1fr]">
+          {/* la vidéo tient dans l'écran, lecteur compris (écran de portable) */}
+          <div className="mx-auto aspect-[9/16] h-[min(568px,calc(100vh-200px))] min-h-[320px] max-w-full overflow-hidden rounded-2xl border border-border bg-black">
             {video ? (
               <video src={video} controls playsInline className="h-full w-full" data-testid="studio-video" />
             ) : (
@@ -270,9 +271,7 @@ export default function StudioMontage() {
         <PlansVoixOff
           montage={m}
           envoi={envoi}
-          onChanger={(i, planId) =>
-            relancer({ ...r, voix_off: { remplacements: { ...r.voix_off.remplacements, [String(i)]: planId } } })
-          }
+          onAppliquer={(choix) => relancer({ ...r, voix_off: { remplacements: { ...r.voix_off.remplacements, ...choix } } })}
         />
       )}
 

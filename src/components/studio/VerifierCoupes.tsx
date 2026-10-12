@@ -4,7 +4,7 @@
 // La lecture « comme le montage » saute les coupes : on entend le rythme final
 // avant de relancer. Rien n'est envoyé tant que l'élève ne valide pas.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Pause, Play, RotateCcw, Undo2, Volume2, ZoomIn, ZoomOut } from "lucide-react";
+import { Loader2, Mic, Pause, Play, RotateCcw, Undo2, Volume2, ZoomIn, ZoomOut } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ import {
   garderCoupe,
   memesPlages,
   minutage,
+  motsAffiches,
   natureCoupe,
   normaliser,
   tempsDeLecture,
@@ -61,6 +62,8 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
   modeRef.current = mode;
 
   const duree = travail?.meta.duration ?? 0;
+  // Voix off : pas d'image, seulement la voix (la vidéo « d'aperçu » est noire)
+  const voixSeule = !!travail?.meta.audio_seul;
   const dossier = `${montage.user_id}/${montage.id}`;
 
   // chargement : ce que la machine a préparé, et la vidéo légère (ou la source)
@@ -149,8 +152,7 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
   const motsVisibles = useMemo(() => {
     if (!travail || !pxParS) return [];
     let droite = -Infinity;
-    return travail.mots
-      .map((m, k) => ({ ...m, k }))
+    return motsAffiches(travail.mots.map((m, k) => ({ ...m, k })))
       .filter((m) => {
         const x = m.start * pxParS;
         if (x < droite) return false;
@@ -206,8 +208,8 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[94vh] max-w-6xl overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="flex h-[94vh] max-w-6xl flex-col gap-3 overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle>Vérifier les coupes</DialogTitle>
           <DialogDescription>
             En or, les passages gardés ; hachurées, les coupes. Tire les poignées pour prolonger un passage, ou garde
@@ -220,22 +222,37 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
         ) : !travail ? (
           <Loader2 className="mx-auto my-16 h-6 w-6 animate-spin text-muted-foreground" />
         ) : (
-          <div className="space-y-5" data-testid="verifier-coupes">
-            <div className="grid gap-5 md:grid-cols-[220px_1fr]">
-              <div className="mx-auto aspect-[9/16] w-full max-w-[220px] overflow-hidden rounded-xl border border-border bg-black">
+          // la vidéo, la frise et les boutons restent à l'écran ; seule la liste des coupes défile
+          <div className="flex min-h-0 flex-1 flex-col gap-4" data-testid="verifier-coupes">
+            <div className="grid shrink-0 gap-4 md:grid-cols-[auto_1fr]">
+              <div className="relative mx-auto aspect-[9/16] h-[30vh] max-h-[300px] min-h-[170px] overflow-hidden rounded-xl border border-border bg-black">
                 {video ? (
                   <video
                     ref={videoRef}
                     src={video}
                     playsInline
                     preload="auto"
-                    className="h-full w-full object-contain"
+                    className={cn("h-full w-full object-contain", voixSeule && "hidden")}
                     onPlay={() => setLecture(true)}
                     onPause={() => setLecture(false)}
                     data-testid="coupes-video"
                   />
                 ) : (
                   <Loader2 className="m-auto mt-24 h-6 w-6 animate-spin text-muted-foreground" />
+                )}
+                {voixSeule && (
+                  <div
+                    className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-primary/15 to-black p-4 text-center"
+                    data-testid="coupes-voix"
+                  >
+                    <span className={cn("rounded-full bg-primary/20 p-4", lecture && "animate-pulse")}>
+                      <Mic className="h-7 w-7 text-primary" />
+                    </span>
+                    <p className="text-sm font-medium text-foreground">Ta voix</p>
+                    <p className="text-[11px] leading-snug text-muted-foreground">
+                      Ici, tu règles les coupes de ta voix. Les images de la banque sont choisies au montage.
+                    </p>
+                  </div>
                 )}
               </div>
 
@@ -265,7 +282,7 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                     {(
                       [
                         { id: "montage", nom: "Comme le montage" },
-                        { id: "tout", nom: "Vidéo entière" },
+                        { id: "tout", nom: voixSeule ? "Voix entière" : "Vidéo entière" },
                       ] as { id: Mode; nom: string }[]
                     ).map((o) => (
                       <button
@@ -289,14 +306,14 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                 </div>
 
                 <p className="text-xs text-muted-foreground">
-                  « Comme le montage » saute les coupes : tu entends le rythme final. « Vidéo entière » joue tout, pour
-                  repérer ce qui a été coupé.
+                  « Comme le montage » saute les coupes : tu entends le rythme final. « {voixSeule ? "Voix entière" : "Vidéo entière"} »
+                  joue tout, pour repérer ce qui a été coupé.
                 </p>
               </div>
             </div>
 
             {/* la frise */}
-            <div className="space-y-2">
+            <div className="shrink-0 space-y-2">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-foreground">Frise du montage</p>
                 <div className="flex items-center gap-1">
@@ -385,12 +402,12 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
             </div>
 
             {/* la liste des coupes */}
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-foreground">Les coupes</p>
+            <div className="flex min-h-[120px] flex-1 flex-col gap-2">
+              <p className="shrink-0 text-sm font-medium text-foreground">Les coupes</p>
               {coupes.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Plus aucune coupe : toute la vidéo est gardée.</p>
               ) : (
-                <ul className="max-h-72 divide-y divide-border overflow-y-auto rounded-lg border border-border">
+                <ul className="min-h-0 flex-1 divide-y divide-border overflow-y-auto rounded-lg border border-border">
                   {coupes.map((c) => {
                     const n = natureCoupe(c, travail);
                     const bord = c[0] <= 0.001 ? "Début de la vidéo" : c[1] >= duree - 0.001 ? "Fin de la vidéo" : null;
@@ -427,7 +444,7 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
+            <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-border pt-3">
               <Button
                 variant="ghost"
                 className="gap-2"

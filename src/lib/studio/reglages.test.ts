@@ -96,6 +96,12 @@ describe("écran d'attente", () => {
     expect(cleSon(m.reglages)).toBe("fort");
     expect(etapesAffichees({ ...m, etape: "son" }).etapes[etapesAffichees({ ...m, etape: "son" }).courant].id).toBe("son");
   });
+
+  it("coupes changées seulement : le son renettoyé n'affiche pas une transcription à refaire", () => {
+    const m = { ...base, travail_pret: true, audio_prepare: "normal", reglages: {} };
+    const r = etapesAffichees({ ...m, etape: "son" });
+    expect(r.etapes[r.courant].id).toBe("coupes");
+  });
 });
 
 describe("motion design", () => {

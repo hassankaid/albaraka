@@ -116,7 +116,9 @@ def moments(gardes, sous_titres, total):
     (un changement de plan tombe sur une pause ou un début de phrase), puis sur les mots."""
     if total <= 0:
         return []
-    bornes = sorted({0.0, round(total, 3)} | {round(c["start"], 3) for c in sous_titres if 0.05 < c["start"] < total - 0.05})
+    colles = {round(w["start"], 3) for w in gardes if re.match(r"^['’-]", w["text"].strip())}
+    bornes = sorted({0.0, round(total, 3)} | {round(c["start"], 3) for c in sous_titres
+                                              if 0.05 < c["start"] < total - 0.05 and round(c["start"], 3) not in colles})
     morceaux = []
     for a, b in zip(bornes, bornes[1:]):
         if morceaux and (morceaux[-1][1] - morceaux[-1][0] < MOMENT_MIN):
@@ -126,7 +128,8 @@ def moments(gardes, sous_titres, total):
     if len(morceaux) > 1 and morceaux[-1][1] - morceaux[-1][0] < MOMENT_MIN:
         morceaux[-2][1] = morceaux[-1][1]
         morceaux.pop()
-    debuts = [w["start"] for w in gardes]
+    # jamais de coupure juste avant « 'ala » ou « -les » : le mot resterait coupé en deux
+    debuts = [w["start"] for w in gardes if not re.match(r"^['’-]", w["text"].strip())]
     out = []
     for a, b in morceaux:
         for x, y in _decouper(a, b, debuts):

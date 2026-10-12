@@ -19,7 +19,8 @@ export interface MotTravail {
 
 /** Ce que la machine a gardé de la préparation (travail.json) et qui sert ici. */
 export interface TravailCoupes {
-  meta: { duration: number };
+  /** audio_seul : Voix off (la voix seule, sans image) */
+  meta: { duration: number; audio_seul?: boolean };
   coupes: Plage[];
   mots: MotTravail[];
   retires: number[];
@@ -95,6 +96,28 @@ export function memesPlages(x: Plage[] | null | undefined, y: Plage[] | null | u
 }
 
 /** Ce que la coupe enlève : une phrase recommencée (mots retirés par l'IA) ou un blanc. */
+/** Whisper coupe « C'est » en « C » + « 'est » et « Nourris-les » en « Nourris » + « -les » :
+ * à l'affichage, on recolle apostrophes et traits d'union. */
+export function joindre(mots: string[]): string {
+  return mots
+    .join(" ")
+    .replace(/\s+(?=['’-])/g, "")
+    .replace(/(['’])\s+/g, "$1")
+    .trim();
+}
+
+/** Les mots de la frise, recollés de la même façon (le premier garde le début, le dernier la fin). */
+export function motsAffiches<M extends MotTravail>(mots: M[]): M[] {
+  const out: M[] = [];
+  for (const m of mots) {
+    const avant = out[out.length - 1];
+    if (avant && (/^['’-]/.test(m.text.trim()) || /['’]$/.test(avant.text.trim()))) {
+      out[out.length - 1] = { ...avant, text: joindre([avant.text, m.text]), end: m.end };
+    } else out.push({ ...m });
+  }
+  return out;
+}
+
 export function natureCoupe(coupe: Plage, travail: Pick<TravailCoupes, "mots" | "retires">): {
   phraseRatee: boolean;
   avant: string;
@@ -105,13 +128,13 @@ export function natureCoupe(coupe: Plage, travail: Pick<TravailCoupes, "mots" | 
   const dedans = travail.mots
     .map((m, i) => ({ ...m, i }))
     .filter((m) => (m.start + m.end) / 2 >= coupe[0] && (m.start + m.end) / 2 <= coupe[1]);
-  const avant = travail.mots.filter((m) => m.end <= coupe[0] + 0.05).slice(-3).map((m) => m.text).join(" ");
-  const apres = travail.mots.filter((m) => m.start >= coupe[1] - 0.05).slice(0, 3).map((m) => m.text).join(" ");
+  const avant = joindre(travail.mots.filter((m) => m.end <= coupe[0] + 0.05).slice(-3).map((m) => m.text));
+  const apres = joindre(travail.mots.filter((m) => m.start >= coupe[1] - 0.05).slice(0, 3).map((m) => m.text));
   return {
     phraseRatee: dedans.some((m) => retires.has(m.i)),
     avant,
     apres,
-    mots: dedans.map((m) => m.text).join(" "),
+    mots: joindre(dedans.map((m) => m.text)),
   };
 }
 

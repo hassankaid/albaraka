@@ -251,6 +251,9 @@ export function etapesAffichees(m: Pick<Montage, "reglages" | "etape" | "travail
   if (renduSeul && (courant === -1 || m.etape === "reception")) {
     courant = etapes.findIndex((e) => !ETAPES_PREPARATION.includes(e.id));
   }
+  // coupes changées seulement : la machine renettoie le son (quelques secondes) puis refait les
+  // coupes, sans retranscrire ; transcription et phrases ratées restent affichées comme faites
+  if (renduSeul && m.etape === "son") courant = etapes.findIndex((e) => e.id === "coupes");
   return { etapes, courant: Math.max(0, courant) };
 }
 
