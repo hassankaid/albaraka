@@ -20,12 +20,16 @@ les corrections de la plateforme sont ici :
   6. motion design piloté par un plan d'animation de l'IA (voir animations.py) ;
   7. motion design Hyperframes (dossier hf/) : l'IA choisit des recettes dans la bibliothèque
      AL BARAKA, la composition est vérifiée puis rendue. animations.py reste en secours.
+  8. rythme des coupes réglable, et coupes ajustées à la main (vocal de Sidali, 12/10) : le
+     moteur supprimait toute pause de plus de 120 ms. Changer les coupes ne refait ni la
+     transcription ni les phrases ratées (voir monter et coupes_a_refaire).
 
   preparation : son (réglage « normal »), aperçu, transcription, phrases ratées,
                 coupes, montage brut, sous-titres. Si l'élève a déjà lancé le
                 montage, enchaîne le rendu.
   complet     : la même chose avec le réglage de son choisi, puis le rendu.
-  rendu       : floutage et incrustation seulement, à partir de la préparation.
+  rendu       : floutage et incrustation seulement, à partir de la préparation
+                (les coupes sont refaites d'abord si l'élève les a changées).
 """
 from __future__ import annotations
 
@@ -178,6 +182,75 @@ P.CAPTION_PROMPT = P.CAPTION_PROMPT.replace(
     "Réponds UNIQUEMENT en JSON",
     "Écris le mot clé avec sa casse naturelle (minuscules, sauf noms propres et « AL BARAKA »), "
     "jamais tout en majuscules.\n\nRéponds UNIQUEMENT en JSON")
+
+
+# Correctif 8 : rythme des coupes (pause gardée entière / marge avant / marge après la voix).
+# « dynamique » est le réglage d'origine du moteur ; « naturel » garde les respirations.
+RYTHMES = {
+    "dynamique": (0.12, 0.05, 0.08),
+    "naturel": (0.35, 0.08, 0.15),
+    "pose": (0.70, 0.12, 0.25),
+}
+RYTHME_DEFAUT = "naturel"
+
+
+def coupes_reglees(reglages, duree):
+    """(rythme, plages gardées à la main ou None) d'après les réglages de l'élève."""
+    c = (reglages or {}).get("coupes") or {}
+    rythme = c.get("rythme") if c.get("rythme") in RYTHMES else RYTHME_DEFAUT
+    plages = []
+    for p in c.get("plages") or []:
+        try:
+            a, b = max(0.0, float(p[0])), min(float(duree), float(p[1]))
+        except (TypeError, ValueError, IndexError):
+            continue
+        a, b = np.floor(a * P.OUT_FPS) / P.OUT_FPS, np.ceil(b * P.OUT_FPS) / P.OUT_FPS
+        if b - a >= 0.1:
+            plages.append([round(float(a), 3), round(float(min(b, duree)), 3)])
+    plages.sort()
+    fusion = []
+    for a, b in plages[:2000]:
+        if fusion and a <= fusion[-1][1]:
+            fusion[-1][1] = max(fusion[-1][1], b)
+        else:
+            fusion.append([a, b])
+    return rythme, (fusion or None)
+
+
+def coupes_a_refaire(travail, reglages):
+    """Les coupes de la préparation gardée diffèrent-elles de celles demandées ?"""
+    rythme, plages = coupes_reglees(reglages, travail["meta"]["duration"])
+    if plages:
+        return plages != travail.get("plages")
+    return travail.get("plages") is not None or travail.get("rythme", "dynamique") != rythme
+
+
+def plages_d_index(indices):
+    """{2, 3, 4, 9} → [(2, 4), (9, 9)] (format de kept_ranges_from_words)."""
+    out = []
+    for i in sorted(indices):
+        if out and i == out[-1][1] + 1:
+            out[-1][1] = i
+        else:
+            out.append([i, i])
+    return [tuple(p) for p in out]
+
+
+def grouper_sous_titres(kept):
+    """Comme P.group_captions, mais garde les index de mots de chaque sous-titre : si seules
+    les coupes changent, les sous-titres sont recalés sans redemander l'IA."""
+    listing = "\n".join(f"{i}: {w.text}" for i, w in enumerate(kept))
+    data = json.loads(llm(P.CAPTION_PROMPT.format(words=listing)))
+    textes, groupes = [], []
+    for c in data["captions"]:
+        groupes.append([int(c["first"]), int(c["last"])])
+        textes.append({"small": c.get("small", ""), "big": casse_mot_cle(c.get("big", ""))})
+    return textes, groupes
+
+
+def caler_sous_titres(textes, groupes, kept, total):
+    caps = [P.Caption(t["small"], t["big"], kept[f].start, kept[l].end) for t, (f, l) in zip(textes, groupes)]
+    return P.finalize_timing(P.finalize_timing(caps), total)  # comme le moteur (group_captions puis préparation)
 
 
 def casse_mot_cle(texte):
@@ -425,55 +498,113 @@ def preparer(src, dossier, liens, reglages, avec_apercu):
     etape("phrases_ratees")
     remove = P.detect_retakes(words, llm)
     t = top("phrases_ratees", t)
-    etape("coupes")
-    cuts = P.tighten(P.kept_ranges_from_words(words, remove, meta["duration"]), P.energy_db(wav))
     removed = {i for a, b in remove for i in range(a, b + 1)}
+    travail = {"meta": meta, "audio": cle_son, "mots": [dataclasses.asdict(w) for w in words],
+               "retires_ia": sorted(removed), "chrono": chrono}
+    if "travail/apercu.mp4" in liens["deposer"]:
+        try:  # vidéo légère pour « Vérifier les coupes » (la source peut faire 1 Go)
+            deposer(liens["deposer"]["travail/apercu.mp4"], video_apercu(src, clean, meta, dossier), "video/mp4")
+            travail["apercu_video"] = True
+        except Exception:
+            traceback.print_exc()
+    monter(src, dossier, liens, travail, reglages, chrono=chrono)
+    return travail, cle_son
+
+
+def video_apercu(src, clean, meta, dossier):
+    """La vidéo entière au cadre final, en petit (360 x 640), avec le son nettoyé."""
+    vf = []
+    if meta["hdr"]:
+        vf.append("zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv")
+    vf.append(f"scale={P.OUT_W}:{P.OUT_H}:force_original_aspect_ratio=increase,crop={P.OUT_W}:{P.OUT_H},"
+              "scale=360:640,setsar=1,format=yuv420p")
+    sortie = os.path.join(dossier, "apercu.mp4")
+    P.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-i", clean, "-map", "0:v:0", "-map", "1:a:0",
+           "-vf", ",".join(vf), "-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "30", "-g", "30",
+           "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", "-shortest", sortie])
+    return sortie
+
+
+def monter(src, dossier, liens, travail, reglages, chrono=None, precedent=None):
+    """Coupes → montage brut → sous-titres → plan d'animation, à partir des mots transcrits.
+    `precedent` : la préparation d'avant, quand seules les coupes changent. Si les mots
+    gardés sont les mêmes, sous-titres et plan sont recalés sans redemander l'IA."""
+    chrono = chrono if chrono is not None else {}
+    t = time.time()
+
+    def top(cle):
+        nonlocal t
+        chrono[cle] = round(time.time() - t, 1)
+        t = time.time()
+
+    meta = travail["meta"]
+    clean, wav = os.path.join(dossier, "clean48k.wav"), os.path.join(dossier, "a.wav")
+    words = [P.Word(**w) for w in travail["mots"]]
+    rythme, plages = coupes_reglees(reglages, meta["duration"])
+    etape("coupes")
+    retires = set(travail.get("retires_ia", travail.get("retires", [])))
+    if plages:
+        cuts = [tuple(p) for p in plages]
+        # un mot est gardé si son milieu est dans une plage gardée (l'élève peut remettre
+        # une phrase que l'IA avait jugée ratée, ou couper un mot)
+        retires = {i for i, w in enumerate(words) if not any(a <= (w.start + w.end) / 2 <= b for a, b in cuts)}
+    else:
+        P.CUT_MIN_GAP, P.CUT_PRE_PAD, P.CUT_POST_PAD = RYTHMES[rythme]
+        cuts = P.tighten(P.kept_ranges_from_words(words, plages_d_index(retires), meta["duration"]), P.energy_db(wav))
     kept = []
     for i, w in enumerate(words):
-        if i in removed:
+        if i in retires:
             continue
         s, e = P.map_time(w.start, cuts, "start"), P.map_time(w.end, cuts, "end")
         kept.append(P.Word(w.text, s, max(e, s + 0.05)))
-    t = top("coupes", t)
+    if not kept:
+        raise ValueError("Avec ces coupes, plus aucune parole n'est gardée. Remets au moins un passage.")
+    top("coupes")
     etape("montage")
     cut = os.path.join(dossier, "cut.mp4")
     P.render_cut(src, clean, cuts, meta, cut)
     total = sum(b - a for a, b in cuts)
-    t = top("montage", t)
+    top("montage")
     etape("sous_titres")
-    caps = P.finalize_timing(P.group_captions(kept, llm), total)
-    for c in caps:
-        c.big = casse_mot_cle(c.big)
-    t = top("sous_titres", t)
+    memes_mots = bool(precedent and precedent.get("groupes") and sorted(retires) == precedent.get("retires"))
+    if memes_mots:
+        textes = [{"small": c["small"], "big": c["big"]} for c in precedent["sous_titres"]]
+        groupes = precedent["groupes"]
+    else:
+        textes, groupes = grouper_sous_titres(kept)
+    caps = caler_sous_titres(textes, groupes, kept, total)
+    top("sous_titres")
     etape("animations")
     gardes = [dataclasses.asdict(w) for w in kept]
     sous_titres = [dataclasses.asdict(c) for c in caps]
+    brut = precedent.get("plan_hf_brut") if memes_mots else None
     try:
-        plan = plan_hf(gardes, sous_titres, total)
+        brut, plan = plan_hf(gardes, sous_titres, total, brut)
     except Exception:  # le plan sera redemandé au rendu (ou le motion design classique prendra le relais)
         traceback.print_exc()
-        plan = None
-    t = top("animations", t)
-    travail = {
-        "meta": meta, "audio": cle_son, "duree_sortie": round(total, 2), "coupes": cuts,
-        "mots": [dataclasses.asdict(w) for w in words], "retires": sorted(removed),
-        "sous_titres": sous_titres, "chrono": chrono,
-        "mots_gardes": gardes, "plan_hf": plan,
+        brut = plan = None
+    top("animations")
+    travail.update({
+        "rythme": rythme, "plages": plages, "duree_sortie": round(total, 2), "coupes": cuts,
+        "retires": sorted(retires), "sous_titres": sous_titres, "groupes": groupes, "chrono": chrono,
+        "mots_gardes": gardes, "plan_hf": plan, "plan_hf_brut": brut, "plan": None,
         "cout_usd": dict(COUT), "reponses_ia": REPONSES_IA[-4:],
-    }
+    })
     chemin = os.path.join(dossier, "travail.json")
     with open(chemin, "w", encoding="utf-8") as f:
         json.dump(travail, f, ensure_ascii=False)
     deposer(liens["deposer"]["travail/cut.mp4"], cut, "video/mp4")
     deposer(liens["deposer"]["travail/travail.json"], chemin, "application/json")
-    return travail, cle_son
+    return travail
 
 
-def plan_hf(gardes, sous_titres, duree):
-    """Plan du motion design Hyperframes : l'IA choisit dans la bibliothèque (hf/catalogue.py)."""
+def plan_hf(gardes, sous_titres, duree, brut=None):
+    """Plan du motion design Hyperframes : l'IA choisit dans la bibliothèque (hf/catalogue.py).
+    Renvoie (plan brut de l'IA, plan nettoyé) ; un plan brut déjà connu est seulement recalé."""
     import catalogue as HC
-    brut = json.loads(llm(HC.prompt(gardes, sous_titres, duree)))
-    return HC.nettoyer(brut, gardes, sous_titres, duree)
+    if brut is None:
+        brut = json.loads(llm(HC.prompt(gardes, sous_titres, duree)))
+    return brut, HC.nettoyer(brut, gardes, sous_titres, duree)
 
 
 def hyperframes_present():
@@ -495,7 +626,8 @@ def rendre_hf(dossier, liens, reglages, travail, flou):
     mots = mots_gardes(travail)
     plan = travail.get("plan_hf")
     if plan is None:
-        plan = travail["plan_hf"] = plan_hf(mots, travail["sous_titres"], travail["duree_sortie"])
+        travail["plan_hf_brut"], plan = plan_hf(mots, travail["sous_titres"], travail["duree_sortie"])
+        travail["plan_hf"] = plan
     compo = os.path.join(dossier, "hf")
     donnees = HA.construire(compo, video, travail, plan, reglages, visages, mots, original=cut if flou else None)
     etape("verification")
@@ -631,6 +763,16 @@ def main():
             if travail.get("audio") != options_son(reglages)[1] and liens.get("source"):
                 telecharger(liens["source"], src)
                 travail, _ = preparer(src, dossier, liens, reglages, avec_apercu=False)
+        # coupes changées (rythme ou ajustées à la main) : seules les coupes et la suite sont refaites
+        if coupes_a_refaire(travail, reglages):
+            if not os.path.exists(src):
+                telecharger(liens["source"], src)
+            if not os.path.exists(os.path.join(dossier, "clean48k.wav")):
+                etape("son")
+                P.enhance_audio(src, os.path.join(dossier, "clean48k.wav"), os.path.join(dossier, "a.wav"),
+                                options_son(reglages)[0])
+            precedent = json.loads(json.dumps(travail))
+            monter(src, dossier, liens, travail, reglages, precedent=precedent)
         rendu = rendre(dossier, liens, reglages, travail)
         rapport = {
             "entree_s": round(travail["meta"]["duration"], 2), "sortie_s": travail["duree_sortie"],

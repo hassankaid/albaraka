@@ -20,7 +20,7 @@ import { createClient } from "@supabase/supabase-js";
 const BUCKET = "studio-videos";
 const REGION = "cdg1"; // Paris : les vidéos des élèves restent en Europe
 const DUREE_MACHINE_MS = 25 * 60 * 1000;
-const DEPOTS = ["apercu.jpg", "travail/cut.mp4", "travail/travail.json", "sortie.mp4"];
+const DEPOTS = ["apercu.jpg", "travail/cut.mp4", "travail/travail.json", "travail/apercu.mp4", "sortie.mp4"];
 
 const repondre = (status: number, corps: unknown) =>
   new Response(JSON.stringify(corps), { status, headers: { "Content-Type": "application/json" } });

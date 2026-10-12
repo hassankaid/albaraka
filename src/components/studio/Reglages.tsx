@@ -1,10 +1,12 @@
-// Les 4 blocs de réglages du Studio : Visage, Son, Sous-titres, Design.
+// Les blocs de réglages du Studio : Visage, Son, Sous-titres, Design, Coupes.
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { NIVEAUX_SON, PALETTES, STYLES_MONTAGE, type Reglages } from "@/lib/studio/reglages";
+import { Scissors } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { NIVEAUX_SON, PALETTES, RYTHMES_COUPES, STYLES_MONTAGE, type Reglages } from "@/lib/studio/reglages";
 import { SelecteurCouleur } from "./SelecteurCouleur";
 
 type Maj = (r: Reglages) => void;
@@ -212,6 +214,64 @@ export function BlocDesign({ reglages, onChange }: { reglages: Reglages; onChang
             <p className="text-xs text-muted-foreground">Sans prénom, la vidéo n'a pas de carte de présentation.</p>
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Rythme des coupes, et accès à « Vérifier les coupes » quand la préparation est faite.
+ * Des coupes ajustées à la main remplacent le rythme : changer de rythme les efface.
+ */
+export function BlocCoupes({
+  reglages,
+  onChange,
+  onVerifier,
+}: {
+  reglages: Reglages;
+  onChange: Maj;
+  onVerifier?: () => void;
+}) {
+  const c = reglages.coupes;
+  const aLaMain = !!c.plages?.length;
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-foreground">Rythme des coupes</p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {RYTHMES_COUPES.map((o) => {
+            const actif = !aLaMain && c.rythme === o.id;
+            return (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => onChange({ ...reglages, coupes: { rythme: o.id, plages: null } })}
+                aria-pressed={actif}
+                className={cn(
+                  "rounded-lg border px-3 py-2 text-left transition-colors",
+                  actif ? "border-primary bg-primary/10" : "border-border hover:border-primary/50",
+                )}
+              >
+                <span className={cn("block text-sm font-semibold", actif ? "text-primary" : "text-foreground")}>{o.nom}</span>
+                <span className="block text-xs text-muted-foreground">{o.description}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {aLaMain && (
+        <p className="rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-xs text-foreground">
+          Coupes ajustées à la main. Choisir un rythme ci-dessus revient aux coupes automatiques.
+        </p>
+      )}
+      {onVerifier ? (
+        <Button type="button" variant="outline" onClick={onVerifier} className="w-full gap-2 sm:w-auto">
+          <Scissors className="h-4 w-4" /> Vérifier les coupes
+        </Button>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          Tu pourras vérifier chaque coupe et prolonger un passage dès que la préparation de ta vidéo est terminée.
+        </p>
       )}
     </div>
   );

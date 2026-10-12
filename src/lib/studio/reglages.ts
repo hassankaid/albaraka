@@ -10,6 +10,9 @@ export type NiveauSon = "leger" | "normal" | "fort";
 /** Ton du montage : « auto » laisse l'IA choisir selon le sujet (grave, par défaut, motivation). */
 export type StyleMontage = "auto" | "sobre" | "signature" | "energique";
 
+/** Rythme des coupes (vocal de Sidali, 12/10) : « dynamique » est l'ancien comportement. */
+export type RythmeCoupes = "naturel" | "dynamique" | "pose";
+
 export type PaletteId = "or_noir" | "emeraude" | "rose_poudre" | "bleu_electrique" | "rouge_passion" | "blanc_minimal" | "personnalise";
 
 export interface Reglages {
@@ -27,6 +30,8 @@ export interface Reglages {
     prenom: string;
     titre: string;
   };
+  /** Coupes des blancs : rythme automatique, ou passages gardés ajustés à la main (secondes). */
+  coupes: { rythme: RythmeCoupes; plages: [number, number][] | null };
 }
 
 export const REGLAGES_PAR_DEFAUT: Reglages = {
@@ -35,7 +40,14 @@ export const REGLAGES_PAR_DEFAUT: Reglages = {
   visage: { flouter: false, style: "naturel", couleur: "#C9A45C", intensite: 3, intensite_couleur: 3 },
   // activé par défaut (cahier des charges, section 4)
   design: { actif: true, style: "auto", palette: "or_noir", principale: "#C9A45C", fond: "#0F0F0F", texte: "#FFFFFF", prenom: "", titre: "" },
+  coupes: { rythme: "naturel", plages: null },
 };
+
+export const RYTHMES_COUPES: { id: RythmeCoupes; nom: string; description: string }[] = [
+  { id: "naturel", nom: "Naturel", description: "Garde les respirations et les petites pauses" },
+  { id: "dynamique", nom: "Dynamique", description: "Coupe tous les blancs, rythme serré" },
+  { id: "pose", nom: "Posé", description: "Garde presque toutes les pauses, idéal pour un cours" },
+];
 
 export const STYLES_MONTAGE: { id: StyleMontage; nom: string; description: string }[] = [
   { id: "auto", nom: "Auto", description: "L'IA choisit selon ton sujet" },
@@ -181,6 +193,7 @@ export function completerReglages(r: Partial<Reglages> | null | undefined): Regl
     // les montages faits avec un ancien style (bulle colorée) repassent au flou naturel
     visage: { ...REGLAGES_PAR_DEFAUT.visage, ...(r?.visage ?? {}), style: "naturel" },
     design: { ...REGLAGES_PAR_DEFAUT.design, ...(r?.design ?? {}) },
+    coupes: { ...REGLAGES_PAR_DEFAUT.coupes, ...(r?.coupes ?? {}) },
   };
 }
 

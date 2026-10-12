@@ -33,7 +33,8 @@ import {
   type Reglages,
 } from "@/lib/studio/reglages";
 import { ApercuStudio } from "@/components/studio/ApercuStudio";
-import { Bloc, BlocDesign, BlocSon, BlocSousTitres, BlocVisage } from "@/components/studio/Reglages";
+import { Bloc, BlocCoupes, BlocDesign, BlocSon, BlocSousTitres, BlocVisage } from "@/components/studio/Reglages";
+import { VerifierCoupes } from "@/components/studio/VerifierCoupes";
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -112,6 +113,8 @@ export default function StudioMontage() {
   const [apercu, setApercu] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [signal, setSignal] = useState<string | null>(null);
+  // « relancer » : depuis la vidéo finie, on refait tout de suite ; « regler » : depuis les réglages
+  const [verifier, setVerifier] = useState<"relancer" | "regler" | null>(null);
 
   useEffect(() => {
     if (m?.statut === "termine" && m.sortie_path) {
@@ -247,6 +250,9 @@ export default function StudioMontage() {
               <Button onClick={telecharger} className="gap-2">
                 <Download className="h-4 w-4" /> Télécharger
               </Button>
+              <Button variant="outline" onClick={() => setVerifier("relancer")} className="gap-2">
+                <Scissors className="h-4 w-4" /> Vérifier les coupes
+              </Button>
               <Button variant="outline" onClick={() => setModifier(true)} className="gap-2">
                 <Settings2 className="h-4 w-4" /> Changer les réglages
               </Button>
@@ -273,6 +279,9 @@ export default function StudioMontage() {
             <Bloc titre="Design">
               <BlocDesign reglages={r} onChange={setReglages} />
             </Bloc>
+            <Bloc titre="Coupes">
+              <BlocCoupes reglages={r} onChange={setReglages} onVerifier={() => setVerifier("regler")} />
+            </Bloc>
             {sonChange && (
               <p className="text-xs text-amber-300">
                 Le réglage du son a changé : tout le montage sera refait (quelques minutes).
@@ -297,6 +306,21 @@ export default function StudioMontage() {
             <ApercuStudio image={apercu} visages={m.apercu?.visages ?? []} reglages={r} flou />
           </div>
         </div>
+      )}
+
+      {m.travail_pret && (
+        <VerifierCoupes
+          open={verifier !== null}
+          onOpenChange={(o) => !o && setVerifier(null)}
+          montage={m}
+          reglages={r}
+          libelleValider={verifier === "relancer" ? "Refaire la vidéo avec ces coupes" : "Valider ces coupes"}
+          onValider={(plages) => {
+            const nouveaux = { ...r, coupes: { ...r.coupes, plages } };
+            if (verifier === "relancer") relancer(nouveaux);
+            else setReglages(nouveaux);
+          }}
+        />
       )}
 
       <Dialog open={signal !== null} onOpenChange={(o) => !o && setSignal(null)}>

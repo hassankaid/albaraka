@@ -18,7 +18,8 @@ import {
 } from "@/lib/studio/reglages";
 import { ApercuStudio } from "@/components/studio/ApercuStudio";
 import { imageDuFichier } from "@/lib/studio/image";
-import { Bloc, BlocDesign, BlocSon, BlocSousTitres, BlocVisage } from "@/components/studio/Reglages";
+import { Bloc, BlocCoupes, BlocDesign, BlocSon, BlocSousTitres, BlocVisage } from "@/components/studio/Reglages";
+import { VerifierCoupes } from "@/components/studio/VerifierCoupes";
 
 type Ecran = "import" | "visage" | "reglages";
 
@@ -54,6 +55,7 @@ export default function StudioFaceCamera() {
   const [imageLocale, setImageLocale] = useState<HTMLCanvasElement | null>(null);
   const [imageServeur, setImageServeur] = useState<string | null>(null);
   const [lancement, setLancement] = useState(false);
+  const [verifier, setVerifier] = useState(false);
   const charge = useRef(false);
 
   // reprise d'un montage commencé : ses réglages enregistrés
@@ -193,6 +195,13 @@ export default function StudioFaceCamera() {
                 <Bloc titre="Design">
                   <BlocDesign reglages={reglages} onChange={setReglages} />
                 </Bloc>
+                <Bloc titre="Coupes">
+                  <BlocCoupes
+                    reglages={reglages}
+                    onChange={setReglages}
+                    onVerifier={montage?.travail_pret ? () => setVerifier(true) : undefined}
+                  />
+                </Bloc>
                 <div className="flex flex-wrap justify-between gap-2">
                   <Button variant="outline" onClick={() => setEcran("visage")}>
                     Retour
@@ -215,6 +224,16 @@ export default function StudioFaceCamera() {
             />
           </div>
         </div>
+      )}
+      {montage?.travail_pret && (
+        <VerifierCoupes
+          open={verifier}
+          onOpenChange={setVerifier}
+          montage={montage}
+          reglages={reglages}
+          libelleValider="Valider ces coupes"
+          onValider={(plages) => setReglages({ ...reglages, coupes: { ...reglages.coupes, plages } })}
+        />
       )}
     </div>
   );
