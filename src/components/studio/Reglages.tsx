@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Scissors } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { NIVEAUX_SON, PALETTES, RYTHMES_COUPES, STYLES_MONTAGE, type Reglages } from "@/lib/studio/reglages";
+import { FONDS_SONORES, NIVEAUX_SON, PALETTES, RYTHMES_COUPES, STYLES_MONTAGE, type Reglages } from "@/lib/studio/reglages";
 import { SelecteurCouleur } from "./SelecteurCouleur";
 
 type Maj = (r: Reglages) => void;
@@ -98,6 +98,29 @@ export function BlocSon({ reglages, onChange }: { reglages: Reglages; onChange: 
           </div>
         </div>
       )}
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-foreground">
+          Fond sonore
+          <span className="block text-xs font-normal text-muted-foreground">Sous ta voix, baissé automatiquement quand tu parles</span>
+        </p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" data-testid="fond-sonore">
+          {FONDS_SONORES.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => maj({ fond: f.id })}
+              aria-pressed={s.fond === f.id}
+              className={cn(
+                "rounded-lg border px-3 py-2 text-left transition-colors",
+                s.fond === f.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/50",
+              )}
+            >
+              <span className={cn("block text-sm font-medium", s.fond === f.id && "text-primary")}>{f.nom}</span>
+              <span className="block text-[11px] text-muted-foreground">{f.detail}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

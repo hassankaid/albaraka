@@ -653,6 +653,45 @@ def liens_banque(chemins):
     return rep["liens"]
 
 
+FONDS = ("humming", "nasheed", "maher_zain")
+
+
+def mixer_fond(video, fond, dst):
+    """Fond sonore sous la voix : niveau ramené à -24 LUFS, fondu d'entrée et de sortie, et
+    baissé automatiquement quand la voix parle (compression par la voix, « ducking »)."""
+    d = float(P.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", video]))
+    filtre = (
+        "[0:a]aresample=48000,aformat=channel_layouts=stereo,asplit=2[voix][cle];"
+        "[1:a]loudnorm=I=-24:TP=-3:LRA=11,aresample=48000,aformat=channel_layouts=stereo,"
+        f"afade=t=in:d=1.5,afade=t=out:st={max(0.0, d - 2):.2f}:d=2[fond];"
+        "[fond][cle]sidechaincompress=threshold=0.1:ratio=3:attack=20:release=500[baisse];"
+        "[voix][baisse]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.95:level=0[a]")
+    P.run(["ffmpeg", "-v", "error", "-y", "-i", video, "-stream_loop", "-1", "-i", fond,
+           "-filter_complex", filtre, "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+           "-movflags", "+faststart", "-t", f"{d:.3f}", dst])
+
+
+def ajouter_fond(sortie, reglages, dossier):
+    """« Fond sonore » choisi par l'élève (un son au hasard dans la catégorie). Ne fait jamais
+    échouer le montage : en cas de souci, la vidéo part avec la voix seule."""
+    fond = ((reglages or {}).get("son") or {}).get("fond")
+    if fond not in FONDS:
+        return None
+    try:
+        son = (rpc("studio_job_fond_sonore", p_id=MONTAGE, p_jeton=JETON, p_categorie=fond) or [None])[0]
+        if not son:
+            return None
+        local = os.path.join(dossier, "fond" + os.path.splitext(son["chemin"])[1])
+        telecharger(liens_banque([son["chemin"]])[son["chemin"]], local)
+        mixe = os.path.join(dossier, "sortie_fond.mp4")
+        mixer_fond(sortie, local, mixe)
+        os.replace(mixe, sortie)
+        return son["nom"]
+    except Exception:
+        traceback.print_exc()
+        return None
+
+
 def choisir_plans(gardes, sous_titres, total):
     """Voix off : moments → ce qu'il faut montrer (Claude) → recherche par le sens → choix."""
     import voixoff as V
@@ -762,9 +801,10 @@ def rendre_hf(dossier, liens, reglages, travail, flou):
     etape("incrustation")
     sortie = os.path.join(dossier, "sortie.mp4")
     HA.rendre(compo, sortie)
+    fond = ajouter_fond(sortie, reglages, dossier)
     etape("envoi")
     deposer(liens["deposer"]["sortie.mp4"], sortie, "video/mp4")
-    return {"moteur": "hyperframes", "passe_image": stats, "style": donnees["style"],
+    return {"moteur": "hyperframes", "fond_sonore": fond, "passe_image": stats, "style": donnees["style"],
             "motion_design": donnees["elements"], "cta": donnees["cta"], "verification": problemes,
             "rendu_s": round(time.time() - t0, 1)}
 
@@ -841,9 +881,10 @@ def rendre(dossier, liens, reglages, travail):
     etape("incrustation")
     sortie = os.path.join(dossier, "sortie.mp4")
     P.burn(etape_video, ass, sortie)
+    fond = ajouter_fond(sortie, reglages, dossier)
     etape("envoi")
     deposer(liens["deposer"]["sortie.mp4"], sortie, "video/mp4")
-    return {"moteur": "classique", "passe_image": stats, "motion_design": scene["plan"] if scene else None,
+    return {"moteur": "classique", "fond_sonore": fond, "passe_image": stats, "motion_design": scene["plan"] if scene else None,
             "secours_hyperframes": secours, "rendu_s": round(time.time() - t0, 1)}
 
 

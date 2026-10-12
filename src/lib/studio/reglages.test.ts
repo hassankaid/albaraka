@@ -32,7 +32,10 @@ describe("réglages", () => {
     expect(r.visage).toMatchObject({ flouter: true, style: "naturel", intensite: 3 });
     // un montage réglé avec une ancienne bulle colorée repasse au flou naturel
     expect(completerReglages({ visage: { flouter: true, style: "sticker" } as never }).visage.style).toBe("naturel");
-    expect(r.son).toEqual({ ameliorer: true, niveau: "normal" });
+    expect(r.son).toEqual({ ameliorer: true, niveau: "normal", fond: "aucun" });
+    // fond sonore : une valeur inconnue repasse à « aucun »
+    expect(completerReglages({ son: { fond: "nasheed" } as never }).son.fond).toBe("nasheed");
+    expect(completerReglages({ son: { fond: "rap" } as never }).son.fond).toBe("aucun");
     expect(r.sous_titres).toEqual({ texte: "#FFFFFF", contour: "#000000", ombre: "#000000" });
   });
 
@@ -89,7 +92,7 @@ describe("écran d'attente", () => {
   });
 
   it("si le son a changé, tout est refait", () => {
-    const m = { ...base, travail_pret: true, audio_prepare: "normal", reglages: { son: { ameliorer: true, niveau: "fort" as const } } };
+    const m = { ...base, travail_pret: true, audio_prepare: "normal", reglages: { son: { ameliorer: true, niveau: "fort" as const, fond: "aucun" as const } } };
     expect(cleSon(m.reglages)).toBe("fort");
     expect(etapesAffichees({ ...m, etape: "son" }).etapes[etapesAffichees({ ...m, etape: "son" }).courant].id).toBe("son");
   });

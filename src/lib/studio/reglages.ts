@@ -13,10 +13,13 @@ export type StyleMontage = "auto" | "sobre" | "signature" | "energique";
 /** Rythme des coupes (vocal de Sidali, 12/10) : « dynamique » est l'ancien comportement. */
 export type RythmeCoupes = "naturel" | "dynamique" | "pose";
 
+/** Fond sonore sous la voix (sons de la banque de Sidali), baissé automatiquement quand on parle. */
+export type FondSonore = "aucun" | "humming" | "nasheed" | "maher_zain";
+
 export type PaletteId = "or_noir" | "emeraude" | "rose_poudre" | "bleu_electrique" | "rouge_passion" | "blanc_minimal" | "personnalise";
 
 export interface Reglages {
-  son: { ameliorer: boolean; niveau: NiveauSon };
+  son: { ameliorer: boolean; niveau: NiveauSon; fond: FondSonore };
   sous_titres: { texte: string; contour: string; ombre: string };
   visage: { flouter: boolean; style: StyleFlou; couleur: string; intensite: number; intensite_couleur: number };
   /** Motion design : style, palette, et prénom + titre pour la carte de présentation. */
@@ -37,7 +40,7 @@ export interface Reglages {
 }
 
 export const REGLAGES_PAR_DEFAUT: Reglages = {
-  son: { ameliorer: true, niveau: "normal" },
+  son: { ameliorer: true, niveau: "normal", fond: "aucun" },
   sous_titres: { texte: "#FFFFFF", contour: "#000000", ombre: "#000000" },
   visage: { flouter: false, style: "naturel", couleur: "#C9A45C", intensite: 3, intensite_couleur: 3 },
   // activé par défaut (cahier des charges, section 4)
@@ -102,6 +105,13 @@ export const NIVEAUX_SON: { id: NiveauSon; nom: string }[] = [
   { id: "leger", nom: "Léger" },
   { id: "normal", nom: "Normal" },
   { id: "fort", nom: "Fort" },
+];
+
+export const FONDS_SONORES: { id: FondSonore; nom: string; detail: string }[] = [
+  { id: "aucun", nom: "Aucun", detail: "Ta voix seule" },
+  { id: "humming", nom: "Humming", detail: "Voix fredonnées, sans instrument" },
+  { id: "nasheed", nom: "Nasheed", detail: "Chants, sans instrument" },
+  { id: "maher_zain", nom: "Maher Zain", detail: "Chansons de Maher Zain" },
 ];
 
 /** Étapes affichées sur l'écran d'attente, dans l'ordre. */
@@ -195,7 +205,11 @@ export interface Montage {
 /** Réglages complets à partir de ce qui est enregistré (champs manquants = défaut). */
 export function completerReglages(r: Partial<Reglages> | null | undefined): Reglages {
   return {
-    son: { ...REGLAGES_PAR_DEFAUT.son, ...(r?.son ?? {}) },
+    son: {
+      ...REGLAGES_PAR_DEFAUT.son,
+      ...(r?.son ?? {}),
+      fond: FONDS_SONORES.some((f) => f.id === r?.son?.fond) ? r.son.fond : "aucun",
+    },
     sous_titres: { ...REGLAGES_PAR_DEFAUT.sous_titres, ...(r?.sous_titres ?? {}) },
     // les montages faits avec un ancien style (bulle colorée) repassent au flou naturel
     visage: { ...REGLAGES_PAR_DEFAUT.visage, ...(r?.visage ?? {}), style: "naturel" },
