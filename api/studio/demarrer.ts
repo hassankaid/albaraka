@@ -161,6 +161,13 @@ export async function POST(request: Request): Promise<Response> {
         OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY!,
         // bruitages de la bibliothèque Hyperframes (licence Pixabay), installés dans le snapshot
         STUDIO_SONS: "/opt/studio-sons",
+        // Hyperframes se met à jour tout seul (npm install -g en arrière-plan) : le 12/10, la
+        // version 0.8.149 a remplacé ses fichiers en plein montage (« Cannot find module
+        // manager-….js »). La version figée dans la machine modèle doit rester celle-là.
+        HYPERFRAMES_NO_UPDATE_CHECK: "1",
+        HYPERFRAMES_NO_AUTO_INSTALL: "1",
+        HYPERFRAMES_NO_TELEMETRY: "1",
+        DO_NOT_TRACK: "1",
         STOP_URL: `https://vercel.com/api/v2/sandboxes/sessions/${sbx.currentSession().sessionId}/stop?teamId=${arret.teamId}`,
         STOP_TOKEN: arret.token,
       },

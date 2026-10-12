@@ -49,6 +49,11 @@ import time
 import traceback
 import urllib.request
 
+# Hyperframes ne doit ni se mettre à jour en plein montage, ni envoyer de télémétrie
+# (le 12/10, une mise à jour automatique a remplacé ses fichiers pendant un rendu).
+for _var in ("HYPERFRAMES_NO_UPDATE_CHECK", "HYPERFRAMES_NO_AUTO_INSTALL", "HYPERFRAMES_NO_TELEMETRY", "DO_NOT_TRACK"):
+    os.environ.setdefault(_var, "1")
+
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(ICI, "moteur"))
 sys.path.insert(0, os.path.join(ICI, "hf"))
