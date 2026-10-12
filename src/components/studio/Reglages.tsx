@@ -4,7 +4,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Scissors } from "lucide-react";
+import { Loader2, Scissors } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FONDS_SONORES, NIVEAUX_SON, PALETTES, RYTHMES_COUPES, STYLES_MONTAGE, type Reglages } from "@/lib/studio/reglages";
 import { SelecteurCouleur } from "./SelecteurCouleur";
@@ -292,8 +292,9 @@ export function BlocCoupes({
           <Scissors className="h-4 w-4" /> Vérifier les coupes
         </Button>
       ) : (
-        <p className="text-xs text-muted-foreground">
-          Tu pourras vérifier chaque coupe et prolonger un passage dès que la préparation de ta vidéo est terminée.
+        <p className="flex items-center gap-2 text-xs text-muted-foreground" data-testid="coupes-preparation">
+          <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+          Préparation de ta vidéo… Dans quelques secondes, tu pourras vérifier chaque coupe et prolonger un passage.
         </p>
       )}
     </div>
