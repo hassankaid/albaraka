@@ -42,6 +42,8 @@ export interface Parcours {
   titre: string;
   subtitle: string | null;
   status: string;
+  /** Masqué aux élèves (ancien Parcours Al Baraka) : le CEO seul y accède. */
+  masque_eleves?: boolean;
   phases: ParcoursPhase[];
 }
 
@@ -143,9 +145,9 @@ function computeProgress(
 }
 
 async function fetchParcours(slug: string): Promise<Parcours | null> {
-  const { data: p, error } = await supabase
+  const { data: p, error } = await (supabase as any)
     .from("parcours")
-    .select("id, pass_type, slug, titre, subtitle, status")
+    .select("id, pass_type, slug, titre, subtitle, status, masque_eleves")
     .eq("slug", slug)
     .maybeSingle();
   if (error) throw error;

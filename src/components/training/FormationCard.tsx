@@ -19,6 +19,7 @@ interface FormationCardProps {
     description: string | null;
     cover_url: string | null;
     status: string;
+    masquee_eleves?: boolean;
   };
   progress: number;
   nbChapitresDone: number;
@@ -70,6 +71,14 @@ export function FormationCard({
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <GraduationCap className="h-12 w-12 text-muted-foreground/40" />
+          </div>
+        )}
+        {formation.masquee_eleves && isCeoView && (
+          <div className="absolute top-2 left-2">
+            <Badge variant="secondary" className="gap-1 text-xs">
+              <EyeOff className="h-3 w-3" />
+              Masquée aux élèves
+            </Badge>
           </div>
         )}
         {isDraft && isCeoView && (

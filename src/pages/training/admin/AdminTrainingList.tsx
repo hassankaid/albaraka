@@ -36,6 +36,7 @@ export interface Formation {
   cover_url: string | null;
   status: string;
   ordre: number;
+  masquee_eleves?: boolean;
   nb_modules: number;
   nb_chapitres: number;
   nb_enrollments: number;
@@ -54,9 +55,9 @@ export default function AdminTrainingList() {
   const { data: formations, isLoading } = useQuery({
     queryKey: ["admin-training", "formations"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("formations")
-        .select("id, slug, titre, description, couleur, cover_url, status, ordre")
+        .select("id, slug, titre, description, couleur, cover_url, status, ordre, masquee_eleves")
         .order("ordre", { ascending: true });
       if (error) throw error;
 
@@ -140,6 +141,23 @@ export default function AdminTrainingList() {
       queryClient.invalidateQueries({ queryKey: ["admin-training"] });
       queryClient.invalidateQueries({ queryKey: ["training"] });
     },
+  });
+
+  const toggleMasqueeMutation = useMutation({
+    mutationFn: async ({ id, masquee }: { id: string; masquee: boolean }) => {
+      const { error } = await (supabase as any)
+        .from("formations")
+        .update({ masquee_eleves: !masquee })
+        .eq("id", id);
+      if (error) throw error;
+      return !masquee;
+    },
+    onSuccess: (masquee) => {
+      toast.success(masquee ? "Formation masquée aux élèves" : "Formation réaffichée aux élèves");
+      queryClient.invalidateQueries({ queryKey: ["admin-training"] });
+      queryClient.invalidateQueries({ queryKey: ["training"] });
+    },
+    onError: () => toast.error("Erreur lors du changement de visibilité"),
   });
 
   const deleteMutation = useMutation({
@@ -254,6 +272,12 @@ export default function AdminTrainingList() {
                     toggleArchiveMutation.mutate({
                       id: formation.id,
                       currentStatus: formation.status,
+                    })
+                  }
+                  onToggleMasquee={() =>
+                    toggleMasqueeMutation.mutate({
+                      id: formation.id,
+                      masquee: !!formation.masquee_eleves,
                     })
                   }
                   onDelete={() => deleteMutation.mutate(formation.id)}

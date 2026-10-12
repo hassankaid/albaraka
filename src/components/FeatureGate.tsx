@@ -20,9 +20,9 @@ export function FeatureGate({
   feature,
   children,
   lockedTitle = "Cette section est verrouillée",
-  lockedDescription = "Termine la formation Marketing Digital depuis ton parcours AL BARAKA pour débloquer cette section.",
+  lockedDescription = "Termine la partie MARKETING DIGITAL de ton parcours Community Management pour débloquer cette section.",
   unlockCtaLabel = "Ouvrir mon parcours",
-  unlockRoute = "/parcours/al-baraka",
+  unlockRoute = "/training/parcours-community-management",
 }: Props) {
   const navigate = useNavigate();
   const { profile } = useAuth();

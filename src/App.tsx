@@ -445,10 +445,10 @@ const FullApp = () => (
                   <Route path="/parcours/liberty/m14" element={<PassGuard><LibertyModuleFrame><M14MiddleTicketPage /></LibertyModuleFrame></PassGuard>} />
                   <Route path="/parcours/liberty/m16" element={<PassGuard><LibertyModuleFrame><M16LowTicketPage /></LibertyModuleFrame></PassGuard>} />
                   <Route path="/parcours/liberty/m18" element={<PassGuard><LibertyModuleFrame><M18ValueLadderPage /></LibertyModuleFrame></PassGuard>} />
-                  <Route path="/working/activity" element={<FeatureGate feature="working_activity"><MyActivity /></FeatureGate>} />
+                  <Route path="/working/activity" element={<FeatureGate feature="working_activity" lockedDescription="Termine la partie SETTING de ton parcours Setting/Closing pour débloquer cette section." unlockRoute="/training/parcours-setter-closer"><MyActivity /></FeatureGate>} />
                   <Route path="/working/organisation" element={<FeatureGate feature="quiz_organisation"><OrganisationPage /></FeatureGate>} />
                   <Route path="/working/personal-brand" element={<MarketingGate><PersonalBrandPage /></MarketingGate>} />
-                  <Route path="/working/agent" element={<FeatureGate feature="working_activity" lockedTitle="Agent IA verrouillé" lockedDescription="Termine la formation SETTING depuis ton parcours AL BARAKA pour débloquer l'Agent IA." unlockCtaLabel="Ouvrir mon parcours" unlockRoute="/parcours/al-baraka"><AgentIA /></FeatureGate>} />
+                  <Route path="/working/agent" element={<FeatureGate feature="working_activity" lockedTitle="Agent IA verrouillé" lockedDescription="Termine la partie SETTING de ton parcours Setting/Closing pour débloquer l'Agent IA." unlockCtaLabel="Ouvrir mon parcours" unlockRoute="/training/parcours-setter-closer"><AgentIA /></FeatureGate>} />
                   <Route path="/working/lien-de-paiement" element={<LienDePaiement />} />
                 </Route>
               </Route>

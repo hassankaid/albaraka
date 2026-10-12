@@ -20,9 +20,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useAllParcours, useDeleteParcours, type ParcoursRow } from "@/hooks/useAdminParcours";
+import { useAllParcours, useDeleteParcours, useUpdateParcours, type ParcoursRow } from "@/hooks/useAdminParcours";
 import { ParcoursFormDialog } from "@/components/admin/parcours/ParcoursFormDialog";
-import { Loader2, Map, ChevronRight, Plus, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Loader2, Map, ChevronRight, Plus, MoreVertical, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminParcoursList() {
@@ -30,12 +30,22 @@ export default function AdminParcoursList() {
   const navigate = useNavigate();
   const { data: parcours, isLoading } = useAllParcours();
   const del = useDeleteParcours();
+  const maj = useUpdateParcours();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ParcoursRow | null>(null);
   const [deleting, setDeleting] = useState<ParcoursRow | null>(null);
 
   if (profile?.role !== "ceo") return <Navigate to="/dashboard" replace />;
+
+  async function basculerMasque(p: ParcoursRow) {
+    try {
+      await maj.mutateAsync({ id: p.id, masque_eleves: !p.masque_eleves });
+      toast.success(p.masque_eleves ? "Parcours réaffiché aux élèves" : "Parcours masqué aux élèves");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erreur");
+    }
+  }
 
   async function confirmDelete() {
     if (!deleting) return;
@@ -106,6 +116,11 @@ export default function AdminParcoursList() {
                   >
                     {p.status}
                   </Badge>
+                  {p.masque_eleves && (
+                    <Badge variant="secondary" className="gap-1 text-xs">
+                      <EyeOff className="h-3 w-3" /> Masqué aux élèves
+                    </Badge>
+                  )}
                 </div>
                 {p.subtitle && (
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{p.subtitle}</p>
@@ -121,6 +136,13 @@ export default function AdminParcoursList() {
                   <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenuItem onClick={() => setEditing(p)}>
                       <Pencil className="h-4 w-4 mr-2" /> Modifier les réglages
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => basculerMasque(p)}>
+                      {p.masque_eleves ? (
+                        <><Eye className="h-4 w-4 mr-2" /> Réafficher aux élèves</>
+                      ) : (
+                        <><EyeOff className="h-4 w-4 mr-2" /> Masquer aux élèves</>
+                      )}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="text-destructive focus:text-destructive"

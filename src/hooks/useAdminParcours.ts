@@ -10,6 +10,8 @@ export interface ParcoursRow {
   status: string;
   ordre: number;
   created_at: string;
+  /** Masqué aux élèves (CEO seul) : ancien Parcours Al Baraka. */
+  masque_eleves?: boolean;
 }
 
 export interface ParcoursPhaseRow {
@@ -296,7 +298,7 @@ export function useUpdateParcours() {
   return useMutation({
     mutationFn: async (
       patch: { id: string } & Partial<
-        Pick<ParcoursRow, "slug" | "titre" | "subtitle" | "pass_type" | "status" | "ordre">
+        Pick<ParcoursRow, "slug" | "titre" | "subtitle" | "pass_type" | "status" | "ordre" | "masque_eleves">
       >,
     ) => {
       const { id, ...rest } = patch;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
   useParcours,
@@ -52,6 +52,12 @@ export default function ParcoursView() {
       localStorage.setItem(lastSeenKey, target.id);
     }
   }, [parcours, progress]);
+
+  // Parcours masqué aux élèves (ancien Parcours Al Baraka, remplacé par les
+  // parcours CM et Setting/Closing) : retour à la page Formation.
+  if (parcours?.masque_eleves && profile?.role !== "ceo") {
+    return <Navigate to="/training" replace />;
+  }
 
   if (isLoading || passLoading) {
     return (

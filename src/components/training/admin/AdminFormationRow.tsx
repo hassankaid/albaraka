@@ -28,6 +28,7 @@ import {
   ArchiveRestore,
   Trash2,
   Eye,
+  EyeOff,
   BookOpen,
   Users,
   Layers,
@@ -43,6 +44,7 @@ interface AdminFormationRowProps {
     description: string | null;
     cover_url: string | null;
     status: string;
+    masquee_eleves?: boolean;
     nb_modules: number;
     nb_chapitres: number;
     nb_enrollments: number;
@@ -50,6 +52,7 @@ interface AdminFormationRowProps {
   onEdit: () => void;
   onDuplicate: () => void;
   onToggleArchive: () => void;
+  onToggleMasquee?: () => void;
   onDelete: () => void;
   onPreview: () => void;
   onOpenEditor: () => void;
@@ -61,6 +64,7 @@ export function AdminFormationRow({
   onEdit,
   onDuplicate,
   onToggleArchive,
+  onToggleMasquee,
   onDelete,
   onPreview,
   onOpenEditor,
@@ -135,6 +139,12 @@ export function AdminFormationRow({
             <Badge variant="secondary" className={sc.className}>
               {sc.label}
             </Badge>
+            {formation.masquee_eleves && (
+              <Badge variant="secondary" className="gap-1">
+                <EyeOff className="h-3 w-3" />
+                Masquée aux élèves
+              </Badge>
+            )}
           </div>
           {formation.description && (
             <p className="text-sm text-muted-foreground line-clamp-1">
@@ -182,6 +192,21 @@ export function AdminFormationRow({
                 <Copy className="h-4 w-4 mr-2" />
                 Dupliquer
               </DropdownMenuItem>
+              {onToggleMasquee && (
+                <DropdownMenuItem onClick={onToggleMasquee}>
+                  {formation.masquee_eleves ? (
+                    <>
+                      <Eye className="h-4 w-4 mr-2" />
+                      Réafficher aux élèves
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="h-4 w-4 mr-2" />
+                      Masquer aux élèves
+                    </>
+                  )}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onToggleArchive}>
                 {formation.status === "archived" ? (

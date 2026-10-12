@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +41,12 @@ export default function ParcoursChapitreDetail() {
   const isAccessible = chapitre ? progress?.isChapitreAccessible(chapitre.id) ?? false : false;
   // Module de théorie à voir avant ce chapitre (parcours Liberty).
   const theorie = chapitre ? progress?.theorieManquante(chapitre.id) ?? null : null;
+
+  // Parcours masqué aux élèves (ancien Parcours Al Baraka, remplacé par les
+  // parcours CM et Setting/Closing) : retour à la page Formation.
+  if (parcours?.masque_eleves && profile?.role !== "ceo") {
+    return <Navigate to="/training" replace />;
+  }
 
   if (isLoading || passLoading) {
     return (

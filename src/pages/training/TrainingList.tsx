@@ -63,17 +63,20 @@ export default function TrainingList() {
   }, [parcours]);
 
   const { data: formations, isLoading } = useQuery({
-    queryKey: ["training", "formations", userId],
+    queryKey: ["training", "formations", userId, isCeo],
     enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("formations")
-        .select("id, slug, titre, description, couleur, cover_url, status, ordre, access_mode")
+        .select("id, slug, titre, description, couleur, cover_url, status, ordre, access_mode, masquee_eleves")
         .order("ordre", { ascending: true });
       if (error) throw error;
       if (!data) return [];
+      // Formations masquées aux élèves (anciennes formations remplacées par les
+      // parcours) : le CEO seul les voit encore.
+      const visibles = (data as any[]).filter((f) => isCeo || !f.masquee_eleves);
       return Promise.all(
-        data.map(async (f) => {
+        visibles.map(async (f) => {
           const [{ data: progress }, { data: chapters }] = await Promise.all([
             supabase.rpc("get_formation_progress", {
               p_user_id: userId!,
@@ -109,7 +112,53 @@ export default function TrainingList() {
   // (colonne formations.ordre, pilotée par drag-and-drop). Le tri est déjà
   // appliqué côté fetch. formationUnlockMap ne sert qu'à identifier les
   // formations du parcours et leur phase de déblocage (cadenas + label).
-  const sortedFormations = formations ?? [];
+  const sortedFormations = (formations ?? []).filter((f: any) => !f.masquee_eleves);
+  const formationsMasquees = (formations ?? []).filter((f: any) => f.masquee_eleves);
+
+  const renderFormation = (f: any) => {
+    // Détermine si la formation est accessible et, sinon, pourquoi :
+    //   1. CEO → toujours accessible
+    //   2. access_mode 'free' → toujours accessible (auto-enroll trigger)
+    //   3. access_mode 'liberty_only' + pas de pass Liberty → verrouillée (Liberty only)
+    //   4. enrollment manquant → verrouillée (déblocage via le parcours)
+    const isLibertyLocked = f.access_mode === "liberty_only" && !hasLiberty;
+    const hasAccess = isCeo
+      || f.access_mode === "free"
+      || (!isLibertyLocked && enrollments.has(f.id));
+
+    if (!hasAccess) {
+      const reason: LockReason = isLibertyLocked ? "liberty_only" : f.access_mode === "pass" ? "pass" : "parcours";
+      const unlockInfo = formationUnlockMap.get(f.id);
+      const phaseLabel = reason === "parcours" && unlockInfo
+        ? `Phase ${unlockInfo.phaseNum} · ${unlockInfo.phaseTitre}`
+        : undefined;
+      return (
+        <LockedFormationCard
+          key={f.id}
+          titre={f.titre}
+          cover_url={f.cover_url}
+          lockReason={reason}
+          unlockPhaseLabel={phaseLabel}
+          onClickLocked={() =>
+            setLockedModal({ titre: f.titre, reason, phaseLabel })
+          }
+        />
+      );
+    }
+    return (
+      <FormationCard
+        key={f.id}
+        formation={f}
+        progress={f.progress}
+        nbChapitresDone={f.nbChapitresDone}
+        nbChapitresTotal={f.nbChapitresTotal}
+        isCeoView={isCeo}
+        nbEleves={effectifs ? (effectifs.parFormation[f.id] ?? 0) : undefined}
+        hasCertificate={certifiedFormationIds.has(f.id)}
+        onOpen={() => navigate(`/training/${f.slug}`)}
+      />
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -242,50 +291,23 @@ export default function TrainingList() {
 
         {!isLoading && sortedFormations.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortedFormations.map((f) => {
-              // Détermine si la formation est accessible et, sinon, pourquoi :
-              //   1. CEO → toujours accessible
-              //   2. access_mode 'free' → toujours accessible (auto-enroll trigger)
-              //   3. access_mode 'liberty_only' + pas de pass Liberty → verrouillée (Liberty only)
-              //   4. enrollment manquant → verrouillée (déblocage via le parcours)
-              const isLibertyLocked = f.access_mode === "liberty_only" && !hasLiberty;
-              const hasAccess = isCeo
-                || f.access_mode === "free"
-                || (!isLibertyLocked && enrollments.has(f.id));
+            {sortedFormations.map(renderFormation)}
+          </div>
+        )}
 
-              if (!hasAccess) {
-                const reason: LockReason = isLibertyLocked ? "liberty_only" : f.access_mode === "pass" ? "pass" : "parcours";
-                const unlockInfo = formationUnlockMap.get(f.id);
-                const phaseLabel = reason === "parcours" && unlockInfo
-                  ? `Phase ${unlockInfo.phaseNum} · ${unlockInfo.phaseTitre}`
-                  : undefined;
-                return (
-                  <LockedFormationCard
-                    key={f.id}
-                    titre={f.titre}
-                    cover_url={f.cover_url}
-                    lockReason={reason}
-                    unlockPhaseLabel={phaseLabel}
-                    onClickLocked={() =>
-                      setLockedModal({ titre: f.titre, reason, phaseLabel })
-                    }
-                  />
-                );
-              }
-              return (
-                <FormationCard
-                  key={f.id}
-                  formation={f}
-                  progress={f.progress}
-                  nbChapitresDone={f.nbChapitresDone}
-                  nbChapitresTotal={f.nbChapitresTotal}
-                  isCeoView={isCeo}
-                  nbEleves={effectifs ? (effectifs.parFormation[f.id] ?? 0) : undefined}
-                  hasCertificate={certifiedFormationIds.has(f.id)}
-                  onOpen={() => navigate(`/training/${f.slug}`)}
-                />
-              );
-            })}
+        {!isLoading && isCeo && formationsMasquees.length > 0 && (
+          <div className="space-y-3 pt-4">
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Anciennes formations · masquées aux élèves
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Remplacées par les parcours : visibles par toi seul. Progression et certificats des élèves conservés.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {formationsMasquees.map(renderFormation)}
+            </div>
           </div>
         )}
       </div>

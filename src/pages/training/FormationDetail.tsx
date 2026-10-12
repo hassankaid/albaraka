@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import { debutEtape } from "@/lib/etapes";
 import { useQuery } from "@tanstack/react-query";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -58,9 +58,9 @@ export default function FormationDetail() {
     queryKey: ["training", "formation-detail", slug, userId],
     enabled: !!slug && !!userId,
     queryFn: async () => {
-      const { data: formation, error: fErr } = await supabase
+      const { data: formation, error: fErr } = await (supabase as any)
         .from("formations")
-        .select("id, slug, titre, description, couleur, cover_url, status")
+        .select("id, slug, titre, description, couleur, cover_url, status, masquee_eleves")
         .eq("slug", slug!)
         .maybeSingle();
       if (fErr) throw fErr;
@@ -167,6 +167,12 @@ export default function FormationDetail() {
         </Button>
       </div>
     );
+  }
+
+  // Ancienne formation masquée aux élèves (remplacée par les parcours) :
+  // un ancien lien ramène à la page Formation.
+  if (data.formation.masquee_eleves && !isCeo) {
+    return <Navigate to="/training" replace />;
   }
 
   const {

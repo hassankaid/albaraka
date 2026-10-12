@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate, Link, useSearchParams, Navigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -78,7 +78,7 @@ export default function ChapterViewer() {
         .select(
           `id, titre, description, ordre, status, duree_estimee_minutes, notes_formateur,
           formation_modules!inner(id, titre, formation_id,
-            formations!inner(id, slug, titre, navigation_libre)
+            formations!inner(id, slug, titre, navigation_libre, masquee_eleves)
           ),
           chapitre_videos(id, titre, url, vimeo_id, ordre, duree_secondes, notes),
           chapitre_ressources(id, titre, type, url, ordre, video_id)`
@@ -346,6 +346,12 @@ export default function ChapterViewer() {
         </Button>
       </div>
     );
+  }
+
+  // Ancienne formation masquée aux élèves (remplacée par les parcours) :
+  // un ancien lien ramène à la page Formation.
+  if ((chapterData.formation as any)?.masquee_eleves && !isCeo) {
+    return <Navigate to="/training" replace />;
   }
 
   const { chapitre, videos, ressources, formation, module: chapModule } = chapterData;

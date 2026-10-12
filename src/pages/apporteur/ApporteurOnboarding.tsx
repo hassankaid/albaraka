@@ -162,6 +162,8 @@ export default function ApporteurOnboarding() {
               // Sprint T (18/05/2026) : redirection finale adaptée selon le
               // pass actif :
               //   - Pass AL BARAKA → 1er chapitre du parcours "al-baraka"
+              //     (masqué aux élèves depuis le 12/10/2026 : page Formation,
+              //     où sont les parcours CM et Setting/Closing)
               //   - Pass Liberty   → 1er chapitre du parcours "liberty" si défini
               //   - Formation à la carte (aucun pass) → /training direct
               let targetPath = "/training";
@@ -179,10 +181,10 @@ export default function ApporteurOnboarding() {
                     : null;
 
                 if (parcoursSlug) {
-                  const { data: parc } = await supabase
+                  const { data: parc } = await (supabase as any)
                     .from("parcours")
                     .select(
-                      `id, parcours_phases(id, ordre, parcours_chapitres(id, ordre))`,
+                      `id, masque_eleves, parcours_phases(id, ordre, parcours_chapitres(id, ordre))`,
                     )
                     .eq("slug", parcoursSlug)
                     .maybeSingle();
@@ -194,7 +196,7 @@ export default function ApporteurOnboarding() {
                     (a: { ordre: number }, b: { ordre: number }) => a.ordre - b.ordre,
                   );
                   const firstChapter = chapters[0];
-                  if (firstChapter?.id) {
+                  if (firstChapter?.id && !(parc as any)?.masque_eleves) {
                     targetPath = `/parcours/${parcoursSlug}/chapitre/${firstChapter.id}`;
                   }
                 }

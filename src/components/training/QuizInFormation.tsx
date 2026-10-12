@@ -318,7 +318,7 @@ export function FormationFinalQuizCard({
               </p>
             ) : !validated ? (
               <p className="text-xs text-muted-foreground mt-1">
-                Valide ce quiz (max {quiz.max_errors} erreur{quiz.max_errors !== 1 ? "s" : ""}) pour finaliser la formation et débloquer le chapitre suivant de ton parcours AL BARAKA.
+                Valide ce quiz (max {quiz.max_errors} erreur{quiz.max_errors !== 1 ? "s" : ""}) pour valider cette étape et continuer ton parcours.
               </p>
             ) : (
               <p className="text-xs text-muted-foreground mt-1">

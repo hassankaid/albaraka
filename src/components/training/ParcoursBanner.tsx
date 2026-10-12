@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, EyeOff, Sparkles } from "lucide-react";
 import { useParcours } from "@/hooks/useParcours";
 import { useUserPass } from "@/hooks/useUserPass";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,11 +37,15 @@ export function ParcoursBanner() {
 function SingleParcoursBanner({ slug }: { slug: string }) {
   const navigate = useNavigate();
   const { parcours, progress, isLoading } = useParcours(slug);
+  const { profile } = useAuth();
   const label = slug === "liberty" ? "Pack Liberty" : "Pass Al-Baraka";
 
   if (isLoading) {
     return <Skeleton className="h-32 w-full rounded-2xl" />;
   }
+
+  // Parcours masqué aux élèves (ancien Parcours Al Baraka) : pas de bandeau.
+  if (parcours?.masque_eleves && profile?.role !== "ceo") return null;
 
   if (!parcours || parcours.phases.length === 0) {
     // Parcours en draft / sans contenu : bandeau "bientôt disponible"
@@ -85,6 +89,12 @@ function SingleParcoursBanner({ slug }: { slug: string }) {
             <Sparkles className="h-3 w-3" />
             {parcours.pass_type === "al_baraka" ? "Pass Al-Baraka" : "Pack Liberty"}
           </Badge>
+          {parcours.masque_eleves && (
+            <Badge variant="secondary" className="ml-2 gap-1">
+              <EyeOff className="h-3 w-3" />
+              Masqué aux élèves
+            </Badge>
+          )}
           <h2 className="font-heading text-xl md:text-2xl text-foreground">{parcours.titre}</h2>
           {currentPhase && (
             <p className="text-xs text-muted-foreground">
