@@ -10,7 +10,8 @@
 //
 // Les segments trop petits sont écartés du classement plutôt que noyés dedans :
 // un canal à deux leads dont un achète afficherait un rendement spectaculaire
-// et ferait prendre une mauvaise décision. Ils restent listés, avec la raison.
+// et ferait prendre une mauvaise décision. Ils restent dans le tableau, en bas
+// et sans rang, pour que chaque canal soit visible dès son premier lead.
 // ─────────────────────────────────────────────────────────────────────────
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -77,21 +78,22 @@ export default function AnalyseSegments({ lignes, titre = "Meilleur et pire" }: 
 }
 
 function ContenuAxe({ classement }: { classement: Classement }) {
-  const { meilleur, pire, critere, compares, ecartes, motif } = classement;
-  const totalLeads = compares.reduce((a, s) => a + s.kpis.leads, 0);
+  const { meilleur, pire, critere, compares, petits, motif } = classement;
+  const lignes = [...compares, ...petits];
+  const totalLeads = lignes.reduce((a, s) => a + s.kpis.leads, 0);
 
-  if (motif === "volume_insuffisant") {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Pas assez de volume sur cette période pour classer quoi que ce soit
-        {ecartes.length > 0 && <> — {ecartes.length} segment{ecartes.length > 1 ? "s" : ""} sous le seuil de {SEUIL_LEADS} leads</>}.
-      </p>
-    );
+  if (lignes.length === 0) {
+    return <p className="text-sm text-muted-foreground">Aucun lead sur cette période.</p>;
   }
 
   return (
     <div className="space-y-4">
-      {motif === "aucun_ecart" ? (
+      {motif === "volume_insuffisant" ? (
+        <p className="text-sm text-muted-foreground rounded-lg border border-dashed p-3">
+          Aucun segment n'atteint {SEUIL_LEADS} leads sur cette période : pas encore assez de volume
+          pour désigner un meilleur et un pire. Les volumes sont dans le tableau.
+        </p>
+      ) : motif === "aucun_ecart" ? (
         <p className="text-sm text-muted-foreground rounded-lg border border-dashed p-3">
           Aucun écart entre les segments sur cette période — ils sont tous à{" "}
           {critere === "roi" ? "ROI nul" : "0 € de CA par lead"}. Il n'y a donc ni meilleur ni pire
@@ -120,14 +122,20 @@ function ContenuAxe({ classement }: { classement: Classement }) {
             </tr>
           </thead>
           <tbody>
-            {compares.map((s, i) => (
-              <tr key={s.cle} className="border-b last:border-0 hover:bg-muted/30">
+            {lignes.map((s, i) => {
+              const classe = i < compares.length;
+              const premier = classe && i === 0;
+              return (
+              <tr key={s.cle} className={`border-b last:border-0 hover:bg-muted/30 ${classe ? "" : "text-muted-foreground"}`}>
                 <td className="p-2.5 min-w-[190px]">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-muted-foreground tabular-nums text-xs">{i + 1}</span>
-                    <span className={i === 0 ? "font-medium" : undefined}>{s.libelle}</span>
+                    <span className="text-muted-foreground tabular-nums text-xs w-3">{classe ? i + 1 : "–"}</span>
+                    <span className={premier ? "font-medium" : classe ? undefined : "text-foreground"}>{s.libelle}</span>
+                    {!classe && (
+                      <Badge variant="outline" className="text-[10px] font-normal px-1.5 py-0">hors classement</Badge>
+                    )}
                   </div>
-                  <BarrePart valeur={s.kpis.leads} total={totalLeads} ton={i === 0 ? "or" : "neutre"} />
+                  <BarrePart valeur={s.kpis.leads} total={totalLeads} ton={premier ? "or" : "neutre"} />
                 </td>
                 <td className="p-2.5 text-right tabular-nums">{fmtNombre(s.kpis.leads)}</td>
                 <td className="p-2.5 text-right tabular-nums">{fmtEuros(s.kpis.cpl, 2)}</td>
@@ -140,7 +148,8 @@ function ContenuAxe({ classement }: { classement: Classement }) {
                 }`}>{fmtPourcent(s.kpis.roi)}</td>
                 <td className="p-2.5 text-right tabular-nums">{fmtEuros(s.kpis.caParLead, 2)}</td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -148,10 +157,14 @@ function ContenuAxe({ classement }: { classement: Classement }) {
       <p className="text-xs text-muted-foreground flex items-start gap-1.5">
         <Info className="size-3.5 mt-0.5 shrink-0" />
         <span>
-          {motif === "classe" ? "Classé" : "Comparé"} sur le <strong>{libelleCritere(critere)}</strong>
-          {critere === "caParLead" && " — le ROI n'est pas comparable ici, tous les segments n'ont pas de dépense publicitaire"}.
-          {ecartes.length > 0 && (
-            <> Écartés du classement : {ecartes.map((e) => `${e.libelle} (${e.raison})`).join(", ")}.</>
+          {compares.length > 0 && (
+            <>
+              {motif === "classe" ? "Classé" : "Comparé"} sur le <strong>{libelleCritere(critere)}</strong>
+              {critere === "caParLead" && " — le ROI n'est pas comparable ici, tous les segments n'ont pas de dépense publicitaire"}.{" "}
+            </>
+          )}
+          {petits.length > 0 && (
+            <>« Hors classement » : moins de {SEUIL_LEADS} leads, trop peu pour juger un rendement. Ils sont affichés pour leur volume, sans rang.</>
           )}
         </span>
       </p>

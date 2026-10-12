@@ -41,6 +41,16 @@ describe("classement des segments", () => {
     expect(c.ecartes[0].libelle).toBe("Organique TikTok");
   });
 
+  it("garde les petits segments à afficher, du plus gros au plus petit", () => {
+    const c = classer(parCanal([
+      ligne("snap_ads", 18),
+      ligne("google_ads", 1),
+      ligne("tunnel_quiz_apporteurs", 2),
+    ]));
+    expect(c.compares.map((s) => s.cle)).toEqual(["snap_ads"]);
+    expect(c.petits.map((s) => s.cle)).toEqual(["tunnel_quiz_apporteurs", "google_ads"]);
+  });
+
   it("bascule sur le CA par lead dès qu'un segment n'a pas de dépense", () => {
     const payant = classer(parCanal([
       ligne("meta_ads", 81, 3, 7200, 350.72),

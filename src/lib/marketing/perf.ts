@@ -169,6 +169,12 @@ export interface Classement {
   compares: Segment[];
   /** Écartés faute de volume, avec la raison. Affiché pour qu'aucun segment ne disparaisse en silence. */
   ecartes: { libelle: string; raison: string }[];
+  /**
+   * Les mêmes segments sous le seuil, entiers et triés par volume : ils restent
+   * dans le tableau, sans rang (12/10/2026 — le media buyer cherchait son
+   * premier lead Google Ads, invisible parce que cité seulement en note).
+   */
+  petits: Segment[];
   /** Pourquoi il n'y a pas de gagnant, le cas échéant. */
   motif: "classe" | "volume_insuffisant" | "aucun_ecart";
 }
@@ -186,6 +192,9 @@ export const SEUIL_LEADS = 5;
  */
 export function classer(segments: Segment[]): Classement {
   const ecartes: { libelle: string; raison: string }[] = [];
+  const petits = segments
+    .filter((s) => s.kpis.leads < SEUIL_LEADS)
+    .sort((a, b) => b.kpis.leads - a.kpis.leads);
   const compares = segments.filter((s) => {
     if (s.kpis.leads < SEUIL_LEADS) {
       ecartes.push({ libelle: s.libelle, raison: `${s.kpis.leads} lead${s.kpis.leads > 1 ? "s" : ""}, trop peu pour juger` });
@@ -208,10 +217,10 @@ export function classer(segments: Segment[]): Classement {
   const aucunEcart = valeurs.length > 0 && Math.max(...valeurs) === Math.min(...valeurs);
 
   if (tries.length === 0) {
-    return { meilleur: null, pire: null, critere, compares: tries, ecartes, motif: "volume_insuffisant" };
+    return { meilleur: null, pire: null, critere, compares: tries, ecartes, petits, motif: "volume_insuffisant" };
   }
   if (aucunEcart) {
-    return { meilleur: null, pire: null, critere, compares: tries, ecartes, motif: "aucun_ecart" };
+    return { meilleur: null, pire: null, critere, compares: tries, ecartes, petits, motif: "aucun_ecart" };
   }
 
   return {
@@ -220,6 +229,7 @@ export function classer(segments: Segment[]): Classement {
     critere,
     compares: tries,
     ecartes,
+    petits,
     motif: "classe",
   };
 }
