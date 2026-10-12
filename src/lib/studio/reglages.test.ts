@@ -127,4 +127,11 @@ describe("motion design Hyperframes", () => {
     expect(sans).not.toContain("verification");
     expect(sans).not.toContain("motion_design");
   });
+
+  it("Voix off : la réception est celle de la voix, et le choix des plans apparaît", () => {
+    const ids = etapesDuMontage({}, "voix_off");
+    expect(ids[0].nom).toBe("Réception de ta voix");
+    expect(ids.map((e) => e.id)).toContain("plans");
+    expect(etapesDuMontage({}).map((e) => e.id)).not.toContain("plans");
+  });
 });

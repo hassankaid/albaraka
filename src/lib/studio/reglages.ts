@@ -214,7 +214,7 @@ export function etapesDuMontage(reglages: Partial<Reglages> | null | undefined, 
       (e.id !== "floutage" || (outil === "face_camera" && r.visage.flouter && !r.design.actif)) &&
       (e.id !== "plans" || outil === "voix_off") &&
       ((e.id !== "motion_design" && e.id !== "verification") || r.design.actif),
-  );
+  ).map((e) => (outil === "voix_off" && e.id === "reception" ? { ...e, nom: "Réception de ta voix" } : e));
 }
 
 /** Clé du réglage du son, comme la calcule la base (studio_lancer). */
