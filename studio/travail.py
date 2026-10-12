@@ -529,13 +529,19 @@ def preparer(src, dossier, liens, reglages, avec_apercu):
     words = transcrire_par_prises(wav)
     if not words:
         raise ValueError("Aucune parole n'a été entendue dans la vidéo.")
+    cales = None
+    if VOIX_OFF and SCRIPT:  # l'orthographe du script (« T'as vu », pas « Taviyu »)
+        try:
+            cales = __import__("voixoff").caler_sur_script(words, SCRIPT)
+        except Exception:
+            traceback.print_exc()
     t = top("transcription", t)
     etape("phrases_ratees")
     remove = P.detect_retakes(words, llm)
     t = top("phrases_ratees", t)
     removed = {i for a, b in remove for i in range(a, b + 1)}
     travail = {"meta": meta, "audio": cle_son, "mots": [dataclasses.asdict(w) for w in words],
-               "retires_ia": sorted(removed), "chrono": chrono}
+               "retires_ia": sorted(removed), "chrono": chrono, "mots_cales_script": cales}
     if "travail/apercu.mp4" in liens["deposer"]:
         try:  # vidéo légère pour « Vérifier les coupes » (la source peut faire 1 Go)
             fichier = (__import__("voixoff").apercu_audio(clean, os.path.join(dossier, "apercu.mp4")) if VOIX_OFF

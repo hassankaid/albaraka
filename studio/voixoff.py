@@ -16,11 +16,13 @@ Le reste (sous-titres, motion design) est fait par le moteur commun sur cette vi
 from __future__ import annotations
 
 import concurrent.futures as cf
+import difflib
 import json
 import math
 import os
 import re
 import subprocess
+import unicodedata
 
 FPS = 30
 W, H = 1080, 1920
@@ -91,6 +93,45 @@ def apercu_audio(clean, dst):
                     "-i", clean, "-map", "0:v", "-map", "1:a", "-shortest", "-c:v", "libx264", "-preset", "veryfast",
                     "-crf", "35", "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", dst], check=True)
     return dst
+
+
+# ---------------------------------------------------------------- mots calés sur le script
+def _cle(mot):
+    """« T'as » → « tas », « Été, » → « ete » : pour comparer l'oral transcrit et le script."""
+    m = unicodedata.normalize("NFD", mot.lower())
+    return "".join(c for c in m if c.isalnum())
+
+
+def caler_sur_script(mots, script):
+    """Whisper écrit ce qu'il entend (« Taviyu » pour « T'as vu ») ; l'élève a écrit son script.
+    On garde les mots et leurs temps, mais on reprend l'orthographe du script partout où les deux
+    s'alignent. Les reprises (phrases recommencées) ne sont pas dans le script : elles restent
+    telles quelles. Un mot transcrit peut recevoir plusieurs mots du script (« T'as vu »),
+    jamais l'inverse : le nombre de mots ne change pas (les index servent aux coupes)."""
+    jetons = [j for j in re.split(r"\s+", script or "") if _cle(j)]
+    if not mots or not jetons:
+        return 0
+    a, b = [_cle(m.text) for m in mots], [_cle(j) for j in jetons]
+    corriges = 0
+    for op, i1, i2, j1, j2 in difflib.SequenceMatcher(None, a, b, autojunk=False).get_opcodes():
+        if op == "equal":
+            paires = zip(range(i1, i2), range(j1, j2))
+        elif op == "replace" and i2 - i1 == j2 - j1 and i2 - i1 <= 3:
+            # mot mal entendu à la même place (« Taviyu » / « T'as ») : proche à l'écrit, ou seul
+            paires = [(i, j) for i, j in zip(range(i1, i2), range(j1, j2))
+                      if i2 - i1 == 1 or difflib.SequenceMatcher(None, a[i], b[j]).ratio() >= 0.5]
+        elif op == "replace" and i2 - i1 == 1 and j2 - j1 <= 3 and \
+                difflib.SequenceMatcher(None, a[i1], "".join(b[j1:j2])).ratio() >= 0.5:
+            mots[i1].text = " ".join(jetons[j1:j2])
+            corriges += 1
+            continue
+        else:
+            continue
+        for i, j in paires:
+            if mots[i].text != jetons[j]:
+                mots[i].text = jetons[j]
+                corriges += 1
+    return corriges
 
 
 # ---------------------------------------------------------------- moments
