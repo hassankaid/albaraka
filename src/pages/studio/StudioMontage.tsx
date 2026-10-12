@@ -157,7 +157,18 @@ export default function StudioMontage() {
   async function telecharger() {
     try {
       const nom = `${(m!.source_nom ?? "video").replace(/\.[^.]+$/, "")}-albaraka.mp4`;
-      window.location.href = await lienStudio(m!.sortie_path!, nom);
+      // le stockage répond parfois 503 quelques secondes : on vérifie le lien avant d'y aller,
+      // sinon l'élève tomberait sur une page d'erreur brute
+      for (let essai = 1; ; essai++) {
+        const lien = await lienStudio(m!.sortie_path!, nom);
+        const rep = await fetch(lien, { method: "HEAD" }).catch(() => null);
+        if (rep?.ok || (rep && rep.status < 500) || essai >= 3) {
+          if (rep && !rep.ok && rep.status >= 500) throw new Error("Le stockage ne répond pas, réessaie dans un instant.");
+          window.location.href = lien;
+          return;
+        }
+        await new Promise((ok) => setTimeout(ok, 1500 * essai));
+      }
     } catch (e) {
       toast({ title: "Téléchargement impossible", description: message(e), variant: "destructive" });
     }
