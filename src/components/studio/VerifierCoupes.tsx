@@ -145,6 +145,19 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
   const pxParS = duree ? (Math.max(largeur, 300) / duree) * zoom : 0;
   const coupes = useMemo(() => coupesEntre(plages, duree).filter(([a, b]) => b - a > 0.03), [plages, duree]);
   const gardee = dureeGardee(plages);
+  // les mots sous la frise : seulement ceux qui tiennent sans se chevaucher (zoomer en montre plus)
+  const motsVisibles = useMemo(() => {
+    if (!travail || !pxParS) return [];
+    let droite = -Infinity;
+    return travail.mots
+      .map((m, k) => ({ ...m, k }))
+      .filter((m) => {
+        const x = m.start * pxParS;
+        if (x < droite) return false;
+        droite = x + Math.min(120, m.text.length * 5.6 + 6);
+        return true;
+      });
+  }, [travail, pxParS]);
   const rythmePrepa = travail?.plages ? null : travail?.rythme ?? "dynamique";
   const rythmeDiffere = !!travail && !reglages.coupes.plages?.length && !!rythmePrepa && rythmePrepa !== reglages.coupes.rythme;
 
@@ -351,11 +364,11 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                     <div className="pointer-events-none absolute inset-y-0 z-20 w-0.5 bg-white shadow" style={{ left: t * pxParS }} />
                   </div>
                   <div className="relative h-5">
-                    {travail.mots.map((m, k) => {
+                    {motsVisibles.map((m) => {
                       const retire = !plages.some(([a, b]) => (m.start + m.end) / 2 >= a && (m.start + m.end) / 2 <= b);
                       return (
                         <span
-                          key={k}
+                          key={m.k}
                           className={cn(
                             "absolute top-1 max-w-[120px] truncate whitespace-nowrap text-[10px]",
                             retire ? "text-red-300/80 line-through" : "text-muted-foreground",
@@ -384,7 +397,7 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                     return (
                       <li key={`${c[0]}-${c[1]}`} className="flex flex-wrap items-center gap-3 px-3 py-2 text-sm">
                         <span className="w-28 shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-                          {minutage(c[0])} → {(c[1] - c[0]).toFixed(1).replace(".", ",")} s
+                          {minutage(c[0])} · {(c[1] - c[0]).toFixed(1).replace(".", ",")} s
                         </span>
                         <span
                           className={cn(
@@ -392,7 +405,7 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                             n.phraseRatee ? "bg-amber-500/15 text-amber-300" : "bg-muted text-muted-foreground",
                           )}
                         >
-                          {bord ?? (n.phraseRatee ? "Phrase recommencée" : "Blanc")}
+                          {n.phraseRatee ? "Phrase recommencée" : bord ?? "Blanc"}
                         </span>
                         <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
                           {n.avant && <>…{n.avant} </>}
