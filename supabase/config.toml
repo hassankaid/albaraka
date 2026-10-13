@@ -78,3 +78,6 @@ verify_jwt = false
 
 [functions.studio-banque]
 verify_jwt = false
+
+[functions.send-annonce-eleves]
+verify_jwt = false
