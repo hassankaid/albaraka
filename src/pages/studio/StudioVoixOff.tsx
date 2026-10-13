@@ -3,7 +3,7 @@
 // (ou un enregistrement importé) ; 3. son, sous-titres, design, puis « Lancer le montage ».
 // Pendant que l'élève règle, la machine prépare déjà la voix et choisit les plans.
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Headphones, Loader2, Mic2, Sparkles, Upload, Volume2, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,8 +34,10 @@ export default function StudioVoixOff() {
   const { data: montage } = useMontage(id);
   const { data: themes } = useThemes();
   const [ecran, setEcran] = useState<Ecran>(id ? "reglages" : "script");
-  const [script, setScript] = useState("");
-  const [theme, setTheme] = useState<string | null>(null);
+  // Depuis la bibliothèque de scripts : le script choisi arrive prérempli.
+  const depuisBibliotheque = useLocation().state as { script?: string; theme?: string | null } | null;
+  const [script, setScript] = useState(() => (depuisBibliotheque?.script ?? "").slice(0, SCRIPT_MAX));
+  const [theme, setTheme] = useState<string | null>(depuisBibliotheque?.theme ?? null);
   const [detection, setDetection] = useState(false);
   const [envoi, setEnvoi] = useState<number | null>(null);
   const [reglages, setReglages] = useState<Reglages>(REGLAGES_PAR_DEFAUT);

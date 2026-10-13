@@ -1,6 +1,6 @@
 // Studio vidéo : accueil (les deux outils) et « Mes vidéos ».
 import { Link } from "react-router-dom";
-import { Camera, Clock, Database, Film, Mic, Loader2 } from "lucide-react";
+import { BookOpen, Camera, Clock, Database, Film, Mic, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,11 +35,19 @@ export default function StudioAccueil() {
             Des vidéos 9:16 prêtes à publier, sans toucher au montage.
           </p>
         </div>
-        <Button asChild variant="outline" size="sm" className="gap-2">
-          <Link to="/studio/banque">
-            <Database className="h-4 w-4" /> Banque de vidéos
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm" className="gap-2">
+            <Link to="/studio/banque">
+              <Database className="h-4 w-4" /> Banque de vidéos
+            </Link>
+          </Button>
+          {/* Sidali (13/10/2026) : la bibliothèque doit être bien visible, en haut à droite. */}
+          <Button asChild size="sm" className="gap-2" data-testid="bouton-bibliotheque-scripts">
+            <Link to="/studio/scripts">
+              <BookOpen className="h-4 w-4" /> Bibliothèque de scripts
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2">
