@@ -32,6 +32,9 @@ export default function DerogationsActives() {
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
   const lignes = data ?? [];
+  // Rien en vigueur : le bloc disparaît (13/10/2026, les coachings sont ouverts à tous
+  // et les dérogations de coaching ont été révoquées). Il revient dès qu'on en pose une.
+  if (lignes.length === 0) return null;
 
   return (
     <Card>
