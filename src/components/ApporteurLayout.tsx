@@ -3,7 +3,7 @@ import SpaceSwitcher from "./SpaceSwitcher";
 import {
   BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X,
   ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp, GraduationCap,
-  CalendarDays, Award, Sparkles, Bot, MessageSquare, Link2,
+  CalendarDays, Award, Sparkles, Bot, MessageSquare, Link2, Lock,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
@@ -83,13 +83,35 @@ function detectSpace(pathname: string): Space {
   return "working";
 }
 
+const PAGES_OUVERTES_SI_SUSPENDU = ["/my-space/commissions", "/my-space/profile"];
+
+function AccesSuspendu() {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center" data-testid="acces-suspendu">
+      <div className="p-4 rounded-full bg-muted mb-4">
+        <Lock className="h-8 w-8 text-muted-foreground" />
+      </div>
+      <h3 className="text-lg font-semibold text-foreground mb-1">Ton accès est suspendu</h3>
+      <p className="text-sm text-muted-foreground max-w-md">
+        Ton Pass n'est plus actif. Pour retrouver ton espace, tes parcours et ta progression, contacte l'équipe AL BARAKA.
+      </p>
+      <p className="text-xs text-muted-foreground mt-3">Tes commissions et ton profil restent accessibles dans le menu.</p>
+    </div>
+  );
+}
+
 export default function ApporteurLayout() {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { profile, signOut } = useAuth();
-  const { hasAnyPass } = useUserPass();
+  const { hasAnyPass, accesCoupe } = useUserPass();
+  // Règle de Sidali (13/10/2026) : pass retiré ou vente « perdue » = plus rien.
+  // Seuls restent ses commissions (l'argent déjà gagné lui est dû) et son profil
+  // (coordonnées bancaires).
+  const suspendu = accesCoupe && profile?.role === "apporteur";
+  const pageAutoriseeSiSuspendu = PAGES_OUVERTES_SI_SUSPENDU.some((p) => location.pathname.startsWith(p));
   const { has: aDebloque } = useFeatureUnlocks();
   const { canAccess: canAccessPersonalBrand } = useCanAccessPersonalBrand();
 
@@ -100,6 +122,9 @@ export default function ApporteurLayout() {
     : "U";
 
   const activeItems: NavItem[] = (() => {
+    if (suspendu) {
+      return workingNavItems.filter((item) => PAGES_OUVERTES_SI_SUSPENDU.includes(item.path));
+    }
     if (currentSpace === "training") {
       // Filtre les items passRequired (Scripts, Rôle-Play, Quiz) selon le pass.
       return trainingNavItems.filter((item) => !item.passRequired || hasAnyPass);
@@ -166,7 +191,7 @@ export default function ApporteurLayout() {
               <X className="h-5 w-5" />
             </button>
           </div>
-          <SpaceSwitcher />
+          {!suspendu && <SpaceSwitcher />}
         </div>
 
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
@@ -197,9 +222,9 @@ export default function ApporteurLayout() {
           </div>
 
           <div className="flex items-center gap-3">
-            <DiscordButton />
+            {!suspendu && <DiscordButton />}
 
-            <DriveButton />
+            {!suspendu && <DriveButton />}
 
             <NotificationsBell />
 
@@ -250,7 +275,7 @@ export default function ApporteurLayout() {
         </header>
 
         <main className="flex-1 p-6">
-          <Outlet />
+          {suspendu && !pageAutoriseeSiSuspendu ? <AccesSuspendu /> : <Outlet />}
         </main>
       </div>
     </div>
