@@ -78,7 +78,7 @@ export default function ChapterViewer() {
       const { data: chapitre, error } = await (supabase as any)
         .from("formation_chapitres")
         .select(
-          `id, titre, description, ordre, status, duree_estimee_minutes, notes_formateur,
+          `id, titre, description, ordre, status, duree_estimee_minutes, notes_formateur, outil,
           formation_modules!inner(id, titre, formation_id,
             formations!inner(id, slug, titre, navigation_libre, masquee_eleves)
           ),
@@ -673,6 +673,35 @@ export default function ChapterViewer() {
               <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
+
+          {/* Outil « Construire mon script d'appel » à la fin du module (cahier des charges du 12/10/2026) */}
+          {(chapitre as { outil?: string | null }).outil?.startsWith("script_appel_") && (
+            <div className="rounded-xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/5 to-transparent p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" data-testid="outil-script-appel">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">Place à la pratique</p>
+                  <p className="text-sm text-foreground">
+                    Construisez votre script d'appel découverte et votre script d'appel de transformation, puis téléchargez-les en PDF et en Word.
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => navigate(
+                  (chapitre as { outil?: string }).outil === "script_appel_liberty"
+                    ? "/training/script-appel?version=liberty"
+                    : "/training/script-appel",
+                )}
+                className="shrink-0 gap-2 bg-amber-500 text-white hover:bg-amber-600"
+              >
+                Construire mon script d'appel
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
 
           {/* Passage à la pratique : outil interactif Liberty lié à ce module */}
           {outilLie && (
