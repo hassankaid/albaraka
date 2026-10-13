@@ -56,7 +56,6 @@ import ApporteurProfile from "./pages/apporteur/ApporteurProfile";
 import ApporteurOnboarding from "./pages/apporteur/ApporteurOnboarding";
 import Scripts from "./pages/working/Scripts";
 import Ressources from "./pages/training/Ressources";
-import ScriptForgePage from "./pages/working/script-forge/ScriptForgePage";
 import ScriptAppelPage from "./pages/training/script-appel/ScriptAppelPage";
 import Plan90Page from "./pages/working/plan90/Plan90Page";
 import MyActivity from "./pages/working/MyActivity";
@@ -429,7 +428,8 @@ const FullApp = () => (
                   <Route path="/training/scripts" element={<Navigate to="/training/ressources" replace />} />
                   <Route path="/training/ressources" element={<PassGuard allowCollab><Ressources /></PassGuard>} />
                   <Route path="/training/scripts-en-ligne" element={<PassGuard allowCollab><Scripts /></PassGuard>} />
-                  <Route path="/training/script-forge" element={<PassGuard allowCollab><ScriptForgePage /></PassGuard>} />
+                  {/* Script Forge retiré (Sidali, 13/10/2026) : doublon de « Construire mon script d'appel ». */}
+                  <Route path="/training/script-forge" element={<Navigate to="/training/ressources" replace />} />
                   <Route path="/training/script-appel" element={<PassGuard allowCollab><ScriptAppelPage /></PassGuard>} />
                   <Route path="/working/plan-90" element={<PassGuard allowCollab><Plan90Page /></PassGuard>} />
                   <Route path="/training/role-play" element={<PassGuard allowCollab><RolePlay /></PassGuard>} />

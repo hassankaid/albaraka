@@ -4,7 +4,7 @@
 // L'élève ne voit que les phases des parcours auxquels il est inscrit (RLS).
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, FolderDown, Loader2, MonitorPlay, PenLine, Wand2, type LucideIcon } from "lucide-react";
+import { ArrowRight, FolderDown, Loader2, MonitorPlay, PenLine, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -31,32 +31,20 @@ const RACCOURCIS: Record<string, { internes?: Raccourci[]; templates?: Raccourci
       {
         titre: "Script DM et objections setting — version en ligne",
         description: "Le script DM AL BARAKA et les réponses aux objections, à copier en un clic.",
-        to: "/training/scripts-en-ligne?onglet=setting",
+        to: "/training/scripts-en-ligne",
         icone: MonitorPlay,
       },
     ],
   },
+  // Closing (Sidali, 13/10/2026) : pas de version en ligne (les élèves ouvrent le
+  // document téléchargé) et Script Forge retiré, doublon de « Construire mon script d'appel ».
   closing: {
-    internes: [
-      {
-        titre: "Scripts closing et objections — version en ligne",
-        description: "Les scripts d'appel de vente AL BARAKA et les réponses aux objections.",
-        to: "/training/scripts-en-ligne?onglet=closing",
-        icone: MonitorPlay,
-      },
-    ],
     templates: [
       {
         titre: "Construire mon script d'appel",
         description: "Remplis les modèles d'appel découverte et d'appel de transformation, puis télécharge-les en Word ou PDF.",
         to: "/training/script-appel",
         icone: PenLine,
-      },
-      {
-        titre: "Script Forge",
-        description: "Génère un script d'appel découverte ou closing sur mesure pour ton offre.",
-        to: "/training/script-forge",
-        icone: Wand2,
       },
     ],
   },
