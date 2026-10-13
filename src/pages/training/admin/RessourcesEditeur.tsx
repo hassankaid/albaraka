@@ -4,7 +4,7 @@
 // ressource que l'élève télécharge d'un clic. Ajouter un lien reste possible.
 // Le titre se modifie sur place (enregistré en quittant le champ) ; un fichier peut
 // être remplacé sans perdre sa place ; supprimer une ressource supprime son fichier.
-import { useRef, useState } from "react";
+import { createContext, useContext, useRef, useState } from "react";
 import {
   Check,
   Download,
@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +54,7 @@ import {
   verifierRessource,
 } from "@/lib/ressourcesFormation";
 import { supprimerFichiersStockes } from "@/lib/ressourcesStockage";
+import type { RubriqueRessource } from "@/lib/ressourcesPhases";
 
 export interface RessourceEditee {
   id: string;
@@ -61,7 +63,19 @@ export interface RessourceEditee {
   url: string;
   ordre: number;
   video_id: string | null;
+  rubrique?: RubriqueRessource | null;
 }
+
+// Parcours Setting/Closing (Sidali, 13/10/2026) : chaque ressource peut être
+// rangée dans « Scripts internes AL BARAKA » ou « Scripts templates » de la page
+// Ressources des élèves. Le sélecteur n'apparaît que dans ce parcours.
+export const AvecRubriqueContext = createContext(false);
+
+const RUBRIQUES: { valeur: string; libelle: string }[] = [
+  { valeur: "aucune", libelle: "Autre ressource" },
+  { valeur: "script_interne", libelle: "Script interne AL BARAKA" },
+  { valeur: "script_template", libelle: "Script template" },
+];
 
 const ICONES: Record<string, LucideIcon> = {
   PDF: FileText,
@@ -299,8 +313,10 @@ function LigneRessource({
   const [remplacement, setRemplacement] = useState(false);
   const champ = useRef<HTMLInputElement>(null);
 
-  async function enregistrer(maj: { titre?: string; url?: string }) {
-    const { error } = await supabase.from("chapitre_ressources").update(maj).eq("id", r.id);
+  const avecRubrique = useContext(AvecRubriqueContext);
+
+  async function enregistrer(maj: { titre?: string; url?: string; rubrique?: RubriqueRessource | null }) {
+    const { error } = await (supabase.from("chapitre_ressources") as any).update(maj).eq("id", r.id);
     if (error) {
       toast.error("Modification non enregistrée.");
       return;
@@ -377,6 +393,23 @@ function LigneRessource({
           />
         )}
       </div>
+      {avecRubrique && (
+        <Select
+          value={r.rubrique ?? "aucune"}
+          onValueChange={(v) => enregistrer({ rubrique: v === "aucune" ? null : (v as RubriqueRessource) })}
+        >
+          <SelectTrigger className="h-9 w-full text-xs sm:w-52" aria-label="Rubrique dans la page Ressources">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {RUBRIQUES.map((o) => (
+              <SelectItem key={o.valeur} value={o.valeur} className="text-xs">
+                {o.libelle}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
       <div className="flex shrink-0 items-center gap-1">
         {enregistre && <Check className="h-4 w-4 text-emerald-500" aria-label="Enregistré" />}
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={ouvrir} title={fichier ? "Télécharger" : "Ouvrir le lien"}>

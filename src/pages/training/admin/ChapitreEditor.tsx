@@ -53,7 +53,7 @@ import {
 import { toast } from "sonner";
 import { VimeoLinkInput } from "@/components/training/VimeoLinkInput";
 import RenvoisSection from "./RenvoisSection";
-import { RessourcesEditeur } from "./RessourcesEditeur";
+import { AvecRubriqueContext, RessourcesEditeur } from "./RessourcesEditeur";
 import { supprimerFichiersStockes } from "@/lib/ressourcesStockage";
 
 // ── Types ────────────────────────────────────────────────────────
@@ -75,6 +75,7 @@ interface Ressource {
   url: string;
   ordre: number;
   video_id: string | null;
+  rubrique?: "script_interne" | "script_template" | null;
 }
 
 // ── Detect video source helper ───────────────────────────────────
@@ -115,7 +116,7 @@ export default function ChapitreEditor() {
             formations!inner(id, slug, titre)
           ),
           chapitre_videos(id, titre, url, vimeo_id, notes, ordre, duree_secondes),
-          chapitre_ressources(id, titre, type, url, ordre, video_id)`
+          chapitre_ressources(id, titre, type, url, ordre, video_id, rubrique)`
         )
         .eq("id", chapitreId!)
         .maybeSingle();
@@ -199,20 +200,22 @@ export default function ChapitreEditor() {
       {/* Section 1: Métadonnées */}
       <MetadataSection chapitre={chapitre} onSaved={invalidate} />
 
-      {/* Section 2: Vidéos */}
-      <VideosSection
-        videos={videos}
-        ressources={ressources}
-        chapitreId={chapitreId!}
-        onChanged={invalidate}
-      />
+      <AvecRubriqueContext.Provider value={formation?.slug === "parcours-setter-closer"}>
+        {/* Section 2: Vidéos */}
+        <VideosSection
+          videos={videos}
+          ressources={ressources}
+          chapitreId={chapitreId!}
+          onChanged={invalidate}
+        />
 
-      {/* Section 3: Ressources du chapitre */}
-      <ChapterRessourcesSection
-        ressources={chapterRessources}
-        chapitreId={chapitreId!}
-        onChanged={invalidate}
-      />
+        {/* Section 3: Ressources du chapitre */}
+        <ChapterRessourcesSection
+          ressources={chapterRessources}
+          chapitreId={chapitreId!}
+          onChanged={invalidate}
+        />
+      </AvecRubriqueContext.Provider>
 
       {/* Section 4: Renvois vers d'autres chapitres */}
       <RenvoisSection chapitreId={chapitreId!} videos={videos} />

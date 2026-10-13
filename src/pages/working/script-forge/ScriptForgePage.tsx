@@ -202,8 +202,8 @@ export default function ScriptForgePage() {
           <span style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: 20, color: C.gold, fontWeight: 600, letterSpacing: "1px" }}>AL BARAKA</span>
           <span className="text-[12px] uppercase" style={{ letterSpacing: "2px", color: C.smoke }}>Script Forge</span>
         </div>
-        <Link to="/training/scripts" className="inline-flex items-center gap-1.5 text-[12px] font-medium transition-colors hover:opacity-80" style={{ color: C.smoke }}>
-          <ArrowLeft className="h-3.5 w-3.5" /> Scripts
+        <Link to="/training/ressources" className="inline-flex items-center gap-1.5 text-[12px] font-medium transition-colors hover:opacity-80" style={{ color: C.smoke }}>
+          <ArrowLeft className="h-3.5 w-3.5" /> Ressources
         </Link>
       </div>
 

@@ -55,6 +55,7 @@ import ApporteurCommissions from "./pages/apporteur/ApporteurCommissions";
 import ApporteurProfile from "./pages/apporteur/ApporteurProfile";
 import ApporteurOnboarding from "./pages/apporteur/ApporteurOnboarding";
 import Scripts from "./pages/working/Scripts";
+import Ressources from "./pages/training/Ressources";
 import ScriptForgePage from "./pages/working/script-forge/ScriptForgePage";
 import ScriptAppelPage from "./pages/training/script-appel/ScriptAppelPage";
 import Plan90Page from "./pages/working/plan90/Plan90Page";
@@ -393,8 +394,8 @@ const FullApp = () => (
                   <Route path="/admin/training/access" element={<AdminTrainingAccess />} />
                   <Route path="/admin/training/students/:userId" element={<StudentDetailPage />} />
                   <Route path="/admin/training/certificates" element={<AdminCertificates />} />
-                  <Route path="/training/scripts/setting" element={<Navigate to="/training/scripts" replace />} />
-                  <Route path="/training/scripts/closing" element={<Navigate to="/training/scripts" replace />} />
+                  <Route path="/training/scripts/setting" element={<Navigate to="/training/ressources" replace />} />
+                  <Route path="/training/scripts/closing" element={<Navigate to="/training/ressources" replace />} />
                 </Route>
                 {/* Apporteur layout (only /my-space/* lives here exclusively) */}
                 <Route element={<ApporteurLayout />}>
@@ -417,7 +418,10 @@ const FullApp = () => (
                   {/* Scripts / Rôle-Play / Quiz : ouverts à CEO/collab toujours,
                       et aux apporteurs disposant d'un pass AL BARAKA ou Liberty.
                       PassGuard avec allowCollab pour ne pas bloquer les collab simples. */}
-                  <Route path="/training/scripts" element={<PassGuard allowCollab><Scripts /></PassGuard>} />
+                  {/* « Scripts » devient « Ressources » (Sidali, 13/10/2026) ; les scripts en ligne restent accessibles depuis Setting et Closing. */}
+                  <Route path="/training/scripts" element={<Navigate to="/training/ressources" replace />} />
+                  <Route path="/training/ressources" element={<PassGuard allowCollab><Ressources /></PassGuard>} />
+                  <Route path="/training/scripts-en-ligne" element={<PassGuard allowCollab><Scripts /></PassGuard>} />
                   <Route path="/training/script-forge" element={<PassGuard allowCollab><ScriptForgePage /></PassGuard>} />
                   <Route path="/training/script-appel" element={<PassGuard allowCollab><ScriptAppelPage /></PassGuard>} />
                   <Route path="/working/plan-90" element={<PassGuard allowCollab><Plan90Page /></PassGuard>} />

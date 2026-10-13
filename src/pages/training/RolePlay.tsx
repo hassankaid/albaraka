@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Copy, Check, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, ArrowRight, Copy, Check, Loader2, Target } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useProspectProfiles, useProspectProfileWithScripts, type TypeAppel, type ProspectNiveau } from "@/hooks/useRolePlay";
@@ -45,6 +46,27 @@ export default function RolePlay() {
             Scripts pour jouer le prospect dans chaque situation. Imprime le script et un partenaire joue le prospect pendant que tu t'entraînes comme setter/closer.
           </p>
         </div>
+
+        {/* Déplacé depuis l'ancienne page Scripts (13/10/2026) : le Plan 90 jours suit les role-plays. */}
+        <Link
+          to="/working/plan-90"
+          className="group flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/10 to-transparent p-4 transition-colors hover:border-amber-500/70"
+        >
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-600">
+              <Target className="h-4.5 w-4.5" />
+            </span>
+            <div>
+              <div className="font-semibold">Mon Plan 90 jours — entraînement closing</div>
+              <p className="text-sm text-muted-foreground">
+                Suis tes role-plays (découverte + closing), tes ventes et ton état émotionnel sur 12 semaines. Recaps hebdo automatiques.
+              </p>
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-600">
+            Ouvrir <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </Link>
 
         {loadingProfiles ? (
           <div className="flex justify-center py-12">

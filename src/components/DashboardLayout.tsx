@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, MessageCircle, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film, Hash, Mail, FlaskConical, ClipboardList, Globe } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, MessageCircle, FolderDown, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film, Hash, Mail, FlaskConical, ClipboardList, Globe } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -74,9 +74,9 @@ const adminNavItems: NavItem[] = [
 
 const trainingNavItems: NavItem[] = [
   { title: "Formation", path: "/training", icon: GraduationCap, roles: ["ceo", "collaborateur"] },
-  // Scripts / Rôle-Play / Quiz : ouverts à CEO/collab toujours, et aux apporteurs
+  // Ressources / Rôle-Play / Quiz : ouverts à CEO/collab toujours, et aux apporteurs
   // (purs ou is_also_apporteur) avec pass AL BARAKA ou Liberty.
-  { title: "Scripts", path: "/training/scripts", icon: MessageSquare, roles: ["ceo", "collaborateur", "apporteur"], staffOrApporteurWithPass: true },
+  { title: "Ressources", path: "/training/ressources", icon: FolderDown, roles: ["ceo", "collaborateur", "apporteur"], staffOrApporteurWithPass: true },
   { title: "Rôle-Play", path: "/training/role-play", icon: Bot, roles: ["ceo", "collaborateur", "apporteur"], staffOrApporteurWithPass: true },
   { title: "Quiz", path: "/training/quiz", icon: TrendingUp, roles: ["ceo", "collaborateur", "apporteur"], staffOrApporteurWithPass: true },
   { title: "Suivi Élèves", path: "/admin/training/students", icon: UsersRound, roles: ["ceo"] },
@@ -136,7 +136,8 @@ const pageTitles: Record<string, string> = {
   "/working/organisation": "Mon Organisation",
   "/working/agent": "Agent IA Setting",
   "/studio": "Studio · Mes vidéos",
-  "/training/scripts": "Scripts",
+  "/training/ressources": "Ressources",
+  "/training/scripts-en-ligne": "Scripts en ligne",
   "/training": "Formation",
   "/admin/training": "Gestion des formations",
 };

@@ -3,7 +3,7 @@ import SpaceSwitcher from "./SpaceSwitcher";
 import {
   BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X,
   ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp, GraduationCap,
-  CalendarDays, Award, Bot, Rocket, MessageSquare, Link2, Lock,
+  CalendarDays, Award, Bot, Rocket, FolderDown, Link2, Lock,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
@@ -48,7 +48,7 @@ const trainingNavItems: NavItem[] = [
   { title: "Mes Certificats", path: "/training/certificats", icon: Award },
   // Pages réservées aux porteurs de pass AL BARAKA ou Liberty.
   // Apparaissent dans la sidebar uniquement si hasAnyPass=true.
-  { title: "Scripts", path: "/training/scripts", icon: MessageSquare, passRequired: true },
+  { title: "Ressources", path: "/training/ressources", icon: FolderDown, passRequired: true },
   { title: "Rôle-Play", path: "/training/role-play", icon: Bot, passRequired: true },
   { title: "Quiz", path: "/training/quiz", icon: TrendingUp, passRequired: true },
 ];
@@ -71,7 +71,8 @@ const pageTitles: Record<string, string> = {
   "/working/agent": "Agent IA Setting",
   "/training": "Formation",
   "/training/certificats": "Mes Certificats",
-  "/training/scripts": "Scripts",
+  "/training/ressources": "Ressources",
+  "/training/scripts-en-ligne": "Scripts en ligne",
   "/training/role-play": "Rôle-Play",
   "/training/quiz": "Quiz",
 };
@@ -129,7 +130,7 @@ export default function ApporteurLayout() {
       return workingNavItems.filter((item) => PAGES_OUVERTES_SI_SUSPENDU.includes(item.path));
     }
     if (currentSpace === "training") {
-      // Filtre les items passRequired (Scripts, Rôle-Play, Quiz) selon le pass.
+      // Filtre les items passRequired (Ressources, Rôle-Play, Quiz) selon le pass.
       return trainingNavItems.filter((item) => !item.passRequired || hasAnyPass);
     }
     if (currentSpace === "coaching") {
