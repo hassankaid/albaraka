@@ -19,9 +19,10 @@ export const META_CATEGORIE: Record<OfferCategory, { label: string; icon: Lucide
  * ce sont les offres à 3 000 / 2 400 / 5 000 € contre 500 €, et un mur de
  * douze cartes en vrac noyait les trois qui comptent.
  */
+// L'offre Al Baraka 200 €/mois n'est pas proposée aux élèves (Hassan, 13/10/2026) :
+// elle reste au catalogue pour son propre tunnel, mais sort de leurs liens.
 export const ORDRE_CATEGORIES: { categorie: OfferCategory; titre: string; sous_titre: string }[] = [
   { categorie: "al_baraka", titre: "Pass AL BARAKA", sous_titre: "L'écosystème complet" },
-  { categorie: "al_baraka_200", titre: "Al Baraka 200 €/mois", sous_titre: "Le même accès, réglé sur douze mois" },
   { categorie: "liberty", titre: "Liberty", sous_titre: "L'accompagnement haut de gamme" },
   { categorie: "a_la_carte", titre: "Formations à la carte", sous_titre: "Une compétence à la fois" },
 ];

@@ -97,9 +97,9 @@ describe("l'ordre d'affichage", () => {
     const { default: Page } = await monter({ pass: true, debloque: true });
     const { container } = render(<Page />);
     const titres = [...container.querySelectorAll("h2")].map((h) => h.textContent);
+    // L'offre Al Baraka 200 €/mois n'est plus proposée aux élèves (Hassan, 13/10/2026).
     expect(titres).toEqual([
       "Pass AL BARAKA",
-      "Al Baraka 200 €/mois",
       "Liberty",
       "Formations à la carte",
     ]);

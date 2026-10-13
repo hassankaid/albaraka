@@ -11,6 +11,11 @@ describe("liens de paiement des élèves", () => {
     expect(groupes.map((g) => g.categorie)).toEqual(["al_baraka", "a_la_carte"]);
   });
 
+  it("ne propose pas l'offre Al Baraka 200 €/mois aux élèves", () => {
+    const groupes = offresParCategorie([o("1", "al_baraka_200", "al-baraka-200"), o("2", "al_baraka", "al-baraka")]);
+    expect(groupes.map((g) => g.categorie)).toEqual(["al_baraka"]);
+  });
+
   it("construit le lien public, sans mode test", () => {
     const lien = lienOffre(o("1", "a_la_carte", "closing"), 3);
     expect(lien).toMatch(/\/checkout\/formation\/closing\/3$/);
