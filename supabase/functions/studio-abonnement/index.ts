@@ -131,6 +131,9 @@ serve(async (req) => {
         success_url: `${base}/studio/abonnement?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${base}/studio/abonnement`,
         locale: "fr",
+        // 10 € TTC pour tout le monde : pas de conversion automatique en devise locale
+        // (Stripe affichait 114,14 MAD avec 4 % de frais depuis le Maroc).
+        "adaptive_pricing[enabled]": "false",
       };
       if (actuel?.stripe_customer_id) params.customer = actuel.stripe_customer_id;
       else if (user.email) params.customer_email = user.email;
