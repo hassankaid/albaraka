@@ -228,6 +228,10 @@ def vecteurs(textes):
 
 
 # ---------------------------------------------------------------- une vidéo
+class VideoInutilisable(Exception):
+    """Vidéo sans aucun plan d'au moins 1,2 s : trop courte, ou montage trop rapide."""
+
+
 def indexer(v, dossier):
     vid = v["id"]
     ici = os.path.join(dossier, vid)
@@ -239,7 +243,10 @@ def indexer(v, dossier):
     duree, largeur, hauteur = sonder(travail)
     morceaux = plans(travail, duree)
     if not morceaux:
-        raise ValueError("aucun plan de plus de 1,2 s")
+        # Écartée automatiquement par la base (studio_banque_job_erreur) d'après ce motif.
+        d = f"{duree:.1f}".replace(".", ",")
+        raise VideoInutilisable(f"Trop courte : {d} s (un plan doit durer au moins 1,2 s)" if duree < 2
+                                else f"Montage trop rapide : {d} s, aucun plan de plus de 1,2 s")
     imgs = {r: images(travail, a, b, ici, f"{r}") for r, (a, b) in enumerate(morceaux)}
     chemins = {f"travail/{vid}.mp4": travail}
     chemins.update({f"images/{vid}/{os.path.basename(i)}": i for r in imgs for i in imgs[r]})
@@ -279,7 +286,7 @@ def main():
                 return n, None
             except Exception as e:
                 traceback.print_exc()
-                message = f"{type(e).__name__}: {e}"[:400]
+                message = (str(e) if isinstance(e, VideoInutilisable) else f"{type(e).__name__}: {e}")[:400]
                 try:
                     rpc("studio_banque_job_erreur", p_job=os.environ["JOB"], p_jeton=os.environ["JETON"],
                         p_video=v["id"], p_message=message)
