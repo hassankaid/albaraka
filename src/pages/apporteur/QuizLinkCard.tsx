@@ -436,7 +436,7 @@ export default function QuizLinkCard() {
           </Card>
 
           <p className="text-xs text-muted-foreground italic">
-            💡 Les leads qui complètent le quiz apparaissent automatiquement dans tes leads ci-dessus (source "Apporteur&nbsp;- Quiz").
+            💡 Les leads qui complètent le quiz apparaissent automatiquement dans « Mes Leads » (source "Apporteur&nbsp;- Quiz").
           </p>
         </div>
       )}
