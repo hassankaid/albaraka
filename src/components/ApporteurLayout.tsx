@@ -79,6 +79,7 @@ const pageTitles: Record<string, string> = {
   "/working/activity": "Mon Activité",
   "/working/organisation": "Mon Organisation",
   "/working/agent": "Agent IA Setting",
+  "/working/lien-de-paiement": "Liens de paiement",
   "/training": "Formation",
   "/training/certificats": "Mes Certificats",
   "/training/ressources": "Ressources",
