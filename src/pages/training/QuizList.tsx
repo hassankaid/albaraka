@@ -37,7 +37,7 @@ function QuizCard({ quiz }: { quiz: any }) {
           )}
           <Badge variant="outline" className="text-xs gap-1">
             <AlertCircle className="h-3 w-3" />
-            Max {quiz.max_errors} erreur{quiz.max_errors !== 1 ? "s" : ""}
+            80 % de bonnes réponses
           </Badge>
           {hasAttempted && (
             <Badge variant={validated ? "default" : "secondary"} className={cn("text-xs", validated && "bg-emerald-600 hover:bg-emerald-700")}>

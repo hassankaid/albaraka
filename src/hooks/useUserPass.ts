@@ -27,14 +27,17 @@ export function useUserPass() {
       const { data, error } = await supabase
         .from("user_passes")
         .select("*")
-        .eq("user_id", userId!)
-        .is("revoked_at", null);
+        .eq("user_id", userId!);
       if (error) throw error;
       return (data ?? []) as UserPass[];
     },
   });
 
-  const passes = query.data ?? [];
+  const tous = query.data ?? [];
+  const passes = tous.filter((p) => !p.revoked_at);
+  // Règle de Sidali (13/10/2026) : un pass retiré et plus aucun pass actif =
+  // plus aucun accès aux formations (impayé, vente perdue).
+  const accesCoupe = passes.length === 0 && tous.some((p) => !!p.revoked_at);
   const hasAlBaraka = passes.some((p) => p.pass_type === "al_baraka");
   const hasLiberty = passes.some((p) => p.pass_type === "liberty");
   const hasAnyPass = hasAlBaraka || hasLiberty;
@@ -46,6 +49,7 @@ export function useUserPass() {
     hasLiberty,
     hasAnyPass,
     passLevel,
+    accesCoupe,
     isLoading: query.isLoading,
     isError: query.isError,
   };

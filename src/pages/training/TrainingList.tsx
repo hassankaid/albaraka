@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { GraduationCap, Lock, Award, ArrowRight } from "lucide-react";
 import { useMyCertificates } from "@/hooks/useCertificates";
-import { useFormationEnrollments } from "@/hooks/useFormationEnrollments";
+import { estAchatALaCarte, useFormationEnrollments } from "@/hooks/useFormationEnrollments";
 import { useEffectifsFormations } from "@/hooks/useEffectifsFormations";
 import { useParcours } from "@/hooks/useParcours";
 import { useUserPass } from "@/hooks/useUserPass";
@@ -26,7 +26,7 @@ export default function TrainingList() {
   const userId = profile?.id;
   const isCeo = profile?.role === "ceo";
 
-  const { hasAnyPass, hasLiberty, passLevel } = useUserPass();
+  const { hasAnyPass, hasLiberty, passLevel, accesCoupe } = useUserPass();
   const { data: comingSoonEnabled } = useAppSetting<boolean>("training_coming_soon_enabled");
   const showComingSoon = !!profile?.early_access && !isCeo && comingSoonEnabled === true;
   // CEO : AL BARAKA par défaut pour voir la structure ; sinon selon pass
@@ -63,7 +63,7 @@ export default function TrainingList() {
   }, [parcours]);
 
   const { data: formations, isLoading } = useQuery({
-    queryKey: ["training", "formations", userId, isCeo],
+    queryKey: ["training", "formations", userId, isCeo, hasLiberty],
     enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -72,9 +72,24 @@ export default function TrainingList() {
         .order("ordre", { ascending: true });
       if (error) throw error;
       if (!data) return [];
-      // Formations masquées aux élèves (anciennes formations remplacées par les
-      // parcours) : le CEO seul les voit encore.
-      const visibles = (data as any[]).filter((f) => isCeo || !f.masquee_eleves);
+      // Ce que voit un élève (Sidali, 13/10/2026) : les parcours puis Estimaction.
+      // Les formations masquées (vendues à la carte) ne s'affichent qu'à ceux qui
+      // les ont achetées ; celles réservées Liberty, qu'aux membres Liberty.
+      // Le CEO voit tout.
+      let visibles = data as any[];
+      if (!isCeo) {
+        const { data: mesInscriptions } = await supabase
+          .from("formation_enrollments")
+          .select("formation_id, source")
+          .eq("user_id", userId!)
+          .is("revoked_at", null);
+        const sources = new Map((mesInscriptions ?? []).map((r) => [r.formation_id, r.source as string]));
+        visibles = visibles.filter((f) =>
+          f.masquee_eleves
+            ? estAchatALaCarte(sources.get(f.id))
+            : f.access_mode !== "liberty_only" || hasLiberty || sources.has(f.id),
+        );
+      }
       return Promise.all(
         visibles.map(async (f) => {
           const [{ data: progress }, { data: chapters }] = await Promise.all([
@@ -112,8 +127,10 @@ export default function TrainingList() {
   // (colonne formations.ordre, pilotée par drag-and-drop). Le tri est déjà
   // appliqué côté fetch. formationUnlockMap ne sert qu'à identifier les
   // formations du parcours et leur phase de déblocage (cadenas + label).
-  const sortedFormations = (formations ?? []).filter((f: any) => !f.masquee_eleves);
-  const formationsMasquees = (formations ?? []).filter((f: any) => f.masquee_eleves);
+  const sortedFormations = (formations ?? []).filter((f: any) => !isCeo || !f.masquee_eleves);
+  const formationsMasquees = isCeo ? (formations ?? []).filter((f: any) => f.masquee_eleves) : [];
+  // Pass retiré (impayé) : plus aucun accès, on le dit clairement.
+  const suspendu = !isCeo && accesCoupe && !sortedFormations.some((f: any) => enrollments.has(f.id));
 
   const renderFormation = (f: any) => {
     // Détermine si la formation est accessible et, sinon, pourquoi :
@@ -122,9 +139,9 @@ export default function TrainingList() {
     //   3. access_mode 'liberty_only' + pas de pass Liberty → verrouillée (Liberty only)
     //   4. enrollment manquant → verrouillée (déblocage via le parcours)
     const isLibertyLocked = f.access_mode === "liberty_only" && !hasLiberty;
-    const hasAccess = isCeo
-      || f.access_mode === "free"
-      || (!isLibertyLocked && enrollments.has(f.id));
+    // Estimaction (libre) passe aussi par une inscription : elle est fermée
+    // quand le pass est retiré (règle de Sidali du 13/10/2026).
+    const hasAccess = isCeo || (!isLibertyLocked && enrollments.has(f.id));
 
     if (!hasAccess) {
       const reason: LockReason = isLibertyLocked ? "liberty_only" : f.access_mode === "pass" ? "pass" : "parcours";
@@ -245,10 +262,22 @@ export default function TrainingList() {
       )}
 
       {/* Bandeau Pass */}
-      {!showComingSoon && <ParcoursBanner />}
+      {!showComingSoon && !suspendu && <ParcoursBanner />}
+
+      {!showComingSoon && suspendu && !isLoading && (
+        <div className="flex flex-col items-center justify-center py-20 text-center" data-testid="acces-suspendu">
+          <div className="p-4 rounded-full bg-muted mb-4">
+            <Lock className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-semibold text-foreground mb-1">Ton accès aux formations est suspendu</h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            Ton Pass n'est plus actif. Pour retrouver tes parcours et ta progression, contacte l'équipe AL BARAKA.
+          </p>
+        </div>
+      )}
 
       {/* Catalogue formations — masqué tant que les early access sont en "coming soon" */}
-      {!showComingSoon && (
+      {!showComingSoon && !suspendu && (
       <div>
         <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
           <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
@@ -299,10 +328,10 @@ export default function TrainingList() {
           <div className="space-y-3 pt-4">
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Anciennes formations · masquées aux élèves
+                Formations à la carte · masquées aux élèves du Pass
               </h3>
               <p className="text-xs text-muted-foreground">
-                Remplacées par les parcours : visibles par toi seul. Progression et certificats des élèves conservés.
+                Remplacées par les parcours pour le Pass ; seuls ceux qui en achètent une à la carte la voient. Progression et certificats conservés.
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

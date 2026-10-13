@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFormationEnrollments } from "@/hooks/useFormationEnrollments";
 import {
   Accordion,
   AccordionItem,
@@ -53,6 +54,7 @@ export default function FormationDetail() {
   const { profile } = useAuth();
   const userId = profile?.id;
   const isCeo = profile?.role === "ceo";
+  const inscriptions = useFormationEnrollments();
 
   const { data, isLoading } = useQuery({
     queryKey: ["training", "formation-detail", slug, userId],
@@ -169,9 +171,9 @@ export default function FormationDetail() {
     );
   }
 
-  // Ancienne formation masquée aux élèves (remplacée par les parcours) :
-  // un ancien lien ramène à la page Formation.
-  if (data.formation.masquee_eleves && !isCeo) {
+  // Formation masquée aux élèves du Pass (vendue à la carte) : seul son
+  // acheteur y accède ; un ancien lien ramène les autres à la page Formation.
+  if (data.formation.masquee_eleves && !isCeo && !inscriptions.isLoading && !inscriptions.aLaCarte(data.formation.id)) {
     return <Navigate to="/training" replace />;
   }
 

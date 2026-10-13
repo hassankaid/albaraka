@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, ArrowRight, Loader2, CheckCircle2, XCircle, RotateCcw, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { explicationAffichee, quizAuNouveauFormat, scoreQuiz } from "@/lib/quizExplications";
+import { erreursPermises, explicationAffichee, quizAuNouveauFormat, quizReussi, scoreQuiz } from "@/lib/quizExplications";
 import { toast } from "sonner";
 
 type AnswerRecord = { question_id: string; selected: number; correct: boolean };
@@ -36,7 +36,7 @@ export default function QuizPage() {
   // Parcours linéaire (09/10/2026) : un quiz de fin de chapitre réussi mène
   // directement au chapitre suivant, sans repasser par la page de la formation.
   const chapitreDuQuiz = (quiz as { chapitre_id?: string | null } | undefined)?.chapitre_id ?? null;
-  const reussi = finished && answers.filter((a) => !a.correct).length <= (quiz?.max_errors ?? 0);
+  const reussi = finished && quizReussi(answers.filter((a) => !a.correct).length, answers.length);
   const { data: suite } = useQuery({
     queryKey: ["training", "chapter-nav", chapitreDuQuiz, "apres-quiz"],
     enabled: !!chapitreDuQuiz && reussi,
@@ -90,7 +90,8 @@ export default function QuizPage() {
   const questions = quiz.questions;
   const currentQuestion = questions[currentIdx];
   const errorsCount = answers.filter((a) => !a.correct).length;
-  const maxErrors = quiz.max_errors;
+  // 80 % de bonnes réponses (règle du 13/10/2026) : erreurs encore permises.
+  const maxErrors = erreursPermises(questions.length);
   const progress = ((currentIdx + (finished ? 1 : 0)) / questions.length) * 100;
   // Quiz dont chaque réponse a sa propre explication (parcours setter/closer) :
   // on y affiche aussi le score. Les autres quiz gardent l'affichage d'avant.
@@ -121,7 +122,7 @@ export default function QuizPage() {
       // Quiz done — save attempt
       const finalAnswers = answers;
       const finalErrors = finalAnswers.filter((a) => !a.correct).length;
-      const validated = finalErrors <= maxErrors;
+      const validated = quizReussi(finalErrors, questions.length);
 
       try {
         await createAttempt.mutateAsync({
@@ -196,8 +197,8 @@ export default function QuizPage() {
   // ─── Finished screen ───
   if (finished) {
     const finalErrors = answers.filter((a) => !a.correct).length;
-    const validated = finalErrors <= maxErrors;
-    const score = scoreQuiz(questions.length, finalErrors, maxErrors);
+    const score = scoreQuiz(questions.length, finalErrors);
+    const validated = score.valide;
 
     return (
       <div className="max-w-2xl mx-auto py-12 space-y-6">
@@ -226,11 +227,11 @@ export default function QuizPage() {
               )}
               {nouveauFormat ? null : validated ? (
                 <p className="text-emerald-600 dark:text-emerald-400 mt-3 text-sm">
-                  ✅ Maximum {maxErrors} erreurs autorisées. Bien joué !
+                  ✅ 80 % de bonnes réponses atteints ({score.bonnes}/{score.total}). Bien joué !
                 </p>
               ) : (
                 <p className="text-amber-600 dark:text-amber-400 mt-3 text-sm">
-                  Maximum {maxErrors} erreurs autorisées. Retente pour valider.
+                  Il faut 80 % de bonnes réponses ({score.minimum}/{score.total}) pour valider. Retente pour valider.
                 </p>
               )}
             </div>

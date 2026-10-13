@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link, useSearchParams, Navigate } from "react-r
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFormationEnrollments } from "@/hooks/useFormationEnrollments";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -63,6 +64,7 @@ export default function ChapterViewer() {
   const { profile } = useAuth();
   const userId = profile?.id;
   const isCeo = profile?.role === "ceo";
+  const inscriptions = useFormationEnrollments();
   const { hasLiberty } = useUserPass();
   const [sidebarOpenMobile, setSidebarOpenMobile] = useState(false);
   const [completionModalOpen, setCompletionModalOpen] = useState(false);
@@ -348,9 +350,10 @@ export default function ChapterViewer() {
     );
   }
 
-  // Ancienne formation masquée aux élèves (remplacée par les parcours) :
-  // un ancien lien ramène à la page Formation.
-  if ((chapterData.formation as any)?.masquee_eleves && !isCeo) {
+  // Formation masquée aux élèves du Pass (vendue à la carte) : seul son
+  // acheteur y accède ; un ancien lien ramène les autres à la page Formation.
+  if ((chapterData.formation as any)?.masquee_eleves && !isCeo && !inscriptions.isLoading
+      && !inscriptions.aLaCarte((chapterData.formation as any).id)) {
     return <Navigate to="/training" replace />;
   }
 

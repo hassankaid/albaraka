@@ -181,7 +181,7 @@ function QuizDialog({ open, onOpenChange, initial }: {
             {initial ? "Modifier le quiz" : "Nouveau quiz"}
           </DialogTitle>
           <DialogDescription>
-            Un quiz contient une série de questions. L'élève valide le quiz s'il fait au maximum {maxErrors} erreur{maxErrors !== 1 ? "s" : ""}.
+            Un quiz contient une série de questions. L'élève valide le quiz s'il obtient au moins 80 % de bonnes réponses.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-5 py-2">
@@ -293,8 +293,10 @@ function QuizDialog({ open, onOpenChange, initial }: {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Max erreurs pour valider</Label>
-            <Input type="number" min="0" max="100" value={maxErrors} onChange={(e) => setMaxErrors(parseInt(e.target.value) || 0)} />
+            <Label>Validation</Label>
+            <p className="text-sm text-muted-foreground">
+              Le quiz est validé à 80 % de bonnes réponses, quel que soit le nombre de questions.
+            </p>
           </div>
         </div>
         <DialogFooter>
@@ -604,7 +606,7 @@ export default function AdminQuizList() {
                             </Badge>
                           );
                         })()}
-                        <Badge variant="outline" className="text-[10px]">Max {q.max_errors} err</Badge>
+                        <Badge variant="outline" className="text-[10px]">80 %</Badge>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -655,7 +657,7 @@ export default function AdminQuizList() {
                     {quizDetail.description && <p className="text-sm text-muted-foreground">{quizDetail.description}</p>}
                     <div className="flex items-center gap-2 mt-2">
                       <Badge variant="outline">{quizDetail.questions?.length || 0} questions</Badge>
-                      <Badge variant="outline">Max {quizDetail.max_errors} erreurs</Badge>
+                      <Badge variant="outline">Validé à 80 % de bonnes réponses</Badge>
                     </div>
                   </div>
                   <Button size="sm" onClick={() => { setEditQuestion(null); setQuestionDialogOpen(true); }} className="gap-2">

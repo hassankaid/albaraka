@@ -1,3 +1,4 @@
+import { POURCENTAGE_REUSSITE_QUIZ } from "@/lib/quizExplications";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,10 +39,8 @@ export function ModuleQuizCard({
 
   const validated = !!lastAttempt?.validated;
   const hasAttempted = !!lastAttempt;
-  const erreursPermises = Number(quiz.max_errors ?? 0);
-  const seuil = erreursPermises > 0
-    ? `${erreursPermises} erreur${erreursPermises > 1 ? "s" : ""} au plus`
-    : "sans erreur";
+  // Règle du 13/10/2026 : 80 % de bonnes réponses, plus de nombre d'erreurs fixe.
+  const seuil = `${POURCENTAGE_REUSSITE_QUIZ} % de bonnes réponses`;
 
   return (
     <div
@@ -70,7 +69,7 @@ export function ModuleQuizCard({
               {quiz.titre}
             </span>
             <Badge variant="outline" className="text-[10px]">
-              Max {quiz.max_errors} erreur{quiz.max_errors !== 1 ? "s" : ""}
+              {POURCENTAGE_REUSSITE_QUIZ} % de bonnes réponses
             </Badge>
             {validated && (
               <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white border-0 text-[10px]">
@@ -142,10 +141,8 @@ export function ChapterQuizCard({
 
   const validated = !!lastAttempt?.validated;
   const hasAttempted = !!lastAttempt;
-  const erreursPermises = Number(quiz.max_errors ?? 0);
-  const seuil = erreursPermises > 0
-    ? `${erreursPermises} erreur${erreursPermises > 1 ? "s" : ""} au plus`
-    : "sans erreur";
+  // Règle du 13/10/2026 : 80 % de bonnes réponses, plus de nombre d'erreurs fixe.
+  const seuil = `${POURCENTAGE_REUSSITE_QUIZ} % de bonnes réponses`;
 
   return (
     <Card
@@ -201,7 +198,7 @@ export function ChapterQuizCard({
             ) : !validated ? (
               <p className="text-xs text-muted-foreground mt-1">
                 {navigationLibre
-                  ? `Teste tes acquis : le quiz est validé ${erreursPermises > 0 ? `avec ${seuil}` : "sans aucune erreur"}.`
+                  ? `Teste tes acquis : le quiz est validé avec ${seuil}.`
                   : `Valide ce quiz (${seuil}) pour débloquer le chapitre suivant.`}
               </p>
             ) : (
@@ -262,10 +259,8 @@ export function FormationFinalQuizCard({
 
   const validated = !!lastAttempt?.validated;
   const hasAttempted = !!lastAttempt;
-  const erreursPermises = Number(quiz.max_errors ?? 0);
-  const seuil = erreursPermises > 0
-    ? `${erreursPermises} erreur${erreursPermises > 1 ? "s" : ""} au plus`
-    : "sans erreur";
+  // Règle du 13/10/2026 : 80 % de bonnes réponses, plus de nombre d'erreurs fixe.
+  const seuil = `${POURCENTAGE_REUSSITE_QUIZ} % de bonnes réponses`;
 
   return (
     <Card
@@ -318,7 +313,7 @@ export function FormationFinalQuizCard({
               </p>
             ) : !validated ? (
               <p className="text-xs text-muted-foreground mt-1">
-                Valide ce quiz (max {quiz.max_errors} erreur{quiz.max_errors !== 1 ? "s" : ""}) pour valider cette étape et continuer ton parcours.
+                Valide ce quiz ({seuil}) pour valider cette étape et continuer ton parcours.
               </p>
             ) : (
               <p className="text-xs text-muted-foreground mt-1">

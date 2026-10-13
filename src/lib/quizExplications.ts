@@ -44,15 +44,37 @@ export function quizAuNouveauFormat(questions: QuestionAvecExplications[]): bool
   return questions.some(aExplicationsParReponse);
 }
 
+/**
+ * Règle de validation des quiz (Sidali, 13/10/2026) : 80 % de bonnes réponses,
+ * quel que soit le nombre de questions. Remplace l'ancien « N erreurs au plus »
+ * (colonne quizzes.max_errors, gardée en base mais plus utilisée).
+ */
+export const POURCENTAGE_REUSSITE_QUIZ = 80;
+
+/** Nombre de bonnes réponses qu'il faut au minimum (80 %, arrondi au-dessus). */
+export function bonnesReponsesRequises(total: number): number {
+  return Math.ceil((total * POURCENTAGE_REUSSITE_QUIZ) / 100 - 1e-9);
+}
+
+/** Nombre d'erreurs qu'on peut faire en restant à 80 % ou plus. */
+export function erreursPermises(total: number): number {
+  return Math.max(0, total - bonnesReponsesRequises(total));
+}
+
+/** Vrai si la tentative atteint 80 % de bonnes réponses. */
+export function quizReussi(erreurs: number, total: number): boolean {
+  return total > 0 && total - erreurs >= bonnesReponsesRequises(total);
+}
+
 /** Score d'une tentative, et le minimum de bonnes réponses pour valider. */
-export function scoreQuiz(total: number, erreurs: number, maxErreurs: number) {
+export function scoreQuiz(total: number, erreurs: number) {
   const bonnes = Math.max(0, total - erreurs);
   return {
     bonnes,
     total,
     pourcentage: total === 0 ? 0 : Math.round((bonnes / total) * 100),
-    minimum: Math.max(0, total - maxErreurs),
-    valide: erreurs <= maxErreurs,
+    minimum: bonnesReponsesRequises(total),
+    valide: quizReussi(erreurs, total),
   };
 }
 

@@ -77,8 +77,9 @@ describe("explication par réponse", () => {
     repondre("Un");
     fireEvent.click(screen.getByText("Voir les résultats"));
     expect((await screen.findByTestId("quiz-score")).textContent).toBe("1/2 bonnes réponses · 50 %");
-    expect(screen.getByText("Quiz validé !")).toBeTruthy();
-    expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ errors_count: 1, total_questions: 2, validated: true }));
+    // 80 % de bonnes réponses exigés (règle du 13/10/2026), quel que soit max_errors.
+    expect(screen.getByText("À refaire")).toBeTruthy();
+    expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ errors_count: 1, total_questions: 2, validated: false }));
     expect(screen.getByText("Recommencer")).toBeTruthy();
   });
 
@@ -103,7 +104,7 @@ describe("parcours linéaire : après un quiz de fin de chapitre réussi", () =>
     quiz = { ...quiz, chapitre_id: "chap-16" };
     suite = { id: "chap-17", titre: "PARTIE 1 — Introduction", slug: "parcours-setter-closer" };
     monter();
-    repondre("Jaune");
+    repondre("Bleu");
     fireEvent.click(screen.getByText("Question suivante"));
     repondre("Un");
     fireEvent.click(screen.getByText("Voir les résultats"));
@@ -111,8 +112,8 @@ describe("parcours linéaire : après un quiz de fin de chapitre réussi", () =>
     expect(bouton.textContent).toContain("Continuer : PARTIE 1 — Introduction");
   });
 
-  it("ne propose rien si le quiz est raté", async () => {
-    quiz = { ...quiz, chapitre_id: "chap-16", max_errors: 0 };
+  it("ne propose rien si le quiz est raté (sous 80 %)", async () => {
+    quiz = { ...quiz, chapitre_id: "chap-16", max_errors: 5 };
     suite = { id: "chap-17", titre: "Suite", slug: "parcours-setter-closer" };
     monter();
     repondre("Jaune");

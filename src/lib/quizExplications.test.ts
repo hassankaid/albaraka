@@ -7,6 +7,9 @@ import {
   nettoyerQuestion,
   quizAuNouveauFormat,
   scoreQuiz,
+  bonnesReponsesRequises,
+  erreursPermises,
+  quizReussi,
 } from "./quizExplications";
 
 const nouvelle = {
@@ -51,15 +54,27 @@ describe("explication affichée après validation", () => {
   });
 });
 
-describe("score", () => {
-  it("Setting : 18 questions, 3 erreurs max = 15 bonnes réponses minimum (80 %)", () => {
-    expect(scoreQuiz(18, 3, 3)).toEqual({ bonnes: 15, total: 18, pourcentage: 83, minimum: 15, valide: true });
-    expect(scoreQuiz(18, 4, 3)).toMatchObject({ bonnes: 14, pourcentage: 78, valide: false });
+describe("score : 80 % de bonnes réponses (règle du 13/10/2026)", () => {
+  it("Setting : 18 questions = 15 bonnes réponses minimum", () => {
+    expect(scoreQuiz(18, 3)).toEqual({ bonnes: 15, total: 18, pourcentage: 83, minimum: 15, valide: true });
+    expect(scoreQuiz(18, 4)).toMatchObject({ bonnes: 14, pourcentage: 78, valide: false });
   });
 
-  it("Closing : 20 questions, 4 erreurs max = 16 bonnes réponses minimum (80 %)", () => {
-    expect(scoreQuiz(20, 4, 4)).toMatchObject({ bonnes: 16, pourcentage: 80, minimum: 16, valide: true });
-    expect(scoreQuiz(20, 5, 4)).toMatchObject({ bonnes: 15, valide: false });
+  it("Closing : 20 questions = 16 bonnes réponses minimum (80 % pile valide)", () => {
+    expect(scoreQuiz(20, 4)).toMatchObject({ bonnes: 16, pourcentage: 80, minimum: 16, valide: true });
+    expect(scoreQuiz(20, 5)).toMatchObject({ bonnes: 15, valide: false });
+  });
+
+  it("10 questions : 2 erreurs passent, 3 non (l'ancien « 3 erreurs max » ne vaut plus)", () => {
+    expect(erreursPermises(10)).toBe(2);
+    expect(quizReussi(2, 10)).toBe(true);
+    expect(quizReussi(3, 10)).toBe(false);
+  });
+
+  it("petits quiz : 5 questions = 4 bonnes, 3 questions = 3 bonnes", () => {
+    expect(bonnesReponsesRequises(5)).toBe(4);
+    expect(bonnesReponsesRequises(3)).toBe(3);
+    expect(quizReussi(0, 0)).toBe(false);
   });
 });
 
@@ -83,7 +98,7 @@ describe("branchements", () => {
   it("la page du quiz utilise l'explication de la réponse choisie et affiche le score", () => {
     const page = readFileSync(resolve(process.cwd(), "src/pages/training/QuizPage.tsx"), "utf-8");
     expect(page).toContain("explicationAffichee(currentQuestion, selectedOption)");
-    expect(page).toContain("scoreQuiz(questions.length, finalErrors, maxErrors)");
+    expect(page).toContain("scoreQuiz(questions.length, finalErrors)");
   });
 
   it("la base garde les explications alignées sur les réponses", () => {
