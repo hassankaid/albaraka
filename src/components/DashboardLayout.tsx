@@ -7,7 +7,6 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPass } from "@/hooks/useUserPass";
 import { useFeatureUnlocks, type FeatureKey } from "@/hooks/useFeatureUnlock";
-import { useCanAccessPersonalBrand } from "@/hooks/useCanAccessPersonalBrand";
 import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 import { DiscordButton } from "@/components/DiscordButton";
 import { DriveButton } from "@/components/DriveButton";
@@ -33,8 +32,8 @@ interface NavItem {
 const workingNavItems: NavItem[] = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
   { title: "Mon Organisation", path: "/working/organisation", icon: CalendarDays, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
-  { title: "Personal Brand", path: "/working/personal-brand", icon: Sparkles, roles: ["ceo", "collaborateur", "apporteur"], apporteurOnly: true },
-  { title: "Agent IA", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true },
+  // Personal Brand désactivé pour tout le monde (Sidali, 13/10/2026).
+  { title: "Agent IA Setting", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true },
   // Debloquee par la formation Setting a 100 %, comme le canal Discord Setting.
   // La page verifie elle-meme le pass actif ET le deblocage.
   { title: "Liens de paiement", path: "/working/lien-de-paiement", icon: Link2, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true, featureRequired: "payment_links" },
@@ -135,8 +134,7 @@ const pageTitles: Record<string, string> = {
   "/admin/coaching": "Administration Coaching",
   "/working/activity": "Mon Activité",
   "/working/organisation": "Mon Organisation",
-  "/working/personal-brand": "Personal Brand",
-  "/working/agent": "Agent IA",
+  "/working/agent": "Agent IA Setting",
   "/studio": "Studio · Mes vidéos",
   "/training/scripts": "Scripts",
   "/training": "Formation",
@@ -151,7 +149,6 @@ export default function DashboardLayout() {
   const { profile, signOut } = useAuth();
   const { hasAnyPass } = useUserPass();
   const { has: aDebloque } = useFeatureUnlocks();
-  const { canAccess: canAccessPersonalBrand } = useCanAccessPersonalBrand();
 
   // Redirect pure apporteurs to their dedicated space (except coaching routes)
   const isCoachingRoute = location.pathname.startsWith("/coaching") || location.pathname.startsWith("/mon-coaching");
@@ -193,11 +190,6 @@ export default function DashboardLayout() {
       // CEO/collab passent toujours, apporteur (pur ou hybride) doit avoir un pass.
       if (item.staffOrApporteurWithPass) {
         return userRole === "ceo" || userRole === "collaborateur" || hasAnyPass;
-      }
-      // Personal Brand (26/05/2026) : masqué pour les AL BARAKA qui n'ont pas
-      // validé Marketing Digital. CEO/coach/Liberty passent.
-      if (item.path === "/working/personal-brand" && !canAccessPersonalBrand) {
-        return false;
       }
       return true;
     });

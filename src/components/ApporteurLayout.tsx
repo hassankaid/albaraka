@@ -3,7 +3,7 @@ import SpaceSwitcher from "./SpaceSwitcher";
 import {
   BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X,
   ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp, GraduationCap,
-  CalendarDays, Award, Sparkles, Bot, MessageSquare, Link2, Lock,
+  CalendarDays, Award, Bot, Rocket, MessageSquare, Link2, Lock,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
@@ -11,7 +11,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPass } from "@/hooks/useUserPass";
 import { useFeatureUnlocks, type FeatureKey } from "@/hooks/useFeatureUnlock";
-import { useCanAccessPersonalBrand } from "@/hooks/useCanAccessPersonalBrand";
+import { useAccesTunnel } from "@/hooks/useAccesTunnel";
 import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 import { DiscordButton } from "@/components/DiscordButton";
 import { DriveButton } from "@/components/DriveButton";
@@ -28,12 +28,15 @@ interface NavItem {
 const workingNavItems: NavItem[] = [
   { title: "Mon Activité", path: "/working/activity", icon: TrendingUp },
   { title: "Mon Organisation", path: "/working/organisation", icon: CalendarDays },
-  { title: "Personal Brand", path: "/working/personal-brand", icon: Sparkles, passRequired: true },
-  { title: "Agent IA", path: "/working/agent", icon: Bot, passRequired: true },
+  // Personal Brand désactivé pour tout le monde (Sidali, 13/10/2026) : la page
+  // redirige vers le Dashboard, les données des élèves sont conservées.
+  { title: "Agent IA Setting", path: "/working/agent", icon: Bot, passRequired: true },
   // L'espace apporteur a sa PROPRE barre laterale : ajouter l'entree dans
   // DashboardLayout ne suffit pas, un apporteur ne la voit jamais.
   { title: "Liens de paiement", path: "/working/lien-de-paiement", icon: Link2, passRequired: true, featureRequired: "payment_links" },
   { title: "Dashboard", path: "/my-space", icon: BarChart3 },
+  // Sidali (13/10/2026) : les élèves doivent trouver leur lien de tunnel du premier coup.
+  { title: "Mon tunnel", path: "/my-space/tunnel", icon: Rocket },
   { title: "Mes Leads", path: "/my-space/leads", icon: Users },
   { title: "Mes Ventes", path: "/my-space/sales", icon: BadgeEuro },
   { title: "Commissions & Factures", path: "/my-space/commissions", icon: Receipt },
@@ -57,6 +60,7 @@ const coachingNavItems: NavItem[] = [
 
 const pageTitles: Record<string, string> = {
   "/my-space": "Dashboard",
+  "/my-space/tunnel": "Mon tunnel",
   "/my-space/leads": "Mes Leads",
   "/my-space/sales": "Mes Ventes",
   "/my-space/commissions": "Commissions & Factures",
@@ -64,8 +68,7 @@ const pageTitles: Record<string, string> = {
   "/my-space/coaching-calendar": "Mes Coachings",
   "/working/activity": "Mon Activité",
   "/working/organisation": "Mon Organisation",
-  "/working/personal-brand": "Personal Brand",
-  "/working/agent": "Agent IA",
+  "/working/agent": "Agent IA Setting",
   "/training": "Formation",
   "/training/certificats": "Mes Certificats",
   "/training/scripts": "Scripts",
@@ -113,7 +116,7 @@ export default function ApporteurLayout() {
   const suspendu = accesCoupe && profile?.role === "apporteur";
   const pageAutoriseeSiSuspendu = PAGES_OUVERTES_SI_SUSPENDU.some((p) => location.pathname.startsWith(p));
   const { has: aDebloque } = useFeatureUnlocks();
-  const { canAccess: canAccessPersonalBrand } = useCanAccessPersonalBrand();
+  const { aAcces: aAccesTunnel } = useAccesTunnel();
 
   const currentSpace = detectSpace(location.pathname);
   const pageTitle = pageTitles[location.pathname] || "Mon espace";
@@ -137,10 +140,7 @@ export default function ApporteurLayout() {
       // Comme dans DashboardLayout : on ne montre pas une entree dont la page
       // afficherait un ecran verrouille.
       if (item.featureRequired && !aDebloque(item.featureRequired)) return false;
-      // Personal Brand (26/05/2026) : masqué pour AL BARAKA sans Marketing validé.
-      if (item.path === "/working/personal-brand" && !canAccessPersonalBrand) {
-        return false;
-      }
+      if (item.path === "/my-space/tunnel" && !aAccesTunnel) return false;
       return true;
     });
   })();

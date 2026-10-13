@@ -12,7 +12,6 @@ import { fr } from "date-fns/locale";
 import { formatDateOnly } from "@/lib/formatDate";
 import { LEAD_STATUS_LABELS, LEAD_STATUS_COLORS } from "@/lib/leadConfig";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
-import QuizLinkCard from "@/pages/apporteur/QuizLinkCard";
 
 type PeriodFilter = "this_month" | "last_month" | "this_year" | "all";
 
@@ -338,8 +337,7 @@ export default function ApporteurDashboard() {
         </div>
       </section>
 
-      {/* ═══ 3.5 MON LIEN QUIZ (beta, gated) ═══ */}
-      <QuizLinkCard />
+      {/* Le lien quiz a sa propre page « Mon tunnel » depuis le 13/10/2026. */}
 
       {/* ═══ 4. PROCHAINES COMMISSIONS ═══ */}
       <section className="space-y-3">

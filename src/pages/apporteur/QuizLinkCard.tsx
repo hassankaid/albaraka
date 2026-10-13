@@ -1,4 +1,4 @@
-// QuizLinkCard — section affichée dans le dashboard apporteur (/my-space)
+// QuizLinkCard — section affichée sur la page « Mon tunnel » (/my-space/tunnel)
 // pour gérer son lien de prospection quiz et consulter ses stats funnel.
 // Accès : CEO, OU détenteur d'un pass AL BARAKA actif, OU whitelist manuelle
 // via la feature `quiz_lead_magnet` (back-door exceptions).
@@ -22,8 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useFeatureUnlocks } from "@/hooks/useFeatureUnlock";
-import { useUserPass } from "@/hooks/useUserPass";
+import { useAccesTunnel } from "@/hooks/useAccesTunnel";
 import { useToast } from "@/hooks/use-toast";
 import { getPublicAppOrigin } from "@/lib/impersonation";
 import { PhoneInputField, isValidPhoneNumber } from "@/components/ui/PhoneInputField";
@@ -61,14 +60,8 @@ function buildPublicUrl(slug: string): string {
 
 export default function QuizLinkCard() {
   const { profile } = useAuth();
-  const { isLoading: featureLoading, has } = useFeatureUnlocks();
-  const { hasAlBaraka, isLoading: passLoading } = useUserPass();
+  const { aAcces: canAccess, isLoading: accessLoading } = useAccesTunnel();
   const { toast } = useToast();
-
-  const isCeo = profile?.role === "ceo";
-  const isWhitelisted = has("quiz_lead_magnet");
-  const canAccess = isCeo || hasAlBaraka || isWhitelisted;
-  const accessLoading = featureLoading || passLoading;
 
   const [loading, setLoading] = useState(true);
   const [owner, setOwner] = useState<QuizOwnerRow | null>(null);

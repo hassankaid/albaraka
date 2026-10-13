@@ -48,6 +48,7 @@ import AdminCoaching from "./pages/AdminCoaching";
 // « Historique » masqués le 20/05/2026 (demande CEO). Pages conservées sur
 // disque mais retirées du routing — leurs routes redirigent vers le calendrier.
 import ApporteurDashboard from "./pages/apporteur/ApporteurDashboard";
+import MonTunnel from "./pages/apporteur/MonTunnel";
 import ApporteurLeads from "./pages/apporteur/ApporteurLeads";
 import ApporteurSales from "./pages/apporteur/ApporteurSales";
 import ApporteurCommissions from "./pages/apporteur/ApporteurCommissions";
@@ -98,7 +99,6 @@ import RdvCalendly from "./pages/public/rdv/RdvCalendly";
 import CoachingCalendar from "./pages/coaching/CoachingCalendar";
 import { PassGuard } from "./components/PassGuard";
 import { FeatureGate } from "./components/FeatureGate";
-import { MarketingGate } from "./components/MarketingGate";
 import SharedLayout from "./components/SharedLayout";
 import ParcoursView from "./pages/parcours/ParcoursView";
 import { LibertyModuleFrame } from "./components/parcours/LibertyModuleFrame";
@@ -118,7 +118,6 @@ import M14MiddleTicketPage from "./pages/parcours/liberty/m14-middle-ticket/M14M
 import M16LowTicketPage from "./pages/parcours/liberty/m16-low-ticket/M16LowTicketPage";
 import M18ValueLadderPage from "./pages/parcours/liberty/m18-value-ladder/M18ValueLadderPage";
 import OrganisationPage from "./pages/working/organisation/OrganisationPage";
-import PersonalBrandPage from "./pages/working/personal-brand/PersonalBrandPage";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import AdminAnnouncements from "./pages/admin/announcements/AdminAnnouncements";
 import AdminCalendlyWebhooks from "./pages/admin/webhooks/AdminCalendlyWebhooks";
@@ -400,6 +399,7 @@ const FullApp = () => (
                 {/* Apporteur layout (only /my-space/* lives here exclusively) */}
                 <Route element={<ApporteurLayout />}>
                   <Route path="/my-space" element={<ApporteurDashboard />} />
+                  <Route path="/my-space/tunnel" element={<MonTunnel />} />
                   <Route path="/my-space/leads" element={<ApporteurLeads />} />
                   <Route path="/my-space/sales" element={<ApporteurSales />} />
                   <Route path="/my-space/commissions" element={<ApporteurCommissions />} />
@@ -449,8 +449,9 @@ const FullApp = () => (
                   <Route path="/parcours/liberty/m18" element={<PassGuard><LibertyModuleFrame><M18ValueLadderPage /></LibertyModuleFrame></PassGuard>} />
                   <Route path="/working/activity" element={<FeatureGate feature="working_activity" lockedDescription="Termine la partie SETTING de ton parcours Setting/Closing pour débloquer cette section." unlockRoute="/training/parcours-setter-closer"><MyActivity /></FeatureGate>} />
                   <Route path="/working/organisation" element={<FeatureGate feature="quiz_organisation"><OrganisationPage /></FeatureGate>} />
-                  <Route path="/working/personal-brand" element={<MarketingGate><PersonalBrandPage /></MarketingGate>} />
-                  <Route path="/working/agent" element={<FeatureGate feature="working_activity" lockedTitle="Agent IA verrouillé" lockedDescription="Termine la partie SETTING de ton parcours Setting/Closing pour débloquer l'Agent IA." unlockCtaLabel="Ouvrir mon parcours" unlockRoute="/training/parcours-setter-closer"><AgentIA /></FeatureGate>} />
+                  {/* Personal Brand désactivé pour tout le monde (Sidali, 13/10/2026) ; données conservées. */}
+                  <Route path="/working/personal-brand" element={<Navigate to="/my-space" replace />} />
+                  <Route path="/working/agent" element={<FeatureGate feature="working_activity" lockedTitle="Agent IA Setting verrouillé" lockedDescription="Termine la partie SETTING de ton parcours Setting/Closing pour débloquer l'Agent IA Setting." unlockCtaLabel="Ouvrir mon parcours" unlockRoute="/training/parcours-setter-closer"><AgentIA /></FeatureGate>} />
                   <Route path="/working/lien-de-paiement" element={<LienDePaiement />} />
                 </Route>
               </Route>

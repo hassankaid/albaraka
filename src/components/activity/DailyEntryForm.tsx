@@ -3,19 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Video, MessageCircle, Mail, CalendarCheck, ShoppingCart, Sparkles, TrendingUp } from "lucide-react";
+import { Loader2, Video, MessageCircle, Mail, CalendarCheck, CalendarX, ShoppingCart, Sparkles, TrendingUp, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { format, isSameDay } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { DailyKpi, Objectives, WeekStripDay } from "@/hooks/useActivityData";
 import { ymd } from "@/hooks/useActivityData";
 import { WeekStrip } from "./WeekStrip";
+import { presents } from "@/lib/activiteTaux";
 
 const KPI_CONFIG = [
   { key: "videos_published" as const, label: "Vidéos publiées", icon: Video, color: "hsl(var(--primary))" },
   { key: "messages_sent" as const, label: "Messages envoyés", icon: MessageCircle, color: "hsl(262 80% 55%)" },
-  { key: "replies_received" as const, label: "Réponses reçues", icon: Mail, color: "hsl(150 60% 45%)" },
+  { key: "replies_received" as const, label: "Réponses reçues (conversations)", icon: Mail, color: "hsl(150 60% 45%)" },
   { key: "appointments" as const, label: "RDV obtenus", icon: CalendarCheck, color: "hsl(35 90% 55%)" },
+  { key: "no_shows" as const, label: "Nombre de no-show", icon: CalendarX, color: "hsl(0 70% 55%)" },
   { key: "sales_made" as const, label: "Ventes réalisées", icon: ShoppingCart, color: "hsl(350 70% 55%)" },
 ];
 
@@ -26,13 +28,14 @@ const OBJ_MAP: Record<string, keyof Objectives> = {
   appointments: "appointments",
 };
 
-type FormState = Pick<DailyKpi, "videos_published" | "messages_sent" | "replies_received" | "appointments" | "sales_made">;
+type FormState = Required<Pick<DailyKpi, "videos_published" | "messages_sent" | "replies_received" | "appointments" | "no_shows" | "sales_made">>;
 
 const EMPTY_FORM: FormState = {
   videos_published: 0,
   messages_sent: 0,
   replies_received: 0,
   appointments: 0,
+  no_shows: 0,
   sales_made: 0,
 };
 
@@ -64,6 +67,7 @@ export function DailyEntryForm({
         messages_sent: day.entry.messages_sent,
         replies_received: day.entry.replies_received,
         appointments: day.entry.appointments,
+        no_shows: day.entry.no_shows ?? 0,
         sales_made: day.entry.sales_made,
       });
     } else {
@@ -72,6 +76,10 @@ export function DailyEntryForm({
   }, [selectedDate, weekStrip]);
 
   const handleSubmit = async () => {
+    if (form.no_shows > form.appointments) {
+      toast.error("Le nombre de no-show ne peut pas dépasser le nombre de RDV obtenus.");
+      return;
+    }
     try {
       await onSave({ entryDate: ymd(selectedDate), values: form });
       toast.success(
@@ -168,6 +176,18 @@ export function DailyEntryForm({
                 />
               </div>
             ))}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <UserCheck className="h-3.5 w-3.5 text-muted-foreground" />
+                Présents en RDV
+              </label>
+              <div
+                className="flex h-10 items-center rounded-md border border-dashed px-3 text-sm text-muted-foreground"
+                data-testid="presents-rdv"
+              >
+                {presents(form.appointments, form.no_shows)} (calculé : RDV − no-show)
+              </div>
+            </div>
           </div>
           <Button
             className="mt-4 w-full sm:w-auto"

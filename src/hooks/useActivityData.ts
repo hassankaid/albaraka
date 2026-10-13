@@ -12,6 +12,8 @@ export type DailyKpi = {
   messages_sent: number;
   replies_received: number;
   appointments: number;
+  /** RDV obtenus où le prospect ne s'est pas présenté (13/10/2026). */
+  no_shows?: number;
   sales_made: number;
   ai_feedback?: string | null;
   updated_at?: string;
@@ -201,7 +203,7 @@ export function useActivityData(userId: string | undefined) {
   const saveDayMutation = useMutation({
     mutationFn: async (params: {
       entryDate: string;
-      values: Pick<DailyKpi, KpiKey>;
+      values: Pick<DailyKpi, KpiKey | "no_shows">;
     }) => {
       if (!userId) throw new Error("Not authenticated");
 

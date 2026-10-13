@@ -9,6 +9,7 @@ import { ActivityLeaderboards } from "@/components/activity/ActivityLeaderboards
 import { ScoreExplanation } from "@/components/activity/ScoreExplanation";
 import { WeeklyRecapBanner } from "@/components/activity/WeeklyRecapBanner";
 import { ActivityChart } from "@/components/activity/ActivityChart";
+import { TauxConversion } from "@/components/activity/TauxConversion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MyActivityVenteView } from "@/components/activity-vente/MyActivityVenteView";
 import { CoachVenteDashboard } from "@/components/admin-activity/CoachVenteDashboard";
@@ -86,6 +87,7 @@ function CollaborateurActivityView() {
         onSave={(params) => data.saveDayMutation.mutateAsync(params)}
         isSaving={data.saveDayMutation.isPending}
       />
+      <TauxConversion semaine={data.weekDays} mois={data.monthDays} />
       <ActivityLeaderboards
         dailyRanked={dailyRanked}
         weeklyRanked={weeklyRanked}
