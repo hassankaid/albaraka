@@ -27,9 +27,9 @@ export async function POST(request: Request): Promise<Response> {
   });
   const { data: user } = await sb.auth.getUser(jwt);
   if (!user.user) return repondre(401, { error: "Session expirée" });
-  // Studio réservé au CEO pendant les essais (comme /api/studio/demarrer)
-  const { data: profil } = await sb.from("profiles").select("role").eq("id", user.user.id).maybeSingle();
-  if (profil?.role !== "ceo") return repondre(403, { error: "Studio pas encore ouvert" });
+  // Mêmes droits que /api/studio/demarrer : la base décide (studio_ouvert).
+  const { data: ouvert } = await sb.rpc("studio_ouvert", { p_user_id: user.user.id });
+  if (!ouvert) return repondre(403, { error: "Le Studio n'est pas ouvert pour ton compte." });
 
   const { data: themes } = await sb.from("studio_banque_themes").select("id, nom").eq("actif", true).order("ordre");
   if (!themes?.length) return repondre(500, { error: "Aucun thème" });

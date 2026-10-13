@@ -44,6 +44,11 @@ vi.mock("@/hooks/useFeatureUnlock", () => ({
   useFeatureUnlocks: () => ({ isLoading: false, has: () => false }),
 }));
 
+// Studio (13/10/2026) : l'entrée de menu dépend de studio_ouvert (React Query).
+vi.mock("@/hooks/useStudioAcces", () => ({
+  useStudioAcces: () => ({ data: { ouvert: false }, isLoading: false }),
+}));
+
 vi.mock("@/hooks/useCanAccessPersonalBrand", () => ({
   useCanAccessPersonalBrand: () => ({ canAccess: false, isLoading: false, needsMarketingCompletion: false }),
 }));

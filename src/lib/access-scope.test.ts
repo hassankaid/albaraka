@@ -29,11 +29,19 @@ describe("isApporteurScopedPath", () => {
     "/working/agent",
     "/parcours/al-baraka",
     "/onboarding",
+    // Studio ouvert aux élèves du Pass le 13/10/2026 (StudioGate décide).
+    "/studio",
+    "/studio/face-camera",
+    "/studio/voix-off",
+    "/studio/scripts",
+    "/studio/abonnement",
   ])("allows %s", (path) => {
     expect(isApporteurScopedPath(path)).toBe(true);
   });
 
   it.each([
+    "/studio/banque",
+    "/studio/scripts/gerer",
     "/dashboard",
     "/leads",
     "/calls",

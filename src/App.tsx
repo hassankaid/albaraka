@@ -145,6 +145,7 @@ import StudioBanque from "./pages/studio/StudioBanque";
 import StudioVoixOff from "./pages/studio/StudioVoixOff";
 import StudioScripts from "./pages/studio/StudioScripts";
 import StudioScriptsGerer from "./pages/studio/StudioScriptsGerer";
+import StudioAbonnement from "./pages/studio/StudioAbonnement";
 import AdminEmailCampaign from "./pages/admin/email-campaigns/AdminEmailCampaign";
 import AdminSmsCampaign from "./pages/admin/email-campaigns/AdminSmsCampaign";
 import { WA_TUNNEL, VSL_TUNNEL } from "./pages/tunnels/config";
@@ -352,14 +353,9 @@ const FullApp = () => (
                   <Route path="/admin/payment-links" element={<AdminPaymentLinks />} />
                   <Route path="/admin/conferences" element={<AdminConferences />} />
                   <Route path="/admin/site-vitrine" element={<AdminSiteVitrine />} />
-                  {/* Studio vidéo (phase 1, 10/10/2026) : CEO uniquement */}
-                  <Route path="/studio" element={<StudioGate><StudioAccueil /></StudioGate>} />
-                  <Route path="/studio/face-camera" element={<StudioGate><StudioFaceCamera /></StudioGate>} />
-                  <Route path="/studio/montage/:id" element={<StudioGate><StudioMontage /></StudioGate>} />
-                  <Route path="/studio/banque" element={<StudioGate><StudioBanque /></StudioGate>} />
-                  <Route path="/studio/voix-off" element={<StudioGate><StudioVoixOff /></StudioGate>} />
-                  <Route path="/studio/scripts" element={<StudioGate><StudioScripts /></StudioGate>} />
-                  <Route path="/studio/scripts/gerer" element={<StudioGate><StudioScriptsGerer /></StudioGate>} />
+                  {/* Studio : banque de vidéos et gestion des scripts, CEO uniquement */}
+                  <Route path="/studio/banque" element={<StudioGate ceo><StudioBanque /></StudioGate>} />
+                  <Route path="/studio/scripts/gerer" element={<StudioGate ceo><StudioScriptsGerer /></StudioGate>} />
                   <Route path="/admin/team" element={<AdminTeam />} />
                   <Route path="/admin/announcements" element={<AdminAnnouncements />} />
                   <Route path="/admin/quiz-lead" element={<AdminQuizLead />} />
@@ -413,6 +409,13 @@ const FullApp = () => (
                 </Route>
                 {/* Shared routes: layout chosen by role at runtime (pure apporteur → ApporteurLayout, else DashboardLayout) */}
                 <Route element={<SharedLayout />}>
+                  {/* Studio vidéo : élèves du Pass AL BARAKA et Liberty (Sidali, 13/10/2026), la base décide (studio_ouvert) */}
+                  <Route path="/studio" element={<StudioGate><StudioAccueil /></StudioGate>} />
+                  <Route path="/studio/face-camera" element={<StudioGate><StudioFaceCamera /></StudioGate>} />
+                  <Route path="/studio/montage/:id" element={<StudioGate><StudioMontage /></StudioGate>} />
+                  <Route path="/studio/voix-off" element={<StudioGate><StudioVoixOff /></StudioGate>} />
+                  <Route path="/studio/scripts" element={<StudioGate><StudioScripts /></StudioGate>} />
+                  <Route path="/studio/abonnement" element={<StudioGate><StudioAbonnement /></StudioGate>} />
                   <Route path="/announcements/:id" element={<AnnouncementDetail />} />
                   <Route path="/contract" element={<ContractLandingPage />} />
                   <Route path="/contracts" element={<ContractLandingPage />} />

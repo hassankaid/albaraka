@@ -74,9 +74,10 @@ export async function POST(request: Request): Promise<Response> {
   });
   const { data: user, error: eUser } = await sb.auth.getUser(jwt);
   if (eUser || !user.user) return repondre(401, { error: "Session expirée" });
-  // Phase 1 : Studio réservé au CEO (et donc à Sidali).
-  const { data: profil } = await sb.from("profiles").select("role").eq("id", user.user.id).maybeSingle();
-  if (profil?.role !== "ceo") return repondre(403, { error: "Studio pas encore ouvert" });
+  // Ouvert aux élèves du Pass AL BARAKA et de Liberty (Sidali, 13/10/2026) : la base
+  // décide (studio_ouvert) ; le quota du jour est vérifié par studio_preparer.
+  const { data: ouvert } = await sb.rpc("studio_ouvert", { p_user_id: user.user.id });
+  if (!ouvert) return repondre(403, { error: "Le Studio n'est pas ouvert pour ton compte." });
 
   const { data: m, error: eM } = await sb
     .from("studio_montages")

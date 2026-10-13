@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
+import { useStudioAcces } from "@/hooks/useStudioAcces";
+import { BandeauQuota, QuotaAtteint, quotaEpuise } from "@/components/studio/QuotaStudio";
 import { demarrer, importerVideo, lienStudio, useMontage } from "@/hooks/useStudio";
 import {
   completerReglages,
@@ -47,6 +50,8 @@ function dureeVideo(f: File): Promise<number | null> {
 export default function StudioFaceCamera() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { data: acces } = useStudioAcces();
   const [params, setParams] = useSearchParams();
   const id = params.get("id") ?? undefined;
   const { data: montage } = useMontage(id);
@@ -91,6 +96,7 @@ export default function StudioFaceCamera() {
       setParams({ id: nouvelId }, { replace: true });
       setEcran("visage");
       await demarrer(nouvelId, "preparer");
+      queryClient.invalidateQueries({ queryKey: ["studio", "acces"] });
     } catch (e) {
       setProgres(null);
       toast({ title: "Import impossible", description: message(e), variant: "destructive" });
@@ -135,7 +141,10 @@ export default function StudioFaceCamera() {
         ))}
       </ol>
 
-      {ecran === "import" && (
+      {ecran === "import" && !id && <BandeauQuota />}
+      {ecran === "import" && !id && quotaEpuise(acces) && progres === null ? (
+        <QuotaAtteint />
+      ) : ecran === "import" && (
         <div className="space-y-4">
           {progres === null ? (
             <label

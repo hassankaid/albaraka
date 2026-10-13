@@ -12,13 +12,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { demarrer, detecterTheme, importerVoix, useMontage, useThemes } from "@/hooks/useStudio";
 import { completerReglages, messageErreur, REGLAGES_PAR_DEFAUT, type Reglages } from "@/lib/studio/reglages";
-import { compterMots, dureeLecture, SCRIPT_MAX, verifierAudio } from "@/lib/studio/voixoff";
+import { compterMots, dureeLecture, ENREGISTREMENT_MAX_S, SCRIPT_MAX, verifierAudio } from "@/lib/studio/voixoff";
 import { EnregistreurVoix } from "@/components/studio/EnregistreurVoix";
 import { VerifierCoupes } from "@/components/studio/VerifierCoupes";
 import { Bloc, BlocCoupes, BlocDesign, BlocSon, BlocSousTitres } from "@/components/studio/Reglages";
+import { BandeauQuota, QuotaAtteint, quotaEpuise } from "@/components/studio/QuotaStudio";
+import { useStudioAcces } from "@/hooks/useStudioAcces";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Ecran = "script" | "voix" | "reglages";
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+/** Durée d'un fichier audio lue par le navigateur, ou null s'il ne sait pas (le moteur vérifie). */
+function dureeAudio(f: File): Promise<number | null> {
+  return new Promise((ok) => {
+    const url = URL.createObjectURL(f);
+    const a = document.createElement("audio");
+    const fin = (d: number | null) => {
+      URL.revokeObjectURL(url);
+      ok(d);
+    };
+    a.preload = "metadata";
+    a.onloadedmetadata = () => fin(Number.isFinite(a.duration) ? a.duration : null);
+    a.onerror = () => fin(null);
+    setTimeout(() => fin(null), 5000);
+    a.src = url;
+  });
+}
 
 /** « Voix off — T'as vu Allah, subhanahu wa… » plutôt que « voix-off.webm » dans « Mes vidéos ». */
 function titreEnregistrement(script: string) {
@@ -29,6 +49,8 @@ function titreEnregistrement(script: string) {
 
 export default function StudioVoixOff() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { data: acces } = useStudioAcces();
   const [params, setParams] = useSearchParams();
   const id = params.get("id") ?? undefined;
   const { data: montage } = useMontage(id);
@@ -73,6 +95,7 @@ export default function StudioVoixOff() {
       setEcran("reglages");
       setEnvoi(null);
       await demarrer(nouvelId, "preparer");
+      queryClient.invalidateQueries({ queryKey: ["studio", "acces"] });
     } catch (e) {
       setEnvoi(null);
       toast({ title: "Envoi impossible", description: message(e), variant: "destructive" });
@@ -115,7 +138,10 @@ export default function StudioVoixOff() {
         ))}
       </ol>
 
-      {ecran === "script" && (
+      {!id && ecran !== "reglages" && <BandeauQuota />}
+      {!id && ecran !== "reglages" && quotaEpuise(acces) && envoi === null ? (
+        <QuotaAtteint />
+      ) : ecran === "script" && (
         <div className="space-y-4">
           <Bloc titre="Ton script">
             <Textarea
@@ -176,7 +202,7 @@ export default function StudioVoixOff() {
         </div>
       )}
 
-      {ecran === "voix" && (
+      {ecran === "voix" && !(!id && quotaEpuise(acces) && envoi === null) && (
         <div className="space-y-4">
           {envoi !== null ? (
             <div className="space-y-3 rounded-2xl border border-border p-6">
@@ -209,7 +235,13 @@ export default function StudioVoixOff() {
                     if (!f) return;
                     const refus = verifierAudio(f);
                     if (refus) return toast({ title: "Fichier refusé", description: refus, variant: "destructive" });
-                    envoyer(f, f.name);
+                    dureeAudio(f).then((d) => {
+                      // 3 minutes en voix off (Sidali, 13/10/2026) ; le moteur vérifie aussi.
+                      if (d && d > ENREGISTREMENT_MAX_S + 5) {
+                        return toast({ title: "Voix off trop longue", description: "3 minutes maximum : raccourcis ton script.", variant: "destructive" });
+                      }
+                      envoyer(f, f.name);
+                    });
                   }}
                 />
               </label>

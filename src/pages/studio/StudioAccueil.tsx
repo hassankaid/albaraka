@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useMesMontages } from "@/hooks/useStudio";
+import { BandeauQuota } from "@/components/studio/QuotaStudio";
 import { enTraitement, LIBELLE_STATUT, lienDuMontage, type Montage } from "@/lib/studio/reglages";
 
 const COULEUR_STATUT: Record<Montage["statut"], string> = {
@@ -22,7 +23,8 @@ function joursRestants(expire: string) {
 }
 
 export default function StudioAccueil() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const estCeo = profile?.role === "ceo";
   const { data: montages, isLoading } = useMesMontages(user?.id);
   const visibles = (montages ?? []).filter((m) => m.statut !== "import");
 
@@ -36,11 +38,13 @@ export default function StudioAccueil() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" size="sm" className="gap-2">
-            <Link to="/studio/banque">
-              <Database className="h-4 w-4" /> Banque de vidéos
-            </Link>
-          </Button>
+          {estCeo && (
+            <Button asChild variant="outline" size="sm" className="gap-2">
+              <Link to="/studio/banque">
+                <Database className="h-4 w-4" /> Banque de vidéos
+              </Link>
+            </Button>
+          )}
           {/* Sidali (13/10/2026) : la bibliothèque doit être bien visible, en haut à droite. */}
           <Button asChild size="sm" className="gap-2" data-testid="bouton-bibliotheque-scripts">
             <Link to="/studio/scripts">
@@ -49,6 +53,8 @@ export default function StudioAccueil() {
           </Button>
         </div>
       </header>
+
+      <BandeauQuota />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Card className="border-primary/40">

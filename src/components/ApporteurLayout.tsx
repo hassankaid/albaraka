@@ -3,7 +3,7 @@ import SpaceSwitcher from "./SpaceSwitcher";
 import {
   BarChart3, Users, BadgeEuro, Receipt, Settings, Sun, Moon, LogOut, Menu, X,
   ArrowLeftRight, ChevronDown, User, BookOpen, TrendingUp, GraduationCap,
-  CalendarDays, Award, Bot, Rocket, FolderDown, Link2, Lock,
+  CalendarDays, Award, Bot, Rocket, FolderDown, Film, Link2, Lock,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserPass } from "@/hooks/useUserPass";
 import { useFeatureUnlocks, type FeatureKey } from "@/hooks/useFeatureUnlock";
 import { useAccesTunnel } from "@/hooks/useAccesTunnel";
+import { useStudioAcces } from "@/hooks/useStudioAcces";
 import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 import { DiscordButton } from "@/components/DiscordButton";
 import { DriveButton } from "@/components/DriveButton";
@@ -31,6 +32,8 @@ const workingNavItems: NavItem[] = [
   // Personal Brand désactivé pour tout le monde (Sidali, 13/10/2026) : la page
   // redirige vers le Dashboard, les données des élèves sont conservées.
   { title: "Agent IA Setting", path: "/working/agent", icon: Bot, passRequired: true },
+  // Studio vidéo : élèves du Pass AL BARAKA et Liberty (Sidali, 13/10/2026), la base décide.
+  { title: "Studio", path: "/studio", icon: Film },
   // L'espace apporteur a sa PROPRE barre laterale : ajouter l'entree dans
   // DashboardLayout ne suffit pas, un apporteur ne la voit jamais.
   { title: "Liens de paiement", path: "/working/lien-de-paiement", icon: Link2, passRequired: true, featureRequired: "payment_links" },
@@ -61,6 +64,7 @@ const coachingNavItems: NavItem[] = [
 const pageTitles: Record<string, string> = {
   "/my-space": "Dashboard",
   "/my-space/tunnel": "Mon tunnel",
+  "/studio": "Studio",
   "/my-space/leads": "Mes Leads",
   "/my-space/sales": "Mes Ventes",
   "/my-space/commissions": "Commissions & Factures",
@@ -118,6 +122,7 @@ export default function ApporteurLayout() {
   const pageAutoriseeSiSuspendu = PAGES_OUVERTES_SI_SUSPENDU.some((p) => location.pathname.startsWith(p));
   const { has: aDebloque } = useFeatureUnlocks();
   const { aAcces: aAccesTunnel } = useAccesTunnel();
+  const { data: accesStudio } = useStudioAcces();
 
   const currentSpace = detectSpace(location.pathname);
   const pageTitle = pageTitles[location.pathname] || "Mon espace";
@@ -142,6 +147,7 @@ export default function ApporteurLayout() {
       // afficherait un ecran verrouille.
       if (item.featureRequired && !aDebloque(item.featureRequired)) return false;
       if (item.path === "/my-space/tunnel" && !aAccesTunnel) return false;
+      if (item.path === "/studio" && !accesStudio?.ouvert) return false;
       return true;
     });
   })();

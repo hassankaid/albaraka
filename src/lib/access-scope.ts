@@ -28,6 +28,8 @@ export function isApporteurScopedPath(pathname: string): boolean {
   if (pathname === "/working/personal-brand") return true;
   if (pathname === "/working/agent") return true;
   if (pathname.startsWith("/parcours/")) return true;
+  // Studio vidéo, sauf la banque et la gestion des scripts (CEO).
+  if (pathname === "/studio" || (pathname.startsWith("/studio/") && !pathname.startsWith("/studio/banque") && pathname !== "/studio/scripts/gerer")) return true;
   return false;
 }
 

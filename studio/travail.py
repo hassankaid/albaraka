@@ -63,6 +63,7 @@ import soundfile as sf  # noqa: E402
 import pipeline as P  # noqa: E402
 
 DUREE_MAX = 5 * 60 + 5            # 5 min (cahier des charges), petite marge
+DUREE_MAX_VOIX_OFF = 3 * 60 + 5   # 3 min en voix off (Sidali, 13/10/2026)
 STT = os.environ.get("STT_MODELE", "openai/whisper-large-v3-turbo")
 LLM = os.environ.get("LLM_MODELE", "anthropic/claude-sonnet-5.5")
 PRIVE = {"zdr": True, "data_collection": "deny"}
@@ -525,6 +526,8 @@ def preparer(src, dossier, liens, reglages, avec_apercu):
         return time.time()
 
     meta = __import__("voixoff").sonder_audio(src) if VOIX_OFF else P.probe(src)
+    if VOIX_OFF and meta["duration"] > DUREE_MAX_VOIX_OFF:
+        raise ValueError("La voix off dépasse 3 minutes. Raccourcis le script ou coupe-la en plusieurs parties.")
     if meta["duration"] > DUREE_MAX:
         raise ValueError("La vidéo dépasse 5 minutes. Coupe-la en plusieurs parties.")
     if not meta["has_audio"]:

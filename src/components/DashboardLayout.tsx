@@ -5,6 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useStudioAcces } from "@/hooks/useStudioAcces";
 import { useUserPass } from "@/hooks/useUserPass";
 import { useFeatureUnlocks, type FeatureKey } from "@/hooks/useFeatureUnlock";
 import { NotificationsBell } from "@/components/notifications/NotificationsBell";
@@ -27,6 +28,8 @@ interface NavItem {
    *  Different de passRequired : porte sur l'avancement de la formation,
    *  pas sur la possession d'un pass. */
   featureRequired?: FeatureKey;
+  /** Studio vidéo : visible si la base ouvre le Studio à la personne (studio_ouvert). */
+  studioRequired?: boolean;
 }
 
 const workingNavItems: NavItem[] = [
@@ -37,8 +40,8 @@ const workingNavItems: NavItem[] = [
   // Debloquee par la formation Setting a 100 %, comme le canal Discord Setting.
   // La page verifie elle-meme le pass actif ET le deblocage.
   { title: "Liens de paiement", path: "/working/lien-de-paiement", icon: Link2, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true, featureRequired: "payment_links" },
-  // Studio vidéo (phase 1) : CEO uniquement le temps des essais.
-  { title: "Studio", path: "/studio", icon: Film, roles: ["ceo"] },
+  // Studio vidéo : élèves du Pass AL BARAKA et Liberty (Sidali, 13/10/2026), la base décide.
+  { title: "Studio", path: "/studio", icon: Film, roles: ["ceo", "collaborateur", "apporteur"], studioRequired: true },
   // After separator
   { title: "Mon Dashboard", path: "/dashboard", icon: Home, roles: ["ceo", "collaborateur", "apporteur", "agence"], adminSection: true },
   { title: "Leads", path: "/leads", icon: Users, roles: ["ceo", "collaborateur"], adminSection: true },
@@ -177,6 +180,7 @@ export default function DashboardLayout() {
   const pageTitle = isCeo && location.pathname === "/working/activity" ? "Suivi Activité" : rawTitle;
 
   const isApporteurLike = profile?.role === "apporteur" || profile?.is_also_apporteur;
+  const { data: accesStudio } = useStudioAcces();
 
   const filterItems = (items: NavItem[]) =>
     items.filter((item) => {
@@ -185,6 +189,7 @@ export default function DashboardLayout() {
       // la page affichera un ecran verrouille. Pas de derogation early_access
       // ici — la page n'en accorde pas non plus, l'entree mentirait.
       if (item.featureRequired && !isCeo && !aDebloque(item.featureRequired)) return false;
+      if (item.studioRequired) return isCeo || !!accesStudio?.ouvert;
       if (item.coachOnly) return profile?.is_coach || isCeo;
       if (item.apporteurOnly) return isApporteurLike || isCeo;
       if (item.passOrStaff) return hasAnyPass || profile?.is_coach || isCeo;
