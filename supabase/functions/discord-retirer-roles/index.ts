@@ -1,5 +1,7 @@
-// Discord : retire tous les rôles d'un élève dont l'accès est suspendu
-// (règle de Sidali du 13/10/2026 : pass retiré ou vente « perdue » = plus rien).
+// Discord : retire tous les rôles d'un élève dont l'accès est suspendu, puis le
+// retire du serveur (règle de Sidali du 13/10/2026 : pass retiré ou vente
+// « perdue » = plus rien ; retrait du serveur confirmé par Hassan le 13/10).
+// Quand l'élève régularise, Sidali le réinvite.
 //
 // Appelée par la base (couper_acces_formations, via net.http_post) avec
 // body = { user_id }. verify_jwt=false comme les autres fonctions Discord : la
@@ -78,8 +80,19 @@ serve(async (req) => {
           .is("revoked_at", null);
       }
     }
-    console.log(`[retirer-roles] user=${user_id} roles=${JSON.stringify(resultats)}`);
-    return json({ ok: true, roles: resultats });
+    // Retrait du serveur (« kick ») : 204 = retiré, 404 = n'y était déjà plus.
+    const kick = await fetch(`https://discord.com/api/guilds/${discordGuildId}/members/${link.discord_user_id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bot ${discordBotToken}`,
+        "X-Audit-Log-Reason": "Accès AL BARAKA suspendu (pass retiré ou impayé)",
+      },
+    });
+    if (kick.ok || kick.status === 404) {
+      await supabaseAdmin.from("discord_links").update({ is_guild_member: false }).eq("user_id", user_id);
+    }
+    console.log(`[retirer-roles] user=${user_id} roles=${JSON.stringify(resultats)} serveur=${kick.status}`);
+    return json({ ok: true, roles: resultats, serveur: kick.status });
   } catch (e) {
     console.error("[retirer-roles] uncaught", e);
     return json({ error: (e as Error)?.message ?? "Erreur inconnue" }, 500);
