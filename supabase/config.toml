@@ -63,6 +63,9 @@ verify_jwt = false
 [functions.discord-admin-action]
 verify_jwt = false
 
+[functions.discord-retirer-roles]
+verify_jwt = false
+
 [functions.sync-stripe-payments]
 verify_jwt = false
 
