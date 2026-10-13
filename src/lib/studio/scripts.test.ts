@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decouperLot, motsRecherche, normaliserRecherche, proposerAccroche, proposerTitre, uniformiserTexte } from "./scripts";
+import { decouperLot, motsRecherche, normaliserRecherche, proposerAccroche, proposerTitre, typographie, uniformiserTexte } from "./scripts";
 
 describe("bibliothèque de scripts", () => {
   it("cherche sans accents ni majuscules, comme la base", () => {
@@ -17,6 +17,13 @@ describe("bibliothèque de scripts", () => {
     expect(proposerAccroche(texte)).toBe("Tu travailles 40 heures par semaine pour un rêve qui n'est pas le tien ?");
     expect(proposerTitre(texte).length).toBeLessThanOrEqual(61);
     expect(proposerTitre("Court.")).toBe("Court");
+    expect(proposerAccroche("Eh ! L'homme qui attend le tir parfait finit sa vie avec un chargeur plein.")).toBe(
+      "Eh ! L'homme qui attend le tir parfait finit sa vie avec un chargeur plein.",
+    );
+  });
+
+  it("garde les guillemets et la ponctuation collés à leur mot", () => {
+    expect(typographie("dire : « Alhamdoulilah » ?")).toBe("dire\u00a0: «\u00a0Alhamdoulilah\u00a0»\u00a0?");
   });
 
   it("découpe un lot de scripts séparés par ---", () => {

@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemes } from "@/hooks/useStudio";
 import { useComptesThemesScripts, useScriptsStudio } from "@/hooks/useStudioScripts";
-import { proposerAccroche, type ScriptStudio } from "@/lib/studio/scripts";
+import { proposerAccroche, typographie, type ScriptStudio } from "@/lib/studio/scripts";
 import { dureeLecture } from "@/lib/studio/voixoff";
 
 export function useRechercheDifferee(valeur: string, delai = 300) {
@@ -56,14 +56,14 @@ function LectureScript({
         {script && (
           <>
             <DialogHeader>
-              <DialogTitle className="pr-6 text-xl">{script.titre}</DialogTitle>
+              <DialogTitle className="pr-6 text-xl">{typographie(script.titre)}</DialogTitle>
               <DialogDescription className="flex flex-wrap items-center gap-2">
                 {nomTheme(script.theme_id) && <Badge variant="secondary">{nomTheme(script.theme_id)}</Badge>}
                 <span>environ {dureeLecture(script.texte)} de lecture</span>
               </DialogDescription>
             </DialogHeader>
             <div className="whitespace-pre-wrap rounded-lg border bg-muted/30 p-4 text-[15px] leading-relaxed" data-testid="script-texte">
-              {script.texte}
+              {typographie(script.texte)}
             </div>
             <div className="flex flex-wrap justify-end gap-2">
               <Button variant="outline" className="gap-2" onClick={copier}>
@@ -182,8 +182,8 @@ export default function StudioScripts() {
                     {s.mis_en_avant && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-label="Mis en avant" />}
                     <span className="ml-auto text-xs text-muted-foreground">{dureeLecture(s.texte)}</span>
                   </div>
-                  <h3 className="font-semibold leading-snug text-foreground">{s.titre}</h3>
-                  <p className="line-clamp-3 text-sm text-muted-foreground">{s.accroche || proposerAccroche(s.texte)}</p>
+                  <h3 className="font-semibold leading-snug text-foreground">{typographie(s.titre)}</h3>
+                  <p className="line-clamp-3 text-sm text-muted-foreground">{typographie(s.accroche || proposerAccroche(s.texte))}</p>
                 </CardContent>
               </Card>
             ))}

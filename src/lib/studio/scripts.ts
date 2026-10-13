@@ -68,9 +68,24 @@ export function proposerTitre(texte: string): string {
   return couper(premierePhrase(texte).replace(/[.!?…]+$/, ""), 60);
 }
 
-/** Accroche affichée sur la carte : la première phrase du script. */
+/**
+ * Accroche affichée sur la carte : le début du script, au moins 40 caractères
+ * (« Eh ! » tout seul ne dit rien du script).
+ */
 export function proposerAccroche(texte: string): string {
-  return couper(premierePhrase(texte), 160);
+  const t = uniformiserTexte(texte).replace(/\n+/g, " ");
+  const phrases = t.match(/[^.!?…]+[.!?…]+[»"”]?(\s|$)|[^.!?…]+$/g) ?? [t];
+  let accroche = "";
+  for (const ph of phrases) {
+    accroche = `${accroche} ${ph.trim()}`.trim();
+    if (accroche.length >= 40) break;
+  }
+  return couper(accroche, 160);
+}
+
+/** Espaces insécables de la typographie française : « » ? ! : ; ne restent pas seuls en bout de ligne. */
+export function typographie(texte: string): string {
+  return texte.replace(/« /g, "«\u00a0").replace(/ (»|[?!:;])/g, "\u00a0$1");
 }
 
 /**
