@@ -1,8 +1,9 @@
 // ─────────────────────────────────────────────────────────────────────────
 // Liens de paiement — version ÉLÈVE.
 //
-// Débloquée par la formation Setting terminée à 100 %, exactement comme le
-// rôle Discord « Setting » : même condition, même moment.
+// Ouverte à tous les élèves avec un pass actif (Sidali, 13/10/2026 : « les élèves
+// n'ont pas les liens de paiement ») ; avant, il fallait la formation Setting à
+// 100 %. Les mêmes liens sont aussi dans le menu « Liens de paiement » du header.
 //
 // Volontairement plus pauvre que /admin/payment-links :
 //
@@ -16,48 +17,22 @@
 // Rien n'est écrit en base ici. Une « création de lien » n'est qu'une URL
 // assemblée depuis l'offre et le nombre de mensualités.
 //
-// LA DOUBLE CONDITION EST INDISPENSABLE : le déblocage dans
-// user_feature_unlocks est définitif, alors qu'un pass se révoque. Sans la
-// vérification du pass actif ci-dessous, un élève dont on retire le pass
-// garderait l'accès à vie.
+// La condition est le pass ACTIF : un élève dont on retire le pass perd l'accès.
 // ─────────────────────────────────────────────────────────────────────────
 import { useMemo, useState } from "react";
-import { Copy, Check, CalendarClock, Crown, Sparkles, GraduationCap, Lock } from "lucide-react";
+import { Copy, Check, Lock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useOffers, type Offer, type OfferCategory } from "@/hooks/useOffers";
+import { useOffers, type Offer } from "@/hooks/useOffers";
 import { useUserPass } from "@/hooks/useUserPass";
-import { useFeatureUnlocks } from "@/hooks/useFeatureUnlock";
 import { useAuth } from "@/hooks/useAuth";
-import { getPublicAppOrigin } from "@/lib/impersonation";
-import { buildOfferPath } from "@/pages/admin/payment-links/CatalogueTab";
-
-const META: Record<OfferCategory, { label: string; icon: any; color: string }> = {
-  al_baraka:     { label: "AL BARAKA",             icon: Crown,         color: "text-amber-500" },
-  al_baraka_200: { label: "Al Baraka 200 €/mois",  icon: CalendarClock, color: "text-amber-500" },
-  liberty:       { label: "Liberty",               icon: Sparkles,      color: "text-amber-400" },
-  a_la_carte:    { label: "À la carte",            icon: GraduationCap, color: "text-sky-400" },
-};
-
-/**
- * L'ordre d'affichage. Les pass d'abord, les formations à la carte ensuite :
- * ce sont les offres à 3 000 / 2 400 / 5 000 € contre 500 €, et un mur de
- * douze cartes en vrac noyait les trois qui comptent.
- */
-const ORDRE: { categorie: OfferCategory; titre: string; sous_titre: string }[] = [
-  { categorie: "al_baraka",     titre: "Pass AL BARAKA",        sous_titre: "L'écosystème complet" },
-  { categorie: "al_baraka_200", titre: "Al Baraka 200 €/mois",  sous_titre: "Le même accès, réglé sur douze mois" },
-  { categorie: "liberty",       titre: "Liberty",               sous_titre: "L'accompagnement haut de gamme" },
-  { categorie: "a_la_carte",    titre: "Formations à la carte", sous_titre: "Une compétence à la fois" },
-];
+import { euros, lienOffre, META_CATEGORIE, offresParCategorie } from "@/lib/liensPaiement";
 
 const ymd = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-
-const euros = (n: number) => n.toLocaleString("fr-FR") + " €";
 
 function CarteOffre({ offre }: { offre: Offer }) {
   const { toast } = useToast();
@@ -67,11 +42,8 @@ function CarteOffre({ offre }: { offre: Offer }) {
   const [copie, setCopie] = useState(false);
 
 
-  const url = useMemo(() => {
-    const base = `${getPublicAppOrigin()}${buildOfferPath(offre, mensualites)}`;
-    // Le seul paramètre autorisé ici. `test=1` n'existe pas sur cette page.
-    return depart ? `${base}?start=${depart}` : base;
-  }, [offre, mensualites, depart]);
+  // Le seul paramètre autorisé ici. `test=1` n'existe pas sur cette page.
+  const url = useMemo(() => lienOffre(offre, mensualites, depart), [offre, mensualites, depart]);
 
   async function copier() {
     try {
@@ -172,11 +144,10 @@ export default function LienDePaiement() {
   const { profile } = useAuth();
   const { data: offres, isLoading: offresEnCours } = useOffers();
   const { hasAnyPass, isLoading: passEnCours } = useUserPass();
-  const { has, isLoading: deblocageEnCours } = useFeatureUnlocks();
 
   const estStaff = profile?.role === "ceo";
 
-  if (passEnCours || deblocageEnCours || offresEnCours) {
+  if (passEnCours || offresEnCours) {
     return (
       <div className="space-y-4 p-6">
         <Skeleton className="h-8 w-1/3" />
@@ -195,16 +166,6 @@ export default function LienDePaiement() {
     );
   }
 
-  if (!estStaff && !has("payment_links")) {
-    return (
-      <Verrouille
-        titre="Termine la formation Setting"
-        texte="Les liens de paiement se débloquent quand la formation Setting est terminée à 100 %, en même temps que ton accès au canal Discord Setting."
-      />
-    );
-  }
-
-  const actives = (offres ?? []).filter((o) => o.status === "active");
 
   return (
     <div className="p-6 space-y-6">
@@ -215,14 +176,12 @@ export default function LienDePaiement() {
         </p>
       </div>
 
-      {ORDRE.map(({ categorie, titre, sous_titre }) => {
-        const offres = actives.filter((o) => o.category === categorie);
-        if (offres.length === 0) return null;
-        const Icone = META[categorie].icon;
+      {offresParCategorie(offres ?? []).map(({ categorie, titre, sous_titre, offres }) => {
+        const Icone = META_CATEGORIE[categorie].icon;
         return (
           <section key={categorie} className="space-y-3">
             <div className="flex items-baseline gap-2 border-b border-border pb-2">
-              <Icone className={`h-4 w-4 shrink-0 ${META[categorie].color}`} />
+              <Icone className={`h-4 w-4 shrink-0 ${META_CATEGORIE[categorie].color}`} />
               <h2 className="font-heading text-lg text-foreground">{titre}</h2>
               <span className="text-xs text-muted-foreground">{sous_titre}</span>
               {offres.length > 1 && (

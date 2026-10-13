@@ -65,6 +65,11 @@ vi.mock("@/components/DiscordButton", () => ({
   DiscordButton: () => null,
 }));
 
+// Menu « Liens de paiement » du header (13/10/2026) : lit le catalogue (React Query).
+vi.mock("@/components/MenuLiensPaiement", () => ({
+  MenuLiensPaiement: () => null,
+}));
+
 vi.mock("./SpaceSwitcher", () => ({
   default: () => null,
 }));

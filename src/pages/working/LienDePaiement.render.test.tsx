@@ -1,5 +1,7 @@
 /**
- * La double condition d'accès aux liens de paiement.
+ * L'accès aux liens de paiement : un pass actif suffit depuis le 13/10/2026
+ * (Sidali : « les élèves n'ont pas les liens de paiement »). Avant, il fallait
+ * aussi avoir terminé la formation Setting.
  *
  * La page n'est visible qu'avec une session d'élève : je ne peux pas l'ouvrir
  * dans un navigateur. Sans ces tests, son premier affichage réel serait aussi
@@ -7,11 +9,10 @@
  *
  * Deux erreurs sont possibles ici, et aucune ne se voit :
  *
- *  • trop fermé — un élève qui a terminé Setting reste bloqué, et personne ne
- *    le signale parce qu'il croit que c'est normal ;
- *  • trop ouvert — le déblocage dans user_feature_unlocks est DÉFINITIF alors
- *    qu'un pass se révoque. Sans la vérification du pass, un ancien membre
- *    garderait la main sur les liens de paiement à vie.
+ *  • trop fermé — un élève avec un pass reste bloqué, et personne ne le
+ *    signale parce qu'il croit que c'est normal ;
+ *  • trop ouvert — un ancien membre (pass révoqué) garderait la main sur les
+ *    liens de paiement.
  *
  * Le troisième test verrouille l'absence du mode test : un lien `?test=1`
  * n'encaisse rien, et l'élève comme le client s'en apercevraient trop tard.
@@ -60,16 +61,11 @@ describe("l'accès à la page", () => {
     expect(screen.queryByText("PASS AL BARAKA")).not.toBeInTheDocument();
   });
 
-  it("refuse avec un pass mais sans avoir terminé Setting", async () => {
+  it("ouvre avec un pass, même sans avoir terminé Setting (13/10/2026)", async () => {
     const { default: Page } = await monter({ pass: true, debloque: false });
     render(<Page />);
-    expect(screen.getByText(/Termine la formation Setting/i)).toBeInTheDocument();
-  });
-
-  it("ouvre quand les DEUX conditions sont réunies", async () => {
-    const { default: Page } = await monter({ pass: true, debloque: true });
-    render(<Page />);
     expect(screen.getByText("PASS AL BARAKA")).toBeInTheDocument();
+    expect(screen.queryByText(/Termine la formation Setting/i)).not.toBeInTheDocument();
   });
 
   it("laisse passer le CEO, qui n'a ni pass ni déblocage", async () => {

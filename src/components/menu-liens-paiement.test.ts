@@ -1,9 +1,9 @@
 /**
- * L'entrée « Liens de paiement » est masquée tant que Setting n'est pas
- * terminée.
+ * L'entrée « Liens de paiement » est réservée aux porteurs d'un pass.
  *
- * Demandé par Hassan le 28/09/2026, après avoir constaté que 294 porteurs de
- * pass voyaient l'entrée pour tomber sur un écran verrouillé.
+ * Historique : le 28/09/2026, Hassan l'avait masquée tant que Setting n'était
+ * pas terminée ; le 13/10/2026, Sidali l'a ouverte à tous les élèves avec un
+ * pass (« les élèves n'ont pas les liens de paiement »).
  *
  * Deux barres latérales coexistent — DashboardLayout et ApporteurLayout — et
  * l'oubli de la seconde est précisément le bug qu'on vient de corriger : les
@@ -31,18 +31,17 @@ describe("les deux barres latérales", () => {
       expect(src).toContain('path: "/working/lien-de-paiement"');
     });
 
-    it(`${nom} la conditionne au déblocage payment_links`, () => {
-      // La ligne de l'entrée doit porter featureRequired, sinon elle
-      // s'affiche pour tous les porteurs de pass.
+    it(`${nom} la réserve aux porteurs d'un pass, sans condition Setting`, () => {
       const ligne = src.split("\n").find((l) => l.includes('"/working/lien-de-paiement"'));
       expect(ligne, "entrée introuvable").toBeDefined();
-      expect(ligne).toContain('featureRequired: "payment_links"');
+      expect(ligne).toMatch(/passRequired: true|passOrStaff: true/);
+      expect(ligne).not.toContain("featureRequired");
     });
 
-    it(`${nom} applique réellement featureRequired dans son filtre`, () => {
-      // Déclarer la propriété ne sert à rien si le filtre l'ignore — c'est le
-      // cas de passRequired dans le bloc « working » d'ApporteurLayout.
-      expect(src).toMatch(/item\.featureRequired[^\n]*aDebloque\(item\.featureRequired\)/);
+    it(`${nom} applique réellement la condition de pass dans son filtre`, () => {
+      // Déclarer la propriété ne sert à rien si le filtre l'ignore (c'était le
+      // cas de passRequired dans le bloc « working » d'ApporteurLayout).
+      expect(src).toMatch(/item\.passRequired && !hasAnyPass|item\.passOrStaff\) return hasAnyPass/);
     });
   }
 });

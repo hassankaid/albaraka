@@ -15,6 +15,7 @@ import { useAccesTunnel } from "@/hooks/useAccesTunnel";
 import { useStudioAcces } from "@/hooks/useStudioAcces";
 import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 import { DiscordButton } from "@/components/DiscordButton";
+import { MenuLiensPaiement } from "@/components/MenuLiensPaiement";
 import { DriveButton } from "@/components/DriveButton";
 
 interface NavItem {
@@ -36,7 +37,8 @@ const workingNavItems: NavItem[] = [
   { title: "Studio", path: "/studio", icon: Film },
   // L'espace apporteur a sa PROPRE barre laterale : ajouter l'entree dans
   // DashboardLayout ne suffit pas, un apporteur ne la voit jamais.
-  { title: "Liens de paiement", path: "/working/lien-de-paiement", icon: Link2, passRequired: true, featureRequired: "payment_links" },
+  // Ouverts à tous les élèves avec un pass (Sidali, 13/10/2026), plus seulement après la formation Setting.
+  { title: "Liens de paiement", path: "/working/lien-de-paiement", icon: Link2, passRequired: true },
   { title: "Dashboard", path: "/my-space", icon: BarChart3 },
   // Sidali (13/10/2026) : les élèves doivent trouver leur lien de tunnel du premier coup.
   { title: "Mon tunnel", path: "/my-space/tunnel", icon: Rocket },
@@ -150,6 +152,7 @@ export default function ApporteurLayout() {
       // Comme dans DashboardLayout : on ne montre pas une entree dont la page
       // afficherait un ecran verrouille.
       if (item.featureRequired && !aDebloque(item.featureRequired)) return false;
+      if (item.passRequired && !hasAnyPass) return false;
       if (item.path === "/my-space/tunnel" && !aAccesTunnel) return false;
       if (item.path === "/studio" && !accesStudio?.ouvert) return false;
       return true;
@@ -233,6 +236,7 @@ export default function ApporteurLayout() {
           </div>
 
           <div className="flex items-center gap-3">
+            {!suspendu && <MenuLiensPaiement />}
             {!suspendu && <DiscordButton />}
 
             {!suspendu && <DriveButton />}

@@ -10,6 +10,7 @@ import { useUserPass } from "@/hooks/useUserPass";
 import { useFeatureUnlocks, type FeatureKey } from "@/hooks/useFeatureUnlock";
 import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 import { DiscordButton } from "@/components/DiscordButton";
+import { MenuLiensPaiement } from "@/components/MenuLiensPaiement";
 import { DriveButton } from "@/components/DriveButton";
 
 interface NavItem {
@@ -39,7 +40,8 @@ const workingNavItems: NavItem[] = [
   { title: "Agent IA Setting", path: "/working/agent", icon: Bot, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true },
   // Debloquee par la formation Setting a 100 %, comme le canal Discord Setting.
   // La page verifie elle-meme le pass actif ET le deblocage.
-  { title: "Liens de paiement", path: "/working/lien-de-paiement", icon: Link2, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true, featureRequired: "payment_links" },
+  // Ouverts à tous les élèves avec un pass (Sidali, 13/10/2026), plus seulement après la formation Setting.
+  { title: "Liens de paiement", path: "/working/lien-de-paiement", icon: Link2, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true },
   // Studio vidéo : élèves du Pass AL BARAKA et Liberty (Sidali, 13/10/2026), la base décide.
   { title: "Studio", path: "/studio", icon: Film, roles: ["ceo", "collaborateur", "apporteur"], studioRequired: true },
   // After separator
@@ -302,6 +304,7 @@ export default function DashboardLayout() {
           </div>
 
           <div className="flex items-center gap-3">
+            <MenuLiensPaiement />
             <DiscordButton />
 
             <DriveButton />
