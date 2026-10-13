@@ -17,6 +17,7 @@ import { EnregistreurVoix } from "@/components/studio/EnregistreurVoix";
 import { VerifierCoupes } from "@/components/studio/VerifierCoupes";
 import { Bloc, BlocCoupes, BlocDesign, BlocSon, BlocSousTitres } from "@/components/studio/Reglages";
 import { BandeauQuota, QuotaAtteint, quotaEpuise } from "@/components/studio/QuotaStudio";
+import { memeScript } from "@/lib/studio/scripts";
 import { useStudioAcces } from "@/hooks/useStudioAcces";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -57,7 +58,7 @@ export default function StudioVoixOff() {
   const { data: themes } = useThemes();
   const [ecran, setEcran] = useState<Ecran>(id ? "reglages" : "script");
   // Depuis la bibliothèque de scripts : le script choisi arrive prérempli.
-  const depuisBibliotheque = useLocation().state as { script?: string; theme?: string | null } | null;
+  const depuisBibliotheque = useLocation().state as { script?: string; theme?: string | null; scriptId?: string } | null;
   const [script, setScript] = useState(() => (depuisBibliotheque?.script ?? "").slice(0, SCRIPT_MAX));
   const [theme, setTheme] = useState<string | null>(depuisBibliotheque?.theme ?? null);
   const [detection, setDetection] = useState(false);
@@ -90,12 +91,18 @@ export default function StudioVoixOff() {
     if (!theme) return;
     setEnvoi(0);
     try {
-      const nouvelId = await importerVoix(voix, nom, script, theme, setEnvoi);
+      // Script de la bibliothèque gardé dans l'essentiel : il devient « déjà tourné ».
+      const scriptId =
+        depuisBibliotheque?.scriptId && depuisBibliotheque.script && memeScript(depuisBibliotheque.script, script)
+          ? depuisBibliotheque.scriptId
+          : null;
+      const nouvelId = await importerVoix(voix, nom, script, theme, setEnvoi, scriptId);
       setParams({ id: nouvelId }, { replace: true });
       setEcran("reglages");
       setEnvoi(null);
       await demarrer(nouvelId, "preparer");
       queryClient.invalidateQueries({ queryKey: ["studio", "acces"] });
+      queryClient.invalidateQueries({ queryKey: ["studio", "scripts", "tournes"] });
     } catch (e) {
       setEnvoi(null);
       toast({ title: "Envoi impossible", description: message(e), variant: "destructive" });

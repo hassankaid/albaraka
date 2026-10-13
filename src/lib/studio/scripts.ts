@@ -15,6 +15,10 @@ export interface ScriptStudio {
 
 export const SCRIPTS_PAR_PAGE = 24;
 
+/** « 12 octobre » : date à laquelle l'élève a tourné un script. */
+export const dateTournage = (iso: string) =>
+  new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "Europe/Paris" });
+
 /** Même normalisation que public.texte_recherche() : sans accents ni majuscules. */
 export function normaliserRecherche(texte: string): string {
   return texte
@@ -104,4 +108,18 @@ export function decouperLot(brut: string): { titre: string; texte: string }[] {
       return { titre: titreExplicite ? titreExplicite[1].trim() : proposerTitre(texte), texte };
     })
     .filter((s) => s.texte.length > 0);
+}
+
+/**
+ * La voix off part-elle toujours du script de la bibliothèque ? Oui si l'élève en a
+ * gardé l'essentiel (au moins 60 % des mots) : retouches permises, texte réécrit non.
+ */
+export function memeScript(bibliotheque: string, final: string): boolean {
+  const mots = (t: string) => new Set(normaliserRecherche(t).split(/[^a-z0-9']+/).filter((m) => m.length > 2));
+  const a = mots(bibliotheque);
+  if (a.size === 0) return false;
+  const b = mots(final);
+  let communs = 0;
+  for (const m of a) if (b.has(m)) communs++;
+  return communs / a.size >= 0.6;
 }

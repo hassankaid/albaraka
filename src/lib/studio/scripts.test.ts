@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decouperLot, motsRecherche, normaliserRecherche, proposerAccroche, proposerTitre, typographie, uniformiserTexte } from "./scripts";
+import { decouperLot, memeScript, motsRecherche, normaliserRecherche, proposerAccroche, proposerTitre, typographie, uniformiserTexte } from "./scripts";
 
 describe("bibliothèque de scripts", () => {
   it("cherche sans accents ni majuscules, comme la base", () => {
@@ -32,5 +32,13 @@ describe("bibliothèque de scripts", () => {
       { titre: "Le salariat", texte: "Premier script." },
       { titre: "Deuxième script ici", texte: "Deuxième script ici." },
     ]);
+  });
+
+  it("reconnaît une voix off partie d'un script de la bibliothèque", () => {
+    const original = "Tu travailles 40 heures par semaine pour un rêve qui n'est pas le tien. Arrête et construis le tien.";
+    expect(memeScript(original, original)).toBe(true);
+    expect(memeScript(original, original.replace("40 heures", "35 heures") + " Abonne-toi !")).toBe(true);
+    expect(memeScript(original, "Un tout autre texte sur la prière et la patience, rien à voir.")).toBe(false);
+    expect(memeScript("", "x")).toBe(false);
   });
 });

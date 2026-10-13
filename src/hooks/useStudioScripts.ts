@@ -12,18 +12,21 @@ export interface FiltresScripts {
   theme: string | null;
   /** Page de gestion : montre aussi les scripts masqués. */
   avecMasques?: boolean;
+  /** Filtre « Pas encore tournés » : scripts à écarter. */
+  exclure?: string[];
 }
 
-export function useScriptsStudio({ recherche, theme, avecMasques = false }: FiltresScripts) {
+export function useScriptsStudio({ recherche, theme, avecMasques = false, exclure = [] }: FiltresScripts) {
   const mots = motsRecherche(recherche);
   return useInfiniteQuery({
-    queryKey: ["studio", "scripts", mots.join(" "), theme, avecMasques],
+    queryKey: ["studio", "scripts", mots.join(" "), theme, avecMasques, exclure.join(",")],
     initialPageParam: 0,
     queryFn: async ({ pageParam }): Promise<{ scripts: ScriptStudio[]; total: number }> => {
       let q = db.from("studio_scripts").select(COLONNES, { count: "exact" });
       if (!avecMasques) q = q.eq("publie", true);
       if (theme) q = q.eq("theme_id", theme);
       for (const mot of mots) q = q.ilike("recherche", `%${mot}%`);
+      if (exclure.length) q = q.not("id", "in", `(${exclure.join(",")})`);
       const { data, error, count } = await q
         .order("mis_en_avant", { ascending: false })
         .order("created_at", { ascending: false })
@@ -95,4 +98,44 @@ export function useGestionScriptsStudio() {
   });
 
   return { enregistrer, ajouterLot, modifier, supprimer };
+}
+
+/**
+ * Scripts que l'élève a déjà tournés (Sidali, 13/10/2026) : script de la bibliothèque
+ * → date de sa première vidéo comptée. Voix off automatiquement, face caméra si
+ * l'élève l'a indiqué à l'import.
+ */
+export function useScriptsTournes() {
+  return useQuery({
+    queryKey: ["studio", "scripts", "tournes"],
+    queryFn: async (): Promise<Map<string, string>> => {
+      const { data: session } = await supabase.auth.getSession();
+      const uid = session.session?.user.id;
+      if (!uid) return new Map();
+      const { data, error } = await db
+        .from("studio_montages")
+        .select("script_id, compte_le")
+        .eq("user_id", uid)
+        .not("script_id", "is", null)
+        .not("compte_le", "is", null)
+        .order("compte_le", { ascending: true });
+      if (error) throw error;
+      const tournes = new Map<string, string>();
+      for (const r of data ?? []) if (!tournes.has(r.script_id)) tournes.set(r.script_id, r.compte_le);
+      return tournes;
+    },
+  });
+}
+
+/** Un script par son identifiant (script présélectionné depuis la bibliothèque). */
+export function useScriptStudio(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ["studio", "scripts", "un", id],
+    enabled: !!id,
+    queryFn: async (): Promise<ScriptStudio | null> => {
+      const { data, error } = await db.from("studio_scripts").select(COLONNES).eq("id", id).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
 }

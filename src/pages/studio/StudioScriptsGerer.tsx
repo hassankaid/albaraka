@@ -27,7 +27,7 @@ import { detecterTheme, useThemes } from "@/hooks/useStudio";
 import { useGestionScriptsStudio, useScriptsStudio, type ScriptAEnregistrer } from "@/hooks/useStudioScripts";
 import { decouperLot, proposerTitre, uniformiserTexte, type ScriptStudio } from "@/lib/studio/scripts";
 import { dureeLecture, SCRIPT_MAX } from "@/lib/studio/voixoff";
-import { useRechercheDifferee } from "./StudioScripts";
+import { useRechercheDifferee } from "@/hooks/useRechercheDifferee";
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const VIDE: ScriptAEnregistrer = { titre: "", accroche: null, texte: "", theme_id: null, mis_en_avant: false, publie: true };

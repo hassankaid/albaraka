@@ -1,43 +1,63 @@
 // Studio, bibliothèque de scripts vidéo (Sidali, 13/10/2026) : les membres cherchent
 // un script par thème ou par mot, le lisent, le copient ou tournent directement avec
-// en Voix off (le script arrive prérempli dans le prompteur).
-import { useEffect, useState } from "react";
+// (voix off : script prérempli ; face caméra : script présélectionné à l'import).
+// Un script déjà tourné porte un badge, et l'élève est prévenu avant de le refaire.
+import { useState } from "react";
+import { useRechercheDifferee } from "@/hooks/useRechercheDifferee";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, Copy, Loader2, Mic, Search, Settings2, Star } from "lucide-react";
+import { ArrowLeft, Camera, Check, CheckCircle2, Copy, Loader2, Mic, Search, Settings2, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemes } from "@/hooks/useStudio";
-import { useComptesThemesScripts, useScriptsStudio } from "@/hooks/useStudioScripts";
-import { proposerAccroche, typographie, type ScriptStudio } from "@/lib/studio/scripts";
+import { useComptesThemesScripts, useScriptsStudio, useScriptsTournes } from "@/hooks/useStudioScripts";
+import { dateTournage, proposerAccroche, typographie, type ScriptStudio } from "@/lib/studio/scripts";
 import { dureeLecture } from "@/lib/studio/voixoff";
-
-export function useRechercheDifferee(valeur: string, delai = 300) {
-  const [differee, setDifferee] = useState(valeur);
-  useEffect(() => {
-    const t = setTimeout(() => setDifferee(valeur), delai);
-    return () => clearTimeout(t);
-  }, [valeur, delai]);
-  return differee;
-}
 
 function LectureScript({
   script,
   nomTheme,
+  tourneLe,
   onFermer,
 }: {
   script: ScriptStudio | null;
   nomTheme: (id: string | null) => string | null;
+  /** Date de la première vidéo faite avec ce script, si l'élève l'a déjà tourné. */
+  tourneLe: string | null;
   onFermer: () => void;
 }) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [copie, setCopie] = useState(false);
+  const [aConfirmer, setAConfirmer] = useState<"voix_off" | "face_camera" | null>(null);
+
+  function tourner(outil: "voix_off" | "face_camera") {
+    if (!script) return;
+    if (outil === "voix_off") {
+      navigate("/studio/voix-off", { state: { script: script.texte, theme: script.theme_id, scriptId: script.id } });
+    } else {
+      navigate("/studio/face-camera", { state: { scriptId: script.id } });
+    }
+  }
+
+  // Script déjà tourné : on prévient avant (Sidali, 13/10/2026), sans bloquer.
+  const demander = (outil: "voix_off" | "face_camera") => (tourneLe ? setAConfirmer(outil) : tourner(outil));
 
   async function copier() {
     if (!script) return;
@@ -60,6 +80,11 @@ function LectureScript({
               <DialogDescription className="flex flex-wrap items-center gap-2">
                 {nomTheme(script.theme_id) && <Badge variant="secondary">{nomTheme(script.theme_id)}</Badge>}
                 <span>environ {dureeLecture(script.texte)} de lecture</span>
+                {tourneLe && (
+                  <Badge className="gap-1 bg-emerald-600/15 text-emerald-600 hover:bg-emerald-600/15">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Déjà tourné le {dateTournage(tourneLe)}
+                  </Badge>
+                )}
               </DialogDescription>
             </DialogHeader>
             <div className="whitespace-pre-wrap rounded-lg border bg-muted/30 p-4 text-[15px] leading-relaxed" data-testid="script-texte">
@@ -70,16 +95,30 @@ function LectureScript({
                 {copie ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
                 {copie ? "Copié" : "Copier le script"}
               </Button>
-              <Button
-                className="gap-2"
-                onClick={() => navigate("/studio/voix-off", { state: { script: script.texte, theme: script.theme_id } })}
-              >
+              <Button variant="outline" className="gap-2" onClick={() => demander("face_camera")}>
+                <Camera className="h-4 w-4" /> Tourner en face caméra
+              </Button>
+              <Button className="gap-2" onClick={() => demander("voix_off")}>
                 <Mic className="h-4 w-4" /> Tourner en voix off avec ce script
               </Button>
             </div>
           </>
         )}
       </DialogContent>
+      <AlertDialog open={!!aConfirmer} onOpenChange={(o) => !o && setAConfirmer(null)}>
+        <AlertDialogContent data-testid="alerte-deja-tourne">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tu as déjà tourné ce script</AlertDialogTitle>
+            <AlertDialogDescription>
+              Attention : tu as déjà fait une vidéo avec ce script le {tourneLe ? dateTournage(tourneLe) : ""}. Es-tu sûr de vouloir la refaire ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={onFermer}>Choisir un autre script</AlertDialogCancel>
+            <AlertDialogAction onClick={() => aConfirmer && tourner(aConfirmer)}>Oui, je la refais</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
@@ -92,7 +131,13 @@ export default function StudioScripts() {
   const recherche = useRechercheDifferee(saisie);
   const [theme, setTheme] = useState<string | null>(null);
   const [ouvert, setOuvert] = useState<ScriptStudio | null>(null);
-  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useScriptsStudio({ recherche, theme });
+  const [nouveauxSeulement, setNouveauxSeulement] = useState(false);
+  const { data: tournes = new Map<string, string>() } = useScriptsTournes();
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useScriptsStudio({
+    recherche,
+    theme,
+    exclure: nouveauxSeulement ? [...tournes.keys()] : [],
+  });
 
   const scripts = data?.pages.flatMap((p) => p.scripts) ?? [];
   const total = data?.pages[0]?.total ?? 0;
@@ -150,6 +195,14 @@ export default function StudioScripts() {
         </div>
       )}
 
+      {tournes.size > 0 && (
+        <label className="flex w-fit cursor-pointer items-center gap-2 text-sm" data-testid="filtre-pas-tournes">
+          <Switch checked={nouveauxSeulement} onCheckedChange={setNouveauxSeulement} />
+          Pas encore tournés seulement
+          <span className="text-xs text-muted-foreground">({tournes.size} déjà tourné{tournes.size > 1 ? "s" : ""})</span>
+        </label>
+      )}
+
       {isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }, (_, i) => (
@@ -158,12 +211,17 @@ export default function StudioScripts() {
         </div>
       ) : scripts.length === 0 ? (
         <p className="py-16 text-center text-muted-foreground">
-          {recherche || theme ? "Aucun script ne correspond à ta recherche." : "La bibliothèque arrive très bientôt."}
+          {nouveauxSeulement && !recherche && !theme
+            ? "Tu as tourné tous les scripts. Bravo !"
+            : recherche || theme || nouveauxSeulement
+              ? "Aucun script ne correspond à ta recherche."
+              : "La bibliothèque arrive très bientôt."}
         </p>
       ) : (
         <>
           <p className="text-sm text-muted-foreground">
             {total} script{total > 1 ? "s" : ""}
+            {nouveauxSeulement && " pas encore tournés"}
           </p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {scripts.map((s) => (
@@ -182,6 +240,11 @@ export default function StudioScripts() {
                     {s.mis_en_avant && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-label="Mis en avant" />}
                     <span className="ml-auto text-xs text-muted-foreground">{dureeLecture(s.texte)}</span>
                   </div>
+                  {tournes.has(s.id) && (
+                    <span className="flex items-center gap-1 text-xs font-medium text-emerald-600" data-testid="badge-deja-tourne">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Déjà tourné le {dateTournage(tournes.get(s.id)!)}
+                    </span>
+                  )}
                   <h3 className="font-semibold leading-snug text-foreground">{typographie(s.titre)}</h3>
                   <p className="line-clamp-3 text-sm text-muted-foreground">{typographie(s.accroche || proposerAccroche(s.texte))}</p>
                 </CardContent>
@@ -198,7 +261,7 @@ export default function StudioScripts() {
         </>
       )}
 
-      <LectureScript script={ouvert} nomTheme={nomTheme} onFermer={() => setOuvert(null)} />
+      <LectureScript script={ouvert} nomTheme={nomTheme} tourneLe={ouvert ? tournes.get(ouvert.id) ?? null : null} onFermer={() => setOuvert(null)} />
     </div>
   );
 }

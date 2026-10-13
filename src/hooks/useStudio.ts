@@ -65,6 +65,8 @@ export async function lienStudio(chemin: string, telechargement?: string): Promi
 export async function importerVideo(
   fichier: File,
   onProgres: (pourcent: number) => void,
+  /** Script de la bibliothèque indiqué par l'élève (facultatif) : il sera « déjà tourné ». */
+  scriptId: string | null = null,
 ): Promise<string> {
   const { data: session } = await supabase.auth.getSession();
   const jeton = session.session?.access_token;
@@ -78,6 +80,7 @@ export async function importerVideo(
     outil: "face_camera",
     source_nom: fichier.name.slice(0, 200),
     source_path: chemin,
+    script_id: scriptId,
   });
   if (error) throw error;
 
@@ -141,6 +144,8 @@ export async function importerVoix(
   script: string,
   theme: string,
   onProgres: (pourcent: number) => void,
+  /** Script de la bibliothèque dont part la voix off (null si texte libre ou très modifié). */
+  scriptId: string | null = null,
 ): Promise<string> {
   const { data: session } = await supabase.auth.getSession();
   const jeton = session.session?.access_token;
@@ -157,6 +162,7 @@ export async function importerVoix(
     source_path: chemin,
     script: script.slice(0, 5000),
     theme,
+    script_id: scriptId,
   });
   if (error) throw error;
 

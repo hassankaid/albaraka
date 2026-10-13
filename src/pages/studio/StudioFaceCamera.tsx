@@ -2,7 +2,7 @@
 // Tous les choix se font AVANT le traitement. Pendant que l'élève règle, la
 // machine prépare déjà la vidéo (son, transcription, coupes, sous-titres).
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, Upload, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStudioAcces } from "@/hooks/useStudioAcces";
 import { BandeauQuota, QuotaAtteint, quotaEpuise } from "@/components/studio/QuotaStudio";
+import { ChoixScriptBibliotheque } from "@/components/studio/ChoixScriptBibliotheque";
 import { demarrer, importerVideo, lienStudio, useMontage } from "@/hooks/useStudio";
 import {
   completerReglages,
@@ -53,6 +54,9 @@ export default function StudioFaceCamera() {
   const queryClient = useQueryClient();
   const { data: acces } = useStudioAcces();
   const [params, setParams] = useSearchParams();
+  // Script de la bibliothèque (facultatif) : présélectionné si l'élève vient de la bibliothèque.
+  const depuisBibliotheque = useLocation().state as { scriptId?: string } | null;
+  const [scriptId, setScriptId] = useState<string | null>(depuisBibliotheque?.scriptId ?? null);
   const id = params.get("id") ?? undefined;
   const { data: montage } = useMontage(id);
   const [ecran, setEcran] = useState<Ecran>(id ? "visage" : "import");
@@ -92,11 +96,12 @@ export default function StudioFaceCamera() {
     imageDuFichier(f).then(setImageLocale);
     setProgres(0);
     try {
-      const nouvelId = await importerVideo(f, setProgres);
+      const nouvelId = await importerVideo(f, setProgres, scriptId);
       setParams({ id: nouvelId }, { replace: true });
       setEcran("visage");
       await demarrer(nouvelId, "preparer");
       queryClient.invalidateQueries({ queryKey: ["studio", "acces"] });
+      queryClient.invalidateQueries({ queryKey: ["studio", "scripts", "tournes"] });
     } catch (e) {
       setProgres(null);
       toast({ title: "Import impossible", description: message(e), variant: "destructive" });
@@ -146,6 +151,7 @@ export default function StudioFaceCamera() {
         <QuotaAtteint />
       ) : ecran === "import" && (
         <div className="space-y-4">
+          {progres === null && <ChoixScriptBibliotheque value={scriptId} onChange={setScriptId} />}
           {progres === null ? (
             <label
               className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border px-6 py-16 text-center transition-colors hover:border-primary/60"
