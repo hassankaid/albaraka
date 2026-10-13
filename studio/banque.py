@@ -69,7 +69,7 @@ Réponds UNIQUEMENT en JSON :
   "personnes": true ou false,
   "visage_reconnaissable": true si un visage est net et identifiable,
   "texte_ecran": true si un texte lisible est à l'écran,
-  "logo": true si un logo ou une marque d'une autre entreprise est visible,
+  "logo": true seulement si le logo ou la marque d'une autre entreprise est BIEN VISIBLE ET CENTRAL (sujet principal du plan, grand, net, lisible) ; false si le logo est petit, en arrière-plan, sur le côté, flou ou partiel,
   "qualite": "nette", "floue" ou "sombre"}}"""
 
 
