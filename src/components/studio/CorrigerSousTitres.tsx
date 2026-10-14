@@ -285,6 +285,20 @@ export function CorrigerSousTitres({ open, onOpenChange, montage, reglages, onVa
                           >
                             <Play className="h-3 w-3" /> {minutage(ia[i].start)}
                           </button>
+                          {exacte ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 shrink-0 sm:order-last"
+                              onClick={() => setCorrections((cs) => corriger(cs, ia[i], { small: ia[i].small, big: ia[i].big }))}
+                              aria-label="Revenir au texte d'origine"
+                              title="Revenir au texte d'origine"
+                            >
+                              <Undo2 className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <span className="h-8 w-8 shrink-0 sm:order-last" />
+                          )}
                           <Input
                             value={valeur.small}
                             onChange={(e) => modifier(i, "small", e.target.value)}
@@ -301,20 +315,6 @@ export function CorrigerSousTitres({ open, onOpenChange, montage, reglages, onVa
                             aria-label="Mot clé"
                             data-sous-titre="1"
                           />
-                          {exacte ? (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 shrink-0 sm:order-last"
-                              onClick={() => setCorrections((cs) => corriger(cs, ia[i], { small: ia[i].small, big: ia[i].big }))}
-                              aria-label="Revenir au texte d'origine"
-                              title="Revenir au texte d'origine"
-                            >
-                              <Undo2 className="h-4 w-4" />
-                            </Button>
-                          ) : (
-                            <span className="h-8 w-8 shrink-0 sm:order-last" />
-                          )}
                         </div>
                         {(change || vide) && (
                           <p className={cn("mt-1 pl-1 text-[11px]", vide ? "text-red-400" : "text-emerald-500")}>
