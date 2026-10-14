@@ -862,6 +862,13 @@ def couleur(v, defaut):
 def rendre(dossier, liens, reglages, travail):
     t0 = time.time()
     st = (reglages or {}).get("sous_titres") or {}
+    # sous-titres corrigés par l'élève (corrections.py) : appliqués au rendu seulement,
+    # travail.json garde ceux de l'IA (les corrections la visent par leur texte)
+    import corrections as C
+    if st.get("corrections"):
+        travail = {**travail, "sous_titres": C.appliquer(travail["sous_titres"], st["corrections"]),
+                   "plan_hf": C.corriger_plan(travail.get("plan_hf"), st["corrections"]),
+                   "plan": C.corriger_plan(travail.get("plan"), st["corrections"])}
     style = P.StyleOptions(couleur(st.get("texte"), "#FFFFFF"), couleur(st.get("contour"), "#000000"),
                            couleur(st.get("ombre"), "#000000"))
     caps = [P.Caption(**c) for c in travail["sous_titres"]]
@@ -968,6 +975,7 @@ def main():
         rapport = {
             "entree_s": round(travail["meta"]["duration"], 2), "sortie_s": travail["duree_sortie"],
             "morceaux": len(travail["coupes"]), "sous_titres": len(travail["sous_titres"]),
+            "sous_titres_corriges": len(((reglages or {}).get("sous_titres") or {}).get("corrections") or []),
             "mots_retires": len(travail["retires"]), "chrono_preparation": travail.get("chrono"),
             **rendu, "total_s": round(time.time() - debut, 1),
             # en « rendu », la préparation a été payée par une autre machine

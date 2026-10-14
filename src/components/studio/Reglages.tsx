@@ -4,7 +4,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Loader2, Scissors } from "lucide-react";
+import { Loader2, PenLine, Scissors } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FONDS_SONORES, NIVEAUX_SON, PALETTES, RYTHMES_COUPES, STYLES_MONTAGE, type Reglages } from "@/lib/studio/reglages";
 import { SelecteurCouleur } from "./SelecteurCouleur";
@@ -125,14 +125,40 @@ export function BlocSon({ reglages, onChange }: { reglages: Reglages; onChange: 
   );
 }
 
-export function BlocSousTitres({ reglages, onChange }: { reglages: Reglages; onChange: Maj }) {
+/** Couleurs des sous-titres, et « Corriger les sous-titres » dès que la préparation est prête. */
+export function BlocSousTitres({
+  reglages,
+  onChange,
+  onCorriger,
+}: {
+  reglages: Reglages;
+  onChange: Maj;
+  onCorriger?: () => void;
+}) {
   const c = reglages.sous_titres;
   const maj = (p: Partial<Reglages["sous_titres"]>) => onChange({ ...reglages, sous_titres: { ...c, ...p } });
+  const nb = c.corrections?.length ?? 0;
   return (
     <div className="space-y-4">
       <SelecteurCouleur label="Couleur du texte" valeur={c.texte} onChange={(texte) => maj({ texte })} />
       <SelecteurCouleur label="Couleur du contour" valeur={c.contour} onChange={(contour) => maj({ contour })} />
       <SelecteurCouleur label="Couleur de l'ombre" valeur={c.ombre} onChange={(ombre) => maj({ ombre })} />
+      {onCorriger ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="button" variant="outline" onClick={onCorriger} className="w-full gap-2 sm:w-auto">
+            <PenLine className="h-4 w-4" /> Corriger les sous-titres
+          </Button>
+          {nb > 0 && (
+            <span className="text-xs text-emerald-500" data-testid="nb-corrections">
+              {nb} sous-titre{nb > 1 ? "s" : ""} corrigé{nb > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground" data-testid="sous-titres-preparation">
+          Dès que ta vidéo est préparée, tu pourras relire et corriger chaque sous-titre.
+        </p>
+      )}
     </div>
   );
 }

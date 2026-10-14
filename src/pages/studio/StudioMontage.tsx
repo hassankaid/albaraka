@@ -12,6 +12,7 @@ import {
   Flag,
   Loader2,
   Palette,
+  PenLine,
   RotateCcw,
   ScanEye,
   Scissors,
@@ -38,6 +39,7 @@ import { ApercuStudio } from "@/components/studio/ApercuStudio";
 import { Bloc, BlocCoupes, BlocDesign, BlocSon, BlocSousTitres, BlocVisage } from "@/components/studio/Reglages";
 import { VerifierCoupes } from "@/components/studio/VerifierCoupes";
 import { PlansVoixOff } from "@/components/studio/PlansVoixOff";
+import { CorrigerSousTitres } from "@/components/studio/CorrigerSousTitres";
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -118,6 +120,7 @@ export default function StudioMontage() {
   const [signal, setSignal] = useState<string | null>(null);
   // « relancer » : depuis la vidéo finie, on refait tout de suite ; « regler » : depuis les réglages
   const [verifier, setVerifier] = useState<"relancer" | "regler" | null>(null);
+  const [corriger, setCorriger] = useState<"relancer" | "regler" | null>(null);
 
   useEffect(() => {
     if (m?.statut === "termine" && m.sortie_path) {
@@ -268,6 +271,11 @@ export default function StudioMontage() {
               <Button onClick={telecharger} className="gap-2">
                 <Download className="h-4 w-4" /> Télécharger
               </Button>
+              {m.travail_pret && (
+                <Button variant="outline" onClick={() => setCorriger("relancer")} className="gap-2">
+                  <PenLine className="h-4 w-4" /> Corriger les sous-titres
+                </Button>
+              )}
               <Button variant="outline" onClick={() => setVerifier("relancer")} className="gap-2">
                 <Scissors className="h-4 w-4" /> Vérifier les coupes
               </Button>
@@ -302,7 +310,11 @@ export default function StudioMontage() {
               <BlocSon reglages={r} onChange={setReglages} />
             </Bloc>
             <Bloc titre="Sous-titres">
-              <BlocSousTitres reglages={r} onChange={setReglages} />
+              <BlocSousTitres
+                reglages={r}
+                onChange={setReglages}
+                onCorriger={m.travail_pret ? () => setCorriger("regler") : undefined}
+              />
             </Bloc>
             <Bloc titre="Design">
               <BlocDesign reglages={r} onChange={setReglages} />
@@ -348,6 +360,21 @@ export default function StudioMontage() {
           onValider={(plages) => {
             const nouveaux = { ...r, coupes: { ...r.coupes, plages } };
             if (verifier === "relancer") relancer(nouveaux);
+            else setReglages(nouveaux);
+          }}
+        />
+      )}
+
+      {m.travail_pret && (
+        <CorrigerSousTitres
+          open={corriger !== null}
+          onOpenChange={(o) => !o && setCorriger(null)}
+          montage={m}
+          reglages={r}
+          libelleValider={corriger === "relancer" ? "Refaire la vidéo avec ces sous-titres" : "Valider ces sous-titres"}
+          onValider={(corrections) => {
+            const nouveaux = { ...r, sous_titres: { ...r.sous_titres, corrections } };
+            if (corriger === "relancer") relancer(nouveaux);
             else setReglages(nouveaux);
           }}
         />

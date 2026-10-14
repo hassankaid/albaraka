@@ -15,6 +15,7 @@ import { completerReglages, messageErreur, REGLAGES_PAR_DEFAUT, type Reglages } 
 import { compterMots, dureeLecture, ENREGISTREMENT_MAX_S, SCRIPT_MAX, verifierAudio } from "@/lib/studio/voixoff";
 import { EnregistreurVoix } from "@/components/studio/EnregistreurVoix";
 import { VerifierCoupes } from "@/components/studio/VerifierCoupes";
+import { CorrigerSousTitres } from "@/components/studio/CorrigerSousTitres";
 import { Bloc, BlocCoupes, BlocDesign, BlocSon, BlocSousTitres } from "@/components/studio/Reglages";
 import { BandeauQuota, QuotaAtteint, quotaEpuise } from "@/components/studio/QuotaStudio";
 import { memeScript } from "@/lib/studio/scripts";
@@ -66,6 +67,7 @@ export default function StudioVoixOff() {
   const [reglages, setReglages] = useState<Reglages>(REGLAGES_PAR_DEFAUT);
   const [lancement, setLancement] = useState(false);
   const [verifier, setVerifier] = useState(false);
+  const [corriger, setCorriger] = useState(false);
   const charge = useRef(false);
 
   useEffect(() => {
@@ -274,7 +276,11 @@ export default function StudioVoixOff() {
             <BlocSon reglages={reglages} onChange={setReglages} />
           </Bloc>
           <Bloc titre="Sous-titres">
-            <BlocSousTitres reglages={reglages} onChange={setReglages} />
+            <BlocSousTitres
+              reglages={reglages}
+              onChange={setReglages}
+              onCorriger={montage?.travail_pret ? () => setCorriger(true) : undefined}
+            />
           </Bloc>
           <Bloc titre="Design">
             <BlocDesign reglages={reglages} onChange={setReglages} />
@@ -299,6 +305,16 @@ export default function StudioVoixOff() {
           reglages={reglages}
           libelleValider="Valider ces coupes"
           onValider={(plages) => setReglages({ ...reglages, coupes: { ...reglages.coupes, plages } })}
+        />
+      )}
+      {montage?.travail_pret && (
+        <CorrigerSousTitres
+          open={corriger}
+          onOpenChange={setCorriger}
+          montage={montage}
+          reglages={reglages}
+          libelleValider="Valider ces sous-titres"
+          onValider={(corrections) => setReglages({ ...reglages, sous_titres: { ...reglages.sous_titres, corrections } })}
         />
       )}
     </div>

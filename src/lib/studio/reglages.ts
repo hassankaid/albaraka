@@ -2,6 +2,8 @@
 // l'élève, valeurs par défaut et libellés. Tout le reste (format, polices,
 // position des sous-titres, coupes…) est imposé dans le moteur.
 
+import type { CorrectionSousTitre } from "./sousTitres";
+
 // « naturel » : seul le visage est flouté, sans bulle ni couleur (choix de Hassan, 09/10).
 // Les 6 styles du cahier des charges restent connus du moteur mais ne sont plus proposés.
 export type StyleFlou = "naturel" | "flou" | "mosaique" | "verre" | "marqueur" | "sticker" | "neon";
@@ -20,7 +22,8 @@ export type PaletteId = "or_noir" | "emeraude" | "rose_poudre" | "bleu_electriqu
 
 export interface Reglages {
   son: { ameliorer: boolean; niveau: NiveauSon; fond: FondSonore };
-  sous_titres: { texte: string; contour: string; ombre: string };
+  /** corrections : sous-titres corrigés par l'élève (voir sousTitres.ts), appliqués à chaque rendu. */
+  sous_titres: { texte: string; contour: string; ombre: string; corrections?: CorrectionSousTitre[] };
   visage: { flouter: boolean; style: StyleFlou; couleur: string; intensite: number; intensite_couleur: number };
   /** Motion design : style, palette, et prénom + titre pour la carte de présentation. */
   design: {
