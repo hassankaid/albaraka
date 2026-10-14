@@ -191,7 +191,7 @@ export function CorrigerSousTitres({ open, onOpenChange, montage, reglages, onVa
       <DialogContent className="flex h-[94vh] max-w-5xl flex-col gap-3 overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle>Corriger les sous-titres</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs sm:text-sm">
             Corrige la petite ligne ou le mot clé d'un sous-titre. Clique sur l'heure pour réécouter ce passage. Un mot corrigé
             l'est partout dans la vidéo, animations comprises.
           </DialogDescription>
@@ -203,9 +203,10 @@ export function CorrigerSousTitres({ open, onOpenChange, montage, reglages, onVa
           <Loader2 className="mx-auto my-16 h-6 w-6 animate-spin text-muted-foreground" />
         ) : (
           <div className="flex min-h-0 flex-1 flex-col gap-3" data-testid="corriger-sous-titres">
-            <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[auto_1fr]">
-              <div className="flex shrink-0 flex-col items-center gap-2">
-                <div className="relative aspect-[9/16] h-[26vh] min-h-[170px] overflow-hidden rounded-xl border border-border bg-black md:h-[min(560px,62vh)]">
+            {/* sur téléphone, tout défile et la vidéo reste collée en haut ; sur ordinateur, seule la liste défile */}
+            <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto md:grid-cols-[auto_1fr] md:gap-4 md:overflow-hidden">
+              <div className="sticky top-0 z-10 flex shrink-0 flex-col items-center gap-2 bg-background pb-2 md:static md:pb-0">
+                <div className="relative aspect-[9/16] h-[22vh] min-h-[150px] overflow-hidden rounded-xl border border-border bg-black md:h-[min(560px,62vh)]">
                   {video ? (
                     <video
                       ref={videoRef}
@@ -231,7 +232,7 @@ export function CorrigerSousTitres({ open, onOpenChange, montage, reglages, onVa
                 </Button>
               </div>
 
-              <div className="flex min-h-0 flex-col gap-2">
+              <div className="flex flex-col gap-2 md:min-h-0">
                 {coupesChangees && (
                   <p className="flex shrink-0 gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
                     <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -256,7 +257,7 @@ export function CorrigerSousTitres({ open, onOpenChange, montage, reglages, onVa
                     aria-label="Chercher un mot dans les sous-titres"
                   />
                 </div>
-                <ul className="min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1" data-testid="liste-sous-titres">
+                <ul className="space-y-1.5 pr-1 md:min-h-0 md:flex-1 md:overflow-y-auto" data-testid="liste-sous-titres">
                   {visibles.map((i) => {
                     const c = affiches[i];
                     const exacte = correctionDe(ia[i], corrections);
@@ -274,11 +275,12 @@ export function CorrigerSousTitres({ open, onOpenChange, montage, reglages, onVa
                         )}
                         data-testid="ligne-sous-titre"
                       >
-                        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+                        {/* téléphone : heure et retour en haut, les deux cases en dessous, pleine largeur */}
+                        <div className="grid grid-cols-[1fr_auto] items-center gap-1.5 sm:flex sm:gap-2">
                           <button
                             type="button"
                             onClick={() => ecouter(i)}
-                            className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-xs tabular-nums text-muted-foreground hover:bg-muted hover:text-foreground"
+                            className="flex shrink-0 items-center gap-1 justify-self-start rounded-md px-1.5 py-1 text-xs tabular-nums text-muted-foreground hover:bg-muted hover:text-foreground"
                             aria-label={`Écouter le sous-titre de ${minutage(ia[i].start)}`}
                           >
                             <Play className="h-3 w-3" /> {minutage(ia[i].start)}
@@ -287,7 +289,7 @@ export function CorrigerSousTitres({ open, onOpenChange, montage, reglages, onVa
                             value={valeur.small}
                             onChange={(e) => modifier(i, "small", e.target.value)}
                             maxLength={MAX_PETIT}
-                            className="h-8 min-w-0 flex-[3] text-sm uppercase"
+                            className="col-span-2 h-8 min-w-0 text-sm uppercase sm:flex-[3]"
                             aria-label="Petite ligne"
                             data-sous-titre="1"
                           />
@@ -295,7 +297,7 @@ export function CorrigerSousTitres({ open, onOpenChange, montage, reglages, onVa
                             value={valeur.big}
                             onChange={(e) => modifier(i, "big", e.target.value)}
                             maxLength={MAX_GRAND}
-                            className="h-8 min-w-0 flex-[2] font-serif text-sm italic"
+                            className="col-span-2 h-8 min-w-0 font-serif text-sm italic sm:flex-[2]"
                             aria-label="Mot clé"
                             data-sous-titre="1"
                           />
@@ -303,7 +305,7 @@ export function CorrigerSousTitres({ open, onOpenChange, montage, reglages, onVa
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 shrink-0"
+                              className="h-8 w-8 shrink-0 sm:order-last"
                               onClick={() => setCorrections((cs) => corriger(cs, ia[i], { small: ia[i].small, big: ia[i].big }))}
                               aria-label="Revenir au texte d'origine"
                               title="Revenir au texte d'origine"
@@ -311,7 +313,7 @@ export function CorrigerSousTitres({ open, onOpenChange, montage, reglages, onVa
                               <Undo2 className="h-4 w-4" />
                             </Button>
                           ) : (
-                            <span className="h-8 w-8 shrink-0" />
+                            <span className="h-8 w-8 shrink-0 sm:order-last" />
                           )}
                         </div>
                         {(change || vide) && (
