@@ -90,8 +90,8 @@ function ConfirmerRecyclage({
           <AlertDialogTitle>Dernière relance</AlertDialogTitle>
           <AlertDialogDescription>
             {perdu
-              ? "C'est la 6ᵉ relance sans réponse : en la validant, ce lead passe en « Perdu ». Il a été relancé 6 fois au total et ne retournera pas dans « À recycler »."
-              : "C'est la 3ᵉ relance sans réponse : en la validant, ce lead quitte ta liste et part dans « À recycler », avec le statut « Pas de réponse »."}
+              ? "C'est la 6ᵉ relance sans réponse : en la validant, ce lead passe en «\u00a0Perdu\u00a0». Il a été relancé 6 fois au total et ne retournera pas dans «\u00a0À recycler\u00a0»."
+              : "C'est la 3ᵉ relance sans réponse : en la validant, ce lead quitte ta liste et part dans «\u00a0À recycler\u00a0», avec le statut «\u00a0Pas de réponse\u00a0»."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
