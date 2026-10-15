@@ -34,6 +34,8 @@ import LeadApporteurForm from "@/components/LeadApporteurForm";
 import ProcessLeadModal from "@/components/leads/ProcessLeadModal";
 import { BoutonRelanceFaite, StatutLead } from "@/components/leads/Relances";
 import { apresRelance, etapeRelance, RELANCES_MAX, STATUT_RELANCE } from "@/lib/relances";
+import { delaiTraitement } from "@/lib/delaiTraitement";
+import { cn } from "@/lib/utils";
 import ContactSheet from "@/components/ContactSheet";
 import {
   LEAD_STATUS_COLORS,
@@ -72,6 +74,8 @@ type LeadEnriched = Tables<"leads_enriched"> & {
   // Système de relances (15/10/2026) : étape 1 à 3 d'un lead « À relancer ».
   relance_etape?: number | null;
   relance_derniere_le?: string | null;
+  // Délai de traitement (15/10/2026) : première action de l'équipe sur la fiche.
+  premiere_action_le?: string | null;
 };
 
 // Convert a Date picked on the calendar (browser-local interpretation)
@@ -1461,6 +1465,17 @@ export default function Leads() {
                       >
                         <span>{formatShortDate(lead.created_at)}</span>
                         {lead.created_at && <span className="text-[11px] text-muted-foreground/80">{formatHeure(lead.created_at)}</span>}
+                        {(() => {
+                          const d = delaiTraitement(lead);
+                          return d ? (
+                            <span
+                              className={cn("mt-0.5 text-[10px]", d.enAttente ? "text-amber-300" : "text-muted-foreground/70")}
+                              data-testid="delai-traitement"
+                            >
+                              {d.texte}
+                            </span>
+                          ) : null;
+                        })()}
                       </span>
                     </TableCell>
                     {/* Actions */}

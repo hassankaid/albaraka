@@ -21,11 +21,16 @@ import {
 } from "@/lib/leadTags";
 
 // relance_* : système de relances (15/10/2026), pas encore dans les types générés
-type LeadEnriched = Tables<"leads_enriched"> & { relance_etape?: number | null; relance_derniere_le?: string | null };
+type LeadEnriched = Tables<"leads_enriched"> & {
+  relance_etape?: number | null;
+  relance_derniere_le?: string | null;
+  premiere_action_le?: string | null;
+};
 
 import { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS, getLeadStatusListForLevel } from "@/lib/leadConfig";
 import { SuiviRelances } from "@/components/leads/Relances";
 import { STATUT_RELANCE } from "@/lib/relances";
+import { delaiTraitement } from "@/lib/delaiTraitement";
 
 export { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS };
 
@@ -263,6 +268,8 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
             <span className="text-foreground">{lead.source_label || "—"}</span>
             <span className="text-muted-foreground">Date d'entrée</span>
             <span className="text-foreground">{lead.created_at ? formatDateTime(lead.created_at) : "—"}</span>
+            <span className="text-muted-foreground">Délai de traitement</span>
+            <span className="text-foreground">{delaiTraitement(lead)?.texte ?? "—"}</span>
             <span className="text-muted-foreground">Apporteur</span>
             <span className="text-foreground">{lead.apporteur_name || "—"}</span>
             <span className="text-muted-foreground">Setter</span>
