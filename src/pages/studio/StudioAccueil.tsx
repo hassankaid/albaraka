@@ -1,6 +1,8 @@
 // Studio vidéo : accueil (les deux outils) et « Mes vidéos ».
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, Camera, Clock, Database, Film, Mic, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { BookOpen, Camera, Clock, Database, FileDown, Film, Mic, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +10,36 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMesMontages } from "@/hooks/useStudio";
 import { BandeauQuota } from "@/components/studio/QuotaStudio";
 import { enTraitement, LIBELLE_STATUT, lienDuMontage, type Montage } from "@/lib/studio/reglages";
+import { supabase } from "@/integrations/supabase/client";
+import { STOCKAGE_RESSOURCES } from "@/lib/ressourcesFormation";
+
+// Guide élève du Studio (Sidali, 15/10/2026) : le même fichier que la ressource
+// « Guide du Studio » du chapitre « Tes outils d'affilié » (parcours Setting/Closing).
+// Si Sidali remplace ce fichier dans le chapitre, reporter ici le nouveau chemin.
+const GUIDE_STUDIO = "ce381f21-5340-40f4-b51b-cf7d425e4579/6037b242-Guide-du-Studio.pdf";
+
+function BoutonGuide() {
+  const [envoi, setEnvoi] = useState(false);
+  async function telecharger() {
+    setEnvoi(true);
+    try {
+      const { data, error } = await supabase.storage
+        .from(STOCKAGE_RESSOURCES)
+        .createSignedUrl(GUIDE_STUDIO, 300, { download: "Guide du Studio AL BARAKA.pdf" });
+      if (error || !data?.signedUrl) throw error ?? new Error("lien indisponible");
+      window.location.assign(data.signedUrl);
+    } catch {
+      toast.error("Le guide n'a pas pu être téléchargé. Réessaie dans un instant.");
+    } finally {
+      setEnvoi(false);
+    }
+  }
+  return (
+    <Button variant="outline" size="sm" className="gap-2" onClick={telecharger} disabled={envoi} data-testid="bouton-guide-studio">
+      {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />} Guide du Studio
+    </Button>
+  );
+}
 
 const COULEUR_STATUT: Record<Montage["statut"], string> = {
   import: "bg-muted text-muted-foreground",
@@ -38,6 +70,7 @@ export default function StudioAccueil() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <BoutonGuide />
           {estCeo && (
             <Button asChild variant="outline" size="sm" className="gap-2">
               <Link to="/studio/banque">
