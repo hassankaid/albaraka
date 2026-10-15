@@ -757,6 +757,9 @@ export default function Leads() {
     });
   };
 
+  const formatHeure = (dateStr: string) =>
+    new Date(dateStr).toLocaleTimeString("fr-FR", { timeZone: userTz, hour: "2-digit", minute: "2-digit" }).replace(":", "h");
+
   const formatRangeLabel = (d: Date): string =>
     d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
@@ -1450,10 +1453,14 @@ export default function Leads() {
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    {/* Date */}
+                    {/* Date et heure d'entrée du lead (Sidali, 15/10/2026 : voir le délai de traitement) */}
                     <TableCell>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {formatShortDate(lead.created_at)}
+                      <span
+                        className="flex flex-col text-xs text-muted-foreground whitespace-nowrap"
+                        title={lead.created_at ? `Formulaire rempli le ${formatShortDate(lead.created_at)} à ${formatHeure(lead.created_at)}` : undefined}
+                      >
+                        <span>{formatShortDate(lead.created_at)}</span>
+                        {lead.created_at && <span className="text-[11px] text-muted-foreground/80">{formatHeure(lead.created_at)}</span>}
                       </span>
                     </TableCell>
                     {/* Actions */}

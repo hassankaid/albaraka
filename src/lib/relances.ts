@@ -29,16 +29,38 @@ export function etapeRelance(lead: LeadRelance | null | undefined): number | nul
   return Math.min(RELANCES_MAX, Math.max(1, Number.isFinite(e) ? e : 1));
 }
 
-/** « faite aujourd'hui », « faite hier », « faite il y a 3 j » ; null si aucune relance faite. */
-export function derniereRelance(date: string | null | undefined, maintenant = new Date()): string | null {
+/** Heure au format « 14h05 » dans le fuseau donné. */
+function heure(d: Date, tz: string): string {
+  const parts = new Intl.DateTimeFormat("fr-FR", { timeZone: tz, hour: "2-digit", minute: "2-digit" }).formatToParts(d);
+  const h = parts.find((p) => p.type === "hour")?.value ?? "";
+  const m = parts.find((p) => p.type === "minute")?.value ?? "";
+  return `${h}h${m}`;
+}
+
+/** Jour « AAAA-MM-JJ » dans le fuseau donné (pour compter les jours sans décalage). */
+function jourDans(d: Date, tz: string): number {
+  const cle = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+  return Date.parse(`${cle}T00:00:00Z`);
+}
+
+/**
+ * « faite aujourd'hui à 14h05 », « faite hier à 18h30 », « faite le 11 oct. à 9h12 » ;
+ * null si aucune relance faite. L'heure est demandée par les setters (Sabrina, 15/10/2026).
+ */
+export function derniereRelance(
+  date: string | null | undefined,
+  maintenant = new Date(),
+  tz = "Europe/Paris",
+): string | null {
   if (!date) return null;
   const d = new Date(date);
   if (Number.isNaN(d.getTime())) return null;
-  const jour = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
-  const jours = Math.round((jour(maintenant) - jour(d)) / 86_400_000);
-  if (jours <= 0) return "faite aujourd'hui";
-  if (jours === 1) return "faite hier";
-  return `faite il y a ${jours} j`;
+  const jours = Math.round((jourDans(maintenant, tz) - jourDans(d, tz)) / 86_400_000);
+  const h = heure(d, tz);
+  if (jours <= 0) return `faite aujourd'hui à ${h}`;
+  if (jours === 1) return `faite hier à ${h}`;
+  const jour = d.toLocaleDateString("fr-FR", { timeZone: tz, day: "numeric", month: "short" });
+  return `faite le ${jour} à ${h}`;
 }
 
 /** 1er passage (Relances 1 à 3) ou 2e passage (Relances 4 à 6). */

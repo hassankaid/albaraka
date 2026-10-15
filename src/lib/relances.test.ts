@@ -28,12 +28,15 @@ describe("etapeRelance", () => {
 });
 
 describe("derniereRelance", () => {
-  const maintenant = new Date(2026, 9, 15, 10, 0);
-  it("formule la date de la dernière relance", () => {
+  const maintenant = new Date("2026-10-15T08:00:00Z"); // 10h00 à Paris
+  it("donne le jour et l'heure de la dernière relance (heure de Paris)", () => {
     expect(derniereRelance(null, maintenant)).toBeNull();
-    expect(derniereRelance(new Date(2026, 9, 15, 8, 0).toISOString(), maintenant)).toBe("faite aujourd'hui");
-    expect(derniereRelance(new Date(2026, 9, 14, 23, 0).toISOString(), maintenant)).toBe("faite hier");
-    expect(derniereRelance(new Date(2026, 9, 11, 9, 0).toISOString(), maintenant)).toBe("faite il y a 4 j");
+    expect(derniereRelance("2026-10-15T06:05:00Z", maintenant)).toBe("faite aujourd'hui à 08h05");
+    expect(derniereRelance("2026-10-14T21:30:00Z", maintenant)).toBe("faite hier à 23h30");
+    expect(derniereRelance("2026-10-11T07:12:00Z", maintenant)).toBe("faite le 11 oct. à 09h12");
+  });
+  it("suit le fuseau du membre", () => {
+    expect(derniereRelance("2026-10-15T06:05:00Z", maintenant, "America/Montreal")).toBe("faite aujourd'hui à 02h05");
   });
 });
 

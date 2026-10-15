@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS } from "@/lib/leadConfig";
 import {
@@ -47,6 +48,7 @@ function Points({ etape }: { etape: number }) {
 
 /** Badge du statut ; pour « À relancer », l'étape en cours (Relance 2/3) et la dernière relance. */
 export function StatutLead({ lead, className }: { lead: LeadRelance; className?: string }) {
+  const { user } = useAuth();
   if (!lead.status) return null;
   const etape = etapeRelance(lead);
   const badge = (
@@ -55,7 +57,7 @@ export function StatutLead({ lead, className }: { lead: LeadRelance; className?:
     </Badge>
   );
   if (!etape) return badge;
-  const derniere = derniereRelance(lead.relance_derniere_le);
+  const derniere = derniereRelance(lead.relance_derniere_le, new Date(), user?.timezone || "Europe/Paris");
   return (
     <span className="inline-flex flex-col items-start gap-0.5" data-testid="statut-relance">
       {badge}
@@ -161,11 +163,12 @@ export function SuiviRelances({
   onFait: (r: ResultatRelance) => void;
   modifiable: boolean;
 }) {
+  const { user } = useAuth();
   const { etape, envoi, valider } = useValiderRelance(lead, onFait);
   const [note, setNote] = useState("");
   const [confirmer, setConfirmer] = useState(false);
   if (!etape) return null;
-  const derniere = derniereRelance(lead.relance_derniere_le);
+  const derniere = derniereRelance(lead.relance_derniere_le, new Date(), user?.timezone || "Europe/Paris");
   const passage = passageRelance(etape);
   const premiere = (passage - 1) * RELANCES_PAR_PASSAGE + 1;
   return (
