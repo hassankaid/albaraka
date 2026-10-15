@@ -267,7 +267,7 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
             <span className="text-muted-foreground">Source</span>
             <span className="text-foreground">{lead.source_label || "—"}</span>
             <span className="text-muted-foreground">Date d'entrée</span>
-            <span className="text-foreground">{lead.created_at ? formatDateTime(lead.created_at) : "—"}</span>
+            <span className="text-foreground">{lead.created_at ? formatDateTime(lead.created_at, user?.timezone || "Europe/Paris") : "—"}</span>
             <span className="text-muted-foreground">Délai de traitement</span>
             <span className="text-foreground">{delaiTraitement(lead)?.texte ?? "—"}</span>
             <span className="text-muted-foreground">Apporteur</span>
