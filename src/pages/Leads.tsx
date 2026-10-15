@@ -33,7 +33,7 @@ import LeadInstagramForm from "@/components/LeadInstagramForm";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
 import ProcessLeadModal from "@/components/leads/ProcessLeadModal";
 import { BoutonRelanceFaite, StatutLead } from "@/components/leads/Relances";
-import { etapeRelance, RELANCES_MAX, STATUT_RELANCE } from "@/lib/relances";
+import { apresRelance, etapeRelance, RELANCES_MAX, STATUT_RELANCE } from "@/lib/relances";
 import ContactSheet from "@/components/ContactSheet";
 import {
   LEAD_STATUS_COLORS,
@@ -1317,7 +1317,14 @@ export default function Leads() {
                       <div className="flex flex-col items-start gap-1">
                         <StatutLead lead={lead} className="text-[10px]" />
                         {etapeRelance(lead) && (lead.assigned_to === user?.id || isCeo) && (
-                          <BoutonRelanceFaite lead={lead} onFait={fetchLeads} />
+                          <BoutonRelanceFaite
+                            lead={lead}
+                            onFait={(r) => {
+                              // la ligne change tout de suite ; le rechargement complet suit
+                              setLeads((ls) => ls.map((l) => (l.id === lead.id ? apresRelance(l, r) : l)));
+                              fetchLeads();
+                            }}
+                          />
                         )}
                       </div>
                     </TableCell>

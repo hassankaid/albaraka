@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
-import { derniereRelance, etapeFinale, etapeRelance, libelleBouton, messageRelance } from "./relances";
+import { apresRelance, derniereRelance, etapeFinale, etapeRelance, libelleBouton, messageRelance } from "./relances";
 
 describe("etapeRelance", () => {
   it("donne l'étape d'un lead à relancer, bornée de 1 à 3", () => {
@@ -34,5 +34,23 @@ describe("libellés", () => {
     expect(messageRelance({ ok: true, changed: true, etape: 2 }, 1)).toBe("Relance 1 faite : prochaine étape, Relance 2.");
     expect(messageRelance({ ok: true, changed: true, etape: null, recycle: true }, 3)).toContain("À recycler");
     expect(messageRelance({ ok: true, changed: false, etape: 2 }, 1)).toBe("Cette relance était déjà validée.");
+  });
+});
+
+describe("apresRelance", () => {
+  const lead = { id: "1", status: "a_relancer", relance_etape: 1, relance_derniere_le: null, assigned_to: "u", recycled_at: null };
+  it("avance l'étape tout de suite", () => {
+    expect(apresRelance(lead, { ok: true, changed: true, etape: 2 }, "T")).toMatchObject({ relance_etape: 2, relance_derniere_le: "T" });
+  });
+  it("recycle après la dernière", () => {
+    expect(apresRelance(lead, { ok: true, changed: true, etape: null, recycle: true }, "T")).toMatchObject({
+      status: "pas_de_reponse",
+      assigned_to: null,
+      recycled_at: "T",
+      relance_etape: null,
+    });
+  });
+  it("ne change rien si la relance était déjà validée", () => {
+    expect(apresRelance(lead, { ok: true, changed: false, etape: 2 })).toBe(lead);
   });
 });

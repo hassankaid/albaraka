@@ -62,6 +62,19 @@ export async function marquerRelanceFaite(leadId: string, etape: number, note?: 
   return data as ResultatRelance;
 }
 
+/** La fiche telle qu'elle est après la relance, pour l'afficher tout de suite (sans attendre le rechargement). */
+export function apresRelance<L extends LeadRelance & { assigned_to?: string | null; recycled_at?: string | null }>(
+  lead: L,
+  r: ResultatRelance,
+  maintenant = new Date().toISOString(),
+): L {
+  if (!r.changed) return lead;
+  if (r.recycle) {
+    return { ...lead, status: "pas_de_reponse", assigned_to: null, recycled_at: maintenant, relance_etape: null, relance_derniere_le: null };
+  }
+  return { ...lead, relance_etape: r.etape, relance_derniere_le: maintenant };
+}
+
 /** Message de confirmation après une relance. */
 export function messageRelance(r: ResultatRelance, etapeFaite: number): string {
   if (!r.changed) return "Cette relance était déjà validée.";

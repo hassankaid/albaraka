@@ -28,6 +28,7 @@ import {
   messageRelance,
   RELANCES_MAX,
   type LeadRelance,
+  type ResultatRelance,
 } from "@/lib/relances";
 
 function Points({ etape }: { etape: number }) {
@@ -94,7 +95,7 @@ function ConfirmerRecyclage({
   );
 }
 
-function useValiderRelance(lead: LeadRelance, onFait: () => void) {
+function useValiderRelance(lead: LeadRelance, onFait: (r: ResultatRelance) => void) {
   const { toast } = useToast();
   const [envoi, setEnvoi] = useState(false);
   const etape = etapeRelance(lead);
@@ -104,7 +105,7 @@ function useValiderRelance(lead: LeadRelance, onFait: () => void) {
     try {
       const r = await marquerRelanceFaite(lead.id, etape, note);
       toast({ title: messageRelance(r, etape) });
-      onFait();
+      onFait(r);
     } catch (e) {
       toast({ title: "Relance impossible", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
     } finally {
@@ -115,7 +116,7 @@ function useValiderRelance(lead: LeadRelance, onFait: () => void) {
 }
 
 /** Bouton compact « ✓ Relance N » pour la ligne du tableau. */
-export function BoutonRelanceFaite({ lead, onFait }: { lead: LeadRelance; onFait: () => void }) {
+export function BoutonRelanceFaite({ lead, onFait }: { lead: LeadRelance; onFait: (r: ResultatRelance) => void }) {
   const { etape, envoi, valider } = useValiderRelance(lead, onFait);
   const [confirmer, setConfirmer] = useState(false);
   if (!etape) return null;
@@ -143,7 +144,15 @@ export function BoutonRelanceFaite({ lead, onFait }: { lead: LeadRelance; onFait
 }
 
 /** Bloc « Suivi des relances » de la fiche du lead : les 3 étapes, une note facultative, le bouton. */
-export function SuiviRelances({ lead, onFait, modifiable }: { lead: LeadRelance; onFait: () => void; modifiable: boolean }) {
+export function SuiviRelances({
+  lead,
+  onFait,
+  modifiable,
+}: {
+  lead: LeadRelance;
+  onFait: (r: ResultatRelance) => void;
+  modifiable: boolean;
+}) {
   const { etape, envoi, valider } = useValiderRelance(lead, onFait);
   const [note, setNote] = useState("");
   const [confirmer, setConfirmer] = useState(false);

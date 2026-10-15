@@ -18,7 +18,7 @@ import { fr } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { LEAD_STATUS_LABELS } from "@/lib/leadConfig";
 import { BoutonRelanceFaite, StatutLead, SuiviRelances } from "@/components/leads/Relances";
-import { etapeRelance, STATUT_RELANCE } from "@/lib/relances";
+import { apresRelance, etapeRelance, STATUT_RELANCE } from "@/lib/relances";
 import { leadSourceConfig, getSourceLabel, getSourceBadgeClass } from "@/lib/leadConfig";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
@@ -513,7 +513,15 @@ export default function ApporteurLeads() {
                     <TableCell>
                       <div className="flex flex-col items-start gap-1">
                         <StatutLead lead={lead} className="text-xs" />
-                        {etapeRelance(lead) && peutRelancer(lead) && <BoutonRelanceFaite lead={lead} onFait={fetchLeads} />}
+                        {etapeRelance(lead) && peutRelancer(lead) && (
+                          <BoutonRelanceFaite
+                            lead={lead}
+                            onFait={(r) => {
+                              setLeads((ls) => ls.map((l) => (l.id === lead.id ? apresRelance(l, r) : l)));
+                              fetchLeads();
+                            }}
+                          />
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
