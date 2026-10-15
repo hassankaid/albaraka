@@ -429,6 +429,9 @@ function TimelineDot({ type, action }: { type: string; action?: string }) {
     } else if (action === "apporteur_source_change") {
       className = "bg-violet-500/20 border-violet-500/40";
       icon = "🏷️";
+    } else if (action === "relance_faite") {
+      className = "bg-yellow-500/20 border-yellow-500/40";
+      icon = "🔁";
     } else {
       className = "bg-cyan-500/20 border-cyan-500/40";
       icon = "🔄";
@@ -548,6 +551,21 @@ function LeadActivityEvent({ data, userTz }: { data: any; userTz: string }) {
         <div>
           <p className="text-sm text-foreground">Lead recyclé</p>
           {data.note && <p className="text-xs text-muted-foreground italic mt-1">{data.note}</p>}
+        </div>
+      </div>
+    );
+  }
+
+  // Système de relances (15/10/2026) : note = « Relance N faite — note facultative »
+  if (data.action === "relance_faite") {
+    const [titre, ...reste] = String(data.note || `Relance ${data.old_value} faite`).split(" — ");
+    return (
+      <div className="flex items-start gap-2">
+        <RefreshCw className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm text-foreground">{titre}</p>
+          {reste.length > 0 && <p className="text-xs text-muted-foreground italic mt-1">"{reste.join(" — ")}"</p>}
+          <span className="text-xs text-muted-foreground">par {userName}</span>
         </div>
       </div>
     );
