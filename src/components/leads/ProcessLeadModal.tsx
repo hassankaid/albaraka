@@ -20,9 +20,12 @@ import {
   type LeadTagDefinition,
 } from "@/lib/leadTags";
 
-type LeadEnriched = Tables<"leads_enriched">;
+// relance_* : système de relances (15/10/2026), pas encore dans les types générés
+type LeadEnriched = Tables<"leads_enriched"> & { relance_etape?: number | null; relance_derniere_le?: string | null };
 
 import { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS, getLeadStatusListForLevel } from "@/lib/leadConfig";
+import { SuiviRelances } from "@/components/leads/Relances";
+import { STATUT_RELANCE } from "@/lib/relances";
 
 export { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS };
 
@@ -297,7 +300,24 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
               ))}
             </SelectContent>
           </Select>
+          {lead.status !== STATUT_RELANCE && status === STATUT_RELANCE && (
+            <p className="text-xs text-muted-foreground">
+              Le lead démarre le suivi des relances à la Relance 1 (3 relances, puis recyclage s'il ne répond pas).
+            </p>
+          )}
         </div>
+
+        {/* Section 3 ter : suivi des relances (lead déjà « À relancer ») */}
+        {lead.status === STATUT_RELANCE && status === STATUT_RELANCE && (
+          <SuiviRelances
+            lead={lead}
+            modifiable={canEdit}
+            onFait={() => {
+              onSuccess();
+              onClose();
+            }}
+          />
+        )}
 
         <Separator />
 

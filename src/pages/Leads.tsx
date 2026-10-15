@@ -32,6 +32,8 @@ import { fr } from "date-fns/locale";
 import LeadInstagramForm from "@/components/LeadInstagramForm";
 import LeadApporteurForm from "@/components/LeadApporteurForm";
 import ProcessLeadModal from "@/components/leads/ProcessLeadModal";
+import { BoutonRelanceFaite, StatutLead } from "@/components/leads/Relances";
+import { etapeRelance, RELANCES_MAX, STATUT_RELANCE } from "@/lib/relances";
 import ContactSheet from "@/components/ContactSheet";
 import {
   LEAD_STATUS_COLORS,
@@ -67,6 +69,9 @@ type LeadEnriched = Tables<"leads_enriched"> & {
   // hebdomadaire (lundi 00h Europe/Paris). NULL = lead jamais passé par la
   // bascule (== pas issu d'un apport, ou apport encore dans la semaine en cours).
   auto_released_at?: string | null;
+  // Système de relances (15/10/2026) : étape 1 à 3 d'un lead « À relancer ».
+  relance_etape?: number | null;
+  relance_derniere_le?: string | null;
 };
 
 // Convert a Date picked on the calendar (browser-local interpretation)
@@ -242,6 +247,8 @@ export default function Leads() {
     user?.role === "collaborateur" && user?.collaborateur_level === "intermediaire";
   const [tab, setTab] = useState<string>(isIntermediaire ? "mes_leads" : "a_affecter");
   const [statusFilter, setStatusFilter] = useState("all");
+  // Sous-filtre de « À relancer » : toutes les étapes, ou Relance 1, 2 ou 3
+  const [relanceFilter, setRelanceFilter] = useState("all");
   // Sous-onglet de « À affecter » : Ads (défaut) ou Organique. Sépare les
   // leads publicitaires des leads organiques pour ne plus mélanger les
   // compteurs (cf. demande CEO 20/05/2026).
@@ -605,8 +612,8 @@ export default function Leads() {
     return SOURCE_GROUPS.filter((g) => g.label === wanted);
   }, [tab, aAffecterSegment]);
 
-  // Filtered leads
-  const filteredLeads = useMemo(() => {
+  // Filtered leads (avant le sous-filtre d'étape de relance)
+  const leadsAvantEtape = useMemo(() => {
     let result: LeadEnriched[];
 
     if (tab === "a_affecter") {
@@ -659,6 +666,28 @@ export default function Leads() {
     return result;
   }, [leads, scopedLeads, tab, aAffecterSegment, statusFilter, sourceFilter, collabFilter, apporteurFilter, search, dateRange, userTz, user]);
 
+  // Nombre de leads à chaque étape de relance, pour le sous-filtre
+  const nbParEtape = useMemo(() => {
+    const n: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
+    for (const l of leadsAvantEtape) {
+      const e = etapeRelance(l);
+      if (e) n[e] += 1;
+    }
+    return n;
+  }, [leadsAvantEtape]);
+
+  const filteredLeads = useMemo(
+    () =>
+      statusFilter === STATUT_RELANCE && relanceFilter !== "all"
+        ? leadsAvantEtape.filter((l) => etapeRelance(l) === Number(relanceFilter))
+        : leadsAvantEtape,
+    [leadsAvantEtape, statusFilter, relanceFilter],
+  );
+
+  useEffect(() => {
+    if (statusFilter !== STATUT_RELANCE) setRelanceFilter("all");
+  }, [statusFilter]);
+
   useEffect(() => {
     setPage(0);
     setSelectedIds(new Set());
@@ -677,7 +706,7 @@ export default function Leads() {
     setSourceFilter([]);
   }, [aAffecterSegment]);
 
-  useEffect(() => { setPage(0); }, [statusFilter, sourceFilter.length, search, collabFilter, apporteurFilter, dateRange]);
+  useEffect(() => { setPage(0); }, [statusFilter, relanceFilter, sourceFilter.length, search, collabFilter, apporteurFilter, dateRange]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
   const paginatedLeads = useMemo(
@@ -963,6 +992,22 @@ export default function Leads() {
             ))}
           </SelectContent>
         </Select>
+
+        {statusFilter === STATUT_RELANCE && (
+          <Select value={relanceFilter} onValueChange={setRelanceFilter}>
+            <SelectTrigger className="w-[150px] h-7 text-xs bg-card" data-testid="filtre-etape-relance">
+              <SelectValue placeholder="Étape" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Étape : toutes ({nbParEtape[1] + nbParEtape[2] + nbParEtape[3]})</SelectItem>
+              {Array.from({ length: RELANCES_MAX }, (_, i) => i + 1).map((e) => (
+                <SelectItem key={e} value={String(e)}>
+                  Relance {e} ({nbParEtape[e]})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         {canAssign && (
           <>
@@ -1269,11 +1314,12 @@ export default function Leads() {
                     </TableCell>
                     {/* Statut */}
                     <TableCell>
-                      {lead.status && (
-                        <Badge variant="outline" className={`text-[10px] leading-tight ${LEAD_STATUS_COLORS[lead.status] || ""}`}>
-                          {LEAD_STATUS_LABELS[lead.status] || lead.status}
-                        </Badge>
-                      )}
+                      <div className="flex flex-col items-start gap-1">
+                        <StatutLead lead={lead} className="text-[10px]" />
+                        {etapeRelance(lead) && (lead.assigned_to === user?.id || isCeo) && (
+                          <BoutonRelanceFaite lead={lead} onFait={fetchLeads} />
+                        )}
+                      </div>
                     </TableCell>
                     {/* Setter */}
                     <TableCell>

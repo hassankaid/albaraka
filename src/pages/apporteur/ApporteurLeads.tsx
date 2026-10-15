@@ -16,13 +16,16 @@ import LeadScoringPanel from "@/components/leads/LeadScoringPanel";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import { LEAD_STATUS_LABELS, LEAD_STATUS_COLORS } from "@/lib/leadConfig";
+import { LEAD_STATUS_LABELS } from "@/lib/leadConfig";
+import { BoutonRelanceFaite, StatutLead, SuiviRelances } from "@/components/leads/Relances";
+import { etapeRelance, STATUT_RELANCE } from "@/lib/relances";
 import { leadSourceConfig, getSourceLabel, getSourceBadgeClass } from "@/lib/leadConfig";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import { messageErreurLead } from "@/lib/leadDoublon";
 
-type LeadEnriched = Tables<"leads_enriched">;
+// relance_* : système de relances (15/10/2026), pas encore dans les types générés
+type LeadEnriched = Tables<"leads_enriched"> & { relance_etape?: number | null; relance_derniere_le?: string | null };
 
 const APPORTEUR_SOURCES = [
   { value: "apporteur_facebook", label: "Facebook" },
@@ -130,6 +133,10 @@ export default function ApporteurLeads() {
   //     l'apporteur → pas de risque de double saisie.
   // Sinon (lead assigné à quelqu'un d'autre), édition du statut bloquée pour
   // éviter d'écraser le travail du collab qui traite le lead.
+  // Valider une relance : mêmes droits que changer le statut (cf. RPC marquer_relance_faite)
+  const peutRelancer = (l: LeadEnriched) =>
+    l.assigned_to === profile?.id || (l.assigned_to === null && l.apporteur_id === profile?.id);
+
   const canEditStatus = !!editLead && (
     editLead.assigned_to === profile?.id ||
     (editLead.assigned_to === null && editLead.apporteur_id === profile?.id)
@@ -504,11 +511,10 @@ export default function ApporteurLeads() {
                         : "—"}
                     </TableCell>
                     <TableCell>
-                      {lead.status && (
-                        <Badge variant="outline" className={`text-xs ${LEAD_STATUS_COLORS[lead.status] || ""}`}>
-                          {LEAD_STATUS_LABELS[lead.status] || lead.status}
-                        </Badge>
-                      )}
+                      <div className="flex flex-col items-start gap-1">
+                        <StatutLead lead={lead} className="text-xs" />
+                        {etapeRelance(lead) && peutRelancer(lead) && <BoutonRelanceFaite lead={lead} onFait={fetchLeads} />}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-0.5">
@@ -558,11 +564,7 @@ export default function ApporteurLeads() {
                       <p className="text-xs text-muted-foreground truncate">{lead.contact_phone}</p>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                      {lead.status && (
-                        <Badge variant="outline" className={`text-xs ${LEAD_STATUS_COLORS[lead.status] || ""}`}>
-                          {LEAD_STATUS_LABELS[lead.status] || lead.status}
-                        </Badge>
-                      )}
+                      <StatutLead lead={lead} className="text-xs" />
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setScoringLead(lead); }}
@@ -693,11 +695,7 @@ export default function ApporteurLeads() {
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                   <div className="flex items-center gap-1.5">
                     <span className="text-muted-foreground">Statut :</span>
-                    {editLead.status && (
-                      <Badge variant="outline" className={`text-xs ${LEAD_STATUS_COLORS[editLead.status] || ""}`}>
-                        {LEAD_STATUS_LABELS[editLead.status] || editLead.status}
-                      </Badge>
-                    )}
+                    <StatutLead lead={editLead} className="text-xs" />
                   </div>
                   {editLead.source && (
                     <div className="flex items-center gap-1.5">
@@ -758,6 +756,17 @@ export default function ApporteurLeads() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {editLead.status === STATUT_RELANCE && editStatus === STATUT_RELANCE && (
+                <SuiviRelances
+                  lead={editLead}
+                  modifiable={canEditStatus}
+                  onFait={() => {
+                    setEditLead(null);
+                    fetchLeads();
+                  }}
+                />
+              )}
 
               {/* Modification de source — uniquement pour les leads apportés
                   par l'apporteur lui-même. */}
