@@ -247,7 +247,7 @@ export default function Leads() {
     user?.role === "collaborateur" && user?.collaborateur_level === "intermediaire";
   const [tab, setTab] = useState<string>(isIntermediaire ? "mes_leads" : "a_affecter");
   const [statusFilter, setStatusFilter] = useState("all");
-  // Sous-filtre de « À relancer » : toutes les étapes, ou Relance 1, 2 ou 3
+  // Sous-filtre de « À relancer » : toutes les étapes, ou Relance 1 à 6 (4 à 6 = 2e passage)
   const [relanceFilter, setRelanceFilter] = useState("all");
   // Sous-onglet de « À affecter » : Ads (défaut) ou Organique. Sépare les
   // leads publicitaires des leads organiques pour ne plus mélanger les
@@ -668,7 +668,7 @@ export default function Leads() {
 
   // Nombre de leads à chaque étape de relance, pour le sous-filtre
   const nbParEtape = useMemo(() => {
-    const n: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
+    const n: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
     for (const l of leadsAvantEtape) {
       const e = etapeRelance(l);
       if (e) n[e] += 1;
@@ -995,14 +995,14 @@ export default function Leads() {
 
         {statusFilter === STATUT_RELANCE && (
           <Select value={relanceFilter} onValueChange={setRelanceFilter}>
-            <SelectTrigger className="w-[150px] h-7 text-xs bg-card" data-testid="filtre-etape-relance">
+            <SelectTrigger className="min-w-[150px] w-auto h-7 text-xs bg-card" data-testid="filtre-etape-relance">
               <SelectValue placeholder="Étape" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Étape : toutes ({nbParEtape[1] + nbParEtape[2] + nbParEtape[3]})</SelectItem>
+              <SelectItem value="all">Étape : toutes ({Object.values(nbParEtape).reduce((a, b) => a + b, 0)})</SelectItem>
               {Array.from({ length: RELANCES_MAX }, (_, i) => i + 1).map((e) => (
                 <SelectItem key={e} value={String(e)}>
-                  Relance {e} ({nbParEtape[e]})
+                  Relance {e}{e > 3 ? " · 2ᵉ passage" : ""} ({nbParEtape[e]})
                 </SelectItem>
               ))}
             </SelectContent>

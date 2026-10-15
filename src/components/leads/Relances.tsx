@@ -1,6 +1,6 @@
-// Système de relances (demande de Hassan, 15/10/2026) : badge « Relance 2/3 »,
-// bouton « Relance faite » (ligne du tableau) et bloc « Suivi des relances »
-// (fiche du lead). La logique est dans lib/relances.ts.
+// Système de relances (demande de Hassan, 15/10/2026) : badge « Relance 2/3 »
+// (ou « Relance 4/6 · 2ᵉ passage »), bouton « Relance faite » (ligne du tableau)
+// et bloc « Suivi des relances » (fiche du lead). La logique est dans lib/relances.ts.
 import { useState } from "react";
 import { Check, Loader2, Recycle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -23,10 +23,14 @@ import {
   derniereRelance,
   etapeFinale,
   etapeRelance,
+  finitEnPerdu,
   libelleBouton,
+  libelleEtape,
   marquerRelanceFaite,
   messageRelance,
-  RELANCES_MAX,
+  passageRelance,
+  RELANCES_PAR_PASSAGE,
+  totalRelances,
   type LeadRelance,
   type ResultatRelance,
 } from "@/lib/relances";
@@ -34,7 +38,7 @@ import {
 function Points({ etape }: { etape: number }) {
   return (
     <span className="inline-flex gap-0.5" aria-hidden>
-      {Array.from({ length: RELANCES_MAX }, (_, i) => (
+      {Array.from({ length: totalRelances(etape) }, (_, i) => (
         <span key={i} className={cn("h-1.5 w-1.5 rounded-full", i < etape ? "bg-yellow-300" : "bg-yellow-300/25")} />
       ))}
     </span>
@@ -57,38 +61,42 @@ export function StatutLead({ lead, className }: { lead: LeadRelance; className?:
       {badge}
       <span
         className="inline-flex items-center gap-1 text-[10px] text-yellow-300/90"
-        title={`Relance ${etape} sur ${RELANCES_MAX}${derniere ? ` · dernière ${derniere.replace("faite ", "")}` : ""}`}
+        title={`Relance ${etape} sur ${totalRelances(etape)}${derniere ? ` · dernière ${derniere.replace("faite ", "")}` : ""}`}
       >
-        <Points etape={etape} /> Relance {etape}/{RELANCES_MAX}
+        <Points etape={etape} /> {libelleEtape(etape)}
         {derniere && <span className="text-muted-foreground">· {derniere}</span>}
       </span>
     </span>
   );
 }
 
-/** Confirmation avant la dernière relance, qui recycle le lead. */
+/** Confirmation avant la dernière relance d'un passage : recyclage (Relance 3) ou « Perdu » (Relance 6). */
 function ConfirmerRecyclage({
   open,
   onOpenChange,
   onConfirmer,
+  etape,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   onConfirmer: () => void;
+  etape: number;
 }) {
+  const perdu = finitEnPerdu(etape);
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Dernière relance</AlertDialogTitle>
           <AlertDialogDescription>
-            C'est la 3ᵉ relance sans réponse : en la validant, ce lead quitte ta liste et part dans « À recycler », avec le
-            statut « Pas de réponse ».
+            {perdu
+              ? "C'est la 6ᵉ relance sans réponse : en la validant, ce lead passe en « Perdu ». Il a été relancé 6 fois au total et ne retournera pas dans « À recycler »."
+              : "C'est la 3ᵉ relance sans réponse : en la validant, ce lead quitte ta liste et part dans « À recycler », avec le statut « Pas de réponse »."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Annuler</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirmer}>Valider et recycler</AlertDialogAction>
+          <AlertDialogAction onClick={onConfirmer}>{perdu ? "Valider et classer en Perdu" : "Valider et recycler"}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -138,7 +146,7 @@ export function BoutonRelanceFaite({ lead, onFait }: { lead: LeadRelance; onFait
         {envoi ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
         {libelleBouton(etape)}
       </Button>
-      <ConfirmerRecyclage open={confirmer} onOpenChange={setConfirmer} onConfirmer={() => valider()} />
+      <ConfirmerRecyclage open={confirmer} onOpenChange={setConfirmer} onConfirmer={() => valider()} etape={etape} />
     </>
   );
 }
@@ -158,14 +166,18 @@ export function SuiviRelances({
   const [confirmer, setConfirmer] = useState(false);
   if (!etape) return null;
   const derniere = derniereRelance(lead.relance_derniere_le);
+  const passage = passageRelance(etape);
+  const premiere = (passage - 1) * RELANCES_PAR_PASSAGE + 1;
   return (
     <div className="space-y-3 rounded-lg border border-yellow-500/30 bg-yellow-500/[0.05] p-3" data-testid="suivi-relances">
       <div className="flex items-center justify-between gap-2">
-        <h4 className="text-sm font-semibold text-foreground">Suivi des relances</h4>
+        <h4 className="text-sm font-semibold text-foreground">
+          Suivi des relances{passage === 2 && <span className="font-normal text-muted-foreground"> · 2ᵉ passage</span>}
+        </h4>
         {derniere && <span className="text-xs text-muted-foreground">Dernière relance {derniere.replace("faite ", "")}</span>}
       </div>
       <ol className="grid grid-cols-3 gap-2">
-        {Array.from({ length: RELANCES_MAX }, (_, i) => i + 1).map((n) => {
+        {Array.from({ length: RELANCES_PAR_PASSAGE }, (_, i) => premiere + i).map((n) => {
           const fait = n < etape;
           const courant = n === etape;
           return (
@@ -188,6 +200,11 @@ export function SuiviRelances({
           );
         })}
       </ol>
+      {passage === 2 && (
+        <p className="text-[11px] text-muted-foreground">
+          Ce lead a déjà eu 3 relances sans réponse lors d'un 1ᵉʳ passage.
+        </p>
+      )}
       {modifiable ? (
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input
@@ -210,11 +227,13 @@ export function SuiviRelances({
       ) : null}
       <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
         <Recycle className="mt-0.5 h-3 w-3 shrink-0" />
-        {etapeFinale(etape)
-          ? "Dernière relance : sans réponse, le lead partira dans « À recycler »."
-          : "Le prospect a répondu ? Change simplement son statut : le suivi des relances s'arrête."}
+        {finitEnPerdu(etape)
+          ? "Dernière relance : sans réponse, le lead passera en « Perdu » (6 relances au total)."
+          : etapeFinale(etape)
+            ? "Dernière relance : sans réponse, le lead partira dans « À recycler »."
+            : "Le prospect a répondu ? Change simplement son statut : le suivi des relances s'arrête."}
       </p>
-      <ConfirmerRecyclage open={confirmer} onOpenChange={setConfirmer} onConfirmer={() => valider(note)} />
+      <ConfirmerRecyclage open={confirmer} onOpenChange={setConfirmer} onConfirmer={() => valider(note)} etape={etape} />
     </div>
   );
 }

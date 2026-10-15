@@ -302,7 +302,7 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
           </Select>
           {lead.status !== STATUT_RELANCE && status === STATUT_RELANCE && (
             <p className="text-xs text-muted-foreground">
-              Le lead démarre le suivi des relances à la Relance 1 (3 relances, puis recyclage s'il ne répond pas).
+              Le lead démarre le suivi des relances : Relance 1 à 3 puis recyclage s'il ne répond pas. S'il a déjà été recyclé sans réponse, il démarre à la Relance 4 et passe en « Perdu » après la 6ᵉ.
             </p>
           )}
         </div>
