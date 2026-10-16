@@ -432,8 +432,14 @@ def _images_morceau(args):
 
 def nombre_images(chemin):
     out = P.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-count_packets",
-                 "-show_entries", "stream=nb_read_packets", "-of", "csv=p=0", chemin])
-    return int(out.strip().splitlines()[0])
+                 "-show_entries", "stream=nb_read_packets", "-of", "default=nw=1:nk=1", chemin])
+    # Vidéo filmée en portrait sur iPhone (rotation enregistrée) : ffprobe ajoute
+    # les données annexes à la ligne (« 404, » en CSV, 16/10/2026). On garde le
+    # premier nombre.
+    m = re.search(r"\d+", out)
+    if not m:
+        raise RuntimeError(f"nombre d'images illisible : {out.strip()[:80]!r}")
+    return int(m.group())
 
 
 def principal(boites):
