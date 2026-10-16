@@ -8,7 +8,7 @@
  * modèle de Sidali, avec les textes déjà placés.
  */
 import { assembler, enMinuscule, lignes, ligneRemplie, liste, texte, type AutreDocument, type DefinitionOutil, type Profil } from "./modele";
-import { cible, delai, etapesMethode, grandeIdee, nomMethode, phraseMecanisme, problemesAvatar, promesseSpecifique, resultat } from "./partage";
+import { cible, delai, etapesMethode, grandeIdee, motsAvatar, nomMethode, phraseMecanisme, problemesAvatar, promesseSpecifique, resultat } from "./partage";
 import { remplirXml, transformerModele, TYPE_PPTX, type Valeurs } from "./modeles";
 
 const sansClients = (p: Profil) => liste(p, "preuves.aucunClient").length > 0;
@@ -42,13 +42,17 @@ export function titreAssemble(p: Profil): string {
   return "";
 }
 
+/** « les mamans salariées » → « Si vous faites partie des mamans salariées » ; sinon « Si vous êtes … ». */
+export function siVousEtes(c: string): string {
+  const m = c.match(/^(les|des)\s+(.*)$/i);
+  return m ? `Si vous faites partie des ${m[2]}` : `Si vous êtes ${c}`;
+}
+
 const pre = {
-  p1: (p: Profil) => (cible(p) || problemesAvatar(p)[0]
-    ? `Si vous êtes ${cible(p) || "[avatar précis]"} et que ${enMinuscule(problemesAvatar(p)[0] ?? "") || "[problème ou désir]"}…`
-    : ""),
+  p1: (p: Profil) => (cible(p) ? `${siVousEtes(cible(p))} et que vous vous dites ${motsAvatar(p)[0] ? `« ${motsAvatar(p)[0].replace(/^[«"\s]+|[»"\s]+$/g, "")} »` : "[ses mots, son problème]"}…` : ""),
   p2: (p: Profil) => (resultat(p) ? `Je vous aide personnellement à ${resultat(p)} en ${delai(p) || "[délai]"} grâce à ${methode(p) || "[méthode]"}.` : ""),
   p7: (p: Profil) => (resultat(p)
-    ? `En résumé : ${promesseSpecifique(p)} En ${delai(p) || "[délai]"}, on règle ensemble ${problemesAvatar(p).map(enMinuscule).join(", ") || "[vos 3 problèmes]"}. Et vous êtes protégé par ma garantie : ${garantieTexte(p) || "[garantie]"} Cliquez sur le bouton sous la vidéo pour réserver votre appel.`
+    ? `En résumé : ${promesseSpecifique(p)} En ${delai(p) || "[délai]"}, on s'attaque ensemble à ce qui vous bloque aujourd'hui. Et vous êtes protégé par ma garantie : ${garantieTexte(p) || "[garantie]"} Cliquez sur le bouton sous la vidéo pour réserver votre appel.`
     : ""),
   p11: (p: Profil) => (resultat(p)
     ? `Vous avez deux options. Option 1 : continuer comme aujourd'hui${texte(p, "avatar.ressenti") ? `, ${enMinuscule(texte(p, "avatar.ressenti"))}` : ""}. Option 2 : réserver votre appel gratuit, et repartir au minimum avec un plan clair pour ${resultat(p)}. Cliquez sur le bouton sous la vidéo.`

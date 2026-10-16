@@ -146,3 +146,11 @@ describe("outil 11 — mid et low-ticket", () => {
     expect(lignes(eleve, "methode.etapes")).toHaveLength(2);
   });
 });
+
+describe("outil 4 — l'appel de l'avatar", () => {
+  it("s'accorde avec une cible au pluriel et reprend ses mots", async () => {
+    const { siVousEtes } = await import("./outil4VslTunnel");
+    expect(siVousEtes("les mamans salariées")).toBe("Si vous faites partie des mamans salariées");
+    expect(siVousEtes("une maman salariée")).toBe("Si vous êtes une maman salariée");
+  });
+});
