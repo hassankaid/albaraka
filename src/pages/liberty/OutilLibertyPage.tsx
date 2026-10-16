@@ -146,7 +146,7 @@ export default function OutilLibertyPage() {
         </div>
       </nav>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
         <section className="space-y-5 rounded-xl border border-border bg-card p-4 md:p-5">
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">Écran {i + 1} / {n}</p>
@@ -167,7 +167,7 @@ export default function OutilLibertyPage() {
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-2 border-t border-border pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4">
             <Button variant="outline" size="sm" className="gap-1.5" disabled={i === 0} onClick={() => setEcran(i - 1)}>
               <ArrowLeft className="h-4 w-4" /> Précédent
             </Button>
