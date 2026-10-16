@@ -87,19 +87,7 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
         setTravail(tr);
         const deja = reglages.coupes.plages;
         setPlages(normaliser(deja?.length ? deja : tr.coupes, tr.meta.duration));
-        const lien = await lienStudio(tr.apercu_video ? `${dossier}/travail/apercu.mp4` : montage.source_path!);
-        setVideo(lien);
-        // le dessin du son de la loupe, à partir de la vidéo légère (la source peut faire 1 Go)
-        if (tr.apercu_video) {
-          const Contexte = window.OfflineAudioContext ?? (window as unknown as { webkitOfflineAudioContext?: typeof OfflineAudioContext }).webkitOfflineAudioContext;
-          if (Contexte) {
-            fetch(lien)
-              .then((r) => r.arrayBuffer())
-              .then((b) => new Contexte(1, 1, 16000).decodeAudioData(b))
-              .then((audio) => actif && setSon(mesurerSon(audio.getChannelData(0), audio.sampleRate)))
-              .catch(() => undefined);
-          }
-        }
+        setVideo(await lienStudio(tr.apercu_video ? `${dossier}/travail/apercu.mp4` : montage.source_path!));
       } catch {
         if (actif) setErreur("La préparation de ta vidéo n'est pas encore disponible. Réessaie dans un instant.");
       }
@@ -108,6 +96,23 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
       actif = false;
     };
   }, [open, travail, dossier, montage.source_path, reglages.coupes.plages]);
+
+  // le dessin du son de la loupe, à partir de la vidéo légère (la source peut faire 1 Go)
+  useEffect(() => {
+    if (!open || son || !video || !travail?.apercu_video) return;
+    const Contexte =
+      window.OfflineAudioContext ?? (window as unknown as { webkitOfflineAudioContext?: typeof OfflineAudioContext }).webkitOfflineAudioContext;
+    if (!Contexte) return;
+    let actif = true;
+    fetch(video)
+      .then((r) => r.arrayBuffer())
+      .then((b) => new Contexte(1, 1, 16000).decodeAudioData(b))
+      .then((audio) => actif && setSon(mesurerSon(audio.getChannelData(0), audio.sampleRate)))
+      .catch(() => undefined);
+    return () => {
+      actif = false;
+    };
+  }, [open, son, video, travail?.apercu_video]);
 
   // à la réouverture, on repart des réglages en cours
   useEffect(() => {
