@@ -49,7 +49,7 @@ export function siVousEtes(c: string): string {
 }
 
 const pre = {
-  p1: (p: Profil) => (cible(p) ? `${siVousEtes(cible(p))} et que vous vous dites ${motsAvatar(p)[0] ? `« ${motsAvatar(p)[0].replace(/^[«"\s]+|[»"\s]+$/g, "")} »` : "[ses mots, son problème]"}…` : ""),
+  p1: (p: Profil) => (cible(p) ? `${siVousEtes(cible(p))} et que vous vous dites ${motsAvatar(p)[0] ? `«\u00a0${motsAvatar(p)[0].replace(/^[«"\s]+|[»"\s]+$/g, "")}\u00a0»` : "[ses mots, son problème]"}…` : ""),
   p2: (p: Profil) => (resultat(p) ? `Je vous aide personnellement à ${resultat(p)} en ${delai(p) || "[délai]"} grâce à ${methode(p) || "[méthode]"}.` : ""),
   p7: (p: Profil) => (resultat(p)
     ? `En résumé : ${promesseSpecifique(p)} En ${delai(p) || "[délai]"}, on s'attaque ensemble à ce qui vous bloque aujourd'hui. Et vous êtes protégé par ma garantie : ${garantieTexte(p) || "[garantie]"} Cliquez sur le bouton sous la vidéo pour réserver votre appel.`
