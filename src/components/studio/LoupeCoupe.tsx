@@ -222,11 +222,9 @@ function Panneau({ titre, bord, position, plages, mots, enveloppe, t, actif, onA
         <p className="text-sm font-medium text-foreground">{titre}</p>
         <p className="font-mono text-xs tabular-nums text-muted-foreground">{minutagePrecis(position)}</p>
       </div>
-      <svg
-        ref={svg}
-        viewBox="0 0 1000 150"
-        preserveAspectRatio="none"
-        className="h-24 w-full touch-none select-none rounded-md bg-muted/30 sm:h-28"
+      {/* le dessin s'étire en largeur : les textes et la poignée sont posés par-dessus, en HTML, pour rester nets */}
+      <div
+        className="relative touch-none select-none"
         onPointerDown={(e) => {
           (e.target as Element).setPointerCapture?.(e.pointerId);
           setTire(true);
@@ -239,51 +237,57 @@ function Panneau({ titre, bord, position, plages, mots, enveloppe, t, actif, onA
         aria-label={titre}
         aria-valuenow={position}
       >
-        {coupes.map(([a, b]) => (
-          <rect key={a} x={x(a)} y={0} width={Math.max(0, x(b) - x(a))} height={150} className="fill-red-500/15" />
-        ))}
-        {graduations.map((s) => (
-          <g key={s.toFixed(2)}>
-            <line x1={x(s)} x2={x(s)} y1={0} y2={Math.round(s * 10) % 5 === 0 ? 10 : 5} className="stroke-muted-foreground/60" strokeWidth={2} />
-            {Math.round(s * 10) % 5 === 0 && (
-              <text x={x(s) + 4} y={11} className="fill-muted-foreground text-[11px]">
-                {s.toFixed(1).replace(".", ",")}
-              </text>
-            )}
-          </g>
-        ))}
-        {barres.map(({ s, h, garde }) => (
-          <rect
-            key={s.toFixed(3)}
-            x={x(s)}
-            y={78 - h * 56}
-            width={1000 / (FENETRE / enveloppe!.pas) - 1}
-            height={h * 112}
-            className={garde ? "fill-primary" : "fill-red-400/60"}
-          />
-        ))}
+        <svg ref={svg} viewBox="0 0 1000 150" preserveAspectRatio="none" className="h-24 w-full rounded-md bg-muted/30 sm:h-28">
+          {coupes.map(([a, b]) => (
+            <rect key={a} x={x(a)} y={0} width={Math.max(0, x(b) - x(a))} height={150} className="fill-red-500/15" />
+          ))}
+          {graduations.map((g) => (
+            <line key={g.toFixed(2)} x1={x(g)} x2={x(g)} y1={0} y2={Math.round(g * 10) % 5 === 0 ? 14 : 7} className="stroke-muted-foreground/60" strokeWidth={2} />
+          ))}
+          {barres.map(({ s: b, h, garde }) => (
+            <rect
+              key={b.toFixed(3)}
+              x={x(b)}
+              y={80 - h * 62}
+              width={1000 / (FENETRE / enveloppe!.pas) - 1}
+              height={h * 124}
+              className={garde ? "fill-primary" : "fill-red-400/60"}
+            />
+          ))}
+          {t >= debut && t <= fin && <line x1={x(t)} x2={x(t)} y1={0} y2={150} className="stroke-white/70" strokeWidth={2} />}
+          <line x1={x(position)} x2={x(position)} y1={0} y2={150} className="stroke-white" strokeWidth={5} />
+        </svg>
+        {graduations
+          .filter((g) => Math.round(g * 10) % 5 === 0)
+          .map((g) => (
+            <span key={g.toFixed(2)} className="pointer-events-none absolute top-0.5 text-[10px] text-muted-foreground" style={{ left: `calc(${x(g) / 10}% + 3px)` }}>
+              {g.toFixed(1).replace(".", ",")}
+            </span>
+          ))}
+        <span
+          className="pointer-events-none absolute top-3 h-6 w-3 rounded-sm bg-white shadow"
+          style={{ left: `calc(${x(position) / 10}% - ${bord === "fin" ? 12 : 0}px)` }}
+        />
         {!enveloppe && (
-          <text x={500} y={80} textAnchor="middle" className="fill-muted-foreground text-[13px]">
+          <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
             Dessin du son indisponible pour cette vidéo
-          </text>
+          </p>
         )}
+      </div>
+      <div className="relative h-4 overflow-hidden">
         {motsVus.map((m) => {
           const garde = plages.some(([a, b]) => (m.start + m.end) / 2 >= a && (m.start + m.end) / 2 <= b);
           return (
-            <text
+            <span
               key={`${m.start}-${m.text}`}
-              x={x(Math.max(m.start, debut)) + 2}
-              y={142}
-              className={cn("text-[13px]", garde ? "fill-foreground" : "fill-red-300 line-through")}
+              className={cn("absolute top-0 whitespace-nowrap text-[11px]", garde ? "text-foreground" : "text-red-300 line-through")}
+              style={{ left: `${Math.max(0, x(m.start)) / 10}%` }}
             >
               {m.text}
-            </text>
+            </span>
           );
         })}
-        {t >= debut && t <= fin && <line x1={x(t)} x2={x(t)} y1={0} y2={150} className="stroke-white/70" strokeWidth={2} />}
-        <line x1={x(position)} x2={x(position)} y1={0} y2={150} className="stroke-white" strokeWidth={5} />
-        <rect x={x(position) - (bord === "fin" ? 14 : 0)} y={14} width={14} height={24} rx={3} className="fill-white" />
-      </svg>
+      </div>
       <div className="flex flex-wrap items-center gap-1.5">
         <Button variant="outline" size="sm" className="h-8 px-2.5" onClick={() => onDecaler(-0.1)} aria-label="Reculer de 0,1 s">
           −0,1 s
