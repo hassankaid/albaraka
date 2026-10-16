@@ -68,3 +68,12 @@ describe("outil 1 — document", () => {
     expect(nomFichier(outil1NicheAvatar, "Éléonore D'Arc")).toBe("Liberty_Etape2_Niche_avatar_Eleonore_D_Arc");
   });
 });
+
+describe("saisie", () => {
+  it("garde les espaces tapés (le document, lui, les retire)", async () => {
+    const { brut } = await import("./modele");
+    expect(brut({ a: "Mamans " }, "a")).toBe("Mamans ");
+    expect(texte({ a: "Mamans " }, "a")).toBe("Mamans");
+    expect(brut({ a: ["x"] }, "a")).toBe("");
+  });
+});

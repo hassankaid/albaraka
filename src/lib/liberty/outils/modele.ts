@@ -97,6 +97,12 @@ export function texte(p: Profil, cle: string): string {
   return (v ?? "").trim();
 }
 
+/** La valeur telle que tapée (sans retirer les espaces) : pour les champs de saisie. */
+export function brut(p: Profil, cle: string): string {
+  const v = p[cle];
+  return typeof v === "string" ? v : "";
+}
+
 export function liste(p: Profil, cle: string): string[] {
   const v = p[cle];
   if (!Array.isArray(v)) return [];

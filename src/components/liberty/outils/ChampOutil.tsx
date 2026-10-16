@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { liste, lignes, texte, type Champ, type Colonne, type Ligne, type Profil, type Valeur } from "@/lib/liberty/outils";
+import { brut, liste, lignes, texte, type Champ, type Colonne, type Ligne, type Profil, type Valeur } from "@/lib/liberty/outils";
 
 interface Props {
   champ: Champ;
@@ -140,11 +140,11 @@ export function ChampOutil({ champ, profil, onChange }: Props) {
   let saisie: React.ReactNode;
   switch (champ.type) {
     case "court":
-      saisie = <Input id={id} value={texte(profil, champ.cle)} placeholder={champ.exemple ? `Ex. : ${champ.exemple}` : undefined}
+      saisie = <Input id={id} value={brut(profil, champ.cle)} placeholder={champ.exemple ? `Ex. : ${champ.exemple}` : undefined}
         onChange={(e) => onChange(champ.cle, e.target.value)} className="bg-background text-sm" />;
       break;
     case "long":
-      saisie = <TexteLong id={id} valeur={texte(profil, champ.cle)} exemple={champ.exemple} onChange={(v) => onChange(champ.cle, v)} />;
+      saisie = <TexteLong id={id} valeur={brut(profil, champ.cle)} exemple={champ.exemple} onChange={(v) => onChange(champ.cle, v)} />;
       break;
     case "choix": {
       const v = texte(profil, champ.cle);
