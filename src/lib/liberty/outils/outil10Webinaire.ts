@@ -76,8 +76,16 @@ export function valeursWebinaire(p: Profil, eleve: string): Valeurs {
   v["N"] ||= nombreEtapes(p) ? String(nombreEtapes(p)) : "";
   v["VOTRE PRÉNOM NOM"] ||= eleve;
   v["CONTENU PASS L4"] = garantie(p);
+  v[NOMBRE_FORMULES] = texte(p, "webinaire.nombre_formules");
   return v;
 }
+
+/**
+ * Slide 86 : « «N» formules pour rejoindre la méthode ». Le modèle y réutilise «N»
+ * (le nombre d'étapes ailleurs) : ici, c'est le nombre de formules, saisi à part.
+ */
+const NOMBRE_FORMULES = "NOMBRE DE FORMULES";
+const SLIDE_FORMULES = 86;
 
 /** Les slides des étapes 7 à 9 (slides 70 à 72), retirées si l'étape reste vide. */
 export function slidesARetirer(p: Profil): number[] {
@@ -180,6 +188,13 @@ const ecrans: Ecran[] = PARTIES_WEBINAIRE.map((titre, k) => ({
         }]
       : []),
     ...CHAMPS_WEBINAIRE.filter((c) => c[2] === k).map(champ),
+    ...(k === 7
+      ? [{
+          cle: "webinaire.nombre_formules", type: "nombre" as const, libelle: "Nombre de formules · slide 86",
+          aide: "Sur la slide : « […] formules pour rejoindre la méthode ». Sur cette slide, le « N » du modèle compte vos formules, pas vos étapes.",
+          exemple: "2",
+        }]
+      : []),
   ],
   apercu: k === PARTIES_WEBINAIRE.length - 1,
 }));
@@ -195,7 +210,8 @@ const AUTRES: AutreDocument[] = [{
     const zip = await JSZip.loadAsync(await modele("webinaire"), { base64: true });
     const valeurs = valeursWebinaire(p, eleve);
     for (const nom of Object.keys(zip.files).filter((n) => /^ppt\/slides\/slide\d+\.xml$/.test(n))) {
-      zip.file(nom, remplirSlideWebinaire(await zip.file(nom)!.async("string"), valeurs));
+      const ici = nom === `ppt/slides/slide${SLIDE_FORMULES}.xml` ? { ...valeurs, N: valeurs[NOMBRE_FORMULES] } : valeurs;
+      zip.file(nom, remplirSlideWebinaire(await zip.file(nom)!.async("string"), ici));
     }
     await retirerSlidesPptx(zip, slidesARetirer(p));
     return zip.generateAsync({ type: "blob", mimeType: TYPE_PPTX, compression: "DEFLATE" });
@@ -220,7 +236,10 @@ export const outil10Webinaire: DefinitionOutil = {
       blocs: [{
         t: "tableau",
         colonnes: ["Élément", "Votre texte", "Slides"],
-        lignes: CHAMPS_WEBINAIRE.filter((c) => c[2] === k).map(([nom, , , ou]) => [lisible(nom), v[nom] ?? "", ou.replace(/^slides? /, "")]),
+        lignes: [
+          ...CHAMPS_WEBINAIRE.filter((c) => c[2] === k).map(([nom, , , ou]) => [lisible(nom), v[nom] ?? "", ou.replace(/^slides? /, "")]),
+          ...(k === 7 ? [["Nombre de formules", v[NOMBRE_FORMULES] ?? "", String(SLIDE_FORMULES)]] : []),
+        ],
       }],
     }));
     return { titre: "Mon template webinaire : vos textes", sections };
