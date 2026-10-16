@@ -63,3 +63,19 @@ describe("outil 3 — fiche offre", () => {
     expect(remplirContratXml(xml, { "promesse.specifiqueTexte": "J'aide les mamans à perdre 8 kg en 90 jours." })).toContain(">J&apos;aide les mamans à perdre 8 kg en 90 jours<");
   });
 });
+
+describe("outil 4 — VSL", () => {
+  it("place les témoignages 1 à 3 sur la slide 7, les suivants sur la slide 13, et la méthode sur la slide 3", async () => {
+    const { valeursSlide, titreAssemble, FORMULES_TITRE } = await import("./outil4VslTunnel");
+    const p = {
+      "methode.nom": "T12S", "promesse.resultat": "prendre 7 kg", "promesse.delaiNombre": "90", "promesse.delaiUnite": "jours",
+      "preuves.temoignages": ["A", "B", "C", "D"].map((prenom) => ({ prenom })),
+    };
+    expect(valeursSlide(p, 7, "Yasmine Benali")["PRÉNOM CLIENT 3"]).toBe("C");
+    expect(valeursSlide(p, 13, "Yasmine Benali")["PRÉNOM CLIENT 1"]).toBe("D");
+    expect(valeursSlide(p, 3, "Yasmine Benali")["NOM DE LA MÉTHODE"]).toBe("la méthode T12S");
+    expect(valeursSlide(p, 12, "Yasmine Benali")["NOM DE LA MÉTHODE"]).toBe("T12S");
+    expect(valeursSlide(p, 9, "Yasmine Benali")["VOTRE PRÉNOM"]).toBe("Yasmine");
+    expect(titreAssemble({ ...p, "titre.formule": FORMULES_TITRE[0] })).toBe("Comment prendre 7 kg en 90 jours, même si [objection principale]");
+  });
+});
