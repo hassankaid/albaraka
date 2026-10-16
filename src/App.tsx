@@ -57,6 +57,7 @@ import ApporteurOnboarding from "./pages/apporteur/ApporteurOnboarding";
 import Scripts from "./pages/working/Scripts";
 import Ressources from "./pages/training/Ressources";
 import ScriptAppelPage from "./pages/training/script-appel/ScriptAppelPage";
+import OutilLibertyPage from "./pages/liberty/OutilLibertyPage";
 import Plan90Page from "./pages/working/plan90/Plan90Page";
 import MyActivity from "./pages/working/MyActivity";
 import AgentIA from "./pages/working/AgentIA";
@@ -431,6 +432,8 @@ const FullApp = () => (
                   {/* Script Forge retiré (Sidali, 13/10/2026) : doublon de « Construire mon script d'appel ». */}
                   <Route path="/training/script-forge" element={<Navigate to="/training/ressources" replace />} />
                   <Route path="/training/script-appel" element={<PassGuard allowCollab><ScriptAppelPage /></PassGuard>} />
+                  {/* Outils du Parcours Liberty (cahier des charges de Sidali du 15/10/2026) */}
+                  <Route path="/training/parcours-liberty/outil/:code" element={<PassGuard><OutilLibertyPage /></PassGuard>} />
                   <Route path="/working/plan-90" element={<PassGuard allowCollab><Plan90Page /></PassGuard>} />
                   <Route path="/training/role-play" element={<PassGuard allowCollab><RolePlay /></PassGuard>} />
                   <Route path="/training/quiz" element={<PassGuard allowCollab><QuizList /></PassGuard>} />

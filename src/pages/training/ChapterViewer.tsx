@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useParams, useNavigate, Link, useSearchParams, Navigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { outilLiberty } from "@/lib/liberty/outils";
 import { useAuth } from "@/hooks/useAuth";
 import { useFormationEnrollments } from "@/hooks/useFormationEnrollments";
 import { Button } from "@/components/ui/button";
@@ -703,8 +704,31 @@ export default function ChapterViewer() {
             </div>
           )}
 
-          {/* Parcours Liberty (16/10/2026) : la page d'un des 11 outils, construits phase par phase */}
-          {(chapitre as { outil?: string | null }).outil?.startsWith("liberty_") && (
+          {/* Parcours Liberty (16/10/2026) : la page d'un des 11 outils, ouverte s'il est prêt */}
+          {outilLiberty((chapitre as { outil?: string | null }).outil) && (
+            <div className="rounded-xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/5 to-transparent p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" data-testid="outil-liberty">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">Place à la pratique</p>
+                  <p className="text-sm text-foreground">
+                    Remplissez l'outil directement sur la plateforme : vos réponses sont enregistrées au fur et à mesure, puis vous téléchargez votre document en PDF ou en Word.
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => navigate(`/training/parcours-liberty/outil/${(chapitre as { outil?: string }).outil}`)}
+                className="shrink-0 gap-2 bg-amber-500 text-white hover:bg-amber-600"
+              >
+                Ouvrir l'outil
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          {(chapitre as { outil?: string | null }).outil?.startsWith("liberty_") && !outilLiberty((chapitre as { outil?: string | null }).outil) && (
             <div className="rounded-xl border-2 border-dashed border-amber-500/40 bg-amber-500/5 p-4 flex items-start gap-3" data-testid="outil-liberty-en-preparation">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600">
                 <Sparkles className="h-4 w-4" />
