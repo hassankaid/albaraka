@@ -34,7 +34,7 @@ const EXEMPLES: Record<string, Partial<Record<string, string>>> = {
 
 const sansClient = (p: Profil) => liste(p, "histoires.h2.aucunClient").length > 0;
 
-function ecranHistoire(k: string, titre: string, n: number): Ecran {
+function ecranHistoire(k: string, titre: string): Ecran {
   const particularites: Record<string, { intro: string; champs: Champ[] }> = {
     h1: {
       intro: "Pourquoi vous faites ce que vous faites. C'est votre différence la plus forte : personne n'a vécu exactement votre parcours.",
@@ -55,7 +55,7 @@ function ecranHistoire(k: string, titre: string, n: number): Ecran {
   };
   const ex = EXEMPLES[k] ?? {};
   return {
-    titre: `${n}. ${titre}`,
+    titre,
     intro: particularites[k].intro,
     apercu: k === "h4",
     champs: [
@@ -85,7 +85,7 @@ export const outil5Histoires: DefinitionOutil = {
   nom: "Mes 4 histoires",
   objectif: "Rédiger vos 4 histoires de vente, avec la même structure.",
   fichier: "Liberty_Etape8_Mes_4_histoires",
-  ecrans: HISTOIRES.map((h, i) => ecranHistoire(h.k, h.titre, i + 1)),
+  ecrans: HISTOIRES.map((h) => ecranHistoire(h.k, h.titre)),
   document: (p: Profil) => ({
     titre: "Mes 4 histoires",
     sections: HISTOIRES.map(({ k, titre }, i): SectionDoc => ({

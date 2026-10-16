@@ -86,9 +86,12 @@ function Bloc({ b }: { b: BlocDoc }) {
     case "texte":
       return <Text style={s.champ}>{b.texte}</Text>;
     case "saut":
-      return <View break />;
+      return null;
   }
 }
+
+/** Un saut de page s'applique à ce qui suit : @react-pdf ignore un <View break /> vide. */
+const apresSaut = (blocs: BlocDoc[], k: number) => k > 0 && blocs[k - 1].t === "saut";
 
 export function DocumentPdf({ document: d, entete: e }: { document: DocumentOutil; entete: Entete }) {
   return (
@@ -98,9 +101,11 @@ export function DocumentPdf({ document: d, entete: e }: { document: DocumentOuti
         <Text style={s.titre}>{d.titre}</Text>
         <Text style={s.sousTitre}>Outil {e.def.numero} — {e.def.nom}  ·  {e.eleve || "Élève"}  ·  {e.date}</Text>
         {d.sections.map((sec, i) => (
-          <View key={i}>
+          <View key={i} break={i > 0 && d.sections[i - 1].blocs[d.sections[i - 1].blocs.length - 1]?.t === "saut"}>
             <Text style={s.h2} minPresenceAhead={40}>{sec.titre.toUpperCase()}</Text>
-            {sec.blocs.map((b, k) => <Bloc key={k} b={b} />)}
+            {sec.blocs.map((b, k) =>
+              apresSaut(sec.blocs, k) ? <View key={k} break><Bloc b={b} /></View> : <Bloc key={k} b={b} />,
+            )}
           </View>
         ))}
         <Text style={s.rappel}>{RAPPEL_VALIDATION}</Text>
