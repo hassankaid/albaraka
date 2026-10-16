@@ -77,3 +77,34 @@ describe("saisie", () => {
     expect(brut({ a: ["x"] }, "a")).toBe("");
   });
 });
+
+describe("outil 2 — promesse & méthode", () => {
+  it("assemble la promesse en direct, avec des repères pour ce qui manque", async () => {
+    const { promesseAssemblee, promesseSpecifique, delaiEnJours } = await import("./partage");
+    const p: Profil = { "sousNiche.phrase": "Hommes minces de plus de 25 ans.", "promesse.resultat": "prendre 7 kg de muscle", "promesse.delaiNombre": "12", "promesse.delaiUnite": "semaines" };
+    expect(promesseAssemblee(p)).toBe("J'aide hommes minces de plus de 25 ans à prendre 7 kg de muscle en 12 semaines grâce à [nom de votre méthode].");
+    expect(delaiEnJours(p)).toBe(84);
+    expect(promesseSpecifique({ ...p, "promesse.specifiqueTexte": "Ma version." })).toBe("Ma version.");
+    expect(promesseSpecifique({})).toBe("");
+  });
+  it("alerte sous 90 jours, sans bloquer", async () => {
+    const { outil2PromesseMethode } = await import("./outil2PromesseMethode");
+    const regle = outil2PromesseMethode.ecrans[0].champs.find((c) => c.cle === "info.regle90");
+    expect(regle?.type === "info" && regle.rendu({ "promesse.delaiNombre": "30", "promesse.delaiUnite": "jours" })?.ton).toBe("alerte");
+    expect(regle?.type === "info" && regle.rendu({ "promesse.delaiNombre": "3", "promesse.delaiUnite": "mois" })).toBeNull();
+  });
+  it("propose les solutions de l'écran 2 dans la méthode, et les range dans le document", async () => {
+    const { outil2PromesseMethode } = await import("./outil2PromesseMethode");
+    const { options } = await import("./modele");
+    const p: Profil = {
+      "solutions.liste": [{ probleme: "Pas de programme", solution: "Programme adapté" }, { probleme: "Ne cuisine pas", solution: "Recettes en 10 min" }],
+      "methode.etapes": [{ nom: "Phase 1", solutions: "Programme adapté ; Recettes en 10 min" }],
+    };
+    const etapes = outil2PromesseMethode.ecrans[2].champs[0];
+    const col = etapes.type === "blocs" ? etapes.colonnes.find((c) => c.cle === "solutions") : undefined;
+    expect(col && col.type === "multi" ? options(col.options, p) : []).toEqual(["Programme adapté", "Recettes en 10 min"]);
+    const d = outil2PromesseMethode.document(p);
+    expect(d.sections[1].titre).toBe("Problèmes → solutions (2)");
+    expect(JSON.stringify(d.sections[2])).toContain("Recettes en 10 min");
+  });
+});

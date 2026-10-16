@@ -14,11 +14,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPass } from "@/hooks/useUserPass";
 import { useLibertyProfil } from "@/hooks/useLibertyProfil";
-import { champRempli, outilLiberty } from "@/lib/liberty/outils";
+import { champRempli, champsVisibles, estSaisie, nomFichier, outilLiberty, texte, type AutreDocument } from "@/lib/liberty/outils";
 import { RAPPEL_VALIDATION } from "@/lib/liberty/outils/docx";
 import { ChampOutil } from "@/components/liberty/outils/ChampOutil";
 import { ApercuDocument } from "@/components/liberty/outils/ApercuDocument";
-import { telechargerDocument } from "@/components/liberty/outils/telecharger";
+import { declencher, telechargerDocument } from "@/components/liberty/outils/telecharger";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -50,7 +50,7 @@ export default function OutilLibertyPage() {
   const { profil, modifier, etat, chargement, reessayer } = useLibertyProfil();
   const [ecran, setEcran] = useState(() => (code ? lireEcran(code) : 0));
   const [apercu, setApercu] = useState(false);
-  const [envoi, setEnvoi] = useState<"pdf" | "docx" | null>(null);
+  const [envoi, setEnvoi] = useState<string | null>(null);
 
   // le chapitre de l'outil dans le parcours, pour le bouton « Retour »
   const { data: chapitre } = useQuery({
@@ -73,11 +73,38 @@ export default function OutilLibertyPage() {
   const document = useMemo(() => (def ? def.document(profil) : null), [def, profil]);
   const eleve = profile?.full_name?.trim() ?? "";
 
+  // Textes de départ : écrits une seule fois dans les champs vides de l'écran affiché
+  // (une clé « _prerempli.<champ> » retient que c'est fait, même si l'élève vide ensuite le champ).
+  useEffect(() => {
+    if (!def || chargement) return;
+    for (const c of def.ecrans[i]?.champs ?? []) {
+      if (!c.prerempli || c.lectureSeule || texte(profil, c.cle) || profil[`_prerempli.${c.cle}`]) continue;
+      const v = c.prerempli(profil).trim();
+      if (!v) continue;
+      modifier(c.cle, v);
+      modifier(`_prerempli.${c.cle}`, "oui");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [def, i, chargement]);
+
   if (!def) return <Navigate to="/training/parcours-liberty" replace />;
   if (!chargementPass && !isCeo && !hasLiberty) return <Navigate to="/training" replace />;
 
   const courant = def.ecrans[i];
   const retour = () => navigate(chapitre ? `/training/parcours-liberty/chapitre/${chapitre}` : "/training/parcours-liberty");
+
+  async function telechargerAutre(a: AutreDocument) {
+    if (!def) return;
+    setEnvoi(a.fichier);
+    try {
+      await reessayer();
+      declencher(await a.generer(profil, eleve), `${nomFichier({ ...def, fichier: a.fichier }, eleve)}.${a.format}`);
+    } catch {
+      toast.error("Le document n'a pas pu être généré. Réessayez dans un instant.");
+    } finally {
+      setEnvoi(null);
+    }
+  }
 
   async function telecharger(format: "pdf" | "docx") {
     if (!def || !document) return;
@@ -92,14 +119,24 @@ export default function OutilLibertyPage() {
     }
   }
 
+  const formats = def.formats ?? ["pdf", "docx"];
   const boutonsTelecharger = (
-    <div className="flex gap-2">
-      <Button variant="outline" size="sm" className="gap-1.5" disabled={!!envoi} onClick={() => telecharger("pdf")} data-testid="telecharger-pdf">
-        {envoi === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />} PDF
-      </Button>
-      <Button variant="outline" size="sm" className="gap-1.5" disabled={!!envoi} onClick={() => telecharger("docx")} data-testid="telecharger-word">
-        {envoi === "docx" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />} Word
-      </Button>
+    <div className="flex flex-wrap gap-2">
+      {formats.includes("pdf") && (
+        <Button variant="outline" size="sm" className="gap-1.5" disabled={!!envoi} onClick={() => telecharger("pdf")} data-testid="telecharger-pdf">
+          {envoi === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />} PDF
+        </Button>
+      )}
+      {formats.includes("docx") && (
+        <Button variant="outline" size="sm" className="gap-1.5" disabled={!!envoi} onClick={() => telecharger("docx")} data-testid="telecharger-word">
+          {envoi === "docx" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />} Word
+        </Button>
+      )}
+      {(def.autresDocuments ?? []).map((a) => (
+        <Button key={a.fichier} variant="outline" size="sm" className="gap-1.5" disabled={!!envoi} onClick={() => telechargerAutre(a)}>
+          {envoi === a.fichier ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />} {a.libelle}
+        </Button>
+      ))}
     </div>
   );
 
@@ -133,7 +170,7 @@ export default function OutilLibertyPage() {
         </div>
         <div className="flex flex-wrap gap-1.5">
           {def.ecrans.map((e, k) => {
-            const remplis = e.champs.filter((c) => champRempli(profil, c)).length;
+            const remplis = champsVisibles(e.champs, profil).filter((c) => estSaisie(c) && champRempli(profil, c)).length;
             return (
               <button key={e.titre} type="button" onClick={() => setEcran(k)}
                 className={cn("rounded-full border px-2.5 py-1 text-xs transition-colors",
@@ -157,7 +194,7 @@ export default function OutilLibertyPage() {
           {chargement ? (
             <div className="space-y-3"><Skeleton className="h-10" /><Skeleton className="h-24" /><Skeleton className="h-10" /></div>
           ) : (
-            courant.champs.map((c) => <ChampOutil key={c.cle} champ={c} profil={profil} onChange={modifier} />)
+            champsVisibles(courant.champs, profil).map((c) => <ChampOutil key={c.cle} champ={c} profil={profil} onChange={modifier} />)
           )}
 
           {courant.apercu && document && (
@@ -179,7 +216,7 @@ export default function OutilLibertyPage() {
                 Suivant <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button size="sm" className="gap-1.5" disabled={!!envoi} onClick={() => telecharger("pdf")}>
+              <Button size="sm" className="gap-1.5" disabled={!!envoi} onClick={() => telecharger(formats[0])}>
                 <FileDown className="h-4 w-4" /> Télécharger
               </Button>
             )}

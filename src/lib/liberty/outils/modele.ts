@@ -26,24 +26,50 @@ interface ChampBase {
   exemple?: string;
   /** Affiché mais non modifiable ici (la garantie, hors outil 3). */
   lectureSeule?: boolean;
+  /** Information saisie dans un outil précédent (« l'outil 1 ») : reprise, et modifiable ici. */
+  repris?: string;
+  /** Le champ n'apparaît que si la condition est vraie (ex. « Pas encore de clients »). */
+  visible?: (p: Profil) => boolean;
+  /** Texte de départ, écrit une seule fois dans le champ vide : l'élève le retouche ensuite. */
+  prerempli?: (p: Profil) => string;
 }
 
-export interface Colonne {
-  cle: string;
-  libelle: string;
-  type: "court" | "long";
-  exemple?: string;
+/** Des options fixes, ou calculées à partir d'un autre écran (ex. les solutions de l'écran 2). */
+export type Options = string[] | ((p: Profil) => string[]);
+
+export type Colonne =
+  | { cle: string; libelle: string; type: "court" | "long" | "nombre" | "date"; exemple?: string }
+  | { cle: string; libelle: string; type: "choix"; options: Options; exemple?: string }
+  /** Plusieurs choix, enregistrés séparés par « ; ». */
+  | { cle: string; libelle: string; type: "multi"; options: Options; exemple?: string };
+
+/** Ce qu'un encart calculé affiche : une phrase assemblée, un rappel, une alerte. */
+export interface Encart {
+  texte: string;
+  ton?: "phrase" | "rappel" | "alerte";
+  titre?: string;
 }
 
 export type Champ =
-  | (ChampBase & { type: "court" | "long" })
-  | (ChampBase & { type: "choix"; options: string[] })
+  | (ChampBase & { type: "court" | "long" | "nombre" | "date"; unite?: string })
+  | (ChampBase & { type: "choix"; options: Options })
   /** Liste de textes courts. `fixe` : toujours ce nombre de lignes ; sinon extensible. */
   | (ChampBase & { type: "liste"; fixe?: number; ajout?: string })
   /** Blocs répétés (ou tableau) : une ligne = un bloc de colonnes. */
-  | (ChampBase & { type: "blocs"; colonnes: Colonne[]; fixe?: number; max?: number; ajout?: string; nomBloc: string })
+  | (ChampBase & {
+      type: "blocs"; colonnes: Colonne[]; nomBloc: string; ajout?: string;
+      /** Toujours ce nombre de blocs. */ fixe?: number;
+      /** Nombre de blocs vides au départ (sinon 1). */ initial?: number;
+      max?: number;
+      /** Compteur affiché, sans blocage : « 12 problèmes, objectif 20 ». */
+      compteur?: { objectif: number; mot: string };
+      /** Présentation en tableau (une ligne par bloc) plutôt qu'en cartes. */
+      tableau?: boolean;
+    })
   /** Cases à cocher pour soi, sans score. */
-  | (ChampBase & { type: "cases"; options: string[] });
+  | (ChampBase & { type: "cases"; options: Options })
+  /** Un encart calculé (phrase assemblée en direct, rappel, alerte) : rien n'est saisi. */
+  | (ChampBase & { type: "info"; rendu: (p: Profil) => Encart | null });
 
 export interface Ecran {
   titre: string;
@@ -62,7 +88,9 @@ export type BlocDoc =
   | { t: "phrase"; libelle?: string; valeur: string }
   | { t: "liste"; libelle?: string; items: string[] }
   | { t: "tableau"; colonnes: string[]; lignes: string[][] }
-  | { t: "texte"; texte: string };
+  | { t: "texte"; texte: string }
+  /** Nouvelle page (ex. un script par page). */
+  | { t: "saut" };
 
 export interface SectionDoc {
   titre: string;
@@ -73,6 +101,15 @@ export interface DocumentOutil {
   /** Titre du document, ex. « Fiche sous-niche & avatar ». */
   titre: string;
   sections: SectionDoc[];
+}
+
+/** Un document de plus que le document principal (annexe, contrat, PowerPoint). */
+export interface AutreDocument {
+  libelle: string;
+  format: "docx" | "pptx";
+  /** Préfixe du nom de fichier. */
+  fichier: string;
+  generer: (p: Profil, eleve: string) => Promise<Blob>;
 }
 
 export interface DefinitionOutil {
@@ -86,6 +123,9 @@ export interface DefinitionOutil {
   document: (p: Profil) => DocumentOutil;
   /** Préfixe du nom de fichier téléchargé. */
   fichier: string;
+  /** Formats du document principal (par défaut PDF et Word). */
+  formats?: ("pdf" | "docx")[];
+  autresDocuments?: AutreDocument[];
 }
 
 /** Ce qu'on écrit à la place d'une information vide. */
@@ -120,9 +160,25 @@ export function ligneRemplie(l: Ligne): boolean {
   return Object.values(l).some((v) => (v ?? "").trim());
 }
 
+export function options(o: Options, p: Profil): string[] {
+  return (typeof o === "function" ? o(p) : o).map((x) => x.trim()).filter(Boolean);
+}
+
+/** Les champs affichés d'un écran (sans ceux masqués par leur condition). */
+export function champsVisibles(champs: Champ[], p: Profil): Champ[] {
+  return champs.filter((c) => !c.visible || c.visible(p));
+}
+
+/** Les champs qu'on remplit (sans les encarts calculés). */
+export function estSaisie(c: Champ): boolean {
+  return c.type !== "info";
+}
+
 /** Un champ est-il rempli ? (pour la barre de progression, sans rien imposer) */
 export function champRempli(p: Profil, c: Champ): boolean {
   switch (c.type) {
+    case "info":
+      return false;
     case "liste":
     case "cases":
       return liste(p, c.cle).length > 0;
@@ -145,4 +201,25 @@ export function nomFichier(def: DefinitionOutil, eleve: string): string {
   const propre = (s: string) =>
     s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
   return [def.fichier, propre(eleve)].filter(Boolean).join("_");
+}
+
+/** Une case à cocher (valeur « oui ») est-elle cochée ? */
+export function coche(p: Profil, cle: string): boolean {
+  return texte(p, cle) === "oui";
+}
+
+/** Une phrase assemblée : les morceaux vides deviennent « [libellé] ». */
+export function assembler(morceaux: (string | { valeur: string; vide: string })[]): string {
+  return morceaux.map((m) => (typeof m === "string" ? m : m.valeur.trim() || `[${m.vide}]`)).join("");
+}
+
+/** « Mamans salariées qui veulent… » → « mamans salariées qui veulent… » (pour l'insérer dans une phrase). */
+export function enMinuscule(t: string): string {
+  const s = t.trim().replace(/[.!]+$/, "");
+  return s ? s.charAt(0).toLowerCase() + s.slice(1) : "";
+}
+
+/** Valeurs d'une colonne « multi » (séparées par « ; »). */
+export function multi(v: string | undefined): string[] {
+  return (v ?? "").split(";").map((x) => x.trim()).filter(Boolean);
 }

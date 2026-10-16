@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { nomFichier, type DefinitionOutil, type DocumentOutil } from "@/lib/liberty/outils/modele";
 import { genererDocx, type Entete } from "@/lib/liberty/outils/docx";
 
-function declencher(blob: Blob, nom: string) {
+export function declencher(blob: Blob, nom: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

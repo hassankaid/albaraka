@@ -41,6 +41,8 @@ function Bloc({ b }: { b: BlocDoc }) {
     }
     case "texte":
       return <p className="mb-1.5">{b.texte}</p>;
+    case "saut":
+      return <hr className="my-3 border-dashed border-neutral-300" />;
   }
 }
 

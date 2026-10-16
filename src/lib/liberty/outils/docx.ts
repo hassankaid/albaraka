@@ -67,6 +67,8 @@ function bloc(b: BlocDoc): string {
     }
     case "texte":
       return para(`<w:spacing w:after="80"/>`, run(b.texte, { sz: 21 }));
+    case "saut":
+      return `<w:p><w:r><w:br w:type="page"/></w:r></w:p>`;
   }
 }
 

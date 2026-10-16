@@ -85,6 +85,8 @@ function Bloc({ b }: { b: BlocDoc }) {
     }
     case "texte":
       return <Text style={s.champ}>{b.texte}</Text>;
+    case "saut":
+      return <View break />;
   }
 }
 
