@@ -82,7 +82,7 @@ describe("outil 2 — promesse & méthode", () => {
   it("assemble la promesse en direct, avec des repères pour ce qui manque", async () => {
     const { promesseAssemblee, promesseSpecifique, delaiEnJours } = await import("./partage");
     const p: Profil = { "sousNiche.phrase": "Hommes minces de plus de 25 ans.", "promesse.resultat": "prendre 7 kg de muscle", "promesse.delaiNombre": "12", "promesse.delaiUnite": "semaines" };
-    expect(promesseAssemblee(p)).toBe("J'aide hommes minces de plus de 25 ans à prendre 7 kg de muscle en 12 semaines grâce à [nom de votre méthode].");
+    expect(promesseAssemblee(p)).toBe("J'aide hommes minces de plus de 25 ans à prendre 7 kg de muscle en 12 semaines grâce à la méthode [nom de votre méthode].");
     expect(delaiEnJours(p)).toBe(84);
     expect(promesseSpecifique({ ...p, "promesse.specifiqueTexte": "Ma version." })).toBe("Ma version.");
     expect(promesseSpecifique({})).toBe("");

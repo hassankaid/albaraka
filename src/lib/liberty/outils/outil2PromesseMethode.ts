@@ -117,7 +117,7 @@ export const outil2PromesseMethode: DefinitionOutil = {
           ],
         },
         { cle: "nom.offre", type: "court", libelle: "Le nom choisi pour votre offre", exemple: "RAYONNE — 90 jours pour devenir LA référence" },
-        { cle: "methode.nom", type: "court", libelle: "Le nom de votre méthode", aide: "Il complète votre promesse : « … grâce à [nom de votre méthode]. »", exemple: "la méthode T12S" },
+        { cle: "methode.nom", type: "court", libelle: "Le nom de votre méthode", aide: "Le nom seul : il complète votre promesse (« … grâce à la méthode [nom] ») et votre contrat.", exemple: "T12S" },
         { cle: "nom.verifications", type: "cases", options: VERIFICATIONS_NOM, libelle: "Les 3 règles et les 4 tests", aide: "Pour vous, sans note : cochez ce qui est vrai." },
       ],
     },

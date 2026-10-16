@@ -14,11 +14,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPass } from "@/hooks/useUserPass";
 import { useLibertyProfil } from "@/hooks/useLibertyProfil";
-import { champRempli, champsVisibles, estSaisie, nomFichier, outilLiberty, texte, type AutreDocument } from "@/lib/liberty/outils";
+import { champRempli, champsVisibles, estSaisie, nomFichier, outilLiberty, type AutreDocument } from "@/lib/liberty/outils";
 import { RAPPEL_VALIDATION } from "@/lib/liberty/outils/docx";
 import { ChampOutil } from "@/components/liberty/outils/ChampOutil";
 import { ApercuDocument } from "@/components/liberty/outils/ApercuDocument";
 import { declencher, telechargerDocument } from "@/components/liberty/outils/telecharger";
+import { chargerModele } from "@/components/liberty/outils/chargerModele";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -78,10 +79,10 @@ export default function OutilLibertyPage() {
   useEffect(() => {
     if (!def || chargement) return;
     for (const c of def.ecrans[i]?.champs ?? []) {
-      if (!c.prerempli || c.lectureSeule || texte(profil, c.cle) || profil[`_prerempli.${c.cle}`]) continue;
-      const v = c.prerempli(profil).trim();
-      if (!v) continue;
-      modifier(c.cle, v);
+      if (!c.prerempli || c.lectureSeule || champRempli(profil, c) || profil[`_prerempli.${c.cle}`]) continue;
+      const v = c.prerempli(profil);
+      if (!v || (typeof v === "string" ? !v.trim() : !v.length)) continue;
+      modifier(c.cle, typeof v === "string" ? v.trim() : v);
       modifier(`_prerempli.${c.cle}`, "oui");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -98,7 +99,7 @@ export default function OutilLibertyPage() {
     setEnvoi(a.fichier);
     try {
       await reessayer();
-      declencher(await a.generer(profil, eleve), `${nomFichier({ ...def, fichier: a.fichier }, eleve)}.${a.format}`);
+      declencher(await a.generer(profil, eleve, chargerModele), `${nomFichier({ ...def, fichier: a.fichier }, eleve)}.${a.format}`);
     } catch {
       toast.error("Le document n'a pas pu être généré. Réessayez dans un instant.");
     } finally {

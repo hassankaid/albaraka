@@ -33,7 +33,7 @@ export function promesseAssemblee(p: Profil): string {
     "J'aide ", { valeur: cible(p), vide: "votre sous-niche" },
     " à ", { valeur: resultat(p), vide: "résultat concret et chiffré" },
     " en ", { valeur: delai(p), vide: "délai" },
-    " grâce à ", { valeur: nomMethode(p), vide: "nom de votre méthode" }, ".",
+    " grâce à la méthode ", { valeur: nomMethode(p), vide: "nom de votre méthode" }, ".",
   ]);
 }
 

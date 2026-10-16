@@ -264,9 +264,19 @@ export function ChampOutil({ champ, profil, onChange }: Props) {
     }
   }
 
+  const propose = champ.proposition?.(profil).trim() ?? "";
   return (
     <div className="space-y-1.5" data-testid={id}>
       {entete}
+      {propose && propose !== texte(profil, champ.cle) && (
+        <div className="space-y-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">Texte proposé à partir de vos réponses</p>
+          <p className="whitespace-pre-line text-foreground">{propose}</p>
+          <Button type="button" size="sm" variant="outline" onClick={() => onChange(champ.cle, propose)}>
+            {texte(profil, champ.cle) ? "Remplacer mon texte par celui-ci" : "Utiliser ce texte"}
+          </Button>
+        </div>
+      )}
       {saisie}
     </div>
   );

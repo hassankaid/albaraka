@@ -30,8 +30,10 @@ interface ChampBase {
   repris?: string;
   /** Le champ n'apparaît que si la condition est vraie (ex. « Pas encore de clients »). */
   visible?: (p: Profil) => boolean;
-  /** Texte de départ, écrit une seule fois dans le champ vide : l'élève le retouche ensuite. */
-  prerempli?: (p: Profil) => string;
+  /** Contenu de départ, écrit une seule fois dans le champ vide : l'élève le retouche ensuite. */
+  prerempli?: (p: Profil) => Valeur;
+  /** Texte proposé à partir des autres réponses : un bouton le recopie dans le champ (garantie). */
+  proposition?: (p: Profil) => string;
 }
 
 /** Des options fixes, ou calculées à partir d'un autre écran (ex. les solutions de l'écran 2). */
@@ -109,7 +111,8 @@ export interface AutreDocument {
   format: "docx" | "pptx";
   /** Préfixe du nom de fichier. */
   fichier: string;
-  generer: (p: Profil, eleve: string) => Promise<Blob>;
+  /** `modele` charge un modèle de Sidali (table liberty_modeles) en base64. */
+  generer: (p: Profil, eleve: string, modele: (code: string) => Promise<string>) => Promise<Blob>;
 }
 
 export interface DefinitionOutil {
