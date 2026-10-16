@@ -108,7 +108,7 @@ export const outil8ScriptSetting: DefinitionOutil = {
         {
           cle: "setting.vocal", type: "long", libelle: "Votre premier vocal (30 secondes)",
           aide: "Le vocal crée la confiance : on entend une vraie personne. Remerciez, présentez-vous en une phrase, posez une question.",
-          prerempli: (p) => `Bonjour [Prénom], c'est [votre prénom] ! Merci pour votre message. Je me permets un petit vocal, c'est plus simple. J'aide ${cible(p) || "[votre sous-niche]"} à ${resultat(p) || "[résultat]"}. Dites-moi : où en êtes-vous aujourd'hui avec ça ?`,
+          prerempli: (p) => (resultat(p) ? `Bonjour [Prénom], c'est [votre prénom] ! Merci pour votre message. Je me permets un petit vocal, c'est plus simple. J'aide ${cible(p) || "[votre sous-niche]"} à ${resultat(p)}. Dites-moi : où en êtes-vous aujourd'hui avec ça ?` : ""),
         },
       ],
     },
@@ -159,7 +159,7 @@ export const outil8ScriptSetting: DefinitionOutil = {
       champs: [
         {
           cle: "setting.transition", type: "long", libelle: "Votre transition vers l'appel",
-          prerempli: (p) => `D'après ce que vous me dites, je pense pouvoir vous aider à ${resultat(p) || "[résultat]"}${delai(p) ? ` en ${delai(p)}` : ""}. Le plus simple, c'est qu'on en parle 20 minutes au téléphone : je vous pose quelques questions, et je vous dis honnêtement si je peux vous aider. Vous seriez disponible plutôt demain ou après-demain ?`,
+          prerempli: (p) => resultat(p) && `D'après ce que vous me dites, je pense pouvoir vous aider à ${resultat(p)}${delai(p) ? ` en ${delai(p)}` : ""}. Le plus simple, c'est qu'on en parle 20 minutes au téléphone : je vous pose quelques questions, et je vous dis honnêtement si je peux vous aider. Vous seriez disponible plutôt demain ou après-demain ?`,
         },
         {
           cle: "setting.creneau", type: "long", libelle: "Fixer le créneau",
@@ -220,8 +220,8 @@ export const outil8ScriptSetting: DefinitionOutil = {
         },
         {
           cle: "setting.confirmation", type: "long", libelle: "Message de confirmation de l'appel",
-          aide: "Avec le lien de votre vidéo avant l'appel (outil 4) : la personne arrive préparée.",
-          prerempli: (p) => `C'est noté pour [jour] à [heure] ! D'ici là, regardez cette courte vidéo, elle vous aidera à profiter au maximum de notre appel : ${texte(p, "liens.videoAvantAppel") || "[lien de votre vidéo avant l'appel]"}`,
+          aide: "Avec le lien de votre vidéo avant l'appel (outil 4) : la personne arrive préparée. Il se remplit tout seul dès que le lien est saisi dans l'outil 4.",
+          prerempli: (p) => texte(p, "liens.videoAvantAppel") && `C'est noté pour [jour] à [heure] ! D'ici là, regardez cette courte vidéo, elle vous aidera à profiter au maximum de notre appel : ${texte(p, "liens.videoAvantAppel")}`,
         },
         {
           cle: "setting.rappel", type: "long", libelle: "Rappel une heure avant",

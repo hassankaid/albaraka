@@ -160,7 +160,7 @@ export const outil11MidLow: DefinitionOutil = {
         },
         {
           cle: "low.invitation", type: "long", libelle: "L'invitation à réserver un appel",
-          prerempli: (p) => `Vous voulez aller plus loin et ${resultat(p) || "[résultat]"}${delai(p) ? ` en ${delai(p)}` : ""} ? Réservez un appel avec moi : on regarde ensemble votre situation, et je vous dis si je peux vous aider. [lien de réservation]`,
+          prerempli: (p) => resultat(p) && `Vous voulez aller plus loin et ${resultat(p)}${delai(p) ? ` en ${delai(p)}` : ""} ? Réservez un appel avec moi : on regarde ensemble votre situation, et je vous dis si je peux vous aider. [lien de réservation]`,
         },
         { cle: "low.prix", type: "nombre", libelle: "Le prix", exemple: "27" },
       ],

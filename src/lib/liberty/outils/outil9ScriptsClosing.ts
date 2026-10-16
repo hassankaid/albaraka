@@ -40,6 +40,8 @@ function phrasePrix(p: Profil): string {
 /** Les 3 piliers de départ : les deux premières étapes de la méthode, puis l'accompagnement (le plus fort, à la fin). */
 function piliersDeDepart(p: Profil): Ligne[] {
   const etapes = etapesMethode(p);
+  // sans méthode (outil 2), rien n'est proposé : les piliers se rempliront dès qu'elle sera saisie
+  if (!etapes.length) return [];
   const suivi = [
     texte(p, "offre.appelsFrequence") && `${texte(p, "offre.appelsFrequence")}${texte(p, "offre.appelsDuree") ? ` de ${texte(p, "offre.appelsDuree")}` : ""}`,
     texte(p, "offre.messagerieCanal") && `${texte(p, "offre.messagerieCanal")} entre les appels${texte(p, "offre.messagerieDelai") ? `, réponse sous ${texte(p, "offre.messagerieDelai")}` : ""}`,
@@ -201,7 +203,7 @@ export const outil9ScriptsClosing: DefinitionOutil = {
         },
         {
           cle: "decouverte.transition", type: "long", libelle: "Si vous pouvez l'aider : la transition vers l'appel de vente",
-          prerempli: (p) => `Bonne nouvelle : vous correspondez exactement au type de personnes que j'aide à ${resultat(p) || "[résultat]"}${delai(p) ? ` en ${delai(p)}` : ""}. Je vous propose qu'on se fixe un appel en visio, où je vous présente en détail comment on peut vous y amener. J'ai des disponibilités [jour] à [heure] ou [jour] à [heure] : qu'est-ce qui vous arrange le mieux ?`,
+          prerempli: (p) => resultat(p) && `Bonne nouvelle : vous correspondez exactement au type de personnes que j'aide à ${resultat(p)}${delai(p) ? ` en ${delai(p)}` : ""}. Je vous propose qu'on se fixe un appel en visio, où je vous présente en détail comment on peut vous y amener. J'ai des disponibilités [jour] à [heure] ou [jour] à [heure] : qu'est-ce qui vous arrange le mieux ?`,
         },
         {
           cle: "decouverte.nonQualifie", type: "long", libelle: "Si vous ne pouvez pas l'aider",
@@ -268,7 +270,7 @@ export const outil9ScriptsClosing: DefinitionOutil = {
         },
         {
           cle: "closing.pitchIntro", type: "long", libelle: "L'annonce du pitch",
-          prerempli: (p) => `${nomOffre(p) || "[Nom de votre offre]"} a pour but de vous aider à ${resultat(p) || "[résultat]"}${delai(p) ? ` en ${delai(p)}` : ""}. Il se compose de 3 piliers, chacun pensé pour que vous obteniez ce résultat. Je vous les présente ?`,
+          prerempli: (p) => resultat(p) && `${nomOffre(p) || "[Nom de votre offre]"} a pour but de vous aider à ${resultat(p)}${delai(p) ? ` en ${delai(p)}` : ""}. Il se compose de 3 piliers, chacun pensé pour que vous obteniez ce résultat. Je vous les présente ?`,
         },
         {
           cle: "closing.piliers", type: "blocs", fixe: 3, nomBloc: "Pilier",
@@ -287,7 +289,7 @@ export const outil9ScriptsClosing: DefinitionOutil = {
         {
           cle: "closing.prix", type: "long", libelle: "Le prix et les facilités",
           repris: "votre fiche offre (outil 3)",
-          prerempli: phrasePrix,
+          prerempli: (p) => (prix(p) ? phrasePrix(p) : ""),
           aide: "Puis le silence : laissez-le réfléchir.",
         },
       ],
