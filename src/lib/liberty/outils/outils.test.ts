@@ -25,7 +25,7 @@ describe("profil partagé", () => {
 describe("registre des outils", () => {
   it("connaît l'outil 1 et ignore les autres codes", () => {
     expect(outilLiberty("liberty_niche_avatar")?.numero).toBe(1);
-    expect(outilLiberty("liberty_webinaire")).toBeNull();
+    expect(outilLiberty("liberty_inconnu")).toBeNull();
     expect(outilLiberty(null)).toBeNull();
     // chaque clé de champ est unique dans un outil
     for (const def of Object.values(OUTILS_LIBERTY)) {
@@ -154,7 +154,7 @@ describe("outil 7 — accroches et scripts", () => {
   });
 });
 
-describe("les 7 outils", () => {
+describe("les 11 outils", () => {
   it("génèrent leur document en Word, vides comme remplis", async () => {
     for (const def of Object.values(OUTILS_LIBERTY)) {
       for (const p of [{}, { "avatar.prenom": "Sarah", "promesse.resultat": "perdre 8 kg", "offre.prix": "1500" }] as Profil[]) {
@@ -163,6 +163,6 @@ describe("les 7 outils", () => {
       }
       expect(def.ecrans.length).toBeGreaterThan(0);
     }
-    expect(Object.keys(OUTILS_LIBERTY)).toHaveLength(7);
+    expect(Object.keys(OUTILS_LIBERTY)).toHaveLength(11);
   });
 });

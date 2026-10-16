@@ -138,6 +138,8 @@ export interface AutreDocument {
   format: "docx" | "pptx";
   /** Préfixe du nom de fichier. */
   fichier: string;
+  /** Le document à télécharger en premier (bouton « Télécharger » du dernier écran). */
+  principal?: boolean;
   /** `modele` charge un modèle de Sidali (table liberty_modeles) en base64. */
   generer: (p: Profil, eleve: string, modele: (code: string) => Promise<string>) => Promise<Blob>;
 }

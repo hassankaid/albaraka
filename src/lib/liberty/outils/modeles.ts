@@ -168,3 +168,40 @@ export function retirerIndicationsDocx(xml: string): string {
     });
   });
 }
+
+// ── PowerPoint : retirer des slides ──────────────────────────────────────
+
+/**
+ * Retire des slides d'un PowerPoint ouvert (numéros de fichier slideN.xml, qui
+ * suivent l'ordre d'affichage dans les modèles de Sidali) : la slide, ses notes,
+ * son lien dans la présentation et son type de contenu.
+ */
+export async function retirerSlidesPptx(zip: JSZip, numeros: number[]): Promise<void> {
+  if (!numeros.length) return;
+  const relsNom = "ppt/_rels/presentation.xml.rels";
+  let rels = await zip.file(relsNom)!.async("string");
+  let presentation = await zip.file("ppt/presentation.xml")!.async("string");
+  let types = await zip.file("[Content_Types].xml")!.async("string");
+  for (const n of numeros) {
+    const slide = `ppt/slides/slide${n}.xml`;
+    if (!zip.file(slide)) continue;
+    const relation = [...rels.matchAll(/<Relationship [^>]*\/>/g)].map((m) => m[0]).find((r) => r.includes(`Target="slides/slide${n}.xml"`));
+    const id = relation?.match(/Id="([^"]+)"/)?.[1];
+    if (relation) rels = rels.replace(relation, "");
+    if (id) presentation = presentation.replace(new RegExp(`<p:sldId [^>]*r:id="${id}"[^>]*/>`), "");
+    const slideRels = `ppt/slides/_rels/slide${n}.xml.rels`;
+    const notes = zip.file(slideRels) ? (await zip.file(slideRels)!.async("string")).match(/Target="\.\.\/notesSlides\/(notesSlide\d+\.xml)"/)?.[1] : undefined;
+    for (const piece of [slide, slideRels, ...(notes ? [`ppt/notesSlides/${notes}`, `ppt/notesSlides/_rels/${notes}.rels`] : [])]) {
+      zip.remove(piece);
+      types = types.replace(new RegExp(`<Override PartName="/${piece.replace(/\./g, "\\.")}"[^>]*/>`), "");
+    }
+  }
+  zip.file(relsNom, rels);
+  zip.file("ppt/presentation.xml", presentation);
+  zip.file("[Content_Types].xml", types);
+  const app = zip.file("docProps/app.xml");
+  if (app) {
+    const restantes = Object.keys(zip.files).filter((f) => /^ppt\/slides\/slide\d+\.xml$/.test(f)).length;
+    zip.file("docProps/app.xml", (await app.async("string")).replace(/<Slides>\d+<\/Slides>/, `<Slides>${restantes}</Slides>`));
+  }
+}

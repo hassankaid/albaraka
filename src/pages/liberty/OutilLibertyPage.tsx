@@ -121,8 +121,17 @@ export default function OutilLibertyPage() {
   }
 
   const formats = def.formats ?? ["pdf", "docx"];
+  // un document « principal » (le PowerPoint du webinaire) passe avant le récapitulatif
+  const principal = def.autresDocuments?.find((a) => a.principal);
+  const autres = [...(def.autresDocuments ?? [])].sort((a, b) => Number(!!b.principal) - Number(!!a.principal));
+  const boutonsAutres = autres.map((a) => (
+    <Button key={a.fichier} variant={a.principal ? "default" : "outline"} size="sm" className="gap-1.5" disabled={!!envoi} onClick={() => telechargerAutre(a)}>
+      {envoi === a.fichier ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />} {a.libelle}
+    </Button>
+  ));
   const boutonsTelecharger = (
     <div className="flex flex-wrap gap-2">
+      {principal && boutonsAutres}
       {formats.includes("pdf") && (
         <Button variant="outline" size="sm" className="gap-1.5" disabled={!!envoi} onClick={() => telecharger("pdf")} data-testid="telecharger-pdf">
           {envoi === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />} PDF
@@ -133,11 +142,7 @@ export default function OutilLibertyPage() {
           {envoi === "docx" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />} Word
         </Button>
       )}
-      {(def.autresDocuments ?? []).map((a) => (
-        <Button key={a.fichier} variant="outline" size="sm" className="gap-1.5" disabled={!!envoi} onClick={() => telechargerAutre(a)}>
-          {envoi === a.fichier ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />} {a.libelle}
-        </Button>
-      ))}
+      {!principal && boutonsAutres}
     </div>
   );
 
@@ -217,7 +222,7 @@ export default function OutilLibertyPage() {
                 Suivant <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button size="sm" className="gap-1.5" disabled={!!envoi} onClick={() => telecharger(formats[0])}>
+              <Button size="sm" className="gap-1.5" disabled={!!envoi} onClick={() => (principal ? telechargerAutre(principal) : telecharger(formats[0]))}>
                 <FileDown className="h-4 w-4" /> Télécharger
               </Button>
             )}

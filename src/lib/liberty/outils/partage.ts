@@ -3,7 +3,7 @@
  * automatique » du cahier des charges), calculées à partir du profil partagé.
  * Chaque outil s'en sert pour pré-remplir ses phrases.
  */
-import { assembler, enMinuscule, lignes, ligneRemplie, texte, type Profil } from "./modele";
+import { assembler, enMinuscule, lignes, ligneRemplie, texte, type Encart, type Profil } from "./modele";
 
 /** Le délai de la promesse en jours (pour la règle des 90 jours). */
 export function delaiEnJours(p: Profil): number | null {
@@ -65,4 +65,21 @@ export function etapesMethode(p: Profil): { nom: string; micro: string; solution
 export function problemesAvatar(p: Profil): string[] {
   const v = p["avatar.problemes"];
   return Array.isArray(v) ? (v as unknown[]).filter((x): x is string => typeof x === "string").map((x) => x.trim()).filter(Boolean) : [];
+}
+
+/** Les mots de l'avatar (outil 1) : ses phrases à lui. */
+export function motsAvatar(p: Profil): string[] {
+  const v = p["avatar.mots"];
+  return Array.isArray(v) ? (v as unknown[]).filter((x): x is string => typeof x === "string").map((x) => x.trim()).filter(Boolean) : [];
+}
+
+/** L'encart « Votre avatar » des scripts (outils 8 et 9) : ses problèmes, sa peur, son objection, ses mots. */
+export function rappelAvatar(p: Profil): Encart | null {
+  const lignesRappel = [
+    problemesAvatar(p).length ? `Ses problèmes : ${problemesAvatar(p).join(" · ")}` : "",
+    texte(p, "avatar.peur") ? `Sa peur : ${texte(p, "avatar.peur")}` : "",
+    texte(p, "avatar.objection") ? `Son objection : ${texte(p, "avatar.objection")}` : "",
+    motsAvatar(p).length ? `Ses mots : ${motsAvatar(p).map((m) => `« ${m} »`).join(" ")}` : "",
+  ].filter(Boolean);
+  return lignesRappel.length ? { ton: "rappel", titre: "Votre avatar (outil 1)", texte: lignesRappel.join("\n") } : null;
 }
