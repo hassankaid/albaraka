@@ -703,6 +703,21 @@ export default function ChapterViewer() {
             </div>
           )}
 
+          {/* Parcours Liberty (16/10/2026) : la page d'un des 11 outils, construits phase par phase */}
+          {(chapitre as { outil?: string | null }).outil?.startsWith("liberty_") && (
+            <div className="rounded-xl border-2 border-dashed border-amber-500/40 bg-amber-500/5 p-4 flex items-start gap-3" data-testid="outil-liberty-en-preparation">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">Outil en préparation</p>
+                <p className="text-sm text-foreground">
+                  Cet outil arrive ici très bientôt : vous le remplirez directement sur la plateforme, puis vous téléchargerez votre document.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Passage à la pratique : outil interactif Liberty lié à ce module */}
           {outilLie && (
             <div className="rounded-xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/5 to-transparent p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
