@@ -62,7 +62,8 @@ function bloc(b: BlocDoc): string {
       const corps = (b.lignes.length ? b.lignes : [b.colonnes.map(() => "")])
         .map((l) => `<w:tr>${l.map((c) => cellule(valeur(c, { sz: 19 }), largeur)).join("")}</w:tr>`).join("");
       const bord = `<w:top w:val="single" w:sz="4" w:color="D9CDB0"/><w:left w:val="single" w:sz="4" w:color="D9CDB0"/><w:bottom w:val="single" w:sz="4" w:color="D9CDB0"/><w:right w:val="single" w:sz="4" w:color="D9CDB0"/><w:insideH w:val="single" w:sz="4" w:color="D9CDB0"/><w:insideV w:val="single" w:sz="4" w:color="D9CDB0"/>`;
-      return `<w:tbl><w:tblPr><w:tblW w:w="9638" w:type="dxa"/><w:tblBorders>${bord}</w:tblBorders><w:tblCellMar><w:left w:w="80" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr>${entete}${corps}</w:tbl>${para(`<w:spacing w:after="80"/>`, "")}`;
+      const grille = `<w:tblGrid>${b.colonnes.map(() => `<w:gridCol w:w="${largeur}"/>`).join("")}</w:tblGrid>`;
+      return `<w:tbl><w:tblPr><w:tblW w:w="9638" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders>${bord}</w:tblBorders><w:tblCellMar><w:left w:w="80" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr>${grille}${entete}${corps}</w:tbl>${para(`<w:spacing w:after="80"/>`, "")}`;
     }
     case "texte":
       return para(`<w:spacing w:after="80"/>`, run(b.texte, { sz: 21 }));

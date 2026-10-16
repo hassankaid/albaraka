@@ -17,7 +17,7 @@ const BORD = "#D9CDB0";
 const s = StyleSheet.create({
   page: { backgroundColor: "#FFFFFF", paddingTop: 48, paddingBottom: 56, paddingHorizontal: 54, fontFamily: "Helvetica", fontSize: 10.5, color: NOIR, lineHeight: 1.4 },
   sur: { fontFamily: "Helvetica-Bold", fontSize: 9, color: OR, letterSpacing: 1 },
-  titre: { fontFamily: "Helvetica-Bold", fontSize: 20, marginTop: 2, marginBottom: 3 },
+  titre: { fontFamily: "Helvetica-Bold", fontSize: 20, lineHeight: 1.25, marginTop: 2, marginBottom: 6 },
   sousTitre: { fontSize: 9.5, color: GRIS, paddingBottom: 6, borderBottomWidth: 0.8, borderBottomColor: OR, marginBottom: 10 },
   h2: { fontFamily: "Helvetica-Bold", fontSize: 12, color: OR, marginTop: 12, marginBottom: 5, letterSpacing: 0.6 },
   champ: { marginBottom: 4 },
