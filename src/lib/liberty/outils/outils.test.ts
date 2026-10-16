@@ -108,3 +108,61 @@ describe("outil 2 — promesse & méthode", () => {
     expect(JSON.stringify(d.sections[2])).toContain("Recettes en 10 min");
   });
 });
+
+describe("outil 6 — calendrier", () => {
+  const idees = (n: string) => Array.from({ length: 10 }, (_, i) => `${n} ${i + 1}`);
+  const base: Profil = { "contenu.tofu": idees("T"), "contenu.mofu": idees("M"), "contenu.bofu": idees("B"), "contenu.debut": "2026-10-19" };
+  it("7 vidéos par semaine : 30 publications, la semaine type, chaque idée une seule fois", async () => {
+    const { genererCalendrier } = await import("./outil6Calendrier");
+    const cal = genererCalendrier({ ...base, "contenu.rythme": "7", "histoires.h1.premiere": "Le jour où j'ai failli tout arrêter…" });
+    expect(cal).toHaveLength(30);
+    // le 19/10/2026 est un lundi : TOFU, puis MOFU, puis l'histoire
+    expect(cal.slice(0, 3).map((l) => l.niveau)).toEqual(["TOFU", "MOFU", "MOFU"]);
+    expect(cal[2].sujet).toBe("Le jour où j'ai failli tout arrêter…");
+    expect(cal[4]).toMatchObject({ niveau: "BOFU", pilier: "Preuve et offre", sujet: "B 1" });
+    const sujets = cal.map((l) => l.sujet).filter((s) => /^[TMB] \d+$/.test(s ?? ""));
+    expect(new Set(sujets).size).toBe(sujets.length);
+  });
+  it("3 vidéos par semaine : on saute des jours en gardant lundi, mercredi, vendredi", async () => {
+    const { genererCalendrier } = await import("./outil6Calendrier");
+    const cal = genererCalendrier({ ...base, "contenu.rythme": "3" });
+    expect(cal.length).toBeGreaterThanOrEqual(12);
+    expect(cal.length).toBeLessThanOrEqual(14);
+    expect(new Set(cal.map((l) => new Date(`${l.date}T12:00:00`).getDay()))).toEqual(new Set([1, 3, 5]));
+  });
+  it("approche les piliers visés", async () => {
+    const { genererCalendrier, repartitionPiliers } = await import("./outil6Calendrier");
+    const r = repartitionPiliers(genererCalendrier({ ...base, "contenu.rythme": "7" }));
+    expect(r["Éducatif"] + r["Histoires et inspiration"] + r["Preuve et offre"] + r["Coulisses"] + r["Communauté"]).toBeGreaterThanOrEqual(98);
+    expect(r["Preuve et offre"]).toBeGreaterThanOrEqual(15);
+  });
+});
+
+describe("outil 7 — accroches et scripts", () => {
+  it("propose les sujets du calendrier avec leur niveau, et le modèle du type choisi", async () => {
+    const { sujetsCalendrier, outil7AccrochesScripts, TYPES_ACCROCHE } = await import("./outil7AccrochesScripts");
+    expect(sujetsCalendrier({ "contenu.tofu": ["3 erreurs"], "contenu.bofu": ["Karim +8 kg"] })).toEqual(["TOFU · 3 erreurs", "BOFU · Karim +8 kg"]);
+    const champ = outil7AccrochesScripts.ecrans[0].champs[0];
+    const texteCol = champ.type === "blocs" ? champ.colonnes.find((c) => c.cle === "texte") : undefined;
+    expect(texteCol?.modele?.({ type: "Rupture" })).toBe(TYPES_ACCROCHE["Rupture"]);
+    const d = outil7AccrochesScripts.document({
+      "accroches.liste": [{ type: "Rupture", texte: "Tout le monde vous dit de manger moins." }, { texte: "Sans type" }],
+      "scripts.liste": [{ accroche: "A", accrochesTest: "x ; y" }],
+    });
+    expect(d.sections[0].titre).toBe("Vos accroches (2)");
+    expect(JSON.stringify(d.sections[1])).toContain('"x","y"');
+  });
+});
+
+describe("les 7 outils", () => {
+  it("génèrent leur document en Word, vides comme remplis", async () => {
+    for (const def of Object.values(OUTILS_LIBERTY)) {
+      for (const p of [{}, { "avatar.prenom": "Sarah", "promesse.resultat": "perdre 8 kg", "offre.prix": "1500" }] as Profil[]) {
+        const xml = corpsDocx(def.document(p), { def, eleve: "Élève", date: "16 octobre 2026" });
+        expect(xml).toContain(RAPPEL_VALIDATION);
+      }
+      expect(def.ecrans.length).toBeGreaterThan(0);
+    }
+    expect(Object.keys(OUTILS_LIBERTY)).toHaveLength(7);
+  });
+});

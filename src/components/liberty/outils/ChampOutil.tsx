@@ -5,11 +5,16 @@
  * vide, un exemple grisé. Aucun champ n'est obligatoire. Une information reprise
  * d'un outil précédent le dit, et reste modifiable ici.
  */
-import { AlertTriangle, ArrowDown, ArrowUp, Link2, Lock, Plus, Quote, X } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, ArrowDown, ArrowUp, Link2, Lock, Plus, Quote, Sparkles, Wand2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import {
   brut, liste, lignes, multi, options as optionsDe, texte,
@@ -33,8 +38,8 @@ function TexteLong({ valeur, exemple, onChange, lignesMin = 3, ...rest }: {
   );
 }
 
-function Pastilles({ choix, valeur, onChange, plusieurs, label }: {
-  choix: string[]; valeur: string[]; onChange: (v: string[]) => void; plusieurs: boolean; label: string;
+function Pastilles({ choix, valeur, onChange, plusieurs, label, max }: {
+  choix: string[]; valeur: string[]; onChange: (v: string[]) => void; plusieurs: boolean; label: string; max?: number;
 }) {
   if (!choix.length) return <p className="text-xs italic text-muted-foreground">Rien à choisir pour l'instant : remplissez d'abord l'écran précédent.</p>;
   return (
@@ -44,6 +49,7 @@ function Pastilles({ choix, valeur, onChange, plusieurs, label }: {
         return (
           <Button key={o} type="button" size="sm" variant={actif ? "default" : "outline"} className="h-auto min-h-8 whitespace-normal py-1 text-left text-xs"
             role={plusieurs ? "checkbox" : "radio"} aria-checked={actif}
+            disabled={plusieurs && !actif && !!max && valeur.length >= max}
             onClick={() => onChange(plusieurs ? (actif ? valeur.filter((x) => x !== o) : [...valeur, o]) : actif ? [] : [o])}>
             {o}
           </Button>
@@ -97,12 +103,13 @@ function CelluleBloc({ c, valeur, profil, premier, onChange }: {
       return <Pastilles choix={optionsDe(c.options, profil)} valeur={valeur ? [valeur] : []} plusieurs={false} label={c.libelle}
         onChange={(v) => onChange(v[0] ?? "")} />;
     case "multi":
-      return <Pastilles choix={optionsDe(c.options, profil)} valeur={multi(valeur)} plusieurs label={c.libelle}
+      return <Pastilles choix={optionsDe(c.options, profil)} valeur={multi(valeur)} plusieurs label={c.libelle} max={c.max}
         onChange={(v) => onChange(v.join(" ; "))} />;
   }
 }
 
 function SaisieBlocs({ champ, profil, onChange }: Props & { champ: Extract<Champ, { type: "blocs" }> }) {
+  const [filtres, setFiltres] = useState<Record<string, string>>({});
   const actuel = lignes(profil, champ.cle);
   const n = champ.fixe ?? Math.max(champ.initial ?? 1, actuel.length);
   const blocs: Ligne[] = Array.from({ length: n }, (_, i) => actuel[i] ?? {});
@@ -116,14 +123,31 @@ function SaisieBlocs({ champ, profil, onChange }: Props & { champ: Extract<Champ
   const peutAjouter = !champ.fixe && (!champ.max || blocs.length < champ.max);
   const remplis = blocs.filter((b) => Object.values(b).some((x) => (x ?? "").trim())).length;
   const large = (c: Colonne) => c.type === "long" || c.type === "choix" || c.type === "multi";
+  const garde = (b: Ligne) => (champ.filtres ?? []).every((f) => {
+    const choisi = filtres[f.colonne];
+    if (!choisi) return true;
+    const v = b[f.colonne] ?? "";
+    return f.prefixe ? v.startsWith(choisi) : v === choisi;
+  });
   return (
     <div className="space-y-3">
+      {(champ.filtres ?? []).map((f) => (
+        <div key={f.colonne} className="flex flex-wrap items-center gap-1.5" data-testid={`filtre-${f.colonne}`}>
+          <span className="mr-1 text-xs text-muted-foreground">{f.libelle} :</span>
+          {["", ...f.options].map((o) => (
+            <Button key={o || "tous"} type="button" size="sm" variant={(filtres[f.colonne] ?? "") === o ? "default" : "outline"} className="h-7 px-2 text-xs"
+              onClick={() => setFiltres((x) => ({ ...x, [f.colonne]: o }))}>
+              {o || "Tous"}
+            </Button>
+          ))}
+        </div>
+      ))}
       {champ.compteur && (
         <p className={cn("text-xs font-medium", remplis >= champ.compteur.objectif ? "text-emerald-600" : "text-amber-600")} data-testid="compteur">
           {remplis} {champ.compteur.mot}{remplis > 1 ? "s" : ""}, objectif {champ.compteur.objectif}
         </p>
       )}
-      {blocs.map((b, i) => (
+      {blocs.map((b, i) => !garde(b) ? null : (
         <div key={i} className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">{champ.nomBloc} {i + 1}</p>
@@ -150,7 +174,18 @@ function SaisieBlocs({ champ, profil, onChange }: Props & { champ: Extract<Champ
           <div className="grid gap-2 sm:grid-cols-2">
             {champ.colonnes.map((c) => (
               <div key={c.cle} className={cn("space-y-1", (large(c) || champ.colonnes.length === 1) && "sm:col-span-2")}>
-                <span className="text-xs font-medium text-foreground">{c.libelle}</span>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-foreground">{c.libelle}</span>
+                  {c.modele && c.modele(b) && (
+                    <Button type="button" variant="ghost" size="sm" className="h-6 gap-1 px-1.5 text-[11px] text-amber-600"
+                      onClick={() => modifier(i, c, c.modele!(b))}>
+                      <Wand2 className="h-3 w-3" /> Partir d'un modèle
+                    </Button>
+                  )}
+                </div>
+                {c.aide && (typeof c.aide === "function" ? c.aide(profil) : c.aide) && (
+                  <p className="text-[11px] text-muted-foreground">{typeof c.aide === "function" ? c.aide(profil) : c.aide}</p>
+                )}
                 <CelluleBloc c={c} valeur={b[c.cle] ?? ""} profil={profil} premier={i === 0} onChange={(v) => modifier(i, c, v)} />
               </div>
             ))}
@@ -183,8 +218,41 @@ function EncartCalcule({ champ, profil }: { champ: Extract<Champ, { type: "info"
   );
 }
 
+function Action({ champ, profil, onChange }: Props & { champ: Extract<Champ, { type: "action" }> }) {
+  const [confirmation, setConfirmation] = useState<string | null>(null);
+  const executer = () => {
+    for (const [cle, v] of Object.entries(champ.executer(profil))) onChange(cle, v);
+  };
+  return (
+    <div className="space-y-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-4" data-testid={`action-${champ.cle}`}>
+      {champ.libelle && <p className="text-sm font-medium text-foreground">{champ.libelle}</p>}
+      {champ.aide && <p className="whitespace-pre-line text-xs text-muted-foreground">{champ.aide}</p>}
+      <Button type="button" className="gap-2" onClick={() => {
+        const message = champ.confirmer?.(profil) ?? null;
+        if (message) setConfirmation(message);
+        else executer();
+      }}>
+        <Sparkles className="h-4 w-4" /> {champ.bouton}
+      </Button>
+      <AlertDialog open={!!confirmation} onOpenChange={(o) => !o && setConfirmation(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{champ.bouton}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmation}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={executer}>Continuer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 export function ChampOutil({ champ, profil, onChange }: Props) {
   if (champ.type === "info") return <EncartCalcule champ={champ} profil={profil} />;
+  if (champ.type === "action") return <Action champ={champ} profil={profil} onChange={onChange} />;
   const id = `champ-${champ.cle}`;
   const entete = (
     <div className="space-y-0.5">

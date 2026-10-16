@@ -39,11 +39,30 @@ interface ChampBase {
 /** Des options fixes, ou calculées à partir d'un autre écran (ex. les solutions de l'écran 2). */
 export type Options = string[] | ((p: Profil) => string[]);
 
+interface ColonneBase {
+  cle: string;
+  libelle: string;
+  exemple?: string;
+  /** Aide sous la colonne, fixe ou calculée (ex. les mots de l'avatar). */
+  aide?: string | ((p: Profil) => string);
+  /** Texte modèle de la ligne : un bouton « Partir d'un modèle » le recopie (ex. selon le type d'accroche). */
+  modele?: (l: Ligne) => string;
+}
+
 export type Colonne =
-  | { cle: string; libelle: string; type: "court" | "long" | "nombre" | "date"; exemple?: string }
-  | { cle: string; libelle: string; type: "choix"; options: Options; exemple?: string }
-  /** Plusieurs choix, enregistrés séparés par « ; ». */
-  | { cle: string; libelle: string; type: "multi"; options: Options; exemple?: string };
+  | (ColonneBase & { type: "court" | "long" | "nombre" | "date" })
+  | (ColonneBase & { type: "choix"; options: Options })
+  /** Plusieurs choix, enregistrés séparés par « ; » (au plus `max`). */
+  | (ColonneBase & { type: "multi"; options: Options; max?: number });
+
+/** Un filtre au-dessus des blocs : n'afficher que ceux dont la colonne vaut l'option (ou commence par elle). */
+export interface FiltreBlocs {
+  colonne: string;
+  libelle: string;
+  options: string[];
+  /** Compare le début de la valeur (ex. « TOFU · … »). */
+  prefixe?: boolean;
+}
 
 /** Ce qu'un encart calculé affiche : une phrase assemblée, un rappel, une alerte. */
 export interface Encart {
@@ -65,13 +84,21 @@ export type Champ =
       max?: number;
       /** Compteur affiché, sans blocage : « 12 problèmes, objectif 20 ». */
       compteur?: { objectif: number; mot: string };
-      /** Présentation en tableau (une ligne par bloc) plutôt qu'en cartes. */
+      /** Blocs réordonnables (flèches monter / descendre). */
       tableau?: boolean;
+      filtres?: FiltreBlocs[];
     })
   /** Cases à cocher pour soi, sans score. */
   | (ChampBase & { type: "cases"; options: Options })
   /** Un encart calculé (phrase assemblée en direct, rappel, alerte) : rien n'est saisi. */
-  | (ChampBase & { type: "info"; rendu: (p: Profil) => Encart | null });
+  | (ChampBase & { type: "info"; rendu: (p: Profil) => Encart | null })
+  /** Un bouton qui calcule et écrit des informations (ex. générer le calendrier). */
+  | (ChampBase & {
+      type: "action"; bouton: string;
+      /** Message de confirmation avant d'écraser (null : pas de confirmation). */
+      confirmer?: (p: Profil) => string | null;
+      executer: (p: Profil) => Profil;
+    });
 
 export interface Ecran {
   titre: string;
@@ -174,13 +201,14 @@ export function champsVisibles(champs: Champ[], p: Profil): Champ[] {
 
 /** Les champs qu'on remplit (sans les encarts calculés). */
 export function estSaisie(c: Champ): boolean {
-  return c.type !== "info";
+  return c.type !== "info" && c.type !== "action";
 }
 
 /** Un champ est-il rempli ? (pour la barre de progression, sans rien imposer) */
 export function champRempli(p: Profil, c: Champ): boolean {
   switch (c.type) {
     case "info":
+    case "action":
       return false;
     case "liste":
     case "cases":
