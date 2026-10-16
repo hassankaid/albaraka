@@ -23,9 +23,14 @@ import { CHAMPS_WEBINAIRE, PARTIES_WEBINAIRE, type ChampWebinaire } from "./webi
 
 const cleDe = (nom: string) => CHAMPS_WEBINAIRE.find((c) => c[0] === nom)?.[1] ?? "";
 
+/** Le texte d'un élément : saisi, sinon repris des outils précédents (même si l'écran n'a pas été ouvert). */
+function saisi(p: Profil, nom: string): string {
+  return texte(p, cleDe(nom)) || (prerempli(nom)?.(p) ?? "").trim();
+}
+
 /** Un nombre saisi (« 1 497 », « 1497,50 »), ou null. */
 function nombre(p: Profil, nom: string): number | null {
-  const v = texte(p, cleDe(nom)).replace(/[^\d,.-]/g, "").replace(",", ".");
+  const v = saisi(p, nom).replace(/[^\d,.-]/g, "").replace(",", ".");
   if (!v) return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
@@ -37,7 +42,7 @@ const LONGS = /DESCRIPTION|CITATION|VÉRITÉ|PIVOT|CONSTAT|CONSÉQUENCE|PREUVE|Q
 
 /** Le nombre d'étapes renseignées (pour « LA MÉTHODE EN N ÉTAPES »). */
 function nombreEtapes(p: Profil): number {
-  return [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((k) => texte(p, cleDe(`NOM ÉTAPE ${k}`))).length;
+  return [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((k) => saisi(p, `NOM ÉTAPE ${k}`)).length;
 }
 
 /** Les calculs du cahier des charges, à partir des montants saisis. */
@@ -54,8 +59,8 @@ export function calculsWebinaire(p: Profil) {
 /** La valeur de chaque champ « » du modèle, telle qu'elle s'écrit dans le PowerPoint. */
 export function valeursWebinaire(p: Profil, eleve: string): Valeurs {
   const v: Valeurs = {};
-  for (const [nom, cle] of CHAMPS_WEBINAIRE) {
-    const brut = texte(p, cle);
+  for (const [nom] of CHAMPS_WEBINAIRE) {
+    const brut = saisi(p, nom);
     if (MONTANTS.has(nom)) {
       const n = nombre(p, nom);
       v[nom] = n !== null ? montant(n, p) : "";
@@ -76,7 +81,7 @@ export function valeursWebinaire(p: Profil, eleve: string): Valeurs {
 
 /** Les slides des étapes 7 à 9 (slides 70 à 72), retirées si l'étape reste vide. */
 export function slidesARetirer(p: Profil): number[] {
-  return [7, 8, 9].filter((k) => !texte(p, cleDe(`NOM ÉTAPE ${k}`)) && !texte(p, cleDe(`DESCRIPTION ÉTAPE ${k}`))).map((k) => 63 + k);
+  return [7, 8, 9].filter((k) => !saisi(p, `NOM ÉTAPE ${k}`) && !saisi(p, `DESCRIPTION ÉTAPE ${k}`)).map((k) => 63 + k);
 }
 
 /** Une slide : retire les exemples gris, puis remplit chaque paragraphe en gardant la couleur du texte voisin. */

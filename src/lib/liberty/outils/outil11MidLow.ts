@@ -5,7 +5,7 @@
  * garantie, l'histoire fondatrice (outil 5) et les témoignages (outil 4).
  * Aides : slides 390 à 395 du PowerPoint du parcours.
  */
-import { assembler, lignes, ligneRemplie, liste, texte, type DefinitionOutil, type Ligne, type Profil, type SectionDoc } from "./modele";
+import { assembler, enMinuscule, lignes, ligneRemplie, liste, texte, type DefinitionOutil, type Ligne, type Profil, type SectionDoc } from "./modele";
 import { garantie, montant, prix } from "./outil3FicheOffre";
 import { cible, delai, etapesMethode, motsAvatar, nomOffre, problemesAvatar, resultat } from "./partage";
 
@@ -34,7 +34,7 @@ export function titrePageDeVente(p: Profil): string {
     { valeur: r ? r.charAt(0).toUpperCase() + r.slice(1) : "", vide: "Résultat" },
     " pour ", { valeur: cible(p), vide: "cible" },
     " en ", { valeur: delai(p), vide: "délai" },
-    ", même si ", { valeur: texte(p, "avatar.objection").replace(/^[«"\s]+|[»".\s]+$/g, ""), vide: "objection" }, ".",
+    ", même si ", { valeur: enMinuscule(texte(p, "avatar.objection").replace(/^[«"\s]+|[»".\s]+$/g, "")), vide: "objection" }, ".",
   ]);
 }
 

@@ -98,8 +98,8 @@ export const outil8ScriptSetting: DefinitionOutil = {
         {
           cle: "setting.premiersMessages", type: "blocs", nomBloc: "Premier message", ajout: "Ajouter une situation", initial: 3, max: 5,
           libelle: "Vos premiers messages",
-          aide: "Un message par situation. Choisissez la situation : « Partir d'un modèle » recopie un exemple à adapter.",
-          prerempli: () => SITUATIONS_CONTACT.slice(0, 3).map((situation) => ({ situation })),
+          aide: "Un message par situation, à adapter à votre ton. Pour une autre situation, « Partir d'un modèle » recopie un exemple.",
+          prerempli: () => SITUATIONS_CONTACT.slice(0, 3).map((situation) => ({ situation, message: MODELES_CONTACT[situation] })),
           colonnes: [
             { cle: "situation", libelle: "La situation", type: "choix", options: SITUATIONS_CONTACT },
             { cle: "message", libelle: "Votre message", type: "long", modele: (l) => MODELES_CONTACT[l.situation ?? ""] ?? "", exemple: "Merci pour votre commentaire ! Qu'est-ce qui vous a parlé dans la vidéo ?" },

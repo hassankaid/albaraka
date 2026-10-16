@@ -86,6 +86,15 @@ describe("outil 10 — webinaire", () => {
     // un montant écrit à la main remplace le calcul
     expect(valeursWebinaire({ ...p, [cle("ÉCONOMIE €")]: "600 €" }, "")["ÉCONOMIE €"]).toBe("600 €");
   });
+  it("reprend la méthode, le prix et le bonus même si leur écran n'a pas été ouvert", () => {
+    const v = valeursWebinaire({ ...eleve, "offre.bonus": [{ nom: "Menus express" }] }, "");
+    expect(v["NOM ÉTAPE 2"]).toBe("Les repas");
+    expect(v["DESCRIPTION ÉTAPE 1"]).toBe("Comprendre pourquoi");
+    expect(v["PRIX"]).toBe("3 000 €");
+    expect(v["NOM BONUS"]).toBe("Menus express");
+    expect(v["NOM DE VOTRE MÉTHODE"]).toBe("la méthode T12S");
+    expect(v["N"]).toBe("2");
+  });
   it("compte les étapes et retire les slides des étapes 7 à 9 vides", () => {
     const p: Profil = { [cle("NOM ÉTAPE 1")]: "A", [cle("NOM ÉTAPE 2")]: "B", [cle("NOM ÉTAPE 7")]: "G" };
     expect(valeursWebinaire(p, "")["N"]).toBe("3");
@@ -126,7 +135,7 @@ describe("outil 10 — webinaire", () => {
 
 describe("outil 11 — mid et low-ticket", () => {
   it("assemble le titre de la page de vente selon la formule", () => {
-    expect(titrePageDeVente(eleve)).toBe("Perdre 8 kg pour les mamans salariées en 90 jours, même si Je n'ai pas le temps.");
+    expect(titrePageDeVente(eleve)).toBe("Perdre 8 kg pour les mamans salariées en 90 jours, même si je n'ai pas le temps.");
     expect(titrePageDeVente({})).toBe("[Résultat] pour [cible] en [délai], même si [objection].");
   });
   it("propose les modules du programme et n'affiche la garantie que si elle s'applique", () => {
