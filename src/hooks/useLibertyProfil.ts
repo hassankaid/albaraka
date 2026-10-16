@@ -34,6 +34,8 @@ export function useLibertyProfil() {
   });
 
   const [profil, setProfil] = useState<Profil>({});
+  // vrai une fois les réponses de l'élève posées dans l'état local (pas seulement reçues)
+  const [pret, setPret] = useState(false);
   const [etat, setEtat] = useState<EtatEnregistrement>("enregistre");
   const enAttente = useRef<Profil>({});
   const minuterie = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -43,6 +45,7 @@ export function useLibertyProfil() {
     if (data && !charge.current) {
       charge.current = true;
       setProfil(data);
+      setPret(true);
     }
   }, [data]);
 
@@ -91,5 +94,5 @@ export function useLibertyProfil() {
     };
   }, [envoyer]);
 
-  return { profil, modifier, etat, chargement: isLoading || (!!userId && !charge.current && !data), reessayer: envoyer };
+  return { profil, modifier, etat, chargement: isLoading || !pret, reessayer: envoyer };
 }
