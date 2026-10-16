@@ -4,14 +4,16 @@
 // La lecture « comme le montage » saute les coupes : on entend le rythme final
 // avant de relancer. Rien n'est envoyé tant que l'élève ne valide pas.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Mic, Pause, Play, RotateCcw, Undo2, Volume2, ZoomIn, ZoomOut } from "lucide-react";
+import { Loader2, Mic, Pause, Play, RotateCcw, SearchCheck, Undo2, Volume2, ZoomIn, ZoomOut } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { lienStudio } from "@/hooks/useStudio";
+import { LoupeCoupe } from "@/components/studio/LoupeCoupe";
 import {
   coupesEntre,
   deplacerBord,
+  enveloppe as mesurerSon,
   dureeGardee,
   garderCoupe,
   memesPlages,
@@ -19,7 +21,9 @@ import {
   motsAffiches,
   natureCoupe,
   normaliser,
+  passageAvant,
   tempsDeLecture,
+  type Enveloppe,
   type Plage,
   type TravailCoupes,
 } from "@/lib/studio/coupes";
@@ -51,6 +55,9 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
   const [zoom, setZoom] = useState(1);
   const [largeur, setLargeur] = useState(0);
   const [glisse, setGlisse] = useState<{ i: number; bord: "debut" | "fin"; base: Plage[] } | null>(null);
+  // la coupe ouverte dans la loupe : n° du passage qui la précède (-1 : début de la vidéo)
+  const [selection, setSelection] = useState<number | null>(null);
+  const [son, setSon] = useState<Enveloppe | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const frise = useRef<HTMLDivElement>(null);
@@ -80,7 +87,19 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
         setTravail(tr);
         const deja = reglages.coupes.plages;
         setPlages(normaliser(deja?.length ? deja : tr.coupes, tr.meta.duration));
-        setVideo(await lienStudio(tr.apercu_video ? `${dossier}/travail/apercu.mp4` : montage.source_path!));
+        const lien = await lienStudio(tr.apercu_video ? `${dossier}/travail/apercu.mp4` : montage.source_path!);
+        setVideo(lien);
+        // le dessin du son de la loupe, à partir de la vidéo légère (la source peut faire 1 Go)
+        if (tr.apercu_video) {
+          const Contexte = window.OfflineAudioContext ?? (window as unknown as { webkitOfflineAudioContext?: typeof OfflineAudioContext }).webkitOfflineAudioContext;
+          if (Contexte) {
+            fetch(lien)
+              .then((r) => r.arrayBuffer())
+              .then((b) => new Contexte(1, 1, 16000).decodeAudioData(b))
+              .then((audio) => actif && setSon(mesurerSon(audio.getChannelData(0), audio.sampleRate)))
+              .catch(() => undefined);
+          }
+        }
       } catch {
         if (actif) setErreur("La préparation de ta vidéo n'est pas encore disponible. Réessaie dans un instant.");
       }
@@ -96,6 +115,7 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
       const deja = reglages.coupes.plages;
       setPlages(normaliser(deja?.length ? deja : travail.coupes, travail.meta.duration));
       setHistorique([]);
+      setSelection(null);
     }
     if (!open) {
       videoRef.current?.pause();
@@ -128,7 +148,8 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
           if (fin !== null && v.currentTime >= fin) {
             v.pause();
             finEcoute.current = null;
-          } else if (fin === null && modeRef.current === "montage") {
+          } else if (modeRef.current === "montage") {
+            // « Écouter la transition » saute aussi les coupes, et s'arrête à `fin`
             const suite = tempsDeLecture(v.currentTime, plagesRef.current);
             if (suite === null) v.pause();
             else if (suite - v.currentTime > 0.03) v.currentTime = suite;
@@ -186,10 +207,21 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
     } else v.pause();
   }
 
-  function ecouter(coupe: Plage) {
+  function ecouter(coupe: Plage, avant = 1.5, apres = 1) {
     setMode("tout");
-    finEcoute.current = Math.min(duree, coupe[1] + 1);
-    aller(coupe[0] - 1.5, true);
+    finEcoute.current = Math.min(duree, coupe[1] + apres);
+    aller(coupe[0] - avant, true);
+  }
+
+  /** La transition telle qu'elle sera dans le montage : 2 s avant la coupe, puis la reprise. */
+  function ecouterTransition(coupe: Plage) {
+    setMode("montage");
+    finEcoute.current = Math.min(duree, coupe[1] + 1.5);
+    aller(Math.max(0, coupe[0] - 2), true);
+  }
+
+  function ouvrir(coupe: Plage) {
+    setSelection(passageAvant(plages, coupe));
   }
 
   const tempsDuPointeur = (clientX: number) => {
@@ -212,8 +244,8 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
         <DialogHeader className="shrink-0">
           <DialogTitle>Vérifier les coupes</DialogTitle>
           <DialogDescription>
-            En or, les passages gardés ; hachurées, les coupes. Tire les poignées pour prolonger un passage, ou garde
-            une coupe entière depuis la liste.
+            En or, les passages gardés ; hachurées, les coupes. Touche une coupe (ou « Ajuster ») pour la voir de près
+            et la régler à l'image près, ou garde-la entière depuis la liste.
           </DialogDescription>
         </DialogHeader>
 
@@ -337,7 +369,13 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                   <div
                     ref={frise}
                     className="relative h-14 cursor-pointer bg-[repeating-linear-gradient(135deg,rgba(239,68,68,0.18)_0_6px,transparent_6px_12px)]"
-                    onPointerDown={(e) => aller(tempsDuPointeur(e.clientX))}
+                    onPointerDown={(e) => {
+                      const temps = tempsDuPointeur(e.clientX);
+                      aller(temps);
+                      // un clic dans une coupe l'ouvre dans la loupe
+                      const c = coupes.find(([a, b]) => temps >= a && temps <= b);
+                      if (c) ouvrir(c);
+                    }}
                     data-testid="coupes-frise"
                   >
                     {plages.map(([a, b], i) => (
@@ -378,6 +416,16 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                         ))}
                       </div>
                     ))}
+                    {selection !== null &&
+                      (() => {
+                        const c = coupes.find((x) => passageAvant(plages, x) === selection);
+                        return c ? (
+                          <div
+                            className="pointer-events-none absolute inset-y-0 z-10 rounded-sm ring-2 ring-white"
+                            style={{ left: c[0] * pxParS, width: Math.max(4, (c[1] - c[0]) * pxParS) }}
+                          />
+                        ) : null;
+                      })()}
                     <div className="pointer-events-none absolute inset-y-0 z-20 w-0.5 bg-white shadow" style={{ left: t * pxParS }} />
                   </div>
                   <div className="relative h-5">
@@ -401,7 +449,25 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
               </div>
             </div>
 
-            {/* la liste des coupes */}
+            {/* la loupe sur la coupe choisie, sinon la liste des coupes */}
+            {selection !== null ? (
+              <LoupeCoupe
+                plages={plages}
+                passage={selection}
+                duree={duree}
+                mots={motsAffiches(travail.mots)}
+                enveloppe={son}
+                t={t}
+                onModifier={modifier}
+                onEcouterTransition={ecouterTransition}
+                onEcouterCoupe={(c) => ecouter(c, 0.5, 0.5)}
+                onGarder={(c) => {
+                  modifier(garderCoupe(plages, c, duree));
+                  setSelection(null);
+                }}
+                onFermer={() => setSelection(null)}
+              />
+            ) : (
             <div className="flex min-h-[120px] flex-1 flex-col gap-2">
               <p className="shrink-0 text-sm font-medium text-foreground">Les coupes</p>
               {coupes.length === 0 ? (
@@ -433,6 +499,9 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                           <Button variant="ghost" size="sm" className="h-8 gap-1.5" onClick={() => ecouter(c)}>
                             <Volume2 className="h-3.5 w-3.5" /> Écouter
                           </Button>
+                          <Button variant="outline" size="sm" className="h-8 gap-1.5" onClick={() => ouvrir(c)} data-testid="coupe-ajuster">
+                            <SearchCheck className="h-3.5 w-3.5" /> Ajuster
+                          </Button>
                           <Button variant="outline" size="sm" className="h-8" onClick={() => modifier(garderCoupe(plages, c, duree))}>
                             Garder
                           </Button>
@@ -443,6 +512,7 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                 </ul>
               )}
             </div>
+            )}
 
             <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-border pt-3">
               <Button
