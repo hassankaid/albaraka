@@ -78,7 +78,7 @@ export default function ChapterViewer() {
       const { data: chapitre, error } = await (supabase as any)
         .from("formation_chapitres")
         .select(
-          `id, titre, description, ordre, status, duree_estimee_minutes, notes_formateur, outil,
+          `id, titre, description, ordre, status, duree_estimee_minutes, notes_formateur, outil, sans_video,
           formation_modules!inner(id, titre, formation_id,
             formations!inner(id, slug, titre, navigation_libre, masquee_eleves)
           ),
@@ -599,7 +599,7 @@ export default function ChapterViewer() {
               videosCompleted={allVideosWatched}
               navigationLibre={!!(formation as { navigation_libre?: boolean }).navigation_libre}
             />
-          ) : (
+          ) : (chapitre as { sans_video?: boolean }).sans_video ? null : (
             <div className="aspect-video bg-muted rounded-lg flex flex-col items-center justify-center gap-3">
               <PlayCircle className="h-16 w-16 text-muted-foreground/30" />
               <p className="text-sm font-medium text-muted-foreground">
