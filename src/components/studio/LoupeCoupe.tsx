@@ -215,7 +215,17 @@ function Panneau({ titre, bord, position, plages, mots, enveloppe, t, actif, onA
     if (curseur >= fin) break;
   }
   if (curseur < fin) coupes.push([curseur, fin]);
-  const motsVus = mots.filter((m) => m.end > debut && m.start < fin);
+  // les mots sous le dessin : seulement ceux qui tiennent sans se chevaucher (≈ 6,5 px par lettre)
+  const largeurPx = svg.current?.clientWidth || 400;
+  let droite = -Infinity;
+  const motsVus = mots
+    .filter((m) => m.end > debut && m.start < fin)
+    .filter((m) => {
+      const gauche = (Math.max(0, x(m.start)) / 1000) * largeurPx;
+      if (gauche < droite) return false;
+      droite = gauche + m.text.length * 6.5 + 6;
+      return true;
+    });
   const graduations = Array.from({ length: Math.floor(FENETRE * 10) + 2 }, (_, k) => Math.ceil(debut * 10) / 10 + k / 10).filter((s) => s <= fin);
 
   return (
