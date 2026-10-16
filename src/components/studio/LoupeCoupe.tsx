@@ -82,6 +82,12 @@ export function LoupeCoupe({ plages, passage, duree, mots, enveloppe, t, onModif
     onModifier(deplacerBord(plages, b.i, bord, cible, duree));
   }
 
+  // sur téléphone, la loupe s'ouvre sous la frise : on la fait venir à l'écran
+  const cadre = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (window.innerWidth < 768) cadre.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [passage]);
+
   // clavier : ← → une image, avec Maj un dixième de seconde
   const decalerRef = useRef(decaler);
   decalerRef.current = decaler;
@@ -108,7 +114,7 @@ export function LoupeCoupe({ plages, passage, duree, mots, enveloppe, t, onModif
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto" data-testid="loupe-coupe">
+    <div ref={cadre} className="flex scroll-mt-2 flex-col gap-3 md:min-h-0 md:flex-1 md:overflow-y-auto" data-testid="loupe-coupe">
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="ghost" size="sm" className="gap-1.5 px-2" onClick={onFermer}>
           <ArrowLeft className="h-4 w-4" /> Toutes les coupes

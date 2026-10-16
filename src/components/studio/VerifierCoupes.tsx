@@ -245,7 +245,8 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[94vh] max-w-6xl flex-col gap-3 overflow-hidden">
+      {/* téléphone : la fenêtre défile ; ordinateur : tout reste à l'écran, seule la liste défile */}
+      <DialogContent className="flex h-[94vh] max-w-6xl flex-col gap-3 overflow-y-auto md:overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle>Vérifier les coupes</DialogTitle>
           <DialogDescription>
@@ -260,7 +261,7 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
           <Loader2 className="mx-auto my-16 h-6 w-6 animate-spin text-muted-foreground" />
         ) : (
           // la vidéo, la frise et les boutons restent à l'écran ; seule la liste des coupes défile
-          <div className="flex min-h-0 flex-1 flex-col gap-4" data-testid="verifier-coupes">
+          <div className="flex flex-col gap-4 md:min-h-0 md:flex-1" data-testid="verifier-coupes">
             <div className="grid shrink-0 gap-4 md:grid-cols-[auto_1fr]">
               <div
                 className={cn(
@@ -479,12 +480,12 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                 onFermer={() => setSelection(null)}
               />
             ) : (
-            <div className="flex min-h-[120px] flex-1 flex-col gap-2">
+            <div className="flex flex-col gap-2 md:min-h-[120px] md:flex-1">
               <p className="shrink-0 text-sm font-medium text-foreground">Les coupes</p>
               {coupes.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Plus aucune coupe : toute la vidéo est gardée.</p>
               ) : (
-                <ul className="min-h-0 flex-1 divide-y divide-border overflow-y-auto rounded-lg border border-border">
+                <ul className="divide-y divide-border rounded-lg border border-border md:min-h-0 md:flex-1 md:overflow-y-auto">
                   {coupes.map((c) => {
                     const n = natureCoupe(c, travail);
                     const bord = c[0] <= 0.001 ? "Début de la vidéo" : c[1] >= duree - 0.001 ? "Fin de la vidéo" : null;
