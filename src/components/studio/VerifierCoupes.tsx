@@ -262,7 +262,13 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
           // la vidéo, la frise et les boutons restent à l'écran ; seule la liste des coupes défile
           <div className="flex min-h-0 flex-1 flex-col gap-4" data-testid="verifier-coupes">
             <div className="grid shrink-0 gap-4 md:grid-cols-[auto_1fr]">
-              <div className="relative mx-auto aspect-[9/16] h-[30vh] max-h-[300px] min-h-[170px] overflow-hidden rounded-xl border border-border bg-black">
+              <div
+                className={cn(
+                  "relative mx-auto aspect-[9/16] overflow-hidden rounded-xl border border-border bg-black",
+                  // loupe ouverte : la vidéo se fait petite pour laisser la place aux réglages
+                  selection !== null ? "h-[16vh] min-h-[110px]" : "h-[30vh] max-h-[300px] min-h-[170px]",
+                )}
+              >
                 {video ? (
                   <video
                     ref={videoRef}
@@ -342,7 +348,7 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                   <span className="ml-auto font-mono text-xs tabular-nums text-muted-foreground">{minutage(t)}</span>
                 </div>
 
-                <p className="text-xs text-muted-foreground">
+                <p className={cn("text-xs text-muted-foreground", selection !== null && "hidden")}>
                   « Comme le montage » saute les coupes : tu entends le rythme final. « {voixSeule ? "Voix entière" : "Vidéo entière"} »
                   joue tout, pour repérer ce qui a été coupé.
                 </p>

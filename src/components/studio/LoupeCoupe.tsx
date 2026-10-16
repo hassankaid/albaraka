@@ -12,7 +12,6 @@ import {
   coupeApres,
   deplacerBord,
   IMAGE,
-  minutage,
   minutagePrecis,
   niveau,
   PLAGE_MIN,
@@ -115,7 +114,7 @@ export function LoupeCoupe({ plages, passage, duree, mots, enveloppe, t, onModif
           <ArrowLeft className="h-4 w-4" /> Toutes les coupes
         </Button>
         <p className="text-sm text-foreground">
-          Coupe à <span className="font-mono tabular-nums">{minutage(coupe[0])}</span> ·{" "}
+          Coupe à <span className="font-mono tabular-nums">{minutagePrecis(coupe[0])}</span> ·{" "}
           <span className="font-medium">{secondes(coupe[1] - coupe[0])}</span> enlevées
         </p>
         <div className="ml-auto flex flex-wrap gap-2">
@@ -227,7 +226,7 @@ function Panneau({ titre, bord, position, plages, mots, enveloppe, t, actif, onA
         ref={svg}
         viewBox="0 0 1000 150"
         preserveAspectRatio="none"
-        className="h-32 w-full touch-none select-none rounded-md bg-muted/30"
+        className="h-24 w-full touch-none select-none rounded-md bg-muted/30 sm:h-28"
         onPointerDown={(e) => {
           (e.target as Element).setPointerCapture?.(e.pointerId);
           setTire(true);
