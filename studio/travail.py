@@ -209,6 +209,52 @@ RYTHMES = {
 }
 RYTHME_DEFAUT = "naturel"
 
+# Correctif 9 (vocal de Sidali, 16/10) : « l'IA coupe la fin de certaines prononciations ».
+# Le moteur bornait chaque passage à 0,15 s autour des temps de Whisper, qui date souvent
+# trop tôt la fin du dernier mot d'une phrase (« concrètement. », « différence. ») : la fin
+# du mot tombait dans la coupe, même quand la voix continuait. Mesuré sur 22 montages réels :
+# 24 fins rognées → 3, 23 débuts → 8, pour 3 % de durée en plus. Désormais, chaque passage
+# peut aller jusqu'à MARGE_LIBRE du mot, sans jamais toucher le mot voisin, et c'est
+# l'énergie du son (tighten) qui place la coupe là où la voix s'arrête vraiment.
+MARGE_LIBRE = 0.6
+
+
+def plages_des_mots(words, remove, duration):
+    """Plages de temps source à garder (avant resserrage des blancs), bornées par les mots
+    voisins et non plus par 0,15 s autour de chaque mot. Une phrase ratée retirée juste à
+    côté garde la règle du milieu de l'intervalle, comme dans le moteur d'origine."""
+    retires = {i for a, b in remove for i in range(a, b + 1)}
+    plages = []
+    for i, w in enumerate(words):
+        if i in retires:
+            continue
+        s, e = w.start - MARGE_LIBRE, w.end + MARGE_LIBRE
+        # bornés par les mots voisins : deux passages qui se touchent fusionnent, et le
+        # resserrage décide ensuite, au son, s'il y a une pause à couper entre eux
+        if i > 0:
+            s = max(s, words[i - 1].end)
+        if i + 1 < len(words):
+            e = min(e, words[i + 1].start)
+        s, e = max(0.0, min(s, w.start)), min(duration, max(e, w.end))
+        if i > 0 and (i - 1) in retires:  # ne pas mordre sur la prise ratée juste avant
+            s = max(s, (words[i - 1].end + w.start) / 2)
+        if i + 1 < len(words) and (i + 1) in retires:
+            e = min(e, (w.end + words[i + 1].start) / 2)
+        if plages and s <= plages[-1][1] and (i - 1) not in retires:
+            plages[-1][1] = max(plages[-1][1], e)
+        else:
+            plages.append([s, e])
+    out = []
+    for s, e in plages:  # jamais deux plages qui se chevauchent
+        if out and s < out[-1][1]:
+            s = out[-1][1]
+        if e > s:
+            out.append((s, e))
+    return out
+
+
+P.kept_ranges_from_words = plages_des_mots
+
 
 def coupes_reglees(reglages, duree):
     """(rythme, plages gardées à la main ou None) d'après les réglages de l'élève."""
