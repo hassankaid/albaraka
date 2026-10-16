@@ -217,6 +217,8 @@ RYTHME_DEFAUT = "naturel"
 # peut aller jusqu'à MARGE_LIBRE du mot, sans jamais toucher le mot voisin, et c'est
 # l'énergie du son (tighten) qui place la coupe là où la voix s'arrête vraiment.
 MARGE_LIBRE = 0.6
+# version du calcul des coupes automatiques, gardée dans travail.json (2 = correctif 9)
+COUPES_VERSION = 2
 
 
 def plages_des_mots(words, remove, duration):
@@ -280,11 +282,14 @@ def coupes_reglees(reglages, duree):
 
 
 def coupes_a_refaire(travail, reglages):
-    """Les coupes de la préparation gardée diffèrent-elles de celles demandées ?"""
+    """Les coupes de la préparation gardée diffèrent-elles de celles demandées ?
+    Des coupes automatiques calculées par un moteur plus ancien sont refaites aussi :
+    « Refaire la vidéo » applique alors le correctif 9 (fins de mots protégées)."""
     rythme, plages = coupes_reglees(reglages, travail["meta"]["duration"])
     if plages:
         return plages != travail.get("plages")
-    return travail.get("plages") is not None or travail.get("rythme", "dynamique") != rythme
+    return (travail.get("plages") is not None or travail.get("rythme", "dynamique") != rythme
+            or travail.get("coupes_version", 1) < COUPES_VERSION)
 
 
 def plages_d_index(indices):
@@ -709,6 +714,7 @@ def monter(src, dossier, liens, travail, reglages, chrono=None, precedent=None):
     top("animations")
     travail.update({
         "rythme": rythme, "plages": plages, "duree_sortie": round(total, 2), "coupes": cuts,
+        "coupes_version": COUPES_VERSION,
         "retires": sorted(retires), "sous_titres": sous_titres, "groupes": groupes, "chrono": chrono,
         "mots_gardes": gardes, "plan_hf": plan, "plan_hf_brut": brut, "plan": None,
         "cout_usd": dict(COUT), "reponses_ia": REPONSES_IA[-4:],
