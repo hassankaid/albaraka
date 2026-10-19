@@ -25,6 +25,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { demarrer, lienStudio, signalerProbleme, useMontage, useRafraichirStudio } from "@/hooks/useStudio";
+import { useAuth } from "@/hooks/useAuth";
+import { dollars } from "@/lib/studio/creditIA";
 import {
   completerReglages,
   enTraitement,
@@ -111,6 +113,7 @@ function Etapes({ m }: { m: Montage }) {
 export default function StudioMontage() {
   const { id } = useParams();
   const { data: m, isLoading } = useMontage(id);
+  const estCeo = useAuth().profile?.role === "ceo";
   const rafraichir = useRafraichirStudio();
   const [video, setVideo] = useState<string | null>(null);
   const [modifier, setModifier] = useState(false);
@@ -260,6 +263,11 @@ export default function StudioMontage() {
               {m.rapport && (
                 <p className="text-sm text-muted-foreground">
                   {Math.round(Number(m.rapport.entree_s))} s filmées, {Math.round(Number(m.rapport.sortie_s))} s gardées.
+                </p>
+              )}
+              {estCeo && Number(m.cout_ia_usd) > 0 && (
+                <p className="text-xs text-muted-foreground" data-testid="cout-ia">
+                  Coût IA de ce montage (visible par l'équipe seulement) : {dollars(Number(m.cout_ia_usd))}
                 </p>
               )}
               <p className="text-xs text-muted-foreground">

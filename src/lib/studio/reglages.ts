@@ -2,6 +2,7 @@
 // l'élève, valeurs par défaut et libellés. Tout le reste (format, polices,
 // position des sous-titres, coupes…) est imposé dans le moteur.
 
+import { estPanneIA, MESSAGE_IA_INDISPONIBLE } from "./creditIA";
 import type { CorrectionSousTitre } from "./sousTitres";
 
 // « naturel » : seul le visage est flouté, sans bulle ni couleur (choix de Hassan, 09/10).
@@ -197,6 +198,8 @@ export interface Montage {
   version: number;
   sortie_path: string | null;
   rapport: Record<string, unknown> | null;
+  /** Coût IA cumulé en dollars, tous passages (migration 20261019200000). */
+  cout_ia_usd?: number | string | null;
   erreur: string | null;
   signalement: string | null;
   created_at: string;
@@ -279,6 +282,8 @@ export const LIBELLE_STATUT: Record<Statut, string> = {
 export function messageErreur(erreur: string | null | undefined): { texte: string; detail: string | null } {
   const e = (erreur ?? "").trim();
   const technique = e.match(/^Erreur pendant le montage \((.*)\)$/s);
+  // panne de l'IA (crédit épuisé, clé refusée) : rien à corriger côté élève
+  if (technique && estPanneIA(technique[1])) return { texte: MESSAGE_IA_INDISPONIBLE, detail: technique[1] };
   if (technique || !e) {
     return {
       texte: "Un souci technique a interrompu le montage. Relance-le : la plupart du temps, ça passe. Si ça recommence, signale-le, l'équipe regardera.",

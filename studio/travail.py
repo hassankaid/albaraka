@@ -47,6 +47,7 @@ import sys
 import tempfile
 import time
 import traceback
+import urllib.error
 import urllib.request
 
 # Hyperframes ne doit ni se mettre à jour en plein montage, ni envoyer de télémétrie
@@ -111,16 +112,60 @@ def deposer(url, chemin, type_mime):
         _http(url, f.read(), methode="PUT", entetes={"Content-Type": type_mime, "x-upsert": "true"}, delai=600)
 
 
+class ServiceIA(ValueError):
+    """L'IA refuse les appels (crédit épuisé, clé refusée) : inutile de réessayer. Le message
+    est montré tel quel à l'élève ; `panne` est déclarée à la base, qui alerte l'équipe."""
+
+    def __init__(self, panne):
+        super().__init__("Le Studio est momentanément indisponible : le service d'intelligence artificielle "
+                         "ne répond plus. L'équipe est prévenue et s'en occupe. Relance ton montage un peu plus "
+                         "tard : ta vidéo ne sera pas recomptée.")
+        self.panne = panne
+
+
 def openrouter(chemin, corps, essais=3):
     for k in range(essais):
         try:
             return json.loads(_http("https://openrouter.ai/api/v1" + chemin, {**corps, "provider": PRIVE},
                                     entetes={"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}",
                                              "Content-Type": "application/json"}, delai=90))
+        except urllib.error.HTTPError as e:
+            # 402 : crédit épuisé ; 401 / 403 : clé refusée (panne du 19/10/2026)
+            if e.code in (401, 402, 403):
+                raise ServiceIA("credit" if e.code == 402 else "cle") from e
+            if k == essais - 1:
+                raise
+            time.sleep(2 * (k + 1))
         except Exception:
             if k == essais - 1:
                 raise
             time.sleep(2 * (k + 1))
+
+
+COUT_DECLARE = [0.0]  # ce qui a déjà été déclaré à la base pendant ce passage
+
+
+def credit_restant():
+    """Le crédit OpenRouter restant, en dollars (None si on ne peut pas le lire)."""
+    try:
+        d = json.loads(_http("https://openrouter.ai/api/v1/credits",
+                             entetes={"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}"}, delai=10))["data"]
+        return round(float(d["total_credits"]) - float(d["total_usage"]), 2)
+    except Exception:
+        return None
+
+
+def declarer_cout(panne=None):
+    """Déclare à la base ce que ce passage a coûté depuis la dernière déclaration, et le crédit
+    restant (studio_job_cout, migration 20261019200000) : coût réel par montage et alerte
+    « crédit bas » à l'équipe. Jamais bloquant."""
+    try:
+        total = sum(COUT.values())
+        rpc("studio_job_cout", p_id=MONTAGE, p_jeton=JETON, p_cout=round(total - COUT_DECLARE[0], 5),
+            p_credit=credit_restant(), p_panne=panne)
+        COUT_DECLARE[0] = total
+    except Exception:
+        traceback.print_exc()
 
 
 REPONSES_IA = []  # gardées dans travail.json pour comprendre un montage raté
@@ -708,6 +753,8 @@ def monter(src, dossier, liens, travail, reglages, chrono=None, precedent=None):
     brut = precedent.get("plan_hf_brut") if memes_mots else None
     try:
         brut, plan = plan_hf(gardes, sous_titres, total, brut)
+    except ServiceIA:  # l'IA ne répond plus : inutile de continuer, l'élève relancera
+        raise
     except Exception:  # le plan sera redemandé au rendu (ou le motion design classique prendra le relais)
         traceback.print_exc()
         brut = plan = None
@@ -949,6 +996,8 @@ def rendre(dossier, liens, reglages, travail):
     if d.get("actif", True) is not False and hyperframes_present():
         try:
             return rendre_hf(dossier, liens, reglages, travail, flou)
+        except ServiceIA:
+            raise
         except Exception as e:
             traceback.print_exc()
             secours = f"{type(e).__name__}: {e}"[:400]
@@ -1000,6 +1049,7 @@ def main():
             telecharger(liens["source"], src)
             travail, cle_son = preparer(src, dossier, liens, reglages, avec_apercu=(mode == "preparation"))
             if mode == "preparation":
+                declarer_cout()
                 suite = rpc("studio_job_fin_preparation", p_id=MONTAGE, p_jeton=JETON, p_audio=cle_son)
                 if not suite.get("continuer"):
                     print("préparation terminée, en attente des réglages", flush=True)
@@ -1040,6 +1090,7 @@ def main():
             "cout_usd": {k: round(v + (travail.get("cout_usd") or {}).get(k, 0) * (mode == "rendu"), 5)
                          for k, v in COUT.items()},
         }
+        declarer_cout()
         rpc("studio_job_terminer", p_id=MONTAGE, p_jeton=JETON, p_sortie_path=liens["sortie_path"], p_rapport=rapport)
         print(json.dumps(rapport, ensure_ascii=False), flush=True)
 
@@ -1050,6 +1101,7 @@ if __name__ == "__main__":
     except Exception as e:
         traceback.print_exc()
         message = str(e) if isinstance(e, ValueError) else f"Erreur pendant le montage ({type(e).__name__}: {str(e)[:300]})"
+        declarer_cout(getattr(e, "panne", None))
         try:
             rpc("studio_job_erreur", p_id=MONTAGE, p_jeton=JETON, p_message=message)
         except Exception:

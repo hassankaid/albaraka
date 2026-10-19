@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useMesMontages } from "@/hooks/useStudio";
 import { BandeauQuota } from "@/components/studio/QuotaStudio";
+import { CreditIA } from "@/components/studio/CreditIA";
 import { enTraitement, LIBELLE_STATUT, lienDuMontage, type Montage } from "@/lib/studio/reglages";
 import { supabase } from "@/integrations/supabase/client";
 import { STOCKAGE_RESSOURCES } from "@/lib/ressourcesFormation";
@@ -87,6 +88,7 @@ export default function StudioAccueil() {
         </div>
       </header>
 
+      {estCeo && <CreditIA />}
       <BandeauQuota />
 
       <div className="grid gap-4 sm:grid-cols-2">
