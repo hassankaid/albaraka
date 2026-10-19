@@ -10,13 +10,15 @@
 // à relancer d'un élève à activer. Les absents finissent donc toujours en bas,
 // quel que soit le critère.
 // ─────────────────────────────────────────────────────────────────────────
-export type CritereTri = "connexion" | "activite" | "nom";
+export type CritereTri = "connexion" | "activite" | "nom" | "cout_ia";
 
 export interface EleveTriable {
   full_name: string | null;
   email: string;
   derniere_presence?: string | null;
   last_activity_at?: string | null;
+  /** coût IA total depuis le début (admin) */
+  cout_ia?: number;
 }
 
 /** Plus récent d'abord ; les valeurs absentes toujours en dernier. */
@@ -33,6 +35,9 @@ export function trier<T extends EleveTriable>(eleves: T[], critere: CritereTri):
     copie.sort((a, b) => comparerDates(a.derniere_presence, b.derniere_presence));
   } else if (critere === "activite") {
     copie.sort((a, b) => comparerDates(a.last_activity_at, b.last_activity_at));
+  } else if (critere === "cout_ia") {
+    // les plus gros consommateurs d'abord ; à égalité (souvent 0), par nom
+    copie.sort((a, b) => (b.cout_ia ?? 0) - (a.cout_ia ?? 0) || (a.full_name || a.email).localeCompare(b.full_name || b.email, "fr"));
   } else {
     copie.sort((a, b) =>
       (a.full_name || a.email).localeCompare(b.full_name || b.email, "fr"),

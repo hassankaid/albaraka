@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, MessageCircle, FolderDown, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film, Hash, Mail, FlaskConical, ClipboardList, Globe } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, MessageCircle, FolderDown, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film, Hash, Mail, FlaskConical, ClipboardList, Globe, Gauge } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -69,6 +69,7 @@ const adminNavItems: NavItem[] = [
   { title: "Factures", path: "/admin/invoices", icon: FileText, roles: ["ceo"] },
   { title: "Contrats clients", path: "/admin/contracts", icon: FileSignature, roles: ["ceo"] },
   { title: "Données", path: "/admin/data", icon: Database, roles: ["ceo"] },
+  { title: "Consommation IA", path: "/admin/ia", icon: Gauge, roles: ["ceo"] },
   { title: "Agent IA", path: "/admin/agent-knowledge", icon: Bot, roles: ["ceo"] },
   { title: "Créer", path: "/admin/create", icon: PlusCircle, roles: ["ceo"] },
   { title: "Webhooks Calendly", path: "/admin/webhooks/calendly", icon: Webhook, roles: ["ceo"] },
@@ -133,6 +134,7 @@ const pageTitles: Record<string, string> = {
   "/admin/training/access": "Accès & Pass",
   "/admin/create": "Création complète",
   "/admin/agent-knowledge": "Base de connaissance Agent IA",
+  "/admin/ia": "Consommation IA",
   "/my-space": "Mon espace",
   "/profile": "Mon profil",
   "/coaching/calendar": "Calendrier des coachings",

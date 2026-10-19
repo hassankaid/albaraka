@@ -70,6 +70,7 @@ import ChapitreEditor from "./pages/training/admin/ChapitreEditor";
 import AdminScriptList from "./pages/admin/scripts/AdminScriptList";
 import ScriptEditor from "./pages/admin/scripts/ScriptEditor";
 import AdminAgentKnowledge from "./pages/admin/agent-knowledge/AdminAgentKnowledge";
+import AdminConsommationIA from "./pages/admin/ia/AdminConsommationIA";
 import RolePlay from "./pages/training/RolePlay";
 import RolePlayAdmin from "./pages/admin/role-play/RolePlayAdmin";
 import QuizList from "./pages/training/QuizList";
@@ -387,6 +388,7 @@ const FullApp = () => (
                   <Route path="/admin/scripts" element={<AdminScriptList />} />
                   <Route path="/admin/scripts/:id" element={<ScriptEditor />} />
                   <Route path="/admin/agent-knowledge" element={<AdminAgentKnowledge />} />
+                  <Route path="/admin/ia" element={<AdminConsommationIA />} />
                   <Route path="/admin/role-play" element={<RolePlayAdmin />} />
                   <Route path="/admin/quizzes" element={<AdminQuizList />} />
                   <Route path="/admin/training/manage" element={<AdminTrainingHub />} />

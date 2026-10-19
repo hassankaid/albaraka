@@ -73,3 +73,18 @@ describe("comparerDates", () => {
     expect(comparerDates(null, null)).toBe(0);
   });
 });
+
+describe("tri par coût IA", () => {
+  it("les plus gros consommateurs d'abord, puis par nom", () => {
+    const r = trier(
+      [
+        { full_name: "Zoé", email: "z@x", cout_ia: 0 },
+        { full_name: "Ali", email: "a@x", cout_ia: 0.4 },
+        { full_name: "Bob", email: "b@x" },
+        { full_name: "Ana", email: "an@x", cout_ia: 2 },
+      ],
+      "cout_ia",
+    );
+    expect(r.map((e) => e.full_name)).toEqual(["Ana", "Ali", "Bob", "Zoé"]);
+  });
+});

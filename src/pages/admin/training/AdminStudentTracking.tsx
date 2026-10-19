@@ -3,6 +3,9 @@ import BandeauConnexions from "./BandeauConnexions";
 import { trier, type CritereTri } from "./tri-eleves";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { usd } from "@/lib/ia/consommation";
 import { useStudentsList, type StudentSummary } from "@/hooks/useStudentTracking";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -55,6 +58,19 @@ export default function AdminStudentTracking() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { data: students, isLoading } = useStudentsList();
+  // Vidéos Studio et coût IA depuis le début, par personne (RPC réservée au CEO)
+  const { data: ia } = useQuery({
+    queryKey: ["ia-par-eleve"],
+    enabled: profile?.role === "ceo",
+    staleTime: 60_000,
+    queryFn: async () => {
+      // ia_par_eleve est absente des types générés (migration 20261019221000)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).rpc("ia_par_eleve");
+      if (error) throw error;
+      return new Map((data as { user_id: string; videos: number; cout: number }[]).map((l) => [l.user_id, l]));
+    },
+  });
 
   const [search, setSearch] = useState("");
   const [formationFilter, setFormationFilter] = useState<string>("all");
@@ -113,7 +129,10 @@ export default function AdminStudentTracking() {
 
   // Le tri s'applique APRES les filtres. La logique vit dans tri-eleves.ts
   // pour etre testable — le piege est le traitement des valeurs absentes.
-  const studentsTries = useMemo(() => trier(filteredStudents, tri), [filteredStudents, tri]);
+  const studentsTries = useMemo(
+    () => trier(filteredStudents.map((s) => ({ ...s, cout_ia: Number(ia?.get(s.user_id)?.cout ?? 0) })), tri),
+    [filteredStudents, tri, ia],
+  );
 
   return (
     <div className="space-y-6">
@@ -199,6 +218,7 @@ export default function AdminStudentTracking() {
             <SelectItem value="connexion">Présence la plus récente</SelectItem>
             <SelectItem value="activite">Activité la plus récente</SelectItem>
             <SelectItem value="nom">Nom (A → Z)</SelectItem>
+            <SelectItem value="cout_ia">Coût IA (le plus élevé)</SelectItem>
           </SelectContent>
         </Select>
 
@@ -244,9 +264,11 @@ export default function AdminStudentTracking() {
             {/* Header */}
             <div className="hidden md:grid md:grid-cols-12 gap-3 px-4 py-3 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               <div className="col-span-3">Élève</div>
-              <div className="col-span-2 text-center">Formations</div>
-              <div className="col-span-3">Progression</div>
+              <div className="col-span-1 text-center">Formations</div>
+              <div className="col-span-2">Progression</div>
               <div className="col-span-1 text-center">Quiz</div>
+              <div className="col-span-1 text-center">Vidéos</div>
+              <div className="col-span-1 text-right" title="Coût de l'IA depuis le début (Studio et autres fonctionnalités)">Coût IA</div>
               <div className="col-span-3">Dernière présence</div>
             </div>
 
@@ -271,14 +293,14 @@ export default function AdminStudentTracking() {
                   </div>
 
                   {/* Formations count */}
-                  <div className="col-span-2 flex items-center justify-start md:justify-center">
+                  <div className="col-span-1 flex items-center justify-start md:justify-center">
                     <Badge variant="outline" className="text-xs">
                       {s.enrollments_count}
                     </Badge>
                   </div>
 
                   {/* Progression */}
-                  <div className="col-span-3 flex items-center gap-2">
+                  <div className="col-span-2 flex items-center gap-2">
                     <div className="flex-1 min-w-0">
                       <Progress
                         value={s.global_progress_pct}
@@ -313,6 +335,16 @@ export default function AdminStudentTracking() {
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
+                  </div>
+
+                  {/* Studio et IA (admin) : sur mobile, en une ligne */}
+                  <div className="col-span-1 flex items-center justify-start md:justify-center text-xs tabular-nums">
+                    <span className="md:hidden text-muted-foreground mr-1">Vidéos Studio :</span>
+                    {ia?.get(s.user_id)?.videos ? ia.get(s.user_id)!.videos : <span className="text-muted-foreground">—</span>}
+                  </div>
+                  <div className="col-span-1 flex items-center justify-start md:justify-end text-xs tabular-nums">
+                    <span className="md:hidden text-muted-foreground mr-1">Coût IA :</span>
+                    {s.cout_ia ? usd(s.cout_ia) : <span className="text-muted-foreground">—</span>}
                   </div>
 
                   {/* Connexion, puis activité — deux choses différentes, et
