@@ -65,9 +65,10 @@ export function PlansVoixOff({
         setMoments(ms);
         setChoix({});
         const ids = [...new Set(ms.flatMap((m) => [m.plan.id, ...m.propositions.map((p) => p.id)]))];
-        const { data } = await db.from("studio_banque_plans").select("id, images").in("id", ids);
+        // une image par plan (RPC ouverte aux élèves : la banque elle-même reste réservée au CEO)
+        const { data } = await db.rpc("studio_vignettes_plans", { p_ids: ids });
         const parPlan: Record<string, string> = {};
-        for (const p of data ?? []) parPlan[p.id] = p.images?.[1] ?? p.images?.[0];
+        for (const p of (data ?? []) as { id: string; image: string | null }[]) if (p.image) parPlan[p.id] = p.image;
         const liens = await liensBanque(Object.values(parPlan).filter(Boolean));
         if (actif) setImages(Object.fromEntries(Object.entries(parPlan).map(([id, c]) => [id, liens[c]])));
       } catch {
