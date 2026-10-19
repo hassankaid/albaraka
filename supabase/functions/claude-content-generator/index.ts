@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { appelerIA, utilisateurDe } from "../_shared/ia.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,36 +21,16 @@ serve(async (req) => {
       });
     }
 
-    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!ANTHROPIC_API_KEY) {
-      throw new Error("ANTHROPIC_API_KEY non configurée");
-    }
-
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 8000,
-        messages: [{ role: "user", content: prompt }],
-      }),
+    // Générateur de contenus (personal brand) : via OpenRouter, noté au journal de consommation IA
+    const texte = await appelerIA({
+      fonctionnalite: "contenus_personal_brand",
+      userId: await utilisateurDe(req),
+      maxTokens: 8000,
+      messages: [{ role: "user", content: prompt }],
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Anthropic API error:", response.status, errorText);
-      throw new Error(`API Anthropic error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const textContent = data.content?.find((c: any) => c.type === "text");
-
     return new Response(
-      JSON.stringify({ response: textContent?.text || "" }),
+      JSON.stringify({ response: texte }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

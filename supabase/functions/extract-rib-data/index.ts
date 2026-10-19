@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { appelerIA } from "../_shared/ia.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,7 +23,6 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY")!;
 
     // Verify the calling user
     const supabaseUser = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
@@ -152,37 +152,22 @@ Si un champ n'est pas trouvé, mets une chaîne vide. Ne retourne RIEN d'autre q
       ];
     }
 
-    // Call Anthropic Claude to extract bank details
-    const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": anthropicKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: messageContent,
-          },
-        ],
-      }),
-    });
-
-    if (!anthropicResponse.ok) {
-      const errorText = await anthropicResponse.text();
-      console.error("Anthropic API error:", errorText);
+    // Lecture du RIB par Claude, via OpenRouter, notée au journal de consommation IA
+    let textContent = "";
+    try {
+      textContent = await appelerIA({
+        fonctionnalite: "lecture_rib",
+        userId: user.id,
+        maxTokens: 1024,
+        messages: [{ role: "user", content: messageContent }],
+      });
+    } catch (e) {
+      console.error("IA error:", (e as Error).message);
       return new Response(
-        JSON.stringify({ error: "AI extraction failed", details: errorText }),
+        JSON.stringify({ error: "AI extraction failed", details: (e as Error).message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const anthropicData = await anthropicResponse.json();
-    const textContent = anthropicData.content?.[0]?.text || "";
 
     // Parse the JSON from Claude's response
     const jsonMatch = textContent.match(/\{[\s\S]*\}/);

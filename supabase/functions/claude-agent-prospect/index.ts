@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { appelerIA, IAIndisponible, utilisateurDe } from "../_shared/ia.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -125,55 +126,32 @@ serve(async (req) => {
       );
     }
 
-    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!ANTHROPIC_API_KEY) {
-      throw new Error("ANTHROPIC_API_KEY non configurée");
-    }
-
     const entries = await fetchKnowledgeBase();
     const systemPromptText = buildSystemPrompt(entries);
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1024,
-        // Prompt caching Anthropic : system prompt mis en cache côté API,
-        // -90% de coût et -50% de latence sur les requêtes suivantes (TTL 5 min)
-        system: [
-          {
-            type: "text",
-            text: systemPromptText,
-            cache_control: { type: "ephemeral" },
-          },
-        ],
-        messages,
-      }),
+    // OpenRouter, comme toute l'IA de la plateforme (19/10/2026) ; la base de
+    // connaissance reste en cache chez le fournisseur entre deux messages.
+    const texte = await appelerIA({
+      fonctionnalite: "agent_setting",
+      userId: await utilisateurDe(req),
+      system: systemPromptText,
+      cacheSystem: true,
+      maxTokens: 1024,
+      messages,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Anthropic API error:", response.status, errorText);
-      return new Response(
-        JSON.stringify({ error: `API Anthropic error: ${response.status}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const data = await response.json();
-    const textContent = data.content?.find((c: any) => c.type === "text");
-
     return new Response(
-      JSON.stringify({ response: textContent?.text || "" }),
+      JSON.stringify({ response: texte }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("Error in claude-agent-prospect:", error);
+    if (error instanceof IAIndisponible) {
+      return new Response(
+        JSON.stringify({ error: "L'assistant IA est momentanément indisponible. Réessaie un peu plus tard." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Erreur inconnue" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

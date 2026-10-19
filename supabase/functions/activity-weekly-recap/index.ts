@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { appelerIA } from "../_shared/ia.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,7 +65,7 @@ function listAllDays(weekStart: string): string[] {
 }
 
 async function generateRecap(
-  apiKey: string,
+  userId: string,
   args: {
     userName: string;
     weekStart: string;
@@ -105,28 +106,18 @@ Rédige un bilan en 4 à 6 phrases :
 
 Ton bienveillant, factuel, chiffré. Pas de flagornerie, pas d'anglicismes, pas de listes, français naturel.`;
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 500,
+  // via OpenRouter, noté au journal de consommation IA (imputé à la personne du récap)
+  try {
+    return (await appelerIA({
+      fonctionnalite: "recap_hebdo",
+      userId,
+      maxTokens: 500,
       messages: [{ role: "user", content: prompt }],
-    }),
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    console.error("Anthropic error:", response.status, errText);
+    })) || null;
+  } catch (e) {
+    console.error("IA error:", (e as Error).message);
     return null;
   }
-
-  const data = await response.json();
-  return data.content?.[0]?.text || null;
 }
 
 Deno.serve(async (req) => {
@@ -135,8 +126,6 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not set");
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -244,7 +233,7 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const recap = await generateRecap(ANTHROPIC_API_KEY, {
+        const recap = await generateRecap(profile.id, {
           userName: profile.full_name || "collaborateur",
           weekStart: prevMondayStr,
           weekEnd: prevSundayStr,

@@ -16,9 +16,10 @@
 //   { content: "...texte généré..." }
 //
 // Auth : JWT verification activée → seul un utilisateur Supabase connecté peut appeler.
-// La clé ANTHROPIC_API_KEY est lue depuis les secrets Supabase Edge Functions.
+// Depuis le 19/10/2026 : via OpenRouter (_shared/ia.ts), chaque appel noté au journal de consommation IA.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { appelerIA, utilisateurDe } from "../_shared/ia.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,42 +67,18 @@ serve(async (req) => {
       ? max_tokens
       : DEFAULT_MAX_TOKENS;
 
-  // ── Appel API Claude ──────────────────────────────────────────────────
-  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!ANTHROPIC_API_KEY) {
-    console.error("[liberty-claude-proxy] ANTHROPIC_API_KEY non configurée");
-    return json({ error: "Configuration serveur invalide" }, 500);
-  }
-
+  // ── Appel à Claude (OpenRouter) ───────────────────────────────────────
   try {
     const t0 = Date.now();
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: finalModel,
-        max_tokens: finalMaxTokens,
-        system,
-        messages: [{ role: "user", content: user }],
-      }),
+    const textContent = await appelerIA({
+      fonctionnalite: "liberty_ancien",
+      userId: await utilisateurDe(req),
+      modele: finalModel,
+      maxTokens: finalMaxTokens,
+      system,
+      messages: [{ role: "user", content: user }],
+      reference: module_id,
     });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error(
-        `[liberty-claude-proxy] Anthropic API error ${res.status} (module=${module_id}):`,
-        errText,
-      );
-      return json({ error: `Anthropic API ${res.status}` }, 502);
-    }
-
-    const data = await res.json();
-    const textContent =
-      data.content?.find((c: any) => c.type === "text")?.text ?? "";
 
     const elapsed = Date.now() - t0;
     console.info(

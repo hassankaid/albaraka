@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { appelerIA, utilisateurDe } from "../_shared/ia.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,9 +60,6 @@ serve(async (req) => {
     const payload = (await req.json()) as Payload;
     const { today, yesterday, last7, objectives_daily } = payload;
 
-    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not set");
-
     const week = summarize7Days(last7 || []);
 
     const prompt = `Tu es un coach bienveillant mais lucide pour des apporteurs d'affaires d'Ethicarena.
@@ -95,30 +93,19 @@ Génère 2 à 3 phrases courtes, contextuelles et concrètes :
 
 Pas de liste, pas d'emoji excessif, français naturel, ton chaleureux mais factuel.`;
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 250,
+    // via OpenRouter, noté au journal de consommation IA ; en cas d'échec, pas de message (comme avant)
+    let feedback: string | null = null;
+    try {
+      feedback = (await appelerIA({
+        fonctionnalite: "coach_activite",
+        userId: await utilisateurDe(req),
+        maxTokens: 250,
         messages: [{ role: "user", content: prompt }],
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Anthropic error:", response.status, errText);
-      return new Response(JSON.stringify({ feedback: null }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+        reference: today.entry_date,
+      })) || null;
+    } catch (e) {
+      console.error("IA error:", (e as Error).message);
     }
-
-    const data = await response.json();
-    const feedback = data.content?.[0]?.text || null;
 
     return new Response(JSON.stringify({ feedback }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -56,6 +56,16 @@ Réponds UNIQUEMENT en JSON : {"theme": "identifiant"}`;
       }),
     });
     const d = await rep.json();
+    // journal de consommation IA (tableau de bord admin) : jamais bloquant
+    await sb
+      .rpc("ia_noter", {
+        p_fonctionnalite: "studio_theme",
+        p_modele: MODELE,
+        p_tokens_entree: d?.usage?.prompt_tokens ?? null,
+        p_tokens_sortie: d?.usage?.completion_tokens ?? null,
+        p_cout: d?.usage?.cost ?? 0,
+      })
+      .then(() => undefined, () => undefined);
     const texte: string = d?.choices?.[0]?.message?.content ?? "";
     const id = /"theme"\s*:\s*"([a-z_]+)"/.exec(texte)?.[1];
     const theme = themes.find((t) => t.id === id)?.id ?? themes[0].id;
