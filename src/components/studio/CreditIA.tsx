@@ -1,6 +1,6 @@
 // La carte « Crédit IA » de l'accueil du Studio, réservée au CEO (panne du 19/10/2026) :
 // le crédit OpenRouter restant (mesuré à chaque montage), combien de montages il permet
-// encore, ce que le Studio a coûté sur 7 jours. Une alerte arrive dans les notifications
+// encore, ce que le Studio a coûté depuis le début du suivi complet. Une alerte arrive dans les notifications
 // quand le crédit passe sous le seuil.
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ExternalLink, Sparkles } from "lucide-react";
