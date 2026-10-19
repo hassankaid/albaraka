@@ -31,7 +31,7 @@ import { ChapterQuizCard } from "@/components/training/QuizInFormation";
 import { useLockedChapitres, useQuizByChapitre } from "@/hooks/useQuizzes";
 import { useOutilLibertyDuChapitre } from "@/hooks/useOutilLiberty";
 import { useUserPass } from "@/hooks/useUserPass";
-import { Lock, Sparkles } from "lucide-react";
+import { Lightbulb, Lock, Sparkles } from "lucide-react";
 import { useRenvoisDuChapitre, type Renvoi } from "@/hooks/useRenvois";
 import Renvois from "@/components/training/Renvois";
 import { RessourceEleve } from "@/components/training/RessourceEleve";
@@ -699,6 +699,33 @@ export default function ChapterViewer() {
                 className="shrink-0 gap-2 bg-amber-500 text-white hover:bg-amber-600"
               >
                 Construire mon script d'appel
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          {/* Parcours Liberty (Sidali, 19/10/2026) : sous la toute première vidéo, pour qui n'a
+              pas encore d'idée d'offre, l'ancien outil Niche (bilan, brainstorm, propositions) */}
+          {formation.slug === "parcours-liberty" && navData && !navData.prev_chapitre_id && (
+            <div className="rounded-xl border border-amber-500/40 bg-gradient-to-br from-amber-500/5 to-transparent p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" data-testid="liberty-pas-d-idee">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600">
+                  <Lightbulb className="h-4 w-4" />
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-sm font-semibold text-foreground">Vous n'avez pas encore d'idée d'offre ?</p>
+                  <p className="text-sm text-muted-foreground">
+                    Faites le point sur votre parcours et vos compétences : l'outil vous propose des idées de niches, puis vous aide à en choisir une. Vous la reporterez ensuite dans l'Outil 1.
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate("/training/parcours-liberty/trouver-mon-offre")}
+                className="shrink-0 gap-2 border-amber-500/60 text-amber-700 hover:bg-amber-500/10 dark:text-amber-400"
+              >
+                Trouver mon idée d'offre
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>

@@ -14,6 +14,7 @@ import { useProchaineEtapeLiberty } from "@/hooks/useProchaineEtapeLiberty";
 import { pushM1ProfilePivot } from "../lib/profilePivot";
 import { exportM1PDF } from "../lib/exportPDF";
 import type { M1State } from "../lib/types";
+import { useDestinationsNiche } from "../lib/destinations";
 
 interface LockScreenProps {
   state: M1State;
@@ -27,7 +28,10 @@ export function LockScreen({
   state, setState, userId, onBack, flushNow,
 }: LockScreenProps) {
   const navigate = useNavigate();
-  const prochaine = useProchaineEtapeLiberty();
+  const ancienneSuite = useProchaineEtapeLiberty();
+  // depuis le nouveau parcours : la niche se reporte dans l'Outil 1
+  const { suite } = useDestinationsNiche();
+  const prochaine = suite ?? ancienneSuite;
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const { parcours } = useParcours("liberty");
@@ -115,7 +119,8 @@ export function LockScreen({
       <StepEyebrow>Verrou pédagogique</StepEyebrow>
       <StepTitle>Lock & Export</StepTitle>
       <StepSub>
-        Voilà tout ce que tu as construit. Tu signes, tu télécharges, tu démarres le M2.{" "}
+        Voilà tout ce que tu as construit. Tu signes, tu télécharges,{" "}
+        {suite ? "puis tu reportes ta niche dans l'Outil 1." : "tu démarres le M2."}{" "}
         <strong className="text-[#C9A84C]">L'engagement n'est pas cosmétique</strong> — c'est ce
         qui te tiendra droit pendant les 90 jours.
       </StepSub>

@@ -106,6 +106,7 @@ import ParcoursView from "./pages/parcours/ParcoursView";
 import { LibertyModuleFrame } from "./components/parcours/LibertyModuleFrame";
 import ParcoursChapitreDetail from "./pages/parcours/ParcoursChapitreDetail";
 import M1NichePage from "./pages/parcours/liberty/m1-niche/M1NichePage";
+import { DestinationsNicheContext, DESTINATIONS_NOUVEAU_PARCOURS } from "./pages/parcours/liberty/m1-niche/lib/destinations";
 import M2PsychologiePage from "./pages/parcours/liberty/m2-psychologie/M2PsychologiePage";
 import M3AnatomiePage from "./pages/parcours/liberty/m3-anatomie/M3AnatomiePage";
 import M4ValueLadderPage from "./pages/parcours/liberty/m4-value-ladder/M4ValueLadderPage";
@@ -436,6 +437,8 @@ const FullApp = () => (
                   <Route path="/training/script-appel" element={<PassGuard allowCollab><ScriptAppelPage /></PassGuard>} />
                   {/* Outils du Parcours Liberty (cahier des charges de Sidali du 15/10/2026) */}
                   <Route path="/training/parcours-liberty/outil/:code" element={<PassGuard><OutilLibertyPage /></PassGuard>} />
+                  {/* « Je n'ai pas encore d'idée d'offre » (Sidali, 19/10/2026) : l'ancien outil Niche, renvoyant au nouveau parcours */}
+                  <Route path="/training/parcours-liberty/trouver-mon-offre" element={<PassGuard><DestinationsNicheContext.Provider value={DESTINATIONS_NOUVEAU_PARCOURS}><M1NichePage /></DestinationsNicheContext.Provider></PassGuard>} />
                   <Route path="/working/plan-90" element={<PassGuard allowCollab><Plan90Page /></PassGuard>} />
                   <Route path="/training/role-play" element={<PassGuard allowCollab><RolePlay /></PassGuard>} />
                   <Route path="/training/quiz" element={<PassGuard allowCollab><QuizList /></PassGuard>} />

@@ -24,6 +24,7 @@ import { DemoSelectorScreen } from "./screens/DemoSelectorScreen";
 import { usePersistedM1State } from "./lib/usePersistedState";
 import { defaultM1State, type M1State, type M1Step } from "./lib/types";
 import { DEMO_NICHES, type DemoNiche } from "./lib/demo-niches";
+import { useDestinationsNiche } from "./lib/destinations";
 
 /**
  * Page orchestrateur de l'outil M1 NICHE (V2).
@@ -39,6 +40,7 @@ export default function M1NichePage() {
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [showExitDemoConfirm, setShowExitDemoConfirm] = useState(false);
   const [showDemoSelector, setShowDemoSelector] = useState(false);
+  const destinations = useDestinationsNiche();
   // Backup du state pré-démo en RAM (pour restauration sans cassure du vrai parcours).
   const preDemoSnapshot = useRef<M1State | null>(null);
 
@@ -147,7 +149,7 @@ export default function M1NichePage() {
           </p>
           <button
             type="button"
-            onClick={() => navigate("/parcours/liberty")}
+            onClick={() => navigate(destinations.retour)}
             className="mt-4 rounded-full px-4 py-2 text-sm font-medium text-[#C9A84C] underline"
           >
             Retour au parcours

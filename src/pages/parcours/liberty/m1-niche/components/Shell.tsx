@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, RotateCcw } from "lucide-react";
+import { useDestinationsNiche } from "../lib/destinations";
 
 interface ShellProps {
   children: ReactNode;
@@ -17,6 +18,7 @@ interface ShellProps {
  * Reproduit l'esthétique brutale & compétente Sidali, version Tailwind.
  */
 export function Shell({ children, onRestart, demoLabel, onExitDemo }: ShellProps) {
+  const destinations = useDestinationsNiche();
   return (
     <div
       className="-mx-6 -my-6 min-h-[calc(100vh-4rem)] w-[calc(100%+3rem)] text-[#ECEEF4]"
@@ -30,11 +32,11 @@ export function Shell({ children, onRestart, demoLabel, onExitDemo }: ShellProps
       <div className="mx-auto w-full max-w-[760px] px-4 py-8 md:py-10">
         {/* Lien retour parcours */}
         <Link
-          to="/parcours/liberty"
+          to={destinations.retour}
           className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-white/40 transition-colors hover:text-[#C9A84C]"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Retour au parcours LIBERTY
+          {destinations.libelleRetour}
         </Link>
 
         <div
