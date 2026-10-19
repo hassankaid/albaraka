@@ -33,7 +33,7 @@ export function DiscordButton() {
       rel="noopener noreferrer"
       title="Accéder au groupe Discord"
       aria-label="Accéder au groupe Discord"
-      className="flex items-center gap-1.5 rounded-lg bg-[#5865F2] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#4752C4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5865F2]/50"
+      className="flex items-center gap-1.5 rounded-lg bg-[#5865F2] px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#4752C4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5865F2]/50"
     >
       <DiscordLogo className="h-4 w-4 shrink-0" />
       <span className="hidden sm:inline">Discord</span>

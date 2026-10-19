@@ -91,7 +91,7 @@ export function MenuLiensPaiement() {
           type="button"
           title="Liens de paiement"
           aria-label="Liens de paiement"
-          className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary"
+          className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary"
           data-testid="bouton-liens-paiement"
         >
           <Link2 className="h-4 w-4 shrink-0 text-primary" />

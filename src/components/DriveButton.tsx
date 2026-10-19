@@ -29,7 +29,7 @@ export function DriveButton() {
       rel="noopener noreferrer"
       title="Accéder au Drive Al Baraka"
       aria-label="Accéder au Drive Al Baraka"
-      className="flex items-center gap-1.5 rounded-lg bg-gold-400 px-2.5 py-1.5 text-xs font-semibold text-[#1A1407] shadow-sm transition-colors hover:bg-gold-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400/50"
+      className="flex items-center gap-1.5 rounded-lg bg-gold-400 px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-[#1A1407] shadow-sm transition-colors hover:bg-gold-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400/50"
     >
       <FolderOpen className="h-4 w-4 shrink-0" />
       <span className="hidden sm:inline">Drive</span>

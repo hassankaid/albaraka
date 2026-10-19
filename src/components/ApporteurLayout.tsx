@@ -228,15 +228,16 @@ export default function ApporteurLayout() {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
-        <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-card/50 backdrop-blur-sm sticky top-0 z-30">
-          <div className="flex items-center gap-3">
+        <header className="h-16 border-b border-border flex items-center justify-between gap-2 px-3 sm:px-6 bg-card/50 backdrop-blur-sm sticky top-0 z-30">
+          {/* Sur mobile, le titre se tronque et les boutons se serrent : rien ne dépasse de l'écran. */}
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <button className="lg:hidden text-muted-foreground" onClick={() => setSidebarOpen(true)}>
               <Menu className="h-5 w-5" />
             </button>
-            <h1 className="text-lg font-bold text-foreground font-heading">{pageTitle}</h1>
+            <h1 className="truncate text-base sm:text-lg font-bold text-foreground font-heading">{pageTitle}</h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
             {!suspendu && <MenuLiensPaiement />}
             {!suspendu && <DiscordButton />}
 
@@ -246,7 +247,7 @@ export default function ApporteurLayout() {
 
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              className="p-1.5 sm:p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
             >
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
@@ -254,7 +255,7 @@ export default function ApporteurLayout() {
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-secondary transition-colors"
+                className="flex items-center gap-2 p-1 sm:p-1.5 rounded-lg hover:bg-secondary transition-colors"
               >
                 <Avatar className="h-8 w-8 text-xs">
                   {profile?.avatar_url ? <AvatarImage src={profile.avatar_url} alt={profile.full_name} /> : null}
@@ -263,7 +264,7 @@ export default function ApporteurLayout() {
                 <span className="text-sm font-medium text-foreground hidden sm:block">
                   {profile?.full_name || "Utilisateur"}
                 </span>
-                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                <ChevronDown className="hidden sm:block h-3 w-3 text-muted-foreground" />
               </button>
 
               {dropdownOpen && (
