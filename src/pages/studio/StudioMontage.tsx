@@ -26,6 +26,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "@/hooks/use-toast";
 import { demarrer, lienStudio, signalerProbleme, useMontage, useRafraichirStudio } from "@/hooks/useStudio";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { dollars } from "@/lib/studio/creditIA";
 import {
   completerReglages,
@@ -114,6 +116,16 @@ export default function StudioMontage() {
   const { id } = useParams();
   const { data: m, isLoading } = useMontage(id);
   const estCeo = useAuth().profile?.role === "ceo";
+  // le coût IA est réservé à l'admin : table à part, lisible par le CEO seulement (migration 20261019210000)
+  const { data: coutIA } = useQuery({
+    queryKey: ["studio-cout-montage", id],
+    enabled: estCeo && !!id,
+    queryFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table absente des types générés
+      const { data } = await (supabase as any).from("studio_montages_couts").select("cout_ia_usd").eq("montage_id", id).maybeSingle();
+      return data ? Number(data.cout_ia_usd) : null;
+    },
+  });
   const rafraichir = useRafraichirStudio();
   const [video, setVideo] = useState<string | null>(null);
   const [modifier, setModifier] = useState(false);
@@ -265,9 +277,9 @@ export default function StudioMontage() {
                   {Math.round(Number(m.rapport.entree_s))} s filmées, {Math.round(Number(m.rapport.sortie_s))} s gardées.
                 </p>
               )}
-              {estCeo && Number(m.cout_ia_usd) > 0 && (
+              {estCeo && !!coutIA && (
                 <p className="text-xs text-muted-foreground" data-testid="cout-ia">
-                  Coût IA de ce montage (visible par l'équipe seulement) : {dollars(Number(m.cout_ia_usd))}
+                  Coût IA de ce montage (réservé à l'admin) : {dollars(coutIA)}
                 </p>
               )}
               <p className="text-xs text-muted-foreground">

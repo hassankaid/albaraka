@@ -198,8 +198,6 @@ export interface Montage {
   version: number;
   sortie_path: string | null;
   rapport: Record<string, unknown> | null;
-  /** Coût IA cumulé en dollars, tous passages (migration 20261019200000). */
-  cout_ia_usd?: number | string | null;
   erreur: string | null;
   signalement: string | null;
   created_at: string;

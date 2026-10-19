@@ -51,7 +51,7 @@ export function CreditIA() {
             <AlertTriangle className={cn("h-5 w-5", etat === "bas" ? "text-amber-400" : "text-red-400")} />
           )}
           <div>
-            <p className="text-xs text-muted-foreground">Crédit IA (OpenRouter) · visible par l'équipe seulement</p>
+            <p className="text-xs text-muted-foreground">Crédit IA (OpenRouter) · réservé à l'admin</p>
             <p className="text-lg font-semibold tabular-nums text-foreground">
               {dollars(data.credit?.reste)}
               {restants && (

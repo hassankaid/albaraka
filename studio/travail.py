@@ -764,7 +764,7 @@ def monter(src, dossier, liens, travail, reglages, chrono=None, precedent=None):
         "coupes_version": COUPES_VERSION,
         "retires": sorted(retires), "sous_titres": sous_titres, "groupes": groupes, "chrono": chrono,
         "mots_gardes": gardes, "plan_hf": plan, "plan_hf_brut": brut, "plan": None,
-        "cout_usd": dict(COUT), "reponses_ia": REPONSES_IA[-4:],
+        "reponses_ia": REPONSES_IA[-4:],  # le coût n'y est plus : réservé à l'admin (studio_job_cout)
     })
     chemin = os.path.join(dossier, "travail.json")
     with open(chemin, "w", encoding="utf-8") as f:
@@ -1086,9 +1086,7 @@ def main():
             "sous_titres_corriges": len(((reglages or {}).get("sous_titres") or {}).get("corrections") or []),
             "mots_retires": len(travail["retires"]), "chrono_preparation": travail.get("chrono"),
             **rendu, "total_s": round(time.time() - debut, 1),
-            # en « rendu », la préparation a été payée par une autre machine
-            "cout_usd": {k: round(v + (travail.get("cout_usd") or {}).get(k, 0) * (mode == "rendu"), 5)
-                         for k, v in COUT.items()},
+            # pas de coût ici : le rapport est lisible par l'élève ; le coût va à studio_job_cout (admin)
         }
         declarer_cout()
         rpc("studio_job_terminer", p_id=MONTAGE, p_jeton=JETON, p_sortie_path=liens["sortie_path"], p_rapport=rapport)
