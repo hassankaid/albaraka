@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { dollars, etatCredit, montagesRestants, type SuiviIA } from "@/lib/studio/creditIA";
+import { COUT_ESTIME, dollars, etatCredit, montagesRestants, type SuiviIA } from "@/lib/studio/creditIA";
 
 // studio_suivi_ia est absente des types générés (migration 20261019200000)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,6 +29,7 @@ export function CreditIA() {
   if (!data) return null;
   const etat = etatCredit(data);
   const restants = montagesRestants(data);
+  const depuis = data.depuis ? new Date(data.depuis).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : "—";
   const mesure = data.credit?.mesure_le
     ? new Date(data.credit.mesure_le).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
     : null;
@@ -53,21 +54,25 @@ export function CreditIA() {
             <p className="text-xs text-muted-foreground">Crédit IA (OpenRouter) · visible par l'équipe seulement</p>
             <p className="text-lg font-semibold tabular-nums text-foreground">
               {dollars(data.credit?.reste)}
-              {restants !== null && (
-                <span className="ml-2 text-sm font-normal text-muted-foreground">≈ {restants} montages</span>
+              {restants && (
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  ≈ {restants.n} montages{restants.estime ? " (estimation)" : ""}
+                </span>
               )}
             </p>
           </div>
         </div>
         <div className="text-sm">
-          <p className="text-xs text-muted-foreground">7 derniers jours</p>
+          <p className="text-xs text-muted-foreground">Dépensé depuis le {depuis}</p>
           <p className="tabular-nums text-foreground">
-            {dollars(data.depense_7j)} · {data.montages_7j} montage{data.montages_7j > 1 ? "s" : ""}
+            {dollars(data.depense)} · {data.montages} montage{data.montages > 1 ? "s" : ""}
           </p>
         </div>
         <div className="text-sm">
           <p className="text-xs text-muted-foreground">Coût moyen d'un montage</p>
-          <p className="tabular-nums text-foreground">{dollars(data.cout_moyen)}</p>
+          <p className="tabular-nums text-foreground">
+            {data.cout_moyen ? dollars(data.cout_moyen) : `≈ ${dollars(COUT_ESTIME)} (estimation)`}
+          </p>
         </div>
         <div className="ml-auto flex flex-col items-end gap-1">
           <Button asChild size="sm" variant={etat === "ok" ? "outline" : "default"} className="gap-1.5">

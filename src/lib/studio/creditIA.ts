@@ -5,10 +5,16 @@
 export interface SuiviIA {
   credit: { reste: number; mesure_le: string } | null;
   seuil: number | null;
-  montages_7j: number;
-  depense_7j: number;
+  /** début du suivi complet des coûts (les montages d'avant n'ont que leur dernier passage) */
+  depuis: string | null;
+  montages: number;
+  depense: number;
+  /** moyenne réelle, à partir de 3 montages terminés suivis ; sinon null */
   cout_moyen: number | null;
 }
+
+/** Coût d'un montage constaté le 19/10/2026 (3,52 $ pour une quinzaine de passages) : l'estimation de départ. */
+export const COUT_ESTIME = 0.2;
 
 export type EtatCredit = "ok" | "bas" | "epuise" | "inconnu";
 
@@ -18,10 +24,11 @@ export function etatCredit(s: Pick<SuiviIA, "credit" | "seuil">): EtatCredit {
   return s.credit.reste < (s.seuil ?? 10) ? "bas" : "ok";
 }
 
-/** Combien de montages le crédit permet encore, au coût moyen constaté (null si inconnu). */
-export function montagesRestants(s: Pick<SuiviIA, "credit" | "cout_moyen">): number | null {
-  if (!s.credit || !s.cout_moyen || s.cout_moyen <= 0) return null;
-  return Math.max(0, Math.floor(s.credit.reste / s.cout_moyen));
+/** Combien de montages le crédit permet encore : au coût moyen réel s'il est connu, sinon à l'estimation. */
+export function montagesRestants(s: Pick<SuiviIA, "credit" | "cout_moyen">): { n: number; estime: boolean } | null {
+  if (!s.credit) return null;
+  const cout = s.cout_moyen && s.cout_moyen > 0 ? s.cout_moyen : COUT_ESTIME;
+  return { n: Math.max(0, Math.floor(s.credit.reste / cout)), estime: !(s.cout_moyen && s.cout_moyen > 0) };
 }
 
 /** 8.4 → « 8,40 $ » ; 0.213 → « 0,21 $ ». */

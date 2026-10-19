@@ -10,8 +10,10 @@ describe("crédit IA du Studio", () => {
     expect(etatCredit({ credit: null, seuil: 10 })).toBe("inconnu");
   });
   it("estime les montages restants au coût moyen", () => {
-    expect(montagesRestants({ credit: { reste: 100, mesure_le: "" }, cout_moyen: 0.2 })).toBe(500);
-    expect(montagesRestants({ credit: { reste: 100, mesure_le: "" }, cout_moyen: null })).toBeNull();
+    expect(montagesRestants({ credit: { reste: 100, mesure_le: "" }, cout_moyen: 0.25 })).toEqual({ n: 400, estime: false });
+    // pas encore assez de montages suivis : estimation à 0,20 $
+    expect(montagesRestants({ credit: { reste: 100, mesure_le: "" }, cout_moyen: null })).toEqual({ n: 500, estime: true });
+    expect(montagesRestants({ credit: null, cout_moyen: 0.2 })).toBeNull();
   });
   it("affiche les montants à la française", () => {
     expect(dollars(8.4)).toBe("8,40 $");
