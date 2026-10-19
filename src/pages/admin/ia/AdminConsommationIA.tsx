@@ -224,7 +224,7 @@ export default function AdminConsommationIA() {
                   Crédit restant
                 </p>
                 <p className="mt-1 font-heading text-2xl font-bold tabular-nums">{reste === null ? "—" : usd(reste)}</p>
-                <div className="mt-1 flex items-center justify-between gap-2">
+                <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                   <p className="text-xs text-muted-foreground">
                     {data.credit?.mesure_le ? `mesuré ${ilYa(data.credit.mesure_le)}` : "pas encore mesuré"}
                   </p>

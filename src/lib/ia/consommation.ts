@@ -168,6 +168,7 @@ export function usd(n: number | string | null | undefined): string {
   const v = Number(n);
   if (n === null || n === undefined || !Number.isFinite(v)) return "—";
   if (v === 0) return "0 $";
+  if (Math.abs(v) < 0.001) return "< 0,001 $";
   const dec = Math.abs(v) < 1 ? 3 : 2;
   return `${v.toLocaleString("fr-FR", { minimumFractionDigits: dec, maximumFractionDigits: dec })} $`;
 }

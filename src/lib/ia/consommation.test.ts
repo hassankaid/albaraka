@@ -33,6 +33,7 @@ describe("formats", () => {
     expect(usd(0.0068)).toBe("0,007 $");
     expect(usd(18.4962)).toBe("18,50 $");
     expect(usd(0)).toBe("0 $");
+    expect(usd(0.000186)).toBe("< 0,001 $");
     expect(usd(null)).toBe("—");
   });
   it("CSV au format Excel français", () => {
