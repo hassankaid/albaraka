@@ -16,6 +16,7 @@ import { RefreshCw, Search, Link2, Unlink, Users, Phone, BookUser, BadgeEuro, Da
 import { formatDateOnly } from "@/lib/formatDate";
 import { getSourceLabel, getSourceBadgeClass, LEAD_STATUS_LABELS, LEAD_STATUS_COLORS, leadSourceConfig } from "@/lib/leadConfig";
 import ContactSheet from "@/components/ContactSheet";
+import { equipeProposee, nomEquipe } from "@/lib/equipe";
 
 // ── Types ──
 interface LeadRow {
@@ -206,7 +207,7 @@ export default function AdminData() {
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [contacts, setContacts] = useState<ContactRow[]>([]);
   const [sales, setSales] = useState<SaleRow[]>([]);
-  const [profilesList, setProfilesList] = useState<{ id: string; full_name: string; role: string }[]>([]);
+  const [profilesList, setProfilesList] = useState<{ id: string; full_name: string; role: string; is_active: boolean | null }[]>([]);
 
   // Link modal
   const [linkModal, setLinkModal] = useState<{
@@ -246,7 +247,7 @@ export default function AdminData() {
 
   // ── Fetch ──
   const fetchProfiles = useCallback(async () => {
-    const { data } = await supabase.from("profiles").select("id, full_name, role");
+    const { data } = await supabase.from("profiles").select("id, full_name, role, is_active");
     if (data) setProfilesList(data);
   }, []);
 
@@ -624,8 +625,8 @@ export default function AdminData() {
                       <EditableCell
                         value={l.assigned_to}
                         type="select"
-                        options={["", ...profilesList.filter(p => ["ceo", "collaborateur"].includes(p.role)).map(p => p.id)]}
-                        optionLabels={Object.fromEntries([["", "— Aucun —"], ...profilesList.filter(p => ["ceo", "collaborateur"].includes(p.role)).map(p => [p.id, p.full_name])])}
+                        options={["", ...equipeProposee(profilesList, l.assigned_to).map(p => p.id)]}
+                        optionLabels={Object.fromEntries([["", "— Aucun —"], ...equipeProposee(profilesList, l.assigned_to).map(p => [p.id, nomEquipe(p)])])}
                         onSave={async (v) => updateField("leads", l.id, "assigned_to", v === "_empty" ? "" : v, fetchLeads)}
                       />
                     </TableCell>
@@ -717,8 +718,8 @@ export default function AdminData() {
                       <EditableCell
                         value={c.assigned_to}
                         type="select"
-                        options={["", ...profilesList.filter(p => ["ceo", "collaborateur"].includes(p.role)).map(p => p.id)]}
-                        optionLabels={Object.fromEntries([["", "— Aucun —"], ...profilesList.filter(p => ["ceo", "collaborateur"].includes(p.role)).map(p => [p.id, p.full_name])])}
+                        options={["", ...equipeProposee(profilesList, c.assigned_to).map(p => p.id)]}
+                        optionLabels={Object.fromEntries([["", "— Aucun —"], ...equipeProposee(profilesList, c.assigned_to).map(p => [p.id, nomEquipe(p)])])}
                         onSave={async (v) => updateField("calls", c.id, "assigned_to", v === "_empty" ? "" : v, fetchCalls)}
                       />
                     </TableCell>

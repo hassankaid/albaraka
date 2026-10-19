@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Trash2, Plus, Pencil, Check, X } from "lucide-react";
 import { ROLE_CONFIG } from "@/lib/roleConfig";
+import { estCollaborateurActif } from "@/lib/equipe";
 
 interface Commission {
   id: string;
@@ -48,6 +49,7 @@ interface Profile {
   full_name: string;
   role: string;
   is_also_apporteur: boolean | null;
+  is_active: boolean | null;
 }
 
 interface ManageCommissionsModalProps {
@@ -101,7 +103,7 @@ export default function ManageCommissionsModal({
   }, [saleId]);
 
   const fetchProfiles = useCallback(async () => {
-    const { data } = await supabase.from("profiles").select("id, full_name, role, is_also_apporteur").order("full_name");
+    const { data } = await supabase.from("profiles").select("id, full_name, role, is_also_apporteur, is_active").order("full_name");
     if (data) setProfiles(data);
   }, []);
 
@@ -389,7 +391,8 @@ export default function ManageCommissionsModal({
               <SelectContent>
                 {profiles
                   .filter((p) => {
-                    if (beneficiaryType === "collaborateur") return p.role === "collaborateur";
+                    // statut de la fiche Équipe : un collaborateur désactivé n'est plus proposé
+                    if (beneficiaryType === "collaborateur") return estCollaborateurActif(p);
                     if (beneficiaryType === "apporteur") return p.role === "apporteur" || p.is_also_apporteur;
                     if (beneficiaryType === "agence") return p.role === "agence";
                     return false;

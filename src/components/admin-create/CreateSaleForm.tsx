@@ -14,6 +14,7 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import EntitySearchSelect from "./EntitySearchSelect";
+import { equipeProposee, nomEquipe } from "@/lib/equipe";
 
 const PRODUCT_OPTIONS = ["Business Developer", "Liberty"];
 
@@ -56,7 +57,8 @@ export default function CreateSaleForm({ prefilledContactId, prefilledLeadId, on
     fetchAllRows<{ id: string; full_name: string; role: string; is_active: boolean }>("profiles", "id, full_name, role, is_active").then(setProfiles);
   }, [isWizardStep]);
 
-  const teamProfiles = profiles.filter((p) => p.role === "ceo" || p.role === "collaborateur").sort((a, b) => a.full_name.localeCompare(b.full_name));
+  // CEO et collaborateurs actifs (fiche Équipe), plus le closer déjà choisi s'il a été désactivé
+  const teamProfiles = equipeProposee(profiles, saleClosedBy).sort((a, b) => a.full_name.localeCompare(b.full_name));
   const contactOptions = contacts.map((c) => ({ id: c.id, label: c.full_name || "Sans nom", sublabel: c.email || undefined }));
   const leadOptions = leads.map((l) => ({ id: l.id, label: l.raw_full_name || "Sans nom", sublabel: l.source }));
 
@@ -133,7 +135,7 @@ export default function CreateSaleForm({ prefilledContactId, prefilledLeadId, on
               <SelectContent>
                 {teamProfiles.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
-                    {p.full_name}{!p.is_active ? " (inactif)" : ""}
+                    {nomEquipe(p)}
                   </SelectItem>
                 ))}
               </SelectContent>

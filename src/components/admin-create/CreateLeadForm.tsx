@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { leadSourceConfig, leadStatusConfig } from "@/lib/leadConfig";
 import EntitySearchSelect from "./EntitySearchSelect";
 import { messageErreurLead } from "@/lib/leadDoublon";
+import { equipeProposee } from "@/lib/equipe";
 
 interface Props {
   /** Pre-filled contact from wizard */
@@ -27,7 +28,7 @@ export default function CreateLeadForm({ prefilledContactId, onCreated, isWizard
 
   const [contactId, setContactId] = useState<string | null>(prefilledContactId || null);
   const [contacts, setContacts] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
-  const [profiles, setProfiles] = useState<{ id: string; full_name: string; role: string }[]>([]);
+  const [profiles, setProfiles] = useState<{ id: string; full_name: string; role: string; is_active: boolean | null }[]>([]);
 
   const [leadSource, setLeadSource] = useState("");
   const [leadStatus, setLeadStatus] = useState("a_qualifier");
@@ -47,10 +48,11 @@ export default function CreateLeadForm({ prefilledContactId, onCreated, isWizard
     if (!isWizardStep) {
       fetchAllRows<{ id: string; full_name: string | null; email: string | null }>("contacts", "id, full_name, email", { order: { column: "created_at", ascending: false } }).then(setContacts);
     }
-    fetchAllRows<{ id: string; full_name: string; role: string }>("profiles", "id, full_name, role").then(setProfiles);
+    fetchAllRows<{ id: string; full_name: string; role: string; is_active: boolean | null }>("profiles", "id, full_name, role, is_active").then(setProfiles);
   }, [isWizardStep]);
 
-  const teamProfiles = profiles.filter((p) => p.role === "ceo" || p.role === "collaborateur");
+  // CEO et collaborateurs actifs (fiche Équipe)
+  const teamProfiles = equipeProposee(profiles, leadAssignedTo);
   const apporteurProfiles = profiles.filter((p) => p.role === "apporteur");
 
   const contactOptions = contacts.map((c) => ({ id: c.id, label: c.full_name || "Sans nom", sublabel: c.email || undefined }));
