@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rangerRessources, type FormationSource, type RessourceSource } from "./ressourcesPhases";
+import { rangerRessources, titreDeLaPartie, type FormationSource, type RessourceSource } from "./ressourcesPhases";
 
 let n = 0;
 const res = (titre: string, rubrique: RessourceSource["rubrique"] = null): RessourceSource => ({
@@ -71,5 +71,43 @@ describe("rangerRessources", () => {
     const [p] = rangerRessources([est]);
     expect(p.phase.titre).toBe("Estimaction");
     expect(p.autres).toHaveLength(2);
+  });
+
+  it("une nouvelle partie d'un parcours devient sa propre catégorie, après les autres", () => {
+    const avecPartie6: FormationSource = {
+      ...cm,
+      formation_modules: [
+        ...cm.formation_modules,
+        mod("PARTIE 6 — PROSPECTION SUR LINKEDIN", [chap("Li", [res("Modèle message LinkedIn")])]),
+        mod("PARTIE 7 — VIDE", [chap("v", [])]),
+        mod("PARTIE 8 — BROUILLON", [chap("b", [res("Pas encore")])], "draft"),
+      ],
+    };
+    const phases = rangerRessources([sc, avecPartie6]);
+    expect(phases.map((p) => p.phase.titre)).toEqual([
+      "Personal Branding",
+      "Community Management",
+      "Setting",
+      "Closing",
+      "Prospection sur Linkedin",
+    ]);
+    expect(phases.at(-1)!.autres.map((r) => r.titre)).toEqual(["Modèle message LinkedIn"]);
+  });
+
+  it("une même nouvelle partie dans les deux parcours n'apparaît qu'une fois, sans doublon", () => {
+    const partie = (f: FormationSource) => ({
+      ...f,
+      formation_modules: [...f.formation_modules, mod("PARTIE 9 — OUTILS", [chap("o", [{ ...res("Canva"), url: "https://canva.com" }])])],
+    });
+    const outils = rangerRessources([partie(sc), partie(cm)]).filter((p) => p.phase.titre === "Outils");
+    expect(outils).toHaveLength(1);
+    expect(outils[0].total).toBe(1);
+  });
+});
+
+describe("titreDeLaPartie", () => {
+  it("garde les accents et les sigles, met les petits mots en minuscules", () => {
+    expect(titreDeLaPartie("PARTIE 6  —  CRÉATION DE CONTENU ET IA")).toBe("Création de Contenu et IA");
+    expect(titreDeLaPartie("BONUS")).toBe("Bonus");
   });
 });
