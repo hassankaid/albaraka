@@ -11,8 +11,6 @@ export interface FonctionnaliteIA {
   groupe: GroupeIA;
   /** où elle se trouve et ce qu'elle fait, en une phrase */
   description: string;
-  /** compte dans le coût d'une vidéo du Studio */
-  montage?: boolean;
   /** n'est plus proposée aux utilisateurs (données conservées) */
   inactive?: string;
 }
@@ -23,21 +21,18 @@ export const CATALOGUE: FonctionnaliteIA[] = [
     nom: "Studio · Face caméra",
     groupe: "studio",
     description: "Montage d'une vidéo face caméra : transcription, coupes, sous-titres, animations.",
-    montage: true,
   },
   {
     cle: "studio_voix_off",
     nom: "Studio · Voix off",
     groupe: "studio",
     description: "Montage voix off : transcription, choix des plans dans la banque, sous-titres.",
-    montage: true,
   },
   {
     cle: "studio_theme",
     nom: "Studio · Thème du script",
     groupe: "studio",
     description: "Détection du thème d'un script voix off, avant le montage.",
-    montage: true,
   },
   {
     cle: "studio_banque",
@@ -110,13 +105,6 @@ export function recenser(lignes: LigneFonctionnalite[]): (LigneFonctionnalite & 
       fiche: fonctionnalite(cle),
     }))
     .sort((a, b) => Number(b.cout) - Number(a.cout) || b.appels - a.appels);
-}
-
-/** Coût moyen d'une vidéo du Studio : coût des montages (pas la banque) ÷ vidéos. */
-export function coutParVideo(lignes: LigneFonctionnalite[], videos: number): number | null {
-  if (!videos) return null;
-  const montages = lignes.filter((l) => fonctionnalite(l.fonctionnalite).montage).reduce((s, l) => s + Number(l.cout), 0);
-  return montages / videos;
 }
 
 // ── périodes ──

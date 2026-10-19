@@ -20,8 +20,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { COUT_ESTIME, type SuiviIA } from "@/lib/studio/creditIA";
 import {
-  bornes, coutParVideo, fonctionnalite, joursDe, PERIODES, pourcent, recenser, usd, versCSV,
+  bornes, fonctionnalite, joursDe, PERIODES, pourcent, recenser, usd, versCSV,
   type LigneFonctionnalite, type Periode,
 } from "@/lib/ia/consommation";
 
@@ -91,6 +92,19 @@ export default function AdminConsommationIA() {
     },
   });
 
+  // Coût d'une vidéo : la moyenne des montages suivis complètement (la même que la
+  // carte du Studio). Les coûts repris d'avant le 19/10 étaient sous-estimés.
+  const { data: suivi } = useQuery({
+    queryKey: ["studio-suivi-ia"],
+    enabled: profile?.role === "ceo",
+    staleTime: 60_000,
+    queryFn: async (): Promise<SuiviIA | null> => {
+      const { data, error } = await db.rpc("studio_suivi_ia");
+      if (error) throw error;
+      return data as SuiviIA | null;
+    },
+  });
+
   const fonctions = useMemo(() => recenser(data?.par_fonctionnalite ?? []), [data]);
 
   const jours = useMemo(() => {
@@ -128,7 +142,6 @@ export default function AdminConsommationIA() {
   const t = data?.totaux;
   const total = Number(t?.cout ?? 0);
   const studio = Number(t?.cout_studio ?? 0);
-  const parVideo = coutParVideo(data?.par_fonctionnalite ?? [], Number(t?.videos ?? 0));
   const reste = data?.credit?.reste ?? null;
   const seuil = Number(data?.seuil ?? 10);
   const etatCredit = reste === null ? "inconnu" : reste <= 0 ? "epuise" : reste < seuil ? "bas" : "ok";
@@ -242,9 +255,12 @@ export default function AdminConsommationIA() {
             <Card>
               <CardContent className="p-4">
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Coût d'une vidéo</p>
-                <p className="mt-1 font-heading text-2xl font-bold tabular-nums">{parVideo === null ? "—" : usd(parVideo)}</p>
+                <p className="mt-1 font-heading text-2xl font-bold tabular-nums">
+                  {suivi?.cout_moyen ? usd(suivi.cout_moyen) : `≈ ${usd(COUT_ESTIME)}`}
+                </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {t.videos} vidéo{t.videos > 1 ? "s" : ""} Studio (relances comprises)
+                  {t.videos} vidéo{t.videos > 1 ? "s" : ""} Studio sur la période
+                  {suivi?.cout_moyen ? "" : " · coût moyen estimé"}
                 </p>
               </CardContent>
             </Card>

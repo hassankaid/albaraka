@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bornes, CATALOGUE, coutParVideo, joursDe, recenser, usd, versCSV } from "./consommation";
+import { bornes, CATALOGUE, joursDe, recenser, usd, versCSV } from "./consommation";
 
 describe("recenser", () => {
   it("garde tout le catalogue, même sans usage, et ajoute les clés inconnues", () => {
@@ -12,14 +12,6 @@ describe("recenser", () => {
     expect(r[0].fiche.nom).toBe("nouvelle_ia");
     expect(r[1].fiche.nom).toBe("Agent IA Setting");
     expect(r.find((l) => l.fonctionnalite === "lecture_rib")?.appels).toBe(0);
-  });
-});
-
-describe("coutParVideo", () => {
-  it("ne compte que les montages, pas l'indexation de la banque", () => {
-    const l = (fonctionnalite: string, cout: number) => ({ fonctionnalite, cout, appels: 1, utilisateurs: 1, dernier: null, erreurs: 0 });
-    expect(coutParVideo([l("studio_face_camera", 0.3), l("studio_theme", 0.1), l("studio_banque", 15)], 2)).toBeCloseTo(0.2);
-    expect(coutParVideo([], 0)).toBeNull();
   });
 });
 
