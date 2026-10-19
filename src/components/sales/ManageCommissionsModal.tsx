@@ -398,7 +398,8 @@ export default function ManageCommissionsModal({
                     return false;
                   })
                   .map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                    // tout en majuscules pour une liste homogène (« HEDI Abrikh », « Youssef YM »…)
+                    <SelectItem key={p.id} value={p.id}>{p.full_name?.toLocaleUpperCase("fr-FR")}</SelectItem>
                   ))}
               </SelectContent>
             </Select>
