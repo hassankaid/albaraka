@@ -92,6 +92,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const refreshToken = params.get("refresh_token");
 
       if (!accessToken || !refreshToken) return;
+      // Lien d'activation (type=recovery) : la bibliothèque ouvre déjà la session depuis le
+      // lien ; l'ouvrir une deuxième fois en même temps pouvait la bloquer (panne du 20/10/2026).
+      if (params.get("type") === "recovery") return;
 
       const { error } = await supabase.auth.setSession({
         access_token: accessToken,

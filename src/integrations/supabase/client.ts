@@ -2,6 +2,9 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { isRunningInImpersonation } from '@/lib/impersonation';
+// lu avant createClient : la bibliothèque retire le lien d'activation de l'adresse (panne du 20/10/2026)
+import { LIEN_INITIAL } from '@/lib/activation';
+void LIEN_INITIAL;
 
 export const SUPABASE_URL = "https://ktvszjzryabjgxyobtyc.supabase.co";
 export const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0dnN6anpyeWFiamd4eW9idHljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMDQwODYsImV4cCI6MjA4NzU4MDA4Nn0.Hck5qF0GQ9-KEMvJiuu10-i-9562mEWBOBuHMTG33ZY";

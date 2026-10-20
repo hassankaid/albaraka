@@ -1,11 +1,35 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/integrations/supabase/client";
+import {
+  avecDelai,
+  changerMotDePasse,
+  LIEN_INITIAL,
+  lienPerime,
+  lireLien,
+  messageActivation,
+  noterActivation,
+  rafraichir,
+  sujetDuJeton,
+  type Resultat,
+} from "@/lib/activation";
 import logo from "@/assets/al-baraka-logo-v2.png";
 import { Lock, Eye, EyeOff, RefreshCw, CheckCircle, Mail, ArrowLeft, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Mode = "loading" | "recovery" | "expired" | "requestSent";
+
+const SERVEUR = { url: SUPABASE_URL, cle: SUPABASE_PUBLISHABLE_KEY };
+
+/** Le jeton de la session déjà ouverte par la bibliothèque, sans jamais l'attendre plus de 4 s. */
+async function jetonDeSession(): Promise<{ access_token: string; refresh_token: string } | null> {
+  try {
+    const { data } = await avecDelai(supabase.auth.getSession(), 4000);
+    return data.session ? { access_token: data.session.access_token, refresh_token: data.session.refresh_token } : null;
+  } catch {
+    return null;
+  }
+}
 
 // ─── Règles de validation du mot de passe ────────────────────────────
 const PASSWORD_RULES = [
@@ -56,19 +80,27 @@ const ResetPassword = () => {
   const [success, setSuccess] = useState(false);
   const [resendEmail, setResendEmail] = useState("");
   const [expiredReason, setExpiredReason] = useState<string>("");
+  const [erreurEnvoi, setErreurEnvoi] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  // le lien tel qu'il est arrivé (lu avant que la bibliothèque ne le retire de l'adresse)
+  const lien = useMemo(() => {
+    const actuel = lireLien(window.location.hash || "");
+    return actuel.jetons || actuel.erreur ? actuel : lireLien(LIEN_INITIAL);
+  }, []);
 
   useEffect(() => {
-    const hash = window.location.hash || "";
-    const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
+    const hash = window.location.hash || LIEN_INITIAL || "";
 
     // Cas 1 : Supabase renvoie une erreur dans le hash (lien expiré / déjà utilisé / invalide)
-    const errCode = hashParams.get("error_code");
-    const errDescription = hashParams.get("error_description");
-    if (errCode || hashParams.get("error")) {
-      setExpiredReason(errDescription?.replace(/\+/g, " ") || errCode || "Le lien n'est plus valide.");
+    if (lien.erreur) {
+      setExpiredReason(lien.erreur);
       setMode("expired");
+      return;
+    }
+    if (lien.jetons) {
+      setMode("recovery");
+      noterActivation(SERVEUR, { etape: "lien_ouvert", succes: true, utilisateur: sujetDuJeton(lien.jetons.access_token) });
       return;
     }
 
@@ -92,7 +124,7 @@ const ResetPassword = () => {
     }
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [lien]);
 
   // État de validation des règles de mot de passe (pour UI + bouton)
   const ruleStates = useMemo(
@@ -121,21 +153,58 @@ const ResetPassword = () => {
       return;
     }
 
+    // Le mot de passe part directement au serveur, avec le jeton du lien et un délai maximum :
+    // la page ne dépend plus de la bibliothèque de connexion, qui pouvait rester bloquée
+    // (panne du 20/10/2026 : le bouton tournait sans fin, rien n'était envoyé).
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
-
-    if (error) {
-      toast({
-        title: "Erreur",
-        description: translateAuthError(error.message),
-        variant: "destructive",
+    setErreurEnvoi(null);
+    const debut = performance.now();
+    let jetons: { access_token: string; refresh_token: string | null } | null = lien.jetons;
+    const utilisateur = sujetDuJeton(jetons?.access_token);
+    try {
+      if (!jetons) jetons = await jetonDeSession();
+      if (!jetons) {
+        noterActivation(SERVEUR, { etape: "sans_jeton", succes: false, duree_ms: performance.now() - debut });
+        setExpiredReason("Session introuvable.");
+        setMode("expired");
+        return;
+      }
+      let r: Resultat = await changerMotDePasse(SERVEUR, jetons.access_token, password);
+      if (lienPerime(r)) {
+        // lien ouvert il y a plus d'une heure : la session déjà ouverte, sinon un jeton neuf
+        const relais = (await jetonDeSession()) ?? (jetons.refresh_token ? await rafraichir(SERVEUR, jetons.refresh_token) : null);
+        if (relais && relais.access_token !== jetons.access_token) {
+          jetons = relais;
+          r = await changerMotDePasse(SERVEUR, jetons.access_token, password);
+        }
+      }
+      noterActivation(SERVEUR, {
+        etape: "mot_de_passe",
+        succes: r.ok,
+        detail: r.ok ? "" : `${r.statut} ${r.code ?? ""} ${r.message}`,
+        duree_ms: performance.now() - debut,
+        utilisateur,
       });
+      if (!r.ok) {
+        if (lienPerime(r)) {
+          setExpiredReason(messageActivation(r));
+          setMode("expired");
+        } else setErreurEnvoi(messageActivation(r));
+        return;
+      }
+      setSuccess(true);
+      // la session dans la bibliothèque (sans jamais l'attendre plus de 5 s), puis l'espace élève
+      // en rechargeant la page : un éventuel blocage de la bibliothèque disparaît avec elle
+      if (jetons.refresh_token) {
+        await avecDelai(supabase.auth.setSession({ access_token: jetons.access_token, refresh_token: jetons.refresh_token }), 5000).catch(() => undefined);
+      }
+      setTimeout(() => window.location.assign("/dashboard"), 1200);
+    } catch (e) {
+      noterActivation(SERVEUR, { etape: "exception", succes: false, detail: String((e as Error)?.message ?? e), duree_ms: performance.now() - debut, utilisateur });
+      setErreurEnvoi("Le mot de passe n'a pas pu être enregistré. Vérifie ta connexion internet et réessaie.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setSuccess(true);
-    setTimeout(() => navigate("/dashboard"), 2000);
   };
 
   const handleRequestNewLink = async (e: React.FormEvent) => {
@@ -353,13 +422,19 @@ const ResetPassword = () => {
             )}
           </div>
 
+          {erreurEnvoi && (
+            <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200" role="alert" data-testid="activation-erreur">
+              {erreurEnvoi}
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading || !allRulesOk || !passwordsMatch}
             className="w-full py-2.5 rounded-full gradient-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading && <RefreshCw className="h-4 w-4 animate-spin" />}
-            Activer mon accès
+            {loading ? "Enregistrement…" : erreurEnvoi ? "Réessayer" : "Activer mon accès"}
           </button>
         </form>
       )}
