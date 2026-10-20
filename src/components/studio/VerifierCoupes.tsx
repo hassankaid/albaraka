@@ -66,6 +66,7 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
   const [origine, setOrigine] = useState<Plage | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [glisse, setGlisse] = useState(false);
+  const [largeurBande, setLargeurBande] = useState(0);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const bande = useRef<HTMLDivElement>(null);
@@ -180,6 +181,17 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
   );
   const rythmePrepa = travail?.plages ? null : travail?.rythme ?? "dynamique";
   const rythmeDiffere = !!travail && !reglages.coupes.plages?.length && !!rythmePrepa && rythmePrepa !== reglages.coupes.rythme;
+
+  // largeur de la bande à l'écran : un numéro ne s'affiche que si sa coupe est assez large
+  useEffect(() => {
+    const el = bande.current;
+    if (!el) return;
+    const mesurer = () => setLargeurBande(el.clientWidth);
+    mesurer();
+    const obs = new ResizeObserver(mesurer);
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [travail, ouverte, open]);
 
   // pendant la lecture, ou quand on glisse le curseur, la coupe en cours reste visible dans la liste
   useEffect(() => {
@@ -417,7 +429,7 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                           )}
                           style={{ left: `calc(${pourcent(debuts[i])}% + 1px)`, width: `calc(${pourcent(b - a)}% - 2px)` }}
                         >
-                          {(b - a) / (total || 1) > 0.018 ? i + 1 : ""}
+                          {((b - a) / (total || 1)) * largeurBande >= 7 + 7 * String(i + 1).length ? i + 1 : ""}
                         </div>
                       ))}
                       <div className="pointer-events-none absolute -bottom-2 -top-2 z-10 w-[3px] -translate-x-1/2 rounded bg-white shadow" style={{ left: `${pourcent(tMontage)}%` }} />
