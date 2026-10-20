@@ -1097,7 +1097,10 @@ def main():
             # pas de coût ici : le rapport est lisible par l'élève ; le coût va à studio_job_cout (admin)
         }
         declarer_cout()
-        rpc("studio_job_terminer", p_id=MONTAGE, p_jeton=JETON, p_sortie_path=liens["sortie_path"], p_rapport=rapport)
+        # p_audio : la préparation déposée est utilisable pour corriger les coupes et les sous-titres,
+        # même quand le montage a tout refait d'un trait (mode « complet », panne du 20/10/2026)
+        rpc("studio_job_terminer", p_id=MONTAGE, p_jeton=JETON, p_sortie_path=liens["sortie_path"], p_rapport=rapport,
+            p_audio=travail.get("audio"))
         print(json.dumps(rapport, ensure_ascii=False), flush=True)
 
 
