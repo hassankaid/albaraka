@@ -173,7 +173,8 @@ export function noterActivation(
         p_detail: (e.detail ?? "").slice(0, 300),
         p_duree_ms: Math.round(e.duree_ms ?? 0),
         p_navigateur: typeof navigator !== "undefined" ? navigateur(navigator.userAgent) : "",
-        p_utilisateur: e.utilisateur ?? null,
+        // un identifiant de compte valide seulement (sinon la ligne serait refusée)
+        p_utilisateur: e.utilisateur && /^[0-9a-f-]{36}$/i.test(e.utilisateur) ? e.utilisateur : null,
       }),
       keepalive: true,
     }).catch(() => undefined);
