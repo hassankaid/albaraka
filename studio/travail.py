@@ -128,7 +128,7 @@ def openrouter(chemin, corps, essais=3):
         try:
             return json.loads(_http("https://openrouter.ai/api/v1" + chemin, {**corps, "provider": PRIVE},
                                     entetes={"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}",
-                                             "Content-Type": "application/json"}, delai=90))
+                                             "Content-Type": "application/json"}, delai=300))
         except urllib.error.HTTPError as e:
             # 402 : crédit épuisé ; 401 / 403 : clé refusée (panne du 19/10/2026)
             if e.code in (401, 402, 403):
@@ -211,10 +211,17 @@ def reponse_valide(prompt, objet):
         isinstance(p, list) and len(p) == 2 and 0 <= int(p[0]) <= int(p[1]) < n for p in plages)
 
 
+# Réponse maximale de l'IA. Le modèle réfléchit avant de répondre (3 000 à 5 000 tokens) et
+# cette réflexion compte dans la limite : à 8 000, les sous-titres d'une vidéo de plus de
+# 4 minutes étaient coupés, donc refusés aux 3 essais (panne du 20/10/2026). Mesuré :
+# 750 mots (5 min) = 9 600 tokens en 52 s, 1 200 mots (8 min) = 15 200 tokens en 81 s.
+MAX_TOKENS_IA = 32000
+
+
 def llm(prompt, essais=3):
     """Appel à Claude ; la réponse n'est acceptée que si elle est complète (voir reponse_valide)."""
     for k in range(essais):
-        d = openrouter("/chat/completions", {"model": LLM, "max_tokens": 8000,
+        d = openrouter("/chat/completions", {"model": LLM, "max_tokens": MAX_TOKENS_IA,
                                              "messages": [{"role": "user", "content": prompt}]})
         COUT["ia"] += (d.get("usage") or {}).get("cost") or 0
         texte = d["choices"][0]["message"]["content"] or ""
@@ -225,7 +232,8 @@ def llm(prompt, essais=3):
                     return json.dumps(objet, ensure_ascii=False)
             except (TypeError, ValueError):
                 continue
-        print(f"réponse IA incomplète (essai {k + 1}) : {texte[:300]!r}", flush=True)
+        fin = (d["choices"][0].get("finish_reason") or "?")
+        print(f"réponse IA incomplète (essai {k + 1}, fin : {fin}) : {texte[:300]!r}", flush=True)
     raise ValueError("L'IA n'a pas renvoyé de réponse complète. Relance le montage.")
 
 
