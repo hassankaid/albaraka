@@ -206,8 +206,9 @@ export function EnteteCoupe({
           <p className="text-xl font-bold text-foreground" data-testid="editeur-titre">
             Coupe {coupe + 1} <span className="text-sm font-medium text-muted-foreground">sur {plages.length}</span>
           </p>
-          <p className="font-mono text-xs tabular-nums text-muted-foreground">
-            {minutagePrecis(debuts[coupe])} → {minutagePrecis(debuts[coupe] + plage[1] - plage[0])} · {secondes(plage[1] - plage[0])}
+          <p className="whitespace-nowrap font-mono text-[11px] tabular-nums text-muted-foreground sm:text-xs">
+            {minutagePrecis(debuts[coupe])} → {minutagePrecis(debuts[coupe] + plage[1] - plage[0])}
+            <span className="hidden sm:inline"> · {secondes(plage[1] - plage[0])}</span>
           </p>
         </div>
         <div className="flex gap-1.5">

@@ -413,7 +413,12 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                         aller(versSource(plages, montageDuPointeur(e.clientX)));
                       }}
                       onPointerMove={(e) => glisse && aller(versSource(plages, montageDuPointeur(e.clientX)))}
-                      onPointerUp={() => setGlisse(false)}
+                      onPointerUp={() => {
+                        setGlisse(false);
+                        // un geste rapide (glisser et lâcher dans la même image) : la liste rattrape le curseur
+                        const i = coupeA(plagesRef.current, videoRef.current?.currentTime ?? 0);
+                        liste.current?.querySelector(`[data-coupe="${i}"]`)?.scrollIntoView({ block: "nearest" });
+                      }}
                       onPointerCancel={() => setGlisse(false)}
                       role="slider"
                       aria-label="Position dans la vidéo finale"
