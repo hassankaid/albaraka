@@ -72,6 +72,8 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
   const liste = useRef<HTMLUListElement>(null);
   const plagesRef = useRef<Plage[]>([]);
   const finEcoute = useRef<number | null>(null);
+  // l'état avant le geste en cours (glisser un point de coupe) : annulé d'un coup, au premier vrai changement
+  const geste = useRef<Plage[] | null>(null);
   const modeRef = useRef<Mode>("montage");
   plagesRef.current = plages;
 
@@ -179,17 +181,22 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
   const rythmePrepa = travail?.plages ? null : travail?.rythme ?? "dynamique";
   const rythmeDiffere = !!travail && !reglages.coupes.plages?.length && !!rythmePrepa && rythmePrepa !== reglages.coupes.rythme;
 
-  // pendant la lecture, la coupe en cours reste visible dans la liste
+  // pendant la lecture, ou quand on glisse le curseur, la coupe en cours reste visible dans la liste
   useEffect(() => {
-    if (!lecture || ouverte !== null || enCours < 0) return;
+    if ((!lecture && !glisse) || ouverte !== null || enCours < 0) return;
     liste.current?.querySelector(`[data-coupe="${enCours}"]`)?.scrollIntoView({ block: "nearest" });
-  }, [enCours, lecture, ouverte]);
+  }, [enCours, lecture, glisse, ouverte]);
 
   /** Un réglage : `nouvelle` = annulable à part (false = la suite du même geste). */
   function regler(nouvelles: Plage[], nouvelle: boolean) {
     const avant = plagesRef.current;
+    if (nouvelle) geste.current = avant;
     if (memesPlages(avant, nouvelles)) return;
-    if (nouvelle) setHistorique((h) => [...h.slice(-49), avant]);
+    const instantane = geste.current;
+    if (instantane) {
+      setHistorique((h) => [...h.slice(-49), instantane]);
+      geste.current = null;
+    }
     setPlages(nouvelles);
     if (ouverte !== null && avant[ouverte]) {
       const milieu = (avant[ouverte][0] + avant[ouverte][1]) / 2;
@@ -448,7 +455,7 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                           <span className="min-w-0 flex-1 truncate text-xs text-foreground/90">« {resumes[i]} »</span>
                           {(r?.avant || r?.apres) && (
                             <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-300">
-                              phrase recommencée retirée {r.avant && r.apres ? "avant et après" : r.avant ? "juste avant" : "juste après"}
+                              phrase recommencée {r.avant && r.apres ? "avant et après" : r.avant ? "avant" : "après"}
                             </span>
                           )}
                           {i === enCours && lecture && <span className="shrink-0 text-[11px] font-semibold text-primary">▶ en lecture</span>}
