@@ -1,32 +1,41 @@
-// « Vérifier les coupes » (vocal de Sidali, 12/10/2026) : la vidéo d'origine, la frise
-// des passages gardés (en or) et des coupes (hachurées), des poignées pour prolonger
-// ou raccourcir un passage, et la liste des coupes avec « Écouter » et « Garder ».
-// La lecture « comme le montage » saute les coupes : on entend le rythme final
-// avant de relancer. Rien n'est envoyé tant que l'élève ne valide pas.
+// « Ajuster les coupes », coupe par coupe (retour de Sidali du 20/10/2026, maquette validée :
+// A oui · B vidéo finale · C réunir · D les deux pas).
+//
+// Une « coupe » = un morceau gardé de la vidéo finale, numéroté. En haut, la bande d'ensemble
+// en lecture seule : la vidéo finale, coupes bout à bout ; un curseur affiche « Coupe 7 · 0:30 »
+// pendant la lecture et quand on le glisse. Dessous, la liste des coupes. « Ouvrir » passe une
+// coupe en plein écran pour régler son début et sa fin (EditeurCoupe). Rien n'est envoyé tant
+// que l'élève ne valide pas. (Avant le 20/10 : frise modifiable et loupe sur les transitions.)
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Mic, Pause, Play, RotateCcw, SearchCheck, Undo2, Volume2, ZoomIn, ZoomOut } from "lucide-react";
+import { Loader2, Mic, Pause, Play, RotateCcw, Undo2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { lienStudio } from "@/hooks/useStudio";
-import { LoupeCoupe } from "@/components/studio/LoupeCoupe";
+import { EditeurCoupe, EnteteCoupe } from "@/components/studio/EditeurCoupe";
 import {
-  coupesEntre,
-  deplacerBord,
-  enveloppe as mesurerSon,
   dureeGardee,
-  garderCoupe,
+  enveloppe as mesurerSon,
   memesPlages,
   minutage,
   motsAffiches,
-  natureCoupe,
   normaliser,
-  passageAvant,
   tempsDeLecture,
   type Enveloppe,
   type Plage,
   type TravailCoupes,
 } from "@/lib/studio/coupes";
+import {
+  apresReglage,
+  coupeA,
+  debutsDansLeMontage,
+  minute,
+  motsDeLaCoupe,
+  phrasesRetireesAutour,
+  resumeCoupe,
+  versMontage,
+  versSource,
+} from "@/lib/studio/coupesParCoupe";
 import { RYTHMES_COUPES, type Montage, type Reglages } from "@/lib/studio/reglages";
 
 interface Props {
@@ -49,24 +58,22 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
   const [video, setVideo] = useState<string | null>(null);
   const [plages, setPlages] = useState<Plage[]>([]);
   const [historique, setHistorique] = useState<Plage[][]>([]);
-  const [mode, setMode] = useState<Mode>("montage");
   const [lecture, setLecture] = useState(false);
   const [t, setT] = useState(0);
-  const [zoom, setZoom] = useState(1);
-  const [largeur, setLargeur] = useState(0);
-  const [glisse, setGlisse] = useState<{ i: number; bord: "debut" | "fin"; base: Plage[] } | null>(null);
-  // la coupe ouverte dans la loupe : n° du passage qui la précède (-1 : début de la vidéo)
-  const [selection, setSelection] = useState<number | null>(null);
   const [son, setSon] = useState<Enveloppe | null>(null);
+  // la coupe ouverte en plein écran, et ce qu'elle était à l'ouverture (pointillé « avant »)
+  const [ouverte, setOuverte] = useState<number | null>(null);
+  const [origine, setOrigine] = useState<Plage | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [glisse, setGlisse] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
-  const frise = useRef<HTMLDivElement>(null);
-  const cadre = useRef<HTMLDivElement>(null);
+  const bande = useRef<HTMLDivElement>(null);
+  const liste = useRef<HTMLUListElement>(null);
   const plagesRef = useRef<Plage[]>([]);
   const finEcoute = useRef<number | null>(null);
   const modeRef = useRef<Mode>("montage");
   plagesRef.current = plages;
-  modeRef.current = mode;
 
   const duree = travail?.meta.duration ?? 0;
   // Voix off : pas d'image, seulement la voix (la vidéo « d'aperçu » est noire)
@@ -97,7 +104,7 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
     };
   }, [open, travail, dossier, montage.source_path, reglages.coupes.plages]);
 
-  // le dessin du son de la loupe, à partir de la vidéo légère (la source peut faire 1 Go)
+  // le dessin du son (éditeur), à partir de la vidéo légère (la source peut faire 1 Go)
   useEffect(() => {
     if (!open || son || !video || !travail?.apercu_video) return;
     const Contexte =
@@ -120,7 +127,8 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
       const deja = reglages.coupes.plages;
       setPlages(normaliser(deja?.length ? deja : travail.coupes, travail.meta.duration));
       setHistorique([]);
-      setSelection(null);
+      setOuverte(null);
+      setMessage(null);
     }
     if (!open) {
       videoRef.current?.pause();
@@ -128,19 +136,7 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // largeur visible de la frise (zoom 1 = toute la vidéo tient à l'écran)
-  useEffect(() => {
-    if (!open) return;
-    const el = cadre.current;
-    if (!el) return;
-    const mesurer = () => setLargeur(el.clientWidth);
-    mesurer();
-    const obs = new ResizeObserver(mesurer);
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [open, travail]);
-
-  // lecture : position, saut des coupes en mode « montage », arrêt après « Écouter »
+  // lecture : position, saut des parties retirées (comme le montage), arrêt en fin d'écoute
   useEffect(() => {
     if (!open) return;
     let id = 0;
@@ -154,7 +150,6 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
             v.pause();
             finEcoute.current = null;
           } else if (modeRef.current === "montage") {
-            // « Écouter la transition » saute aussi les coupes, et s'arrête à `fin`
             const suite = tempsDeLecture(v.currentTime, plagesRef.current);
             if (suite === null) v.pause();
             else if (suite - v.currentTime > 0.03) v.currentTime = suite;
@@ -171,27 +166,49 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
     return () => cancelAnimationFrame(id);
   }, [open]);
 
-  const pxParS = duree ? (Math.max(largeur, 300) / duree) * zoom : 0;
-  const coupes = useMemo(() => coupesEntre(plages, duree).filter(([a, b]) => b - a > 0.03), [plages, duree]);
-  const gardee = dureeGardee(plages);
-  // les mots sous la frise : seulement ceux qui tiennent sans se chevaucher (zoomer en montre plus)
-  const motsVisibles = useMemo(() => {
-    if (!travail || !pxParS) return [];
-    let droite = -Infinity;
-    return motsAffiches(travail.mots.map((m, k) => ({ ...m, k })))
-      .filter((m) => {
-        const x = m.start * pxParS;
-        if (x < droite) return false;
-        droite = x + Math.min(120, m.text.length * 5.6 + 6);
-        return true;
-      });
-  }, [travail, pxParS]);
+  const debuts = useMemo(() => debutsDansLeMontage(plages), [plages]);
+  const total = dureeGardee(plages);
+  const enCours = coupeA(plages, t);
+  const tMontage = versMontage(plages, t);
+  const mots = useMemo(() => (travail ? motsAffiches(travail.mots) : []), [travail]);
+  const resumes = useMemo(() => plages.map((p) => resumeCoupe(motsDeLaCoupe(mots, p))), [plages, mots]);
+  const reperes = useMemo(
+    () => (travail ? plages.map((_, i) => phrasesRetireesAutour(plages, i, travail, duree)) : []),
+    [plages, travail, duree],
+  );
   const rythmePrepa = travail?.plages ? null : travail?.rythme ?? "dynamique";
   const rythmeDiffere = !!travail && !reglages.coupes.plages?.length && !!rythmePrepa && rythmePrepa !== reglages.coupes.rythme;
 
-  function modifier(nouvelles: Plage[]) {
-    setHistorique((h) => [...h.slice(-49), plages]);
+  // pendant la lecture, la coupe en cours reste visible dans la liste
+  useEffect(() => {
+    if (!lecture || ouverte !== null || enCours < 0) return;
+    liste.current?.querySelector(`[data-coupe="${enCours}"]`)?.scrollIntoView({ block: "nearest" });
+  }, [enCours, lecture, ouverte]);
+
+  /** Un réglage : `nouvelle` = annulable à part (false = la suite du même geste). */
+  function regler(nouvelles: Plage[], nouvelle: boolean) {
+    const avant = plagesRef.current;
+    if (memesPlages(avant, nouvelles)) return;
+    if (nouvelle) setHistorique((h) => [...h.slice(-49), avant]);
     setPlages(nouvelles);
+    if (ouverte !== null && avant[ouverte]) {
+      const milieu = (avant[ouverte][0] + avant[ouverte][1]) / 2;
+      const { coupe, reunies } = apresReglage(avant, nouvelles, milieu);
+      if (reunies) {
+        setMessage(`Les coupes ${coupe + 1} et ${coupe + 2} sont réunies : elles n'en font plus qu'une.`);
+        setOrigine(nouvelles[coupe]);
+      } else setMessage(null);
+      setOuverte(coupe);
+    }
+  }
+
+  function annuler() {
+    if (!historique.length) return;
+    const precedent = historique[historique.length - 1];
+    setHistorique((h) => h.slice(0, -1));
+    setPlages(precedent);
+    setMessage(null);
+    if (ouverte !== null && ouverte >= precedent.length) setOuverte(precedent.length - 1);
   }
 
   function aller(temps: number, jouer = false) {
@@ -207,31 +224,38 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
     if (!v) return;
     if (v.paused) {
       finEcoute.current = null;
-      if (mode === "montage" && tempsDeLecture(v.currentTime, plages) === null) v.currentTime = plages[0]?.[0] ?? 0;
+      modeRef.current = "montage";
+      if (tempsDeLecture(v.currentTime, plages) === null) v.currentTime = plages[0]?.[0] ?? 0;
       v.play().catch(() => undefined);
     } else v.pause();
   }
 
-  function ecouter(coupe: Plage, avant = 1.5, apres = 1) {
-    setMode("tout");
-    finEcoute.current = Math.min(duree, coupe[1] + apres);
-    aller(coupe[0] - avant, true);
+  /** Écouter comme le montage (les parties retirées sautées), de `de` à `jusqua`. */
+  function ecouter(de: number, jusqua: number) {
+    modeRef.current = "montage";
+    finEcoute.current = Math.min(duree, jusqua);
+    aller(de, true);
   }
 
-  /** La transition telle qu'elle sera dans le montage : 2 s avant la coupe, puis la reprise. */
-  function ecouterTransition(coupe: Plage) {
-    setMode("montage");
-    finEcoute.current = Math.min(duree, coupe[1] + 1.5);
-    aller(Math.max(0, coupe[0] - 2), true);
+  /** Écouter une partie retirée telle qu'elle est (avec 0,5 s autour). */
+  function ecouterRetire([a, b]: Plage) {
+    modeRef.current = "tout";
+    finEcoute.current = Math.min(duree, b + 0.5);
+    aller(Math.max(0, a - 0.5), true);
   }
 
-  function ouvrir(coupe: Plage) {
-    setSelection(passageAvant(plages, coupe));
+  function ouvrir(i: number) {
+    videoRef.current?.pause();
+    setOrigine(plages[i]);
+    setMessage(null);
+    setOuverte(i);
+    aller(plages[i][0]);
   }
 
-  const tempsDuPointeur = (clientX: number) => {
-    const r = frise.current?.getBoundingClientRect();
-    return r ? (clientX - r.left) / pxParS : 0;
+  // la bande : un instant de la vidéo finale sous le pointeur
+  const montageDuPointeur = (clientX: number) => {
+    const r = bande.current?.getBoundingClientRect();
+    return r && total ? Math.max(0, Math.min(total, ((clientX - r.left) / r.width) * total)) : 0;
   };
 
   function valider() {
@@ -241,17 +265,17 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
     onOpenChange(false);
   }
 
-  const graduation = duree > 120 ? 10 : duree > 40 ? 5 : 1;
+  const graduation = total > 120 ? 20 : total > 40 ? 10 : 5;
+  const pourcent = (s: number) => (total ? (s / total) * 100 : 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* téléphone : la fenêtre défile ; ordinateur : tout reste à l'écran, seule la liste défile */}
       <DialogContent className="flex h-[94vh] max-w-6xl flex-col gap-3 overflow-y-auto md:overflow-hidden">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Vérifier les coupes</DialogTitle>
+          <DialogTitle>Ajuster les coupes</DialogTitle>
           <DialogDescription>
-            En or, les passages gardés ; hachurées, les coupes. Touche une coupe (ou « Ajuster ») pour la voir de près
-            et la régler à l'image près, ou garde-la entière depuis la liste.
+            Écoute ta vidéo, repère la coupe à corriger, puis ouvre-la pour régler son début et sa fin.
           </DialogDescription>
         </DialogHeader>
 
@@ -260,14 +284,13 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
         ) : !travail ? (
           <Loader2 className="mx-auto my-16 h-6 w-6 animate-spin text-muted-foreground" />
         ) : (
-          // la vidéo, la frise et les boutons restent à l'écran ; seule la liste des coupes défile
           <div className="flex flex-col gap-4 md:min-h-0 md:flex-1" data-testid="verifier-coupes">
-            <div className="grid shrink-0 gap-4 md:grid-cols-[auto_1fr]">
+            <div className="grid shrink-0 items-center gap-4 md:grid-cols-[auto_1fr]">
+              {/* la vidéo reste montée (c'est elle qui joue le son) ; plus petite quand une coupe est ouverte */}
               <div
                 className={cn(
                   "relative mx-auto aspect-[9/16] overflow-hidden rounded-xl border border-border bg-black",
-                  // loupe ouverte : la vidéo se fait petite pour laisser la place aux réglages
-                  selection !== null ? "h-[16vh] min-h-[110px]" : "h-[30vh] max-h-[300px] min-h-[170px]",
+                  ouverte !== null ? "h-[15vh] min-h-[100px]" : "h-[26vh] max-h-[260px] min-h-[150px]",
                 )}
               >
                 {video ? (
@@ -282,260 +305,175 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                     data-testid="coupes-video"
                   />
                 ) : (
-                  <Loader2 className="m-auto mt-24 h-6 w-6 animate-spin text-muted-foreground" />
+                  <Loader2 className="m-auto mt-16 h-6 w-6 animate-spin text-muted-foreground" />
                 )}
                 {voixSeule && (
-                  <div
-                    className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-primary/15 to-black p-4 text-center"
-                    data-testid="coupes-voix"
-                  >
-                    <span className={cn("rounded-full bg-primary/20 p-4", lecture && "animate-pulse")}>
-                      <Mic className="h-7 w-7 text-primary" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-primary/15 to-black p-3 text-center" data-testid="coupes-voix">
+                    <span className={cn("rounded-full bg-primary/20 p-3", lecture && "animate-pulse")}>
+                      <Mic className="h-6 w-6 text-primary" />
                     </span>
-                    <p className="text-sm font-medium text-foreground">Ta voix</p>
-                    <p className="text-[11px] leading-snug text-muted-foreground">
-                      Ici, tu règles les coupes de ta voix. Les images de la banque sont choisies au montage.
+                    <p className="text-xs font-medium text-foreground">Ta voix</p>
+                  </div>
+                )}
+              </div>
+
+              {ouverte !== null ? (
+                <EnteteCoupe plages={plages} coupe={ouverte} mots={mots} onAller={ouvrir} onFermer={() => setOuverte(null)} />
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
+                    <p className="text-2xl font-semibold tabular-nums text-foreground">
+                      {minutage(total)} <span className="text-sm font-normal text-muted-foreground">gardées</span>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      sur {minutage(duree)} filmées · {plages.length} coupe{plages.length > 1 ? "s" : ""}
                     </p>
                   </div>
-                )}
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
-                  <p className="text-2xl font-semibold tabular-nums text-foreground">
-                    {minutage(gardee)} <span className="text-sm font-normal text-muted-foreground">gardées</span>
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    sur {minutage(duree)} filmées · {coupes.length} coupe{coupes.length > 1 ? "s" : ""}
-                  </p>
-                </div>
-
-                {rythmeDiffere && (
-                  <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                    Ces coupes sont celles du rythme « {nomRythme(rythmePrepa!)} ». Le rythme « {nomRythme(reglages.coupes.rythme)} »
-                    s'appliquera au prochain montage, sauf si tu ajustes ici : tes ajustements le remplacent.
-                  </p>
-                )}
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button onClick={basculerLecture} className="gap-2" disabled={!video}>
-                    {lecture ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                    {lecture ? "Pause" : "Lecture"}
-                  </Button>
-                  <div className="flex rounded-lg border border-border p-0.5 text-xs">
-                    {(
-                      [
-                        { id: "montage", nom: "Comme le montage" },
-                        { id: "tout", nom: voixSeule ? "Voix entière" : "Vidéo entière" },
-                      ] as { id: Mode; nom: string }[]
-                    ).map((o) => (
-                      <button
-                        key={o.id}
-                        type="button"
-                        onClick={() => {
-                          finEcoute.current = null;
-                          setMode(o.id);
-                        }}
-                        aria-pressed={mode === o.id}
-                        className={cn(
-                          "rounded-md px-3 py-1.5 font-medium transition-colors",
-                          mode === o.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        {o.nom}
-                      </button>
-                    ))}
-                  </div>
-                  <span className="ml-auto font-mono text-xs tabular-nums text-muted-foreground">{minutage(t)}</span>
-                </div>
-
-                <p className={cn("text-xs text-muted-foreground", selection !== null && "hidden")}>
-                  « Comme le montage » saute les coupes : tu entends le rythme final. « {voixSeule ? "Voix entière" : "Vidéo entière"} »
-                  joue tout, pour repérer ce qui a été coupé.
-                </p>
-              </div>
-            </div>
-
-            {/* la frise */}
-            <div className="shrink-0 space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-foreground">Frise du montage</p>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setZoom((z) => Math.max(1, z / 1.6))} disabled={zoom <= 1} aria-label="Dézoomer">
-                    <ZoomOut className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setZoom((z) => Math.min(12, z * 1.6))} disabled={zoom >= 12} aria-label="Zoomer">
-                    <ZoomIn className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <div ref={cadre} className="overflow-x-auto rounded-lg border border-border bg-muted/20 pb-2">
-                <div style={{ width: duree * pxParS }} className="relative select-none px-0">
-                  <div className="relative h-5 text-[10px] text-muted-foreground">
-                    {Array.from({ length: Math.floor(duree / graduation) + 1 }, (_, k) => k * graduation).map((s) => (
-                      <span key={s} className="absolute top-1 -translate-x-1/2 tabular-nums" style={{ left: s * pxParS }}>
-                        {minutage(s).replace(/,\d$/, "")}
-                      </span>
-                    ))}
-                  </div>
-                  <div
-                    ref={frise}
-                    className="relative h-14 cursor-pointer bg-[repeating-linear-gradient(135deg,rgba(239,68,68,0.18)_0_6px,transparent_6px_12px)]"
-                    onPointerDown={(e) => {
-                      const temps = tempsDuPointeur(e.clientX);
-                      aller(temps);
-                      // un clic dans une coupe l'ouvre dans la loupe
-                      const c = coupes.find(([a, b]) => temps >= a && temps <= b);
-                      if (c) ouvrir(c);
-                    }}
-                    data-testid="coupes-frise"
-                  >
-                    {plages.map(([a, b], i) => (
-                      <div
-                        key={`${i}-${a}`}
-                        className="absolute inset-y-1 rounded-md border border-primary bg-primary/70"
-                        style={{ left: a * pxParS, width: Math.max(2, (b - a) * pxParS) }}
-                      >
-                        {(["debut", "fin"] as const).map((bord) => (
-                          <span
-                            key={bord}
-                            role="slider"
-                            aria-label={`${bord === "debut" ? "Début" : "Fin"} du passage ${i + 1}`}
-                            aria-valuenow={bord === "debut" ? a : b}
-                            className={cn(
-                              "absolute inset-y-0 z-10 flex w-3 cursor-ew-resize touch-none items-center justify-center bg-primary-foreground/90 hover:bg-white",
-                              bord === "debut" ? "-left-1 rounded-l-md" : "-right-1 rounded-r-md",
-                            )}
-                            onPointerDown={(e) => {
-                              e.stopPropagation();
-                              (e.target as HTMLElement).setPointerCapture(e.pointerId);
-                              setGlisse({ i, bord, base: plages });
-                            }}
-                            onPointerMove={(e) => {
-                              if (!glisse) return;
-                              setPlages(deplacerBord(glisse.base, glisse.i, glisse.bord, tempsDuPointeur(e.clientX), duree));
-                            }}
-                            onPointerUp={(e) => {
-                              if (!glisse) return;
-                              const fin = tempsDuPointeur(e.clientX);
-                              if (!memesPlages(glisse.base, plagesRef.current)) setHistorique((h) => [...h.slice(-49), glisse.base]);
-                              setGlisse(null);
-                              aller(glisse.bord === "fin" ? fin - 1.5 : fin - 0.3);
-                            }}
-                          >
-                            <span className="h-5 w-0.5 rounded bg-primary" />
-                          </span>
-                        ))}
-                      </div>
-                    ))}
-                    {selection !== null &&
-                      (() => {
-                        const c = coupes.find((x) => passageAvant(plages, x) === selection);
-                        return c ? (
-                          <div
-                            className="pointer-events-none absolute inset-y-0 z-10 rounded-sm ring-2 ring-white"
-                            style={{ left: c[0] * pxParS, width: Math.max(4, (c[1] - c[0]) * pxParS) }}
-                          />
-                        ) : null;
-                      })()}
-                    <div className="pointer-events-none absolute inset-y-0 z-20 w-0.5 bg-white shadow" style={{ left: t * pxParS }} />
-                  </div>
-                  <div className="relative h-5">
-                    {motsVisibles.map((m) => {
-                      const retire = !plages.some(([a, b]) => (m.start + m.end) / 2 >= a && (m.start + m.end) / 2 <= b);
-                      return (
-                        <span
-                          key={m.k}
-                          className={cn(
-                            "absolute top-1 max-w-[120px] truncate whitespace-nowrap text-[10px]",
-                            retire ? "text-red-300/80 line-through" : "text-muted-foreground",
-                          )}
-                          style={{ left: m.start * pxParS }}
-                        >
-                          {m.text}
-                        </span>
-                      );
-                    })}
+                  {rythmeDiffere && (
+                    <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                      Ces coupes sont celles du rythme « {nomRythme(rythmePrepa!)} ». Le rythme « {nomRythme(reglages.coupes.rythme)} »
+                      s'appliquera au prochain montage, sauf si tu ajustes ici : tes ajustements le remplacent.
+                    </p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button onClick={basculerLecture} className="gap-2" disabled={!video} data-testid="coupes-lecture">
+                      {lecture ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                      {lecture ? "Pause" : "Lecture"}
+                    </Button>
+                    <span className="font-mono text-sm tabular-nums text-muted-foreground">
+                      {minute(tMontage)} / {minute(total)}
+                    </span>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* la loupe sur la coupe choisie, sinon la liste des coupes */}
-            {selection !== null ? (
-              <LoupeCoupe
-                plages={plages}
-                passage={selection}
-                duree={duree}
-                mots={motsAffiches(travail.mots)}
-                enveloppe={son}
-                t={t}
-                onModifier={modifier}
-                onEcouterTransition={ecouterTransition}
-                onEcouterCoupe={(c) => ecouter(c, 0.5, 0.5)}
-                onGarder={(c) => {
-                  modifier(garderCoupe(plages, c, duree));
-                  setSelection(null);
-                }}
-                onFermer={() => setSelection(null)}
-              />
-            ) : (
-            <div className="flex flex-col gap-2 md:min-h-[120px] md:flex-1">
-              <p className="shrink-0 text-sm font-medium text-foreground">Les coupes</p>
-              {coupes.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Plus aucune coupe : toute la vidéo est gardée.</p>
-              ) : (
-                <ul className="divide-y divide-border rounded-lg border border-border md:min-h-0 md:flex-1 md:overflow-y-auto">
-                  {coupes.map((c) => {
-                    const n = natureCoupe(c, travail);
-                    const bord = c[0] <= 0.001 ? "Début de la vidéo" : c[1] >= duree - 0.001 ? "Fin de la vidéo" : null;
-                    return (
-                      <li key={`${c[0]}-${c[1]}`} className="flex flex-wrap items-center gap-3 px-3 py-2 text-sm">
-                        <span className="w-28 shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-                          {minutage(c[0])} · {(c[1] - c[0]).toFixed(1).replace(".", ",")} s
-                        </span>
-                        <span
-                          className={cn(
-                            "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                            n.phraseRatee ? "bg-amber-500/15 text-amber-300" : "bg-muted text-muted-foreground",
-                          )}
-                        >
-                          {n.phraseRatee ? "Phrase recommencée" : bord ?? "Blanc"}
-                        </span>
-                        <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-                          {n.avant && <>…{n.avant} </>}
-                          {n.mots ? <span className="text-red-300 line-through">{n.mots}</span> : <span className="text-foreground">‖</span>}
-                          {n.apres && <> {n.apres}…</>}
-                        </span>
-                        <span className="flex shrink-0 gap-1">
-                          <Button variant="ghost" size="sm" className="h-8 gap-1.5" onClick={() => ecouter(c)}>
-                            <Volume2 className="h-3.5 w-3.5" /> Écouter
-                          </Button>
-                          <Button variant="outline" size="sm" className="h-8 gap-1.5" onClick={() => ouvrir(c)} data-testid="coupe-ajuster">
-                            <SearchCheck className="h-3.5 w-3.5" /> Ajuster
-                          </Button>
-                          <Button variant="outline" size="sm" className="h-8" onClick={() => modifier(garderCoupe(plages, c, duree))}>
-                            Garder
-                          </Button>
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
               )}
             </div>
+
+            {ouverte !== null ? (
+              <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
+                <EditeurCoupe
+                  plages={plages}
+                  coupe={ouverte}
+                  duree={duree}
+                  mots={mots}
+                  enveloppe={son}
+                  origine={origine}
+                  t={t}
+                  message={message}
+                  peutAnnuler={historique.length > 0}
+                  onRegler={regler}
+                  onAnnuler={annuler}
+                  onEcouter={ecouter}
+                  onEcouterRetire={ecouterRetire}
+                  onFermer={() => setOuverte(null)}
+                />
+              </div>
+            ) : (
+              <>
+                {/* la bande d'ensemble : la vidéo finale, en lecture seule */}
+                <div className="shrink-0 space-y-1">
+                  <p className="text-sm font-medium text-foreground">
+                    Vue d'ensemble · ta vidéo finale{" "}
+                    <span className="text-xs font-normal text-muted-foreground">(on écoute, on repère : rien ne se modifie ici)</span>
+                  </p>
+                  <div className="relative pt-8">
+                    {enCours >= 0 && (
+                      <span
+                        className="pointer-events-none absolute top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded-md bg-white px-2 py-0.5 text-xs font-bold text-black shadow"
+                        style={{ left: `clamp(48px, ${pourcent(tMontage)}%, calc(100% - 48px))` }}
+                        data-testid="coupe-en-cours"
+                      >
+                        Coupe {enCours + 1} · {minute(tMontage)}
+                      </span>
+                    )}
+                    <div
+                      ref={bande}
+                      className="relative h-12 cursor-pointer touch-none select-none"
+                      onPointerDown={(e) => {
+                        (e.target as Element).setPointerCapture?.(e.pointerId);
+                        setGlisse(true);
+                        aller(versSource(plages, montageDuPointeur(e.clientX)));
+                      }}
+                      onPointerMove={(e) => glisse && aller(versSource(plages, montageDuPointeur(e.clientX)))}
+                      onPointerUp={() => setGlisse(false)}
+                      onPointerCancel={() => setGlisse(false)}
+                      role="slider"
+                      aria-label="Position dans la vidéo finale"
+                      aria-valuenow={tMontage}
+                      data-testid="coupes-bande"
+                    >
+                      {plages.map(([a, b], i) => (
+                        <div
+                          key={`${i}-${a}`}
+                          className={cn(
+                            "absolute inset-y-0 flex items-center justify-center overflow-hidden rounded-[5px] border border-primary text-[11px] font-bold",
+                            i === enCours ? "bg-primary text-primary-foreground" : "bg-primary/30 text-foreground",
+                          )}
+                          style={{ left: `calc(${pourcent(debuts[i])}% + 1px)`, width: `calc(${pourcent(b - a)}% - 2px)` }}
+                        >
+                          {(b - a) / (total || 1) > 0.018 ? i + 1 : ""}
+                        </div>
+                      ))}
+                      <div className="pointer-events-none absolute -bottom-2 -top-2 z-10 w-[3px] -translate-x-1/2 rounded bg-white shadow" style={{ left: `${pourcent(tMontage)}%` }} />
+                    </div>
+                    <div className="relative mt-1.5 h-4 text-[10px] text-muted-foreground">
+                      {Array.from({ length: Math.floor(total / graduation) + 1 }, (_, k) => k * graduation).map((s) => (
+                        <span key={s} className="absolute -translate-x-1/2 tabular-nums" style={{ left: `clamp(10px, ${pourcent(s)}%, calc(100% - 10px))` }}>
+                          {minute(s)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* la liste des coupes */}
+                <div className="flex flex-col gap-2 md:min-h-[120px] md:flex-1">
+                  <p className="shrink-0 text-sm font-medium text-foreground">Les coupes</p>
+                  <ul ref={liste} className="divide-y divide-border rounded-lg border border-border md:min-h-0 md:flex-1 md:overflow-y-auto" data-testid="coupes-liste">
+                    {plages.map(([a, b], i) => {
+                      const r = reperes[i];
+                      return (
+                        <li
+                          key={`${i}-${a}`}
+                          data-coupe={i}
+                          className={cn(
+                            "flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm transition-colors hover:bg-muted/40",
+                            i === enCours && "bg-primary/10 shadow-[inset_3px_0_0_hsl(var(--primary))]",
+                          )}
+                          onClick={() => aller(a)}
+                        >
+                          <span className={cn("w-[74px] shrink-0 font-semibold", i === enCours ? "text-primary" : "text-foreground")}>Coupe {i + 1}</span>
+                          <span className="w-[86px] shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+                            {minute(debuts[i])} → {minute(debuts[i] + b - a)}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-xs text-foreground/90">« {resumes[i]} »</span>
+                          {(r?.avant || r?.apres) && (
+                            <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-300">
+                              phrase recommencée retirée {r.avant && r.apres ? "avant et après" : r.avant ? "juste avant" : "juste après"}
+                            </span>
+                          )}
+                          {i === enCours && lecture && <span className="shrink-0 text-[11px] font-semibold text-primary">▶ en lecture</span>}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={cn("h-8 shrink-0", i === enCours && "border-primary/70 text-primary")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              ouvrir(i);
+                            }}
+                            data-testid="coupe-ouvrir"
+                          >
+                            Ouvrir
+                          </Button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </>
             )}
 
             <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-border pt-3">
-              <Button
-                variant="ghost"
-                className="gap-2"
-                disabled={!historique.length}
-                onClick={() => {
-                  setPlages(historique[historique.length - 1]);
-                  setHistorique((h) => h.slice(0, -1));
-                }}
-              >
+              <Button variant="ghost" className="gap-2" disabled={!historique.length} onClick={annuler}>
                 <Undo2 className="h-4 w-4" /> Annuler
               </Button>
               {(!!reglages.coupes.plages?.length || !!travail.plages) && (
