@@ -30,6 +30,7 @@ import { EngagementChecklist } from "@/components/checkout/EngagementChecklist";
 import { MentionsPaiement } from "@/components/checkout/MentionsPaiement";
 import { MentionFormulaire } from "@/components/legal/MentionFormulaire";
 import { initAgreements, allAgreed, type AgreementItem, LIBELLE_BOUTON_PAIEMENT } from "@/lib/checkout-agreements";
+import { verifierEmail } from "@/lib/emailValide";
 
 const TOTAL_EUR = 5000;
 const PRODUCT_LABEL = "PASS LIBERTY";
@@ -1263,7 +1264,7 @@ function CheckoutForm({
     // l'email AVANT d'appliquer le code (c'est aussi celui qui recevra le pass
     // Liberty cote webhook).
     const couponEmail = billing.email.trim().toLowerCase();
-    if (!couponEmail || !couponEmail.includes("@")) {
+    if (verifierEmail(couponEmail)) {
       setCoupon({ status: "invalid", reason: "email_required" });
       toast.error(
         "Renseigne d'abord l'adresse email de ton compte (celle de ton Pass AL BARAKA) avant d'appliquer le code.",
@@ -1327,7 +1328,8 @@ function CheckoutForm({
   function validateForm(): string | null {
     if (!billing.first_name.trim()) return "Prénom requis";
     if (!billing.last_name.trim()) return "Nom requis";
-    if (!billing.email.trim() || !billing.email.includes("@")) return "Email invalide";
+    const erreurEmail = verifierEmail(billing.email);
+    if (erreurEmail) return erreurEmail;
     if (!billing.phone.trim()) return "Téléphone requis";
     if (!isValidPhoneNumber(billing.phone)) return "Numéro de téléphone invalide";
     if (!billing.address.trim()) return "Adresse requise";

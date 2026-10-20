@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { verifierEmail } from "@/lib/emailValide";
 
 export function NewStudentDialog() {
   const queryClient = useQueryClient();
@@ -36,8 +37,9 @@ export function NewStudentDialog() {
       toast({ title: "Prénom et nom requis", variant: "destructive" });
       return;
     }
-    if (!trimmedEmail || !trimmedEmail.includes("@")) {
-      toast({ title: "Email invalide", variant: "destructive" });
+    const erreurEmail = verifierEmail(trimmedEmail);
+    if (erreurEmail) {
+      toast({ title: "Email invalide", description: erreurEmail, variant: "destructive" });
       return;
     }
 

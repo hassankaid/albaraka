@@ -36,6 +36,7 @@ import { EngagementChecklist } from "@/components/checkout/EngagementChecklist";
 import { MentionsPaiement } from "@/components/checkout/MentionsPaiement";
 import { MentionFormulaire } from "@/components/legal/MentionFormulaire";
 import { initAgreements, allAgreed, type AgreementItem, type CheckoutFormula, LIBELLE_BOUTON_PAIEMENT } from "@/lib/checkout-agreements";
+import { verifierEmail } from "@/lib/emailValide";
 
 const THEME = {
   bg: "#0A0A0A",
@@ -935,7 +936,8 @@ function PaymentLinkForm({
   function validateForm(): string | null {
     if (!billing.first_name.trim()) return "Prénom requis";
     if (!billing.last_name.trim()) return "Nom requis";
-    if (!billing.email.trim() || !billing.email.includes("@")) return "Email invalide";
+    const erreurEmail = verifierEmail(billing.email);
+    if (erreurEmail) return erreurEmail;
     if (!billing.phone.trim()) return "Téléphone requis";
     if (!isValidPhoneNumber(billing.phone)) return "Numéro de téléphone invalide";
     if (!billing.address.trim()) return "Adresse requise";

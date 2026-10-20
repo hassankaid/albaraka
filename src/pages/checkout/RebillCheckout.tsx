@@ -33,6 +33,7 @@ import logo from "@/assets/al-baraka-logo-v2.png";
 import { MentionFormulaire } from "@/components/legal/MentionFormulaire";
 import { Lock, ShieldCheck, ChevronDown, AlertTriangle, Loader2 } from "lucide-react";
 import CheckoutCanvas from "./CheckoutCanvas";
+import { verifierEmail } from "@/lib/emailValide";
 
 const THEME = {
   bg: "#0A0A0A",
@@ -613,7 +614,8 @@ function RebillForm({
   function validateForm(): string | null {
     if (!billing.first_name.trim()) return "Prénom requis";
     if (!billing.last_name.trim()) return "Nom requis";
-    if (!billing.email.trim() || !billing.email.includes("@")) return "Email invalide";
+    const erreurEmail = verifierEmail(billing.email);
+    if (erreurEmail) return erreurEmail;
     if (!billing.phone.trim()) return "Téléphone requis";
     if (!isValidPhoneNumber(billing.phone)) return "Numéro de téléphone invalide";
     if (!billing.address.trim()) return "Adresse requise";
