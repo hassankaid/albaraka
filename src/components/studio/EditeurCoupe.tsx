@@ -4,7 +4,7 @@
 // mot, le point de coupe est ramené au bord du mot. Rien n'est envoyé : c'est la fenêtre
 // « Ajuster les coupes » qui valide.
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Magnet, Scissors, Undo2, Volume2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Magnet, Scissors, Trash2, Undo2, Volume2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -46,6 +46,8 @@ interface Props {
   onEcouter: (de: number, jusqua: number) => void;
   /** écoute ce qui est retiré, tel quel */
   onEcouterRetire: (trou: Plage) => void;
+  /** supprime toute la coupe ; absent quand c'est la dernière */
+  onSupprimer?: () => void;
   onFermer: () => void;
 }
 
@@ -53,7 +55,7 @@ const secondes = (s: number, signe = false) => `${signe && s > 0 ? "+" : ""}${s.
 
 export function EditeurCoupe({
   plages, coupe, duree, mots, enveloppe, origine, t, message, peutAnnuler,
-  onRegler, onAnnuler, onEcouter, onEcouterRetire, onFermer,
+  onRegler, onAnnuler, onEcouter, onEcouterRetire, onSupprimer, onFermer,
 }: Props) {
   const [actif, setActif] = useState<Bord>("debut");
   const [note, setNote] = useState<string | null>(null);
@@ -183,6 +185,11 @@ export function EditeurCoupe({
         <Button variant="outline" className="gap-2 border-primary/60 text-primary" onClick={onFermer}>
           Terminé
         </Button>
+        {onSupprimer && (
+          <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-destructive" onClick={onSupprimer} data-testid="supprimer-coupe">
+            <Trash2 className="h-4 w-4" /> Supprimer cette coupe
+          </Button>
+        )}
       </div>
     </div>
   );

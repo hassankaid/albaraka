@@ -7,7 +7,7 @@
 // coupe en plein écran pour régler son début et sa fin (EditeurCoupe). Rien n'est envoyé tant
 // que l'élève ne valide pas. (Avant le 20/10 : frise modifiable et loupe sur les transitions.)
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Mic, Pause, Play, RotateCcw, Undo2 } from "lucide-react";
+import { Loader2, Mic, Pause, Play, RotateCcw, Trash2, Undo2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -33,6 +33,7 @@ import {
   motsDeLaCoupe,
   phrasesRetireesAutour,
   resumeCoupe,
+  supprimerCoupe,
   versMontage,
   versSource,
 } from "@/lib/studio/coupesParCoupe";
@@ -221,6 +222,19 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
     }
   }
 
+  /** Supprimer une coupe entière : annulable comme un réglage, la liste reprend la main. */
+  function supprimer(i: number) {
+    const avant = plagesRef.current;
+    const apres = supprimerCoupe(avant, i);
+    if (apres === avant) return;
+    videoRef.current?.pause();
+    geste.current = null;
+    setHistorique((h) => [...h.slice(-49), avant]);
+    setPlages(apres);
+    setOuverte(null);
+    setMessage(`Coupe ${i + 1} supprimée : elle ne sera plus dans ta vidéo. « Annuler » la remet.`);
+  }
+
   function annuler() {
     if (!historique.length) return;
     const precedent = historique[historique.length - 1];
@@ -383,6 +397,7 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                   onAnnuler={annuler}
                   onEcouter={ecouter}
                   onEcouterRetire={ecouterRetire}
+                  onSupprimer={plages.length > 1 ? () => supprimer(ouverte) : undefined}
                   onFermer={() => setOuverte(null)}
                 />
               </div>
@@ -452,6 +467,11 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                 {/* la liste des coupes */}
                 <div className="flex flex-col gap-2 md:min-h-[120px] md:flex-1">
                   <p className="shrink-0 text-sm font-medium text-foreground">Les coupes</p>
+                  {message && (
+                    <p className="shrink-0 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs text-foreground" aria-live="polite" data-testid="coupes-message">
+                      {message}
+                    </p>
+                  )}
                   <ul ref={liste} className="divide-y divide-border rounded-lg border border-border md:min-h-0 md:flex-1 md:overflow-y-auto" data-testid="coupes-liste">
                     {plages.map(([a, b], i) => {
                       const r = reperes[i];
@@ -487,6 +507,21 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
                             data-testid="coupe-ouvrir"
                           >
                             Ouvrir
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                            disabled={plages.length <= 1}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              supprimer(i);
+                            }}
+                            aria-label={`Supprimer la coupe ${i + 1}`}
+                            title="Supprimer cette coupe"
+                            data-testid="coupe-supprimer"
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </li>
                       );

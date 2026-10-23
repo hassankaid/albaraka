@@ -84,6 +84,15 @@ export function apresReglage(avant: Plage[], apres: Plage[], ancre: number): { c
   return { coupe: Math.max(0, coupeA(apres, ancre)), reunies: apres.length < avant.length };
 }
 
+/**
+ * Supprimer une coupe entière (demande de Sidali du 23/10/2026) : son passage rejoint les
+ * parties retirées. La dernière coupe ne se supprime pas : une vidéo vide n'existe pas.
+ */
+export function supprimerCoupe(plages: Plage[], i: number): Plage[] {
+  if (plages.length <= 1 || i < 0 || i >= plages.length) return plages;
+  return plages.filter((_, k) => k !== i);
+}
+
 /** Marge gardée autour d'un mot quand le point de coupe lâché dedans est ramené au bord. */
 export const MARGE_MOT = 0.05;
 

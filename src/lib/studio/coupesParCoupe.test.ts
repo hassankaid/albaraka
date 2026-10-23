@@ -8,6 +8,7 @@ import {
   motsDeLaCoupe,
   phrasesRetireesAutour,
   resumeCoupe,
+  supprimerCoupe,
   versMontage,
   versSource,
 } from "./coupesParCoupe";
@@ -79,6 +80,17 @@ describe("régler une coupe", () => {
     expect(horsDesMots(mots, 6.2)).toBeCloseTo(6.05);
     expect(horsDesMots(mots, 6.45)).toBeCloseTo(6.55);
     expect(horsDesMots(mots, 5.9)).toBe(5.9);
+  });
+
+  it("supprime une coupe entière, jamais la dernière", () => {
+    const sans = supprimerCoupe(plages, 1);
+    expect(sans).toEqual([
+      [1, 4],
+      [12, 15],
+    ]);
+    expect(debutsDansLeMontage(sans)).toEqual([0, 3]);
+    expect(supprimerCoupe(plages, 5)).toBe(plages);
+    expect(supprimerCoupe([[1, 4]], 0)).toEqual([[1, 4]]);
   });
 
   it("affiche le temps de la vidéo finale à la seconde", () => {
