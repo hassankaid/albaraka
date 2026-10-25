@@ -65,7 +65,7 @@ export default function AnalyseAppel() {
           <ArrowLeft className="h-4 w-4" /> Analyse d'appels
         </Link>
       </Button>
-      <div className="min-w-0 flex-1">
+      <div className="order-3 w-full min-w-0 sm:order-none sm:w-auto sm:flex-1">
         <h1 className="truncate text-xl font-bold">{a.eleve?.full_name ?? "Élève"}</h1>
         <p className="text-sm text-muted-foreground">
           {nomType(a.type_appel)} · {duree(a.duree_s)} · déposé le {new Date(a.cree_le).toLocaleDateString("fr-FR")}
@@ -73,7 +73,7 @@ export default function AnalyseAppel() {
         </p>
       </div>
       {a.statut === "a_valider" && (
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => setInversion(true)} disabled={action} data-testid="inverser-voix">
+        <Button variant="outline" size="sm" className="ml-auto gap-2 sm:ml-0" onClick={() => setInversion(true)} disabled={action} data-testid="inverser-voix">
           <ArrowLeftRight className="h-4 w-4" /> Inverser les voix
         </Button>
       )}
@@ -180,7 +180,7 @@ export default function AnalyseAppel() {
           />
         </div>
         <aside className="order-1 lg:order-2 lg:sticky lg:top-4 lg:h-[calc(100vh-7rem)]">
-          <div className="h-[46vh] lg:h-full">
+          <div className="h-[38vh] lg:h-full">
             <PanneauEcoute
               lecteur={lecteur}
               src={audio}

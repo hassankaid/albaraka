@@ -320,7 +320,7 @@ Silences entre la fin d'une question du setter et la réponse du prospect : {sil
 # Transcription (voix séparées automatiquement, numéros de tour T1…)
 {transcript}
 
-Réponds UNIQUEMENT avec un objet JSON valide de cette forme (toutes les étapes {codes} ; toutes les règles R1 à R7). Tutoie l'élève. Les citations sont copiées MOT POUR MOT depuis la transcription. Dans les valeurs texte, n'utilise jamais le caractère " (guillemet droit) : utilise « ».
+Réponds UNIQUEMENT avec un objet JSON valide de cette forme (toutes les étapes {codes} ; toutes les règles R1 à R7). Tutoie l'élève. N'écris AUCUNE note globale chiffrée (sur 100) dans les textes : le code calcule la note et l'affiche lui-même. Les citations sont copiées MOT POUR MOT depuis la transcription. Dans les valeurs texte, n'utilise jamais le caractère " (guillemet droit) : utilise « ».
 {SCHEMA}"""
 
 

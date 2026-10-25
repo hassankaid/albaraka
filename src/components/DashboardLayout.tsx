@@ -183,7 +183,12 @@ export default function DashboardLayout() {
 
   // Dynamic page title: CEO sees "Suivi Activité" instead of "Mon Activité"
   const rawTitle =
-    pageTitles[location.pathname] || (location.pathname.startsWith("/studio/") ? "Studio" : "Dashboard");
+    pageTitles[location.pathname] ||
+    (location.pathname.startsWith("/studio/")
+      ? "Studio"
+      : location.pathname.startsWith("/coaching/analyse-appels/")
+        ? "Analyse d'appels"
+        : "Dashboard");
   const pageTitle = isCeo && location.pathname === "/working/activity" ? "Suivi Activité" : rawTitle;
 
   const isApporteurLike = profile?.role === "apporteur" || profile?.is_also_apporteur;
