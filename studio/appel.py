@@ -14,7 +14,8 @@ La chaîne a été mise au point sur un vrai appel de Sabrina (banc d'essai du 2
   2. Gemini Flash écoute l'audio et rend les tours de parole (élève / prospect), en corrigeant
      les mots que Whisper rate (hijra, istikhara…) : 99,4 % des mots attribués comme Gemini Pro ;
   3. les tours sont recalés sur les mots horodatés de Whisper (temps de parole, silences) ;
-  4. Claude Haiku note l'appel avec le référentiel du type d'appel (en base, pas dans ce dépôt) ;
+  4. Claude Haiku note l'appel avec le référentiel du type d'appel (en base, pas dans ce dépôt) et
+     les exemples de référence validés par les coachs (exemples_de_reference) ;
   5. le code vérifie chaque citation (mot pour mot) et calcule la note avec les poids de la grille.
 Coût mesuré : environ 0,06 $ pour un appel de 6 min. Chaque appel à l'IA va au journal
 ia_consommations (appel_job_cout), jamais sur la ligne de l'appel : les coûts sont réservés à l'admin.
@@ -303,6 +304,40 @@ SCHEMA = """{
 mmss = lambda s: f"{int(s // 60)}:{int(s % 60):02d}"
 
 
+def exemples_de_reference(exemples):
+    """Les retours validés et cochés « exemple de référence » par les coachs (4 au plus, les plus
+    récents) : la version corrigée, avec ce que le coach a changé par rapport à l'IA. C'est ainsi
+    que l'outil s'aligne sur la méthode des coachs (cahier des charges, section 6)."""
+    blocs = []
+    for k, x in enumerate(exemples or [], 1):
+        coach, ia = x.get("analyse_coach") or {}, x.get("analyse_ia") or {}
+        notes_ia = {e.get("code"): e.get("note") for e in ia.get("etapes") or []}
+        lignes = [f"## Exemple {k} · note finale validée par le coach : {round(float(x.get('note_finale') or 0))}/100"
+                  + (f" (l'IA avait proposé {round(float(x.get('note_ia') or 0))})" if x.get("note_ia") is not None and x.get("note_ia") != x.get("note_finale") else "")]
+        for e in coach.get("etapes") or []:
+            avant = notes_ia.get(e.get("code"))
+            corrige = f" (l'IA avait mis {avant}/10, le coach a corrigé)" if avant is not None and avant != e.get("note") else ""
+            lignes.append(f"- {e.get('code')} {e.get('nom', '')} : {e.get('note')}/10{corrige}. {e.get('justification', '')}")
+        gardes = [a for a in coach.get("axes") or [] if not a.get("retire")]
+        retires = [a for a in coach.get("axes") or [] if a.get("retire")]
+        if gardes:
+            lignes.append("Axes retenus par le coach : " + " ; ".join(f"{a.get('titre')} (à dire : {a.get('formulation_ideale')})" for a in gardes))
+        if retires:
+            lignes.append("Axes RETIRÉS par le coach (jugés inutiles ou trop exigeants) : " + " ; ".join(a.get("titre", "") for a in retires))
+        forts = [p.get("titre") for p in coach.get("points_forts") or [] if not p.get("retire")]
+        if forts:
+            lignes.append("Points forts retenus : " + " ; ".join(forts))
+        if (coach.get("conseil_prioritaire") or {}).get("texte"):
+            lignes.append("Conseil prioritaire validé : " + coach["conseil_prioritaire"]["texte"])
+        blocs.append("\n".join(lignes))
+    if not blocs:
+        return ""
+    return ("# Exemples de référence validés par les coachs\n"
+            "Voici des retours que les coachs ont validés comme modèles, avec leurs corrections. Aligne ta façon de noter, "
+            "ton niveau d'exigence et ton ton sur eux. Ne recopie pas leur contenu : l'appel à analyser est différent.\n\n"
+            + "\n\n".join(blocs) + "\n\n")
+
+
 def consigne_analyse(ctx, tours, mesures):
     ref = ctx["referentiel"]
     codes = ", ".join(e["code"] for e in ref["grille"])
@@ -313,7 +348,7 @@ Type d'appel déclaré : {ctx['type_appel']}. Le SETTER est l'élève évalué (
 
 {ref['contenu']}
 
-# Mesures calculées par le code
+{exemples_de_reference(ctx.get('exemples'))}# Mesures calculées par le code
 Durée totale : {mmss(mesures['duree_s'])}. Temps de parole mesuré : setter {mesures['parole_s']['SETTER']} s ({mesures['part_setter_pct']} %), prospect {mesures['parole_s']['PROSPECT']} s ({mesures['part_prospect_pct']} %). La transcription automatique rate une partie des réponses très courtes du prospect : la part réelle du setter est un peu plus basse que la mesure.
 Silences entre la fin d'une question du setter et la réponse du prospect : {silences}
 
@@ -385,7 +420,8 @@ def verifier(analyse, tours, ctx, mesures):
         alerte = f"Appel de {int(duree // 60)} min : trop long (norme {ref['duree_min_s'] // 60} à {ref['duree_max_s'] // 60} min)"
     analyse.update({"note_etapes": round(note_etapes, 1), "penalite": penalite, "prospect_informe": informe,
                     "note_globale": round(max(0.0, note_etapes - penalite), 1), "alerte_duree": alerte,
-                    "_verif": {"citations_retirees": retirees}, "_modele": ANALYSE})
+                    "_verif": {"citations_retirees": retirees}, "_modele": ANALYSE,
+                    "_exemples": [x.get("id") for x in ctx.get("exemples") or []]})
     return analyse
 
 
