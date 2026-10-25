@@ -47,6 +47,12 @@ export const CATALOGUE: FonctionnaliteIA[] = [
     description: "Réponses aux messages de prospects, à partir de la base de connaissance.",
   },
   {
+    cle: "analyse_appels",
+    nom: "Analyse d'appels",
+    groupe: "plateforme",
+    description: "Appel d'un élève déposé par un coach : transcription, voix séparées, notation avec la grille (≈ 0,06 $ par appel de setting).",
+  },
+  {
     cle: "coach_activite",
     nom: "Coach IA du jour",
     groupe: "plateforme",
