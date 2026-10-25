@@ -148,6 +148,8 @@ import StudioVoixOff from "./pages/studio/StudioVoixOff";
 import StudioScripts from "./pages/studio/StudioScripts";
 import StudioScriptsGerer from "./pages/studio/StudioScriptsGerer";
 import StudioAbonnement from "./pages/studio/StudioAbonnement";
+import AnalyseAppels from "./pages/coaching/AnalyseAppels";
+import AnalyseAppel from "./pages/coaching/AnalyseAppel";
 import AdminEmailCampaign from "./pages/admin/email-campaigns/AdminEmailCampaign";
 import AdminSmsCampaign from "./pages/admin/email-campaigns/AdminSmsCampaign";
 import { WA_TUNNEL, VSL_TUNNEL } from "./pages/tunnels/config";
@@ -449,6 +451,9 @@ const FullApp = () => (
                   <Route path="/mon-coaching" element={<Navigate to="/coaching/calendar" replace />} />
                   <Route path="/mon-coaching/session/:sessionId" element={<Navigate to="/coaching/calendar" replace />} />
                   <Route path="/coaching/calendar" element={<PassGuard><CoachingCalendar /></PassGuard>} />
+                  {/* Analyse d'appels (V1 coach, 25/10/2026) : réservé aux coachs et au CEO, vérifié dans les pages */}
+                  <Route path="/coaching/analyse-appels" element={<AnalyseAppels />} />
+                  <Route path="/coaching/analyse-appels/:id" element={<AnalyseAppel />} />
                   <Route path="/parcours/:slug" element={<PassGuard><ParcoursView /></PassGuard>} />
                   <Route path="/parcours/:slug/chapitre/:chapitreId" element={<PassGuard><ParcoursChapitreDetail /></PassGuard>} />
                   {/* Outils interactifs Liberty (M1 → M18) */}

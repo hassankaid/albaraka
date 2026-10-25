@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useLocation, Navigate } from "react-router-dom";
 import SpaceSwitcher from "./SpaceSwitcher";
-import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, MessageCircle, FolderDown, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film, Hash, Mail, FlaskConical, ClipboardList, Globe, Gauge } from "lucide-react";
+import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, MessageCircle, FolderDown, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film, Hash, Mail, FlaskConical, ClipboardList, Globe, Gauge, AudioLines } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState } from "react";
@@ -93,6 +93,7 @@ const trainingNavItems: NavItem[] = [
 
 const coachingNavItems: NavItem[] = [
   { title: "Calendrier", path: "/coaching/calendar", icon: CalendarDays, roles: ["ceo", "collaborateur", "apporteur"], passOrStaff: true },
+  { title: "Analyse d'appels", path: "/coaching/analyse-appels", icon: AudioLines, roles: ["ceo", "collaborateur", "apporteur"], coachOnly: true },
   // « Évaluations » (/coaching) et « Historique » (/mon-coaching) masqués le
   // 20/05/2026 sur demande CEO (sections peu utilisées). Pages et tables
   // conservées — réactivables en restaurant ces deux entrées + les routes
@@ -138,6 +139,7 @@ const pageTitles: Record<string, string> = {
   "/my-space": "Mon espace",
   "/profile": "Mon profil",
   "/coaching/calendar": "Calendrier des coachings",
+  "/coaching/analyse-appels": "Analyse d'appels",
   "/admin/coaching": "Administration Coaching",
   "/working/activity": "Mon Activité",
   "/working/organisation": "Mon Organisation",
