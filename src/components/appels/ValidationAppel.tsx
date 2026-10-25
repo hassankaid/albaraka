@@ -258,7 +258,7 @@ export function ValidationAppel({
                   </p>
                   <p className="text-xs text-muted-foreground">{e.poids} %</p>
                 </div>
-                <div className="flex items-start gap-2">
+                <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-start">
                   <div className="inline-flex items-center overflow-hidden rounded-lg border border-border">
                     <button type="button" className="px-2 py-1.5 text-muted-foreground hover:bg-muted" onClick={() => noter(i, -0.5)} aria-label={`Baisser ${e.code}`}>
                       <Minus className="h-3.5 w-3.5" />
@@ -271,7 +271,7 @@ export function ValidationAppel({
                     </button>
                   </div>
                   {noteIA !== undefined && noteIA !== e.note && (
-                    <Badge variant="outline" className="mt-1 h-5 px-1.5 text-[10px]">
+                    <Badge variant="outline" className="h-5 whitespace-nowrap px-1.5 text-[10px]">
                       IA : {noteIA.toLocaleString("fr-FR")}
                     </Badge>
                   )}

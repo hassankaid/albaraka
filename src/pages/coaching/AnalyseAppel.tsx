@@ -179,7 +179,7 @@ export default function AnalyseAppel() {
             onValide={recharger}
           />
         </div>
-        <aside className="order-1 lg:order-2 lg:sticky lg:top-4 lg:h-[calc(100vh-7rem)]">
+        <aside className="order-1 lg:order-2 lg:sticky lg:top-20 lg:h-[calc(100vh-6.5rem)] lg:self-start">
           <div className="h-[38vh] lg:h-full">
             <PanneauEcoute
               lecteur={lecteur}
