@@ -19,9 +19,16 @@ import {
   getTagsByCategory,
   type LeadTagDefinition,
 } from "@/lib/leadTags";
+import { PRIORITE_BADGES, PRIORITE_LABELS, type Priorite } from "@/lib/leadScoring";
+import { SaisieQuestionnaire } from "@/components/leads/SaisieQuestionnaire";
 
 // relance_* : système de relances (15/10/2026), pas encore dans les types générés
 type LeadEnriched = Tables<"leads_enriched"> & {
+  // lead scoring /100 (28/10/2026)
+  quiz_priorite?: Priorite | null;
+  quiz_score_100?: number | null;
+  quiz_saisi_par?: string | null;
+  quiz_answers?: Record<string, string> | null;
   relance_etape?: number | null;
   relance_derniere_le?: string | null;
   premiere_action_le?: string | null;
@@ -56,6 +63,7 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
   const [otherLeadsCount, setOtherLeadsCount] = useState(0);
   const [selectedTagKeys, setSelectedTagKeys] = useState<Set<string>>(new Set());
   const [originalTagKeys, setOriginalTagKeys] = useState<Set<string>>(new Set());
+  const [saisieOuverte, setSaisieOuverte] = useState(false);
 
   const canEdit = !!lead && (lead.assigned_to === user?.id || user?.role === "ceo");
 
@@ -109,6 +117,12 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
 
   if (!lead) return null;
 
+  const commentaireBudgetManquant =
+    status === "pas_qualifie" &&
+    selectedTagKeys.has("zero_budget") &&
+    (status !== lead.status || !originalTagKeys.has("zero_budget")) &&
+    note.trim().length === 0;
+
   const handleSave = async () => {
     if (!user || !lead.id) return;
     setSaving(true);
@@ -125,6 +139,19 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
 
       if (!statusChanged && !hasNote && !tagsChanged) {
         toast({ title: "Aucune modification" });
+        setSaving(false);
+        return;
+      }
+
+      // « Pas qualifié » pour budget (cahier des charges du lead scoring, 28/10/2026) :
+      // le setter rapporte ce que le lead a dit au téléphone, pas sa réponse au
+      // questionnaire — 3 des 10 ventes avaient coché « moins de 500 € ».
+      if (commentaireBudgetManquant) {
+        toast({
+          title: "Commentaire obligatoire",
+          description: "« Pas qualifié » avec « Zéro budget » : écris ce que le lead t'a dit au téléphone sur son budget.",
+          variant: "destructive",
+        });
         setSaving(false);
         return;
       }
@@ -328,6 +355,35 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
 
         <Separator />
 
+        {/* Questionnaire : priorité d'appel, ou saisie des réponses au téléphone (28/10/2026) */}
+        <div className="space-y-2" data-testid="section-questionnaire">
+          <h4 className="text-sm font-semibold text-foreground">Questionnaire</h4>
+          {lead.quiz_priorite ? (
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className={`rounded-md border px-2 py-0.5 font-semibold ${PRIORITE_BADGES[lead.quiz_priorite]}`}>
+                {lead.quiz_priorite} · {PRIORITE_LABELS[lead.quiz_priorite]} · {lead.quiz_score_100}/100
+              </span>
+              {lead.quiz_saisi_par && <span className="text-muted-foreground">saisi par le setter</span>}
+              {lead.quiz_saisi_par && canEdit && (
+                <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setSaisieOuverte(true)}>
+                  Modifier les réponses
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              Le lead n'a pas rempli le questionnaire.
+              {canEdit && (
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setSaisieOuverte(true)}>
+                  Saisir ses réponses
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        <Separator />
+
         {/* Section 3 bis: Étiquettes */}
         <div className="space-y-3">
           <h4 className="text-sm font-semibold text-foreground">Étiquettes</h4>
@@ -384,6 +440,11 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
             className="bg-background min-h-[80px]"
             disabled={!canEdit}
           />
+          {commentaireBudgetManquant && (
+            <p className="text-xs text-amber-500" data-testid="commentaire-budget-obligatoire">
+              Obligatoire avec « Pas qualifié » et « Zéro budget » : ce que le lead a dit au téléphone sur son budget.
+            </p>
+          )}
         </div>
         </div>
 
@@ -400,6 +461,19 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
             </p>
           )}
         </div>
+        {lead.id && (
+          <SaisieQuestionnaire
+            leadId={lead.id}
+            nom={lead.raw_full_name}
+            reponsesInitiales={lead.quiz_saisi_par ? lead.quiz_answers : null}
+            open={saisieOuverte}
+            onOpenChange={setSaisieOuverte}
+            onSaisi={() => {
+              onSuccess();
+              onClose();
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

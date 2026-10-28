@@ -46,6 +46,8 @@ import {
 } from "@/lib/leadConfig";
 import { badgeCanal, estAds, GROUPES, libelleCanal, libelleTunnel, useCanaux, useTunnels } from "@/lib/leadSources";
 import { GestionSources } from "@/components/leads/GestionSources";
+import { SaisieQuestionnaire } from "@/components/leads/SaisieQuestionnaire";
+import { useScoringReglages } from "@/hooks/useScoringReglages";
 import {
   comparerOrdreAppel,
   infosScoring,
@@ -73,6 +75,10 @@ type LeadEnriched = Tables<"leads_enriched"> & {
   quiz_score_100?: number | null;
   quiz_priorite?: Priorite | null;
   quiz_grille_version?: number | null;
+  quiz_saisi_par?: string | null;
+  // Signaux (28/10/2026) : autre fiche du même contact dans les 30 jours, et entrée un jour « Jeu-Ven »
+  reinscrit_de?: string | null;
+  signal_jeu_ven?: boolean | null;
   any_call_id?: string | null;
   any_call_scheduled_at?: string | null;
   any_call_status?: string | null;
@@ -264,6 +270,8 @@ export default function Leads() {
   // Sous-filtre de « À relancer » : toutes les étapes, ou Relance 1 à 6 (4 à 6 = 2e passage)
   const [relanceFilter, setRelanceFilter] = useState("all");
   const [prioriteFilter, setPrioriteFilter] = useState("all");
+  const [saisie, setSaisie] = useState<LeadEnriched | null>(null);
+  const { data: reglagesScoring } = useScoringReglages();
   // Les files de travail s'ouvrent dans l'ordre d'appel (cahier des charges du 27/10).
   const triParDefaut = (t: string) => (t === "a_affecter" || t === "mes_leads" ? "appel" : "recents");
   const [tri, setTri] = useState(() => triParDefaut(isIntermediaire ? "mes_leads" : "a_affecter"));
@@ -711,8 +719,9 @@ export default function Leads() {
         ? leadsAvantEtape.filter((l) => etapeRelance(l) === Number(relanceFilter))
         : leadsAvantEtape;
     // Les leads arrivent du plus récent au plus ancien : seul l'ordre d'appel re-trie.
-    return tri === "appel" ? [...liste].sort(comparerOrdreAppel) : liste;
-  }, [leadsAvantEtape, statusFilter, relanceFilter, tri]);
+    const jeuVenEnTete = !!reglagesScoring?.jeu_ven_tri;
+    return tri === "appel" ? [...liste].sort((a, b) => comparerOrdreAppel(a, b, jeuVenEnTete)) : liste;
+  }, [leadsAvantEtape, statusFilter, relanceFilter, tri, reglagesScoring]);
 
   useEffect(() => {
     if (statusFilter !== STATUT_RELANCE) setRelanceFilter("all");
@@ -1350,7 +1359,12 @@ export default function Leads() {
                                 <span className="font-bold mr-1">{lead.quiz_priorite}</span>
                                 {lead.quiz_score_100}/100
                               </Badge>
-                              {cles && <span className="text-[10px] text-foreground/80 leading-tight">{cles}</span>}
+                              {cles && (
+                                <span className="text-[10px] text-foreground/80 leading-tight">
+                                  {cles}
+                                  {lead.quiz_saisi_par && <span className="text-muted-foreground" title="Réponses saisies par le setter au téléphone"> · saisi</span>}
+                                </span>
+                              )}
                               {(alertes.length > 0 || infos.length > 0 || (isCeo && lead.quiz_score != null)) && (
                                 <span className="text-[10px] text-muted-foreground leading-tight">
                                   {alertes.length > 0 && (
@@ -1366,9 +1380,43 @@ export default function Leads() {
                           );
                         })()
                       ) : (
-                        <span className="text-[10px] text-muted-foreground italic">
-                          {lead.quiz_filled ? "Questionnaire incomplet" : "Non scoré"}
-                        </span>
+                        <div className="flex flex-col items-start gap-0.5">
+                          <span className="text-[10px] text-muted-foreground italic">
+                            {lead.quiz_filled ? "Questionnaire incomplet" : "Non scoré"}
+                          </span>
+                          {(isCeo || lead.assigned_to === user?.id) && (
+                            <button
+                              type="button"
+                              className="text-[10px] font-medium text-primary hover:underline"
+                              onClick={() => setSaisie(lead)}
+                              data-testid="saisir-questionnaire"
+                            >
+                              + Saisir les réponses
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {(lead.reinscrit_de || lead.signal_jeu_ven) && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {lead.reinscrit_de && (
+                            <button
+                              type="button"
+                              onClick={() => lead.contact_id && setContactSheetId(lead.contact_id)}
+                              className="rounded-full border border-orange-500/40 bg-orange-500/10 px-1.5 text-[9px] font-semibold text-orange-300 hover:bg-orange-500/20"
+                              title="Déjà inscrit dans les 30 derniers jours : voir l'historique du contact"
+                            >
+                              Réinscrit
+                            </button>
+                          )}
+                          {lead.signal_jeu_ven && (
+                            <span
+                              className="rounded-full border border-violet-500/40 bg-violet-500/10 px-1.5 text-[9px] font-semibold text-violet-300"
+                              title="Entré un jeudi ou un vendredi : peu de temps avant la conférence"
+                            >
+                              Jeu-Ven
+                            </span>
+                          )}
+                        </div>
                       )}
                     </TableCell>
                     {/* Call autonome : icône 📞 si le lead a déjà réservé un Calendly */}
@@ -1636,6 +1684,17 @@ export default function Leads() {
         onSuccess={fetchLeads}
         onOpenContact={(id) => setContactSheetId(id)}
       />
+      {saisie?.id && (
+        <SaisieQuestionnaire
+          leadId={saisie.id}
+          nom={saisie.raw_full_name ?? saisie.contact_full_name}
+          reponsesInitiales={saisie.quiz_saisi_par ? saisie.quiz_answers : null}
+          open={!!saisie}
+          onOpenChange={(o) => !o && setSaisie(null)}
+          onSaisi={fetchLeads}
+        />
+      )}
+
       <ContactSheet
         contactId={contactSheetId}
         open={!!contactSheetId}

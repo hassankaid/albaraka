@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { comparerOrdreAppel, infosScoring, reponsesCles } from "./leadScoring";
+import { comparerOrdreAppel, infosScoring, meilleurProfil, repartition, reponsesCles } from "./leadScoring";
 
 describe("score /100 : affichage", () => {
   it("résume la situation pro et le budget", () => {
@@ -35,5 +35,28 @@ describe("ordre de la file d'appel", () => {
       "perdu/A/10-28",
       "a_relancer/A/10-25",
     ]);
+  });
+
+  it("à priorité égale, le réinscrit passe devant ; Jeu-Ven seulement si le réglage le demande", () => {
+    const vieux = { status: "a_qualifier", quiz_priorite: "B", created_at: "2026-10-20T10:00:00Z" };
+    const reinscrit = { status: "a_qualifier", quiz_priorite: "B", created_at: "2026-10-27T10:00:00Z", reinscrit_de: "x" };
+    const jeuVen = { status: "a_qualifier", quiz_priorite: "B", created_at: "2026-10-23T10:00:00Z", signal_jeu_ven: true };
+    expect([vieux, jeuVen, reinscrit].sort((a, b) => comparerOrdreAppel(a, b))).toEqual([reinscrit, vieux, jeuVen]);
+    expect([vieux, jeuVen, reinscrit].sort((a, b) => comparerOrdreAppel(a, b, true))).toEqual([reinscrit, jeuVen, vieux]);
+  });
+});
+
+describe("simulation de grille", () => {
+  const points = { q1: { salarie: 60, etudiant: 10 }, q4: { "500_1000": 40, moins_500: 0 } };
+  it("calcule le meilleur profil", () => {
+    expect(meilleurProfil(points)).toBe(100);
+  });
+  it("répartit les réponses complètes selon les seuils, ignore les incomplètes", () => {
+    const r = repartition(
+      [{ q1: "salarie", q4: "500_1000" }, { q1: "salarie", q4: "moins_500" }, { q1: "etudiant", q4: "moins_500" }, { q1: "salarie" }],
+      points,
+      [90, 50, 20],
+    );
+    expect(r).toEqual({ A: 1, B: 1, C: 0, D: 1 });
   });
 });

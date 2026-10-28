@@ -256,17 +256,21 @@ export function infosScoring(flags: string[] | null | undefined): InfosScoring {
 }
 
 // Ordre de la file d'appel : d'abord les leads à qualifier, de la priorité A à D puis
-// les non scorés, le plus ancien en premier à priorité égale ; ensuite les autres
-// leads, du plus récent au plus ancien.
+// les non scorés ; à priorité égale, les « Réinscrit » en tête (une réinscription est
+// un signal d'intérêt), puis les « Jeu-Ven » si le réglage le demande (décision 2 :
+// désactivé au départ), puis le plus ancien. Ensuite les autres leads, du plus récent
+// au plus ancien.
 const RANG: Record<string, number> = { A: 0, B: 1, C: 2, D: 3 };
 
 export interface LeadOrdonnable {
   status?: string | null;
   quiz_priorite?: string | null;
   created_at?: string | null;
+  reinscrit_de?: string | null;
+  signal_jeu_ven?: boolean | null;
 }
 
-export function comparerOrdreAppel(a: LeadOrdonnable, b: LeadOrdonnable): number {
+export function comparerOrdreAppel(a: LeadOrdonnable, b: LeadOrdonnable, jeuVenEnTete = false): number {
   const aTraiter = (l: LeadOrdonnable) => (l.status === "a_qualifier" ? 0 : 1);
   if (aTraiter(a) !== aTraiter(b)) return aTraiter(a) - aTraiter(b);
   const ta = a.created_at ?? "";
@@ -275,5 +279,38 @@ export function comparerOrdreAppel(a: LeadOrdonnable, b: LeadOrdonnable): number
   const ra = RANG[a.quiz_priorite ?? ""] ?? 4;
   const rb = RANG[b.quiz_priorite ?? ""] ?? 4;
   if (ra !== rb) return ra - rb;
+  const reinscrit = (l: LeadOrdonnable) => (l.reinscrit_de ? 0 : 1);
+  if (reinscrit(a) !== reinscrit(b)) return reinscrit(a) - reinscrit(b);
+  if (jeuVenEnTete) {
+    const jv = (l: LeadOrdonnable) => (l.signal_jeu_ven ? 0 : 1);
+    if (jv(a) !== jv(b)) return jv(a) - jv(b);
+  }
   return ta.localeCompare(tb);
 }
+
+// ── Grille : outils de l'écran d'admin (28/10/2026) ───────────────────────
+
+export type PointsGrille = Record<string, Record<string, number>>;
+
+/** Score du meilleur profil possible : doit faire 100 pour un score « sur 100 ». */
+export function meilleurProfil(points: PointsGrille): number {
+  return Object.values(points).reduce((t, opts) => t + Math.max(0, ...Object.values(opts)), 0);
+}
+
+/** Répartition A/B/C/D qu'aurait donnée une grille sur des réponses (simulation avant publication). */
+export function repartition(reponses: Record<string, string>[], points: PointsGrille, seuils: [number, number, number]) {
+  const r: Record<Priorite, number> = { A: 0, B: 0, C: 0, D: 0 };
+  for (const a of reponses) {
+    let total = 0;
+    let complet = true;
+    for (const [q, opts] of Object.entries(points)) {
+      const v = opts[a[q]];
+      if (v === undefined) { complet = false; break; }
+      total += v;
+    }
+    if (!complet) continue;
+    r[total >= seuils[0] ? "A" : total >= seuils[1] ? "B" : total >= seuils[2] ? "C" : "D"] += 1;
+  }
+  return r;
+}
+

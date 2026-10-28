@@ -1,9 +1,12 @@
-// AdminLeadScoring — dashboard CEO (phase test) pour visualiser toutes les
-// soumissions au quiz lead scoring : score, catégorie, flags, réponses
-// détaillées par question. Lecture seule.
-//
-// Phase test : isolé de la table /leads, visible uniquement par CEO.
+// AdminLeadScoring — page CEO du lead scoring (refonte du 28/10/2026) :
+//  - Rapport : par conférence, par priorité et par tag, avec l'export Excel ;
+//  - Grille et réglages : points, seuils A/B/C/D (versions datées) et tag « Jeu-Ven » ;
+//  - Réponses : toutes les soumissions au questionnaire, avec l'ancien score /70
+//    (gardé 4 semaines pour comparer). Lecture seule.
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RapportScoring } from "@/components/scoring/RapportScoring";
+import { GrilleScoring } from "@/components/scoring/GrilleScoring";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -64,6 +67,39 @@ interface FunnelConfig {
 const CATEGORIES: Category[] = ["chaud", "tiede", "froid", "hors_cible"];
 
 export default function AdminLeadScoring() {
+  const { profile } = useAuth();
+  if (profile && profile.role !== "ceo") {
+    return (
+      <Card className="border-border/50">
+        <CardContent className="p-8 text-center">
+          <p className="text-foreground font-medium">Accès réservé au CEO</p>
+        </CardContent>
+      </Card>
+    );
+  }
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <Sparkles className="h-6 w-6 text-primary" /> Lead Scoring
+        </h2>
+        <p className="text-sm text-muted-foreground">Score sur 100 et priorités d'appel A, B, C, D, calculés à partir du questionnaire du tunnel.</p>
+      </div>
+      <Tabs defaultValue="rapport">
+        <TabsList>
+          <TabsTrigger value="rapport">Rapport</TabsTrigger>
+          <TabsTrigger value="grille">Grille et réglages</TabsTrigger>
+          <TabsTrigger value="reponses">Réponses</TabsTrigger>
+        </TabsList>
+        <TabsContent value="rapport" className="mt-4"><RapportScoring /></TabsContent>
+        <TabsContent value="grille" className="mt-4"><GrilleScoring /></TabsContent>
+        <TabsContent value="reponses" className="mt-4"><ReponsesQuestionnaire /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function ReponsesQuestionnaire() {
   const { profile, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [responses, setResponses] = useState<ScoringResponse[]>([]);
@@ -158,13 +194,7 @@ export default function AdminLeadScoring() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            Lead Scoring
-            <Badge variant="outline" className="text-[10px] bg-yellow-500/15 text-yellow-300 border-yellow-500/30 ml-2">
-              Phase test
-            </Badge>
-          </h2>
+          <h3 className="text-lg font-semibold text-foreground">Réponses au questionnaire (ancien score /70)</h3>
           <p className="text-sm text-muted-foreground">
             {stats.total} réponse{stats.total > 1 ? "s" : ""} · {stats.orphelins} orpheline{stats.orphelins > 1 ? "s" : ""} (matching manuel à faire)
           </p>
