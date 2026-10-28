@@ -24,6 +24,7 @@ import {
 import {
   Users, UserPlus, RefreshCw, Search, Phone, Inbox, ChevronDown, Instagram, Pencil, Eye, Info, Copy,
   ChevronLeft, ChevronRight, PartyPopper, CheckSquare, UserMinus, CalendarRange, Recycle,
+  Settings2,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialogAction } from "@/components/ui/alert-dialog";
@@ -41,12 +42,10 @@ import {
   LEAD_STATUS_COLORS,
   LEAD_STATUS_LABELS,
   STATUS_FILTER_OPTIONS,
-  SOURCE_GROUPS,
   isAdsSource,
-  leadSourceConfig,
-  getSourceBadgeClass,
-  getSourceLabel,
 } from "@/lib/leadConfig";
+import { badgeCanal, estAds, GROUPES, libelleCanal, libelleTunnel, useCanaux, useTunnels } from "@/lib/leadSources";
+import { GestionSources } from "@/components/leads/GestionSources";
 import {
   CATEGORY_LABELS as SCORING_CATEGORY_LABELS,
   CATEGORY_BADGES as SCORING_CATEGORY_BADGES,
@@ -57,6 +56,10 @@ import {
 // Les types Supabase régénérés ne reflètent pas encore ces colonnes — on type-
 // cast côté usage. À synchroniser avec types.ts à la prochaine régénération.
 type LeadEnriched = Tables<"leads_enriched"> & {
+  // canal / tunnel / précision calculés en base (lead_attribution, 28/10/2026)
+  canal?: string | null;
+  tunnel?: string | null;
+  canal_precision?: string | null;
   quiz_filled?: boolean | null;
   quiz_score?: number | null;
   quiz_category?: ScoringCategory | null;
@@ -260,6 +263,12 @@ export default function Leads() {
   // Filtre source = affinage optionnel (popover). Vide par défaut : c'est le
   // sous-onglet Ads/Organique qui fait la séparation principale.
   const [sourceFilter, setSourceFilter] = useState<string[]>([]);
+  const [tunnelFilter, setTunnelFilter] = useState<string[]>([]);
+  const [gestionSources, setGestionSources] = useState(false);
+  const { data: canaux } = useCanaux();
+  const { data: tunnels } = useTunnels();
+  // Lead publicitaire : d'après son canal (géré en base) ; l'ancienne liste en dur sert le temps du chargement.
+  const leadAds = useCallback((l: LeadEnriched) => (canaux ? estAds(l, canaux) : isAdsSource(l.source)), [canaux]);
   const [search, setSearch] = useState("");
   // Liste fusionnée des "assignables" : CEO + collaborateurs (tous niveaux)
   // + apporteurs actifs. Sert à la fois au dropdown d'affectation (CEO + délégués
@@ -594,7 +603,7 @@ export default function Leads() {
       && !l.recycled_at
       && !["call_booke", "renvoi_pole_vente", "close", "perdu"].includes(l.status || "")
     );
-    const aAffecterAds = aAffecter.filter((l) => isAdsSource(l.source)).length;
+    const aAffecterAds = aAffecter.filter(leadAds).length;
     return {
       total: scopedLeads.length,
       aQualifier: scopedLeads.filter((l) => l.status === "a_qualifier").length,
@@ -605,16 +614,18 @@ export default function Leads() {
       call_booke: scopedLeads.filter((l) => l.status === "call_booke").length,
       mes_leads: myLeadsCount,
     };
-  }, [scopedLeads, leads, myLeadsCount]);
+  }, [scopedLeads, leads, myLeadsCount, leadAds]);
 
   // Groupes de sources affichés dans le popover « Sources ». Sur « À affecter »,
   // on ne montre que le groupe du sous-onglet actif (Ads ou Organique) pour
   // éviter un état de filtre incohérent avec le sous-onglet.
+  // Seules les sources actives sont proposées (gérées dans « Gérer les sources »).
   const sourceGroupsForFilter = useMemo(() => {
-    if (tab !== "a_affecter") return SOURCE_GROUPS;
-    const wanted = aAffecterSegment === "ads" ? "Ads" : "Organique";
-    return SOURCE_GROUPS.filter((g) => g.label === wanted);
-  }, [tab, aAffecterSegment]);
+    const actifs = (canaux ?? []).filter((c) => c.actif);
+    return GROUPES.filter((g) => tab !== "a_affecter" || (aAffecterSegment === "ads" ? g.cle === "ads" : g.cle !== "ads"))
+      .map((g) => ({ label: g.nom, sources: actifs.filter((c) => c.groupe === g.cle).map((c) => c.cle) }))
+      .filter((g) => g.sources.length > 0);
+  }, [tab, aAffecterSegment, canaux]);
 
   // Filtered leads (avant le sous-filtre d'étape de relance)
   const leadsAvantEtape = useMemo(() => {
@@ -629,7 +640,7 @@ export default function Leads() {
         && !["call_booke", "renvoi_pole_vente", "close", "perdu"].includes(l.status || "")
       );
       result = result.filter((l) =>
-        aAffecterSegment === "ads" ? isAdsSource(l.source) : !isAdsSource(l.source),
+        aAffecterSegment === "ads" ? leadAds(l) : !leadAds(l),
       );
     } else if (tab === "a_recycler") {
       // Logical "À recycler" queue: unassigned leads with recycled_at set
@@ -642,7 +653,8 @@ export default function Leads() {
     }
 
     if (statusFilter !== "all") result = result.filter((l) => l.status === statusFilter);
-    if (sourceFilter.length > 0) result = result.filter((l) => l.source && sourceFilter.includes(l.source));
+    if (sourceFilter.length > 0) result = result.filter((l) => !!l.canal && sourceFilter.includes(l.canal));
+    if (tunnelFilter.length > 0) result = result.filter((l) => !!l.tunnel && tunnelFilter.includes(l.tunnel));
     if (collabFilter !== "all") result = result.filter((l) => l.assigned_to === collabFilter);
     if (apporteurFilter !== "all") result = result.filter((l) => l.apporteur_id === apporteurFilter);
 
@@ -668,7 +680,7 @@ export default function Leads() {
     }
 
     return result;
-  }, [leads, scopedLeads, tab, aAffecterSegment, statusFilter, sourceFilter, collabFilter, apporteurFilter, search, dateRange, userTz, user]);
+  }, [leads, scopedLeads, tab, aAffecterSegment, statusFilter, sourceFilter, tunnelFilter, collabFilter, apporteurFilter, search, dateRange, userTz, user, leadAds]);
 
   // Nombre de leads à chaque étape de relance, pour le sous-filtre
   const nbParEtape = useMemo(() => {
@@ -710,7 +722,7 @@ export default function Leads() {
     setSourceFilter([]);
   }, [aAffecterSegment]);
 
-  useEffect(() => { setPage(0); }, [statusFilter, relanceFilter, sourceFilter.length, search, collabFilter, apporteurFilter, dateRange]);
+  useEffect(() => { setPage(0); }, [statusFilter, relanceFilter, sourceFilter.length, tunnelFilter.length, search, collabFilter, apporteurFilter, dateRange]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
   const paginatedLeads = useMemo(
@@ -922,7 +934,7 @@ export default function Leads() {
                     <div className="ml-4 mt-1 space-y-0.5">
                       {groupSources.map((srcKey) => {
                         const isSelected = sourceFilter.includes(srcKey);
-                        const cfg = leadSourceConfig[srcKey];
+                        const cfg = canaux?.find((c) => c.cle === srcKey);
                         if (!cfg) return null;
                         return (
                           <button
@@ -935,7 +947,7 @@ export default function Leads() {
                             }}
                           >
                             <Checkbox checked={isSelected} className="pointer-events-none" />
-                            <span className="text-xs text-muted-foreground">{cfg.label}</span>
+                            <span className="text-xs text-muted-foreground">{cfg.libelle}</span>
                           </button>
                         );
                       })}
@@ -953,6 +965,45 @@ export default function Leads() {
             )}
           </PopoverContent>
         </Popover>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-7 text-xs bg-card gap-1.5 justify-between" data-testid="filtre-tunnels">
+              {tunnelFilter.length === 0 ? "Tunnels" : `${tunnelFilter.length} tunnel${tunnelFilter.length > 1 ? "s" : ""}`}
+              <ChevronDown className="h-3 w-3 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[250px] p-2" align="start">
+            <div className="space-y-0.5">
+              {(tunnels ?? []).filter((t) => t.actif).map((t) => {
+                const choisi = tunnelFilter.includes(t.cle);
+                return (
+                  <button
+                    key={t.cle}
+                    className="flex items-center gap-2 w-full text-left px-2 py-1 rounded-md hover:bg-secondary/40 transition-colors"
+                    onClick={() => setTunnelFilter((prev) => (choisi ? prev.filter((v) => v !== t.cle) : [...prev, t.cle]))}
+                  >
+                    <Checkbox checked={choisi} className="pointer-events-none" />
+                    <span className="text-xs text-muted-foreground">{t.libelle}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {tunnelFilter.length > 0 && (
+              <div className="border-t border-border mt-2 pt-2">
+                <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setTunnelFilter([])}>
+                  Réinitialiser
+                </Button>
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
+
+        {isCeo && (
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground gap-1.5" onClick={() => setGestionSources(true)} data-testid="gerer-sources">
+            <Settings2 className="h-3.5 w-3.5" /> Gérer les sources
+          </Button>
+        )}
 
         <Popover>
           <PopoverTrigger asChild>
@@ -1044,7 +1095,7 @@ export default function Leads() {
           </>
         )}
 
-        {(statusFilter !== "all" || collabFilter !== "all" || apporteurFilter !== "all" || sourceFilter.length > 0 || dateRange?.from) && (
+        {(statusFilter !== "all" || collabFilter !== "all" || apporteurFilter !== "all" || sourceFilter.length > 0 || tunnelFilter.length > 0 || dateRange?.from) && (
           <Button
             variant="ghost"
             size="sm"
@@ -1054,6 +1105,7 @@ export default function Leads() {
               setCollabFilter("all");
               setApporteurFilter("all");
               setSourceFilter([]);
+              setTunnelFilter([]);
               setDateRange(undefined);
             }}
           >
@@ -1218,11 +1270,12 @@ export default function Leads() {
                     {/* Source */}
                     <TableCell>
                       <div className="flex flex-col gap-1">
-                        {lead.source && (
-                          <Badge variant="outline" className={`text-[10px] leading-tight w-fit ${getSourceBadgeClass(lead.source, lead.source_detail)}`}>
-                            {getSourceLabel(lead.source, lead.source_detail)}
+                        {(lead.canal || lead.source) && (
+                          <Badge variant="outline" className={`text-[10px] leading-tight w-fit ${badgeCanal(lead.canal, canaux)}`}>
+                            {libelleCanal(lead, canaux)}
                           </Badge>
                         )}
+                        {lead.tunnel && <span className="text-[10px] leading-tight text-muted-foreground">{libelleTunnel(lead.tunnel, tunnels)}</span>}
                         {/* Marqueur "Libéré du pot apporteur" : le lead a été
                             auto-libéré le lundi par le cron parce que son
                             apporteur ne l'avait pas qualifié dans sa semaine.
@@ -1645,6 +1698,7 @@ export default function Leads() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <GestionSources open={gestionSources} onOpenChange={setGestionSources} onModifie={fetchLeads} />
     </div>
   );
 }

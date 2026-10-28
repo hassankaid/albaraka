@@ -80,6 +80,11 @@ const COLOR_CLASSES: Record<string, string> = {
   "red-light": "bg-red-300/20 text-red-300 border-red-300/30",
 };
 
+/** Classes du badge pour une couleur (sources gérées en base : lead_canaux.couleur). */
+export function badgeCouleur(couleur: string): string {
+  return COLOR_CLASSES[couleur] || COLOR_CLASSES.gray;
+}
+
 export function getSourceBadgeClass(sourceKey: string, sourceDetail?: string | null): string {
   // For meta_ads, resolve via source_detail for a more specific badge
   if (sourceKey === "meta_ads" && sourceDetail) {

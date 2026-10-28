@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { leadSourceConfig, leadStatusConfig } from "@/lib/leadConfig";
+import { leadStatusConfig } from "@/lib/leadConfig";
+import { useSourcesSaisie } from "@/lib/leadSources";
 import EntitySearchSelect from "./EntitySearchSelect";
 import { messageErreurLead } from "@/lib/leadDoublon";
 import { equipeProposee } from "@/lib/equipe";
@@ -31,6 +32,7 @@ export default function CreateLeadForm({ prefilledContactId, onCreated, isWizard
   const [profiles, setProfiles] = useState<{ id: string; full_name: string; role: string; is_active: boolean | null }[]>([]);
 
   const [leadSource, setLeadSource] = useState("");
+  const sourcesSaisie = useSourcesSaisie();
   const [leadStatus, setLeadStatus] = useState("a_qualifier");
   const [leadNotes, setLeadNotes] = useState("");
   const [leadCallType, setLeadCallType] = useState("");
@@ -123,8 +125,8 @@ export default function CreateLeadForm({ prefilledContactId, onCreated, isWizard
             <Select value={leadSource} onValueChange={setLeadSource}>
               <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
               <SelectContent>
-                {Object.entries(leadSourceConfig).map(([key, cfg]) => (
-                  <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+                {sourcesSaisie.map((o) => (
+                  <SelectItem key={o.source} value={o.source}>{o.libelle}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
