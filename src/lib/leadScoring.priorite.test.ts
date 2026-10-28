@@ -14,7 +14,15 @@ describe("score /100 : affichage", () => {
   });
 });
 
+const NOW = Date.parse("2026-10-28T12:00:00Z");
+
 describe("ordre de la file d'appel", () => {
+  it("un lead à qualifier oublié depuis plus de 14 jours passe après ceux de la semaine", () => {
+    const oublie = { status: "a_qualifier", quiz_priorite: "A", created_at: "2026-05-12T10:00:00Z" };
+    const recent = { status: "a_qualifier", quiz_priorite: "D", created_at: "2026-10-27T10:00:00Z" };
+    expect([oublie, recent].sort((a, b) => comparerOrdreAppel(a, b, false, NOW))).toEqual([recent, oublie]);
+  });
+
   const l = (status: string, quiz_priorite: string | null, created_at: string) => ({ status, quiz_priorite, created_at });
 
   it("à qualifier d'abord, de A à D puis non scoré, le plus ancien en premier", () => {
@@ -26,7 +34,7 @@ describe("ordre de la file d'appel", () => {
       l("a_qualifier", "A", "2026-10-26T09:00:00Z"),
       l("a_relancer", "A", "2026-10-25T10:00:00Z"),
     ];
-    const tries = [...leads].sort(comparerOrdreAppel).map((x) => `${x.status}/${x.quiz_priorite}/${x.created_at.slice(5, 10)}`);
+    const tries = [...leads].sort((a, b) => comparerOrdreAppel(a, b, false, Date.parse("2026-10-28T12:00:00Z"))).map((x) => `${x.status}/${x.quiz_priorite}/${x.created_at.slice(5, 10)}`);
     expect(tries).toEqual([
       "a_qualifier/A/10-26",
       "a_qualifier/A/10-28",
@@ -41,8 +49,8 @@ describe("ordre de la file d'appel", () => {
     const vieux = { status: "a_qualifier", quiz_priorite: "B", created_at: "2026-10-20T10:00:00Z" };
     const reinscrit = { status: "a_qualifier", quiz_priorite: "B", created_at: "2026-10-27T10:00:00Z", reinscrit_de: "x" };
     const jeuVen = { status: "a_qualifier", quiz_priorite: "B", created_at: "2026-10-23T10:00:00Z", signal_jeu_ven: true };
-    expect([vieux, jeuVen, reinscrit].sort((a, b) => comparerOrdreAppel(a, b))).toEqual([reinscrit, vieux, jeuVen]);
-    expect([vieux, jeuVen, reinscrit].sort((a, b) => comparerOrdreAppel(a, b, true))).toEqual([reinscrit, jeuVen, vieux]);
+    expect([vieux, jeuVen, reinscrit].sort((a, b) => comparerOrdreAppel(a, b, false, NOW))).toEqual([reinscrit, vieux, jeuVen]);
+    expect([vieux, jeuVen, reinscrit].sort((a, b) => comparerOrdreAppel(a, b, true, NOW))).toEqual([reinscrit, jeuVen, vieux]);
   });
 });
 
