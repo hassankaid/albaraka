@@ -180,7 +180,7 @@ export interface Classement {
    */
   petits: Segment[];
   /** Pourquoi il n'y a pas de gagnant, le cas échéant. */
-  motif: "classe" | "volume_insuffisant" | "aucun_ecart";
+  motif: "classe" | "volume_insuffisant" | "seul_segment" | "aucun_ecart";
 }
 
 /** En dessous de ce nombre de leads, un segment n'est pas comparable : un seul lead qui achète donne un rendement absurde. */
@@ -222,6 +222,10 @@ export function classer(segments: Segment[]): Classement {
 
   if (tries.length === 0) {
     return { meilleur: null, pire: null, critere, compares: tries, ecartes, petits, motif: "volume_insuffisant" };
+  }
+  // Un seul segment comparable : il n'a personne contre qui être « meilleur ».
+  if (tries.length === 1) {
+    return { meilleur: null, pire: null, critere, compares: tries, ecartes, petits, motif: "seul_segment" };
   }
   if (aucunEcart) {
     return { meilleur: null, pire: null, critere, compares: tries, ecartes, petits, motif: "aucun_ecart" };

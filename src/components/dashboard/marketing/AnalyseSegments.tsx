@@ -93,6 +93,11 @@ function ContenuAxe({ classement }: { classement: Classement }) {
           Aucun segment n'atteint {SEUIL_LEADS} leads sur cette période : pas encore assez de volume
           pour désigner un meilleur et un pire. Les volumes sont dans le tableau.
         </p>
+      ) : motif === "seul_segment" ? (
+        <p className="text-sm text-muted-foreground rounded-lg border border-dashed p-3">
+          Un seul segment atteint {SEUIL_LEADS} leads sur cette période : il n'y a rien à comparer, donc
+          ni meilleur ni pire. Ses chiffres sont dans le tableau.
+        </p>
       ) : motif === "aucun_ecart" ? (
         <p className="text-sm text-muted-foreground rounded-lg border border-dashed p-3">
           Aucun écart entre les segments sur cette période — ils sont tous à{" "}

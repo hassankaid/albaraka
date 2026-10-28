@@ -168,7 +168,7 @@ export function GestionSources({ open, onOpenChange, onModifie }: { open: boolea
             Renomme, active ou désactive les sources et les tunnels. Une source désactivée disparaît des filtres et du formulaire, mais ses leads gardent leur source, et un lead qui arrive encore dessus est toujours enregistré.
           </DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue="sources">
+        <Tabs defaultValue="sources" className="min-w-0">
           <TabsList>
             <TabsTrigger value="sources">Sources ({canaux.length})</TabsTrigger>
             <TabsTrigger value="tunnels">Tunnels ({tunnels.length})</TabsTrigger>

@@ -41,6 +41,16 @@ describe("classement des segments", () => {
     expect(c.ecartes[0].libelle).toBe("TikTok organique");
   });
 
+  it("ne parle pas d'écart quand un seul segment est comparable", () => {
+    const c = classer(parCanal([
+      ligne("meta_ads", 329, 2, 4000),
+      ligne("tunnel_quiz_apporteurs", 3),
+    ]));
+    expect(c.motif).toBe("seul_segment");
+    expect(c.meilleur).toBeNull();
+    expect(c.compares).toHaveLength(1);
+  });
+
   it("garde les petits segments à afficher, du plus gros au plus petit", () => {
     const c = classer(parCanal([
       ligne("snap_ads", 18),
