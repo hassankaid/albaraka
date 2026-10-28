@@ -1,8 +1,8 @@
 // LeadScoringPanel — affiche le diagnostic Quiz d'un lead à partir de son
 // email (lookup dans lead_scoring_responses). Composant réutilisable :
 //
-//  - Mode CEO (showScoreAndCategory=true) : score numérique + catégorie
-//    (tiède/chaud/froid) + alertes + réponses.
+//  - Mode CEO (showScoreAndCategory=true) : priorité A-D, score /100 (et ancien
+//    score /70) + alertes + réponses.
 //  - Mode apporteur/collaborateur (showScoreAndCategory=false) : juste
 //    "Quiz rempli le X" + alertes setter + 7 réponses détaillées. Pas de
 //    score ni de catégorie (éléments d'évaluation interne).
@@ -15,28 +15,11 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sparkles, AlertTriangle, ClipboardList } from "lucide-react";
-import { formatDateTime } from "@/lib/formatDate";
-import {
-  QUIZ_QUESTIONS,
-  CATEGORY_LABELS,
-  CATEGORY_BADGES,
-  CATEGORY_EMOJIS,
-  CATEGORY_DETAILS,
-  FLAG_LABELS,
-  type Category,
-} from "@/lib/leadScoring";
+import { Sparkles, ClipboardList } from "lucide-react";
+import { QUIZ_QUESTIONS } from "@/lib/leadScoring";
+import { BlocPriorite, type ScoringAffiche } from "@/components/leads/BlocPriorite";
 
-interface ScoringResponse {
-  id: string;
-  funnel_slug: string;
-  score: number;
-  category: Category;
-  flags: string[] | null;
-  answers: Record<string, string>;
-  completed_at: string | null;
-  created_at: string;
-}
+type ScoringResponse = ScoringAffiche & { id: string };
 
 interface LeadScoringPanelProps {
   /** Email du lead (utilisé pour le lookup case-insensitive). */
@@ -67,14 +50,14 @@ export default function LeadScoringPanel({
       }
       const { data } = await supabase
         .from("lead_scoring_responses")
-        .select("id, funnel_slug, score, category, flags, answers, completed_at, created_at")
+        .select("id, funnel_slug, score, score_100, priorite, flags, answers, completed_at, created_at")
         .ilike("contact_email", normalized)
         .order("completed_at", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       if (!cancelled) {
-        if (data) setScoring(data as ScoringResponse);
+        if (data) setScoring(data as unknown as ScoringResponse);
         setLoading(false);
       }
     }
@@ -117,55 +100,12 @@ export default function LeadScoringPanel({
         <h3 className="text-sm font-semibold text-foreground">Diagnostic Quiz</h3>
       </div>
 
-      {/* Récap : catégorie + score réservés à showScoreAndCategory=true */}
-      <div className="rounded-md border border-border/50 bg-secondary/30 p-3 space-y-2">
-        {showScoreAndCategory && (
-          <>
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <Badge variant="outline" className={`text-xs ${CATEGORY_BADGES[scoring.category]}`}>
-                {CATEGORY_EMOJIS[scoring.category]} {CATEGORY_LABELS[scoring.category]}
-              </Badge>
-              <span className="text-xs font-mono tabular-nums text-foreground">
-                {scoring.score}/70 pts
-              </span>
-            </div>
-            <p className="text-[11px] text-muted-foreground italic leading-relaxed">
-              {CATEGORY_DETAILS[scoring.category]}
-            </p>
-          </>
-        )}
-        <p className="text-[10px] text-muted-foreground">
-          Quiz rempli le{" "}
-          {scoring.completed_at
-            ? formatDateTime(scoring.completed_at, userTz)
-            : formatDateTime(scoring.created_at, userTz)}
-          {showScoreAndCategory && (
-            <>
-              {" — funnel: "}
-              <code className="font-mono text-[10px]">{scoring.funnel_slug}</code>
-            </>
-          )}
-        </p>
-      </div>
-
-      {/* Alertes setter — visibles dans les deux modes (info opérationnelle utile) */}
-      {scoring.flags && scoring.flags.length > 0 && (
-        <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 space-y-1.5">
-          <div className="flex items-center gap-1.5">
-            <AlertTriangle className="h-3.5 w-3.5 text-amber-300" />
-            <span className="text-xs font-medium text-amber-300 uppercase tracking-wider">
-              Alertes setter ({scoring.flags.length})
-            </span>
-          </div>
-          <ul className="space-y-1">
-            {scoring.flags.map((flag) => (
-              <li key={flag} className="text-xs text-foreground/90">
-                • {FLAG_LABELS[flag] || flag}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <BlocPriorite
+        scoring={scoring}
+        voirPriorite={showScoreAndCategory}
+        voirAncien={showScoreAndCategory}
+        userTz={userTz}
+      />
 
       {/* Réponses détaillées — visibles dans les deux modes */}
       <details className="rounded-md border border-border/50 bg-secondary/20 group" open>

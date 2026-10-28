@@ -47,10 +47,13 @@ import {
 import { badgeCanal, estAds, GROUPES, libelleCanal, libelleTunnel, useCanaux, useTunnels } from "@/lib/leadSources";
 import { GestionSources } from "@/components/leads/GestionSources";
 import {
-  CATEGORY_LABELS as SCORING_CATEGORY_LABELS,
-  CATEGORY_BADGES as SCORING_CATEGORY_BADGES,
-  CATEGORY_EMOJIS as SCORING_CATEGORY_EMOJIS,
+  comparerOrdreAppel,
+  infosScoring,
+  PRIORITE_BADGES,
+  PRIORITE_LABELS,
+  reponsesCles,
   type Category as ScoringCategory,
+  type Priorite,
 } from "@/lib/leadScoring";
 // Vue leads_enriched étendue avec les colonnes scoring (quiz_*) et any_call_*.
 // Les types Supabase régénérés ne reflètent pas encore ces colonnes — on type-
@@ -66,6 +69,10 @@ type LeadEnriched = Tables<"leads_enriched"> & {
   quiz_completed_at?: string | null;
   quiz_flags?: string[] | null;
   quiz_answers?: Record<string, string> | null;
+  // Score /100 et priorité d'appel A-D (grille versionnée, 28/10/2026)
+  quiz_score_100?: number | null;
+  quiz_priorite?: Priorite | null;
+  quiz_grille_version?: number | null;
   any_call_id?: string | null;
   any_call_scheduled_at?: string | null;
   any_call_status?: string | null;
@@ -256,6 +263,10 @@ export default function Leads() {
   const [statusFilter, setStatusFilter] = useState("all");
   // Sous-filtre de « À relancer » : toutes les étapes, ou Relance 1 à 6 (4 à 6 = 2e passage)
   const [relanceFilter, setRelanceFilter] = useState("all");
+  const [prioriteFilter, setPrioriteFilter] = useState("all");
+  // Les files de travail s'ouvrent dans l'ordre d'appel (cahier des charges du 27/10).
+  const triParDefaut = (t: string) => (t === "a_affecter" || t === "mes_leads" ? "appel" : "recents");
+  const [tri, setTri] = useState(() => triParDefaut(isIntermediaire ? "mes_leads" : "a_affecter"));
   // Sous-onglet de « À affecter » : Ads (défaut) ou Organique. Sépare les
   // leads publicitaires des leads organiques pour ne plus mélanger les
   // compteurs (cf. demande CEO 20/05/2026).
@@ -653,6 +664,8 @@ export default function Leads() {
     }
 
     if (statusFilter !== "all") result = result.filter((l) => l.status === statusFilter);
+    if (prioriteFilter !== "all")
+      result = result.filter((l) => (prioriteFilter === "non_score" ? !l.quiz_priorite : l.quiz_priorite === prioriteFilter));
     if (sourceFilter.length > 0) result = result.filter((l) => !!l.canal && sourceFilter.includes(l.canal));
     if (tunnelFilter.length > 0) result = result.filter((l) => !!l.tunnel && tunnelFilter.includes(l.tunnel));
     if (collabFilter !== "all") result = result.filter((l) => l.assigned_to === collabFilter);
@@ -680,7 +693,7 @@ export default function Leads() {
     }
 
     return result;
-  }, [leads, scopedLeads, tab, aAffecterSegment, statusFilter, sourceFilter, tunnelFilter, collabFilter, apporteurFilter, search, dateRange, userTz, user, leadAds]);
+  }, [leads, scopedLeads, tab, aAffecterSegment, statusFilter, prioriteFilter, sourceFilter, tunnelFilter, collabFilter, apporteurFilter, search, dateRange, userTz, user, leadAds]);
 
   // Nombre de leads à chaque étape de relance, pour le sous-filtre
   const nbParEtape = useMemo(() => {
@@ -692,13 +705,14 @@ export default function Leads() {
     return n;
   }, [leadsAvantEtape]);
 
-  const filteredLeads = useMemo(
-    () =>
+  const filteredLeads = useMemo(() => {
+    const liste =
       statusFilter === STATUT_RELANCE && relanceFilter !== "all"
         ? leadsAvantEtape.filter((l) => etapeRelance(l) === Number(relanceFilter))
-        : leadsAvantEtape,
-    [leadsAvantEtape, statusFilter, relanceFilter],
-  );
+        : leadsAvantEtape;
+    // Les leads arrivent du plus récent au plus ancien : seul l'ordre d'appel re-trie.
+    return tri === "appel" ? [...liste].sort(comparerOrdreAppel) : liste;
+  }, [leadsAvantEtape, statusFilter, relanceFilter, tri]);
 
   useEffect(() => {
     if (statusFilter !== STATUT_RELANCE) setRelanceFilter("all");
@@ -708,6 +722,7 @@ export default function Leads() {
     setPage(0);
     setSelectedIds(new Set());
     setAAffecterSegment("ads");
+    setTri(triParDefaut(tab));
     setSourceFilter([]);
     setCollabFilter("all");
     setApporteurFilter("all");
@@ -722,7 +737,7 @@ export default function Leads() {
     setSourceFilter([]);
   }, [aAffecterSegment]);
 
-  useEffect(() => { setPage(0); }, [statusFilter, relanceFilter, sourceFilter.length, tunnelFilter.length, search, collabFilter, apporteurFilter, dateRange]);
+  useEffect(() => { setPage(0); }, [statusFilter, relanceFilter, prioriteFilter, tri, sourceFilter.length, tunnelFilter.length, search, collabFilter, apporteurFilter, dateRange]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
   const paginatedLeads = useMemo(
@@ -1051,6 +1066,29 @@ export default function Leads() {
           </SelectContent>
         </Select>
 
+        <Select value={prioriteFilter} onValueChange={setPrioriteFilter}>
+          <SelectTrigger className="w-[150px] h-7 text-xs bg-card" data-testid="filtre-priorite">
+            <SelectValue placeholder="Priorité" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Priorité : Toutes</SelectItem>
+            {(["A", "B", "C", "D"] as Priorite[]).map((p) => (
+              <SelectItem key={p} value={p}>{p} — {PRIORITE_LABELS[p]}</SelectItem>
+            ))}
+            <SelectItem value="non_score">Non scoré</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={tri} onValueChange={setTri}>
+          <SelectTrigger className="w-[170px] h-7 text-xs bg-card" data-testid="tri-leads">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="appel">Tri : ordre d'appel</SelectItem>
+            <SelectItem value="recents">Tri : plus récents</SelectItem>
+          </SelectContent>
+        </Select>
+
         {statusFilter === STATUT_RELANCE && (
           <Select value={relanceFilter} onValueChange={setRelanceFilter}>
             <SelectTrigger className="min-w-[150px] w-auto h-7 text-xs bg-card" data-testid="filtre-etape-relance">
@@ -1095,13 +1133,14 @@ export default function Leads() {
           </>
         )}
 
-        {(statusFilter !== "all" || collabFilter !== "all" || apporteurFilter !== "all" || sourceFilter.length > 0 || tunnelFilter.length > 0 || dateRange?.from) && (
+        {(statusFilter !== "all" || prioriteFilter !== "all" || collabFilter !== "all" || apporteurFilter !== "all" || sourceFilter.length > 0 || tunnelFilter.length > 0 || dateRange?.from) && (
           <Button
             variant="ghost"
             size="sm"
             className="h-7 text-xs text-muted-foreground"
             onClick={() => {
               setStatusFilter("all");
+              setPrioriteFilter("all");
               setCollabFilter("all");
               setApporteurFilter("all");
               setSourceFilter([]);
@@ -1181,7 +1220,7 @@ export default function Leads() {
                   )}
                   <TableHead className="w-[220px]">Contact</TableHead>
                   <TableHead>Source</TableHead>
-                  <TableHead className="w-[150px]">{isCeo ? "Scoring" : "Quiz"}</TableHead>
+                  <TableHead className="w-[170px]">Priorité</TableHead>
                   <TableHead className="w-[40px] text-center" title="Le lead a réservé un appel Calendly de lui-même">📞</TableHead>
                   <TableHead>Apporteur</TableHead>
                   <TableHead>Statut</TableHead>
@@ -1292,56 +1331,44 @@ export default function Leads() {
                         )}
                       </div>
                     </TableCell>
-                    {/* Scoring / Quiz : contenu adapté au rôle.
-                          - CEO : catégorie tiède/chaud/froid + score numérique + alertes
-                          - Collab / apporteur : indicateur "rempli ou non" + alertes
-                            (score et catégorie volontairement masqués — éléments
-                            d'évaluation interne réservés au CEO). */}
+                    {/* Priorité d'appel (refonte du 28/10/2026) : lettre A-D, score /100 et les deux
+                          réponses qui pèsent le plus, visibles de tous les setters (cahier des
+                          charges : « qui appeler en premier et pourquoi »). Le CEO voit aussi
+                          l'ancien score /70, gardé 4 semaines pour comparer. */}
                     <TableCell>
-                      {lead.quiz_filled && lead.quiz_category ? (
-                        isCeo ? (
-                          <div className="flex flex-col gap-0.5">
-                            <Badge
-                              variant="outline"
-                              className={`text-[10px] leading-tight w-fit ${SCORING_CATEGORY_BADGES[lead.quiz_category]}`}
-                              title={`Quiz rempli le ${lead.quiz_completed_at ? new Date(lead.quiz_completed_at).toLocaleDateString("fr-FR") : "—"}${
-                                lead.quiz_flags && lead.quiz_flags.length > 0
-                                  ? ` — Alertes : ${lead.quiz_flags.join(", ")}`
-                                  : ""
-                              }`}
-                            >
-                              {SCORING_CATEGORY_EMOJIS[lead.quiz_category]} {SCORING_CATEGORY_LABELS[lead.quiz_category]}
-                            </Badge>
-                            <span className="text-[10px] text-muted-foreground">
-                              {lead.quiz_score ?? "?"}/70
-                              {lead.quiz_flags && lead.quiz_flags.length > 0 ? (
-                                <span className="ml-1 text-amber-400 font-medium">
-                                  ⚠ {lead.quiz_flags.length}
-                                </span>
-                              ) : null}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col gap-0.5">
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] leading-tight w-fit bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                              title={`Quiz rempli le ${lead.quiz_completed_at ? new Date(lead.quiz_completed_at).toLocaleDateString("fr-FR") : "—"}`}
-                            >
-                              ✓ Quiz rempli
-                            </Badge>
-                            {lead.quiz_flags && lead.quiz_flags.length > 0 ? (
-                              <span
-                                className="text-[10px] text-amber-400 font-medium"
-                                title={`Alertes setter : ${lead.quiz_flags.join(", ")}`}
+                      {lead.quiz_priorite ? (
+                        (() => {
+                          const { alertes, infos } = infosScoring(lead.quiz_flags);
+                          const cles = reponsesCles(lead.quiz_answers);
+                          return (
+                            <div className="flex flex-col gap-0.5" data-testid="priorite-lead">
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] leading-tight w-fit ${PRIORITE_BADGES[lead.quiz_priorite]}`}
+                                title={`${PRIORITE_LABELS[lead.quiz_priorite]} — questionnaire rempli le ${lead.quiz_completed_at ? new Date(lead.quiz_completed_at).toLocaleDateString("fr-FR") : "—"}`}
                               >
-                                ⚠ {lead.quiz_flags.length} alerte{lead.quiz_flags.length > 1 ? "s" : ""}
-                              </span>
-                            ) : null}
-                          </div>
-                        )
+                                <span className="font-bold mr-1">{lead.quiz_priorite}</span>
+                                {lead.quiz_score_100}/100
+                              </Badge>
+                              {cles && <span className="text-[10px] text-foreground/80 leading-tight">{cles}</span>}
+                              {(alertes.length > 0 || infos.length > 0 || (isCeo && lead.quiz_score != null)) && (
+                                <span className="text-[10px] text-muted-foreground leading-tight">
+                                  {alertes.length > 0 && (
+                                    <span className="text-amber-400 font-medium mr-1" title={alertes.join(" · ")}>
+                                      ⚠ {alertes.length}
+                                    </span>
+                                  )}
+                                  {infos.length > 0 && <span className="mr-1" title={infos.join(" · ")}>ⓘ</span>}
+                                  {isCeo && lead.quiz_score != null && <span title="Ancien score, gardé 4 semaines pour comparer">ancien {lead.quiz_score}/70</span>}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()
                       ) : (
-                        <span className="text-[10px] text-muted-foreground italic">Quiz non rempli</span>
+                        <span className="text-[10px] text-muted-foreground italic">
+                          {lead.quiz_filled ? "Questionnaire incomplet" : "Non scoré"}
+                        </span>
                       )}
                     </TableCell>
                     {/* Call autonome : icône 📞 si le lead a déjà réservé un Calendly */}

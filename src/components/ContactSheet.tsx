@@ -5,28 +5,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Card, CardContent } from "@/components/ui/card";
-import { RefreshCw, UserCheck, MessageSquare, UserPlus, Sparkles, AlertTriangle } from "lucide-react";
+import { RefreshCw, UserCheck, MessageSquare, UserPlus, Sparkles } from "lucide-react";
 import { formatDateTime, formatDateOnly } from "@/lib/formatDate";
-import {
-  QUIZ_QUESTIONS,
-  CATEGORY_LABELS as SCORING_CATEGORY_LABELS,
-  CATEGORY_BADGES as SCORING_CATEGORY_BADGES,
-  CATEGORY_EMOJIS as SCORING_CATEGORY_EMOJIS,
-  CATEGORY_DETAILS as SCORING_CATEGORY_DETAILS,
-  FLAG_LABELS as SCORING_FLAG_LABELS,
-  type Category as ScoringCategory,
-} from "@/lib/leadScoring";
+import { QUIZ_QUESTIONS } from "@/lib/leadScoring";
+import { BlocPriorite, type ScoringAffiche } from "@/components/leads/BlocPriorite";
 
-interface ScoringResponse {
-  id: string;
-  funnel_slug: string;
-  score: number;
-  category: ScoringCategory;
-  flags: string[] | null;
-  answers: Record<string, string>;
-  completed_at: string | null;
-  created_at: string;
-}
+type ScoringResponse = ScoringAffiche & { id: string };
 
 interface ContactDetail {
   id: string;
@@ -125,14 +109,14 @@ export default function ContactSheet({
     if (contactEmail) {
       const { data: scoringData } = await supabase
         .from("lead_scoring_responses")
-        .select("id, funnel_slug, score, category, flags, answers, completed_at, created_at")
+        .select("id, funnel_slug, score, score_100, priorite, flags, answers, completed_at, created_at")
         .ilike("contact_email", contactEmail)
         .order("completed_at", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       if (scoringData) {
-        setScoring(scoringData as ScoringResponse);
+        setScoring(scoringData as unknown as ScoringResponse);
       }
     }
 
@@ -270,10 +254,9 @@ export default function ContactSheet({
             <div className="border-b border-border" />
 
             {/* ── Diagnostic Quiz (Lead Scoring) ───────────────────────
-                  Score + catégorie (tiède/chaud/froid) sont réservés au CEO :
-                  ce sont des éléments d'évaluation interne. Les collaborateurs
-                  et apporteurs voient seulement la date de remplissage, les
-                  alertes setter et les 7 réponses du lead. */}
+                  Priorité A-D et score /100 : CEO et setters (refonte du 28/10/2026).
+                  Les apporteurs voient seulement la date de remplissage, les
+                  alertes et les 7 réponses du lead. */}
             {scoring && (
               <div className="py-4 space-y-3">
                 <div className="flex items-center gap-2">
@@ -281,58 +264,13 @@ export default function ContactSheet({
                   <h3 className="text-sm font-semibold text-foreground">Diagnostic Quiz</h3>
                 </div>
 
-                {/* Récap : catégorie + score (CEO uniquement), date toujours visible */}
-                <div className="rounded-md border border-border/50 bg-secondary/30 p-3 space-y-2">
-                  {authProfile?.role === "ceo" && (
-                    <>
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <Badge
-                          variant="outline"
-                          className={`text-xs ${SCORING_CATEGORY_BADGES[scoring.category]}`}
-                        >
-                          {SCORING_CATEGORY_EMOJIS[scoring.category]} {SCORING_CATEGORY_LABELS[scoring.category]}
-                        </Badge>
-                        <span className="text-xs font-mono tabular-nums text-foreground">
-                          {scoring.score}/70 pts
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground italic leading-relaxed">
-                        {SCORING_CATEGORY_DETAILS[scoring.category]}
-                      </p>
-                    </>
-                  )}
-                  <p className="text-[10px] text-muted-foreground">
-                    Quiz rempli le{" "}
-                    {scoring.completed_at
-                      ? formatDateTime(scoring.completed_at, userTz)
-                      : formatDateTime(scoring.created_at, userTz)}
-                    {authProfile?.role === "ceo" && (
-                      <>
-                        {" — funnel: "}
-                        <code className="font-mono text-[10px]">{scoring.funnel_slug}</code>
-                      </>
-                    )}
-                  </p>
-                </div>
-
-                {/* Alertes setter */}
-                {scoring.flags && scoring.flags.length > 0 && (
-                  <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-300" />
-                      <span className="text-xs font-medium text-amber-300 uppercase tracking-wider">
-                        Alertes setter ({scoring.flags.length})
-                      </span>
-                    </div>
-                    <ul className="space-y-1">
-                      {scoring.flags.map((flag) => (
-                        <li key={flag} className="text-xs text-foreground/90">
-                          • {SCORING_FLAG_LABELS[flag] || flag}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {/* Priorité, score /100 et réponses clés : CEO et setters ; ancien score /70 : CEO */}
+                <BlocPriorite
+                  scoring={scoring}
+                  voirPriorite={authProfile?.role === "ceo" || authProfile?.role === "collaborateur"}
+                  voirAncien={authProfile?.role === "ceo"}
+                  userTz={userTz}
+                />
 
                 {/* Réponses détaillées */}
                 <details className="rounded-md border border-border/50 bg-secondary/20 group">

@@ -9,6 +9,11 @@
 // (Deno ne peut pas importer depuis src/).
 //
 // Score max possible : 70 points (7 questions × 10).
+//
+// 28/10/2026 : ce score /70 est l'ANCIEN score, gardé en lecture seule pendant
+// 4 semaines pour comparer. Le score qui compte est le score /100 et sa priorité
+// A-D, calculés EN BASE (scoring_calcul, grille versionnée scoring_grilles) : voir
+// la fin de ce fichier pour l'affichage.
 // =====================================================================
 
 export interface QuizOption {
@@ -196,4 +201,79 @@ export function computeScoring(answers: Record<string, string>): ScoringResult {
     flags,
     per_question: perQuestion,
   };
+}
+
+// ── Score /100 et priorité d'appel (refonte du 28/10/2026) ────────────────
+// Le calcul est en base ; ici, uniquement l'affichage et l'ordre d'appel.
+
+export type Priorite = "A" | "B" | "C" | "D";
+
+export const PRIORITE_LABELS: Record<Priorite, string> = {
+  A: "Appeler en premier",
+  B: "Bon potentiel",
+  C: "À qualifier",
+  D: "Faible",
+};
+
+export const PRIORITE_BADGES: Record<Priorite, string> = {
+  A: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+  B: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+  C: "bg-sky-500/15 text-sky-300 border-sky-500/30",
+  D: "bg-zinc-500/20 text-zinc-300 border-zinc-500/40",
+};
+
+// Les deux questions qui pèsent le plus dans la grille (25 et 20 points sur 100) :
+// leurs réponses expliquent la priorité en un coup d'œil (« Salarié · 500 à 1 000 € »).
+const COURT: Record<string, Record<string, string>> = {
+  q1: { salarie: "Salarié", independant: "Indépendant", reconversion: "En reconversion", etudiant: "Étudiant", sans_activite: "Sans activité" },
+  q4: { moins_500: "Moins de 500 €", "500_1000": "500 à 1 000 €", "1000_2000": "1 000 à 2 000 €", "2000_3000": "2 000 à 3 000 €", plus_3000: "Plus de 3 000 €" },
+};
+
+export function reponsesCles(answers: Record<string, string> | null | undefined): string | null {
+  if (!answers) return null;
+  const parts = ["q1", "q4"].map((q) => COURT[q][answers[q]]).filter(Boolean);
+  return parts.length ? parts.join(" · ") : null;
+}
+
+// Alertes du questionnaire, revues par le cahier des charges :
+//  - « âge hors cible » supprimée (les 46 ans et plus ont fait 2 ventes) ;
+//  - « budget faible » devient une information neutre (3 des 10 ventes avaient coché
+//    moins de 500 €).
+export interface InfosScoring {
+  alertes: string[];
+  infos: string[];
+}
+
+export function infosScoring(flags: string[] | null | undefined): InfosScoring {
+  const alertes: string[] = [];
+  const infos: string[] = [];
+  for (const f of flags ?? []) {
+    if (f === "age_hors_cible") continue;
+    if (f === "investissement_faible") infos.push("Budget déclaré : moins de 500 €");
+    else alertes.push(FLAG_LABELS[f] ?? f);
+  }
+  return { alertes, infos };
+}
+
+// Ordre de la file d'appel : d'abord les leads à qualifier, de la priorité A à D puis
+// les non scorés, le plus ancien en premier à priorité égale ; ensuite les autres
+// leads, du plus récent au plus ancien.
+const RANG: Record<string, number> = { A: 0, B: 1, C: 2, D: 3 };
+
+export interface LeadOrdonnable {
+  status?: string | null;
+  quiz_priorite?: string | null;
+  created_at?: string | null;
+}
+
+export function comparerOrdreAppel(a: LeadOrdonnable, b: LeadOrdonnable): number {
+  const aTraiter = (l: LeadOrdonnable) => (l.status === "a_qualifier" ? 0 : 1);
+  if (aTraiter(a) !== aTraiter(b)) return aTraiter(a) - aTraiter(b);
+  const ta = a.created_at ?? "";
+  const tb = b.created_at ?? "";
+  if (aTraiter(a) === 1) return tb.localeCompare(ta);
+  const ra = RANG[a.quiz_priorite ?? ""] ?? 4;
+  const rb = RANG[b.quiz_priorite ?? ""] ?? 4;
+  if (ra !== rb) return ra - rb;
+  return ta.localeCompare(tb);
 }
