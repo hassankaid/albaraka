@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { RefreshCw, Search, Link2, Unlink, Users, Phone, BookUser, BadgeEuro, Database, ExternalLink, Trash2, Check, X, Pencil } from "lucide-react";
 import { formatDateOnly } from "@/lib/formatDate";
+import { nomSource, useNomsSources } from "@/lib/leadSources";
 import { getSourceLabel, getSourceBadgeClass, LEAD_STATUS_LABELS, LEAD_STATUS_COLORS, leadSourceConfig } from "@/lib/leadConfig";
 import ContactSheet from "@/components/ContactSheet";
 import { equipeProposee, nomEquipe } from "@/lib/equipe";
@@ -193,6 +194,8 @@ function EditableCell({
 }
 
 export default function AdminData() {
+  // noms des sources tels que réglés dans « Gérer les sources » (page Leads)
+  useNomsSources();
   const { profile } = useAuth();
   const { toast } = useToast();
   const userTz = profile?.timezone || "Europe/Paris";
@@ -469,7 +472,7 @@ export default function AdminData() {
       const actors = [l.assigned_to_name && `Setter: ${l.assigned_to_name}`, l.apporteur_name && `Apporteur: ${l.apporteur_name}`].filter(Boolean).join(" · ");
       return {
         id: l.id,
-        label: `${l.raw_full_name || "Sans nom"} — ${getSourceLabel(l.source, l.source_detail)} — ${formatDate(l.created_at)}`,
+        label: `${l.raw_full_name || "Sans nom"} — ${(nomSource(l.source, l.source_detail) ?? getSourceLabel(l.source, l.source_detail))} — ${formatDate(l.created_at)}`,
         sub: [details, actors].filter(Boolean).join(" — ") || "",
       };
     });
@@ -608,7 +611,7 @@ export default function AdminData() {
                         value={l.source}
                         type="select"
                         options={LEAD_SOURCES}
-                        optionLabels={Object.fromEntries(LEAD_SOURCES.map(s => [s, getSourceLabel(s)]))}
+                        optionLabels={Object.fromEntries(LEAD_SOURCES.map(s => [s, (nomSource(s) ?? getSourceLabel(s))]))}
                         onSave={async (v) => updateField("leads", l.id, "source", v, fetchLeads)}
                       />
                     </TableCell>

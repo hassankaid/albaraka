@@ -1,3 +1,4 @@
+import { nomSource } from "@/lib/leadSources";
 // Libellés lisibles pour les valeurs brutes stockées en DB (leads.source, lead_tags.*).
 // Si une valeur n'est pas dans la map → fallback sur une version capitalisée "Title Case".
 
@@ -89,7 +90,8 @@ function titleCase(raw: string): string {
 
 export function sourceLabel(raw: string | null | undefined): string {
   if (!raw) return "Inconnu";
-  return SOURCE_LABELS[raw] ?? titleCase(raw);
+  // nom actuel, tel que réglé dans « Gérer les sources » (page Leads)
+  return nomSource(raw) ?? SOURCE_LABELS[raw] ?? titleCase(raw);
 }
 
 export function tagCategoryLabel(raw: string | null | undefined): string {

@@ -35,10 +35,10 @@ describe("classement des segments", () => {
   it("écarte les segments trop petits plutôt que de les noyer", () => {
     const c = classer(parCanal([
       ligne("meta_ads", 81, 3, 7200, 350.72),
-      ligne("tiktok_organic", 2, 1, 2000),
+      ligne("tiktok", 2, 1, 2000),
     ]));
     expect(c.compares.map((s) => s.cle)).toEqual(["meta_ads"]);
-    expect(c.ecartes[0].libelle).toBe("Organique TikTok");
+    expect(c.ecartes[0].libelle).toBe("TikTok organique");
   });
 
   it("garde les petits segments à afficher, du plus gros au plus petit", () => {

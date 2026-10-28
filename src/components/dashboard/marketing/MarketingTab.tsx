@@ -19,6 +19,7 @@ import type { ConferenceFilter } from "@/lib/marketing/conferenceFilter";
 import VueConference from "./VueConference";
 import VueMensuelle from "./VueMensuelle";
 import MarketingTabLegacy from "./MarketingTabLegacy";
+import { useNomsSources } from "@/lib/leadSources";
 
 export interface MarketingTabProps {
   /**
@@ -31,6 +32,8 @@ export interface MarketingTabProps {
 type Vue = "conference" | "mensuel" | "ancien";
 
 export default function MarketingTab({ onPeriodeChange }: MarketingTabProps = {}) {
+  // noms des canaux et tunnels tels que réglés dans « Gérer les sources »
+  useNomsSources();
   const [vue, setVue] = useState<Vue>("conference");
   const [periode, setPeriode] = useState<ConferenceFilter | null>(null);
 

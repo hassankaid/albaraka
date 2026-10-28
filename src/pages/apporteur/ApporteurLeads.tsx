@@ -20,6 +20,7 @@ import { LEAD_STATUS_LABELS } from "@/lib/leadConfig";
 import { BoutonRelanceFaite, StatutLead, SuiviRelances } from "@/components/leads/Relances";
 import { apresRelance, etapeRelance, STATUT_RELANCE } from "@/lib/relances";
 import { leadSourceConfig, getSourceLabel, getSourceBadgeClass } from "@/lib/leadConfig";
+import { nomSource, useNomsSources } from "@/lib/leadSources";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import { messageErreurLead } from "@/lib/leadDoublon";
@@ -86,6 +87,8 @@ const APPORTEUR_SOURCE_LABELS: Record<string, string> = {
 };
 
 export default function ApporteurLeads() {
+  // noms des sources tels que réglés dans « Gérer les sources » (page Leads)
+  useNomsSources();
   const { profile } = useAuth();
   const { toast } = useToast();
   const [leads, setLeads] = useState<LeadEnriched[]>([]);
@@ -494,7 +497,7 @@ export default function ApporteurLeads() {
                     <TableCell>
                       {lead.source && (
                         <Badge variant="outline" className={`text-xs ${getSourceBadgeClass(lead.source, lead.source_detail)}`}>
-                          {getSourceLabel(lead.source, lead.source_detail)}
+                          {(nomSource(lead.source, lead.source_detail) ?? getSourceLabel(lead.source, lead.source_detail))}
                         </Badge>
                       )}
                     </TableCell>
@@ -587,7 +590,7 @@ export default function ApporteurLeads() {
                   <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground flex-wrap">
                     {lead.source && (
                       <Badge variant="outline" className={`text-xs ${getSourceBadgeClass(lead.source, lead.source_detail)}`}>
-                        {getSourceLabel(lead.source, lead.source_detail)}
+                        {(nomSource(lead.source, lead.source_detail) ?? getSourceLabel(lead.source, lead.source_detail))}
                       </Badge>
                     )}
                     <span>
@@ -709,7 +712,7 @@ export default function ApporteurLeads() {
                     <div className="flex items-center gap-1.5">
                       <span className="text-muted-foreground">Source :</span>
                       <Badge variant="outline" className={`text-xs ${getSourceBadgeClass(editLead.source, editLead.source_detail)}`}>
-                        {getSourceLabel(editLead.source, editLead.source_detail)}
+                        {(nomSource(editLead.source, editLead.source_detail) ?? getSourceLabel(editLead.source, editLead.source_detail))}
                       </Badge>
                     </div>
                   )}

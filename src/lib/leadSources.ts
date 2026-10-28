@@ -42,6 +42,17 @@ export const GROUPES: { cle: GroupeCanal; nom: string }[] = [
 /** Les mots que les tunnels lisent déjà dans ?src= : une nouvelle source ne peut pas les prendre. */
 export const MOTS_RESERVES = ["ads", "ig", "insta", "instagram_organic", "tiktok_organic", "youtube_organic", "yt", "snapchat_ads", "gads", "direct"];
 
+// Les noms chargés, aussi lisibles par les fonctions de libellé hors composant
+// (tableau de bord marketing, page Données) : un renommage vaut partout.
+const NOMS = { canaux: new Map<string, string>(), tunnels: new Map<string, string>(), sources: new Map<string, SourceMap>(), alias: new Map<string, string>() };
+
+interface SourceMap {
+  source: string;
+  canal: string | null;
+  tunnel: string | null;
+  canal_precision: string | null;
+}
+
 export function useCanaux() {
   return useQuery({
     queryKey: ["lead-canaux"],
@@ -49,6 +60,8 @@ export function useCanaux() {
     queryFn: async (): Promise<Canal[]> => {
       const { data, error } = await db.from("lead_canaux").select("*").order("ordre");
       if (error) throw error;
+      NOMS.canaux.clear();
+      for (const c of data ?? []) NOMS.canaux.set(c.cle, c.libelle);
       return data ?? [];
     },
   });
@@ -61,9 +74,60 @@ export function useTunnels() {
     queryFn: async (): Promise<Tunnel[]> => {
       const { data, error } = await db.from("lead_tunnels").select("*").order("ordre");
       if (error) throw error;
+      NOMS.tunnels.clear();
+      for (const t of data ?? []) NOMS.tunnels.set(t.cle, t.libelle);
       return data ?? [];
     },
   });
+}
+
+export function useSourcesMap() {
+  return useQuery({
+    queryKey: ["lead-sources-map"],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async (): Promise<SourceMap[]> => {
+      const [{ data, error }, { data: alias }] = await Promise.all([
+        db.from("lead_sources_map").select("source, canal, tunnel, canal_precision"),
+        db.from("lead_canaux_alias").select("ancien, canal"),
+      ]);
+      if (error) throw error;
+      NOMS.sources.clear();
+      for (const m of data ?? []) NOMS.sources.set(m.source, m);
+      NOMS.alias.clear();
+      for (const a of alias ?? []) NOMS.alias.set(a.ancien, a.canal);
+      return data ?? [];
+    },
+  });
+}
+
+/** À appeler dans une page qui affiche des sources sans passer par les colonnes calculées. */
+export function useNomsSources() {
+  const a = useCanaux();
+  const b = useTunnels();
+  const c = useSourcesMap();
+  return !!(a.data && b.data && c.data);
+}
+
+/** Nom actuel d'un canal ou d'un tunnel (clé telle quelle si inconnue ou pas encore chargée). */
+export const nomCanal = (cle: string): string | undefined => NOMS.canaux.get(cle);
+export const nomTunnel = (cle: string): string | undefined => NOMS.tunnels.get(cle);
+
+/**
+ * Ancienne clé `leads.source` (+ source_detail) → « Snap Ads · Tunnel WhatsApp (conférence) »,
+ * « Apporteur · TikTok ». Même règle que lead_attribution en base : un lien ?src=<clé d'une
+ * source> range un lead « sans source » dans cette source.
+ */
+export function nomSource(source: string | null | undefined, detail?: string | null): string | undefined {
+  if (!source) return undefined;
+  const m = NOMS.sources.get(source);
+  if (!m?.canal) return undefined;
+  const lien = (detail ?? "").trim().toLowerCase();
+  const viaLien = m.canal === "sans_source" && lien ? NOMS.alias.get(lien) ?? (NOMS.canaux.has(lien) ? lien : undefined) : undefined;
+  const cle = NOMS.alias.get(viaLien ?? m.canal) ?? viaLien ?? m.canal;
+  const canal = NOMS.canaux.get(cle) ?? cle;
+  const avecPrecision = m.canal_precision ? `${canal} · ${m.canal_precision}` : canal;
+  const tunnel = m.tunnel && m.tunnel !== "saisie_manuelle" ? NOMS.tunnels.get(m.tunnel) : null;
+  return tunnel ? `${avecPrecision} · ${tunnel}` : avecPrecision;
 }
 
 export interface LeadAttribue {
@@ -126,17 +190,10 @@ export interface SourceSaisie {
  */
 export function useSourcesSaisie() {
   const { data: canaux } = useCanaux();
-  const map = useQuery({
-    queryKey: ["lead-sources-map"],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async (): Promise<{ source: string; canal: string | null; tunnel: string | null; canal_precision: string | null }[]> => {
-      const { data, error } = await db.from("lead_sources_map").select("source, canal, tunnel, canal_precision").eq("tunnel", "saisie_manuelle");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-  if (!canaux || !map.data) return [] as SourceSaisie[];
-  return map.data
+  const { data: map } = useSourcesMap();
+  if (!canaux || !map) return [] as SourceSaisie[];
+  return map
+    .filter((m) => m.tunnel === "saisie_manuelle")
     .map((m) => ({ m, c: canaux.find((x) => x.cle === m.canal) }))
     .filter(({ c }) => c?.actif)
     .sort((a, b) => a.c!.ordre - b.c!.ordre || (a.m.canal_precision ?? "").localeCompare(b.m.canal_precision ?? ""))

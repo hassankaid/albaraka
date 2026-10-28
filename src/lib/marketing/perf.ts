@@ -12,6 +12,8 @@
 // regroupement — et c'est là que les tableaux de bord se mettent à mentir.
 // ─────────────────────────────────────────────────────────────────────────
 
+import { nomCanal, nomTunnel } from "@/lib/leadSources";
+
 /** Ligne brute renvoyée par `marketing_perf`. */
 export interface PerfBrute {
   canal: string;
@@ -74,19 +76,19 @@ export function calculerKpis(m: Mesures): Kpis {
 
 // ── Libellés ───────────────────────────────────────────────────────────────
 
-export const CANAUX_MARKETING = ["meta_ads", "google_ads", "tiktok_ads", "snap_ads", "instagram_organic", "tiktok_organic", "youtube_organic", "site_vitrine_organic", "direct", "tunnel_quiz_apporteurs"] as const;
-export const TUNNELS = ["wa", "vsl", "quiz", "vitrine"] as const;
-
+// Clés de canal et de tunnel : celles de la page Leads (lead_attribution, 28/10/2026).
+// Les noms viennent de « Gérer les sources » (nomCanal / nomTunnel) ; ceux-ci ne servent
+// qu'aux clés propres au tableau de bord et en attendant le chargement.
 const LIB_CANAL: Record<string, string> = {
   meta_ads: "Meta Ads",
   google_ads: "Google Ads",
   tiktok_ads: "TikTok Ads",
   snap_ads: "Snap Ads",
-  instagram_organic: "Organique Instagram",
-  tiktok_organic: "Organique TikTok",
-  youtube_organic: "Organique YouTube",
-  site_vitrine_organic: "Organique Site vitrine",
-  direct: "Accès direct",
+  instagram: "Instagram organique",
+  tiktok: "TikTok organique",
+  youtube: "YouTube organique",
+  site_vitrine: "Site vitrine",
+  sans_source: "Sans source",
   tunnel_quiz_apporteurs: "Tunnel Quiz Apporteurs",
   apporteur: "Apporteurs",
   non_attribue: "Non attribué",
@@ -94,18 +96,20 @@ const LIB_CANAL: Record<string, string> = {
 };
 
 const LIB_TUNNEL: Record<string, string> = {
-  wa: "WhatsApp",
+  whatsapp: "WhatsApp",
   vsl: "VSL",
-  quiz: "Quiz apporteur",
-  vitrine: "Site vitrine",
-  webinaire_legacy: "Webinaire (ancien)",
-  apporteur: "Apporteurs",
+  liberty: "Liberty",
+  quiz_apporteur: "Quiz apporteur",
+  site_vitrine: "Site vitrine",
+  saisie_manuelle: "Saisie manuelle",
+  ancien_webinaire: "Webinaire (ancien)",
+  anciennes_vsl: "VSL A et B (anciennes)",
   non_attribue: "Non attribué",
   autre: "Autre",
 };
 
-export const libelleCanal = (c: string): string => LIB_CANAL[c] ?? c;
-export const libelleTunnel = (t: string): string => LIB_TUNNEL[t] ?? t;
+export const libelleCanal = (c: string): string => (c === "tunnel_quiz_apporteurs" || c === "non_attribue" ? LIB_CANAL[c] : nomCanal(c) ?? LIB_CANAL[c] ?? c);
+export const libelleTunnel = (t: string): string => nomTunnel(t) ?? LIB_TUNNEL[t] ?? t;
 export const libelleCombinaison = (c: string, t: string): string =>
   `${libelleCanal(c)} · ${libelleTunnel(t)}`;
 
