@@ -53,9 +53,14 @@ export function GrilleScoring() {
   const { data: reponses = [] } = useQuery({
     queryKey: ["scoring-reponses-tunnel"],
     queryFn: async (): Promise<Record<string, string>[]> => {
-      const { data, error } = await db.from("lead_scoring_responses").select("answers").is("saisi_par", null);
-      if (error) throw error;
-      return (data ?? []).map((r: { answers: Record<string, string> }) => r.answers);
+      // Par tranches de 1 000 : au-delà, la base tronque la réponse.
+      const toutes: Record<string, string>[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await db.from("lead_scoring_responses").select("answers").is("saisi_par", null).order("id").range(from, from + 999);
+        if (error) throw error;
+        toutes.push(...(data ?? []).map((r: { answers: Record<string, string> }) => r.answers));
+        if (!data || data.length < 1000) return toutes;
+      }
     },
   });
   const active = grilles.find((g) => g.active);

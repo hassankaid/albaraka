@@ -68,10 +68,16 @@ export function RapportScoring() {
   async function exporter() {
     setExport(true);
     try {
-      const { data, error } = await db.rpc("scoring_export", { p_debut: debut, p_fin: fin, p_mode: "conference" });
-      if (error) throw error;
+      // Par tranches de 1 000 : au-delà, la base tronque la réponse.
+      const data: LeadExporte[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data: tranche, error } = await db.rpc("scoring_export", { p_debut: debut, p_fin: fin, p_mode: "conference" }).range(from, from + 999);
+        if (error) throw error;
+        data.push(...(tranche ?? []));
+        if (!tranche || tranche.length < 1000) break;
+      }
       const titre = debut === fin ? `Conférence du ${jour(debut)}` : `Conférences du ${jour(debut)} au ${jour(fin)}`;
-      const blob = await classeurXlsx(feuillesExport(titre, lignes ?? [], (data ?? []) as LeadExporte[]));
+      const blob = await classeurXlsx(feuillesExport(titre, lignes ?? [], data));
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `AlBaraka_Rapport_scoring_${debut}${debut === fin ? "" : `_${fin}`}.xlsx`;
