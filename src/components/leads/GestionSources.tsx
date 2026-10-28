@@ -139,6 +139,7 @@ export function GestionSources({ open, onOpenChange, onModifie }: { open: boolea
   const [fusion, setFusion] = useState<Canal | null>(null);
   const [cible, setCible] = useState("");
   const [liens, setLiens] = useState<string | null>(null);
+  const [suppression, setSuppression] = useState<Canal | null>(null);
 
   const recharger = () => {
     qc.invalidateQueries({ queryKey: ["lead-canaux"] });
@@ -208,7 +209,7 @@ export function GestionSources({ open, onOpenChange, onModifie }: { open: boolea
                               className="h-7 w-7 text-muted-foreground hover:text-destructive"
                               disabled={c.systeme || n > 0}
                               title={c.systeme ? "Source de secours : ne peut pas être supprimée" : n > 0 ? "Cette source a des leads : désactive-la ou fusionne-la" : "Supprimer"}
-                              onClick={() => confirm(`Supprimer la source « ${c.libelle} » ?`) && rpc("lead_canal_supprimer", { p_cle: c.cle }, "Source supprimée")}
+                              onClick={() => setSuppression(c)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -257,6 +258,21 @@ export function GestionSources({ open, onOpenChange, onModifie }: { open: boolea
             </div>
           </TabsContent>
         </Tabs>
+
+        <Dialog open={!!suppression} onOpenChange={(o) => !o && setSuppression(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Supprimer « {suppression?.libelle} » ?</DialogTitle>
+              <DialogDescription>Elle n'a aucun lead. Si un lien avec cette source est encore utilisé, ses leads arriveront dans « Sans source ».</DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setSuppression(null)}>Annuler</Button>
+              <Button variant="destructive" onClick={async () => { if (await rpc("lead_canal_supprimer", { p_cle: suppression!.cle }, "Source supprimée")) setSuppression(null); }}>
+                Supprimer
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={!!fusion} onOpenChange={(o) => !o && setFusion(null)}>
           <DialogContent className="max-w-md">
