@@ -117,7 +117,7 @@ export default function StudioAbonnement() {
                 M'abonner pour 10 €/mois
               </Button>
             )}
-            {!actif && <p className="text-center text-xs text-muted-foreground">Paiement sécurisé par Stripe. Sans abonnement : 1 nouvelle vidéo par jour, gratuitement.</p>}
+            {!actif && <p className="text-center text-xs text-muted-foreground">Paiement sécurisé par Stripe. Sans abonnement : 1 nouvelle vidéo par jour, gratuitement, d'une minute au plus, avec un motion design léger.</p>}
           </CardContent>
         </Card>
       )}
