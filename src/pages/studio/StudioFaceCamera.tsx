@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStudioAcces } from "@/hooks/useStudioAcces";
 import { BandeauQuota, QuotaAtteint, quotaEpuise } from "@/components/studio/QuotaStudio";
+import { messageDureeGratuite } from "@/lib/studio/reglages";
 import { ChoixScriptBibliotheque } from "@/components/studio/ChoixScriptBibliotheque";
 import { demarrer, importerVideo, lienStudio, useMontage } from "@/hooks/useStudio";
 import {
@@ -94,6 +95,10 @@ export default function StudioFaceCamera() {
     const duree = await dureeVideo(f);
     if (duree && duree > DUREE_MAX_S + 5) {
       return toast({ title: "Vidéo trop longue", description: "5 minutes maximum : coupe-la en plusieurs parties.", variant: "destructive" });
+    }
+    // Version gratuite : 1 minute (Sidali, 29/10/2026). Refusée avant l'import, elle ne compte pas.
+    if (duree && acces?.duree_max_s && duree > acces.duree_max_s + 5) {
+      return toast({ title: "Vidéo trop longue pour la version gratuite", description: messageDureeGratuite(acces.duree_max_s), variant: "destructive" });
     }
     imageDuFichier(f).then(setImageLocale);
     setProgres(0);

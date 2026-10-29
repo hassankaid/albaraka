@@ -65,6 +65,11 @@ import pipeline as P  # noqa: E402
 
 DUREE_MAX = 5 * 60 + 5            # 5 min (cahier des charges), petite marge
 DUREE_MAX_VOIX_OFF = 3 * 60 + 5   # 3 min en voix off (Sidali, 13/10/2026)
+# Formule de l'élève, donnée par api/studio/demarrer.ts (studio_quota) : « gratuit » = 1 minute
+# de vidéo et motion design léger (moteur classique) ; « complet » = abonné ou CEO (Sidali, 29/10/2026).
+FORMULE = os.environ.get("FORMULE", "complet")
+DUREE_MAX_GRATUIT = int(os.environ.get("DUREE_MAX_GRATUIT") or 60)
+GRATUIT = FORMULE == "gratuit"
 STT = os.environ.get("STT_MODELE", "openai/whisper-large-v3-turbo")
 LLM = os.environ.get("LLM_MODELE", "anthropic/claude-sonnet-5.5")
 PRIVE = {"zdr": True, "data_collection": "deny"}
@@ -636,6 +641,10 @@ def preparer(src, dossier, liens, reglages, avec_apercu):
         return time.time()
 
     meta = __import__("voixoff").sonder_audio(src) if VOIX_OFF else P.probe(src)
+    if GRATUIT and meta["duration"] > DUREE_MAX_GRATUIT + 5:
+        # ce message rend la vidéo au quota du jour (studio_job_erreur, « La version gratuite… »)
+        raise ValueError(f"La version gratuite accepte {DUREE_MAX_GRATUIT // 60} minute de vidéo. Raccourcis-la, "
+                         "ou passe à l'abonnement Studio pour aller jusqu'à 5 minutes.")
     if VOIX_OFF and meta["duration"] > DUREE_MAX_VOIX_OFF:
         raise ValueError("La voix off dépasse 3 minutes. Raccourcis le script ou coupe-la en plusieurs parties.")
     if meta["duration"] > DUREE_MAX:
@@ -759,8 +768,11 @@ def monter(src, dossier, liens, travail, reglages, chrono=None, precedent=None):
         top("plans")
     etape("animations")
     brut = precedent.get("plan_hf_brut") if memes_mots else None
+    # Le plan Hyperframes n'est demandé à l'IA que s'il servira : pas en version gratuite
+    # (motion design léger), ni quand le motion design est coupé (29/10/2026).
+    sans_hf = GRATUIT or ((reglages or {}).get("design") or {}).get("actif") is False
     try:
-        brut, plan = plan_hf(gardes, sous_titres, total, brut)
+        brut, plan = (None, None) if sans_hf and brut is None else plan_hf(gardes, sous_titres, total, brut)
     except ServiceIA:  # l'IA ne répond plus : inutile de continuer, l'élève relancera
         raise
     except Exception:  # le plan sera redemandé au rendu (ou le motion design classique prendra le relais)
@@ -1001,7 +1013,8 @@ def rendre(dossier, liens, reglages, travail):
     # en cas d'échec, le motion design classique (animations.py) : l'élève a toujours sa vidéo.
     d = (reglages or {}).get("design") or {}
     secours = None
-    if d.get("actif", True) is not False and hyperframes_present():
+    # Version gratuite : motion design léger, le moteur classique (rapide, ~4,5 fois moins de calcul).
+    if d.get("actif", True) is not False and hyperframes_present() and not GRATUIT:
         try:
             return rendre_hf(dossier, liens, reglages, travail, flou)
         except ServiceIA:

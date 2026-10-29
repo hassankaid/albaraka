@@ -19,7 +19,16 @@ import {
 
 type Phase = "pret" | "enregistrement" | "pause" | "fini";
 
-export function EnregistreurVoix({ script, onValider }: { script: string; onValider: (voix: Blob) => void }) {
+export function EnregistreurVoix({
+  script,
+  onValider,
+  dureeMax = ENREGISTREMENT_MAX_S,
+}: {
+  script: string;
+  onValider: (voix: Blob) => void;
+  /** 3 min, ou 1 min en version gratuite (29/10/2026). */
+  dureeMax?: number;
+}) {
   const [phase, setPhase] = useState<Phase>("pret");
   const [erreur, setErreur] = useState<string | null>(null);
   const [vitesse, setVitesse] = useState(30); // pixels par seconde
@@ -43,7 +52,11 @@ export function EnregistreurVoix({ script, onValider }: { script: string; onVali
   phaseRef.current = phase;
   vitesseRef.current = vitesse;
 
-  // boucle : défilement du prompteur, niveau du micro, chrono, arrêt à 3 min
+  // la formule de l'élève peut arriver après le premier affichage : la boucle lit la valeur à jour
+  const dureeMaxRef = useRef(dureeMax);
+  dureeMaxRef.current = dureeMax;
+
+  // boucle : défilement du prompteur, niveau du micro, chrono, arrêt à 3 min (1 min en gratuit)
   useEffect(() => {
     let id = 0;
     let avant = performance.now();
@@ -56,7 +69,7 @@ export function EnregistreurVoix({ script, onValider }: { script: string; onVali
         if (prompteur.current) prompteur.current.scrollTop += vitesseRef.current * dt;
         const n = dureeEcoulee();
         setDuree(n);
-        if (n >= ENREGISTREMENT_MAX_S) terminer();
+        if (n >= dureeMaxRef.current) terminer();
       }
       const a = analyseur.current;
       if (a && phaseRef.current !== "fini") {
@@ -187,7 +200,7 @@ export function EnregistreurVoix({ script, onValider }: { script: string; onVali
             )}
           >
             {phase === "enregistrement" && <span className="h-2 w-2 animate-pulse rounded-full bg-white" />}
-            {chrono(duree)} / {chrono(ENREGISTREMENT_MAX_S)}
+            {chrono(duree)} / {chrono(dureeMax)}
           </span>
         )}
       </div>

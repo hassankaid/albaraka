@@ -157,3 +157,11 @@ describe("erreurs du montage", () => {
     expect(t.detail).toBe("KeyError: 'duration'");
   });
 });
+
+describe("version gratuite (29/10/2026)", () => {
+  it("annonce la durée maximale en mots simples", async () => {
+    const { minutes, messageDureeGratuite } = await import("./reglages");
+    expect([minutes(60), minutes(120), minutes(45)]).toEqual(["1 minute", "2 minutes", "45 secondes"]);
+    expect(messageDureeGratuite(60)).toContain("La version gratuite accepte 1 minute de vidéo");
+  });
+});

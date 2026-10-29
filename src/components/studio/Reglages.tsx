@@ -7,7 +7,9 @@ import { cn } from "@/lib/utils";
 import { Loader2, PenLine, Scissors } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FONDS_SONORES, NIVEAUX_SON, PALETTES, RYTHMES_COUPES, STYLES_MONTAGE, type Reglages } from "@/lib/studio/reglages";
+import { Link } from "react-router-dom";
 import { SelecteurCouleur } from "./SelecteurCouleur";
+import { useStudioAcces } from "@/hooks/useStudioAcces";
 
 type Maj = (r: Reglages) => void;
 
@@ -166,6 +168,9 @@ export function BlocSousTitres({
 /** Motion design : oui / non, code couleur (6 palettes ou personnalisé), carte de présentation. */
 export function BlocDesign({ reglages, onChange }: { reglages: Reglages; onChange: Maj }) {
   const d = reglages.design;
+  // Version gratuite (29/10/2026) : motion design léger, sans le choix du style (propre au complet).
+  const { data: acces } = useStudioAcces();
+  const leger = acces?.formule === "gratuit";
   const maj = (p: Partial<Reglages["design"]>) => onChange({ ...reglages, design: { ...d, ...p } });
   return (
     <div className="space-y-5">
@@ -173,14 +178,22 @@ export function BlocDesign({ reglages, onChange }: { reglages: Reglages; onChang
         <Label htmlFor="studio-design" className="text-sm font-medium">
           Motion design
           <span className="block text-xs font-normal text-muted-foreground">
-            Mot géant derrière toi, zooms, icônes et listes animées, bruitages, carte de présentation
+            {leger
+              ? "Version légère : zooms, icônes et listes animées, carte de présentation"
+              : "Mot géant derrière toi, zooms, icônes et listes animées, bruitages, carte de présentation"}
           </span>
         </Label>
         <Switch id="studio-design" checked={d.actif} onCheckedChange={(actif) => maj({ actif })} />
       </div>
+      {d.actif && leger && (
+        <p className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 text-xs text-muted-foreground" data-testid="design-leger">
+          Le motion design complet (mot géant derrière toi, styles, bruitages) est inclus dans{" "}
+          <Link to="/studio/abonnement" className="font-medium text-amber-600 underline-offset-2 hover:underline">l'abonnement Studio</Link>.
+        </p>
+      )}
       {d.actif && (
         <>
-          <div className="space-y-2">
+          <div className={cn("space-y-2", leger && "hidden")}>
             <p className="text-sm font-medium text-foreground">Style</p>
             <div className="grid grid-cols-2 gap-2">
               {STYLES_MONTAGE.map((st) => (

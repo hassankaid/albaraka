@@ -295,6 +295,13 @@ export const FORMATS_ACCEPTES = ["video/mp4", "video/quicktime"];
 export const TAILLE_MAX = 1024 * 1024 * 1024; // 1 Go
 export const DUREE_MAX_S = 5 * 60;
 
+/** « 1 minute », « 2 minutes », « 45 secondes ». */
+export const minutes = (s: number) => (s % 60 === 0 ? `${s / 60} minute${s >= 120 ? "s" : ""}` : `${s} secondes`);
+
+/** Refus d'une vidéo trop longue en version gratuite (29/10/2026), avec l'avantage de l'abonnement. */
+export const messageDureeGratuite = (s: number) =>
+  `La version gratuite accepte ${minutes(s)} de vidéo. Raccourcis-la, ou passe à l'abonnement Studio pour aller jusqu'à 5 minutes.`;
+
 /** Contrôle du fichier avant l'import (format, taille). La durée est vérifiée à part. */
 export function verifierFichier(f: { name: string; type: string; size: number }): string | null {
   const ext = f.name.toLowerCase().split(".").pop();

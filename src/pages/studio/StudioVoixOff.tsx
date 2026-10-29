@@ -18,6 +18,7 @@ import { VerifierCoupes } from "@/components/studio/VerifierCoupes";
 import { CorrigerSousTitres } from "@/components/studio/CorrigerSousTitres";
 import { Bloc, BlocCoupes, BlocDesign, BlocSon, BlocSousTitres } from "@/components/studio/Reglages";
 import { BandeauQuota, QuotaAtteint, quotaEpuise } from "@/components/studio/QuotaStudio";
+import { messageDureeGratuite } from "@/lib/studio/reglages";
 import { memeScript } from "@/lib/studio/scripts";
 import { useStudioAcces } from "@/hooks/useStudioAcces";
 import { useQueryClient } from "@tanstack/react-query";
@@ -231,7 +232,11 @@ export default function StudioVoixOff() {
                   <Headphones className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> Des écouteurs avec micro, si tu en as.
                 </p>
               </div>
-              <EnregistreurVoix script={script} onValider={(voix) => envoyer(voix, titreEnregistrement(script))} />
+              <EnregistreurVoix
+                script={script}
+                dureeMax={acces?.duree_max_s ?? ENREGISTREMENT_MAX_S}
+                onValider={(voix) => envoyer(voix, titreEnregistrement(script))}
+              />
               <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground hover:border-primary/60">
                 <Upload className="h-4 w-4" /> Ou importe un enregistrement déjà fait (MP3, M4A, WAV…)
                 <input
@@ -248,6 +253,9 @@ export default function StudioVoixOff() {
                       // 3 minutes en voix off (Sidali, 13/10/2026) ; le moteur vérifie aussi.
                       if (d && d > ENREGISTREMENT_MAX_S + 5) {
                         return toast({ title: "Voix off trop longue", description: "3 minutes maximum : raccourcis ton script.", variant: "destructive" });
+                      }
+                      if (d && acces?.duree_max_s && d > acces.duree_max_s + 5) {
+                        return toast({ title: "Voix off trop longue pour la version gratuite", description: messageDureeGratuite(acces.duree_max_s), variant: "destructive" });
                       }
                       envoyer(f, f.name);
                     });

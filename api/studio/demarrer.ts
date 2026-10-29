@@ -78,6 +78,11 @@ export async function POST(request: Request): Promise<Response> {
   // décide (studio_ouvert) ; le quota du jour est vérifié par studio_preparer.
   const { data: ouvert } = await sb.rpc("studio_ouvert", { p_user_id: user.user.id });
   if (!ouvert) return repondre(403, { error: "Le Studio n'est pas ouvert pour ton compte." });
+  // Formule (Sidali, 29/10/2026) : « gratuit » = 1 minute et motion design léger ; « complet »
+  // = abonné ou CEO. La base décide (studio_quota) ; la machine applique.
+  const { data: quota } = await sb.rpc("studio_mon_quota");
+  const formule = (quota as { formule?: string } | null)?.formule === "gratuit" ? "gratuit" : "complet";
+  const dureeMaxGratuit = String((quota as { duree_max_s?: number } | null)?.duree_max_s ?? 60);
 
   const { data: m, error: eM } = await sb
     .from("studio_montages")
@@ -163,6 +168,8 @@ export async function POST(request: Request): Promise<Response> {
         JETON: jeton,
         MODE: mode,
         OUTIL: m.outil ?? "face_camera",
+        FORMULE: formule,
+        DUREE_MAX_GRATUIT: dureeMaxGratuit,
         SCRIPT: m.outil === "voix_off" ? (m.script ?? "") : "",
         THEME: m.theme ?? "",
         THEME_NOM: themeNom,
