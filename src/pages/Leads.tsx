@@ -1396,26 +1396,18 @@ export default function Leads() {
                           )}
                         </div>
                       )}
-                      {(lead.reinscrit_de || lead.signal_jeu_ven) && (
+                      {/* « Jeu-Ven » n'est plus affiché (Sidali, 28/10/2026) : il reste mesuré dans le
+                          rapport de l'admin et peut jouer sur l'ordre d'appel par un réglage. */}
+                      {lead.reinscrit_de && (
                         <div className="mt-1 flex flex-wrap gap-1">
-                          {lead.reinscrit_de && (
-                            <button
-                              type="button"
-                              onClick={() => lead.contact_id && setContactSheetId(lead.contact_id)}
-                              className="rounded-full border border-orange-500/40 bg-orange-500/10 px-1.5 text-[9px] font-semibold text-orange-300 hover:bg-orange-500/20"
-                              title="Déjà inscrit dans les 30 derniers jours : voir l'historique du contact"
-                            >
-                              Réinscrit
-                            </button>
-                          )}
-                          {lead.signal_jeu_ven && (
-                            <span
-                              className="rounded-full border border-violet-500/40 bg-violet-500/10 px-1.5 text-[9px] font-semibold text-violet-300"
-                              title="Entré un jeudi ou un vendredi : peu de temps avant la conférence"
-                            >
-                              Jeu-Ven
-                            </span>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => lead.contact_id && setContactSheetId(lead.contact_id)}
+                            className="rounded-full border border-orange-500/40 bg-orange-500/10 px-1.5 text-[9px] font-semibold text-orange-300 hover:bg-orange-500/20"
+                            title="Déjà inscrit dans les 30 derniers jours : voir l'historique du contact"
+                          >
+                            Réinscrit
+                          </button>
                         </div>
                       )}
                     </TableCell>

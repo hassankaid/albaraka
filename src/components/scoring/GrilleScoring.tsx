@@ -253,10 +253,11 @@ function Reglages() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Tag « Jeu-Ven »</CardTitle>
+        <CardTitle>Signal « Jeu-Ven »</CardTitle>
         <CardDescription>
-          Les leads entrés ces jours-là (heure de Paris) reçoivent le tag : ils ont peu de temps avant la conférence du dimanche.
-          Par défaut, le tag est seulement affiché ; active le tri quand les chiffres du rapport le confirment.
+          Les leads entrés ces jours-là (heure de Paris) sont repérés : ils ont peu de temps avant la conférence du dimanche. Le signal
+          n'est pas affiché aux setters ; il est suivi dans le rapport. Le tri, s'il est activé, fait passer ces leads devant à
+          priorité égale, sans toucher au score ni à la lettre.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap items-center gap-5">
