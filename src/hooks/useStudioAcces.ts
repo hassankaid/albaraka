@@ -12,9 +12,9 @@ export interface QuotaStudio {
   limite: number | null;
   utilisees: number;
   restantes: number | null;
-  /** « gratuit » : 1 minute et motion design léger ; « complet » : abonné ou CEO (29/10/2026). */
+  /** « gratuit » : motion design léger ; « complet » : abonné ou CEO (29/10/2026). */
   formule?: "gratuit" | "complet";
-  /** Durée maximale d'une vidéo en version gratuite (secondes) ; null en formule complète. */
+  /** Durée maximale en version gratuite (secondes) ; null = durées habituelles (vide depuis le 29/10 au soir). */
   duree_max_s?: number | null;
 }
 

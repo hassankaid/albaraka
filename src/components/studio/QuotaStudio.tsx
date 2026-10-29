@@ -1,6 +1,7 @@
 // Studio : vidéos du jour (1 gratuite, 5 avec l'abonnement à 10 €/mois, Sidali 13/10/2026).
-// Depuis le 29/10/2026, la version gratuite est aussi plus légère : 1 minute de vidéo et un
-// motion design léger ; l'abonnement donne 5 min (3 en voix off) et le motion design complet.
+// Depuis le 29/10/2026, la version gratuite a un motion design léger ; l'abonnement donne le
+// motion design complet. Les durées sont les mêmes pour tous (5 min, 3 en voix off) tant que
+// `duree_max_gratuit` est vide (Sidali, 29/10 au soir).
 // Une « vidéo » = une nouvelle vidéo importée ; refaire le rendu d'une vidéo ne compte pas.
 import { Link } from "react-router-dom";
 import { Crown, Film, Lock } from "lucide-react";
@@ -22,16 +23,16 @@ export function BandeauQuota() {
         <Film className="h-4 w-4 text-primary" />
         Aujourd'hui : <b>{q.utilisees} / {q.limite}</b> {q.limite > 1 ? "nouvelles vidéos" : "nouvelle vidéo"}
         {q.abonne && <span className="ml-1 inline-flex items-center gap-1 text-xs text-amber-600"><Crown className="h-3.5 w-3.5" /> Abonné</span>}
-        {q.formule === "gratuit" && q.duree_max_s && (
+        {q.formule === "gratuit" && (
           <span className="text-xs text-muted-foreground" data-testid="formule-gratuite">
-            · version gratuite : {minutes(q.duree_max_s)} max, motion design léger
+            · version gratuite : {q.duree_max_s ? `${minutes(q.duree_max_s)} max, ` : ""}motion design léger
           </span>
         )}
       </span>
       {!q.abonne ? (
         <Button asChild size="sm" variant="outline" className="gap-2">
           <Link to="/studio/abonnement">
-            <Crown className="h-4 w-4" /> 5 vidéos par jour, 5 min et motion design complet : 10 €/mois
+            <Crown className="h-4 w-4" /> 5 vidéos par jour et motion design complet : 10 €/mois
           </Link>
         </Button>
       ) : (

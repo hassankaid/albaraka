@@ -65,10 +65,11 @@ import pipeline as P  # noqa: E402
 
 DUREE_MAX = 5 * 60 + 5            # 5 min (cahier des charges), petite marge
 DUREE_MAX_VOIX_OFF = 3 * 60 + 5   # 3 min en voix off (Sidali, 13/10/2026)
-# Formule de l'élève, donnée par api/studio/demarrer.ts (studio_quota) : « gratuit » = 1 minute
-# de vidéo et motion design léger (moteur classique) ; « complet » = abonné ou CEO (Sidali, 29/10/2026).
+# Formule de l'élève, donnée par api/studio/demarrer.ts (studio_quota) : « gratuit » = motion design
+# léger (moteur classique) ; « complet » = abonné ou CEO (Sidali, 29/10/2026). Durées identiques pour
+# tous, sauf si studio_config.duree_max_gratuit est rempli (vidé le 29/10 au soir).
 FORMULE = os.environ.get("FORMULE", "complet")
-DUREE_MAX_GRATUIT = int(os.environ.get("DUREE_MAX_GRATUIT") or 60)
+DUREE_MAX_GRATUIT = int(os.environ.get("DUREE_MAX_GRATUIT") or 0)  # 0 : durées habituelles
 GRATUIT = FORMULE == "gratuit"
 STT = os.environ.get("STT_MODELE", "openai/whisper-large-v3-turbo")
 LLM = os.environ.get("LLM_MODELE", "anthropic/claude-sonnet-5.5")
@@ -641,7 +642,7 @@ def preparer(src, dossier, liens, reglages, avec_apercu):
         return time.time()
 
     meta = __import__("voixoff").sonder_audio(src) if VOIX_OFF else P.probe(src)
-    if GRATUIT and meta["duration"] > DUREE_MAX_GRATUIT + 5:
+    if GRATUIT and DUREE_MAX_GRATUIT and meta["duration"] > DUREE_MAX_GRATUIT + 5:
         # ce message rend la vidéo au quota du jour (studio_job_erreur, « La version gratuite… »)
         raise ValueError(f"La version gratuite accepte {DUREE_MAX_GRATUIT // 60} minute de vidéo. Raccourcis-la, "
                          "ou passe à l'abonnement Studio pour aller jusqu'à 5 minutes.")

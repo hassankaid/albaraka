@@ -15,7 +15,6 @@ import { useAbonnementStudio, useActionsAbonnementStudio } from "@/hooks/useStud
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const AVANTAGES = [
   "5 nouvelles vidéos par jour au lieu d'une",
-  "Jusqu'à 5 minutes par vidéo (3 en voix off), au lieu d'une minute",
   "Le motion design complet : mot géant derrière toi, styles, bruitages",
   "Face caméra et voix off, avec toute la bibliothèque de scripts",
   "Retouches et nouveaux rendus toujours illimités",
@@ -117,7 +116,7 @@ export default function StudioAbonnement() {
                 M'abonner pour 10 €/mois
               </Button>
             )}
-            {!actif && <p className="text-center text-xs text-muted-foreground">Paiement sécurisé par Stripe. Sans abonnement : 1 nouvelle vidéo par jour, gratuitement, d'une minute au plus, avec un motion design léger.</p>}
+            {!actif && <p className="text-center text-xs text-muted-foreground">Paiement sécurisé par Stripe. Sans abonnement : 1 nouvelle vidéo par jour, gratuitement, avec un motion design léger.</p>}
           </CardContent>
         </Card>
       )}

@@ -78,11 +78,11 @@ export async function POST(request: Request): Promise<Response> {
   // décide (studio_ouvert) ; le quota du jour est vérifié par studio_preparer.
   const { data: ouvert } = await sb.rpc("studio_ouvert", { p_user_id: user.user.id });
   if (!ouvert) return repondre(403, { error: "Le Studio n'est pas ouvert pour ton compte." });
-  // Formule (Sidali, 29/10/2026) : « gratuit » = 1 minute et motion design léger ; « complet »
+  // Formule (Sidali, 29/10/2026) : « gratuit » = motion design léger (durée limitée seulement si duree_max_gratuit est rempli) ; « complet »
   // = abonné ou CEO. La base décide (studio_quota) ; la machine applique.
   const { data: quota } = await sb.rpc("studio_mon_quota");
   const formule = (quota as { formule?: string } | null)?.formule === "gratuit" ? "gratuit" : "complet";
-  const dureeMaxGratuit = String((quota as { duree_max_s?: number } | null)?.duree_max_s ?? 60);
+  const dureeMaxGratuit = String((quota as { duree_max_s?: number } | null)?.duree_max_s ?? 0);
 
   const { data: m, error: eM } = await sb
     .from("studio_montages")

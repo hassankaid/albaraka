@@ -26,7 +26,7 @@ export function EnregistreurVoix({
 }: {
   script: string;
   onValider: (voix: Blob) => void;
-  /** 3 min, ou 1 min en version gratuite (29/10/2026). */
+  /** 3 min, ou la durée gratuite si `duree_max_gratuit` est rempli. */
   dureeMax?: number;
 }) {
   const [phase, setPhase] = useState<Phase>("pret");
@@ -56,7 +56,7 @@ export function EnregistreurVoix({
   const dureeMaxRef = useRef(dureeMax);
   dureeMaxRef.current = dureeMax;
 
-  // boucle : défilement du prompteur, niveau du micro, chrono, arrêt à 3 min (1 min en gratuit)
+  // boucle : défilement du prompteur, niveau du micro, chrono, arrêt à 3 min (ou à la durée gratuite)
   useEffect(() => {
     let id = 0;
     let avant = performance.now();
