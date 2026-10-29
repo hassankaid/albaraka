@@ -12,13 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { demarrer, detecterTheme, importerVoix, useMontage, useThemes } from "@/hooks/useStudio";
 import { completerReglages, messageErreur, REGLAGES_PAR_DEFAUT, type Reglages } from "@/lib/studio/reglages";
-import { compterMots, dureeLecture, ENREGISTREMENT_MAX_S, SCRIPT_MAX, verifierAudio } from "@/lib/studio/voixoff";
+import { compterMots, dureeLecture, ENREGISTREMENT_MAX_S, SCRIPT_MAX, secondesLecture, verifierAudio } from "@/lib/studio/voixoff";
 import { EnregistreurVoix } from "@/components/studio/EnregistreurVoix";
 import { VerifierCoupes } from "@/components/studio/VerifierCoupes";
 import { CorrigerSousTitres } from "@/components/studio/CorrigerSousTitres";
 import { Bloc, BlocCoupes, BlocDesign, BlocSon, BlocSousTitres } from "@/components/studio/Reglages";
 import { BandeauQuota, QuotaAtteint, quotaEpuise } from "@/components/studio/QuotaStudio";
-import { messageDureeGratuite } from "@/lib/studio/reglages";
+import { messageDureeGratuite, minutes } from "@/lib/studio/reglages";
 import { memeScript } from "@/lib/studio/scripts";
 import { useStudioAcces } from "@/hooks/useStudioAcces";
 import { useQueryClient } from "@tanstack/react-query";
@@ -168,6 +168,11 @@ export default function StudioVoixOff() {
             <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
               <span>
                 {compterMots(script)} mots · environ {dureeLecture(script)} de lecture
+                {acces?.duree_max_s && secondesLecture(script) > acces.duree_max_s && (
+                  <span className="ml-1 text-amber-500" data-testid="script-trop-long-gratuit">
+                    · trop long pour la version gratuite ({minutes(acces.duree_max_s)} de voix au plus)
+                  </span>
+                )}
               </span>
               <span>
                 {script.length} / {SCRIPT_MAX} caractères

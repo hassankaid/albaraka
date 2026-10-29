@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStudioAcces } from "@/hooks/useStudioAcces";
 import { BandeauQuota, QuotaAtteint, quotaEpuise } from "@/components/studio/QuotaStudio";
-import { messageDureeGratuite } from "@/lib/studio/reglages";
+import { messageDureeGratuite, minutes } from "@/lib/studio/reglages";
 import { ChoixScriptBibliotheque } from "@/components/studio/ChoixScriptBibliotheque";
 import { demarrer, importerVideo, lienStudio, useMontage } from "@/hooks/useStudio";
 import {
@@ -170,7 +170,9 @@ export default function StudioFaceCamera() {
             >
               <Upload className="h-10 w-10 text-primary" />
               <span className="text-base font-semibold text-foreground">Dépose ta vidéo ici ou clique pour la choisir</span>
-              <span className="text-sm text-muted-foreground">MP4 ou MOV, iPhone ou Android · 5 minutes et 1 Go maximum</span>
+              <span className="text-sm text-muted-foreground">
+                MP4 ou MOV, iPhone ou Android · {acces?.duree_max_s ? minutes(acces.duree_max_s) : "5 minutes"} et 1 Go maximum
+              </span>
               <input
                 type="file"
                 accept="video/mp4,video/quicktime,.mp4,.mov"

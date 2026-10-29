@@ -9,9 +9,12 @@ const MOTS_PAR_MINUTE = 150;
 
 export const compterMots = (texte: string) => (texte.trim() ? texte.trim().split(/\s+/).length : 0);
 
+/** Durée de lecture estimée d'un script, en secondes. */
+export const secondesLecture = (texte: string) => Math.round((compterMots(texte) / MOTS_PAR_MINUTE) * 60);
+
 /** « 1 min 20 » : durée de lecture estimée d'un script. */
 export function dureeLecture(texte: string): string {
-  const s = Math.round((compterMots(texte) / MOTS_PAR_MINUTE) * 60);
+  const s = secondesLecture(texte);
   if (s < 60) return `${Math.max(s, 0)} s`;
   const m = Math.floor(s / 60);
   const r = s % 60;
