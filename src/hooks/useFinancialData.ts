@@ -12,6 +12,7 @@ interface Ad {
   amount_spent: number;
   impressions: number;
   clicks: number;
+  plateforme: string | null;
 }
 
 interface Sale {
@@ -162,7 +163,7 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
 
   const adsQuery = useQuery({
     queryKey: ["financial-ads"],
-    queryFn: () => fetchAllRows<Ad>("ads", "id, date, campaign_name, campaign_id, channel, amount_spent, impressions, clicks"),
+    queryFn: () => fetchAllRows<Ad>("ads", "id, date, campaign_name, campaign_id, channel, amount_spent, impressions, clicks, plateforme"),
   });
 
   // Raw data (unfiltered)

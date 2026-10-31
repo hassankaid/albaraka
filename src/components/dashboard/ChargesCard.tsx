@@ -12,6 +12,7 @@ import { Plus, Trash2, Building2, Users, CreditCard, Receipt, Settings2, Wallet,
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { libellePlateforme, resumePlateformes } from "@/lib/marketing/adsPlateformes";
 
 // ── Types ──
 interface FixedCharge {
@@ -55,6 +56,7 @@ interface Ad {
   campaign_name: string;
   amount_spent: number;
   channel: string | null;
+  plateforme?: string | null;
 }
 
 interface DateRange {
@@ -533,6 +535,20 @@ export default function ChargesCard({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="ml-8 mt-1 mb-2 space-y-1.5">
+                {resumePlateformes(ads).map(p => (
+                  <div key={p.plateforme} className="flex items-center justify-between text-xs py-0.5">
+                    <div className="flex flex-col min-w-0 mr-2">
+                      <span className="text-foreground font-semibold">{p.libelle}</span>
+                      {p.dernierJour && (
+                        <span className="text-[10px] text-muted-foreground">
+                          Dépenses reçues jusqu'au {new Date(`${p.dernierJour}T12:00:00`).toLocaleDateString("fr-FR")}
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-bold text-foreground whitespace-nowrap">{fmt(p.total)}</span>
+                  </div>
+                ))}
+                {ads.length > 0 && <div className="border-t border-border my-1" />}
                 {(() => {
                   // Aggregate ads by campaign
                   const byCampaign = new Map<string, { name: string; channel: string | null; total: number; count: number }>();
@@ -542,7 +558,7 @@ export default function ChargesCard({
                       existing.total += a.amount_spent;
                       existing.count++;
                     } else {
-                      byCampaign.set(a.campaign_name, { name: a.campaign_name, channel: a.channel, total: a.amount_spent, count: 1 });
+                      byCampaign.set(a.campaign_name, { name: a.campaign_name, channel: libellePlateforme(a.plateforme), total: a.amount_spent, count: 1 });
                     }
                   });
                   const campaigns = Array.from(byCampaign.values()).sort((a, b) => b.total - a.total);
