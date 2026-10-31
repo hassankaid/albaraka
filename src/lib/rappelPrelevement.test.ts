@@ -43,7 +43,7 @@ describe("contenu de l'email", () => {
 
   it("reprend le texte validé", () => {
     expect(sujet).toBe("Ton prélèvement AL BARAKA du jeudi 1er octobre");
-    expect(texte).toContain("As salam alaykoum Yasmine,");
+    expect(texte).toContain("Salamou ‘alaykoum Yasmine,");
     expect(texte).toContain("ta prochaine échéance AL BARAKA sera prélevée le jeudi 1er octobre.");
     expect(texte).toContain("Montant : 200,00 €");
     expect(texte).toContain("Date du prélèvement : jeudi 1er octobre 2026");
@@ -66,7 +66,7 @@ describe("contenu de l'email", () => {
   it("reste juste sans carte connue, sans prénom, sans numéro d'échéance", () => {
     const { texte: t } = construireEmail({ ...base, carte: null, prenom: "", numero: null, total: null });
     expect(t).toContain("Moyen de paiement : carte bancaire enregistrée");
-    expect(t.startsWith("As salam alaykoum,")).toBe(true);
+    expect(t.startsWith("Salamou ‘alaykoum,")).toBe(true);
     expect(t).toContain("Offre : Pass AL BARAKA\n");
   });
 

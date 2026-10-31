@@ -145,6 +145,9 @@ export function duree(s: number | null | undefined): string {
 
 const arrondi = (x: number) => Math.round(x * 10) / 10;
 
+/** « 1 point » ou « 3 points » : la pénalité d'enregistrement est réglée dans le référentiel. */
+export const pointsEnMoins = (n: number) => `${n} point${n > 1 ? "s" : ""}`;
+
 /** Note sur 100 : chaque note sur 10 × son poids, moins la pénalité (enregistrement non annoncé). */
 export function recalculer(a: Analyse): Analyse {
   const noteEtapes = a.etapes.reduce((s, e) => s + Math.max(0, Math.min(10, e.note)) * e.poids, 0) / 10;
@@ -185,7 +188,7 @@ export function texteEleve(a: Analyse, prenom: string): string {
   let entete = `Note : ${note}/100`;
   if (a.penalite) entete += ` (${Math.round(a.note_etapes)} sur les étapes, −${a.penalite} car le prospect n'a pas été prévenu de l'enregistrement)`;
   lignes.push(entete + "." + (a.alerte_duree ? ` ${a.alerte_duree}.` : ""));
-  lignes.push("", `Salam ${prenom}, voici le retour sur ton appel.`, "", a.analyse_globale.trim());
+  lignes.push("", `Salamou ‘alaykoum ${prenom}, voici le retour sur ton appel.`, "", a.analyse_globale.trim());
   const forts = a.points_forts.filter((p) => !p.retire);
   if (forts.length) {
     lignes.push("", "Ce que tu as bien fait :");

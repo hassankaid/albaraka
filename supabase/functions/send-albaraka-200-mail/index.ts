@@ -120,7 +120,7 @@ const TEMPLATES: Record<number, Gabarit> = {
     subject: "J'ai cassé les prix pour t'aider (mais c'est limité !)",
     preheader: "Je te donne pas le chiffre ici. Tu vas le découvrir dans la vidéo.",
     body: [
-      p("Salamou alaykoum c'est Sidali,"),
+      p("Salamou ‘alaykoum c'est Sidali,"),
       p("Bon parlons franchement, aujourd'hui dans tout ce qui est business en ligne, la plupart des formateurs ayant un accompagnement sérieux en personal branding, marketing, closing, ou autre, facturent le prix fort, généralement entre 3000 et 4000 euros. Parfois beaucoup plus."),
       p("J'ai fait un choix différent."),
       p("Parce que je pense que la communauté aujourd'hui a réellement besoin qu'on lui tende la main, qu'on l'aide vraiment à ouvrir les portes d'une activité en ligne halal, sans casquer 4 ou 5000€."),
@@ -141,7 +141,7 @@ const TEMPLATES: Record<number, Gabarit> = {
     subject: '"J\'ai pas le temps" mais tu perds aussi de l\'argent et même plus',
     preheader: "7 minutes maintenant, ou continuer à tourner en rond indéfiniment sans rien construire ?",
     body: [
-      p("Salamou alaykoum c'est encore Sidali,"),
+      p("Salamou ‘alaykoum c'est encore Sidali,"),
       p("Je t'ai parlé hier de l'offre à durée limitée qu'on propose avec l'écosystème Al Baraka, au tarif le plus compétitif du marché pour ce type d'accompagnement."),
       p("Si t'as pas encore regardé la vidéo, je devine ce que t'as pensé."),
       p('"J\'ai pas le temps pour ça maintenant."'),
@@ -164,7 +164,7 @@ const TEMPLATES: Record<number, Gabarit> = {
     subject: "C'est ça qui te bloque, lis ce mail !",
     preheader: "À ce stade, je devine ce qui se passe dans ta tête. Deux pensées, probablement.",
     body: [
-      p("Salamou alaykoum, c'est Sidali (encore)"),
+      p("Salamou ‘alaykoum, c'est Sidali (encore)"),
       p("À ce stade, je devine ce qui se passe dans ta tête. Deux pensées, probablement."),
       p('La première, "je préfère pas dépenser de l\'argent là-dedans."'),
       p("Et je comprends. Mais sache que l'argent n'est pas fait pour être stocké mais plutôt pour être utilisé ! Pour que tu puisses le travailler et qu'il te permette d'améliorer ta vie !"),

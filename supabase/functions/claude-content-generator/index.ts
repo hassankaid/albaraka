@@ -26,7 +26,7 @@ serve(async (req) => {
       fonctionnalite: "contenus_personal_brand",
       userId: await utilisateurDe(req),
       maxTokens: 8000,
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content: `${prompt}\n\nÉcris toujours « Salamou ‘alaykoum » en entier, jamais « Salam » ni « Salem ».` }],
     });
 
     return new Response(

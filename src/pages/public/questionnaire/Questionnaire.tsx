@@ -213,7 +213,7 @@ export default function Questionnaire() {
         <Entete />
         <div style={{ maxWidth: 560, margin: "32px auto 0" }}>
           <h1 style={{ fontSize: 26, lineHeight: 1.2, margin: "0 0 18px", textAlign: "center" }}>
-            {prenom ? `Salam ${prenom}` : "Salam"}
+            {prenom ? `Salamou ‘alaykoum ${prenom}` : "Salamou ‘alaykoum"}
           </h1>
           <p style={{ color: T.creamMuted, fontSize: 15.5, lineHeight: 1.7, margin: "0 0 20px" }}>
             {INTRO}

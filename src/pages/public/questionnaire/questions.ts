@@ -22,7 +22,7 @@ export const THEME = {
 };
 
 export const INTRO =
-  "Salam ! Ce questionnaire prend environ 5 minutes. Tes réponses sont confidentielles et vont nous permettre de mieux t'accompagner et d'améliorer AL BARAKA pour toute la communauté. Sois le plus honnête possible : il n'y a pas de bonne ou de mauvaise réponse.";
+  "Salamou ‘alaykoum ! Ce questionnaire prend environ 5 minutes. Tes réponses sont confidentielles et vont nous permettre de mieux t'accompagner et d'améliorer AL BARAKA pour toute la communauté. Sois le plus honnête possible : il n'y a pas de bonne ou de mauvaise réponse.";
 
 export const CONFIDENTIALITE =
   "Tes réponses ne sont accessibles qu'à l'équipe AL BARAKA. Tu peux demander leur suppression à tout moment en écrivant à ethicarena@outlook.com.";

@@ -107,7 +107,7 @@ const TEMPLATES: Record<Envoi, Gabarit> = {
     subject: "{{PRENOM}}, j'ai besoin de ton avis (5 minutes)",
     preheader: "5 minutes pour m'aider à améliorer ton accompagnement.",
     body: [
-      p("Salam {{PRENOM}},"),
+      p("Salamou ‘alaykoum {{PRENOM}},"),
       p("Je t'écris directement, sans détour."),
       p("Je veux que AL BARAKA soit à la hauteur de ce que tu mérites. Pour ça, j'ai besoin de mieux te connaître : qui tu es, où tu en es, ce qui te freine, et ce que je peux améliorer dans ton accompagnement."),
       p("J'ai préparé un questionnaire très court : 5 minutes chrono."),
@@ -130,7 +130,7 @@ const TEMPLATES: Record<Envoi, Gabarit> = {
     subject: "{{PRENOM}}, il me manque juste ton avis",
     preheader: "Ça prend 5 minutes, et ça change vraiment les choses.",
     body: [
-      p("Salam {{PRENOM}},"),
+      p("Salamou ‘alaykoum {{PRENOM}},"),
       p("Petit rappel : je n'ai pas encore reçu ton retour sur le questionnaire."),
       p("Je sais que tu as mille choses à gérer, mais 5 minutes de ton temps m'aident vraiment à améliorer ton accompagnement et celui de toute la communauté."),
       cta("JE RÉPONDS MAINTENANT"),
@@ -145,7 +145,7 @@ const TEMPLATES: Record<Envoi, Gabarit> = {
     subject: "Dernier rappel, {{PRENOM}} : le questionnaire ferme bientôt",
     preheader: "Il ferme le {{DATE_LIMITE}}.",
     body: [
-      p("Salam {{PRENOM}},"),
+      p("Salamou ‘alaykoum {{PRENOM}},"),
       p("Dernier rappel : le questionnaire ferme le {{DATE_LIMITE}}."),
       p("Si tu veux que ta voix compte dans l'évolution d'AL BARAKA, c'est maintenant : 5 minutes, pas plus."),
       cta("JE RÉPONDS"),

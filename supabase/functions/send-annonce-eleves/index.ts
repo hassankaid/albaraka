@@ -45,7 +45,7 @@ const sousLigne = (texte: string) => `<p style="margin:4px 0 4px 22px;">${texte}
 
 // Le texte de Sidali, dans l'ordre. Ses *astérisques* WhatsApp deviennent du gras.
 const CORPS = [
-  p("Salam 'alaykoum la famille AL BARAKA ! 🙌"),
+  p("Salamou ‘alaykoum la famille AL BARAKA ! 🙌"),
   p("J'ai de très bonnes nouvelles à vous partager, Alhamdoulilah."),
   p("Vous le savez, l'écosystème AL BARAKA n'arrête jamais d'avancer. On améliore la plateforme et l'accompagnement en permanence, avec un seul objectif : que vous obteniez un maximum de résultats. Cette fois, on a mis en place beaucoup d'améliorations d'un coup. Je vous explique tout."),
 

@@ -60,7 +60,7 @@ export function construireEmail(r: Rappel) {
   const veille = dateLongue(decaler(r.jour, -1), false);
   const echeance = r.numero && r.total ? ` — mensualité ${r.numero} sur ${r.total}` : "";
   const carte = r.carte ? `carte bancaire se terminant par ${r.carte}` : "carte bancaire enregistrée";
-  const salut = r.prenom ? `As salam alaykoum ${r.prenom},` : "As salam alaykoum,";
+  const salut = r.prenom ? `Salamou ‘alaykoum ${r.prenom},` : "Salamou ‘alaykoum,";
 
   const sujet = `Ton prélèvement AL BARAKA du ${dateSansAnnee}`;
   const apercu = `Pense à approvisionner ton compte dès le ${veille}.`;
@@ -85,7 +85,7 @@ export function construireEmail(r: Rappel) {
     "",
     "Qu'Allah facilite ton activité et y mette la baraka.",
     "",
-    "Wa salam alaykoum,",
+    "Wa salamou ‘alaykoum,",
     "L'équipe AL BARAKA",
   ].join("\n");
 
@@ -112,7 +112,7 @@ ${P(`Petit rappel pour t'éviter toute mauvaise surprise : ta prochaine échéan
 ${P(`Le prélèvement peut intervenir à tout moment de la journée, y compris tôt le matin. Pour que tout se passe bien, assure-toi que ton compte est suffisamment approvisionné <strong style="color:${OR};font-weight:normal;">dès la veille, le ${echapper(veille)}</strong>. Un prélèvement refusé peut entraîner des frais de la part de ta banque, et on préfère t'éviter ça.`)}
 ${P("Une question, une carte qui a changé ou une difficulté passagère ? Envoie-nous un message : on est là pour trouver une solution avec toi, avant la date du prélèvement.")}
 ${P("Qu'Allah facilite ton activité et y mette la baraka.", "font-style:italic;margin-bottom:28px;")}
-<p style="margin:0 0 6px 0;font-size:14px;color:#9A9A9A;">Wa salam alaykoum,</p>
+<p style="margin:0 0 6px 0;font-size:14px;color:#9A9A9A;">Wa salamou ‘alaykoum,</p>
 <p style="margin:0 0 28px 0;font-size:14px;color:${OR};">L'équipe AL BARAKA</p>
 </td></tr></table></td></tr></table></body></html>`;
 

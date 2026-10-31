@@ -6,7 +6,7 @@
 import { createElement } from "react";
 import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
 import logo from "@/assets/scripts-appel/logo-al-baraka-or.jpg";
-import { duree, type Analyse } from "@/lib/appels/retour";
+import { duree, pointsEnMoins, type Analyse } from "@/lib/appels/retour";
 
 const OR = "#9A740B";
 const OR_BORDURE = "#C9A84C";
@@ -52,7 +52,7 @@ function RetourAppelPdf({ a, eleve, typeAppel, dureeS, date }: { a: Analyse; ele
         </View>
         {(a.penalite > 0 || a.alerte_duree) && (
           <Text style={s.alerte}>
-            {a.penalite > 0 && `${Math.round(a.note_etapes)} sur les étapes, ${a.penalite} points en moins car le prospect n'a pas été prévenu de l'enregistrement. `}
+            {a.penalite > 0 && `${Math.round(a.note_etapes)} sur les étapes, ${pointsEnMoins(a.penalite)} en moins car le prospect n'a pas été prévenu de l'enregistrement. `}
             {a.alerte_duree && `${sansFleche(a.alerte_duree)}.`}
           </Text>
         )}

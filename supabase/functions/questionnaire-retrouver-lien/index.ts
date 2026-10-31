@@ -73,7 +73,7 @@ serve(async (req) => {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f3ee;padding:24px 0;"><tr><td align="center">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#fff;border-radius:8px;padding:32px 28px;">
 <tr><td style="font-size:15px;">
-<p>Salam ${prenom},</p>
+<p>Salamou ‘alaykoum ${prenom},</p>
 <p>Voici ton lien personnel vers le questionnaire. Il n'est valable que pour toi.</p>
 <table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" style="margin:28px auto 10px;">
 <tr><td align="center" bgcolor="#C9A04E" style="background:#C9A04E;border-radius:6px;">

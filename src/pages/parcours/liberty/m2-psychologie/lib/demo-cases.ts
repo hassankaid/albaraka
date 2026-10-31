@@ -679,7 +679,7 @@ const KHADIJA_PATCH: Partial<M2State> = {
         { text: "Doute existentiel qui revient chaque ramadan : et si elle finissait seule ? Vraiment seule ? Pas par choix, par échec ?",
           scene: "Ramadan 2024. Iftar familial chez ses parents. Sa nièce de 4 ans demande pourquoi tata Khadija n'a pas de mari. Sa mère dit 'inshaAllah bientôt'. Personne ne dit rien d'autre. Khadija mange ses dattes." },
         { text: "Frustration de répéter les mêmes erreurs — tomber pour des hommes qui parlent bien la 1ère fois et fuient au 3ème échange",
-          scene: "Mardi 14h. WhatsApp. Le frère qu'elle voyait depuis 5 semaines : 'salam alaykoum sœur, je crois qu'on n'est pas faits l'un pour l'autre, je préfère arrêter là, qu'Allah te facilite'. Elle relit 4 fois. Elle ne répond pas. Elle pleure 11 minutes dans les toilettes du service de cardio." },
+          scene: "Mardi 14h. WhatsApp. Le frère qu'elle voyait depuis 5 semaines : 'Salamou ‘alaykoum sœur, je crois qu'on n'est pas faits l'un pour l'autre, je préfère arrêter là, qu'Allah te facilite'. Elle relit 4 fois. Elle ne répond pas. Elle pleure 11 minutes dans les toilettes du service de cardio." },
         { text: "Sentiment d'être devenue 'trop' — trop ferme, trop méfiante, trop vieille, trop cassée pour être 'choisie' dans le marché du mariage musulman français",
           scene: "Salon AL BARAKA. Une sœur de 24 ans à côté d'elle parle de ses pré-fiançailles avec un médecin de 28 ans. Khadija sourit, félicite. Elle pense : 'à 24 ans j'aurais eu 3 propositions par mois. À 30, je suis une 'option de secours' pour les hommes qui ont raté la première vague.'" },
       ],

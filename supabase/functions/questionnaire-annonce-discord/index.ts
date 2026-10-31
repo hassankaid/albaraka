@@ -23,7 +23,7 @@ const LIEN_GENERIQUE = "https://plateforme.albarakaecosysteme.com/questionnaire"
 
 const MESSAGE = `📢 **ANNONCE IMPORTANTE**
 
-Salam la famille @everyone,
+Salamou ‘alaykoum la famille @everyone,
 
 J'ai besoin de votre aide pour continuer à améliorer AL BARAKA.
 

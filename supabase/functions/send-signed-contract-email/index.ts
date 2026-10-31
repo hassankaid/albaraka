@@ -59,7 +59,7 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
 
 function buildHtml(firstName: string, contractNumber: string): string {
   const safeFirstName = firstName?.trim() || "";
-  const greeting = safeFirstName ? `Salam ${safeFirstName},` : "Salam,";
+  const greeting = safeFirstName ? `Salamou ‘alaykoum ${safeFirstName},` : "Salamou ‘alaykoum,";
 
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="https://www.w3.org/1999/xhtml" lang="fr">

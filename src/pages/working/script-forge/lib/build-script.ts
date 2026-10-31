@@ -10,7 +10,7 @@ export function buildDiscoverySteps(f: FormData): ScriptStep[] {
   return [
     { num: 1, title: "Connexion & Cadrage", duration: "1-2 min", objective: "Poser le cadre, contrôler les 4 premières secondes",
       sections: [
-        { marker: "OUVERTURE", voice: "CALME + ENTHOUSIASTE", text: `Salam aleykoum, c'est ${f.callerName || "[CALLER]"} de ${f.offerName || "[NOM_OFFRE]"}. Comment vas-tu ?` },
+        { marker: "OUVERTURE", voice: "CALME + ENTHOUSIASTE", text: `Salamou ‘alaykoum, c'est ${f.callerName || "[CALLER]"} de ${f.offerName || "[NOM_OFFRE]"}. Comment vas-tu ?` },
         { marker: "CADRER L'APPEL", voice: "POSÉ", text: `Le but de cet appel est simple : on va faire connaissance, je vais comprendre ta situation. Si c'est cohérent, je t'inviterai à notre ${f.finalEvent || "[ÉVÉNEMENT_FINAL]"} où on présente notre méthode en détail. Ça te va comme fonctionnement ?`, tactic: "Attendre un OUI clair. C'est le premier engagement." },
       ] },
     { num: 2, title: "Qualification & Douleur", duration: "3-5 min", objective: "Comprendre sa situation actuelle et faire verbaliser sa douleur",
@@ -56,14 +56,14 @@ export function buildClosingSteps(f: FormData): ScriptStep[] {
           text: (() => {
             switch (f.prospectOrigin) {
               case "webinar":
-                return `Salam aleykoum [Prénom], comment vas-tu ? J'espère que ${f.finalEvent || "la masterclass"} t'a plu — c'est ça qui m'a donné envie de te rappeler.`;
+                return `Salamou ‘alaykoum [Prénom], comment vas-tu ? J'espère que ${f.finalEvent || "la masterclass"} t'a plu — c'est ça qui m'a donné envie de te rappeler.`;
               case "referral":
-                return `Salam aleykoum [Prénom], comment vas-tu ? On m'a beaucoup parlé de toi, je suis content(e) qu'on puisse échanger.`;
+                return `Salamou ‘alaykoum [Prénom], comment vas-tu ? On m'a beaucoup parlé de toi, je suis content(e) qu'on puisse échanger.`;
               case "inbound":
-                return `Salam aleykoum [Prénom], comment vas-tu ? Tu as rempli le formulaire sur ${f.offerName || "[NOM_OFFRE]"} — j'ai bien noté ta demande, prêt(e) pour qu'on en discute ?`;
+                return `Salamou ‘alaykoum [Prénom], comment vas-tu ? Tu as rempli le formulaire sur ${f.offerName || "[NOM_OFFRE]"} — j'ai bien noté ta demande, prêt(e) pour qu'on en discute ?`;
               case "cold":
               default:
-                return `Salam aleykoum [Prénom], comment vas-tu ? Prêt(e) pour notre appel ?`;
+                return `Salamou ‘alaykoum [Prénom], comment vas-tu ? Prêt(e) pour notre appel ?`;
             }
           })(),
           tactic: `Origine du prospect : ${f.prospectOrigin === "webinar" ? "POST-WEBINAIRE (déjà chaud, sait qui tu es)" : f.prospectOrigin === "referral" ? "REFERRAL (confiance préinstallée par le recommandant)" : f.prospectOrigin === "inbound" ? "INBOUND (a manifesté son intérêt, modèle de qualification)" : "COLD (premier contact direct, plus de cadrage nécessaire)"}.` },

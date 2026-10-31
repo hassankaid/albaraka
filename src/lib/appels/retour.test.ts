@@ -53,7 +53,7 @@ describe("le texte pour l'élève", () => {
   it("reprend la note finale, les points forts et les axes gardés", () => {
     const t = texteEleve({ ...ia, axes: ia.axes.map((x, i) => (i === 1 ? { ...x, retire: true } : x)) }, "Yanis");
     expect(t.startsWith("Note : 74/100 (77 sur les étapes, −3 car le prospect n'a pas été prévenu de l'enregistrement). Appel de 6 min 24")).toBe(true);
-    expect(t).toContain("Salam Yanis");
+    expect(t).toContain("Salamou ‘alaykoum Yanis");
     expect(t).toContain("1. Le conjoint : Pas abordé.");
     expect(t).toContain("À dire la prochaine fois : « Ta famille sait que tu t'intéresses à ça ? »");
     expect(t).not.toContain("Le temps");

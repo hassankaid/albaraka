@@ -164,7 +164,7 @@ export function DiscordGate({ onJoined }: Props) {
             color: BRAND.cream,
           }}
         >
-          As salam alaykoum{firstName ? ` ${firstName}` : ""}.
+          Salamou ‘alaykoum{firstName ? ` ${firstName}` : ""}.
         </h1>
 
         <p

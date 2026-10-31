@@ -242,7 +242,7 @@ function gabarits(f: Fiche): Record<number, Gabarit> {
       name: "Confirmation inscription",
       subject: `🎟️ Ton inscription est confirmée`,
       preheader: "Tu es inscrit. Le groupe WhatsApp t'attend.",
-      body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
+      body: `<p>Salamou ‘alaykoum {{FIRST_NAME}},</p>
 ${p(`C'est officiel : tu es inscrit(e) à la conférence Al Baraka.`)}
 ${p(`Et ce que je peux te dire, c'est que tu viens peut-être de faire le premier vrai pas vers une transformation profonde.`)}
 ${p(`Une transformation qui dépend pas de ton diplôme. Ni de ton expérience actuelle. Ni même du salaire que tu gagnes aujourd'hui.`)}
@@ -260,7 +260,7 @@ ${SIG}`,
       name: "J-5 (vidéo 1)",
       subject: `Tu n'imagines pas encore ce que ça peut changer pour toi`,
       preheader: "Avant d'aller plus loin, je veux me présenter.",
-      body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
+      body: `<p>Salamou ‘alaykoum {{FIRST_NAME}},</p>
 ${p(`Dans 5 jours, in shā Allāh, tu assisteras à une conférence qui pourrait changer ta façon de voir ta situation financière.`)}
 ${p(`Et si je te disais que c'est pas toi le problème, mais le chemin qu'on t'a présenté comme étant le seul possible ?`)}
 ${p(`On croit parfois qu'il faut :`)}
@@ -281,7 +281,7 @@ ${SIG}`,
       name: "J-4",
       subject: `Ce n'est pas toi le problème`,
       preheader: "Ce n'est pas toi le problème.",
-      body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
+      body: `<p>Salamou ‘alaykoum {{FIRST_NAME}},</p>
 ${p(`Depuis des années, j'entends la même chose :`)}
 ${puces([`« Je sais pas par où commencer. »`, `« J'ai peur de me lancer et de rien y gagner. »`, `« Je préfère ma sécurité, même si elle me convient pas vraiment. »`])}
 ${p(`Et très souvent, on finit par se dire que le problème vient de soi.`)}
@@ -299,7 +299,7 @@ ${SIG}`,
       name: "J-3 (vidéo 2)",
       subject: `Ta sécurité est une illusion`,
       preheader: "Ta vraie sécurité n'est pas ton contrat de travail.",
-      body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
+      body: `<p>Salamou ‘alaykoum {{FIRST_NAME}},</p>
 ${p(`Il arrive un moment où on continue à travailler par obligation, pour un salaire fixe, mais où quelque chose en nous sait déjà que ça suffit pas.`)}
 ${p(`On tient le rythme. Mais la vraie liberté semble toujours hors de portée.`)}
 ${p(`Si tu as déjà ressenti ça, cette sensation d'avancer sans vraiment avancer, alors sache une chose : il n'est jamais trop tard pour changer de trajectoire.`)}
@@ -322,7 +322,7 @@ ${SIG}`,
       name: "J-2 (vidéo 3)",
       subject: `Des musulmans comme toi…`,
       preheader: "Des parcours qui ressemblent peut-être au tien.",
-      body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
+      body: `<p>Salamou ‘alaykoum {{FIRST_NAME}},</p>
 ${p(`Tu fais ton CDI. Tu essaies de mettre un peu d'argent de côté. Tu te dis que ça va s'arranger.`)}
 ${p(`Mais au fond, il y a ce vide. Cette sensation que ta situation financière n'est pas alignée avec ce que tu veux vraiment vivre — ta foi, ta liberté, tes projets.`)}
 ${p(`Ce vide, je l'ai vu chez des dizaines de personnes que j'ai accompagnées.`)}
@@ -340,7 +340,7 @@ ${SIG}`,
       name: "J-1 (veille)",
       subject: `Ne laisse pas passer ça`,
       preheader: "La conférence commence demain matin.",
-      body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
+      body: `<p>Salamou ‘alaykoum {{FIRST_NAME}},</p>
 ${p(`Demain matin, on se retrouve pour une conférence pas comme les autres.`)}
 ${p(`Une conférence pensée pour toi.`)}
 ${p(`Toi qui sens que ta situation financière n'est pas à la hauteur de ce qu'elle pourrait être.`)}
@@ -364,7 +364,7 @@ ${SIG}`,
       name: "H-2",
       subject: `Ça commence bientôt…`,
       preheader: "Prépare un endroit calme et de quoi noter.",
-      body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
+      body: `<p>Salamou ‘alaykoum {{FIRST_NAME}},</p>
 ${p(`Dans 2 heures, tu vas assister à une conférence unique. Un moment que j'ai préparé avec soin, pour t'aider à construire l'indépendance financière que tu n'aurais jamais dû laisser filer.`)}
 ${p(`Et si tu ressens un peu d'excitation mêlée à de l'appréhension, c'est bon signe. Ça veut dire que cette décision compte vraiment pour toi.`)}
 ${p(`Voici ce que tu vas découvrir ce matin, étape par étape :`)}
@@ -431,7 +431,7 @@ ${SIG}`,
       name: "T-2h",
       subject: "Plus que 2 heures ⏳",
       preheader: "Le lien du direct t'attend dans le groupe WhatsApp.",
-      body: `<p>Assalamu alaykum {{FIRST_NAME}},</p>
+      body: `<p>Salamou ‘alaykoum {{FIRST_NAME}},</p>
 <p><strong>Dans 2 heures, on est ensemble en direct.</strong></p>
 <p>Ce qu'on va voir ce matin :</p>
 <ul style="padding-left:20px;">
@@ -453,7 +453,7 @@ ${SIG}`,
       name: "M-30 (Zoom)",
       subject: "Plus que 30 minutes avant la conférence",
       preheader: "Prépare un endroit calme, de quoi noter, et ta concentration.",
-      body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
+      body: `<p>Salamou ‘alaykoum {{FIRST_NAME}},</p>
 <p>Dans 30 minutes, on se retrouve pour la conférence exclusive :</p>
 <p><strong>Découvre comment le métier de business developer peut te permettre de générer entre 2-6k / mois en 90 jours</strong></p>
 <p>Voici ce que tu vas découvrir :</p>
@@ -471,7 +471,7 @@ ${SIG}`,
       name: "Ouverture (Zoom)",
       subject: "La conférence vient de commencer — rejoins-nous vite !",
       preheader: "On est en direct. Le lien de la salle est dans ce message.",
-      body: `<p>Salam aleykoum {{FIRST_NAME}},</p>
+      body: `<p>Salamou ‘alaykoum {{FIRST_NAME}},</p>
 <p>Nous venons tout juste de commencer la conférence en direct.</p>
 <p>Si tu veux enfin comprendre comment générer des revenus en ligne sans produit, sans audience, et de manière 100% halal&hellip;</p>
 <p>Et découvrir le métier méconnu qui permet à des frères et sœurs de gagner entre 2 000 et 6 000&euro;/mois en 90 jours&hellip;</p>
@@ -483,7 +483,7 @@ ${SIG}`,
       name: "J-1 (rappel)",
       subject: `Rappel – on se retrouve demain à ${f.heure}`,
       preheader: "Petit rappel : la conférence, c'est demain.",
-      body: `${p("Salam aleykoum {{FIRST_NAME}},")}
+      body: `${p("Salamou ‘alaykoum {{FIRST_NAME}},")}
 ${p("Petit rappel : la conférence, c’est demain.")}
 ${p("Et si tu ne l’as pas encore fait, pense à rejoindre le groupe WhatsApp dédié à la conférence.")}
 ${p("C’est là qu’on partage toutes les infos importantes avant le webinaire.")}
@@ -498,7 +498,7 @@ ${SIG}`,
       name: "Dimanche 14h (après la conférence)",
       subject: "La suite, c'est maintenant",
       preheader: "Merci d'être venu(e). Voilà ce qu'on a vu aujourd'hui.",
-      body: `${p("Salam aleykoum,")}
+      body: `${p("Salamou ‘alaykoum,")}
 ${p("Merci d'être venu(e).")}
 ${p("Je sais que bloquer 2h un dimanche, c'est pas rien. Donc respect.")}
 ${p("On a parlé de beaucoup de choses aujourd'hui. De cette croyance qui bloque la majorité des musulmans qui veulent entreprendre. Des compétences concrètes qui permettent de faire de l'argent en ligne, halal, à partir de rien. Et de comment sortir de ce sentiment de stagner malgré les efforts.")}
@@ -517,7 +517,7 @@ ${SIG}`,
       name: "J+1",
       subject: "Pourquoi tout seul, ça marche jamais",
       preheader: "Depuis hier, un message revient tout le temps.",
-      body: `${p("Salam aleykoum,")}
+      body: `${p("Salamou ‘alaykoum,")}
 ${p("Depuis hier, j'ai reçu pas mal de messages. Il y en a un qui revient tout le temps :")}
 ${p("<em>\"Je sais pas par où commencer.\"</em>")}
 ${p("Je vais être cash.")}
@@ -541,7 +541,7 @@ ${SIG}`,
       name: "J+2",
       subject: "\"Ça va être tout le monde sauf moi\"",
       preheader: "Je veux te raconter une histoire.",
-      body: `${p("Salam aleykoum,")}
+      body: `${p("Salamou ‘alaykoum,")}
 ${p("Je veux te raconter une histoire.")}
 ${p("Une des membres de l'écosystème me disait, avant de faire sa première vente : \"Je croyais que ça allait être tout le monde sauf moi.\"")}
 ${p("Elle avait vu les autres témoignages. Elle s'était dit, sincèrement, que c'était possible pour eux, mais pas pour elle. Pas assez de temps, pas assez d'expérience, pas le bon profil.")}
@@ -564,7 +564,7 @@ ${SIG}`,
       name: "J+3 matin",
       subject: "Un truc que je dois te dire, cash",
       preheader: "Je vais être direct sur un truc.",
-      body: `${p("Salam aleykoum,")}
+      body: `${p("Salamou ‘alaykoum,")}
 ${p("Je vais être direct sur un truc.")}
 ${p("Parmi les personnes présentes en direct pendant la conférence, plusieurs ont déjà réservé leur appel. Une offre spéciale a été annoncée pendant le live pour les 10 premiers inscrits, elle ne va pas rester disponible indéfiniment.")}
 ${p("C'est pas une technique marketing pour te faire flipper. C'est juste ce qui a été dit en direct, devant tout le monde.")}
@@ -579,7 +579,7 @@ ${SIG}`,
       name: "J+3 soir",
       subject: "Dernier message",
       preheader: "Je vais pas te faire un roman.",
-      body: `${p("Salam aleykoum,")}
+      body: `${p("Salamou ‘alaykoum,")}
 ${p("Je vais pas te faire un roman.")}
 ${p("L'offre annoncée pour les premiers inscrits se termine ce soir. Pas de compte à rebours artificiel, pas de fausse deadline à minuit pile. Juste la réalité : plusieurs places sont déjà prises.")}
 ${p("Si t'as encore des doutes après tout ce que je t'ai dit ces derniers jours, c'est normal. Mais les doutes, ça se règle pas en y repensant seul pour la centième fois. Ça se règle sur un appel de 20 minutes, où on regarde ta situation ensemble.")}
@@ -591,7 +591,7 @@ ${SIG}`,
       name: "Ouverture",
       subject: "🔴 C'est maintenant — viens, {{FIRST_NAME}}",
       preheader: `Je suis déjà là. On démarre à ${f.heure}.`,
-      body: `<p>Assalamu alaykum {{FIRST_NAME}},</p>
+      body: `<p>Salamou ‘alaykoum {{FIRST_NAME}},</p>
 <p><strong>J'y suis. On démarre dans quelques minutes.</strong></p>
 <p>Le lien du direct est posté dans le groupe WhatsApp. Rejoins, clique, et viens t'asseoir avec nous :</p>
 ${CTA}

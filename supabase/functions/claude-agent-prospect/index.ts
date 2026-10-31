@@ -85,7 +85,7 @@ function buildSystemPrompt(entries: KnowledgeEntry[]): string {
   const kb = entries
     .map((e) => `---\n## ${e.title.toUpperCase()}\n\n${e.content.trim()}\n`)
     .join("\n");
-  return PROMPT_SKELETON + kb;
+  return PROMPT_SKELETON + kb + "\n\n# SALUTATION\nÉcris toujours « Salamou ‘alaykoum » en entier, jamais « Salam » ni « Salem ».";
 }
 
 serve(async (req) => {

@@ -75,7 +75,7 @@ serve(async (req) => {
       userId: await utilisateurDe(req),
       modele: finalModel,
       maxTokens: finalMaxTokens,
-      system,
+      system: system + "\n\n# SALUTATION\nÉcris toujours « Salamou ‘alaykoum » en entier, jamais « Salam » ni « Salem ».",
       messages: [{ role: "user", content: user }],
       reference: module_id,
     });

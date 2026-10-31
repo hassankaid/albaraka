@@ -13,7 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { CitationEcoute } from "@/components/appels/PanneauEcoute";
-import { compterCorrections, recalculer, texteEleve, type Analyse, type Axe, type PointFort } from "@/lib/appels/retour";
+import { compterCorrections, pointsEnMoins, recalculer, texteEleve, type Analyse, type Axe, type PointFort } from "@/lib/appels/retour";
 import { enregistrerCorrections, validerAppel } from "@/hooks/useAppels";
 
 /** Un texte qu'on corrige sur place : crayon → zone de saisie → OK. */
@@ -69,11 +69,12 @@ function TexteModifiable({
   );
 }
 
-function Pastille({ ton, children }: { ton: "vert" | "ambre" | "rouge"; children: React.ReactNode }) {
+function Pastille({ ton, children }: { ton: "vert" | "ambre" | "rouge" | "neutre"; children: React.ReactNode }) {
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold",
+        ton === "neutre" && "bg-muted text-muted-foreground",
         ton === "vert" && "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
         ton === "ambre" && "bg-amber-500/15 text-amber-700 dark:text-amber-300",
         ton === "rouge" && "bg-red-500/15 text-red-700 dark:text-red-300",
@@ -212,7 +213,7 @@ export function ValidationAppel({
                 </Pastille>
               ))
             )}
-            {a.penalite > 0 && <Pastille ton="ambre">−{a.penalite} enregistrement non annoncé</Pastille>}
+            {a.penalite > 0 && <Pastille ton="neutre">−{a.penalite} enregistrement non annoncé</Pastille>}
             {a.alerte_duree && <Pastille ton="ambre">{a.alerte_duree}</Pastille>}
             {a.type_coherent === false && <Pastille ton="rouge">Type d'appel à vérifier</Pastille>}
           </div>
@@ -228,7 +229,7 @@ export function ValidationAppel({
               className="text-xs text-muted-foreground underline-offset-2 hover:underline"
               onClick={() => maj((x) => ({ ...x, penalite: x.penalite ? 0 : penaliteIA }))}
             >
-              {a.penalite ? "Le prospect avait été prévenu ? Retirer les points en moins" : `Remettre les ${penaliteIA} points en moins`}
+              {a.penalite ? "Le prospect avait été prévenu ? Annuler le retrait" : `Retirer à nouveau ${pointsEnMoins(penaliteIA)}`}
             </button>
           )}
         </div>
