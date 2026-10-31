@@ -48,6 +48,6 @@ def sauver(identifiant, dossier, plan, planning, activer=True):
         s = appel("PATCH", f"/scenarios/{identifiant}", corps)["scenario"]
     else:
         s = appel("POST", f"/scenarios?confirmed=true", {**corps, "teamId": int(env["MAKE_TEAM_ID"]), "folderId": int(dossier)})["scenario"]
-    if activer:
+    if activer and not appel("GET", f"/scenarios/{s['id']}")["scenario"].get("isActive"):
         appel("POST", f"/scenarios/{s['id']}/start")
     return {"id": s["id"], "nom": s["name"]}
