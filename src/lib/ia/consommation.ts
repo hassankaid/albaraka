@@ -65,6 +65,12 @@ export const CATALOGUE: FonctionnaliteIA[] = [
     description: "Bilan envoyé chaque lundi matin à partir de l'activité de la semaine.",
   },
   {
+    cle: "organisation_remarque",
+    nom: "Mon Organisation · Remarques",
+    groupe: "plateforme",
+    description: "Traduit la remarque libre d'un élève en créneaux bloqués, qu'il valide avant le recalcul.",
+  },
+  {
     cle: "contenus_personal_brand",
     nom: "Contenus Personal Brand",
     groupe: "plateforme",

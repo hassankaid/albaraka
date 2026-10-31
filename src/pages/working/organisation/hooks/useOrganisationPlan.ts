@@ -2,27 +2,25 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPass } from "@/hooks/useUserPass";
-import type { WeekPlan, Answers, CoachingSlot } from "../lib/generatePlanning";
+import { coachingDansLeFuseau, decalageDepuisParis, type WeekPlan, type Answers, type CoachingSlot } from "../lib/generatePlanning";
 import { fetchActiveCoachingSlots } from "@/hooks/useCoachingSlots";
 
-// Charge les créneaux de coaching depuis la DB (table coaching_weekly_slots)
-// et les transforme au format attendu par le générateur de planning.
-// Le planning d'organisation reflète ainsi tout changement de jour/heure
-// décidé par l'admin.
+// Les coachings, lus en direct depuis l'admin (table coaching_weekly_slots) et affichés dans le
+// fuseau de l'élève : un changement de jour ou d'heure apparaît dans tous les plannings.
 export function useCoachingSlots() {
   return useQuery({
     queryKey: ["organisation", "coaching-slots"],
     queryFn: async (): Promise<CoachingSlot[]> => {
       const slots = await fetchActiveCoachingSlots();
-      return slots.map((s) => ({
+      const decalage = decalageDepuisParis(Intl.DateTimeFormat().resolvedOptions().timeZone);
+      return slots.map((s) => coachingDansLeFuseau({
         id: s.id,
         day: s.day,
         h: s.hour,
         m: s.minute,
         dur: s.durationMinutes,
-        label: `🎓 ${s.title}`,
-        desc: `Coach : ${s.coach}`,
-      }));
+        label: `🔒 Coaching ${s.title} avec ${s.coach}`,
+      }, decalage));
     },
   });
 }

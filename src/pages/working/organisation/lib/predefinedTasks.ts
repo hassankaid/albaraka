@@ -2,59 +2,41 @@ export type TaskCategory =
   | "business" | "formation" | "coaching" | "emploi" | "perso"
   | "religion" | "sport" | "repos" | "admin" | "custom" | "blocked";
 
-export interface PredefinedTask {
+export interface TacheApprentissage {
   id: string;
   label: string;
-  defaultDur: number;
-  defaultFreq: "quotidien" | "3x/semaine" | "2-3x/semaine" | "1x/semaine" | "avant coaching" | "après coaching";
+  /** durée proposée, en minutes ; l'élève la change comme il veut */
+  dureeDefaut: number;
   cat: TaskCategory;
 }
 
-export const PREDEFINED_TASKS: PredefinedTask[] = [
-  { id: "task_tournage", label: "🎬 Tournage vidéos", defaultDur: 60, defaultFreq: "3x/semaine", cat: "business" },
-  { id: "task_creation_contenu", label: "✍️ Création de contenu", defaultDur: 60, defaultFreq: "quotidien", cat: "business" },
-  { id: "task_montage", label: "🎞 Montage vidéo", defaultDur: 60, defaultFreq: "3x/semaine", cat: "business" },
-  { id: "task_sourcing_videos", label: "🔍 Sourcing vidéos", defaultDur: 30, defaultFreq: "quotidien", cat: "business" },
-  { id: "task_sourcing_infopreneur", label: "🔍 Sourcing infopreneurs", defaultDur: 30, defaultFreq: "quotidien", cat: "business" },
-  { id: "task_setting_dm", label: "💬 Setting DM", defaultDur: 45, defaultFreq: "quotidien", cat: "business" },
-  { id: "task_setting_tel", label: "📞 Setting téléphonique", defaultDur: 45, defaultFreq: "quotidien", cat: "business" },
-  { id: "task_closing", label: "🤝 Appel closing", defaultDur: 30, defaultFreq: "2-3x/semaine", cat: "business" },
-  { id: "task_formation_video", label: "📚 Formation vidéo", defaultDur: 45, defaultFreq: "quotidien", cat: "formation" },
-  { id: "task_engagement", label: "💛 Engagement communautaire", defaultDur: 20, defaultFreq: "quotidien", cat: "business" },
-  { id: "task_veille", label: "👀 Veille / Étude de marché", defaultDur: 30, defaultFreq: "2-3x/semaine", cat: "business" },
-  { id: "task_sav", label: "📩 SAV / Suivi client", defaultDur: 20, defaultFreq: "quotidien", cat: "admin" },
-  { id: "task_technique", label: "⚙️ Mise en place technique", defaultDur: 45, defaultFreq: "1x/semaine", cat: "admin" },
-  { id: "task_bilan", label: "📊 Bilan hebdomadaire", defaultDur: 30, defaultFreq: "1x/semaine", cat: "admin" },
-  { id: "task_planif", label: "📋 Planification semaine", defaultDur: 20, defaultFreq: "1x/semaine", cat: "admin" },
-  { id: "task_prep_coaching", label: "📝 Prépa coaching", defaultDur: 20, defaultFreq: "avant coaching", cat: "coaching" },
-  { id: "task_post_coaching", label: "🚀 Application post-coaching", defaultDur: 30, defaultFreq: "après coaching", cat: "formation" },
-  { id: "task_notes", label: "📓 Notes / Révision", defaultDur: 20, defaultFreq: "quotidien", cat: "formation" },
-  // Liberty-specific
-  { id: "task_management", label: "👥 Management équipe", defaultDur: 30, defaultFreq: "quotidien", cat: "admin" },
-  { id: "task_tunnel", label: "🔧 Optimisation tunnel de vente", defaultDur: 45, defaultFreq: "2-3x/semaine", cat: "business" },
-  { id: "task_email_seq", label: "📧 Séquences email / Nurturing", defaultDur: 30, defaultFreq: "2-3x/semaine", cat: "business" },
-  { id: "task_pub", label: "📣 Publicité / Ads", defaultDur: 30, defaultFreq: "quotidien", cat: "business" },
-  { id: "task_comptabilite", label: "💰 Comptabilité / Finances", defaultDur: 30, defaultFreq: "1x/semaine", cat: "admin" },
-  { id: "task_strategie", label: "🧠 Stratégie / Brainstorm", defaultDur: 45, defaultFreq: "1x/semaine", cat: "admin" },
+export const TACHES_APPRENTISSAGE: TacheApprentissage[] = [
+  { id: "task_formation", label: "📚 Formation", dureeDefaut: 60, cat: "formation" },
+  { id: "task_roleplay", label: "🎭 Roleplay", dureeDefaut: 45, cat: "business" },
+  { id: "task_setting_tel", label: "📞 Setting téléphonique", dureeDefaut: 30, cat: "business" },
+  { id: "task_creation_contenu", label: "✍️ Création de contenu", dureeDefaut: 60, cat: "business" },
+  { id: "task_prospection", label: "🔍 Prospection", dureeDefaut: 45, cat: "business" },
 ];
 
-export const BARAKA_TASK_IDS = [
-  "task_tournage","task_creation_contenu","task_montage","task_sourcing_videos",
-  "task_sourcing_infopreneur","task_setting_dm","task_setting_tel","task_closing",
-  "task_formation_video","task_engagement","task_veille","task_sav","task_technique",
-  "task_bilan","task_planif","task_prep_coaching","task_post_coaching","task_notes",
-];
+export const PARCOURS = ["Setter / Closer", "Community Management", "Les deux"] as const;
 
-export const LIBERTY_TASK_IDS = [
-  ...BARAKA_TASK_IDS,
-  "task_management","task_tunnel","task_email_seq","task_pub","task_comptabilite","task_strategie",
-];
+/** Le Pass donne accès aux deux parcours : c'est l'élève qui dit sur lequel il se concentre. LIBERTY : son pass suffit. */
+export function tachesDuParcours(pack: "al_baraka" | "liberty", parcours?: string): TacheApprentissage[] {
+  const setter = ["task_formation", "task_roleplay", "task_setting_tel"];
+  const contenu = ["task_formation", "task_creation_contenu", "task_prospection"];
+  const ids = pack === "liberty" || parcours === "Community Management"
+    ? contenu
+    : parcours === "Les deux"
+    ? [...setter, ...contenu.slice(1)]
+    : setter;
+  return ids.map((id) => TACHES_APPRENTISSAGE.find((t) => t.id === id)!);
+}
 
 export const ALL_DAYS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"] as const;
 export type DayName = typeof ALL_DAYS[number];
 
 export const CAT_LABELS: Record<TaskCategory, string> = {
-  business: "Activité",
+  business: "Pratique",
   formation: "Formation",
   coaching: "Coaching",
   emploi: "Emploi / Études",

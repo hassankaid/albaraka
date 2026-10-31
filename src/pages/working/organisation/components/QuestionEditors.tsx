@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, GraduationCap } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ALL_DAYS, DayName, PREDEFINED_TASKS } from "../lib/predefinedTasks";
-import type { Answers, BlockedSlot, CoachingSlot, CustomTask, DayOverrides } from "../lib/generatePlanning";
+import { ALL_DAYS, DayName, tachesDuParcours } from "../lib/predefinedTasks";
+import { tachesParDefaut, type Answers, type BlockedSlot, type CustomTask, type DayOverrides, type TacheChoisie, type TachesChoisies } from "../lib/generatePlanning";
 import { DayOverridesEditor } from "./DayOverridesEditor";
 
 // ═══════════════════════════════════════════════════════════
@@ -95,147 +95,78 @@ export function BlockedSlotsEditor({
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-// CoachingSelector — choix des coachings à suivre
-// ═══════════════════════════════════════════════════════════
-export function CoachingSelector({
-  value, onChange, coachings,
-}: { value: string[]; onChange: (v: string[]) => void; coachings: CoachingSlot[] }) {
-  const sel = value || [];
-  const toggle = (id: string) =>
-    onChange(sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]);
+// ═══════════════════════════════════════
+// TachesParcoursEditor — les tâches du parcours : durée et jours préférés
+// ═══════════════════════════════════════
+const DUREES = [15, 30, 45, 60, 90, 120, 180];
+const libelleDuree = (d: number) => (d < 60 ? `${d} min` : d % 60 ? `${Math.floor(d / 60)}h${d % 60}` : `${d / 60}h`);
 
-  if (coachings.length === 0) {
-    return (
-      <div className="text-sm text-muted-foreground border border-dashed rounded-lg p-4 text-center">
-        Aucun coaching disponible pour le moment.
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      {coachings.map((c) => {
-        const a = sel.includes(c.id);
-        return (
-          <Card
-            key={c.id}
-            className={cn(
-              "cursor-pointer transition-colors",
-              a ? "border-violet-500 bg-violet-500/10" : "hover:border-violet-500/40"
-            )}
-            onClick={() => toggle(c.id)}
-          >
-            <CardContent className="p-4 flex items-center gap-3">
-              <GraduationCap className={cn("h-5 w-5", a ? "text-violet-500" : "text-muted-foreground")} />
-              <div className="flex-1">
-                <div className={cn("font-medium", a ? "text-violet-600 dark:text-violet-400" : "text-foreground")}>
-                  {a ? "✓ " : ""}{c.label}
-                </div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  {c.day} · {String(c.h).padStart(2, "0")}h{String(c.m).padStart(2, "0")} · {c.dur} min
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════
-// TaskSelector — catalogue tâches prédéfinies groupées
-// ═══════════════════════════════════════════════════════════
-export function TaskSelector({
-  value, onChange, filter,
+export function TachesParcoursEditor({
+  value, onChange, pack, parcours,
 }: {
-  value: Record<string, number>;
-  onChange: (v: Record<string, number>) => void;
-  filter: "baraka" | "liberty";
+  value?: TachesChoisies;
+  onChange: (v: TachesChoisies) => void;
+  pack: "al_baraka" | "liberty";
+  parcours?: string;
 }) {
-  const sel = value || {};
-  const isActive = (id: string) => id in sel;
-  const toggle = (id: string) => {
-    if (isActive(id)) {
-      const n = { ...sel }; delete n[id]; onChange(n);
-    } else {
-      onChange({ ...sel, [id]: 0 });
-    }
+  const taches = tachesDuParcours(pack, parcours);
+  const choix = value ?? tachesParDefaut(pack, parcours);
+  const maj = (id: string, patch: Partial<TacheChoisie>) =>
+    onChange({ ...choix, [id]: { ...choix[id], ...patch } });
+  const basculer = (id: string, dureeDefaut: number) => {
+    const n = { ...choix };
+    if (n[id]) delete n[id];
+    else n[id] = { dur: dureeDefaut, days: [] };
+    onChange(n);
   };
-  const setDur = (id: string, dur: number) => onChange({ ...sel, [id]: dur });
-
-  const BARAKA = [
-    "task_tournage","task_creation_contenu","task_montage","task_sourcing_videos",
-    "task_sourcing_infopreneur","task_setting_dm","task_setting_tel","task_closing",
-    "task_formation_video","task_engagement","task_veille","task_sav","task_technique",
-    "task_bilan","task_planif","task_prep_coaching","task_post_coaching","task_notes",
-  ];
-  const ids = filter === "liberty"
-    ? [...BARAKA, "task_management","task_tunnel","task_email_seq","task_pub","task_comptabilite","task_strategie"]
-    : BARAKA;
-
-  const groups: Record<string, string[]> = {
-    "Contenu & Vidéo": ["task_creation_contenu","task_tournage","task_montage","task_sourcing_videos"],
-    "Prospection & Vente": ["task_sourcing_infopreneur","task_setting_dm","task_setting_tel","task_closing","task_pub","task_tunnel","task_email_seq"],
-    "Formation": ["task_formation_video","task_notes","task_prep_coaching","task_post_coaching"],
-    "Organisation": ["task_engagement","task_veille","task_sav","task_technique","task_bilan","task_planif","task_management","task_comptabilite","task_strategie"],
-  };
-
   return (
-    <div className="space-y-5">
-      {Object.entries(groups).map(([group, groupIds]) => {
-        const visible = groupIds.filter((id) => ids.includes(id));
-        if (!visible.length) return null;
+    <div className="space-y-3">
+      {taches.map((t) => {
+        const c = choix[t.id];
         return (
-          <div key={group}>
-            <div className="text-xs font-semibold uppercase tracking-wider text-primary mb-2">
-              {group}
+          <div key={t.id} className={cn("rounded-lg border p-3", c ? "border-primary/40 bg-primary/5" : "border-border")}>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => basculer(t.id, t.dureeDefaut)}
+                className="flex flex-1 items-center gap-2.5 text-left text-sm font-medium text-foreground"
+              >
+                <span className={cn(
+                  "flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs",
+                  c ? "border-primary bg-primary text-primary-foreground" : "border-border",
+                )}>{c ? "✓" : ""}</span>
+                {t.label}
+              </button>
+              {c && (
+                <Select value={String(c.dur)} onValueChange={(v) => maj(t.id, { dur: Number(v) })}>
+                  <SelectTrigger className="h-8 w-24 text-xs" aria-label={`Durée de ${t.label}`}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[...new Set([...DUREES, c.dur])].sort((a, b) => a - b).map((d) => (
+                      <SelectItem key={d} value={String(d)}>{libelleDuree(d)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
-            <div className="space-y-1.5">
-              {visible.map((id) => {
-                const t = PREDEFINED_TASKS.find((x) => x.id === id);
-                if (!t) return null;
-                const a = isActive(id);
-                return (
-                  <div key={id}>
+            {c && (
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {ALL_DAYS.map((d) => {
+                  const actif = c.days.includes(d);
+                  return (
                     <button
+                      key={d}
                       type="button"
-                      onClick={() => toggle(id)}
+                      aria-pressed={actif}
+                      onClick={() => maj(t.id, { days: actif ? c.days.filter((x) => x !== d) : [...c.days, d] })}
                       className={cn(
-                        "w-full text-left px-4 py-2.5 rounded-lg border text-sm transition-colors",
-                        a
-                          ? "bg-primary/10 border-primary text-primary font-medium"
-                          : "border-border text-muted-foreground hover:border-primary/40",
-                        a && "rounded-b-none border-b-0"
+                        "rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                        actif ? "border-primary bg-primary/15 font-medium text-foreground" : "border-border text-muted-foreground hover:border-primary/50",
                       )}
-                    >
-                      {a ? "✓ " : ""}{t.label}
-                    </button>
-                    {a && (
-                      <div className="px-4 py-2 bg-primary/5 border border-t-0 border-primary rounded-b-lg flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Durée :</span>
-                        <Select
-                          value={String(sel[id] || 0)}
-                          onValueChange={(v) => setDur(id, parseInt(v))}
-                        >
-                          <SelectTrigger className="h-8 w-32 text-xs"><SelectValue placeholder="— Choisis —" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="0">— Choisis —</SelectItem>
-                            {[15, 20, 30, 45, 60, 90, 120].map((d) => (
-                              <SelectItem key={d} value={String(d)}>{d} min</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {sel[id] === 0 && (
-                          <span className="text-xs text-rose-500">⚠ Indique la durée</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                    >{d.slice(0, 3)}</button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         );
       })}
@@ -342,12 +273,12 @@ export function CustomTaskEditor({
 // QuestionCard — dispatcher
 // ═══════════════════════════════════════════════════════════
 export function QuestionCard({
-  question, value, onChange, coachings, answers,
+  question, value, onChange, pack, answers,
 }: {
   question: any;
   value: any;
   onChange: (v: any) => void;
-  coachings: CoachingSlot[];
+  pack: "al_baraka" | "liberty";
   answers: Answers;
 }) {
   const q = question;
@@ -419,12 +350,8 @@ export function QuestionCard({
         />
       )}
 
-      {q.type === "coaching_select" && (
-        <CoachingSelector value={value} onChange={onChange} coachings={coachings} />
-      )}
-
-      {q.type === "task_select" && (
-        <TaskSelector value={value || {}} onChange={onChange} filter={q.taskFilter || "baraka"} />
+      {q.type === "taches_parcours" && (
+        <TachesParcoursEditor value={value} onChange={onChange} pack={pack} parcours={answers.parcours} />
       )}
 
       {q.type === "custom_tasks" && (

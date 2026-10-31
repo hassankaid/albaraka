@@ -17,11 +17,13 @@ function fmtTime(h: number, m: number) {
 }
 
 export function WeeklyAgenda({
-  plan, version, onOpenRefinement,
+  plan, version, onOpenRefinement, fuseau,
 }: {
   plan: WeekPlan;
   version: number;
   onOpenRefinement: () => void;
+  /** le fuseau de l'élève, s'il n'est pas à l'heure de Paris */
+  fuseau?: string;
 }) {
   const [day, setDay] = useState<DayName>("Lundi");
   const slots = plan[day] || [];
@@ -45,6 +47,7 @@ export function WeeklyAgenda({
             Planning {version > 1 ? `v${version}` : ""}
           </Badge>
           <h2 className="font-heading text-2xl text-foreground">Ta semaine type</h2>
+          {fuseau && <p className="mt-1 text-xs text-muted-foreground">Coachings affichés dans ton fuseau horaire ({fuseau}).</p>}
         </div>
       </div>
 

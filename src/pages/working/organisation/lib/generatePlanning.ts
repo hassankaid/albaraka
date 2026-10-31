@@ -1,4 +1,4 @@
-import { ALL_DAYS, DayName, PREDEFINED_TASKS, TaskCategory } from "./predefinedTasks";
+import { ALL_DAYS, DayName, TaskCategory, tachesDuParcours } from "./predefinedTasks";
 
 export interface CoachingSlot {
   id: string;
@@ -62,6 +62,13 @@ export interface PlanSlot {
 
 export type WeekPlan = Record<DayName, PlanSlot[]>;
 
+/** Une tâche du parcours : sa durée, et ses jours préférés (aucun : répartie dans le temps déclaré). */
+export interface TacheChoisie {
+  dur: number;
+  days: DayName[];
+}
+export type TachesChoisies = Record<string, TacheChoisie>;
+
 export interface Answers {
   profile?: string;
   wake_week?: string;
@@ -82,8 +89,8 @@ export interface Answers {
   kids_school?: string;
   sport?: string;
   sport_duration?: string;
-  coachings?: string[];
-  selected_tasks?: Record<string, number>;
+  parcours?: string;
+  taches_parcours?: TachesChoisies;
   custom_tasks?: CustomTask[];
   blocked_slots?: BlockedSlot[];
   /** Exceptions d'horaires pour certains jours. Optionnel et rétrocompatible. */
@@ -140,23 +147,60 @@ export function resolveDayStudy(day: DayName, a: Answers): { start: number; end:
   return { start, end };
 }
 
+/** Les tâches du parcours cochées d'office, en gardant ce que l'élève avait déjà réglé. */
+export function tachesParDefaut(pack: "al_baraka" | "liberty", parcours?: string, existant?: TachesChoisies): TachesChoisies {
+  const r: TachesChoisies = {};
+  for (const t of tachesDuParcours(pack, parcours)) r[t.id] = existant?.[t.id] ?? { dur: t.dureeDefaut, days: [] };
+  return r;
+}
+
+/** Un planning créé avant la refonte : ses tâches sont les anciennes. */
+export const estPlanningAncien = (a: Answers) => !a.taches_parcours;
+
+/** « 1h30 » → 90, « 5h+ » → 300 ; sans réponse, pas de plafond. */
+function minutesDeclarees(v?: string): number {
+  const m = /^(\d+)h(\d+)?/.exec(v ?? "");
+  return m ? Number(m[1]) * 60 + Number(m[2] ?? 0) : Infinity;
+}
+
+const DEBUT_PIC: Record<string, number> = {
+  "Tôt le matin (5h-8h)": 5,
+  "Matinée (8h-12h)": 8,
+  "Après-midi (13h-17h)": 13,
+  "Soirée (18h-21h)": 18,
+  "Nuit (21h+)": 21,
+};
+
+const JOURS_INDISPONIBLES: Record<string, DayName[]> = {
+  Non: ["Samedi", "Dimanche"],
+  Samedi: ["Dimanche"],
+  Dimanche: ["Samedi"],
+};
+
+/**
+ * Calcule la semaine type. Aucune IA, aucun rythme imposé : les tâches sont placées dans le
+ * temps déclaré par l'élève, sur ses jours, et jamais sur un autre bloc. Seuls les prières et
+ * le déjeuner peuvent tomber pendant le travail ou les cours, comme dans la vraie vie.
+ */
 export function generatePlanning(
   answers: Answers,
   pack: "al_baraka" | "liberty",
   coachings: CoachingSlot[]
 ): WeekPlan {
-  const p = answers.profile || (pack === "liberty" ? "Entrepreneur" : "Autre");
+  const p = answers.profile || "Autre";
   const wakeH = parseInt((answers.wake_week || "07:00").split(":")[0]);
   const wakeWeH = parseInt((answers.wake_weekend || "08:00").split(":")[0]);
   const sleepH = parseInt((answers.sleep_week || "23:00").split(":")[0]);
   const sleepWeH = parseInt((answers.sleep_weekend || "23:00").split(":")[0]) || 24;
   const hasPrayers = answers.religious === "Oui, 5 prières";
   const restDay = answers.rest_day || "Aucun";
-  const selectedCoachingIds = answers.coachings || [];
-  const selectedTasks = answers.selected_tasks || {};
   const customTasks = answers.custom_tasks || [];
   const blockedSlots = answers.blocked_slots || [];
-  const hasJob = pack === "liberty" && answers.has_job && answers.has_job !== "Non";
+  const hasJob = !!answers.has_job && answers.has_job !== "Non";
+  const budgetJour = minutesDeclarees(answers.daily_hours);
+  const choix = answers.taches_parcours ?? tachesParDefaut(pack, answers.parcours);
+  const taches = tachesDuParcours(pack, answers.parcours).filter((t) => choix[t.id]);
+  const absents = JOURS_INDISPONIBLES[answers.weekend_work ?? ""] ?? [];
 
   const prayerTimes = [
     { name: "Fajr", h: 5, m: 0, dur: 25 },
@@ -166,205 +210,95 @@ export function generatePlanning(
     { name: "Isha", h: 20, m: 0, dur: 20 },
   ];
 
-  const hasTask = (id: string) => id in selectedTasks;
-  const getTaskDur = (id: string) => {
-    const v = selectedTasks[id];
-    if (v && v > 0) return v;
-    const def = PREDEFINED_TASKS.find((t) => t.id === id);
-    return def ? def.defaultDur : 30;
-  };
-  const getTask = (id: string) => PREDEFINED_TASKS.find((t) => t.id === id);
-
-  const days3x: DayName[] = ["Lundi", "Mercredi", "Vendredi"];
-  const days2x: DayName[] = ["Mardi", "Jeudi", "Samedi"];
-
-  function isBlocked(dayName: DayName, h: number, m: number, dur: number) {
-    const s = h * 60 + m;
-    const e = s + dur;
-    return blockedSlots.some((b) => {
-      const bDays = (b.days || (b.day ? [b.day] : [])) as DayName[];
-      if (!bDays.includes(dayName)) return false;
-      const bs = b.h * 60 + (b.m || 0);
-      return s < bs + b.dur && e > bs;
-    });
-  }
-
-  function nextFree(dayName: DayName, startH: number, dur: number, maxH: number) {
-    for (let c = startH * 60; c + dur <= maxH * 60; c += 30) {
-      const h = Math.floor(c / 60);
-      const m = c % 60;
-      if (!isBlocked(dayName, h, m, dur)) return { h, m };
-    }
-    return null;
-  }
-
-  function buildDay(dayName: DayName): PlanSlot[] {
+  function buildDay(dayName: DayName, indexJour: number): PlanSlot[] {
     const slots: PlanSlot[] = [];
-    // Horaires résolus avec day_overrides éventuels — prime sur les globaux
+    const occupes: { d: number; f: number }[] = [];
+    const journeeDehors: { d: number; f: number }[] = [];
+
     const dWake = resolveDayWake(dayName, answers, wakeH, wakeWeH);
     const dSleep = resolveDaySleep(dayName, answers, sleepH, sleepWeH);
-    const workHours = resolveDayWork(dayName, answers);
-    const studyHours = resolveDayStudy(dayName, answers);
-    const isWorkDay = workHours !== null;
-    const isStudyDay = studyHours !== null;
+    const finJournee = (dSleep <= dWake ? 24 : dSleep) * 60;
+    const workHours = (p === "Salarié(e)" || hasJob) ? resolveDayWork(dayName, answers) : null;
+    const studyHours = p === "Étudiant(e)" ? resolveDayStudy(dayName, answers) : null;
     const isRestDay = restDay === dayName;
-    const isWE = dayName === "Samedi" || dayName === "Dimanche";
 
+    const chevauche = (zones: { d: number; f: number }[], d: number, f: number) => zones.some((z) => d < z.f && f > z.d);
+    const libre = (d: number, dur: number, dehorsPermis = false) =>
+      !chevauche(occupes, d, d + dur) && (dehorsPermis || !chevauche(journeeDehors, d, d + dur));
+    const poser = (d: number, dur: number, label: string, cat: TaskCategory) => {
+      slots.push({ h: Math.floor(d / 60), m: d % 60, dur, label, cat });
+      occupes.push({ d, f: d + dur });
+    };
+    /** Le premier créneau libre à partir de `debut`, à la demi-heure. */
+    const chercher = (debut: number, dur: number, fin = finJournee) => {
+      for (let c = Math.ceil(debut / 30) * 30; c + dur <= fin; c += 30) if (libre(c, dur)) return c;
+      return null;
+    };
+    /** Le créneau libre le plus proche de l'heure habituelle (repas, temps libre). */
+    const presDe = (pref: number, dur: number, dehorsPermis = false) => {
+      for (let ecart = 0; ecart <= 180; ecart += 15) {
+        for (const c of [pref + ecart, pref - ecart]) {
+          if (c >= dWake * 60 && c + dur <= finJournee && libre(c, dur, dehorsPermis)) return c;
+        }
+      }
+      return null;
+    };
+    const poserPres = (pref: number, dur: number, label: string, cat: TaskCategory, dehorsPermis = false) => {
+      const c = presDe(pref, dur, dehorsPermis);
+      if (c !== null) poser(c, dur, label, cat);
+    };
+
+    // 1. Ce qui ne bouge pas : créneaux bloqués, coachings, travail ou cours, enfants
     blockedSlots
       .filter((b) => (b.days || (b.day ? [b.day] : [])).includes(dayName))
-      .forEach((b) =>
+      .forEach((b) => poser(b.h * 60 + (b.m || 0), b.dur, `🔒 ${b.label || "Créneau bloqué"}`, "blocked"));
+
+    const coachingsDuJour = coachings.filter((c) => c.day === dayName);
+    coachingsDuJour.forEach((c) => poser(c.h * 60 + c.m, c.dur, c.label, "coaching"));
+
+    if (!isRestDay) {
+      const journee = workHours ?? studyHours;
+      if (journee) {
         slots.push({
-          h: b.h,
-          m: b.m || 0,
-          dur: b.dur,
-          label: `🔒 ${b.label || "Créneau bloqué"}`,
-          cat: "blocked",
-        })
-      );
+          h: journee.start,
+          m: 0,
+          dur: (journee.end - journee.start) * 60,
+          label: workHours ? "💼 Emploi" : "📕 Cours",
+          cat: "emploi",
+        });
+        journeeDehors.push({ d: journee.start * 60, f: journee.end * 60 });
+      }
+      if (p === "Mère/Père au foyer" && answers.kids_school !== "Non, à la maison") {
+        poserPres(8 * 60 + 30, 30, "Dépôt enfants", "perso");
+        poserPres(16 * 60 + 30, 30, "Récup enfants", "perso");
+      }
+    }
 
-    slots.push({ h: dWake, m: 0, dur: 30, label: "Réveil + Routine", cat: "perso" });
+    // 2. Réveil, coucher, prières (une prière qui tombe sur un coaching passe juste après)
+    if (libre(dWake * 60, 30, true)) poser(dWake * 60, 30, "Réveil + Routine", "perso");
+    occupes.push({ d: finJournee, f: finJournee + 30 });
+    slots.push({ h: dSleep, m: 0, dur: 30, label: "Coucher", cat: "perso" });
     if (hasPrayers) {
-      prayerTimes.forEach((pt) =>
-        slots.push({ h: pt.h, m: pt.m, dur: pt.dur, label: pt.name, cat: "religion" })
-      );
+      prayerTimes.forEach((pt) => {
+        let d = pt.h * 60 + pt.m;
+        for (let bloc = occupes.find((z) => d < z.f && d + pt.dur > z.d); bloc; bloc = occupes.find((z) => d < z.f && d + pt.dur > z.d)) d = bloc.f;
+        poser(d, pt.dur, pt.name, "religion");
+      });
     }
 
+    // 3. Repas et repos
+    if (workHours && !isRestDay && libre((workHours.end + 1) * 60, 30)) poser((workHours.end + 1) * 60, 30, "Décompression", "perso");
     if (isRestDay) {
-      slots.push(
-        { h: 10, m: 0, dur: 120, label: "Temps libre / Famille", cat: "repos" },
-        { h: 12, m: 30, dur: 60, label: "Déjeuner", cat: "perso" },
-        { h: 14, m: 0, dur: 180, label: "Repos / Loisirs", cat: "repos" },
-        { h: 19, m: 0, dur: 60, label: "Dîner", cat: "perso" },
-        { h: dSleep, m: 0, dur: 30, label: "Coucher", cat: "perso" }
-      );
-      selectedCoachingIds.forEach((cId) => {
-        const c = coachings.find((x) => x.id === cId);
-        if (c && c.day === dayName)
-          slots.push({ h: c.h, m: c.m, dur: c.dur, label: c.label, cat: "coaching" });
-      });
-      return slots.sort((a, b) => a.h * 60 + a.m - (b.h * 60 + b.m));
+      poserPres(10 * 60, 120, "Temps libre / Famille", "repos");
+      poserPres(12 * 60 + 30, 60, "Déjeuner", "perso");
+      poserPres(14 * 60, 180, "Repos / Loisirs", "repos");
+      poserPres(19 * 60, 60, "Dîner", "perso");
+    } else {
+      poserPres(12 * 60 + 30, 45, "Déjeuner", "perso", true);
+      poserPres(19 * 60 + 30, 60, "Dîner + Temps libre", "perso");
     }
 
-    selectedCoachingIds.forEach((cId) => {
-      const c = coachings.find((x) => x.id === cId);
-      if (c && c.day === dayName) {
-        if (hasTask("task_prep_coaching")) {
-          const pH = c.m >= 20 ? c.h : c.h - 1;
-          slots.push({
-            h: pH,
-            m: c.m >= 20 ? c.m - 20 : 60 + c.m - 20,
-            dur: 20,
-            label: "📝 Prépa coaching",
-            cat: "coaching",
-          });
-        }
-        slots.push({ h: c.h, m: c.m, dur: c.dur, label: c.label, cat: "coaching" });
-        if (hasTask("task_post_coaching")) {
-          const eM = c.h * 60 + c.m + c.dur;
-          slots.push({
-            h: Math.floor(eM / 60),
-            m: eM % 60,
-            dur: 30,
-            label: "🚀 Post-coaching",
-            cat: "formation",
-          });
-        }
-      }
-    });
-
-    if (((p === "Salarié(e)") || hasJob) && isWorkDay && workHours) {
-      const leaveH = workHours.start - 1;
-      if (dWake + 1 < leaveH) {
-        const sl = nextFree(dayName, dWake + 1, 60, leaveH);
-        if (sl) slots.push({ h: sl.h, m: sl.m, dur: 60, label: "🔥 Session matin", cat: "business" });
-      }
-      slots.push({
-        h: workHours.start,
-        m: 0,
-        dur: (workHours.end - workHours.start) * 60,
-        label: "💼 Emploi",
-        cat: "emploi",
-      });
-      slots.push({ h: workHours.end + 1, m: 0, dur: 30, label: "Décompression", cat: "perso" });
-    } else if (p === "Étudiant(e)" && isStudyDay && studyHours) {
-      slots.push({
-        h: studyHours.start,
-        m: 0,
-        dur: (studyHours.end - studyHours.start) * 60,
-        label: "📕 Cours",
-        cat: "emploi",
-      });
-    } else if (p === "Mère/Père au foyer" && answers.kids_school !== "Non, à la maison") {
-      slots.push(
-        { h: 8, m: 30, dur: 30, label: "Dépôt enfants", cat: "perso" },
-        { h: 16, m: 30, dur: 30, label: "Récup enfants", cat: "perso" }
-      );
-    }
-
-    let bizStartH: number;
-    if (((p === "Salarié(e)") || hasJob) && isWorkDay && workHours) bizStartH = workHours.end + 2;
-    else if (p === "Étudiant(e)" && isStudyDay && studyHours) bizStartH = studyHours.end + 1;
-    else bizStartH = dWake + 1;
-
-    let cursor = bizStartH * 60;
-
-    const taskOrder =
-      pack === "liberty"
-        ? [
-            "task_planif", "task_strategie", "task_formation_video", "task_creation_contenu",
-            "task_tournage", "task_montage", "task_sourcing_videos", "task_sourcing_infopreneur",
-            "task_setting_dm", "task_setting_tel", "task_closing", "task_pub", "task_tunnel",
-            "task_email_seq", "task_engagement", "task_veille", "task_sav", "task_management",
-            "task_comptabilite", "task_notes", "task_technique", "task_bilan",
-          ]
-        : [
-            "task_planif", "task_formation_video", "task_creation_contenu", "task_tournage",
-            "task_montage", "task_sourcing_videos", "task_sourcing_infopreneur", "task_setting_dm",
-            "task_setting_tel", "task_closing", "task_engagement", "task_veille", "task_sav",
-            "task_notes", "task_technique", "task_bilan",
-          ];
-
-    taskOrder.forEach((tid) => {
-      if (!hasTask(tid)) return;
-      const def = getTask(tid);
-      if (!def) return;
-      const dur = getTaskDur(tid);
-      let shouldPlace = false;
-      if (def.defaultFreq === "quotidien") shouldPlace = true;
-      else if (def.defaultFreq === "3x/semaine") shouldPlace = days3x.includes(dayName);
-      else if (def.defaultFreq === "2-3x/semaine") shouldPlace = days2x.includes(dayName);
-      else if (def.defaultFreq === "1x/semaine")
-        shouldPlace = dayName === "Dimanche" || dayName === "Lundi";
-      if (!shouldPlace) return;
-      const sl = nextFree(dayName, Math.floor(cursor / 60), dur, dSleep - 1);
-      if (!sl || sl.h * 60 + sl.m + dur > dSleep * 60 - 60) return;
-      slots.push({ h: sl.h, m: sl.m, dur, label: def.label, cat: def.cat });
-      cursor = sl.h * 60 + sl.m + dur;
-    });
-
-    customTasks.forEach((ct) => {
-      if (!ct.name || !ct.dur) return;
-      const ctDays =
-        ct.days && ct.days.length > 0
-          ? ct.days
-          : ct.freq === "Quotidien"
-          ? [...ALL_DAYS]
-          : ct.freq === "2-3x/semaine"
-          ? days3x
-          : (["Lundi"] as DayName[]);
-      if (!ctDays.includes(dayName)) return;
-      if (ct.time) {
-        const [th, tm] = ct.time.split(":").map(Number);
-        slots.push({ h: th, m: tm || 0, dur: ct.dur, label: `🔹 ${ct.name}`, cat: "custom" });
-      } else {
-        const sl = nextFree(dayName, Math.floor(cursor / 60), ct.dur, dSleep - 1);
-        if (sl) {
-          slots.push({ h: sl.h, m: sl.m, dur: ct.dur, label: `🔹 ${ct.name}`, cat: "custom" });
-          cursor = sl.h * 60 + sl.m + ct.dur;
-        }
-      }
-    });
-
+    // 4. Sport et tâches personnelles à heure fixe
     if (answers.sport && answers.sport !== "Non") {
       const sDays: DayName[] =
         answers.sport === "Tous les jours"
@@ -373,28 +307,125 @@ export function generatePlanning(
           ? ["Lundi", "Mercredi", "Vendredi", "Dimanche"]
           : ["Mardi", "Jeudi"];
       if (sDays.includes(dayName)) {
-        const sDur =
-          answers.sport_duration === "30 min"
-            ? 30
-            : answers.sport_duration === "1h"
-            ? 60
-            : 90;
-        const sl = nextFree(dayName, 18, sDur, dSleep);
-        if (sl) slots.push({ h: sl.h, m: sl.m, dur: sDur, label: "🏋️ Sport", cat: "sport" });
+        const sDur = answers.sport_duration === "30 min" ? 30 : answers.sport_duration === "1h" ? 60 : 90;
+        const c = chercher(18 * 60, sDur) ?? chercher((dWake + 1) * 60, sDur);
+        if (c !== null) poser(c, sDur, "🏋️ Sport", "sport");
       }
     }
 
-    slots.push(
-      { h: 12, m: 30, dur: 45, label: "Déjeuner", cat: "perso" },
-      { h: 19, m: 30, dur: 60, label: "Dîner + Temps libre", cat: "perso" },
-      { h: dSleep, m: 0, dur: 30, label: "Coucher", cat: "perso" }
-    );
+    const persoDuJour = customTasks.filter((ct) => {
+      if (!ct.name || !ct.dur) return false;
+      const ctDays = ct.days && ct.days.length > 0
+        ? ct.days
+        : ct.freq === "Quotidien"
+        ? [...ALL_DAYS]
+        : ct.freq === "2-3x/semaine"
+        ? (["Lundi", "Mercredi", "Vendredi"] as DayName[])
+        : (["Lundi"] as DayName[]);
+      return ctDays.includes(dayName);
+    });
+    persoDuJour.filter((ct) => ct.time).forEach((ct) => {
+      const [th, tm] = ct.time!.split(":").map(Number);
+      const c = chercher(th * 60 + (tm || 0), ct.dur);
+      if (c !== null) poser(c, ct.dur, `🔹 ${ct.name}`, "custom");
+    });
+
+    // 5. Les tâches : d'abord celles dont l'élève a choisi ce jour, puis le reste tant qu'il
+    // reste du temps déclaré. L'ordre tourne chaque jour pour que toutes aient leur place.
+    let debutTaches = Math.max((dWake + 1) * 60, (DEBUT_PIC[answers.peak_energy ?? ""] ?? 0) * 60);
+    if (workHours) debutTaches = (workHours.end + 2) * 60;
+    else if (studyHours) debutTaches = (studyHours.end + 1) * 60;
+    const trouver = (dur: number) => chercher(debutTaches, dur) ?? chercher((dWake + 1) * 60, dur);
+
+    let reste = budgetJour - coachingsDuJour.reduce((n, c) => n + c.dur, 0);
+    const placer = (dur: number, label: string, cat: TaskCategory) => {
+      const c = trouver(dur);
+      if (c === null) return;
+      poser(c, dur, label, cat);
+      reste -= dur;
+    };
+
+    taches.filter((t) => choix[t.id].days.includes(dayName)).forEach((t) => placer(choix[t.id].dur, t.label, t.cat));
+    persoDuJour.filter((ct) => !ct.time).forEach((ct) => placer(ct.dur, `🔹 ${ct.name}`, "custom"));
+
+    if (!isRestDay && !absents.includes(dayName)) {
+      const sansJour = taches.filter((t) => choix[t.id].days.length === 0);
+      sansJour
+        .map((_, i) => sansJour[(i + indexJour) % sansJour.length])
+        .forEach((t) => {
+          if (choix[t.id].dur <= reste) placer(choix[t.id].dur, t.label, t.cat);
+        });
+    }
+
     return slots.sort((a, b) => a.h * 60 + a.m - (b.h * 60 + b.m));
   }
 
   const week: WeekPlan = {} as WeekPlan;
-  ALL_DAYS.forEach((d) => {
-    week[d] = buildDay(d);
+  ALL_DAYS.forEach((d, i) => {
+    week[d] = buildDay(d, i);
   });
   return week;
+}
+
+/* ────────────────────────────────────────────────────────────
+ * Le planning affiché. Il est figé, sauf les coachings : ils sont lus en direct depuis
+ * l'admin, un changement d'horaire s'affiche partout sans que l'élève régénère.
+ * ──────────────────────────────────────────────────────────── */
+const estCoachingCopie = (s: PlanSlot) => s.cat === "coaching" || /Post-coaching/.test(s.label);
+
+export function planAffiche(plan: WeekPlan, coachings: CoachingSlot[]): WeekPlan {
+  const r = {} as WeekPlan;
+  for (const jour of ALL_DAYS) {
+    r[jour] = [
+      ...(plan[jour] ?? []).filter((s) => !estCoachingCopie(s)),
+      ...coachings
+        .filter((c) => c.day === jour)
+        .map((c): PlanSlot => ({ h: c.h, m: c.m, dur: c.dur, label: c.label, cat: "coaching" })),
+    ].sort((a, b) => a.h * 60 + a.m - (b.h * 60 + b.m));
+  }
+  return r;
+}
+
+/** Une tâche se retrouve sur un coaching : l'admin a déplacé son horaire depuis le calcul. */
+export function tacheSurCoaching(plan: WeekPlan): boolean {
+  return ALL_DAYS.some((jour) => {
+    const slots = plan[jour] ?? [];
+    const coachingsDuJour = slots.filter((s) => s.cat === "coaching");
+    return slots
+      .filter((s) => s.cat === "business" || s.cat === "formation" || s.cat === "custom")
+      .some((s) => coachingsDuJour.some((c) => {
+        const d = s.h * 60 + s.m;
+        const dc = c.h * 60 + c.m;
+        return d < dc + c.dur && d + s.dur > dc;
+      }));
+  });
+}
+
+/** Les tâches qui n'ont pas trouvé de place le jour choisi par l'élève. */
+export function tachesSansPlace(plan: WeekPlan, answers: Answers, pack: "al_baraka" | "liberty"): string[] {
+  const choix = answers.taches_parcours;
+  if (!choix) return [];
+  const manquantes: string[] = [];
+  for (const t of tachesDuParcours(pack, answers.parcours)) {
+    for (const jour of choix[t.id]?.days ?? []) {
+      if (!(plan[jour] ?? []).some((s) => s.label === t.label)) {
+        manquantes.push(`${t.label.replace(/^\S+\s/, "")} (${jour.toLowerCase()})`);
+      }
+    }
+  }
+  return manquantes;
+}
+
+/* ────────────────────────────────────────────────────────────
+ * Fuseau horaire : les coachings sont réglés à l'heure de Paris et affichés à celle de l'élève.
+ * ──────────────────────────────────────────────────────────── */
+export function decalageDepuisParis(fuseau: string, maintenant = new Date()): number {
+  const heureDans = (tz: string) => new Date(maintenant.toLocaleString("en-US", { timeZone: tz })).getTime();
+  return Math.round((heureDans(fuseau) - heureDans("Europe/Paris")) / 60000);
+}
+
+export function coachingDansLeFuseau(c: CoachingSlot, decalageMin: number): CoachingSlot {
+  const semaine = 7 * 24 * 60;
+  const total = (ALL_DAYS.indexOf(c.day) * 24 * 60 + c.h * 60 + c.m + decalageMin + semaine) % semaine;
+  return { ...c, day: ALL_DAYS[Math.floor(total / (24 * 60))], h: Math.floor((total % (24 * 60)) / 60), m: total % 60 };
 }

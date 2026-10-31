@@ -14,7 +14,8 @@ export type Fonctionnalite =
   | "recap_hebdo"
   | "contenus_personal_brand"
   | "lecture_rib"
-  | "agent_setting";
+  | "agent_setting"
+  | "organisation_remarque";
 
 /** Le modèle d'avant (Claude Sonnet 4.6 chez Anthropic), le même chez OpenRouter. */
 export const MODELE_PAR_DEFAUT = "anthropic/claude-sonnet-4.6";

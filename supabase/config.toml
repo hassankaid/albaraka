@@ -84,3 +84,6 @@ verify_jwt = false
 
 [functions.depenses-pub]
 verify_jwt = false
+
+[functions.organisation-remarque]
+verify_jwt = false
