@@ -13,7 +13,7 @@ function formatMinutes(m: number) {
   return r === 0 ? `${h}h` : `${h}h${String(r).padStart(2, "0")}`;
 }
 function fmtTime(h: number, m: number) {
-  return `${String(Math.max(0, h)).padStart(2, "0")}:${String(Math.max(0, m)).padStart(2, "0")}`;
+  return `${String(Math.max(0, h) % 24).padStart(2, "0")}:${String(Math.max(0, m)).padStart(2, "0")}`;
 }
 
 export function WeeklyAgenda({

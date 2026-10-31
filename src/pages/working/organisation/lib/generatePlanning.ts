@@ -104,25 +104,23 @@ export interface Answers {
  * jour prime toujours sur la valeur globale.
  * ──────────────────────────────────────────────────────────── */
 
-function parseHour(s?: string | null, fallback = 0): number {
-  if (!s) return fallback;
-  const h = parseInt(String(s).split(":")[0]);
-  return Number.isFinite(h) ? h : fallback;
+/** « 06:30 » → 390 : les horaires se comptent en minutes depuis minuit. */
+function parseMinutes(s: string | null | undefined, fallback: number): number {
+  const [h, m] = String(s ?? "").split(":").map(Number);
+  return Number.isFinite(h) && s ? h * 60 + (Number.isFinite(m) ? m : 0) : fallback;
 }
 
-export function resolveDayWake(day: DayName, a: Answers, fallbackWake = 7, fallbackWakeWE = 8): number {
-  const ov = a.day_overrides?.[day]?.wake;
-  if (ov) return parseHour(ov, fallbackWake);
-  const isWE = day === "Samedi" || day === "Dimanche";
-  return parseHour(isWE ? a.wake_weekend : a.wake_week, isWE ? fallbackWakeWE : fallbackWake);
+const estWeekEnd = (day: DayName) => day === "Samedi" || day === "Dimanche";
+
+export function resolveDayWake(day: DayName, a: Answers): number {
+  const fallback = estWeekEnd(day) ? 8 * 60 : 7 * 60;
+  return parseMinutes(a.day_overrides?.[day]?.wake || (estWeekEnd(day) ? a.wake_weekend : a.wake_week), fallback);
 }
 
-export function resolveDaySleep(day: DayName, a: Answers, fallbackSleep = 23, fallbackSleepWE = 23): number {
-  const ov = a.day_overrides?.[day]?.sleep;
-  if (ov) return parseHour(ov, fallbackSleep);
-  const isWE = day === "Samedi" || day === "Dimanche";
-  const raw = parseHour(isWE ? a.sleep_weekend : a.sleep_week, isWE ? fallbackSleepWE : fallbackSleep);
-  return raw || (isWE ? 24 : 23);
+/** Le coucher, après minuit si besoin : 00:30 → 1470, pour rester le dernier bloc de la journée. */
+export function resolveDaySleep(day: DayName, a: Answers): number {
+  const coucher = parseMinutes(a.day_overrides?.[day]?.sleep || (estWeekEnd(day) ? a.sleep_weekend : a.sleep_week), 23 * 60);
+  return coucher <= resolveDayWake(day, a) ? coucher + 24 * 60 : coucher;
 }
 
 export function resolveDayWork(day: DayName, a: Answers): { start: number; end: number } | null {
@@ -131,9 +129,7 @@ export function resolveDayWork(day: DayName, a: Answers): { start: number; end: 
   const inWorkDays = (a.work_days || []).includes(day);
   const forced = ov?.forced === true;
   if (!inWorkDays && !forced) return null;
-  const start = parseHour(ov?.start || a.work_start, 8);
-  const end = parseHour(ov?.end || a.work_end, 17);
-  return { start, end };
+  return { start: parseMinutes(ov?.start || a.work_start, 8 * 60), end: parseMinutes(ov?.end || a.work_end, 17 * 60) };
 }
 
 export function resolveDayStudy(day: DayName, a: Answers): { start: number; end: number } | null {
@@ -142,9 +138,7 @@ export function resolveDayStudy(day: DayName, a: Answers): { start: number; end:
   const inStudyDays = (a.study_days || []).includes(day);
   const forced = ov?.forced === true;
   if (!inStudyDays && !forced) return null;
-  const start = parseHour(ov?.start || a.study_start, 8);
-  const end = parseHour(ov?.end || a.study_end, 16);
-  return { start, end };
+  return { start: parseMinutes(ov?.start || a.study_start, 8 * 60), end: parseMinutes(ov?.end || a.study_end, 16 * 60) };
 }
 
 /** Les tâches du parcours cochées d'office, en gardant ce que l'élève avait déjà réglé. */
@@ -188,10 +182,6 @@ export function generatePlanning(
   coachings: CoachingSlot[]
 ): WeekPlan {
   const p = answers.profile || "Autre";
-  const wakeH = parseInt((answers.wake_week || "07:00").split(":")[0]);
-  const wakeWeH = parseInt((answers.wake_weekend || "08:00").split(":")[0]);
-  const sleepH = parseInt((answers.sleep_week || "23:00").split(":")[0]);
-  const sleepWeH = parseInt((answers.sleep_weekend || "23:00").split(":")[0]) || 24;
   const hasPrayers = answers.religious === "Oui, 5 prières";
   const restDay = answers.rest_day || "Aucun";
   const customTasks = answers.custom_tasks || [];
@@ -215,9 +205,9 @@ export function generatePlanning(
     const occupes: { d: number; f: number }[] = [];
     const journeeDehors: { d: number; f: number }[] = [];
 
-    const dWake = resolveDayWake(dayName, answers, wakeH, wakeWeH);
-    const dSleep = resolveDaySleep(dayName, answers, sleepH, sleepWeH);
-    const finJournee = (dSleep <= dWake ? 24 : dSleep) * 60;
+    const dWake = resolveDayWake(dayName, answers);
+    const dSleep = resolveDaySleep(dayName, answers);
+    const finJournee = Math.min(dSleep, 24 * 60);
     const workHours = (p === "Salarié(e)" || hasJob) ? resolveDayWork(dayName, answers) : null;
     const studyHours = p === "Étudiant(e)" ? resolveDayStudy(dayName, answers) : null;
     const isRestDay = restDay === dayName;
@@ -238,7 +228,7 @@ export function generatePlanning(
     const presDe = (pref: number, dur: number, dehorsPermis = false) => {
       for (let ecart = 0; ecart <= 180; ecart += 15) {
         for (const c of [pref + ecart, pref - ecart]) {
-          if (c >= dWake * 60 && c + dur <= finJournee && libre(c, dur, dehorsPermis)) return c;
+          if (c >= dWake && c + dur <= finJournee && libre(c, dur, dehorsPermis)) return c;
         }
       }
       return null;
@@ -260,13 +250,13 @@ export function generatePlanning(
       const journee = workHours ?? studyHours;
       if (journee) {
         slots.push({
-          h: journee.start,
-          m: 0,
-          dur: (journee.end - journee.start) * 60,
+          h: Math.floor(journee.start / 60),
+          m: journee.start % 60,
+          dur: journee.end - journee.start,
           label: workHours ? "💼 Emploi" : "📕 Cours",
           cat: "emploi",
         });
-        journeeDehors.push({ d: journee.start * 60, f: journee.end * 60 });
+        journeeDehors.push({ d: journee.start, f: journee.end });
       }
       if (p === "Mère/Père au foyer" && answers.kids_school !== "Non, à la maison") {
         poserPres(8 * 60 + 30, 30, "Dépôt enfants", "perso");
@@ -275,9 +265,9 @@ export function generatePlanning(
     }
 
     // 2. Réveil, coucher, prières (une prière qui tombe sur un coaching passe juste après)
-    if (libre(dWake * 60, 30, true)) poser(dWake * 60, 30, "Réveil + Routine", "perso");
-    occupes.push({ d: finJournee, f: finJournee + 30 });
-    slots.push({ h: dSleep, m: 0, dur: 30, label: "Coucher", cat: "perso" });
+    if (libre(dWake, 30, true)) poser(dWake, 30, "Réveil + Routine", "perso");
+    occupes.push({ d: finJournee, f: dSleep + 30 });
+    slots.push({ h: Math.floor(dSleep / 60), m: dSleep % 60, dur: 30, label: "Coucher", cat: "perso" });
     if (hasPrayers) {
       prayerTimes.forEach((pt) => {
         let d = pt.h * 60 + pt.m;
@@ -287,7 +277,7 @@ export function generatePlanning(
     }
 
     // 3. Repas et repos
-    if (workHours && !isRestDay && libre((workHours.end + 1) * 60, 30)) poser((workHours.end + 1) * 60, 30, "Décompression", "perso");
+    if (workHours && !isRestDay && libre(workHours.end + 60, 30)) poser(workHours.end + 60, 30, "Décompression", "perso");
     if (isRestDay) {
       poserPres(10 * 60, 120, "Temps libre / Famille", "repos");
       poserPres(12 * 60 + 30, 60, "Déjeuner", "perso");
@@ -308,7 +298,7 @@ export function generatePlanning(
           : ["Mardi", "Jeudi"];
       if (sDays.includes(dayName)) {
         const sDur = answers.sport_duration === "30 min" ? 30 : answers.sport_duration === "1h" ? 60 : 90;
-        const c = chercher(18 * 60, sDur) ?? chercher((dWake + 1) * 60, sDur);
+        const c = chercher(18 * 60, sDur) ?? chercher(dWake + 60, sDur);
         if (c !== null) poser(c, sDur, "🏋️ Sport", "sport");
       }
     }
@@ -332,10 +322,10 @@ export function generatePlanning(
 
     // 5. Les tâches : d'abord celles dont l'élève a choisi ce jour, puis le reste tant qu'il
     // reste du temps déclaré. L'ordre tourne chaque jour pour que toutes aient leur place.
-    let debutTaches = Math.max((dWake + 1) * 60, (DEBUT_PIC[answers.peak_energy ?? ""] ?? 0) * 60);
-    if (workHours) debutTaches = (workHours.end + 2) * 60;
-    else if (studyHours) debutTaches = (studyHours.end + 1) * 60;
-    const trouver = (dur: number) => chercher(debutTaches, dur) ?? chercher((dWake + 1) * 60, dur);
+    let debutTaches = Math.max(dWake + 60, (DEBUT_PIC[answers.peak_energy ?? ""] ?? 0) * 60);
+    if (workHours) debutTaches = workHours.end + 120;
+    else if (studyHours) debutTaches = studyHours.end + 60;
+    const trouver = (dur: number) => chercher(debutTaches, dur) ?? chercher(dWake + 60, dur);
 
     let reste = budgetJour - coachingsDuJour.reduce((n, c) => n + c.dur, 0);
     const placer = (dur: number, label: string, cat: TaskCategory) => {

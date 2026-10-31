@@ -153,6 +153,70 @@ describe("le placement", () => {
   });
 });
 
+describe("les horaires à la minute", () => {
+  const demi: Answers = {
+    ...salarie,
+    wake_week: "06:30",
+    wake_weekend: "08:15",
+    sleep_week: "22:45",
+    work_start: "08:30",
+    work_end: "17:30",
+    religious: "Non",
+  };
+
+  it("garde les minutes du réveil, du coucher et du travail", () => {
+    const plan = generatePlanning(demi, "al_baraka", COACHINGS);
+    expect(plan.Mercredi.find((s) => s.label === "Réveil + Routine")).toMatchObject({ h: 6, m: 30 });
+    expect(plan.Mercredi.find((s) => s.label === "Coucher")).toMatchObject({ h: 22, m: 45 });
+    expect(plan.Mercredi.find((s) => s.label === "💼 Emploi")).toMatchObject({ h: 8, m: 30, dur: 540 });
+    expect(plan.Samedi.find((s) => s.label === "Réveil + Routine")).toMatchObject({ h: 8, m: 15 });
+  });
+
+  it("garde les minutes des horaires d'un jour précis et des cours", () => {
+    const parJour = generatePlanning(
+      { ...demi, day_overrides: { Mercredi: { wake: "05:45", work: { start: "10:15", end: "14:45" } } } },
+      "al_baraka",
+      COACHINGS,
+    );
+    expect(parJour.Mercredi.find((s) => s.label === "Réveil + Routine")).toMatchObject({ h: 5, m: 45 });
+    expect(parJour.Mercredi.find((s) => s.label === "💼 Emploi")).toMatchObject({ h: 10, m: 15, dur: 270 });
+    const cours = generatePlanning(
+      { profile: "Étudiant(e)", parcours: "Setter / Closer", study_days: ["Mardi"], study_start: "08:30", study_end: "12:15" },
+      "al_baraka",
+      COACHINGS,
+    );
+    expect(cours.Mardi.find((s) => s.label === "📕 Cours")).toMatchObject({ h: 8, m: 30, dur: 225 });
+  });
+
+  it("ne place aucune tâche avant le réveil, pendant le travail ou après le coucher", () => {
+    const plan = generatePlanning({ ...demi, daily_hours: "5h+" }, "al_baraka", COACHINGS);
+    for (const jour of ALL_DAYS) {
+      for (const t of tachesDuJour(plan[jour])) {
+        expect(debut(t)).toBeGreaterThanOrEqual(jour === "Samedi" || jour === "Dimanche" ? 8 * 60 + 15 : 6 * 60 + 30);
+        expect(debut(t) + t.dur).toBeLessThanOrEqual(jour === "Samedi" || jour === "Dimanche" ? 23 * 60 : 22 * 60 + 45);
+        if (plan[jour].some((s) => s.label === "💼 Emploi")) {
+          expect(debut(t) + t.dur <= 8 * 60 + 30 || debut(t) >= 17 * 60 + 30).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("garde le coucher après minuit en dernier bloc de la journée", () => {
+    const plan = generatePlanning({ ...demi, sleep_week: "00:30", daily_hours: "5h+" }, "al_baraka", COACHINGS);
+    const mercredi = plan.Mercredi;
+    expect(mercredi[mercredi.length - 1]).toMatchObject({ label: "Coucher", h: 24, m: 30 });
+    for (const t of tachesDuJour(mercredi)) expect(debut(t) + t.dur).toBeLessThanOrEqual(24 * 60);
+  });
+
+  it("accepte un coucher à minuit pile et un horaire manquant", () => {
+    const minuit = generatePlanning({ ...demi, sleep_week: "00:00" }, "al_baraka", COACHINGS);
+    expect(minuit.Mercredi.find((s) => s.label === "Coucher")).toMatchObject({ h: 24, m: 0 });
+    const vide = generatePlanning({ parcours: "Setter / Closer" }, "al_baraka", COACHINGS);
+    expect(vide.Mercredi.find((s) => s.label === "Réveil + Routine")).toMatchObject({ h: 7, m: 0 });
+    expect(vide.Samedi.find((s) => s.label === "Réveil + Routine")).toMatchObject({ h: 8, m: 0 });
+  });
+});
+
 describe("les coachings en direct", () => {
   it("remplace les coachings copiés par ceux de l'admin, sans toucher au reste", () => {
     const plan = generatePlanning(salarie, "al_baraka", COACHINGS);
