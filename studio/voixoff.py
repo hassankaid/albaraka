@@ -63,13 +63,15 @@ Réponds UNIQUEMENT en JSON, exactement {n} éléments dans l'ordre des moments 
 HYBRIDE_DOSE = 0.30       # part de la vidéo couverte par des plans, au plus
 HYBRIDE_MARGE = 3.0       # le visage au début (l'accroche) et à la fin (l'appel à l'action)
 HYBRIDE_VISAGE_MIN = 1.5  # toujours un temps de visage entre deux plans
-HYBRIDE_DUREE_MIN = 1.5
+HYBRIDE_DUREE_MIN = 3.0   # retour de Sidali, 01/11/2026 : 2 s, c'était trop court
+HYBRIDE_DUREE_MAX = 5.0
 HYBRIDE_CONCRET_MIN = 5   # un moment abstrait reste sur le visage
 CONSIGNE_HYBRIDE = ("Cette vidéo montre la personne face caméra ; un plan ne remplacera son visage que sur quelques moments. "
                     "Pour chaque moment, ajoute aussi \"concret\" : une note de 0 à 10. 10 : les mots décrivent quelque chose "
                     "qu'on peut montrer (la plage, le bureau, l'argent, une famille). 0 : idée abstraite, émotion ou appel "
                     "direct à la caméra, où le visage est préférable. Le plan doit aller dans le sens de la phrase : une "
-                    "difficulté ne se montre pas avec des images de luxe ou de réussite.")
+                    "difficulté ne se montre pas avec des images de réussite. Jamais d'images clinquantes : liasses de billets, "
+                    "voitures de luxe, yachts, jets, montres, villas. Préfère des images simples du quotidien, du travail, de la vie.")
 
 RELIGIEUX = ("Sujet religieux : images sobres et respectueuses (nature, lumière, lieux de prière), "
              "jamais de représentation de Dieu ni d'image décorative sur Son nom.")
@@ -280,10 +282,22 @@ def choisir(liste, demandes, chercher, secours):
 
 
 def moments_hybrides(liste, total):
-    """Les moments où un plan est permis : ni au début ni à la fin, et assez longs pour être vus."""
+    """Les moments où un plan est permis : ni au début ni à la fin, et assez longs pour être vus.
+    Les moments voisins sont réunis de 3 à 5 s : un plan commence et finit toujours sur un sous-titre."""
     marge = min(HYBRIDE_MARGE, total * 0.15)
-    return [m for m in liste if m["debut"] >= marge and m["fin"] <= total - marge
-            and m["fin"] - m["debut"] >= HYBRIDE_DUREE_MIN and m.get("texte")]
+    permis = [m for m in liste if m["debut"] >= marge and m["fin"] <= total - marge]
+    out, cours = [], None
+    for m in permis:
+        if cours and m["debut"] <= cours["fin"] + 0.05 and cours["fin"] - cours["debut"] < HYBRIDE_DUREE_MIN \
+                and m["fin"] - cours["debut"] <= HYBRIDE_DUREE_MAX:
+            cours = {**cours, "fin": m["fin"], "texte": recoller(f"{cours['texte']} {m['texte']}")}
+        else:
+            if cours:
+                out.append(cours)
+            cours = dict(m)
+    if cours:
+        out.append(cours)
+    return [m for m in out if m["fin"] - m["debut"] >= HYBRIDE_DUREE_MIN and m.get("texte")]
 
 
 def choisir_hybrides(liste, demandes, candidats, total, dose=HYBRIDE_DOSE):

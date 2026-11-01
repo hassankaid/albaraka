@@ -824,7 +824,7 @@ def motion_complet(reglages):
     return not GRATUIT and d.get("actif", True) is not False and d.get("version") != "leger"
 
 
-def chercher_plans_banque(liste, script, consigne=""):
+def chercher_plans_banque(liste, script, consigne="", sobre=False):
     """Ce qu'il faut montrer à chaque moment (Claude), puis la recherche par le sens dans la banque."""
     import voixoff as V
     from banque import THEMES
@@ -842,7 +842,7 @@ def chercher_plans_banque(liste, script, consigne=""):
         return rpc("studio_job_chercher_plans", p_id=MONTAGE, p_jeton=JETON, p_embedding=json.dumps(vecs[i]),
                    p_mots=demandes[i]["mots_cles"], p_themes=demandes[i]["themes"],
                    p_duree=round(liste[i]["fin"] - liste[i]["debut"], 3), p_exclure=[], p_limite=20,
-                   p_dossiers=demandes[i]["categories"]) or []
+                   p_dossiers=demandes[i]["categories"], p_sobre=sobre) or []
 
     with cf.ThreadPoolExecutor(6) as ex:
         return demandes, list(ex.map(chercher, range(len(liste))))
@@ -855,7 +855,7 @@ def choisir_plans_hybrides(gardes, sous_titres, total):
     if not liste:
         return []
     texte = V.recoller(" ".join(w["text"] for w in gardes))
-    demandes, candidats = chercher_plans_banque(liste, texte, V.CONSIGNE_HYBRIDE)
+    demandes, candidats = chercher_plans_banque(liste, texte, V.CONSIGNE_HYBRIDE, sobre=True)
     return V.choisir_hybrides(liste, demandes, candidats, total)
 
 
