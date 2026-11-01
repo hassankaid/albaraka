@@ -13,6 +13,7 @@
 // noir/or). Code de présentation volontairement autonome — on ne touche pas
 // aux fichiers de paiement existants (RebillCheckout, etc.).
 
+import { confirmerAvecFilet } from "@/lib/filetPaiement";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 // `/pure` et non l'entrée par défaut : importer `@stripe/stripe-js` INJECTE
@@ -1034,24 +1035,28 @@ function PaymentLinkForm({
         },
       };
 
-      const confirmRes =
-        result.intent_type === "setup"
-          ? await stripe.confirmSetup({
-              elements,
-              clientSecret: result.client_secret,
-              confirmParams: {
-                return_url: returnUrl,
-                payment_method_data: { billing_details: billingDetails },
-              },
-            })
-          : await stripe.confirmPayment({
-              elements,
-              clientSecret: result.client_secret,
-              confirmParams: {
-                return_url: returnUrl,
-                payment_method_data: { billing_details: billingDetails },
-              },
-            });
+      const confirmRes = await confirmerAvecFilet(
+        stripe,
+        { clientSecret: result.client_secret, returnUrl, type: result.intent_type === "setup" ? "setup" : "payment" },
+        () =>
+          result.intent_type === "setup"
+            ? stripe.confirmSetup({
+                elements,
+                clientSecret: result.client_secret,
+                confirmParams: {
+                  return_url: returnUrl,
+                  payment_method_data: { billing_details: billingDetails },
+                },
+              })
+            : stripe.confirmPayment({
+                elements,
+                clientSecret: result.client_secret,
+                confirmParams: {
+                  return_url: returnUrl,
+                  payment_method_data: { billing_details: billingDetails },
+                },
+              }),
+      );
 
       if (confirmRes.error) {
         toast.error(confirmRes.error.message || "Paiement refusé");

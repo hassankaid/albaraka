@@ -11,6 +11,7 @@
 // Design : reprend exactement le même thème noir/or que le Checkout principal,
 // avec le CheckoutCanvas en fond et le logo AL BARAKA.
 
+import { confirmerAvecFilet } from "@/lib/filetPaiement";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 // `/pure` et non l'entrée par défaut : importer `@stripe/stripe-js` INJECTE
@@ -490,28 +491,33 @@ function AcompteForm({
       }
 
       const returnUrl = `${window.location.origin}/merci-acompte${testMode ? "?test=1" : ""}`;
-      const { error: confirmErr } = await stripe.confirmPayment({
-        elements,
-        clientSecret: data.client_secret,
-        confirmParams: {
-          return_url: returnUrl,
-          payment_method_data: {
-            billing_details: {
-              name: fullName,
-              email: billing.email.trim().toLowerCase(),
-              phone: billing.phone.trim(),
-              address: {
-                line1: billing.address.trim(),
-                line2: "",
-                postal_code: billing.postal_code.trim(),
-                city: billing.city.trim(),
-                state: "",
-                country: billing.country.trim(),
+      const { error: confirmErr } = await confirmerAvecFilet(
+        stripe,
+        { clientSecret: data.client_secret, returnUrl },
+        () =>
+          stripe.confirmPayment({
+            elements,
+            clientSecret: data.client_secret,
+            confirmParams: {
+              return_url: returnUrl,
+              payment_method_data: {
+                billing_details: {
+                  name: fullName,
+                  email: billing.email.trim().toLowerCase(),
+                  phone: billing.phone.trim(),
+                  address: {
+                    line1: billing.address.trim(),
+                    line2: "",
+                    postal_code: billing.postal_code.trim(),
+                    city: billing.city.trim(),
+                    state: "",
+                    country: billing.country.trim(),
+                  },
+                },
               },
             },
-          },
-        },
-      });
+          }),
+      );
 
       if (confirmErr) {
         toast.error(confirmErr.message || "Paiement refusé");
