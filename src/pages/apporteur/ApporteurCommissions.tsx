@@ -52,6 +52,7 @@ const ROLE_SOURCE_CATEGORY: Record<string, string> = {
   apporteur: "apporteur",
   setter: "collaborateur",
   closer: "collaborateur",
+  coach: "collaborateur",
   agence_marketing: "collaborateur",
   collaborateur: "collaborateur",
 };
@@ -61,6 +62,7 @@ const PRECISE_ROLE_LABELS: Record<string, string> = {
   apporteur: "Apporteur",
   setter: "Setter",
   closer: "Closer",
+  coach: "Coach",
   agence_marketing: "Agence",
   collaborateur: "Collaborateur",
 };

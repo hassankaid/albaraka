@@ -1,4 +1,4 @@
-import { Users, Headset, Target, Building2, type LucideIcon } from "lucide-react";
+import { Users, Headset, Target, Building2, GraduationCap, type LucideIcon } from "lucide-react";
 
 export interface RoleConfig {
   label: string;
@@ -11,6 +11,7 @@ export const ROLE_CONFIG: Record<string, RoleConfig> = {
   setter: { label: "Setter", class: "bg-blue-500/20 text-blue-300 border-blue-500/30", icon: Headset },
   closer: { label: "Closer", class: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30", icon: Target },
   agence_marketing: { label: "Agence", class: "bg-orange-500/20 text-orange-300 border-orange-500/30", icon: Building2 },
+  coach: { label: "Coach", class: "bg-purple-500/20 text-purple-300 border-purple-500/30", icon: GraduationCap },
   collaborateur: { label: "Collaborateur", class: "bg-blue-500/20 text-blue-300 border-blue-500/30", icon: Headset },
 };
 

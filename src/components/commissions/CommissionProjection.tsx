@@ -52,6 +52,7 @@ export default function CommissionProjection({ userId, roleSourceFilter }: Commi
     apporteur: "apporteur",
     setter: "collaborateur",
     closer: "collaborateur",
+    coach: "collaborateur",
     agence_marketing: "collaborateur",
     collaborateur: "collaborateur",
   };
@@ -252,6 +253,7 @@ export default function CommissionProjection({ userId, roleSourceFilter }: Commi
               <SelectItem value="apporteur">Apporteur</SelectItem>
               <SelectItem value="setter">Setter</SelectItem>
               <SelectItem value="closer">Closer</SelectItem>
+              <SelectItem value="coach">Coach</SelectItem>
               <SelectItem value="agence_marketing">Agence</SelectItem>
             </SelectContent>
           </Select>

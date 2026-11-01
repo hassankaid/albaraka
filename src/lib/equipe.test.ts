@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { equipeProposee, estCollaborateurActif, nomEquipe, type ProfilEquipe } from "./equipe";
+import { equipeProposee, estCoachActif, estCollaborateurActif, nomEquipe, type ProfilEquipe } from "./equipe";
 
 const p = (id: string, role: string, is_active?: boolean | null): ProfilEquipe => ({ id, full_name: id.toUpperCase(), role, is_active });
 
@@ -34,5 +34,17 @@ describe("nomEquipe", () => {
   it("signale un collaborateur désactivé", () => {
     expect(nomEquipe(p("saba", "collaborateur", false))).toBe("SABA (inactif)");
     expect(nomEquipe(p("sabrina", "collaborateur", true))).toBe("SABRINA");
+  });
+});
+
+describe("estCoachActif", () => {
+  it("propose les coachs actifs, y compris un CEO coach", () => {
+    expect(estCoachActif({ is_coach: true, is_active: true })).toBe(true);
+    expect(estCoachActif({ is_coach: true, is_active: null })).toBe(true);
+  });
+  it("écarte un coach désactivé et les profils qui ne sont pas coachs", () => {
+    expect(estCoachActif({ is_coach: true, is_active: false })).toBe(false);
+    expect(estCoachActif({ is_coach: false, is_active: true })).toBe(false);
+    expect(estCoachActif({ is_coach: null, is_active: true })).toBe(false);
   });
 });

@@ -588,7 +588,7 @@ export default function AdminInvoices() {
 
   const getRoleLabel = (roles: string[]) => {
     if (roles.length > 1) return "Multi-rôles";
-    const map: Record<string, string> = { apporteur: "Apporteur", closer: "Closer", collaborateur: "Collaborateur", agence: "Agence", agence_marketing: "Agence", ceo: "CEO" };
+    const map: Record<string, string> = { apporteur: "Apporteur", closer: "Closer", coach: "Coach", collaborateur: "Collaborateur", agence: "Agence", agence_marketing: "Agence", ceo: "CEO" };
     return map[roles[0]] || roles[0] || "—";
     return map[roles[0]] || roles[0];
   };

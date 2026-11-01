@@ -188,6 +188,7 @@ const statusCfg: Record<string, { label: string; className: string }> = {
 const roleLabels: Record<string, string> = {
   closer: "Closer",
   setter: "Setter",
+  coach: "Coach",
   apporteur: "Apporteur",
   agence_marketing: "Agence",
 };

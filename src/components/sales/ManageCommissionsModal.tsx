@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Trash2, Plus, Pencil, Check, X } from "lucide-react";
 import { ROLE_CONFIG } from "@/lib/roleConfig";
-import { estCollaborateurActif } from "@/lib/equipe";
+import { estCoachActif, estCollaborateurActif } from "@/lib/equipe";
 
 interface Commission {
   id: string;
@@ -50,6 +50,7 @@ interface Profile {
   role: string;
   is_also_apporteur: boolean | null;
   is_active: boolean | null;
+  is_coach: boolean | null;
 }
 
 interface ManageCommissionsModalProps {
@@ -68,6 +69,8 @@ const ROLE_SUGGESTED_PCT: Record<string, number> = {
   setter: 5,
   closer: 10,
   agence_marketing: 20,
+  // Coaching individuel : taux unique de Sidali (01/11/2026), 40 € sur 45 €, modifiable sur la vente
+  coach: 88.89,
 };
 
 export default function ManageCommissionsModal({
@@ -79,7 +82,7 @@ export default function ManageCommissionsModal({
   const [loading, setLoading] = useState(false);
 
   // Form state
-  const [beneficiaryType, setBeneficiaryType] = useState<"collaborateur" | "apporteur" | "agence">("collaborateur");
+  const [beneficiaryType, setBeneficiaryType] = useState<"collaborateur" | "coach" | "apporteur" | "agence">("collaborateur");
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
   const [percentage, setPercentage] = useState("");
@@ -103,7 +106,7 @@ export default function ManageCommissionsModal({
   }, [saleId]);
 
   const fetchProfiles = useCallback(async () => {
-    const { data } = await supabase.from("profiles").select("id, full_name, role, is_also_apporteur, is_active").order("full_name");
+    const { data } = await supabase.from("profiles").select("id, full_name, role, is_also_apporteur, is_active, is_coach").order("full_name");
     if (data) setProfiles(data);
   }, []);
 
@@ -374,10 +377,11 @@ export default function ManageCommissionsModal({
 
           <div className="space-y-2">
             <Label>Type de bénéficiaire</Label>
-            <Select value={beneficiaryType} onValueChange={(v) => { setBeneficiaryType(v as any); setSelectedUserId(""); setSelectedRole(""); }}>
+            <Select value={beneficiaryType} onValueChange={(v) => { setBeneficiaryType(v as any); setSelectedUserId(""); setSelectedRole(v === "coach" ? "coach" : ""); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="collaborateur">Collaborateur</SelectItem>
+                <SelectItem value="coach">Coach</SelectItem>
                 <SelectItem value="apporteur">Apporteur</SelectItem>
                 <SelectItem value="agence">Agence</SelectItem>
               </SelectContent>
@@ -393,6 +397,7 @@ export default function ManageCommissionsModal({
                   .filter((p) => {
                     // statut de la fiche Équipe : un collaborateur désactivé n'est plus proposé
                     if (beneficiaryType === "collaborateur") return estCollaborateurActif(p);
+                    if (beneficiaryType === "coach") return estCoachActif(p);
                     if (beneficiaryType === "apporteur") return p.role === "apporteur" || p.is_also_apporteur;
                     if (beneficiaryType === "agence") return p.role === "agence";
                     return false;
@@ -416,6 +421,9 @@ export default function ManageCommissionsModal({
                     <SelectItem value="closer">Closer</SelectItem>
                   </>
                 )}
+                {beneficiaryType === "coach" && (
+                  <SelectItem value="coach">Coach</SelectItem>
+                )}
                 {beneficiaryType === "apporteur" && (
                   <SelectItem value="apporteur">Apporteur</SelectItem>
                 )}
@@ -428,7 +436,7 @@ export default function ManageCommissionsModal({
 
           <div className="space-y-2">
             <Label>Pourcentage (%)</Label>
-            <Input type="number" value={percentage} onChange={(e) => setPercentage(e.target.value)} placeholder="0" />
+            <Input type="number" step="0.01" value={percentage} onChange={(e) => setPercentage(e.target.value)} placeholder="0" />
           </div>
 
           <Button

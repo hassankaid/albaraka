@@ -315,6 +315,7 @@ export default function AdminCommissions() {
             <SelectItem value="apporteur">Apporteur</SelectItem>
             <SelectItem value="setter">Setter</SelectItem>
             <SelectItem value="closer">Closer</SelectItem>
+            <SelectItem value="coach">Coach</SelectItem>
             <SelectItem value="agence_marketing">Agence</SelectItem>
           </SelectContent>
         </Select>

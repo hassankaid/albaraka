@@ -50,6 +50,7 @@ const ROLE_LABELS: Record<string, string> = {
   apporteur: "Apporteur",
   setter: "Setter",
   closer: "Closer",
+  coach: "Coach",
   agence_marketing: "Agence",
   collaborateur: "Collaborateur",
 };

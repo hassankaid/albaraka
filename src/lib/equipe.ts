@@ -20,6 +20,11 @@ export function estCollaborateurActif(p: Pick<ProfilEquipe, "role" | "is_active"
   return p.role === "collaborateur" && p.is_active !== false;
 }
 
+/** Les personnes à proposer pour une commission de coaching : Sidali, CEO, en fait partie. */
+export function estCoachActif(p: { is_coach?: boolean | null; is_active?: boolean | null }): boolean {
+  return !!p.is_coach && p.is_active !== false;
+}
+
 /** Les personnes à proposer comme setter ou closer : le CEO et les collaborateurs actifs. */
 export function estEquipeActive(p: Pick<ProfilEquipe, "role" | "is_active">): boolean {
   return p.role === "ceo" || estCollaborateurActif(p);
