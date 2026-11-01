@@ -319,6 +319,26 @@ def plages_des_mots(words, remove, duration):
 P.kept_ranges_from_words = plages_des_mots
 
 
+def caler_raccords(cuts, db, hop=0.01, fenetre=0.08):
+    """Quand une phrase ratée est retirée en pleine voix, les temps de Whisper tombent souvent dans
+    une syllabe : le raccord est déplacé de 80 ms au plus, vers le creux de la voix le plus proche."""
+    seuil = P.speech_threshold(db)
+
+    def creux(t, mini, maxi):
+        i = int(round(t / hop))
+        if not 0 <= i < len(db) or db[i] <= seuil:
+            return t
+        a, b = max(0, i - int(fenetre / hop)), min(len(db), i + int(fenetre / hop) + 1)
+        k = a + int(np.argmin(db[a:b]))
+        return min(maxi, max(mini, k * hop))
+
+    out = [list(c) for c in cuts]
+    for i in range(len(out) - 1):
+        out[i][1] = creux(out[i][1], out[i][0] + 0.1, out[i + 1][0])
+        out[i + 1][0] = creux(out[i + 1][0], out[i][1], out[i + 1][1] - 0.1)
+    return [(a, b) for a, b in out]
+
+
 def coupes_reglees(reglages, duree):
     """(rythme, plages gardées à la main ou None) d'après les réglages de l'élève."""
     c = (reglages or {}).get("coupes") or {}
@@ -735,7 +755,8 @@ def monter(src, dossier, liens, travail, reglages, chrono=None, precedent=None):
         retires = {i for i, w in enumerate(words) if not any(a <= (w.start + w.end) / 2 <= b for a, b in cuts)}
     else:
         P.CUT_MIN_GAP, P.CUT_PRE_PAD, P.CUT_POST_PAD = RYTHMES[rythme]
-        cuts = P.tighten(P.kept_ranges_from_words(words, plages_d_index(retires), meta["duration"]), P.energy_db(wav))
+        energie = P.energy_db(wav)
+        cuts = caler_raccords(P.tighten(P.kept_ranges_from_words(words, plages_d_index(retires), meta["duration"]), energie), energie)
     kept = []
     for i, w in enumerate(words):
         if i in retires:

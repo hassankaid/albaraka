@@ -38,6 +38,16 @@
   function sousTitres(tl, P) {
     const st = $("#st");
     const blocs = [];
+    // Un seul sous-titre à l'écran : le suivant attend que le mot clé ait été vu, et le précédent
+    // a fini de disparaître quand il arrive (Sidali, 01/11/2026 : ils se chevauchaient).
+    const MOT_CLE_VU = 0.25;
+    const FONDU = 0.08;
+    const debuts = [], motsCles = [];
+    P.sousTitres.forEach((c, k) => {
+      const prevu = k === 0 ? 0 : Math.max(0, (c.petit[0] ? c.petit[0].t : c.tg) - 0.08);
+      debuts[k] = k === 0 ? 0 : Math.max(prevu, motsCles[k - 1] + MOT_CLE_VU + FONDU);
+      motsCles[k] = k === 0 ? 0 : Math.max(debuts[k], c.tg - 0.05);
+    });
     P.sousTitres.forEach((c, k) => {
       const bloc = el("div", "bloc", st);
       const petit = el("div", "petit", bloc, c.petit.map((m) => `<span class="m">${echapper(m.m)}</span>`).join(""));
@@ -47,20 +57,20 @@
       if (c.taillePetit && c.taillePetit < 64) petit.style.fontSize = c.taillePetit + "px";
       if (c.tailleGrand && c.tailleGrand < 172) grand.style.fontSize = c.tailleGrand + "px";
       // le premier sous-titre est entier dès l'image 0 (la première image sert de miniature)
-      const debut = k === 0 ? 0 : Math.max(0, (c.petit[0] ? c.petit[0].t : c.tg) - 0.08);
+      const debut = debuts[k];
       tl.set(bloc, { opacity: 1 }, debut);
       petit.querySelectorAll(".m").forEach((m, i) => {
-        const t = k === 0 ? 0 : Math.max(0, c.petit[i].t - 0.06);
+        const t = k === 0 ? 0 : Math.max(debut, c.petit[i].t - 0.06);
         if (t === 0) tl.set(m, { opacity: 1 }, 0);
         else if (P.style === "sobre") tl.fromTo(m, { opacity: 0 }, { opacity: 1, duration: 0.12, ease: "none" }, t);
         else tl.fromTo(m, { opacity: 0, y: 28, filter: "blur(10px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.17, ease: "power3.out" }, t);
       });
-      const tg = k === 0 ? 0 : Math.max(0, c.tg - 0.05);
+      const tg = motsCles[k];
       if (tg === 0) tl.set(grand, { opacity: 1 }, 0);
       else if (P.style === "sobre") tl.fromTo(grand, { opacity: 0, scale: 0.92 }, { opacity: 1, scale: 1, duration: 0.14, ease: "power2.out" }, tg);
       else tl.fromTo(grand, { opacity: 0, scale: 1.5, y: 14, filter: "blur(6px)" }, { opacity: 1, scale: 1, y: 0, filter: "blur(0px)", duration: 0.24, ease: "back.out(2.4)" }, tg);
       if (P.style !== "sobre") tl.fromTo(grand.querySelector(".surligne"), { scaleX: 0 }, { scaleX: 1, duration: 0.26, ease: "power3.out" }, tg + 0.1);
-      if (c.fin < P.duree - 0.05) tl.to(bloc, { opacity: 0, y: -20, filter: "blur(6px)", duration: 0.12, ease: "power2.in" }, Math.max(tg + 0.2, c.fin - 0.1));
+      if (k + 1 < P.sousTitres.length) tl.to(bloc, { opacity: 0, y: -20, filter: "blur(6px)", duration: FONDU, ease: "power2.in" }, debuts[k + 1] - FONDU);
     });
     return blocs;
   }
