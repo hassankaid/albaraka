@@ -2,7 +2,7 @@
 // vidéo de l'élève (cadre final 1080 x 1920). C'est une reproduction de
 // studio/moteur/face_effects.py et des sous-titres « Éditorial » : le rendu
 // final est fait par le moteur, l'aperçu en donne l'allure.
-import type { Reglages } from "./reglages";
+import { couleursDesign, type Reglages } from "./reglages";
 
 export const W = 1080;
 export const H = 1920;
@@ -210,6 +210,7 @@ export function dessinerSousTitre(
   petit: string,
   grand: string,
   c: Reglages["sous_titres"],
+  couleurMotCle: string = c.texte,
 ) {
   const p = petit.toUpperCase();
   const fp = taille(ctx, p, "900 {t}px StudioMontserrat", PETITE_TAILLE, 7);
@@ -217,14 +218,14 @@ export function dessinerSousTitre(
   const hauteur = fp + fg * 0.95;
   const yPetit = SOUS_TITRE_Y - hauteur / 2 + fp / 2;
   const yGrand = yPetit + fp / 2 + fg * 0.5;
-  const lignes: [string, string, number, number][] = [
-    [p, `900 ${fp}px StudioMontserrat`, yPetit, 7],
-    [grand, `italic ${fg}px StudioSerif`, yGrand, 0],
+  const lignes: [string, string, number, number, string][] = [
+    [p, `900 ${fp}px StudioMontserrat`, yPetit, 7, c.texte],
+    [grand, `italic ${fg}px StudioSerif`, yGrand, 0, couleurMotCle],
   ];
   ctx.save();
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  for (const [texte, police, y, esp] of lignes) {
+  for (const [texte, police, y, esp, couleur] of lignes) {
     ctx.font = police;
     (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = `${esp}px`;
     // halo d'ombre doux
@@ -247,7 +248,7 @@ export function dessinerSousTitre(
     ctx.lineWidth = 6;
     ctx.strokeStyle = c.contour;
     ctx.strokeText(texte, W / 2, y);
-    ctx.fillStyle = c.texte;
+    ctx.fillStyle = couleur;
     ctx.fillText(texte, W / 2, y);
   }
   ctx.restore();
@@ -276,6 +277,24 @@ export function principaleClaire(principale: string): string {
   const p = rvb(principale);
   if (lum(p) >= 0.75) return principale;
   return `rgb(${p.map((v) => Math.round(v + (255 - v) * 0.45)).join(",")})`;
+}
+
+/**
+ * Le sous-titre tel qu'il sortira dans la vidéo finale. La version gratuite passe par le moteur
+ * classique : sa place et sa taille, avec le mot clé dans la couleur principale (motion design
+ * actif). Les autres ont Hyperframes, qui a sa propre mise en page.
+ */
+export function dessinerSousTitreFinal(
+  ctx: CanvasRenderingContext2D,
+  petit: string,
+  grand: string,
+  reglages: Reglages,
+  formule: "gratuit" | "complet" | undefined,
+) {
+  if (!reglages.design?.actif) return dessinerSousTitre(ctx, petit, grand, reglages.sous_titres);
+  const { principale } = couleursDesign(reglages.design);
+  if (formule === "gratuit") return dessinerSousTitre(ctx, petit, grand, reglages.sous_titres, principaleClaire(principale));
+  dessinerSousTitreAnime(ctx, petit, grand, reglages.sous_titres, principale);
 }
 
 /**

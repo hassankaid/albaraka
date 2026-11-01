@@ -995,8 +995,18 @@ def rendre(dossier, liens, reglages, travail):
         travail = {**travail, "sous_titres": C.appliquer(travail["sous_titres"], st["corrections"]),
                    "plan_hf": C.corriger_plan(travail.get("plan_hf"), st["corrections"]),
                    "plan": C.corriger_plan(travail.get("plan"), st["corrections"])}
+    d = (reglages or {}).get("design") or {}
+    design = {"palette": d.get("palette") or "or_noir", "principale": couleur(d.get("principale"), ""),
+              "fond": couleur(d.get("fond"), ""), "texte": couleur(d.get("texte"), ""),
+              "prenom": str(d.get("prenom") or "")[:24], "titre": str(d.get("titre") or "")[:40]}
+    # avec le motion design, le mot clé prend la couleur principale, comme avec Hyperframes
+    # (Ahmed Abdelbaki, 01/11/2026 : l'aperçu la montrait, la vidéo gratuite restait en blanc)
+    grand = None
+    if d.get("actif", True) is not False:
+        import assembler as HA
+        grand = HA.couleurs(design, st)["--st-grand"]
     style = P.StyleOptions(couleur(st.get("texte"), "#FFFFFF"), couleur(st.get("contour"), "#000000"),
-                           couleur(st.get("ombre"), "#000000"))
+                           couleur(st.get("ombre"), "#000000"), grand)
     caps = [P.Caption(**c) for c in travail["sous_titres"]]
     ass = os.path.join(dossier, "subs.ass")
     with open(ass, "w", encoding="utf-8") as f:
@@ -1012,7 +1022,6 @@ def rendre(dossier, liens, reglages, travail):
                 "intensite_couleur": int(min(5, max(1, int(v.get("intensite_couleur") or 3))))}
     # motion design : activé par défaut (cahier des charges, section 4). Hyperframes d'abord ;
     # en cas d'échec, le motion design classique (animations.py) : l'élève a toujours sa vidéo.
-    d = (reglages or {}).get("design") or {}
     secours = None
     # Version gratuite : motion design léger, le moteur classique (rapide, ~4,5 fois moins de calcul).
     if d.get("actif", True) is not False and hyperframes_present() and not GRATUIT:
@@ -1025,9 +1034,6 @@ def rendre(dossier, liens, reglages, travail):
             secours = f"{type(e).__name__}: {e}"[:400]
     scene = None
     if d.get("actif", True) is not False:
-        design = {"palette": d.get("palette") or "or_noir", "principale": couleur(d.get("principale"), ""),
-                  "fond": couleur(d.get("fond"), ""), "texte": couleur(d.get("texte"), ""),
-                  "prenom": str(d.get("prenom") or "")[:24], "titre": str(d.get("titre") or "")[:40]}
         plan = travail.get("plan")
         if plan is None:  # montage préparé avant la phase 2
             plan = travail["plan"] = plan_animation(mots_gardes(travail), travail["duree_sortie"])

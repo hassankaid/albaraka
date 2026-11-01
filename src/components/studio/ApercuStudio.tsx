@@ -8,12 +8,12 @@ import {
   dessinerCadre,
   dessinerDesign,
   dessinerFloutage,
-  dessinerSousTitre,
-  dessinerSousTitreAnime,
+  dessinerSousTitreFinal,
   H,
   W,
 } from "@/lib/studio/apercu";
 import { couleursDesign, type Reglages } from "@/lib/studio/reglages";
+import { useStudioAcces } from "@/hooks/useStudioAcces";
 
 export function ApercuStudio({
   image,
@@ -30,6 +30,8 @@ export function ApercuStudio({
   flou: boolean;
   sousTitre?: boolean;
 }) {
+  const { data: acces } = useStudioAcces();
+  const formule = acces?.formule;
   const ref = useRef<HTMLCanvasElement>(null);
   const [source, setSource] = useState<HTMLCanvasElement | null>(null);
   const [polices, setPolices] = useState(false);
@@ -65,13 +67,11 @@ export function ApercuStudio({
     ctx.clearRect(0, 0, W, H);
     ctx.drawImage(source, 0, 0);
     if (flou && reglages.visage.flouter && visages?.length) dessinerFloutage(ctx, source, visages, reglages.visage);
-    // avec le motion design, les sous-titres sont animés par Hyperframes (autre place, autre taille)
-    if (sousTitre && polices && reglages.design?.actif) {
-      const couleurs = couleursDesign(reglages.design);
-      dessinerDesign(ctx, couleurs, reglages.design.prenom, reglages.design.titre);
-      dessinerSousTitreAnime(ctx, "voici tes", "sous-titres", reglages.sous_titres, couleurs.principale);
-    } else if (sousTitre && polices) dessinerSousTitre(ctx, "voici tes", "sous-titres", reglages.sous_titres);
-  }, [source, visages, reglages, flou, sousTitre, polices]);
+    if (sousTitre && polices) {
+      if (reglages.design?.actif) dessinerDesign(ctx, couleursDesign(reglages.design), reglages.design.prenom, reglages.design.titre);
+      dessinerSousTitreFinal(ctx, "voici tes", "sous-titres", reglages, formule);
+    }
+  }, [source, visages, reglages, flou, sousTitre, polices, formule]);
 
   const attenteVisage = flou && reglages.visage.flouter && !visages;
   return (

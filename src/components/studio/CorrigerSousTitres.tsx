@@ -11,8 +11,9 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { lienStudio } from "@/hooks/useStudio";
 import { memesPlages, minutage, type Plage } from "@/lib/studio/coupes";
-import { chargerPolices, dessinerSousTitre, dessinerSousTitreAnime, H, W } from "@/lib/studio/apercu";
-import { couleursDesign, type Montage, type Reglages } from "@/lib/studio/reglages";
+import { chargerPolices, dessinerSousTitreFinal, H, W } from "@/lib/studio/apercu";
+import { type Montage, type Reglages } from "@/lib/studio/reglages";
+import { useStudioAcces } from "@/hooks/useStudioAcces";
 import {
   appliquer,
   correctionDe,
@@ -50,6 +51,8 @@ const sansAccents = (t: string) =>
     .toLowerCase();
 
 export function CorrigerSousTitres({ open, onOpenChange, montage, reglages, onValider, libelleValider }: Props) {
+  const { data: acces } = useStudioAcces();
+  const formule = acces?.formule;
   const [travail, setTravail] = useState<TravailSousTitres | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [video, setVideo] = useState<string | null>(null);
@@ -147,10 +150,8 @@ export function CorrigerSousTitres({ open, onOpenChange, montage, reglages, onVa
     ctx.clearRect(0, 0, W, H);
     const c = affiches[courant];
     if (!c || !polices) return;
-    if (reglages.design?.actif) {
-      dessinerSousTitreAnime(ctx, c.small, c.big, reglages.sous_titres, couleursDesign(reglages.design).principale);
-    } else dessinerSousTitre(ctx, c.small, c.big, reglages.sous_titres);
-  }, [affiches, courant, polices, reglages, video]);
+    dessinerSousTitreFinal(ctx, c.small, c.big, reglages, formule);
+  }, [affiches, courant, polices, reglages, video, formule]);
 
   // pendant la lecture, la liste suit la vidéo (sauf si l'élève est en train d'écrire)
   useEffect(() => {

@@ -89,6 +89,7 @@ class StyleOptions:
     text_color: str = "#FFFFFF"
     outline_color: str = "#000000"
     shadow_color: str = "#000000"
+    big_color: str | None = None  # mot clé ; sinon la couleur du texte
 
 
 # --------------------------------------------------------------------------
@@ -367,6 +368,7 @@ def build_ass(caps: list[Caption], style: StyleOptions) -> str:
     txt_c = hex_to_ass(style.text_color)
     out_c = hex_to_ass(style.outline_color)
     sh_c = hex_to_ass(style.shadow_color)
+    big_c = hex_to_ass(style.big_color or style.text_color)
     head = f"""[Script Info]
 PlayResX: {OUT_W}
 PlayResY: {OUT_H}
@@ -388,16 +390,20 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         parts = []
         if small:
             parts.append(r"{\fn%s\fs%d\fsp%d\i0}%s" % (CAP_SMALL_FONT, fs_s, CAP_SMALL_SPACING, small))
+        parts_texte = list(parts)
         if c.big:
-            parts.append(r"{\fn%s\i1\fs%d\fsp0\fscx92\fscy92\t(0,140,\fscx100\fscy100)}%s" % (CAP_BIG_FONT, fs_b, c.big))
+            grand = r"\fn%s\i1\fs%d\fsp0\fscx92\fscy92\t(0,140,\fscx100\fscy100)" % (CAP_BIG_FONT, fs_b)
+            parts.append("{" + grand + "}" + c.big)
+            parts_texte.append("{" + rf"\1c{big_c}" + grand + "}" + c.big)  # le halo garde la couleur d'ombre
         body = r"\N".join(parts)
+        body_texte = r"\N".join(parts_texte)
         pos = r"\an5\pos(%d,%d)\fad(70,40)" % (CAP_POS_X, CAP_POS_Y)
         # Calque 0 : halo d'ombre doux (couleur d'ombre)
         lines.append(f"Dialogue: 0,{ts(c.start)},{ts(c.end)},T,,0,0,0,,"
                      + "{" + pos + rf"\1c{sh_c}\3c{sh_c}\bord10\blur14\alpha&H80&\shad0" + "}" + body)
         # Calque 1 : texte (couleur texte) + contour fin (couleur contour) + ombre portée légère
         lines.append(f"Dialogue: 1,{ts(c.start)},{ts(c.end)},T,,0,0,0,,"
-                     + "{" + pos + rf"\1c{txt_c}\3c{out_c}\bord{CAP_OUTLINE}\blur1.2\shad{CAP_DROP_SHADOW}\4c{sh_c}\4a&H90&" + "}" + body)
+                     + "{" + pos + rf"\1c{txt_c}\3c{out_c}\bord{CAP_OUTLINE}\blur1.2\shad{CAP_DROP_SHADOW}\4c{sh_c}\4a&H90&" + "}" + body_texte)
     return head + "\n".join(lines) + "\n"
 
 
