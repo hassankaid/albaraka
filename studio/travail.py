@@ -98,6 +98,8 @@ MONTAGE, JETON = os.environ.get("MONTAGE_ID", ""), os.environ.get("JETON", "")
 # de la voix, le script lu sert aux phrases ratées et à l'orthographe des sous-titres,
 # l'image est faite de plans de la banque (voir voixoff.py).
 VOIX_OFF = os.environ.get("OUTIL") == "voix_off"
+# Format hybride (Sidali, 01/11/2026) : la face caméra, et des plans de la banque aux bons moments.
+HYBRIDE = os.environ.get("OUTIL") == "hybride"
 SCRIPT = os.environ.get("SCRIPT") or ""
 THEME, THEME_NOM = os.environ.get("THEME") or "", os.environ.get("THEME_NOM") or ""
 
@@ -642,6 +644,8 @@ def preparer(src, dossier, liens, reglages, avec_apercu):
         return time.time()
 
     meta = __import__("voixoff").sonder_audio(src) if VOIX_OFF else P.probe(src)
+    if HYBRIDE and GRATUIT:
+        raise ValueError("Le format hybride est réservé à l'abonnement Studio.")
     if GRATUIT and DUREE_MAX_GRATUIT and meta["duration"] > DUREE_MAX_GRATUIT + 5:
         # ce message rend la vidéo au quota du jour (studio_job_erreur, « La version gratuite… »)
         raise ValueError(f"La version gratuite accepte {DUREE_MAX_GRATUIT // 60} minute de vidéo. Raccourcis-la, "
@@ -767,11 +771,22 @@ def monter(src, dossier, liens, travail, reglages, chrono=None, precedent=None):
         travail["remplacements"] = {}
         monter_plans_banque(travail["moments"], voix, dossier, cut)
         top("plans")
+    if HYBRIDE:
+        etape("plans")
+        travail["remplacements"] = {}
+        try:
+            travail["moments"] = choisir_plans_hybrides(gardes, sous_titres, total)
+        except ServiceIA:
+            raise
+        except Exception:  # sans plan, l'élève a quand même sa vidéo : sa face caméra
+            traceback.print_exc()
+            travail["moments"] = []
+        top("plans")
     etape("animations")
     brut = precedent.get("plan_hf_brut") if memes_mots else None
     # Le plan Hyperframes n'est demandé à l'IA que s'il servira : pas en version gratuite
     # (motion design léger), ni quand le motion design est coupé (29/10/2026).
-    sans_hf = GRATUIT or ((reglages or {}).get("design") or {}).get("actif") is False
+    sans_hf = not motion_complet(reglages)
     try:
         brut, plan = (None, None) if sans_hf and brut is None else plan_hf(gardes, sous_titres, total, brut)
     except ServiceIA:  # l'IA ne répond plus : inutile de continuer, l'élève relancera
@@ -803,54 +818,20 @@ def liens_banque(chemins):
     return rep["liens"]
 
 
-FONDS = ("humming", "nasheed", "maher_zain")
+def motion_complet(reglages):
+    """Hyperframes : motion design actif, formule complète, et version complète choisie (Sidali, 01/11/2026)."""
+    d = (reglages or {}).get("design") or {}
+    return not GRATUIT and d.get("actif", True) is not False and d.get("version") != "leger"
 
 
-def mixer_fond(video, fond, dst):
-    """Fond sonore sous la voix : niveau ramené à -24 LUFS, fondu d'entrée et de sortie, et
-    baissé automatiquement quand la voix parle (compression par la voix, « ducking »)."""
-    d = float(P.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", video]))
-    filtre = (
-        "[0:a]aresample=48000,aformat=channel_layouts=stereo,asplit=2[voix][cle];"
-        "[1:a]loudnorm=I=-24:TP=-3:LRA=11,aresample=48000,aformat=channel_layouts=stereo,"
-        f"afade=t=in:d=1.5,afade=t=out:st={max(0.0, d - 2):.2f}:d=2[fond];"
-        "[fond][cle]sidechaincompress=threshold=0.1:ratio=3:attack=20:release=500[baisse];"
-        "[voix][baisse]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.95:level=0[a]")
-    P.run(["ffmpeg", "-v", "error", "-y", "-i", video, "-stream_loop", "-1", "-i", fond,
-           "-filter_complex", filtre, "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
-           "-movflags", "+faststart", "-t", f"{d:.3f}", dst])
-
-
-def ajouter_fond(sortie, reglages, dossier):
-    """« Fond sonore » choisi par l'élève (un son au hasard dans la catégorie). Ne fait jamais
-    échouer le montage : en cas de souci, la vidéo part avec la voix seule."""
-    fond = ((reglages or {}).get("son") or {}).get("fond")
-    if fond not in FONDS:
-        return None
-    try:
-        son = (rpc("studio_job_fond_sonore", p_id=MONTAGE, p_jeton=JETON, p_categorie=fond) or [None])[0]
-        if not son:
-            return None
-        local = os.path.join(dossier, "fond" + os.path.splitext(son["chemin"])[1])
-        telecharger(liens_banque([son["chemin"]])[son["chemin"]], local)
-        mixe = os.path.join(dossier, "sortie_fond.mp4")
-        mixer_fond(sortie, local, mixe)
-        os.replace(mixe, sortie)
-        return son["nom"]
-    except Exception:
-        traceback.print_exc()
-        return None
-
-
-def choisir_plans(gardes, sous_titres, total):
-    """Voix off : moments → ce qu'il faut montrer (Claude) → recherche par le sens → choix."""
+def chercher_plans_banque(liste, script, consigne=""):
+    """Ce qu'il faut montrer à chaque moment (Claude), puis la recherche par le sens dans la banque."""
     import voixoff as V
     from banque import THEMES
-    liste = V.moments(gardes, sous_titres, total)
     categories = rpc("studio_job_categories", p_id=MONTAGE, p_jeton=JETON) or []
     noms = {c["dossier"] for c in categories}
-    demandes = json.loads(llm(V.prompt_plans(SCRIPT, THEME_NOM or THEMES.get(THEME, ""), liste, THEMES,
-                                             categories)))["moments"]
+    demandes = json.loads(llm(V.prompt_plans(script, THEME_NOM or THEMES.get(THEME, ""), liste, THEMES,
+                                             categories, consigne)))["moments"]
     for d in demandes:
         d["categories"] = [c for c in d.get("categories") or [] if c in noms][:2]
         d["themes"] = [t for t in d.get("themes") or [] if t in THEMES][:2] or ([THEME] if THEME in THEMES else [])
@@ -864,7 +845,25 @@ def choisir_plans(gardes, sous_titres, total):
                    p_dossiers=demandes[i]["categories"]) or []
 
     with cf.ThreadPoolExecutor(6) as ex:
-        candidats = list(ex.map(chercher, range(len(liste))))
+        return demandes, list(ex.map(chercher, range(len(liste))))
+
+
+def choisir_plans_hybrides(gardes, sous_titres, total):
+    """Format hybride : seuls les moments où un plan apporte quelque chose le remplacent par un plan."""
+    import voixoff as V
+    liste = V.moments_hybrides(V.moments(gardes, sous_titres, total), total)
+    if not liste:
+        return []
+    texte = V.recoller(" ".join(w["text"] for w in gardes))
+    demandes, candidats = chercher_plans_banque(liste, texte, V.CONSIGNE_HYBRIDE)
+    return V.choisir_hybrides(liste, demandes, candidats, total)
+
+
+def choisir_plans(gardes, sous_titres, total):
+    """Voix off : moments → ce qu'il faut montrer (Claude) → recherche par le sens → choix."""
+    import voixoff as V
+    liste = V.moments(gardes, sous_titres, total)
+    demandes, candidats = chercher_plans_banque(liste, SCRIPT)
 
     def secours(i, exclus):
         return [c for c in rpc("studio_job_plans_secours", p_id=MONTAGE, p_jeton=JETON,
@@ -882,20 +881,13 @@ def monter_plans_banque(liste, voix, dossier, dst):
 def plans_a_refaire(travail, reglages):
     """Voix off : l'élève a-t-il changé un plan (« Changer ce plan ») depuis la préparation ?"""
     voulus = ((reglages or {}).get("voix_off") or {}).get("remplacements") or {}
-    return VOIX_OFF and bool(travail.get("moments")) and voulus != (travail.get("remplacements") or {})
+    return (VOIX_OFF or HYBRIDE) and bool(travail.get("moments")) and voulus != (travail.get("remplacements") or {})
 
 
 def refaire_plans(src, dossier, liens, travail, reglages):
     """« Changer ce plan » : seul le montage des plans est refait (pas de transcription ni d'IA)."""
     import voixoff as V
     etape("plans")
-    clean = os.path.join(dossier, "clean48k.wav")
-    if not os.path.exists(clean):
-        if not os.path.exists(src):
-            telecharger(liens["source"], src)
-        P.enhance_audio(src, clean, os.path.join(dossier, "a.wav"), options_son(reglages)[0])
-    voix = os.path.join(dossier, "voix.wav")
-    V.couper_audio(clean, [tuple(c) for c in travail["coupes"]], voix)
     voulus = ((reglages or {}).get("voix_off") or {}).get("remplacements") or {}
     # on repart des plans choisis par la préparation, puis on applique les choix de l'élève
     moments = json.loads(json.dumps(travail.get("moments_ia") or travail["moments"]))
@@ -903,12 +895,32 @@ def refaire_plans(src, dossier, liens, travail, reglages):
     travail["moments"] = V.appliquer_remplacements(moments, voulus)
     travail["remplacements"] = voulus
     cut = os.path.join(dossier, "cut.mp4")
-    monter_plans_banque(travail["moments"], voix, dossier, cut)
+    if VOIX_OFF:  # en format hybride, les plans sont posés au rendu : la face caméra ne change pas
+        clean = os.path.join(dossier, "clean48k.wav")
+        if not os.path.exists(clean):
+            if not os.path.exists(src):
+                telecharger(liens["source"], src)
+            P.enhance_audio(src, clean, os.path.join(dossier, "a.wav"), options_son(reglages)[0])
+        voix = os.path.join(dossier, "voix.wav")
+        V.couper_audio(clean, [tuple(c) for c in travail["coupes"]], voix)
+        monter_plans_banque(travail["moments"], voix, dossier, cut)
     chemin = os.path.join(dossier, "travail.json")
     with open(chemin, "w", encoding="utf-8") as f:
         json.dump(travail, f, ensure_ascii=False)
-    deposer(liens["deposer"]["travail/cut.mp4"], cut, "video/mp4")
+    if VOIX_OFF:
+        deposer(liens["deposer"]["travail/cut.mp4"], cut, "video/mp4")
     deposer(liens["deposer"]["travail/travail.json"], chemin, "application/json")
+
+
+def avec_plans_hybrides(video, travail, dossier):
+    """Format hybride : les plans de la banque posés sur la vidéo, le son ne change pas."""
+    moments = travail.get("moments") or []
+    if not HYBRIDE or not moments:
+        return video
+    import voixoff as V
+    etape("plans")
+    return V.incruster_plans(moments, liens_banque([m["plan"]["chemin_travail"] for m in moments]), video, dossier,
+                             os.path.join(dossier, "hybride.mp4"))
 
 
 def plan_hf(gardes, sous_titres, duree, brut=None):
@@ -941,8 +953,11 @@ def rendre_hf(dossier, liens, reglages, travail, flou):
     if plan is None:
         travail["plan_hf_brut"], plan = plan_hf(mots, travail["sous_titres"], travail["duree_sortie"])
         travail["plan_hf"] = plan
+    video = avec_plans_hybrides(video, travail, dossier)
+    if HYBRIDE:
+        plan = __import__("voixoff").sans_effets_du_visage(plan, travail.get("moments"))
     compo = os.path.join(dossier, "hf")
-    donnees = HA.construire(compo, video, travail, plan, reglages, visages, mots, original=cut if flou else None)
+    donnees = HA.construire(compo, video, travail, plan, reglages, visages, mots, original=cut if video != cut else None)
     etape("verification")
     problemes = HA.verifier(compo)
     bloquants = [p for p in problemes if p.get("partie") in ("lint", "runtime")]
@@ -951,10 +966,9 @@ def rendre_hf(dossier, liens, reglages, travail, flou):
     etape("incrustation")
     sortie = os.path.join(dossier, "sortie.mp4")
     HA.rendre(compo, sortie)
-    fond = ajouter_fond(sortie, reglages, dossier)
     etape("envoi")
     deposer(liens["deposer"]["sortie.mp4"], sortie, "video/mp4")
-    return {"moteur": "hyperframes", "fond_sonore": fond, "passe_image": stats, "style": donnees["style"],
+    return {"moteur": "hyperframes", "plans_hybrides": len(travail.get("moments") or []) if HYBRIDE else None, "passe_image": stats, "style": donnees["style"],
             "motion_design": donnees["elements"], "cta": donnees["cta"], "verification": problemes,
             "rendu_s": round(time.time() - t0, 1)}
 
@@ -1024,7 +1038,7 @@ def rendre(dossier, liens, reglages, travail):
     # en cas d'échec, le motion design classique (animations.py) : l'élève a toujours sa vidéo.
     secours = None
     # Version gratuite : motion design léger, le moteur classique (rapide, ~4,5 fois moins de calcul).
-    if d.get("actif", True) is not False and hyperframes_present() and not GRATUIT:
+    if motion_complet(reglages) and hyperframes_present():
         try:
             return rendre_hf(dossier, liens, reglages, travail, flou)
         except ServiceIA:
@@ -1044,13 +1058,13 @@ def rendre(dossier, liens, reglages, travail):
         etape("motion_design" if scene else "floutage")
         etape_video = os.path.join(dossier, "images.mp4")
         stats = rendre_images(cut, etape_video, flou, scene, dossier)
+    etape_video = avec_plans_hybrides(etape_video, travail, dossier)
     etape("incrustation")
     sortie = os.path.join(dossier, "sortie.mp4")
     P.burn(etape_video, ass, sortie)
-    fond = ajouter_fond(sortie, reglages, dossier)
     etape("envoi")
     deposer(liens["deposer"]["sortie.mp4"], sortie, "video/mp4")
-    return {"moteur": "classique", "fond_sonore": fond, "passe_image": stats, "motion_design": scene["plan"] if scene else None,
+    return {"moteur": "classique", "plans_hybrides": len(travail.get("moments") or []) if HYBRIDE else None, "passe_image": stats, "motion_design": scene["plan"] if scene else None,
             "secours_hyperframes": secours, "rendu_s": round(time.time() - t0, 1)}
 
 

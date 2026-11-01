@@ -114,3 +114,6 @@ export function minute(t: number): string {
   const s = Math.max(0, Math.round(t));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
+
+/** Toute la vidéo gardée, sans aucune coupe : pour une vidéo déjà coupée sur le téléphone (Sidali, 01/11/2026). */
+export const videoEntiere = (duree: number): Plage[] => [[0, duree]];

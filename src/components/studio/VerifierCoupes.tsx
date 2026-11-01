@@ -34,6 +34,7 @@ import {
   phrasesRetireesAutour,
   resumeCoupe,
   supprimerCoupe,
+  videoEntiere,
   versMontage,
   versSource,
 } from "@/lib/studio/coupesParCoupe";
@@ -220,6 +221,17 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
       } else setMessage(null);
       setOuverte(coupe);
     }
+  }
+
+  /** Vidéo déjà coupée par l'élève : tout est gardé. Annulable comme un réglage. */
+  function garderTout() {
+    const avant = plagesRef.current;
+    videoRef.current?.pause();
+    geste.current = null;
+    setHistorique((h) => [...h.slice(-49), avant]);
+    setPlages(videoEntiere(duree));
+    setOuverte(null);
+    setMessage("Toute ta vidéo est gardée, sans aucune coupe.");
   }
 
   /** Supprimer une coupe entière : annulable comme un réglage, la liste reprend la main. */
@@ -466,7 +478,18 @@ export function VerifierCoupes({ open, onOpenChange, montage, reglages, onValide
 
                 {/* la liste des coupes */}
                 <div className="flex flex-col gap-2 md:min-h-[120px] md:flex-1">
-                  <p className="shrink-0 text-sm font-medium text-foreground">Les coupes</p>
+                  <div className="flex shrink-0 items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-foreground">Les coupes</p>
+                    <button
+                      type="button"
+                      onClick={garderTout}
+                      disabled={plages.length === 1 && plages[0][0] <= 0 && plages[0][1] >= duree}
+                      className="text-xs text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground disabled:no-underline disabled:opacity-50"
+                      data-testid="garder-video-entiere"
+                    >
+                      Garder la vidéo entière
+                    </button>
+                  </div>
                   {message && (
                     <p className="shrink-0 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs text-foreground" aria-live="polite" data-testid="coupes-message">
                       {message}

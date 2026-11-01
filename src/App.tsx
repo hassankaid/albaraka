@@ -418,6 +418,7 @@ const FullApp = () => (
                   <Route path="/studio" element={<StudioGate><StudioAccueil /></StudioGate>} />
                   <Route path="/studio/face-camera" element={<StudioGate><StudioFaceCamera /></StudioGate>} />
                   <Route path="/studio/montage/:id" element={<StudioGate><StudioMontage /></StudioGate>} />
+                  <Route path="/studio/hybride" element={<StudioGate><StudioFaceCamera outil="hybride" /></StudioGate>} />
                   <Route path="/studio/voix-off" element={<StudioGate><StudioVoixOff /></StudioGate>} />
                   <Route path="/studio/scripts" element={<StudioGate><StudioScripts /></StudioGate>} />
                   <Route path="/studio/abonnement" element={<StudioGate><StudioAbonnement /></StudioGate>} />

@@ -69,6 +69,7 @@ const pageTitles: Record<string, string> = {
   "/studio": "Studio",
   "/studio/face-camera": "Studio",
   "/studio/voix-off": "Studio",
+  "/studio/hybride": "Studio",
   "/studio/scripts": "Studio",
   "/studio/abonnement": "Studio",
   "/my-space/leads": "Mes Leads",

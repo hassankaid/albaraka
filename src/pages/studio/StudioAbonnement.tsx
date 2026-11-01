@@ -15,6 +15,7 @@ import { useAbonnementStudio, useActionsAbonnementStudio } from "@/hooks/useStud
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const AVANTAGES = [
   "5 nouvelles vidéos par jour au lieu d'une",
+  "Le format hybride : ton visage, et des vidéos de la banque aux bons moments",
   "Le motion design complet : mot géant derrière toi, styles, bruitages",
   "Face caméra et voix off, avec toute la bibliothèque de scripts",
   "Retouches et nouveaux rendus toujours illimités",

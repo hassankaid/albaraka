@@ -280,9 +280,9 @@ export function principaleClaire(principale: string): string {
 }
 
 /**
- * Le sous-titre tel qu'il sortira dans la vidéo finale. La version gratuite passe par le moteur
- * classique : sa place et sa taille, avec le mot clé dans la couleur principale (motion design
- * actif). Les autres ont Hyperframes, qui a sa propre mise en page.
+ * Le sous-titre tel qu'il sortira dans la vidéo finale. La version légère (gratuite, ou choisie par
+ * un abonné) passe par le moteur classique : sa place et sa taille, avec le mot clé dans la couleur
+ * principale (motion design actif). La version complète a Hyperframes et sa propre mise en page.
  */
 export function dessinerSousTitreFinal(
   ctx: CanvasRenderingContext2D,
@@ -293,7 +293,7 @@ export function dessinerSousTitreFinal(
 ) {
   if (!reglages.design?.actif) return dessinerSousTitre(ctx, petit, grand, reglages.sous_titres);
   const { principale } = couleursDesign(reglages.design);
-  if (formule === "gratuit") return dessinerSousTitre(ctx, petit, grand, reglages.sous_titres, principaleClaire(principale));
+  if (formule === "gratuit" || reglages.design.version === "leger") return dessinerSousTitre(ctx, petit, grand, reglages.sous_titres, principaleClaire(principale));
   dessinerSousTitreAnime(ctx, petit, grand, reglages.sous_titres, principale);
 }
 

@@ -2,7 +2,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as tus from "tus-js-client";
 import { supabase } from "@/integrations/supabase/client";
-import type { Montage, Reglages } from "@/lib/studio/reglages";
+import type { Montage, Outil, Reglages } from "@/lib/studio/reglages";
 
 export const BUCKET_STUDIO = "studio-videos";
 
@@ -67,6 +67,7 @@ export async function importerVideo(
   onProgres: (pourcent: number) => void,
   /** Script de la bibliothèque indiqué par l'élève (facultatif) : il sera « déjà tourné ». */
   scriptId: string | null = null,
+  outil: Outil = "face_camera",
 ): Promise<string> {
   const { data: session } = await supabase.auth.getSession();
   const jeton = session.session?.access_token;
@@ -77,7 +78,7 @@ export async function importerVideo(
   const chemin = `${uid}/${id}/source.${ext}`;
   const { error } = await db.from("studio_montages").insert({
     id,
-    outil: "face_camera",
+    outil,
     source_nom: fichier.name.slice(0, 200),
     source_path: chemin,
     script_id: scriptId,
@@ -127,6 +128,12 @@ export async function demarrer(
   const corps = await rep.json().catch(() => ({}));
   if (!rep.ok) throw new Error(corps.error ?? `Erreur ${rep.status}`);
   return corps;
+}
+
+/** Enregistre les corrections sans relancer le montage ; null les annule. */
+export async function enregistrerCorrections(id: string, reglages: Reglages | null) {
+  const { error } = await db.rpc("studio_enregistrer_corrections", { p_id: id, p_reglages: reglages });
+  if (error) throw error;
 }
 
 export async function signalerProbleme(id: string, texte: string) {

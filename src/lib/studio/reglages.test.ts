@@ -10,6 +10,7 @@ import {
   messageErreur,
   REGLAGES_PAR_DEFAUT,
   verifierFichier,
+  correctionsEnAttente,
 } from "./reglages";
 
 describe("import d'une vidéo", () => {
@@ -33,10 +34,9 @@ describe("réglages", () => {
     expect(r.visage).toMatchObject({ flouter: true, style: "naturel", intensite: 3 });
     // un montage réglé avec une ancienne bulle colorée repasse au flou naturel
     expect(completerReglages({ visage: { flouter: true, style: "sticker" } as never }).visage.style).toBe("naturel");
-    expect(r.son).toEqual({ ameliorer: true, niveau: "normal", fond: "aucun" });
-    // fond sonore : une valeur inconnue repasse à « aucun »
-    expect(completerReglages({ son: { fond: "nasheed" } as never }).son.fond).toBe("nasheed");
-    expect(completerReglages({ son: { fond: "rap" } as never }).son.fond).toBe("aucun");
+    expect(r.son).toEqual({ ameliorer: true, niveau: "normal" });
+    // les fonds sonores ont été retirés : un ancien réglage est ignoré
+    expect(completerReglages({ son: { fond: "nasheed" } as never }).son).toEqual({ ameliorer: true, niveau: "normal" });
     expect(r.sous_titres).toEqual({ texte: "#FFFFFF", contour: "#000000", ombre: "#000000" });
   });
 
@@ -93,7 +93,7 @@ describe("écran d'attente", () => {
   });
 
   it("si le son a changé, tout est refait", () => {
-    const m = { ...base, travail_pret: true, audio_prepare: "normal", reglages: { son: { ameliorer: true, niveau: "fort" as const, fond: "aucun" as const } } };
+    const m = { ...base, travail_pret: true, audio_prepare: "normal", reglages: { son: { ameliorer: true, niveau: "fort" as const } } };
     expect(cleSon(m.reglages)).toBe("fort");
     expect(etapesAffichees({ ...m, etape: "son" }).etapes[etapesAffichees({ ...m, etape: "son" }).courant].id).toBe("son");
   });
@@ -163,5 +163,34 @@ describe("version gratuite (29/10/2026)", () => {
     const { minutes, messageDureeGratuite } = await import("./reglages");
     expect([minutes(60), minutes(120), minutes(45)]).toEqual(["1 minute", "2 minutes", "45 secondes"]);
     expect(messageDureeGratuite(60)).toContain("La version gratuite accepte 1 minute de vidéo");
+  });
+});
+
+describe("corrections en attente", () => {
+  const base = completerReglages({});
+  it("ne signale rien sans changement, ni pour un ancien fond sonore", () => {
+    expect(correctionsEnAttente(base, null)).toEqual([]);
+    expect(correctionsEnAttente(base, { ...base })).toEqual([]);
+    expect(correctionsEnAttente({ son: { fond: "nasheed" } as never }, base)).toEqual([]);
+  });
+  it("nomme ce qui attend le prochain montage", () => {
+    const attente = {
+      ...base,
+      sous_titres: { ...base.sous_titres, corrections: [{ small_ia: "a", big_ia: "b", small: "a", big: "c" }] },
+      coupes: { ...base.coupes, plages: [[0, 10]] as [number, number][] },
+      son: { ...base.son, niveau: "fort" as const },
+    };
+    expect(correctionsEnAttente(base, attente)).toEqual(["Sous-titres", "Coupes", "Réglages"]);
+    expect(correctionsEnAttente(base, { ...base, voix_off: { remplacements: { "1": "x" } } })).toEqual(["Plans"]);
+  });
+});
+
+describe("format hybride", () => {
+  it("passe par le choix des plans et le floutage, et revient à sa page de réglages", () => {
+    const ids = etapesDuMontage({ visage: { flouter: true } as never, design: { actif: false } as never }, "hybride").map((e) => e.id);
+    expect(ids).toContain("plans");
+    expect(ids).toContain("floutage");
+    expect(etapesDuMontage({}, "face_camera").map((e) => e.id)).not.toContain("plans");
+    expect(lienDuMontage({ id: "x", statut: "pret", lance: false, outil: "hybride" })).toBe("/studio/hybride?id=x");
   });
 });

@@ -1,5 +1,7 @@
-// Studio vidéo : un montage. Écran d'attente (étapes en direct), puis résultat :
-// lecteur, téléchargement, « Changer les réglages » et « Signaler un problème ».
+// Studio vidéo : un montage. Écran d'attente (étapes en direct), puis résultat : lecteur,
+// téléchargement, corrections et « Signaler un problème ». Les corrections s'enregistrent sans
+// relancer le montage ; « Relancer le montage avec les corrections » les prend toutes en compte
+// en un seul rendu, et « Télécharger » revient à la fin de ce rendu (Sidali, 01/11/2026).
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -11,6 +13,7 @@ import {
   Download,
   Flag,
   Loader2,
+  Lock,
   Palette,
   PenLine,
   RotateCcw,
@@ -24,13 +27,15 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { demarrer, lienStudio, signalerProbleme, useMontage, useRafraichirStudio } from "@/hooks/useStudio";
+import { demarrer, enregistrerCorrections, lienStudio, signalerProbleme, useMontage, useRafraichirStudio } from "@/hooks/useStudio";
+import { useStudioAcces } from "@/hooks/useStudioAcces";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { dollars } from "@/lib/studio/creditIA";
 import {
   completerReglages,
+  correctionsEnAttente,
   enTraitement,
   equipeAuTravail,
   etapesAffichees,
@@ -133,9 +138,11 @@ export default function StudioMontage() {
   const [apercu, setApercu] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [signal, setSignal] = useState<string | null>(null);
-  // « relancer » : depuis la vidéo finie, on refait tout de suite ; « regler » : depuis les réglages
-  const [verifier, setVerifier] = useState<"relancer" | "regler" | null>(null);
-  const [corriger, setCorriger] = useState<"relancer" | "regler" | null>(null);
+  // « central » : depuis l'espace central, on enregistre tout de suite ; « regler » : depuis les
+  // réglages, tout s'enregistre ensemble avec « Enregistrer les modifications »
+  const [verifier, setVerifier] = useState<"central" | "regler" | null>(null);
+  const [corriger, setCorriger] = useState<"central" | "regler" | null>(null);
+  const { data: acces } = useStudioAcces();
 
   useEffect(() => {
     if (m?.statut === "termine" && m.sortie_path) {
@@ -152,11 +159,30 @@ export default function StudioMontage() {
   if (isLoading) return <Loader2 className="m-8 h-6 w-6 animate-spin text-muted-foreground" />;
   if (!m) return <p className="p-6 text-sm text-muted-foreground">Ce montage n'existe plus.</p>;
 
-  const r = reglages ?? completerReglages(m.reglages);
-  const sonChange =
-    reglages &&
-    (reglages.son.ameliorer !== completerReglages(m.reglages).son.ameliorer ||
-      reglages.son.niveau !== completerReglages(m.reglages).son.niveau);
+  const actuels = completerReglages(m.reglages);
+  const r = reglages ?? completerReglages(m.reglages_attente ?? m.reglages);
+  const enAttente = correctionsEnAttente(m.reglages, m.reglages_attente);
+  const sonChange = r.son.ameliorer !== actuels.son.ameliorer || r.son.niveau !== actuels.son.niveau;
+  // ancienne vidéo avec une musique de fond : elle disparaît au prochain montage (décision 3A)
+  const ancienFond = (m.reglages?.son as { fond?: string } | undefined)?.fond;
+  const fondPerdu = !!ancienFond && ancienFond !== "aucun";
+  // format hybride sans abonnement : la vidéo reste téléchargeable, seule la relance est réservée
+  const hybrideVerrouille = m.outil === "hybride" && acces?.formule === "gratuit";
+
+  async function enregistrer(nouveaux: Reglages | null, titre: string) {
+    setEnvoi(true);
+    try {
+      await enregistrerCorrections(m!.id, nouveaux);
+      await rafraichir();
+      setModifier(false);
+      setReglages(null);
+      toast({ title: titre });
+    } catch (e) {
+      toast({ title: "Enregistrement impossible", description: message(e), variant: "destructive" });
+    } finally {
+      setEnvoi(false);
+    }
+  }
 
   async function relancer(nouveaux: Reglages) {
     setEnvoi(true);
@@ -271,7 +297,9 @@ export default function StudioMontage() {
           </div>
           <div className="space-y-4">
             <div className="space-y-1">
-              <h2 className="text-lg font-semibold text-foreground">Ta vidéo est prête</h2>
+              <h2 className="text-lg font-semibold text-foreground">
+                {enAttente.length ? "Tes corrections sont enregistrées" : "Ta vidéo est prête"}
+              </h2>
               {m.rapport && (
                 <p className="text-sm text-muted-foreground">
                   {Math.round(Number(m.rapport.entree_s))} s filmées, {Math.round(Number(m.rapport.sortie_s))} s gardées.
@@ -288,20 +316,63 @@ export default function StudioMontage() {
               </p>
             </div>
             <div className="flex flex-col gap-2 sm:max-w-xs">
-              <Button onClick={telecharger} className="gap-2">
-                <Download className="h-4 w-4" /> Télécharger
-              </Button>
-              {m.travail_pret && (
-                <Button variant="outline" onClick={() => setCorriger("relancer")} className="gap-2">
-                  <PenLine className="h-4 w-4" /> Corriger les sous-titres
+              {enAttente.length > 0 ? (
+                <>
+                  <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 text-xs" data-testid="corrections-en-attente">
+                    <p className="font-semibold text-foreground">
+                      {enAttente.length} correction{enAttente.length > 1 ? "s" : ""} en attente
+                    </p>
+                    <p className="text-muted-foreground">{enAttente.join(" · ")}</p>
+                    {(sonChange || fondPerdu) && (
+                      <p className="mt-1 text-amber-300">
+                        {[sonChange && "Le son a changé : tout le montage sera refait (quelques minutes).", fondPerdu && "La musique de fond n'existe plus : elle ne sera pas dans la nouvelle version."]
+                          .filter(Boolean)
+                          .join(" ")}
+                      </p>
+                    )}
+                  </div>
+                  <Button onClick={() => relancer(r)} disabled={envoi} className="gap-2" data-testid="relancer-corrections">
+                    {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />} Relancer le montage avec les corrections
+                  </Button>
+                  <button
+                    type="button"
+                    disabled={envoi}
+                    onClick={() => enregistrer(null, "Corrections annulées")}
+                    className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                    data-testid="annuler-corrections"
+                  >
+                    Annuler mes corrections
+                  </button>
+                </>
+              ) : (
+                <Button onClick={telecharger} className="gap-2">
+                  <Download className="h-4 w-4" /> Télécharger
                 </Button>
               )}
-              <Button variant="outline" onClick={() => setVerifier("relancer")} className="gap-2">
-                <Scissors className="h-4 w-4" /> Vérifier les coupes
-              </Button>
-              <Button variant="outline" onClick={() => setModifier(true)} className="gap-2">
-                <Settings2 className="h-4 w-4" /> Changer les réglages
-              </Button>
+              {hybrideVerrouille ? (
+                <Link
+                  to="/studio/abonnement"
+                  className="flex items-start gap-2 rounded-lg border border-primary/40 p-3 text-xs text-muted-foreground hover:border-primary"
+                  data-testid="hybride-verrouille"
+                >
+                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                  Le format hybride est réservé à l'abonnement : ta vidéo reste téléchargeable, mais la corriger et la relancer demande l'abonnement Studio.
+                </Link>
+              ) : (
+                <>
+                  {m.travail_pret && (
+                    <Button variant="outline" onClick={() => setCorriger("central")} className="gap-2">
+                      <PenLine className="h-4 w-4" /> Corriger les sous-titres
+                    </Button>
+                  )}
+                  <Button variant="outline" onClick={() => setVerifier("central")} className="gap-2">
+                    <Scissors className="h-4 w-4" /> Vérifier les coupes
+                  </Button>
+                  <Button variant="outline" onClick={() => setModifier(true)} className="gap-2">
+                    <Settings2 className="h-4 w-4" /> Changer les réglages
+                  </Button>
+                </>
+              )}
               <Button variant="ghost" onClick={() => setSignal("")} className="gap-2 text-muted-foreground">
                 <Flag className="h-4 w-4" /> Signaler un problème
               </Button>
@@ -310,11 +381,16 @@ export default function StudioMontage() {
         </div>
       )}
 
-      {m.statut === "termine" && !modifier && m.outil === "voix_off" && (
+      {m.statut === "termine" && !modifier && m.outil !== "face_camera" && !hybrideVerrouille && (
         <PlansVoixOff
           montage={m}
           envoi={envoi}
-          onAppliquer={(choix) => relancer({ ...r, voix_off: { remplacements: { ...r.voix_off.remplacements, ...choix } } })}
+          enAttente={Object.fromEntries(
+            Object.entries(r.voix_off.remplacements).filter(([i, id]) => actuels.voix_off.remplacements[i] !== id),
+          )}
+          onAppliquer={(choix) =>
+            enregistrer({ ...r, voix_off: { remplacements: { ...actuels.voix_off.remplacements, ...choix } } }, "Plans enregistrés")
+          }
         />
       )}
 
@@ -344,7 +420,12 @@ export default function StudioMontage() {
             </Bloc>
             {sonChange && (
               <p className="text-xs text-amber-300">
-                Le réglage du son a changé : tout le montage sera refait (quelques minutes).
+                Le réglage du son a changé : tout le montage sera refait (quelques minutes) quand tu le relanceras.
+              </p>
+            )}
+            {fondPerdu && (
+              <p className="text-xs text-amber-300" data-testid="fond-perdu">
+                La musique de fond n'existe plus dans le Studio : elle ne sera pas dans la nouvelle version.
               </p>
             )}
             <div className="flex flex-wrap justify-between gap-2">
@@ -357,8 +438,8 @@ export default function StudioMontage() {
               >
                 Annuler
               </Button>
-              <Button onClick={() => relancer(r)} disabled={envoi} className="gap-2">
-                {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />} Refaire la vidéo
+              <Button onClick={() => enregistrer(r, "Modifications enregistrées")} disabled={envoi} className="gap-2" data-testid="enregistrer-modifications">
+                {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Enregistrer les modifications
               </Button>
             </div>
           </div>
@@ -376,10 +457,10 @@ export default function StudioMontage() {
           onOpenChange={(o) => !o && setVerifier(null)}
           montage={m}
           reglages={r}
-          libelleValider={verifier === "relancer" ? "Refaire la vidéo avec ces coupes" : "Valider ces coupes"}
+          libelleValider="Valider la correction des coupes"
           onValider={(plages) => {
             const nouveaux = { ...r, coupes: { ...r.coupes, plages } };
-            if (verifier === "relancer") relancer(nouveaux);
+            if (verifier === "central") enregistrer(nouveaux, "Coupes enregistrées");
             else setReglages(nouveaux);
           }}
         />
@@ -391,10 +472,10 @@ export default function StudioMontage() {
           onOpenChange={(o) => !o && setCorriger(null)}
           montage={m}
           reglages={r}
-          libelleValider={corriger === "relancer" ? "Refaire la vidéo avec ces sous-titres" : "Valider ces sous-titres"}
+          libelleValider="Valider la correction des sous-titres"
           onValider={(corrections) => {
             const nouveaux = { ...r, sous_titres: { ...r.sous_titres, corrections } };
-            if (corriger === "relancer") relancer(nouveaux);
+            if (corriger === "central") enregistrer(nouveaux, "Sous-titres enregistrés");
             else setReglages(nouveaux);
           }}
         />

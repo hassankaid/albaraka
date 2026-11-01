@@ -16,19 +16,20 @@ export type StyleMontage = "auto" | "sobre" | "signature" | "energique";
 /** Rythme des coupes (vocal de Sidali, 12/10) : « dynamique » est l'ancien comportement. */
 export type RythmeCoupes = "naturel" | "dynamique" | "pose";
 
-/** Fond sonore sous la voix (sons de la banque de Sidali), baissé automatiquement quand on parle. */
-export type FondSonore = "aucun" | "humming" | "nasheed" | "maher_zain";
+/** Motion design « léger » (moteur classique) ou « complet » (Hyperframes, abonnement). */
+export type VersionDesign = "leger" | "complet";
 
 export type PaletteId = "or_noir" | "emeraude" | "rose_poudre" | "bleu_electrique" | "rouge_passion" | "blanc_minimal" | "personnalise";
 
 export interface Reglages {
-  son: { ameliorer: boolean; niveau: NiveauSon; fond: FondSonore };
+  son: { ameliorer: boolean; niveau: NiveauSon };
   /** corrections : sous-titres corrigés par l'élève (voir sousTitres.ts), appliqués à chaque rendu. */
   sous_titres: { texte: string; contour: string; ombre: string; corrections?: CorrectionSousTitre[] };
   visage: { flouter: boolean; style: StyleFlou; couleur: string; intensite: number; intensite_couleur: number };
   /** Motion design : style, palette, et prénom + titre pour la carte de présentation. */
   design: {
     actif: boolean;
+    version: VersionDesign;
     style: StyleMontage;
     palette: PaletteId;
     principale: string;
@@ -44,11 +45,11 @@ export interface Reglages {
 }
 
 export const REGLAGES_PAR_DEFAUT: Reglages = {
-  son: { ameliorer: true, niveau: "normal", fond: "aucun" },
+  son: { ameliorer: true, niveau: "normal" },
   sous_titres: { texte: "#FFFFFF", contour: "#000000", ombre: "#000000" },
   visage: { flouter: false, style: "naturel", couleur: "#C9A45C", intensite: 3, intensite_couleur: 3 },
   // activé par défaut (cahier des charges, section 4)
-  design: { actif: true, style: "auto", palette: "or_noir", principale: "#C9A45C", fond: "#0F0F0F", texte: "#FFFFFF", prenom: "", titre: "" },
+  design: { actif: true, version: "complet", style: "auto", palette: "or_noir", principale: "#C9A45C", fond: "#0F0F0F", texte: "#FFFFFF", prenom: "", titre: "" },
   coupes: { rythme: "naturel", plages: null },
   voix_off: { remplacements: {} },
 };
@@ -111,13 +112,6 @@ export const NIVEAUX_SON: { id: NiveauSon; nom: string }[] = [
   { id: "fort", nom: "Fort" },
 ];
 
-export const FONDS_SONORES: { id: FondSonore; nom: string; detail: string }[] = [
-  { id: "aucun", nom: "Aucun", detail: "Ta voix seule" },
-  { id: "humming", nom: "Humming", detail: "Voix fredonnées, sans instrument" },
-  { id: "nasheed", nom: "Nasheed", detail: "Chants, sans instrument" },
-  { id: "maher_zain", nom: "Maher Zain", detail: "Chansons de Maher Zain" },
-];
-
 /** Étapes affichées sur l'écran d'attente, dans l'ordre. */
 export const ETAPES: { id: string; nom: string }[] = [
   { id: "reception", nom: "Réception de la vidéo" },
@@ -154,7 +148,7 @@ export const ROLE_DE_L_ETAPE: Record<string, { role: string; action: string }> =
   coupes: { role: "monteur", action: "coupe les blancs" },
   montage: { role: "monteur", action: "assemble les meilleures prises" },
   sous_titres: { role: "sous_titres", action: "découpe tes sous-titres et choisit les mots clés" },
-  plans: { role: "da", action: "choisit dans la banque un plan pour chaque moment de ta voix" },
+  plans: { role: "da", action: "choisit dans la banque les plans de ta vidéo" },
   animations: { role: "da", action: "choisit le moment fort et les animations" },
   floutage: { role: "monteur", action: "floute ton visage" },
   motion_design: { role: "motion", action: "anime ta vidéo et place les bruitages" },
@@ -178,18 +172,22 @@ export function equipeAuTravail(etapes: { id: string }[], courant: number) {
   };
 }
 
+export type Outil = "face_camera" | "voix_off" | "hybride";
+
 export type Statut = "import" | "preparation" | "pret" | "en_cours" | "termine" | "erreur";
 
 export interface Montage {
   id: string;
   user_id: string;
-  outil: "face_camera" | "voix_off";
+  outil: Outil;
   script?: string | null;
   theme?: string | null;
   statut: Statut;
   etape: string | null;
   lance: boolean;
   reglages: Partial<Reglages>;
+  /** Corrections enregistrées, en attente du prochain montage (Sidali, 01/11/2026). */
+  reglages_attente?: Partial<Reglages> | null;
   source_nom: string | null;
   source_path: string | null;
   travail_pret: boolean;
@@ -209,11 +207,8 @@ export interface Montage {
 /** Réglages complets à partir de ce qui est enregistré (champs manquants = défaut). */
 export function completerReglages(r: Partial<Reglages> | null | undefined): Reglages {
   return {
-    son: {
-      ...REGLAGES_PAR_DEFAUT.son,
-      ...(r?.son ?? {}),
-      fond: FONDS_SONORES.some((f) => f.id === r?.son?.fond) ? r.son.fond : "aucun",
-    },
+    // les fonds sonores ont été retirés (Sidali, 01/11/2026) : un ancien réglage est ignoré
+    son: { ameliorer: r?.son?.ameliorer ?? REGLAGES_PAR_DEFAUT.son.ameliorer, niveau: r?.son?.niveau ?? REGLAGES_PAR_DEFAUT.son.niveau },
     sous_titres: { ...REGLAGES_PAR_DEFAUT.sous_titres, ...(r?.sous_titres ?? {}) },
     // les montages faits avec un ancien style (bulle colorée) repassent au flou naturel
     visage: { ...REGLAGES_PAR_DEFAUT.visage, ...(r?.visage ?? {}), style: "naturel" },
@@ -223,14 +218,30 @@ export function completerReglages(r: Partial<Reglages> | null | undefined): Regl
   };
 }
 
+/** Ce qui attend le prochain montage, par rapport à la vidéo actuelle. Vide : rien à relancer. */
+export function correctionsEnAttente(actuels: Partial<Reglages> | null | undefined, attente: Partial<Reglages> | null | undefined): string[] {
+  if (!attente) return [];
+  const a = completerReglages(actuels);
+  const b = completerReglages(attente);
+  const pareil = (x: unknown, y: unknown) => JSON.stringify(x ?? null) === JSON.stringify(y ?? null);
+  const { corrections: ca, ...stA } = a.sous_titres;
+  const { corrections: cb, ...stB } = b.sous_titres;
+  const out: string[] = [];
+  if (!pareil(ca ?? [], cb ?? [])) out.push("Sous-titres");
+  if (!pareil(a.coupes.plages, b.coupes.plages) || a.coupes.rythme !== b.coupes.rythme) out.push("Coupes");
+  if (!pareil(a.voix_off, b.voix_off)) out.push("Plans");
+  if (!pareil(a.son, b.son) || !pareil(a.visage, b.visage) || !pareil(a.design, b.design) || !pareil(stA, stB)) out.push("Réglages");
+  return out;
+}
+
 /** Étapes réellement parcourues : le floutage n'apparaît que s'il est demandé, le choix des plans qu'en Voix off. */
-export function etapesDuMontage(reglages: Partial<Reglages> | null | undefined, outil: Montage["outil"] = "face_camera") {
+export function etapesDuMontage(reglages: Partial<Reglages> | null | undefined, outil: Outil = "face_camera") {
   const r = completerReglages(reglages);
   // floutage et animations se font dans la même passe : une seule étape affichée
   return ETAPES.filter(
     (e) =>
-      (e.id !== "floutage" || (outil === "face_camera" && r.visage.flouter && !r.design.actif)) &&
-      (e.id !== "plans" || outil === "voix_off") &&
+      (e.id !== "floutage" || (outil !== "voix_off" && r.visage.flouter && !r.design.actif)) &&
+      (e.id !== "plans" || outil !== "face_camera") &&
       ((e.id !== "motion_design" && e.id !== "verification") || r.design.actif),
   ).map((e) => (outil === "voix_off" && e.id === "reception" ? { ...e, nom: "Réception de ta voix" } : e));
 }
@@ -314,7 +325,7 @@ export function verifierFichier(f: { name: string; type: string; size: number })
 
 /** Où mène un montage de la liste : réglages à finir, ou écran du montage. */
 export function lienDuMontage(m: Pick<Montage, "id" | "statut" | "lance"> & { outil?: Montage["outil"] }) {
-  const reglages = m.outil === "voix_off" ? "/studio/voix-off" : "/studio/face-camera";
+  const reglages = m.outil === "voix_off" ? "/studio/voix-off" : m.outil === "hybride" ? "/studio/hybride" : "/studio/face-camera";
   if ((m.statut === "preparation" && !m.lance) || m.statut === "pret") return `${reglages}?id=${m.id}`;
   return `/studio/montage/${m.id}`;
 }

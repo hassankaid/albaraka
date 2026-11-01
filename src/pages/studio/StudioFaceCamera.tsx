@@ -1,8 +1,8 @@
-// Studio vidéo, outil Face caméra : import, floutage du visage, réglages, lancement.
+// Studio vidéo, outils Face caméra et Format hybride : import, floutage du visage, réglages, lancement.
 // Tous les choix se font AVANT le traitement. Pendant que l'élève règle, la
 // machine prépare déjà la vidéo (son, transcription, coupes, sous-titres).
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, Upload, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -20,6 +20,7 @@ import {
   messageErreur,
   REGLAGES_PAR_DEFAUT,
   verifierFichier,
+  type Outil,
   type Reglages,
 } from "@/lib/studio/reglages";
 import { ApercuStudio } from "@/components/studio/ApercuStudio";
@@ -50,7 +51,7 @@ function dureeVideo(f: File): Promise<number | null> {
   });
 }
 
-export default function StudioFaceCamera() {
+export default function StudioFaceCamera({ outil = "face_camera" }: { outil?: Outil }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -103,7 +104,7 @@ export default function StudioFaceCamera() {
     imageDuFichier(f).then(setImageLocale);
     setProgres(0);
     try {
-      const nouvelId = await importerVideo(f, setProgres, scriptId);
+      const nouvelId = await importerVideo(f, setProgres, scriptId, outil);
       setParams({ id: nouvelId }, { replace: true });
       setEcran("visage");
       await demarrer(nouvelId, "preparer");
@@ -131,6 +132,9 @@ export default function StudioFaceCamera() {
   const visages = montage?.apercu?.visages ?? null;
   const preparationEchouee = montage?.statut === "erreur";
 
+  // réservé à l'abonnement (la base le vérifie aussi, studio_preparer et studio_lancer)
+  if (outil === "hybride" && acces?.formule === "gratuit") return <Navigate to="/studio/abonnement" replace />;
+
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-4 md:p-6">
       <div className="flex items-center gap-3">
@@ -139,7 +143,7 @@ export default function StudioFaceCamera() {
             <ArrowLeft className="h-4 w-4" /> Studio
           </Link>
         </Button>
-        <h1 className="font-heading text-2xl text-foreground">Face caméra</h1>
+        <h1 className="font-heading text-2xl text-foreground">{outil === "hybride" ? "Format hybride" : "Face caméra"}</h1>
       </div>
 
       <ol className="flex gap-2 text-xs">

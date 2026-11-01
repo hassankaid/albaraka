@@ -4,9 +4,9 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Loader2, PenLine, Scissors } from "lucide-react";
+import { Loader2, Lock, PenLine, Scissors } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FONDS_SONORES, NIVEAUX_SON, PALETTES, RYTHMES_COUPES, STYLES_MONTAGE, type Reglages } from "@/lib/studio/reglages";
+import { NIVEAUX_SON, PALETTES, RYTHMES_COUPES, STYLES_MONTAGE, type Reglages } from "@/lib/studio/reglages";
 import { Link } from "react-router-dom";
 import { SelecteurCouleur } from "./SelecteurCouleur";
 import { useStudioAcces } from "@/hooks/useStudioAcces";
@@ -100,29 +100,6 @@ export function BlocSon({ reglages, onChange }: { reglages: Reglages; onChange: 
           </div>
         </div>
       )}
-      <div className="space-y-2">
-        <p className="text-sm font-medium text-foreground">
-          Fond sonore
-          <span className="block text-xs font-normal text-muted-foreground">Sous ta voix, baissé automatiquement quand tu parles</span>
-        </p>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" data-testid="fond-sonore">
-          {FONDS_SONORES.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => maj({ fond: f.id })}
-              aria-pressed={s.fond === f.id}
-              className={cn(
-                "rounded-lg border px-3 py-2 text-left transition-colors",
-                s.fond === f.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/50",
-              )}
-            >
-              <span className={cn("block text-sm font-medium", s.fond === f.id && "text-primary")}>{f.nom}</span>
-              <span className="block text-[11px] text-muted-foreground">{f.detail}</span>
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
@@ -170,7 +147,8 @@ export function BlocDesign({ reglages, onChange }: { reglages: Reglages; onChang
   const d = reglages.design;
   // Version gratuite (29/10/2026) : motion design léger, sans le choix du style (propre au complet).
   const { data: acces } = useStudioAcces();
-  const leger = acces?.formule === "gratuit";
+  const sansAbonnement = acces?.formule === "gratuit";
+  const leger = sansAbonnement || d.version === "leger";
   const maj = (p: Partial<Reglages["design"]>) => onChange({ ...reglages, design: { ...d, ...p } });
   return (
     <div className="space-y-5">
@@ -179,31 +157,70 @@ export function BlocDesign({ reglages, onChange }: { reglages: Reglages; onChang
           Motion design
           <span className="block text-xs font-normal text-muted-foreground">
             {leger
-              ? "Version légère : zooms, icônes et listes animées, carte de présentation"
+              ? "Zooms, icônes et listes animées, carte de présentation"
               : "Mot géant derrière toi, zooms, icônes et listes animées, bruitages, carte de présentation"}
           </span>
         </Label>
         <Switch id="studio-design" checked={d.actif} onCheckedChange={(actif) => maj({ actif })} />
       </div>
-      {d.actif && leger && (
-        <p className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 text-xs text-muted-foreground" data-testid="design-leger">
-          Le motion design complet (mot géant derrière toi, styles, bruitages) est inclus dans{" "}
-          <Link to="/studio/abonnement" className="font-medium text-amber-600 underline-offset-2 hover:underline">l'abonnement Studio</Link>.
-        </p>
-      )}
       {d.actif && (
         <>
-          <div className={cn("space-y-2", leger && "hidden")}>
-            <p className="text-sm font-medium text-foreground">Style</p>
+          <div className="space-y-2" data-testid="version-design">
+            <p className="text-sm font-medium text-foreground">Version</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => maj({ version: "leger" })}
+                aria-pressed={leger}
+                className={cn(
+                  "rounded-lg border px-2.5 py-2 text-left transition-colors",
+                  leger ? "border-primary bg-primary/10" : "border-border hover:border-primary/50",
+                )}
+              >
+                <span className="block text-xs font-medium text-foreground">Léger</span>
+                <span className="block text-[11px] text-muted-foreground">Zooms, icônes et listes animées</span>
+              </button>
+              {sansAbonnement ? (
+                <Link
+                  to="/studio/abonnement"
+                  className="rounded-lg border border-border px-2.5 py-2 text-left opacity-70 transition-colors hover:border-primary/50"
+                  data-testid="version-complete-verrou"
+                >
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                    <Lock className="h-3 w-3 text-primary" /> Complet
+                  </span>
+                  <span className="block text-[11px] text-muted-foreground">Avec l'abonnement : mot géant, styles, bruitages</span>
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => maj({ version: "complet" })}
+                  aria-pressed={!leger}
+                  className={cn(
+                    "rounded-lg border px-2.5 py-2 text-left transition-colors",
+                    !leger ? "border-primary bg-primary/10" : "border-border hover:border-primary/50",
+                  )}
+                >
+                  <span className="block text-xs font-medium text-foreground">Complet</span>
+                  <span className="block text-[11px] text-muted-foreground">Mot géant derrière toi, styles, bruitages</span>
+                </button>
+              )}
+            </div>
+          </div>
+          <div className={cn("space-y-2", !sansAbonnement && leger && "hidden")} data-testid="styles-design">
+            <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+              {sansAbonnement && <Lock className="h-3.5 w-3.5 text-primary" />} Style
+            </p>
             <div className="grid grid-cols-2 gap-2">
               {STYLES_MONTAGE.map((st) => (
                 <button
                   key={st.id}
                   type="button"
+                  disabled={sansAbonnement}
                   onClick={() => maj({ style: st.id })}
                   aria-pressed={d.style === st.id}
                   className={cn(
-                    "rounded-lg border px-2.5 py-2 text-left transition-colors",
+                    "rounded-lg border px-2.5 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                     d.style === st.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/50",
                   )}
                 >

@@ -33,6 +33,7 @@ describe("isApporteurScopedPath", () => {
     "/studio",
     "/studio/face-camera",
     "/studio/voix-off",
+    "/studio/hybride",
     "/studio/scripts",
     "/studio/abonnement",
   ])("allows %s", (path) => {

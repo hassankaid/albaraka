@@ -1,7 +1,6 @@
-// Voix off, sur la vidéo finie : la frise des plans utilisés (cahier, section 3). En
-// cliquant sur un plan, l'élève voit 3 plans de remplacement proposés par l'IA et peut
-// en choisir un ; il peut en changer plusieurs, puis relance une seule fois (seul le rendu
-// est refait : la voix et les sous-titres ne bougent pas).
+// Voix off et format hybride, sur la vidéo finie : la frise des plans utilisés (cahier, section 3).
+// En cliquant sur un plan, l'élève voit 3 plans de remplacement proposés par l'IA et peut en choisir
+// un ; ses choix attendent le rendu final, avec ses autres corrections (Sidali, 01/11/2026).
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Repeat, Undo2, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,6 +28,18 @@ interface Moment {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
 
+/** Les plans déjà choisis, retrouvés parmi les propositions de chaque moment. */
+function reprendre(moments: Moment[], choisis: Record<string, string>): Record<number, PlanChoisi> {
+  const out: Record<number, PlanChoisi> = {};
+  for (const [i, id] of Object.entries(choisis)) {
+    const p = moments[Number(i)]?.propositions.find((x) => x.id === id);
+    if (p) out[Number(i)] = p;
+  }
+  return out;
+}
+
+const cles = (o: Record<string, string>) => JSON.stringify(Object.entries(o).sort());
+
 function Vignette({ src, alt, className }: { src?: string; alt: string; className?: string }) {
   return (
     <div className={`aspect-[9/16] overflow-hidden rounded-lg bg-black ${className ?? ""}`}>
@@ -41,17 +52,22 @@ export function PlansVoixOff({
   montage,
   onAppliquer,
   envoi,
+  enAttente,
 }: {
   montage: Pick<Montage, "id" | "user_id" | "version">;
-  /** index du moment → plan choisi ; relance le rendu une seule fois */
+  /** index du moment → plan choisi ; enregistré, sans relancer le montage */
   onAppliquer: (choix: Record<string, string>) => void;
   envoi: boolean;
+  /** les choix déjà enregistrés, en attente du prochain montage */
+  enAttente: Record<string, string>;
 }) {
   const [moments, setMoments] = useState<Moment[] | null>(null);
   const [images, setImages] = useState<Record<string, string>>({});
   const [ouvert, setOuvert] = useState<number | null>(null);
   const [choix, setChoix] = useState<Record<number, PlanChoisi>>({});
+  const choixIds = Object.fromEntries(Object.entries(choix).map(([i, p]) => [i, p.id]));
   const nbChoix = Object.keys(choix).length;
+  const aEnregistrer = cles(choixIds) !== cles(enAttente);
   const affiche = (i: number) => choix[i] ?? moments?.[i]?.plan;
 
   useEffect(() => {
@@ -79,6 +95,12 @@ export function PlansVoixOff({
       actif = false;
     };
   }, [montage.id, montage.user_id, montage.version]);
+
+  // les choix enregistrés reviennent à l'écran (retour sur la page, annulation des corrections)
+  const attenteCle = cles(enAttente);
+  useEffect(() => {
+    if (moments) setChoix(reprendre(moments, Object.fromEntries(JSON.parse(attenteCle))));
+  }, [moments, attenteCle]);
 
   const m = ouvert !== null ? moments?.[ouvert] : null;
   const nb = useMemo(() => moments?.length ?? 0, [moments]);
@@ -119,22 +141,28 @@ export function PlansVoixOff({
         ))}
       </div>
 
-      {nbChoix > 0 && (
+      {aEnregistrer && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-primary/40 bg-primary/10 p-3" data-testid="plans-a-appliquer">
           <p className="flex-1 text-sm text-foreground">
-            {nbChoix} plan{nbChoix > 1 ? "s" : ""} changé{nbChoix > 1 ? "s" : ""}. Tu peux en changer d'autres, puis refaire la vidéo une
-            seule fois.
+            {nbChoix} plan{nbChoix > 1 ? "s" : ""} changé{nbChoix > 1 ? "s" : ""}. Ils seront pris en compte quand tu relanceras le montage
+            avec tes corrections.
           </p>
-          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setChoix({})} disabled={envoi}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setChoix(reprendre(moments, enAttente))}
+            disabled={envoi}
+          >
             <Undo2 className="h-3.5 w-3.5" /> Annuler
           </Button>
           <Button
             size="sm"
             className="gap-1.5"
             disabled={envoi}
-            onClick={() => onAppliquer(Object.fromEntries(Object.entries(choix).map(([i, p]) => [i, p.id])))}
+            onClick={() => onAppliquer(choixIds)}
           >
-            {envoi ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />} Refaire la vidéo
+            {envoi ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />} Valider ces plans
           </Button>
         </div>
       )}

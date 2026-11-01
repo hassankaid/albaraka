@@ -59,6 +59,17 @@ Varie les images d'un moment à l'autre ; garde une ambiance cohérente.
 Réponds UNIQUEMENT en JSON, exactement {n} éléments dans l'ordre des moments :
 {{"moments": [{{"requete": "...", "mots_cles": ["...", "..."], "themes": ["..."], "categories": ["..."]}}, ...]}}"""
 
+# Format hybride (Sidali, 01/11/2026) : le visage d'abord, un plan seulement là où il apporte quelque chose.
+HYBRIDE_DOSE = 0.30       # part de la vidéo couverte par des plans, au plus
+HYBRIDE_MARGE = 3.0       # le visage au début (l'accroche) et à la fin (l'appel à l'action)
+HYBRIDE_VISAGE_MIN = 1.5  # toujours un temps de visage entre deux plans
+HYBRIDE_DUREE_MIN = 1.5
+HYBRIDE_CONCRET_MIN = 4   # un moment abstrait reste sur le visage
+CONSIGNE_HYBRIDE = ("Cette vidéo montre la personne face caméra ; un plan ne remplacera son visage que sur quelques moments. "
+                    "Pour chaque moment, ajoute aussi \"concret\" : une note de 0 à 10. 10 : les mots décrivent quelque chose "
+                    "qu'on peut montrer (la plage, le bureau, l'argent, une famille). 0 : idée abstraite, émotion ou appel "
+                    "direct à la caméra, où le visage est préférable.")
+
 RELIGIEUX = ("Sujet religieux : images sobres et respectueuses (nature, lumière, lieux de prière), "
              "jamais de représentation de Dieu ni d'image décorative sur Son nom.")
 
@@ -202,14 +213,14 @@ def texte_categories(categories):
             + "\n".join(f"- {c['dossier']} ({c['plans']})" for c in categories) + "\n")
 
 
-def prompt_plans(script, theme_nom, liste, themes, categories=None):
+def prompt_plans(script, theme_nom, liste, themes, categories=None, consigne=""):
     echapper = lambda s: s.replace("{", "{{").replace("}", "}}")
     lignes = "\n".join(f"M{i} [{m['debut']:.1f}-{m['fin']:.1f}] : {m['texte'] or '(silence)'}" for i, m in enumerate(liste))
     religieux = RELIGIEUX if any(k in (script or "").lower() for k in ("allah", "dieu", "invocation", "prière", "coran")) else ""
     return PROMPT_PLANS.format(theme=echapper(theme_nom or "non précisé"), script=echapper((script or "")[:5000]),
                                moments=echapper(lignes), themes="\n".join(f"- {k} : {v}" for k, v in themes.items()),
                                categories=echapper(texte_categories(categories)),
-                               reglage_religieux=religieux, n=len(liste))
+                               reglage_religieux=" ".join(x for x in (religieux, consigne) if x), n=len(liste))
 
 
 def requetes_valides(objet, n):
@@ -267,6 +278,52 @@ def choisir(liste, demandes, chercher, secours):
     return liste
 
 
+def moments_hybrides(liste, total):
+    """Les moments où un plan est permis : ni au début ni à la fin, et assez longs pour être vus."""
+    marge = min(HYBRIDE_MARGE, total * 0.15)
+    return [m for m in liste if m["debut"] >= marge and m["fin"] <= total - marge
+            and m["fin"] - m["debut"] >= HYBRIDE_DUREE_MIN and m.get("texte")]
+
+
+def choisir_hybrides(liste, demandes, candidats, total, dose=HYBRIDE_DOSE):
+    """Les plans du format hybride. Contrairement à la voix off, rien n'oblige à remplir : un moment
+    sans bon plan garde le visage, sans plan de secours. Les meilleurs moments d'abord, jusqu'à la
+    dose voulue, avec toujours un temps de visage entre deux plans."""
+    possibles = []
+    for i, m in enumerate(liste):
+        concret = float((demandes[i] or {}).get("concret") or 0)
+        bons = sorted((c for c in candidats[i] if float(c["score"]) >= SCORE_MIN), key=lambda c: -float(c["score"]))
+        if concret >= HYBRIDE_CONCRET_MIN and bons:
+            possibles.append((float(bons[0]["score"]) + concret * 0.02, i, bons))
+    gardes, utilises, duree = [], set(), 0.0
+    for _, i, bons in sorted(possibles, key=lambda x: -x[0]):
+        m = liste[i]
+        d = m["fin"] - m["debut"]
+        if duree + d > dose * total:
+            continue
+        voisins = [g for g in gardes if m["debut"] - HYBRIDE_VISAGE_MIN < g["fin"] and g["debut"] < m["fin"] + HYBRIDE_VISAGE_MIN]
+        if voisins:
+            continue
+        plan = next((c for c in bons if c["id"] not in utilises), None)
+        if plan is None:
+            continue
+        utilises.add(plan["id"])
+        duree += d
+        gardes.append({**m, "requete": demandes[i], "plan": {**_plan(plan), "source": "banque"},
+                       "propositions": [_plan(c) for c in bons if c["id"] != plan["id"]][:3]})
+    return sorted(gardes, key=lambda g: g["debut"])
+
+
+def sans_effets_du_visage(plan, moments):
+    """Le mot géant derrière le sujet et la vidéo réduite en carte supposent le visage à l'écran :
+    on les retire là où un plan le remplace."""
+    if not plan or not moments:
+        return plan
+    sur_un_plan = lambda e: any(e["t"] < m["fin"] and m["debut"] < e.get("fin", e["t"]) for m in moments)
+    return {**plan, "elements": [e for e in plan["elements"]
+                                 if not (e.get("recette") in ("mot_derriere", "carte_reduite") and sur_un_plan(e))]}
+
+
 def _plan(c):
     return {k: c.get(k) for k in ("id", "video_id", "chemin_travail", "debut", "fin", "description", "ambiance", "score")}
 
@@ -288,10 +345,9 @@ def appliquer_remplacements(liste, remplacements):
 
 
 # ---------------------------------------------------------------- montage des plans
-def monter_plans(liste, liens, voix_wav, dossier, dst):
-    """Les plans bout à bout (durée exacte de chaque moment, 0,2 s après leur début, zoom de
-    3 %), en coupe franche, sur la voix. Les images sont comptées à partir des temps cumulés :
-    la vidéo a exactement la durée de la voix."""
+def clips_des_plans(liste, liens, dossier):
+    """Chaque plan à la durée exacte de son moment (0,2 s après son début, zoom de 3 %). Les images
+    sont comptées à partir des temps cumulés, pour ne jamais dériver de la voix."""
     def un(i):
         m = liste[i]
         p = m["plan"]
@@ -307,7 +363,33 @@ def monter_plans(liste, liens, voix_wav, dossier, dst):
         return out
 
     with cf.ThreadPoolExecutor(min(8, os.cpu_count() or 4)) as ex:
-        morceaux = [m for m in ex.map(un, range(len(liste))) if m]
+        return list(ex.map(un, range(len(liste))))
+
+
+def incruster_plans(liste, liens, video, dossier, dst):
+    """Format hybride : les plans posés sur la vidéo à leur moment, le son de la vidéo ne bouge pas."""
+    clips = clips_des_plans(liste, liens, dossier)
+    entrees, filtres, sortie = ["-i", video], [], "0:v"
+    k = 0
+    for m, clip in zip(liste, clips):
+        if not clip:
+            continue
+        k += 1
+        entrees += ["-i", clip]
+        filtres.append(f"[{k}:v]setpts=PTS-STARTPTS+{m['debut']:.3f}/TB[p{k}];"
+                       f"[{sortie}][p{k}]overlay=eof_action=pass:enable='between(t,{m['debut']:.3f},{m['fin']:.3f})'[v{k}]")
+        sortie = f"v{k}"
+    if not k:
+        return video
+    subprocess.run(["ffmpeg", "-v", "error", "-y", *entrees, "-filter_complex", ";".join(filtres), "-map", f"[{sortie}]",
+                    "-map", "0:a?", "-r", str(FPS), "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-g", "30",
+                    "-pix_fmt", "yuv420p", "-c:a", "copy", dst], check=True)
+    return dst
+
+
+def monter_plans(liste, liens, voix_wav, dossier, dst):
+    """Voix off : les plans bout à bout, en coupe franche, sur la voix."""
+    morceaux = [m for m in clips_des_plans(liste, liens, dossier) if m]
     liste_concat = os.path.join(dossier, "plans.txt")
     with open(liste_concat, "w") as f:
         f.writelines(f"file '{m}'\n" for m in morceaux)
