@@ -1,13 +1,14 @@
-// Studio vidéo : accueil (les deux outils) et « Mes vidéos ».
+// Studio vidéo : accueil (les outils, le format hybride étant verrouillé sans abonnement) et « Mes vidéos ».
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { BookOpen, Camera, Clock, Database, FileDown, Film, Mic, Loader2 } from "lucide-react";
+import { BookOpen, Camera, Clock, Database, FileDown, Film, Layers, Lock, Mic, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useMesMontages } from "@/hooks/useStudio";
+import { useStudioAcces } from "@/hooks/useStudioAcces";
 import { BandeauQuota } from "@/components/studio/QuotaStudio";
 import { CreditIA } from "@/components/studio/CreditIA";
 import { enTraitement, LIBELLE_STATUT, lienDuMontage, type Montage } from "@/lib/studio/reglages";
@@ -60,6 +61,9 @@ export default function StudioAccueil() {
   const estCeo = profile?.role === "ceo";
   const { data: montages, isLoading } = useMesMontages(user?.id);
   const visibles = (montages ?? []).filter((m) => m.statut !== "import");
+  const { data: acces } = useStudioAcces();
+  // visible par tous, réservé à l'abonnement (Sidali, 01/11/2026) ; la base le vérifie aussi
+  const hybrideVerrouille = !acces || acces.formule === "gratuit";
 
   return (
     <div className="mx-auto max-w-4xl space-y-8 p-4 md:p-6">
@@ -91,7 +95,7 @@ export default function StudioAccueil() {
       {estCeo && <CreditIA />}
       <BandeauQuota />
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <Card className="border-primary/40">
           <CardContent className="flex h-full flex-col gap-4 p-6">
             <Camera className="h-8 w-8 text-primary" />
@@ -119,6 +123,26 @@ export default function StudioAccueil() {
             <Button asChild className="w-full">
               <Link to="/studio/voix-off">Commencer</Link>
             </Button>
+          </CardContent>
+        </Card>
+        <Card className="border-primary/40" data-testid="tuile-hybride">
+          <CardContent className="flex h-full flex-col gap-4 p-6">
+            {hybrideVerrouille ? <Lock className="h-8 w-8 text-primary" /> : <Layers className="h-8 w-8 text-primary" />}
+            <div className="flex-1 space-y-1">
+              <h2 className="text-xl font-semibold text-foreground">Format hybride</h2>
+              <p className="text-sm text-muted-foreground">
+                Ton visage, et des vidéos de la banque aux bons moments, avec les sous-titres et le motion design.
+              </p>
+            </div>
+            {hybrideVerrouille ? (
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/studio/abonnement">Disponible avec l'abonnement</Link>
+              </Button>
+            ) : (
+              <Button asChild className="w-full">
+                <Link to="/studio/hybride">Commencer</Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>

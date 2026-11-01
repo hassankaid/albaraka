@@ -64,11 +64,12 @@ HYBRIDE_DOSE = 0.30       # part de la vidéo couverte par des plans, au plus
 HYBRIDE_MARGE = 3.0       # le visage au début (l'accroche) et à la fin (l'appel à l'action)
 HYBRIDE_VISAGE_MIN = 1.5  # toujours un temps de visage entre deux plans
 HYBRIDE_DUREE_MIN = 1.5
-HYBRIDE_CONCRET_MIN = 4   # un moment abstrait reste sur le visage
+HYBRIDE_CONCRET_MIN = 5   # un moment abstrait reste sur le visage
 CONSIGNE_HYBRIDE = ("Cette vidéo montre la personne face caméra ; un plan ne remplacera son visage que sur quelques moments. "
                     "Pour chaque moment, ajoute aussi \"concret\" : une note de 0 à 10. 10 : les mots décrivent quelque chose "
                     "qu'on peut montrer (la plage, le bureau, l'argent, une famille). 0 : idée abstraite, émotion ou appel "
-                    "direct à la caméra, où le visage est préférable.")
+                    "direct à la caméra, où le visage est préférable. Le plan doit aller dans le sens de la phrase : une "
+                    "difficulté ne se montre pas avec des images de luxe ou de réussite.")
 
 RELIGIEUX = ("Sujet religieux : images sobres et respectueuses (nature, lumière, lieux de prière), "
              "jamais de représentation de Dieu ni d'image décorative sur Son nom.")
