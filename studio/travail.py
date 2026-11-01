@@ -321,8 +321,10 @@ P.kept_ranges_from_words = plages_des_mots
 
 def caler_raccords(cuts, db, hop=0.01, fenetre=0.08):
     """Quand une phrase ratée est retirée en pleine voix, les temps de Whisper tombent souvent dans
-    une syllabe : le raccord est déplacé de 80 ms au plus, vers le creux de la voix le plus proche."""
+    une syllabe : le raccord est déplacé de 80 ms au plus, vers le creux de la voix le plus proche,
+    toujours sur une image : sinon le son et les sous-titres dérivent de la vidéo à chaque coupe."""
     seuil = P.speech_threshold(db)
+    sur_image = lambda t: round(t * P.OUT_FPS) / P.OUT_FPS
 
     def creux(t, mini, maxi):
         i = int(round(t / hop))
@@ -330,7 +332,7 @@ def caler_raccords(cuts, db, hop=0.01, fenetre=0.08):
             return t
         a, b = max(0, i - int(fenetre / hop)), min(len(db), i + int(fenetre / hop) + 1)
         k = a + int(np.argmin(db[a:b]))
-        return min(maxi, max(mini, k * hop))
+        return sur_image(min(maxi, max(mini, k * hop)))
 
     out = [list(c) for c in cuts]
     for i in range(len(out) - 1):
