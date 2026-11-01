@@ -27,6 +27,7 @@ export function WeeklyAgenda({
 }) {
   const [day, setDay] = useState<DayName>("Lundi");
   const slots = plan[day] || [];
+  const avecPrieres = (Object.values(plan) as PlanSlot[][]).flat().some((s) => s.cat === "religion");
 
   // Stats par catégorie sur la semaine
   const weekStats = Object.entries(CAT_LABELS)
@@ -108,6 +109,11 @@ export function WeeklyAgenda({
                 <div className="text-[11px] text-muted-foreground mt-0.5">
                   {fmtTime(s.h, s.m)} → {fmtTime(Math.floor(endMin / 60), endMin % 60)}
                 </div>
+                {s.cat === "coaching" && avecPrieres && (
+                  <div className="text-[11px] italic text-muted-foreground mt-0.5" data-testid="note-priere">
+                    Si c'est l'heure de la prière chez toi, tu peux y aller pendant le coaching.
+                  </div>
+                )}
               </div>
             </div>
           );

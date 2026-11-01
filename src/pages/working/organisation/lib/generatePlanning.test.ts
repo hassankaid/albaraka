@@ -84,10 +84,11 @@ describe("le placement", () => {
     expect(ALL_DAYS.flatMap((j) => plan[j]).filter((s) => s.cat === "coaching")).toHaveLength(4);
   });
 
-  it("déplace juste après le coaching la prière qui tombe dessus", () => {
+  it("laisse à son heure la prière qui tombe pendant un coaching", () => {
     const plan = generatePlanning(salarie, "al_baraka", COACHINGS);
-    expect(plan.Lundi.find((s) => s.label === "Maghrib")).toMatchObject({ h: 19, m: 30 });
+    expect(plan.Lundi.find((s) => s.label === "Maghrib")).toMatchObject({ h: 18, m: 15 });
     expect(plan.Mercredi.find((s) => s.label === "Maghrib")).toMatchObject({ h: 18, m: 15 });
+    expect(tacheSurCoaching(plan)).toBe(false);
   });
 
   it("respecte la durée et les jours choisis, sans en ajouter d'autres", () => {

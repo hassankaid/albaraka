@@ -174,7 +174,8 @@ const JOURS_INDISPONIBLES: Record<string, DayName[]> = {
 /**
  * Calcule la semaine type. Aucune IA, aucun rythme imposé : les tâches sont placées dans le
  * temps déclaré par l'élève, sur ses jours, et jamais sur un autre bloc. Seuls les prières et
- * le déjeuner peuvent tomber pendant le travail ou les cours, comme dans la vraie vie.
+ * le déjeuner peuvent tomber pendant le travail ou les cours, comme dans la vraie vie, et les
+ * prières pendant un coaching : l'élève peut y aller (Sidali, 01/11/2026).
  */
 export function generatePlanning(
   answers: Answers,
@@ -244,7 +245,11 @@ export function generatePlanning(
       .forEach((b) => poser(b.h * 60 + (b.m || 0), b.dur, `🔒 ${b.label || "Créneau bloqué"}`, "blocked"));
 
     const coachingsDuJour = coachings.filter((c) => c.day === dayName);
-    coachingsDuJour.forEach((c) => poser(c.h * 60 + c.m, c.dur, c.label, "coaching"));
+    const zonesCoaching = new Set<{ d: number; f: number }>();
+    coachingsDuJour.forEach((c) => {
+      poser(c.h * 60 + c.m, c.dur, c.label, "coaching");
+      zonesCoaching.add(occupes[occupes.length - 1]);
+    });
 
     if (!isRestDay) {
       const journee = workHours ?? studyHours;
@@ -264,14 +269,15 @@ export function generatePlanning(
       }
     }
 
-    // 2. Réveil, coucher, prières (une prière qui tombe sur un coaching passe juste après)
+    // 2. Réveil, coucher, prières (une prière qui tombe sur un coaching reste à son heure)
     if (libre(dWake, 30, true)) poser(dWake, 30, "Réveil + Routine", "perso");
     occupes.push({ d: finJournee, f: dSleep + 30 });
     slots.push({ h: Math.floor(dSleep / 60), m: dSleep % 60, dur: 30, label: "Coucher", cat: "perso" });
     if (hasPrayers) {
       prayerTimes.forEach((pt) => {
         let d = pt.h * 60 + pt.m;
-        for (let bloc = occupes.find((z) => d < z.f && d + pt.dur > z.d); bloc; bloc = occupes.find((z) => d < z.f && d + pt.dur > z.d)) d = bloc.f;
+        const blocSur = () => occupes.find((z) => !zonesCoaching.has(z) && d < z.f && d + pt.dur > z.d);
+        for (let bloc = blocSur(); bloc; bloc = blocSur()) d = bloc.f;
         poser(d, pt.dur, pt.name, "religion");
       });
     }
