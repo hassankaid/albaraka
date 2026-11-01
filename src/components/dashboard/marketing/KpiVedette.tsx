@@ -28,7 +28,7 @@ const CLASSE_VALEUR: Record<Ton, string> = {
   neutre: "text-foreground",
 };
 
-function construire(k: Kpis, comparaison?: Kpis): Vedette[] {
+function construire(k: Kpis, comparaison?: Kpis, mentionDepenses?: string): Vedette[] {
   const evolution = (actuel: number | null, avant: number | null | undefined): string | undefined => {
     if (actuel === null || avant === null || avant === undefined || avant === 0) return undefined;
     const pct = ((actuel - avant) / Math.abs(avant)) * 100;
@@ -46,7 +46,7 @@ function construire(k: Kpis, comparaison?: Kpis): Vedette[] {
     {
       libelle: "ROI",
       valeur: fmtPourcent(k.roi),
-      precision: k.roi === null ? "aucune dépense publicitaire" : `pour ${fmtEuros(k.depense, 2)} investis`,
+      precision: k.roi === null ? "aucune dépense publicitaire" : `pour ${fmtEuros(k.depense, 2)} investis${mentionDepenses ? `, ${mentionDepenses}` : ""}`,
       ton: k.roi === null ? "neutre" : k.roi >= 0 ? "bon" : "mauvais",
     },
     {
@@ -64,8 +64,8 @@ function construire(k: Kpis, comparaison?: Kpis): Vedette[] {
   ];
 }
 
-export default function KpiVedette({ kpis, comparaison }: { kpis: Kpis; comparaison?: Kpis }) {
-  const vedettes = construire(kpis, comparaison);
+export default function KpiVedette({ kpis, comparaison, mentionDepenses }: { kpis: Kpis; comparaison?: Kpis; mentionDepenses?: string }) {
+  const vedettes = construire(kpis, comparaison, mentionDepenses);
 
   return (
     <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">

@@ -242,6 +242,16 @@ export function classer(segments: Segment[]): Classement {
   };
 }
 
+/**
+ * Make envoie les dépenses le matin, jusqu'à la veille : sur une période pas encore
+ * couverte, la dépense et le ROI sont provisoires, et il faut le dire à côté du chiffre.
+ */
+export function mentionDepensesConnues(finPeriode: string, connuesJusquau: string | null | undefined): string | undefined {
+  if (!connuesJusquau || connuesJusquau >= finPeriode) return undefined;
+  const [, mois, jour] = connuesJusquau.split("-");
+  return `dépenses connues jusqu'au ${jour}/${mois}`;
+}
+
 export const libelleCritere = (c: Critere): string =>
   c === "roi" ? "ROI" : "CA par lead";
 

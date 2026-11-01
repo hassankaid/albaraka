@@ -9,8 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildConferenceList, conferenceEnCours, currentOrPrevSunday, formatConferenceLabelFull, type ConferenceFilter } from "@/lib/marketing/conferenceFilter";
-import { additionner, calculerKpis } from "@/lib/marketing/perf";
-import { useMarketingPerf } from "@/hooks/useMarketingPerf";
+import { additionner, calculerKpis, mentionDepensesConnues } from "@/lib/marketing/perf";
+import { useDepensesConnues, useMarketingPerf } from "@/hooks/useMarketingPerf";
 import TableauKpis, { type ColonneKpi } from "./TableauKpis";
 import KpiVedette from "./KpiVedette";
 import AnalyseSegments from "./AnalyseSegments";
@@ -48,6 +48,8 @@ export default function VueConference({ onPeriodeChange }: { onPeriodeChange?: (
     date ? { mode: "conference", from: date, to: date } : null,
   );
 
+  const { data: depensesConnues } = useDepensesConnues();
+
   const lignes = data ?? [];
   const kpis = useMemo(() => calculerKpis(additionner(lignes)), [lignes]);
 
@@ -84,7 +86,7 @@ export default function VueConference({ onPeriodeChange }: { onPeriodeChange?: (
             <p className="text-sm text-destructive">Impossible de charger les données : {(error as any)?.message ?? "erreur inconnue"}</p>
           ) : (
             <>
-              <KpiVedette kpis={kpis} />
+              <KpiVedette kpis={kpis} mentionDepenses={date ? mentionDepensesConnues(date, depensesConnues) : undefined} />
               <div className="mt-4">
                 <TableauKpis kpis={kpis} colonnes={colonnes} />
               </div>

@@ -47,6 +47,19 @@ export function useMarketingPerf(p: PeriodePerf | null) {
   });
 }
 
+/** Dernier jour dont la dépense publicitaire est remontée pour tous les comptes suivis. */
+export function useDepensesConnues() {
+  return useQuery({
+    queryKey: ["marketing-depenses-connues"],
+    staleTime: 60_000,
+    queryFn: async (): Promise<string | null> => {
+      const { data, error } = await (supabase as any).rpc("marketing_depenses_connues_jusqu_au");
+      if (error) throw error;
+      return data ?? null;
+    },
+  });
+}
+
 /** Deux périodes en un seul hook — utilisé par la vue mensuelle pour le mois et son M-1. */
 export function useMarketingPerfComparee(courant: PeriodePerf | null, precedent: PeriodePerf | null) {
   const a = useMarketingPerf(courant);

@@ -2,7 +2,7 @@
 // valent zéro. Couronner le premier de la liste donnerait un « meilleur canal »
 // arbitraire, sur lequel on arbitrerait pourtant du budget.
 import { describe, expect, it } from "vitest";
-import { classer, parCanal, type PerfBrute } from "./perf";
+import { classer, mentionDepensesConnues, parCanal, type PerfBrute } from "./perf";
 
 const ligne = (canal: string, leads: number, ventes = 0, ca = 0, depense = 0): PerfBrute =>
   ({ canal, tunnel: "wa", leads, ventes, ca, depense });
@@ -73,5 +73,19 @@ describe("classement des segments", () => {
       ligne("direct", 14, 1, 1800),
     ]));
     expect(mixte.critere).toBe("caParLead");
+  });
+});
+
+describe("mention des dépenses connues", () => {
+  it("prévient quand la période n'est pas encore couverte", () => {
+    expect(mentionDepensesConnues("2026-11-01", "2026-10-31")).toBe("dépenses connues jusqu'au 31/10");
+    expect(mentionDepensesConnues("2026-11-30", "2026-11-01")).toBe("dépenses connues jusqu'au 01/11");
+  });
+
+  it("se tait quand la période est couverte, ou quand la date est inconnue", () => {
+    expect(mentionDepensesConnues("2026-11-01", "2026-11-01")).toBeUndefined();
+    expect(mentionDepensesConnues("2026-10-25", "2026-10-31")).toBeUndefined();
+    expect(mentionDepensesConnues("2026-11-01", null)).toBeUndefined();
+    expect(mentionDepensesConnues("2026-11-01", undefined)).toBeUndefined();
   });
 });

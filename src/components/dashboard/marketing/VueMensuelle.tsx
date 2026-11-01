@@ -15,9 +15,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import type { ConferenceFilter } from "@/lib/marketing/conferenceFilter";
-import { additionner, calculerKpis, fmtNombre } from "@/lib/marketing/perf";
+import { additionner, calculerKpis, fmtNombre, mentionDepensesConnues } from "@/lib/marketing/perf";
 import { calculerEcart, type DefKpi } from "@/lib/marketing/kpiDefs";
-import { useEnregistrerObjectif, useMarketingPerfComparee, useObjectifs, type KpiObjectif } from "@/hooks/useMarketingPerf";
+import { useDepensesConnues, useEnregistrerObjectif, useMarketingPerfComparee, useObjectifs, type KpiObjectif } from "@/hooks/useMarketingPerf";
 import TableauKpis, { type ColonneKpi } from "./TableauKpis";
 import KpiVedette from "./KpiVedette";
 import AnalyseSegments from "./AnalyseSegments";
@@ -68,6 +68,7 @@ export default function VueMensuelle({ onPeriodeChange }: { onPeriodeChange?: (f
     { mode: "calendrier", ...bornesPrec },
   );
 
+  const { data: depensesConnues } = useDepensesConnues();
   const objectifs = useObjectifs(selection);
   const enregistrer = useEnregistrerObjectif(selection);
 
@@ -150,7 +151,7 @@ export default function VueMensuelle({ onPeriodeChange }: { onPeriodeChange?: (f
             <p className="text-sm text-destructive">Impossible de charger les données : {(perf.error as any)?.message ?? "erreur inconnue"}</p>
           ) : (
             <>
-              <KpiVedette kpis={kpis} comparaison={kpisPrec} />
+              <KpiVedette kpis={kpis} comparaison={kpisPrec} mentionDepenses={mentionDepensesConnues(bornes.to, depensesConnues)} />
               <div className="mt-4">
                 <TableauKpis kpis={kpis} colonnes={colonnes} />
               </div>
