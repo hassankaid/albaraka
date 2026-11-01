@@ -414,7 +414,9 @@ def render_cut(src: str, audio_wav: str, cuts: list[tuple[float, float]], meta: 
     f, cat = [], ""
     for i, (a, b) in enumerate(cuts):
         d = b - a
-        f.append(f"[0:v]trim={a:.4f}:{b:.4f},setpts=PTS-STARTPTS[v{i}]")
+        # 0,5 ms avant les bornes : arrondie à 4 décimales, une borne pouvait dépasser l'image et
+        # en ajouter une par coupe. La vidéo finissait 0,2 s plus longue que les sous-titres.
+        f.append(f"[0:v]trim={max(0, a - 0.0005):.4f}:{b - 0.0005:.4f},setpts=PTS-STARTPTS[v{i}]")
         f.append(f"[1:a]atrim={a:.4f}:{b:.4f},asetpts=PTS-STARTPTS,"
                  f"afade=t=in:d=0.012,afade=t=out:st={max(0, d - 0.02):.4f}:d=0.02[a{i}]")
         cat += f"[v{i}][a{i}]"
