@@ -317,7 +317,7 @@ export function BlocCoupes({
     <div className="space-y-4">
       <div className="space-y-2">
         <p className="text-sm font-medium text-foreground">Rythme des coupes</p>
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2">
           {RYTHMES_COUPES.map((o) => {
             const actif = !aLaMain && c.rythme === o.id;
             return (

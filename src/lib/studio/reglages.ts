@@ -13,8 +13,11 @@ export type NiveauSon = "leger" | "normal" | "fort";
 /** Ton du montage : « auto » laisse l'IA choisir selon le sujet (grave, par défaut, motivation). */
 export type StyleMontage = "auto" | "sobre" | "signature" | "energique";
 
-/** Rythme des coupes (vocal de Sidali, 12/10) : « dynamique » est l'ancien comportement. */
-export type RythmeCoupes = "naturel" | "dynamique" | "pose";
+/**
+ * Rythme des coupes (vocal de Sidali, 12/10) : « dynamique » est l'ancien comportement.
+ * « aucune » = Sans coupe (Sidali, 02/11) : la vidéo entière, sans le blanc du début et de la fin.
+ */
+export type RythmeCoupes = "naturel" | "dynamique" | "pose" | "aucune";
 
 /** Motion design « léger » (moteur classique) ou « complet » (Hyperframes, abonnement). */
 export type VersionDesign = "leger" | "complet";
@@ -58,6 +61,7 @@ export const RYTHMES_COUPES: { id: RythmeCoupes; nom: string; description: strin
   { id: "naturel", nom: "Naturel", description: "Garde les respirations et les petites pauses" },
   { id: "dynamique", nom: "Dynamique", description: "Coupe tous les blancs, rythme serré" },
   { id: "pose", nom: "Posé", description: "Garde presque toutes les pauses, idéal pour un cours" },
+  { id: "aucune", nom: "Sans coupe", description: "Garde toute la vidéo telle que tu l'as filmée" },
 ];
 
 export const STYLES_MONTAGE: { id: StyleMontage; nom: string; description: string }[] = [

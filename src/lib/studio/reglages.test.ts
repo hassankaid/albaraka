@@ -11,6 +11,7 @@ import {
   REGLAGES_PAR_DEFAUT,
   verifierFichier,
   correctionsEnAttente,
+  RYTHMES_COUPES,
 } from "./reglages";
 
 describe("import d'une vidéo", () => {
@@ -192,5 +193,20 @@ describe("format hybride", () => {
     expect(ids).toContain("floutage");
     expect(etapesDuMontage({}, "face_camera").map((e) => e.id)).not.toContain("plans");
     expect(lienDuMontage({ id: "x", statut: "pret", lance: false, outil: "hybride" })).toBe("/studio/hybride?id=x");
+  });
+});
+
+describe("Sans coupe (Sidali, 02/11/2026)", () => {
+  it("est proposé en 4e choix, et un montage déjà réglé le garde", () => {
+    expect(RYTHMES_COUPES.map((r) => r.id)).toEqual(["naturel", "dynamique", "pose", "aucune"]);
+    expect(RYTHMES_COUPES[3].nom).toBe("Sans coupe");
+    const r = completerReglages({ coupes: { rythme: "aucune", plages: null } } as never);
+    expect(r.coupes).toEqual({ rythme: "aucune", plages: null });
+  });
+
+  it("changer de rythme vers Sans coupe est une correction des coupes", () => {
+    const avant = completerReglages(null as never);
+    const apres = { ...avant, coupes: { rythme: "aucune" as const, plages: null } };
+    expect(correctionsEnAttente(avant, apres)).toContain("Coupes");
   });
 });

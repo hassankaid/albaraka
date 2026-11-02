@@ -269,6 +269,11 @@ RYTHMES = {
     "pose": (0.70, 0.12, 0.25),
 }
 RYTHME_DEFAUT = "naturel"
+# « Sans coupe » (Sidali, 02/11) : la vidéo entière, telle que filmée, phrases ratées comprises.
+# Seuls le blanc avant la première parole et après la dernière (le temps de lancer et
+# d'arrêter la caméra) sont retirés, à SANS_COUPE_MARGE[0] s avant et [1] s après la voix.
+SANS_COUPE = "aucune"
+SANS_COUPE_MARGE = (0.3, 0.5)
 
 # Correctif 9 (vocal de Sidali, 16/10) : « l'IA coupe la fin de certaines prononciations ».
 # Le moteur bornait chaque passage à 0,15 s autour des temps de Whisper, qui date souvent
@@ -319,6 +324,27 @@ def plages_des_mots(words, remove, duration):
 P.kept_ranges_from_words = plages_des_mots
 
 
+def sans_coupe(db, duree, words, hop=0.01):
+    """« Sans coupe » : un seul passage, de la première à la dernière parole, calé sur les images.
+    Il faut le son ET les mots : Whisper invente parfois un « Merci. » sur un silence (le son
+    le corrige), et un bruit de fond peut passer pour de la voix (les mots le corrigent).
+    Mesuré sur 12 vidéos d'élèves le 02/11 : sans les mots, 2 d'entre elles gardaient 3 s de vide."""
+    # une parole tient au moins 0,15 s : un clic ou un souffle isolé ne compte pas
+    parle = np.convolve((db > P.speech_threshold(db)).astype(float), np.ones(15) / 15, mode="same") >= 0.6
+    voix = np.nonzero(parle)[0]
+    if not len(voix):
+        return [(0.0, round(float(duree), 3))]
+    a = max(0.0, (voix[0] - 7) * hop - SANS_COUPE_MARGE[0])  # 7 = demi-fenêtre du lissage
+    b = min(float(duree), (voix[-1] + 8) * hop + SANS_COUPE_MARGE[1])
+    if words:
+        a = max(a, words[0].start - SANS_COUPE_MARGE[0] - 0.2)
+        b = min(b, words[-1].end + SANS_COUPE_MARGE[1] + 0.1)
+    if b - a < 0.5:  # son et mots en désaccord complet : on garde tout plutôt que rien
+        a, b = 0.0, float(duree)
+    a, b = np.floor(a * P.OUT_FPS) / P.OUT_FPS, min(float(duree), np.ceil(b * P.OUT_FPS) / P.OUT_FPS)
+    return [(round(float(a), 3), round(float(b), 3))]
+
+
 def caler_raccords(cuts, db, hop=0.01, fenetre=0.08):
     """Quand une phrase ratée est retirée en pleine voix, les temps de Whisper tombent souvent dans
     une syllabe : le raccord est déplacé de 80 ms au plus, vers le creux de la voix le plus proche,
@@ -344,7 +370,7 @@ def caler_raccords(cuts, db, hop=0.01, fenetre=0.08):
 def coupes_reglees(reglages, duree):
     """(rythme, plages gardées à la main ou None) d'après les réglages de l'élève."""
     c = (reglages or {}).get("coupes") or {}
-    rythme = c.get("rythme") if c.get("rythme") in RYTHMES else RYTHME_DEFAUT
+    rythme = c.get("rythme") if c.get("rythme") in RYTHMES or c.get("rythme") == SANS_COUPE else RYTHME_DEFAUT
     plages = []
     for p in c.get("plages") or []:
         try:
@@ -754,6 +780,11 @@ def monter(src, dossier, liens, travail, reglages, chrono=None, precedent=None):
         cuts = [tuple(p) for p in plages]
         # un mot est gardé si son milieu est dans une plage gardée (l'élève peut remettre
         # une phrase que l'IA avait jugée ratée, ou couper un mot)
+        retires = {i for i, w in enumerate(words) if not any(a <= (w.start + w.end) / 2 <= b for a, b in cuts)}
+    elif rythme == SANS_COUPE:
+        # tout est gardé, phrases ratées comprises : l'IA les a repérées quand même
+        # (retires_ia), pour qu'un passage à un autre rythme ne demande qu'un rendu
+        cuts = sans_coupe(P.energy_db(wav), meta["duration"], words)
         retires = {i for i, w in enumerate(words) if not any(a <= (w.start + w.end) / 2 <= b for a, b in cuts)}
     else:
         P.CUT_MIN_GAP, P.CUT_PRE_PAD, P.CUT_POST_PAD = RYTHMES[rythme]
