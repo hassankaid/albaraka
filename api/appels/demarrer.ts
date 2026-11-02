@@ -92,6 +92,8 @@ export async function POST(request: Request): Promise<Response> {
       resources: { vcpus: 2 },
       timeout: DUREE_MACHINE_MS,
       region: REGION,
+      // Pas de copie automatique à l'arrêt (le SDK 3.x en garde une 30 jours par défaut, jamais réutilisée).
+      persistent: false,
     });
     await sbx.writeFiles([{ path: "studio/appel.py", content: readFileSync(join(process.cwd(), "studio", "appel.py")) }]);
     const arret = await jetonArret();
