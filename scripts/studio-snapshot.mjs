@@ -23,7 +23,8 @@ const SONS = "https://raw.githubusercontent.com/heygen-com/hyperframes/v0.8.143/
 const NOMS_SONS = ["whoosh-short", "sparkle", "chime", "impact-bass-1", "pop", "click-soft", "ping"];
 
 const sbx = await Sandbox.create({
-  teamId: "team_VpRsAtUc2ysqZykKIX1jT8D8",
+  // équipe ETHICARENA depuis le transfert du projet (02/11/2026) ; le jeton doit viser cette équipe
+  teamId: "team_IB53JoQrPw32AvDZpMewnrno",
   projectId: "prj_vyHnBgqnWqtXIWj3Y4SNAqsETEMl",
   token: process.env.VERCEL_TOKEN,
   runtime: "python3.13",
