@@ -717,6 +717,10 @@ export function ContractPage({
  * reste à vie, pendant toute la durée d'exploitation de la plateforme. Avant cette date, l'accompagnement était
  * accordé « pour une durée illimitée ». La garantie ne cite pas les huit mois :
  * elle prolonge l'accompagnement dans ses propres conditions.
+ *
+ * PASS (Sidali, 02/11/2026) : plus aucune durée pour l'accompagnement (« on ne met
+ * pas de deadline », elle contredisait la garantie de continuité). Les huit mois
+ * ne restent que pour Liberty.
  */
 export function ConditionsBlock({
   amountTotal,
@@ -760,8 +764,8 @@ export function ConditionsBlock({
       </Condition>
       <Condition term="Durée.">
         {libertyDurationExtra
-          ? "L'accompagnement et le consulting (sessions d'accompagnement en groupe et reviews personnalisées) sont fournis pendant une durée de huit (8) mois à compter de la signature du présent contrat."
-          : "L'accompagnement et le consulting (sessions d'accompagnement en groupe) sont fournis pendant une durée de huit (8) mois à compter de la signature du présent contrat."}{" "}
+          ? "L'accompagnement et le consulting (sessions d'accompagnement en groupe et reviews personnalisées) sont fournis pendant une durée de huit (8) mois à compter de la signature du présent contrat. "
+          : null}
         L'accès à la plateforme AL BARAKA, à ses modules et à la communauté
         privée est accordé à vie, c'est-à-dire pendant toute la durée
         d'exploitation de la plateforme, sous réserve du règlement complet du
@@ -810,7 +814,7 @@ export function EngagementsPass() {
       <BulletList
         items={[
           "Un accès fonctionnel et sécurisé à la plateforme AL BARAKA",
-          "Les six modules et le programme ESTIMACTION dans leur intégralité",
+          "Le programme Pass AL BARAKA dans son intégralité",
           "Quatre sessions d'accompagnement en groupe par semaine",
           "Un espace communautaire actif et bienveillant",
           "La garantie de continuité d'accompagnement (voir conditions ci-dessus)",

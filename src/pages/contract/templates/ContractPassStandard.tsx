@@ -3,7 +3,7 @@
  * Wording exact : /CONTRAT_PASS_AL_BARAKA_3000.txt
  */
 
-import { Text, View } from "@react-pdf/renderer";
+import { Text } from "@react-pdf/renderer";
 import {
   BulletList,
   ConditionsBlock,
@@ -64,85 +64,33 @@ export function ContractPassStandard({ data }: Props) {
       <ObjetContrat programme="AL BARAKA" />
 
       <Section title="Ce que tu reçois avec le Pass AL BARAKA">
-        <Text style={styles.sectionLead}>
-          Six modules complets pour acquérir les compétences essentielles :
-        </Text>
         <BulletList
           items={[
             <Text>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                Personal Branding
-              </Text>{" "}
-              — Construire une image crédible et professionnelle
+              <Text style={{ fontFamily: "Helvetica-Bold" }}>Programme : </Text>
+              un accès au programme Pass AL BARAKA
             </Text>,
             <Text>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>Storytelling</Text>{" "}
-              — Communiquer avec émotion et authenticité
-            </Text>,
-            <Text>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                Marketing Digital
-              </Text>{" "}
-              — Attirer des prospects et développer ta visibilité
+              <Text style={{ fontFamily: "Helvetica-Bold" }}>Plateforme : </Text>
+              un accès à vie à la plateforme AL BARAKA, incluant tous les outils
+              d'intelligence artificielle
             </Text>,
             <Text>
               <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                Community Management
-              </Text>{" "}
-              — Animer et faire grandir ta communauté en ligne
+                Accompagnement et consulting :{" "}
+              </Text>
+              4 sessions d'accompagnement en groupe par semaine
             </Text>,
             <Text>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>Setting</Text> —
-              Prospecter, qualifier et engager la conversation
+              <Text style={{ fontFamily: "Helvetica-Bold" }}>Communauté : </Text>
+              un accès au groupe privé AL BARAKA Family
             </Text>,
             <Text>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>Closing</Text> —
-              Vendre des offres haut de gamme avec éthique
+              <Text style={{ fontFamily: "Helvetica-Bold" }}>Outils : </Text>
+              Scripts, templates et ressources téléchargeables
             </Text>,
           ]}
         />
-        <View style={{ marginTop: 4 }}>
-          <BulletList
-            items={[
-              <Text>
-                <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                  Bonus offert :{" "}
-                </Text>
-                ESTIMACTION — Programme estime de soi et confiance (15H de
-                contenu)
-              </Text>,
-              <Text>
-                <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                  Modules complémentaires inclus :{" "}
-                </Text>
-                Muslim Mindset + Module Administratif
-              </Text>,
-              <Text>
-                <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                  Accompagnement et consulting :{" "}
-                </Text>
-                4 sessions d'accompagnement en groupe par semaine, pendant 8
-                mois
-              </Text>,
-              <Text>
-                <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                  Communauté :{" "}
-                </Text>
-                Accès au groupe privé AL BARAKA
-              </Text>,
-              <Text>
-                <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                  Plateforme :{" "}
-                </Text>
-                Accès à vie à la plateforme AL BARAKA
-              </Text>,
-              <Text>
-                <Text style={{ fontFamily: "Helvetica-Bold" }}>Outils : </Text>
-                Scripts, templates et ressources téléchargeables
-              </Text>,
-            ]}
-          />
-        </View>
       </Section>
 
       {/* Garantie */}
