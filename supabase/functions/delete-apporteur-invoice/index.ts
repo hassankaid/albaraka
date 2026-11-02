@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
     // Get invoice details
     const { data: invoice } = await supabaseAdmin
       .from("apporteur_invoices")
-      .select("id, pdf_url, apporteur_id")
+      .select("id, pdf_url, apporteur_id, paid_at")
       .eq("id", invoice_id)
       .single();
 
@@ -74,16 +74,32 @@ Deno.serve(async (req) => {
       .select("payment_id, sale_id")
       .eq("invoice_id", invoice_id);
 
-    // Revert commissions to 'due'
+    // Revert commissions to 'due'. Only the ones this invoice billed: 'invoiced', or 'paid' at the
+    // moment this invoice was paid. A payment can carry a commission already paid by an earlier
+    // invoice (e.g. a catch-up line on the same payment) — it must stay paid (02/11/2026).
     if (lines && lines.length > 0) {
       for (const line of lines) {
-        await supabaseAdmin
+        const { data: commissions } = await supabaseAdmin
           .from("commissions")
-          .update({ status: "due" })
+          .select("id, status, paid_at")
           .eq("payment_id", line.payment_id)
           .eq("sale_id", line.sale_id)
           .eq("beneficiary_user_id", invoice.apporteur_id)
           .in("status", ["invoiced", "paid"]);
+
+        const ids = (commissions || [])
+          .filter((c) =>
+            c.status === "invoiced" ||
+            (invoice.paid_at && c.paid_at && new Date(c.paid_at).getTime() === new Date(invoice.paid_at).getTime())
+          )
+          .map((c) => c.id);
+
+        if (ids.length > 0) {
+          await supabaseAdmin
+            .from("commissions")
+            .update({ status: "due" })
+            .in("id", ids);
+        }
       }
     }
 
