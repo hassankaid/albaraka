@@ -410,25 +410,31 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 # --------------------------------------------------------------------------
 # 6. Rendu du montage
 # --------------------------------------------------------------------------
+# Zoom alterné aux coupes (Sidali, 02/11/2026) : un passage sur deux est resserré de 8 %,
+# pour que le saut de la tête d'un passage à l'autre ne se voie plus.
+ZOOM_COUPES = 1.08
+
+
 def render_cut(src: str, audio_wav: str, cuts: list[tuple[float, float]], meta: dict, dst: str) -> None:
     f, cat = [], ""
+    # Image de chaque passage : iPhone HDR (HLG/PQ) -> SDR bt709, puis cadre 9:16 imposé
+    # (recadrage centré si la source n'est pas verticale). Posée passage par passage pour que
+    # les passages zoomés aient la même taille que les autres.
+    hdr = ("zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,"
+           "tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,") if meta["hdr"] else ""
+    cadre = (f"scale={OUT_W}:{OUT_H}:force_original_aspect_ratio=increase:flags=lanczos,"
+             f"crop={OUT_W}:{OUT_H},setsar=1,format=yuv420p")
     for i, (a, b) in enumerate(cuts):
         d = b - a
+        zoom = f"crop=trunc(iw/{ZOOM_COUPES}/2)*2:trunc(ih/{ZOOM_COUPES}/2)*2," if i % 2 else ""
         # 0,5 ms avant les bornes : arrondie à 4 décimales, une borne pouvait dépasser l'image et
         # en ajouter une par coupe. La vidéo finissait 0,2 s plus longue que les sous-titres.
-        f.append(f"[0:v]trim={max(0, a - 0.0005):.4f}:{b - 0.0005:.4f},setpts=PTS-STARTPTS[v{i}]")
+        f.append(f"[0:v]trim={max(0, a - 0.0005):.4f}:{b - 0.0005:.4f},setpts=PTS-STARTPTS,"
+                 f"{hdr}{zoom}{cadre}[v{i}]")
         f.append(f"[1:a]atrim={a:.4f}:{b:.4f},asetpts=PTS-STARTPTS,"
                  f"afade=t=in:d=0.012,afade=t=out:st={max(0, d - 0.02):.4f}:d=0.02[a{i}]")
         cat += f"[v{i}][a{i}]"
-    f.append(f"{cat}concat=n={len(cuts)}:v=1:a=1[vc][ac]")
-    vf = []
-    if meta["hdr"]:  # iPhone HDR (HLG/PQ) -> SDR bt709
-        vf.append("zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,"
-                  "tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv")
-    # Cadre 9:16 imposé : recadrage centré si la source n'est pas verticale
-    vf.append(f"scale={OUT_W}:{OUT_H}:force_original_aspect_ratio=increase:flags=lanczos,"
-              f"crop={OUT_W}:{OUT_H},setsar=1,format=yuv420p")
-    f.append(f"[vc]{','.join(vf)}[vo]")
+    f.append(f"{cat}concat=n={len(cuts)}:v=1:a=1[vo][ac]")
     f.append(f"[ac]loudnorm=I={LOUDNESS_LUFS}:TP=-1.5:LRA=11,aresample=48000[ao]")
     run(["ffmpeg", "-v", "error", "-y", "-i", src, "-i", audio_wav, "-filter_complex", ";".join(f),
          "-map", "[vo]", "-map", "[ao]", "-r", str(OUT_FPS),
