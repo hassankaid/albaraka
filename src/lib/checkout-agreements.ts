@@ -20,7 +20,7 @@ export type CheckoutFormula = "PASS AL BARAKA" | "LIBERTY";
  * pouvoir prouver QUELLE version il a acceptée, pas seulement qu'il a coché.
  * Le cahier des charges demande d'archiver chaque version (§3.2).
  */
-export const VERSION_CGV = "25/09/2026";
+export const VERSION_CGV = "02/11/2026";
 
 /** Le chemin des CGV, ouvert dans un nouvel onglet depuis la case à cocher. */
 export const CHEMIN_CGV = "/conditions-generales-de-vente";

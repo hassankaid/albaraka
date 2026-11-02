@@ -23,6 +23,7 @@ import {
   PAGES_LEGALES,
   DATE_MISE_A_JOUR,
   LIGNES_HORS_DOCUMENT,
+  LIGNES_CGV_V2,
 } from "./textes";
 
 const source = readFileSync(
@@ -40,8 +41,9 @@ describe("fidélité au document d'Ethicarena", () => {
     ["politique de confidentialité", POLITIQUE_CONFIDENTIALITE],
     ["conditions générales de vente", CGV],
   ])("chaque ligne des %s figure mot pour mot dans le document", (_nom, page) => {
-    // Les lignes réécrites le 30/09/2026 (retrait du bandeau cookies) sont exemptées — elles seules.
-    const absentes = page.lignes.filter((l) => !presente(l) && !(typeof l === "string" && LIGNES_HORS_DOCUMENT.includes(l)));
+    // Exemptées, elles seules : les lignes réécrites le 30/09/2026 (retrait du bandeau
+    // cookies) et les trois lignes de la version 2 des CGV (02/11/2026).
+    const absentes = page.lignes.filter((l) => !presente(l) && !LIGNES_HORS_DOCUMENT.includes(l) && !LIGNES_CGV_V2.includes(l));
     expect(absentes, `lignes introuvables dans le document source :\n${absentes.join("\n")}`)
       .toEqual([]);
   });
@@ -69,6 +71,14 @@ describe("fidélité au document d'Ethicarena", () => {
 });
 
 describe("ce qui rendrait les pages juridiquement fausses", () => {
+  it("n'annonce plus un déblocage progressif des contenus (CGV version 2, 02/11/2026)", () => {
+    // Le client a accès à tout dès l'ouverture de son accès ; seul un impayé le suspend.
+    const texte = CGV.lignes.join("\n");
+    expect(texte).not.toMatch(/déverrouill|au fur et à mesure|progressivement/);
+    expect(texte).toContain("la totalité des contenus et des outils");
+    expect(DATE_MISE_A_JOUR).toBe("02/11/2026");
+  });
+
   it("ne promet plus un consentement aux cookies que le site ne demande plus", () => {
     // Depuis le 30/09/2026 le pixel Meta se charge sans bandeau (décision de
     // Hassan). La politique doit dire ce que le site fait, pas l'inverse.

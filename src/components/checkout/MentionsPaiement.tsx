@@ -11,9 +11,10 @@
 //                              règles.
 //   le moyen de paiement     — carte bancaire, via Stripe.
 //
-// Et pour le paiement en plusieurs fois, le fait que les accès se débloquent
-// au fur et à mesure : c'est la contrepartie du fractionnement, elle doit
-// être annoncée avant et non découverte après.
+// Et pour le paiement en plusieurs fois, ce qui se passe pour l'accès : complet
+// dès la première échéance, suspendu en cas d'impayé (CGV version 2 du
+// 02/11/2026, articles 7.4 et 8). Jusqu'au 02/11, cette ligne annonçait un
+// déblocage « au fur et à mesure du règlement des échéances », qui n'existe plus.
 //
 // Composant de présentation pur, sans dépendance : les quatre checkouts
 // n'utilisent pas Tailwind mais des couleurs passées en propriété.
@@ -49,8 +50,8 @@ export function MentionsPaiement({ mensualites, engagement = false, couleurs }: 
         <>
           <li>Paiement en {mensualites} fois, sans frais ni intérêts.</li>
           <li>
-            Les accès à la plateforme se débloquent au fur et à mesure du règlement
-            des échéances.
+            Accès complet à la plateforme dès la première échéance, suspendu en cas
+            d'échéance impayée.
           </li>
         </>
       )}

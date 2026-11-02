@@ -40,7 +40,15 @@ const chemin = constante("PDF_CGV");
 
 /** Les lignes des CGV, dans l'ordre, telles qu'elles sont publiées. */
 const bloc = source.split("export const CGV: PageLegale = {")[1].split("];")[0];
-const lignes = [...bloc.matchAll(/^\s*("(?:[^"\\]|\\.)*"),\s*$/gm)].map((m) => JSON.parse(m[1]));
+// Une ligne est une chaîne, ou le nom d'une constante (les lignes de la version 2).
+const valeurDe = (nom) => {
+  const m = source.match(new RegExp(`const ${nom} =\\s*("(?:[^"\\\\]|\\\\.)*");`));
+  if (!m) throw new Error(`${nom} introuvable dans textes.ts`);
+  return JSON.parse(m[1]);
+};
+const lignes = [...bloc.matchAll(/^\s*("(?:[^"\\]|\\.)*"|CGV_V2_[A-Z0-9_]+),\s*$/gm)].map((m) =>
+  m[1].startsWith('"') ? JSON.parse(m[1]) : valeurDe(m[1]),
+);
 if (lignes.length < 50) throw new Error(`seulement ${lignes.length} lignes lues : format inattendu`);
 
 const echapper = (t) =>

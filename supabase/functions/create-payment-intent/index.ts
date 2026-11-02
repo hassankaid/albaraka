@@ -28,7 +28,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  * déclarer lui-même quelle version il a acceptée. À tenir à jour avec
  * `src/lib/checkout-agreements.ts`.
  */
-const VERSION_CGV = "25/09/2026";
+const VERSION_CGV = "02/11/2026";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

@@ -47,8 +47,16 @@ type PassType = "al_baraka" | "liberty";
 // a renoncé à un droit alors qu'elle n'a rien acheté.
 // ─────────────────────────────────────────────────────────────────────────
 
-/** L'adresse publique du PDF des CGV, daté et archivé. */
-const URL_CGV_PDF = "https://plateforme.albarakaecosysteme.com/cgv/cgv-2026-09-25.pdf";
+/**
+ * Les PDF des CGV, datés et archivés, par version. Le client reçoit celle qu'il
+ * a acceptée (la version 2 du 02/11/2026 n'a pas d'effet rétroactif).
+ */
+const PDF_CGV_PAR_VERSION: Record<string, string> = {
+  "25/09/2026": "https://plateforme.albarakaecosysteme.com/cgv/cgv-2026-09-25.pdf",
+  "02/11/2026": "https://plateforme.albarakaecosysteme.com/cgv/cgv-2026-11-02.pdf",
+};
+const URL_CGV_PDF = PDF_CGV_PAR_VERSION["02/11/2026"];
+const urlCgv = (version: string | null) => (version && PDF_CGV_PAR_VERSION[version]) || URL_CGV_PDF;
 
 /** Texte imposé par le cahier des charges. Ne pas reformuler. */
 const PHRASE_RENONCIATION =
@@ -88,7 +96,7 @@ export function blocConfirmationCommande(c: Commande): string {
   <p style="margin:14px 0 0;">
     Les conditions générales de vente que tu as acceptées${c.versionCgv ? ` (version du ${c.versionCgv})` : ""}
     sont jointes à cet e-mail, et consultables ici :
-    <a href="${URL_CGV_PDF}" style="color:#A8813A;">${URL_CGV_PDF}</a>
+    <a href="${urlCgv(c.versionCgv)}" style="color:#A8813A;">${urlCgv(c.versionCgv)}</a>
   </p>
 
   <p style="margin:16px 0 0;padding-top:14px;border-top:1px solid #e5e1d7;font-size:12.5px;color:#7a7a7a;">
@@ -260,9 +268,9 @@ function buildHtml(
  * si le site change. Un échec de téléchargement ne doit pas empêcher
  * l'e-mail de partir — il porte aussi le lien.
  */
-async function piecesJointesCgv(): Promise<Array<{ filename: string; content: string }>> {
+async function piecesJointesCgv(version: string | null): Promise<Array<{ filename: string; content: string }>> {
   try {
-    const res = await fetch(URL_CGV_PDF);
+    const res = await fetch(urlCgv(version));
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const octets = new Uint8Array(await res.arrayBuffer());
     let binaire = "";
@@ -468,12 +476,23 @@ Deno.serve(async (req) => {
           if (vente) {
             // La version des CGV vient de la preuve enregistrée au paiement :
             // c'est celle que le client a réellement acceptée, pas la version
-            // en vigueur aujourd'hui.
-            const { data: preuve } = await adminClient
-              .from("preuves_consentement")
-              .select("version_cgv")
+            // en vigueur aujourd'hui. La preuve porte l'identifiant du paiement
+            // Stripe, pas la vente (sale_id n'y est jamais rempli, constaté le
+            // 02/11/2026) : on passe par les paiements de la vente.
+            const { data: paiements } = await adminClient
+              .from("payments")
+              .select("stripe_payment_intent_id")
               .eq("sale_id", saleId)
-              .maybeSingle();
+              .not("stripe_payment_intent_id", "is", null);
+            const intents = (paiements ?? []).map((p) => String(p.stripe_payment_intent_id));
+            const { data: preuve } = intents.length
+              ? await adminClient
+                .from("preuves_consentement")
+                .select("version_cgv")
+                .in("stripe_intent_id", intents)
+                .limit(1)
+                .maybeSingle()
+              : { data: null };
             confirmation = blocConfirmationCommande({
               produit: String(vente.product ?? "Accès AL BARAKA"),
               montantTotal: Number(vente.amount_ht ?? 0),
@@ -483,7 +502,7 @@ Deno.serve(async (req) => {
               }),
               versionCgv: preuve?.version_cgv ?? null,
             });
-            piecesJointes = await piecesJointesCgv();
+            piecesJointes = await piecesJointesCgv(preuve?.version_cgv ?? null);
           }
         }
 

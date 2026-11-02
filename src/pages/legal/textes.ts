@@ -37,7 +37,7 @@ export interface PageLegale {
  * confidentialité et des CGV. Le cahier des charges demande de remplacer
  * « [JJ/MM/2026] » par la date réelle.
  */
-export const DATE_MISE_A_JOUR = "25/09/2026";
+export const DATE_MISE_A_JOUR = "02/11/2026";
 
 /**
  * Le PDF des CGV, daté et archivé.
@@ -51,7 +51,31 @@ export const DATE_MISE_A_JOUR = "25/09/2026";
  * page et le PDF ne peuvent donc pas diverger. Publier une version 2 suppose
  * de régénérer le PDF sous un nouveau nom et de laisser l'ancien en place.
  */
-export const PDF_CGV = "/cgv/cgv-2026-09-25.pdf";
+export const PDF_CGV = "/cgv/cgv-2026-11-02.pdf";
+
+// ─────────────────────────────────────────────────────────────────────────
+// CGV version 2 du 02/11/2026 (demande de Sidali, validée par Hassan).
+//
+// La version 1 disait que les contenus se « déverrouillent progressivement »
+// (article 3) et, en paiement fractionné, « au fur et à mesure du règlement des
+// échéances » (article 7.4). Ce n'est plus vrai : le client a accès à tout dès
+// l'ouverture de son accès, et l'accès n'est suspendu qu'en cas d'impayé
+// (article 8). Seules ces trois lignes changent ; la version 1 reste en ligne
+// (/cgv/cgv-2026-09-25.pdf), c'est elle que les clients d'avant ont acceptée.
+// ─────────────────────────────────────────────────────────────────────────
+const CGV_V2_ARTICLE_3_OBJET =
+  "Le Vendeur commercialise un accès à la Plateforme AL BARAKA. Dès l'ouverture de son accès, le Client accède à la totalité des contenus et des outils mis à sa disposition dans le cadre de l'offre souscrite.";
+const CGV_V2_ARTICLE_3_PRESENTATION =
+  "Les contenus et outils accessibles ainsi que le prix de chaque offre sont présentés sur sa page de présentation et rappelés avant la validation de la commande, conformément aux articles L. 111-1 et L. 221-5 du Code de la consommation.";
+const CGV_V2_ARTICLE_7_4 =
+  "7.4. Paiement en plusieurs fois : lorsqu'il est proposé, le paiement fractionné est accordé sans frais ni intérêts. L'échéancier (nombre, montants et dates des débits) est communiqué avant la validation de la commande. L'accès à la totalité de la Plateforme est ouvert dès le règlement de la première échéance ; il peut être suspendu en cas d'échéance impayée, dans les conditions de l'article 8. Le Client autorise le débit automatique de chaque échéance sur la carte bancaire enregistrée.";
+
+/** Les lignes réécrites par la version 2 des CGV : `textes.test.ts` les exempte, elles seules. */
+export const LIGNES_CGV_V2: readonly string[] = [
+  CGV_V2_ARTICLE_3_OBJET,
+  CGV_V2_ARTICLE_3_PRESENTATION,
+  CGV_V2_ARTICLE_7_4,
+];
 
 export const MENTIONS_LEGALES: PageLegale = {
   chemin: "/mentions-legales",
@@ -206,8 +230,8 @@ export const CGV: PageLegale = {
     "2.4. Lorsqu'une offre fait l'objet d'un contrat spécifique signé par le Client, les stipulations de ce contrat prévalent sur les présentes CGV en cas de contradiction, sous réserve des droits impératifs dont bénéficie le Client consommateur.",
     "2.5. Les dispositions protectrices des consommateurs prévues par la loi s'appliquent au Client consommateur. Elles s'appliquent aussi au Client professionnel employant cinq salariés au plus, lorsque l'objet du contrat n'entre pas dans le champ de son activité principale.",
     "Article 3 – Objet de la vente",
-    "Le Vendeur commercialise un accès à la Plateforme AL BARAKA, dont les contenus et outils sont déverrouillés progressivement selon l'offre souscrite, le projet du Client et les compétences qu'il souhaite développer.",
-    "Les contenus accessibles, leur rythme de déverrouillage ainsi que le prix de chaque offre sont présentés sur sa page de présentation et rappelés avant la validation de la commande, conformément aux articles L. 111-1 et L. 221-5 du Code de la consommation.",
+    CGV_V2_ARTICLE_3_OBJET,
+    CGV_V2_ARTICLE_3_PRESENTATION,
     "Article 4 – Résultats non garantis",
     "L'accès à la Plateforme relève d'une obligation de moyens. Il ne garantit aucun résultat, notamment financier. Les résultats dépendent de l'implication du Client, de ses compétences, de sa situation de départ et du contexte de marché. Les éventuelles garanties spécifiques prévues par un contrat signé s'appliquent dans les conditions strictement définies par ce contrat.",
     "Article 5 – Prix",
@@ -222,7 +246,7 @@ export const CGV: PageLegale = {
     "7.1. Le paiement s'effectue exclusivement par carte bancaire, via notre prestataire de paiement sécurisé Stripe. Les données bancaires sont chiffrées et traitées par Stripe. Le Vendeur n'y a jamais accès en intégralité.",
     "7.2. Paiement comptant : sauf mention contraire, le prix est exigible en totalité à la commande.",
     "7.3. Paiement mensuel avec engagement : lorsqu'une offre est proposée sous forme d'abonnement avec durée d'engagement, le Client s'engage à régler chaque mensualité jusqu'au terme de la durée d'engagement indiquée avant la commande.",
-    "7.4. Paiement en plusieurs fois : lorsqu'il est proposé, le paiement fractionné est accordé sans frais ni intérêts. L'échéancier (nombre, montants et dates des débits) est communiqué avant la validation de la commande. Les accès à la Plateforme sont déverrouillés au fur et à mesure du règlement des échéances. Le Client autorise le débit automatique de chaque échéance sur la carte bancaire enregistrée.",
+    CGV_V2_ARTICLE_7_4,
     "7.5. Le Client garantit être titulaire du moyen de paiement utilisé ou autorisé à l'utiliser.",
     "Article 8 – Retard ou défaut de paiement",
     "8.1. Aucun intérêt de retard n'est appliqué.",

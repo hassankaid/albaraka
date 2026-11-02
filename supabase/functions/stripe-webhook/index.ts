@@ -139,15 +139,21 @@ function extractId(field: unknown): string | null {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Wording exact des 5 cases d'engagement (Sidali 19/05/2026 — CONSIGNES_IMPLEMENTATION).
+ * Wording exact des cases d'engagement (Sidali 19/05/2026 — CONSIGNES_IMPLEMENTATION,
+ * puis cahier des charges du 25/09/2026 pour les deux premières).
  * Reconstruit le snapshot complet depuis le format compact `id:ISO|id:ISO|...`
  * stocké dans Stripe metadata par `create-payment-intent` v18.
  * Le wording est identique à `src/lib/checkout-agreements.ts` côté frontend.
+ *
+ * Jusqu'au 02/11/2026, la case des CGV manquait ici (elle disparaissait donc du
+ * contrat) et la case d'accès immédiat gardait son texte d'avant le 25/09. La
+ * preuve complète, elle, a toujours été enregistrée dans `preuves_consentement`.
  */
 const AGREEMENT_WORDING: Record<string, (formula: string) => string> = {
+  accepte_cgv: () => "J'ai lu et j'accepte les Conditions générales de vente.",
+  wants_immediate_access: () => "Je demande l'accès immédiat à la plateforme et je reconnais renoncer expressément à mon droit de rétractation, conformément à l'article L. 221-28 du Code de la consommation.",
   knew_formula: (f) => `J'ai bien pris connaissance de ma formule ${f} et de tout ce qui est inclus.`,
   understood_warranty: () => "J'ai bien compris les conditions de la garantie de continuité d'accompagnement et les obligations qui m'incombent pour en bénéficier.",
-  wants_immediate_access: () => "Je souhaite accéder immédiatement à la plateforme et je comprends les conditions qui en découlent (renonciation au droit de rétractation de 14 jours).",
   commits_to_payment: () => "Je m'engage à honorer l'intégralité de mon paiement selon la modalité convenue.",
   respects_confidentiality: () => "Je m'engage à respecter la confidentialité des contenus de l'écosystème.",
 };
@@ -164,7 +170,11 @@ function expandAgreementsCompact(compact: string, formula: string): AgreementSna
   return compact
     .split("|")
     .map((part) => {
-      const [id, ts] = part.split(":");
+      // couper au PREMIER « : » seulement : l'heure ISO en contient deux (jusqu'au
+      // 02/11/2026, les contrats n'en gardaient que « 2026-11-01T18 »)
+      const sep = part.indexOf(":");
+      const id = sep < 0 ? part : part.slice(0, sep);
+      const ts = sep < 0 ? "" : part.slice(sep + 1);
       const wordingFn = AGREEMENT_WORDING[id];
       if (!wordingFn) return null;
       return {

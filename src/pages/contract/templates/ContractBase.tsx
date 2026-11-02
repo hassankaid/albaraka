@@ -729,7 +729,8 @@ export function ConditionsBlock({
     <Section title="Conditions importantes">
       <Condition term="Accès immédiat.">
         Ton accès à la plateforme et à ses modules est activé dès la signature
-        de ce contrat. Conformément à l'article L.221-28 du Code de la
+        de ce contrat : tu as accès, dès cet instant, à la totalité des contenus
+        et des outils mis à ta disposition dans ta formule. Conformément à l'article L.221-28 du Code de la
         consommation, cet accès immédiat à des contenus numériques entraîne la
         renonciation au délai de rétractation de 14 jours. Aucun remboursement
         ne pourra donc être demandé après activation de l'accès.
