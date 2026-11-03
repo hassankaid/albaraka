@@ -22,6 +22,7 @@ import UpdateCard from "./pages/checkout/UpdateCard";
 import UpdateCardMerci from "./pages/checkout/UpdateCardMerci";
 import PaymentLinkCheckout from "./pages/checkout/PaymentLinkCheckout";
 import CoachingCheckout from "./pages/checkout/CoachingCheckout";
+import CoachingConfirmation from "./pages/checkout/CoachingConfirmation";
 import FormationCheckout from "./pages/checkout/FormationCheckout";
 import AlBaraka200Checkout from "./pages/checkout/AlBaraka200Checkout";
 import PiedDePageLegal from "./components/legal/PiedDePageLegal";
@@ -339,6 +340,7 @@ const FullApp = () => (
               {/* Coaching individuel payant (03/11/2026) : le lien posté sur Discord. */}
               <Route path="/checkout/coaching" element={<CoachingCheckout />} />
               <Route path="/checkout/coaching/:slug" element={<CoachingCheckout />} />
+              <Route path="/coaching/confirmation" element={<CoachingConfirmation />} />
               <Route path="/checkout/al-baraka-200" element={<AlBaraka200Checkout />} />
               <Route path="/checkout/al-baraka-200/:installments" element={<AlBaraka200Checkout />} />
               <Route element={<ProtectedRoute />}>
