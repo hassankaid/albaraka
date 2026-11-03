@@ -7,6 +7,7 @@ const corsHeaders = {
 }
 
 const SITE_VITRINE = 'site_vitrine'
+const COACHING_INDIVIDUEL = 'coaching_individuel'
 
 const EVENT_TYPE_MAPPING: Record<string, string> = {
   // ── Agendas VIVANTS (verifies via l'API Calendly le 24/08/2026) ──
@@ -27,6 +28,11 @@ const EVENT_TYPE_MAPPING: Record<string, string> = {
   // Remplace le formulaire du site. UUID lu sur l'API publique de reservation
   // (scheduling_links/dz73-r3j-q2v -> share 1376eaf2-… -> event_types/lookup).
   '655fa72e-bde0-4a12-a6bf-b10cf1d5fe68': SITE_VITRINE,
+
+  // ── Coaching individuel payant avec Sabrina (03/11/2026) ──
+  // calendly.com/d/d36b-3v4-xk6/coaching-individuel-al-baraka, UUID lu sur l'API
+  // publique de réservation. Ces rendez-vous ne vont PAS dans calls (voir plus bas).
+  'b8c343d6-1ff4-44a6-b81c-ead7aa03a104': COACHING_INDIVIDUEL,
 
   // ── Agendas SUPPRIMES (round-robin perdus avec les licences, 08/2026) ──
   // Conserves VOLONTAIREMENT : `replay-calendly-webhook` peut rejouer un
@@ -140,6 +146,76 @@ export async function processCalendlyPayload(payload: any, supabase: any): Promi
   if (!contactId) return { success: false, error: 'find_or_create_contact a renvoyé null' }
 
   // ── ANNULATION ──
+  // COACHING INDIVIDUEL (03/11/2026) : ni un RDV de vente ni un closing. On le
+  // range dans coaching_reservations, sans créer d'appel ni toucher au lead (une
+  // annulation remettrait sinon le lead de l'élève en « contacté »). Une
+  // réservation sans paiement de coaching retrouvé prévient le CEO : l'agenda
+  // public reste réservable par qui en a le lien.
+  if (eventType === COACHING_INDIVIDUEL) {
+    if (event === 'invitee.canceled') {
+      await supabase.from('coaching_reservations')
+        .update({ statut: 'annule', annule_le: cancellation.canceled_at || new Date().toISOString() })
+        .eq('calendly_event_uri', calendlyEventUri)
+      return { success: true, result: { message: 'Coaching annulé', calendly_event_uri: calendlyEventUri } }
+    }
+
+    let coachId: string | null = null
+    if (hostEmail) {
+      const hote = hostEmail.toLowerCase()
+      const { data: parCalendly } = await supabase.from('profiles').select('id').eq('calendly_email', hote).maybeSingle()
+      const { data: parEmail } = parCalendly ? { data: null } : await supabase.from('profiles').select('id').eq('email', hote).maybeSingle()
+      coachId = parCalendly?.id ?? parEmail?.id ?? null
+    }
+
+    // Le paiement : un lien de coaching payé par ce contact, dont le lien de
+    // réservation a été remis, et pas encore rattaché à une autre réservation.
+    const { data: payes } = await supabase
+      .from('payment_links')
+      .select('id, sale_id, offre_coaching, paid_at, sales!inner(contact_id)')
+      .not('offre_coaching', 'is', null)
+      .not('sale_id', 'is', null)
+      .eq('sales.contact_id', contactId)
+      .order('paid_at', { ascending: false })
+    let paiement: any = null
+    for (const p of payes ?? []) {
+      const { data: dejaPris } = await supabase.from('coaching_reservations')
+        .select('id').eq('payment_link_id', p.id).neq('calendly_event_uri', calendlyEventUri).limit(1)
+      if (!dejaPris || dejaPris.length === 0) { paiement = p; break }
+    }
+
+    const { error: resaError } = await supabase.from('coaching_reservations').upsert({
+      calendly_event_uri: calendlyEventUri,
+      offre_coaching: paiement?.offre_coaching ?? 'coaching-individuel',
+      payment_link_id: paiement?.id ?? null,
+      sale_id: paiement?.sale_id ?? null,
+      contact_id: contactId,
+      coach_id: coachId,
+      invitee_nom: rawFullName || fullName,
+      invitee_email: email,
+      scheduled_at: scheduledAt,
+      statut: 'planifie',
+      paye: !!paiement,
+    }, { onConflict: 'calendly_event_uri' })
+    if (resaError) return { success: false, error: `Insert coaching_reservations: ${resaError.message}` }
+
+    if (!paiement) {
+      const quand = scheduledAt
+        ? new Date(scheduledAt).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'full', timeStyle: 'short' })
+        : 'date inconnue'
+      const { data: ceos } = await supabase.from('profiles').select('id').eq('role', 'ceo')
+      for (const c of ceos ?? []) {
+        await supabase.from('notifications').insert({
+          user_id: c.id,
+          type: 'coaching_sans_paiement',
+          title: 'Coaching réservé sans paiement',
+          body: `${rawFullName || fullName || email} a réservé un coaching individuel le ${quand}, sans paiement de coaching retrouvé à son nom.`,
+          metadata: { calendly_event_uri: calendlyEventUri, email, contact_id: contactId },
+        })
+      }
+    }
+    return { success: true, result: { message: 'Coaching enregistré', paye: !!paiement, contact_id: contactId } }
+  }
+
   if (event === 'invitee.canceled') {
     const canceledAt = cancellation.canceled_at || new Date().toISOString()
     const canceledBy = cancellation.canceler_type || 'unknown'

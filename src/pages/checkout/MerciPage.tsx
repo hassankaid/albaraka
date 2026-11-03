@@ -2,6 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import logo from "@/assets/al-baraka-logo-v2.png";
 import { Mail, KeyRound, Users, Compass, CheckCircle2 } from "lucide-react";
 import CheckoutCanvas from "./CheckoutCanvas";
+import BlocReservationCoaching, { useReservationCoaching } from "./ReservationCoaching";
 
 const THEME = {
   bg: "#0A0A0A",
@@ -40,6 +41,9 @@ const STEPS = [
 export default function MerciPage() {
   const [searchParams] = useSearchParams();
   const ref = searchParams.get("payment_intent") || searchParams.get("session_id");
+  // Lien de paiement d'un coaching (03/11/2026) : la page envoie vers la réservation.
+  const reservation = useReservationCoaching(searchParams.get("t"));
+  const coaching = reservation.etat !== "aucun";
 
   return (
     <div
@@ -195,10 +199,16 @@ export default function MerciPage() {
               lineHeight: 1.6,
             }}
           >
-            Félicitations pour ce choix courageux. Tu fais désormais partie de la famille Al Baraka.
+            {coaching
+              ? "Ton paiement est validé. Il ne reste qu'à choisir le créneau de ton coaching individuel."
+              : "Félicitations pour ce choix courageux. Tu fais désormais partie de la famille Al Baraka."}
           </p>
         </div>
 
+        {coaching ? (
+          <BlocReservationCoaching etat={reservation} />
+        ) : (
+          <>
         {/* Email d'accès */}
         <div
           className="alb-fade-3"
@@ -323,6 +333,9 @@ export default function MerciPage() {
             ))}
           </div>
         </div>
+
+          </>
+        )}
 
         {/* Baraka + réf */}
         <div

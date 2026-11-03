@@ -1019,7 +1019,9 @@ function PaymentLinkForm({
         return;
       }
 
-      const returnUrl = `${window.location.origin}/merci?pl=1${testMode ? "&test=1" : ""}`;
+      // Le jeton suit jusqu'à la page « merci » : pour un coaching, elle s'en sert
+      // pour envoyer l'élève vers son lien de réservation (03/11/2026).
+      const returnUrl = `${window.location.origin}/merci?pl=1&t=${encodeURIComponent(token)}${testMode ? "&test=1" : ""}`;
 
       const billingDetails = {
         name: fullName,
