@@ -3,7 +3,7 @@
  * Wording exact : /CONTRAT_LIBERTY_5000.txt
  */
 
-import { Text, View } from "@react-pdf/renderer";
+import { Text } from "@react-pdf/renderer";
 import {
   BulletList,
   ConditionsBlock,
@@ -60,131 +60,41 @@ export function ContractLibertyStandard({ data }: Props) {
       <ObjetContrat programme="Liberty" />
 
       <Section title="Ce que tu reçois avec la formule LIBERTY">
-        <Text style={styles.sectionLead}>
-          Neuf modules complets — l'accès le plus complet de l'écosystème :
-        </Text>
-        <Text
-          style={{
-            fontSize: 9,
-            fontStyle: "italic",
-            marginTop: 2,
-            marginBottom: 2,
-          }}
-        >
-          Les six modules du parcours terrain :
-        </Text>
         <BulletList
           items={[
             <Text>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                Personal Branding
-              </Text>{" "}
-              — Construire une image crédible et professionnelle
+              <Text style={{ fontFamily: "Helvetica-Bold" }}>Programme : </Text>
+              un accès au programme LIBERTY, l'accompagnement le plus complet de
+              l'écosystème
             </Text>,
             <Text>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>Storytelling</Text>{" "}
-              — Communiquer avec émotion et authenticité
-            </Text>,
-            <Text>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                Marketing Digital
-              </Text>{" "}
-              — Attirer des prospects et développer ta visibilité
+              <Text style={{ fontFamily: "Helvetica-Bold" }}>Plateforme : </Text>
+              un accès à vie à la plateforme AL BARAKA, incluant tous les outils
+              d'intelligence artificielle
             </Text>,
             <Text>
               <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                Community Management
-              </Text>{" "}
-              — Animer et faire grandir ta communauté en ligne
+                Accompagnement et consulting premium :{" "}
+              </Text>
+              4 sessions d'accompagnement en groupe par semaine + review
+              personnalisée de tes offres, scripts et pages de vente
             </Text>,
             <Text>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>Setting</Text> —
-              Prospecter, qualifier et engager la conversation
+              <Text style={{ fontFamily: "Helvetica-Bold" }}>Communauté : </Text>
+              un accès au groupe privé AL BARAKA Family
             </Text>,
             <Text>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>Closing</Text> —
-              Vendre des offres haut de gamme avec éthique
+              <Text style={{ fontFamily: "Helvetica-Bold" }}>
+                Bonus exclusif LIBERTY :{" "}
+              </Text>
+              accès automatique et gratuit à tous les futurs modules
+            </Text>,
+            <Text>
+              <Text style={{ fontFamily: "Helvetica-Bold" }}>Outils : </Text>
+              Scripts, templates et ressources téléchargeables
             </Text>,
           ]}
         />
-        <Text
-          style={{
-            fontSize: 9,
-            fontStyle: "italic",
-            marginTop: 4,
-            marginBottom: 2,
-          }}
-        >
-          Les trois modules exclusifs LIBERTY :
-        </Text>
-        <BulletList
-          items={[
-            <Text>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                Offer Creation
-              </Text>{" "}
-              — Création d'offre, proposition de valeur, pricing stratégique
-            </Text>,
-            <Text>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>Copywriting</Text>{" "}
-              — Rédaction persuasive, pages de vente, séquences emails
-            </Text>,
-            <Text>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>Media Buying</Text>{" "}
-              — Publicité Meta Ads, ciblage, scaling des campagnes
-            </Text>,
-          ]}
-        />
-        <View style={{ marginTop: 4 }}>
-          <BulletList
-            items={[
-              <Text>
-                <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                  Bonus inclus :{" "}
-                </Text>
-                ESTIMACTION — Programme estime de soi et confiance (15H de
-                contenu)
-              </Text>,
-              <Text>
-                <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                  Modules complémentaires inclus :{" "}
-                </Text>
-                Muslim Mindset + Module Administratif
-              </Text>,
-              <Text>
-                <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                  Accompagnement et consulting premium :{" "}
-                </Text>
-                4 sessions d'accompagnement en groupe par semaine + review
-                personnalisée de tes offres, scripts et pages de vente, pendant
-                8 mois
-              </Text>,
-              <Text>
-                <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                  Communauté :{" "}
-                </Text>
-                Accès au groupe privé AL BARAKA
-              </Text>,
-              <Text>
-                <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                  Plateforme :{" "}
-                </Text>
-                Accès à vie à la plateforme AL BARAKA
-              </Text>,
-              <Text>
-                <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                  Bonus exclusif LIBERTY :{" "}
-                </Text>
-                Accès automatique et gratuit à tous les futurs modules
-              </Text>,
-              <Text>
-                <Text style={{ fontFamily: "Helvetica-Bold" }}>Outils : </Text>
-                Scripts, templates et ressources téléchargeables liés à
-                l'ensemble des modules
-              </Text>,
-            ]}
-          />
-        </View>
       </Section>
 
       <GuaranteeLiberty />

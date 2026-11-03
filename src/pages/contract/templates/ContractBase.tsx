@@ -719,8 +719,8 @@ export function ContractPage({
  * elle prolonge l'accompagnement dans ses propres conditions.
  *
  * PASS (Sidali, 02/11/2026) : plus aucune durée pour l'accompagnement (« on ne met
- * pas de deadline », elle contredisait la garantie de continuité). Les huit mois
- * ne restent que pour Liberty.
+ * pas de deadline », elle contredisait la garantie de continuité).
+ * LIBERTY (Sidali, 03/11/2026) : même règle, les huit mois disparaissent aussi.
  */
 export function ConditionsBlock({
   amountTotal,
@@ -763,9 +763,6 @@ export function ConditionsBlock({
         restant due.
       </Condition>
       <Condition term="Durée.">
-        {libertyDurationExtra
-          ? "L'accompagnement et le consulting (sessions d'accompagnement en groupe et reviews personnalisées) sont fournis pendant une durée de huit (8) mois à compter de la signature du présent contrat. "
-          : null}
         L'accès à la plateforme AL BARAKA, à ses modules et à la communauté
         privée est accordé à vie, c'est-à-dire pendant toute la durée
         d'exploitation de la plateforme, sous réserve du règlement complet du
@@ -862,7 +859,7 @@ export function EngagementsLiberty() {
       <BulletList
         items={[
           "Un accès fonctionnel et sécurisé à la plateforme AL BARAKA",
-          "L'ensemble des neuf modules, le programme ESTIMACTION et les modules complémentaires",
+          "Le programme LIBERTY dans son intégralité",
           "Quatre sessions d'accompagnement en groupe par semaine",
           "Les reviews personnalisées de tes travaux dans un délai raisonnable",
           "L'accès aux futurs modules ajoutés à l'écosystème, sans surcoût",
@@ -913,7 +910,7 @@ export function GuaranteePass() {
         </Text>
         <Text style={styles.guaranteeBody}>
           Si, à l'issue d'une période de quatre-vingt-dix (90) jours suivant la
-          fin de ton parcours d'accompagnement, tu n'as pas généré au moins
+          fin de ton programme de formation, tu n'as pas généré au moins
           3&nbsp;000€ de chiffre d'affaires grâce aux compétences acquises, le
           Prestataire s'engage à poursuivre ton accompagnement (sessions
           d'accompagnement en groupe et accès à la communauté) jusqu'à
