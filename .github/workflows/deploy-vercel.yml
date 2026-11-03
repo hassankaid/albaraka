@@ -1,0 +1,33 @@
+# Déploiement en production à chaque push sur main.
+# Le projet Vercel est dans l'équipe ETHICARENA de Sidali depuis le 02/11/2026 : Vercel refuse les
+# déploiements Git dont l'auteur du commit n'est pas membre de l'équipe. On déploie donc avec le
+# jeton du compte de Sidali (secret VERCEL_TOKEN du dépôt) ; le build se fait chez Vercel, avec les
+# variables d'environnement du projet. Le déploiement Git de Vercel est coupé dans vercel.json.
+name: Déploiement Vercel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_ORG_ID: team_IB53JoQrPw32AvDZpMewnrno
+      VERCEL_PROJECT_ID: prj_vyHnBgqnWqtXIWj3Y4SNAqsETEMl
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Déployer en production
+        run: npx -y vercel@65.10.0 deploy --prod --yes --token "${{ secrets.VERCEL_TOKEN }}"

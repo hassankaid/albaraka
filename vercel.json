@@ -1,4 +1,7 @@
 {
+  "git": {
+    "deploymentEnabled": false
+  },
   "functions": {
     "api/studio/demarrer.ts": {
       "includeFiles": "studio/**",
