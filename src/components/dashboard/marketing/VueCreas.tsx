@@ -186,8 +186,8 @@ export default function VueCreas() {
           </div>
         )}
         <p className="text-xs text-muted-foreground mt-3">
-          Du {fmtJour(bornes.from + "T12:00:00Z")} au {fmtJour(bornes.to + "T12:00:00Z")}. La dépense compte par jour de diffusion
-          (celle du jour arrive le lendemain matin), les leads par jour d'inscription, et les ventes sont celles de ces leads,
+          Du {fmtJour(bornes.from + "T12:00:00Z")} au {fmtJour(bornes.to + "T12:00:00Z")}. La période s'arrête à hier : la dépense
+          du jour n'arrive que le lendemain matin. La dépense compte par jour de diffusion, les leads par jour d'inscription, et les ventes sont celles de ces leads,
           quelle que soit la date de la vente : une période récente n'a donc pas encore toutes ses ventes. Meta et Snapchat
           seulement — Google ne transmet pas l'identifiant de la pub. « Pub non identifiée » : leads arrivés d'une régie sans
           l'identifiant de la pub dans le lien.

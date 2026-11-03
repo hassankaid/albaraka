@@ -47,16 +47,20 @@ describe("regroupement par créa", () => {
 describe("périodes", () => {
   const le3novembre = new Date("2026-11-03T20:00:00Z");
   it.each([
-    ["7j", "2026-10-28", "2026-11-03"],
-    ["30j", "2026-10-05", "2026-11-03"],
-    ["mois", "2026-11-01", "2026-11-03"],
+    ["7j", "2026-10-27", "2026-11-02"],
+    ["30j", "2026-10-04", "2026-11-02"],
+    ["mois", "2026-11-01", "2026-11-02"],
     ["mois_prec", "2026-10-01", "2026-10-31"],
   ] as const)("%s → du %s au %s", (p, from, to) => {
     expect(bornesPeriode(p, le3novembre)).toEqual({ from, to });
   });
 
-  it("compte en jours de Paris", () => {
+  it("compte en jours de Paris, et s'arrête à hier", () => {
     // 23 h 30 UTC le 03/11 = 00 h 30 le 04/11 à Paris
-    expect(bornesPeriode("7j", new Date("2026-11-03T23:30:00Z")).to).toBe("2026-11-04");
+    expect(bornesPeriode("7j", new Date("2026-11-03T23:30:00Z")).to).toBe("2026-11-03");
+  });
+
+  it("le 1er du mois, le mois en cours se réduit à ce jour", () => {
+    expect(bornesPeriode("mois", new Date("2026-12-01T10:00:00Z"))).toEqual({ from: "2026-12-01", to: "2026-12-01" });
   });
 });

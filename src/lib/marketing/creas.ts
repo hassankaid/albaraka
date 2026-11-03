@@ -145,14 +145,22 @@ function decaler(ymd: string, jours: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Bornes incluses, en jours de Paris. « 7 derniers jours » = aujourd'hui et les 6 jours d'avant. */
+/**
+ * Bornes incluses, en jours de Paris, ARRÊTÉES À HIER : la dépense du jour n'arrive
+ * que le lendemain matin. Compter les leads d'aujourd'hui sans leur dépense ferait
+ * passer une pub lancée le matin pour une pub presque gratuite (Vidéo 14 Meta, le
+ * 03/11/2026 : 13 leads pour 1 € de dépense connue). « 7 derniers jours » = les 7
+ * jours qui finissent hier, comme dans les gestionnaires de pub.
+ */
 export function bornesPeriode(p: PeriodeCrea, maintenant = new Date()): { from: string; to: string } {
   const aujourdhui = jourParis(maintenant);
-  if (p === "7j") return { from: decaler(aujourdhui, -6), to: aujourdhui };
-  if (p === "14j") return { from: decaler(aujourdhui, -13), to: aujourdhui };
-  if (p === "30j") return { from: decaler(aujourdhui, -29), to: aujourdhui };
+  const hier = decaler(aujourdhui, -1);
+  if (p === "7j") return { from: decaler(hier, -6), to: hier };
+  if (p === "14j") return { from: decaler(hier, -13), to: hier };
+  if (p === "30j") return { from: decaler(hier, -29), to: hier };
   const premier = aujourdhui.slice(0, 8) + "01";
-  if (p === "mois") return { from: premier, to: aujourdhui };
+  // Le 1er du mois, le mois en cours se réduit à aujourd'hui, faute de mieux.
+  if (p === "mois") return { from: premier, to: hier < premier ? premier : hier };
   const finPrec = decaler(premier, -1);
   return { from: finPrec.slice(0, 8) + "01", to: finPrec };
 }
