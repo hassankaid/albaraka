@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import PubOrigine from "@/components/PubOrigine";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { RefreshCw, UserCheck, MessageSquare, UserPlus, Sparkles } from "lucide-react";
@@ -401,6 +402,7 @@ function LeadEvent({ data }: { data: any }) {
       {data.apporteur_name && (
         <p className="text-xs text-muted-foreground">Apporté par {data.apporteur_name}</p>
       )}
+      <PubOrigine leadId={data.id} />
       <div className="space-y-0.5 mt-1">
         {data.raw_full_name && <p className="text-xs text-muted-foreground">Prénom saisi : {data.raw_full_name}</p>}
         {data.raw_email && <p className="text-xs text-muted-foreground">Email saisi : {data.raw_email}</p>}
@@ -628,6 +630,7 @@ function SaleEvent({ data }: { data: any }) {
           </Badge>
         )}
       </div>
+      <PubOrigine leadId={data.lead_origine_id} prefixe="Vente amenée par la pub" />
     </>
   );
 }

@@ -10,6 +10,7 @@ tel quel à la réception du CRM, qui le traduit. Le jour Snap est celui du fuse
         --fuseau Asia/Dubai --decalage +04:00 [--debut 2026-10-01 --fin 2026-11-01]
 
 Avec --debut et --fin (31 jours au plus), le scénario est un import ponctuel à lancer à la main.
+Avec --niveau pub, il lit aussi les pubs et les groupes (noms) et la dépense par PUB.
 """
 import argparse
 
@@ -30,6 +31,8 @@ def en_json(identifiant, x, source):
 
 
 def plan(a, debut, fin):
+    if a.niveau == "pub":
+        return plan_par_pub(a, debut, fin)
     connexion = int(a.connexion)
     compte = f"/v1/adaccounts/{a.compte}"
     return {
@@ -57,6 +60,39 @@ def plan(a, debut, fin):
     }
 
 
+def plan_par_pub(a, debut, fin):
+    connexion = int(a.connexion)
+    compte = f"/v1/adaccounts/{a.compte}"
+    envoi = ('{ "plateforme": "snap", "compte": "%s", "niveau": "pub", "devise": "{{1.currency}}", '
+             '"snap_campagnes": {{6.json}}, "snap_groupes": {{7.json}}, "snap_pubs": {{8.json}}, "snap_stats": {{9.json}} }' % a.compte)
+    return {
+        "name": f"{a.client} - DÉPENSES SNAP PAR PUB - {a.compte} → CRM" + (" (import ponctuel)" if a.debut else ""),
+        "metadata": {"instant": False, "version": 1, "designer": {"orphans": []}, "scenario": REGLAGES},
+        "flow": [
+            {"id": 1, "module": "snapchat-campaign-management:getAnAdAccount", "version": 1,
+             "parameters": {"__IMTCONN__": connexion}, "mapper": {"ad_account_id": a.compte},
+             "metadata": {"designer": {"x": 0, "y": 0}}, "onerror": [ignorer(11, 0)]},
+            appel_snap(2, 300, connexion, f"{compte}/campaigns", [("limit", "1000")]),
+            appel_snap(3, 600, connexion, f"{compte}/adsquads", [("limit", "1000")]),
+            appel_snap(4, 900, connexion, f"{compte}/ads", [("limit", "1000")]),
+            appel_snap(5, 1200, connexion, f"{compte}/stats", [
+                ("granularity", "DAY"), ("breakdown", "ad"), ("fields", "spend,impressions,swipes"),
+                ("start_time", debut), ("end_time", fin)]),
+            en_json(6, 1500, 2),
+            en_json(7, 1800, 3),
+            en_json(8, 2100, 4),
+            en_json(9, 2400, 5),
+            {"id": 10, "module": "http:ActionSendData", "version": 3, "parameters": {"handleErrors": True, "useNewZLibDeCompress": True},
+             "mapper": {"ca": "", "qs": [], "url": a.url, "data": envoi,
+                        "gzip": True, "method": "post", "headers": [{"name": "X-Cle-CRM", "value": env["MAKE_CRM_SECRET"]}],
+                        "timeout": "", "useMtls": False, "authPass": "", "authUser": "", "bodyType": "raw", "contentType": "application/json",
+                        "serializeUrl": False, "shareCookies": False, "parseResponse": True, "followRedirect": True,
+                        "useQuerystring": False, "followAllRedirects": False, "rejectUnauthorized": True},
+             "metadata": {"designer": {"x": 2700, "y": 0}}, "onerror": [ignorer(20, 2700)]},
+        ],
+    }
+
+
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     for o in ("client", "dossier", "connexion", "compte", "url", "fuseau", "decalage"):
@@ -65,6 +101,7 @@ if __name__ == "__main__":
     p.add_argument("--debut")
     p.add_argument("--fin")
     p.add_argument("--id")
+    p.add_argument("--niveau", default="campagne", choices=["campagne", "pub"])
     a = p.parse_args()
     jour = lambda d: '{{formatDate(addDays(now; %d); "YYYY-MM-DD"; "%s")}}T00:00:00%s' % (d, a.fuseau, a.decalage)
     debut = f"{a.debut}T00:00:00{a.decalage}" if a.debut else jour(-7)

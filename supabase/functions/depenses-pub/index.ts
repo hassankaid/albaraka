@@ -9,12 +9,20 @@
 // Make peut envoyer les champs bruts de la plateforme : ils sont traduits ici, pour
 // garder les scénarios aussi simples que possible. Snap envoie ses statistiques et ses
 // campagnes telles quelles (snap_stats, snap_campagnes).
+//
+// Depuis le 03/11/2026, un second scénario par compte (Meta, Snap) envoie la dépense
+// par PUB : « niveau »: "pub". Elle va dans ads_pubs (onglet « Par créa ») et ne touche
+// pas à ads, qui fait les totaux du tableau de bord. Snap envoie alors aussi ses pubs
+// et ses groupes (snap_pubs, snap_groupes) pour les noms.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 
 const supabase = createClient(Deno.env.get("SUPABASE_URL") || "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "");
+// Par pub et par jour, Snap renvoie une ligne pour chaque pub du compte, même à 0 € :
+// un import ponctuel d'un mois dépasse le mégaoctet.
 const TAILLE_MAX = 1024 * 1024;
+const TAILLE_MAX_PUB = 20 * 1024 * 1024;
 const PLATEFORMES = ["meta", "snap", "google"];
 
 const json = (corps: unknown, status = 200) =>
@@ -54,7 +62,58 @@ function normaliser(l: Record<string, unknown>) {
   };
 }
 
+function normaliserPub(l: Record<string, unknown>) {
+  return {
+    jour: lireJour(l.jour ?? l.date_start ?? l.day),
+    pub_id: String(l.pub_id ?? l.ad_id ?? "").trim(),
+    pub: l.pub ?? l.ad_name ?? null,
+    groupe_id: l.groupe_id ?? l.adset_id ?? null,
+    groupe: l.groupe ?? l.adset_name ?? null,
+    campagne_id: l.campagne_id ?? l.campaign_id ?? null,
+    campagne: l.campagne ?? l.campaign_name ?? null,
+    montant: l.montant ?? l.spend ?? 0,
+    impressions: l.impressions ?? 0,
+    clics: l.clics ?? l.inline_link_clicks ?? l.clicks ?? 0,
+    devise: l.devise ?? l.account_currency ?? "EUR",
+  };
+}
+
 const enListe = (v: unknown) => (typeof v === "string" ? JSON.parse(v) : v);
+
+// Même réponse /stats, avec breakdown=ad. Les noms viennent de /ads, /adsquads et /campaigns.
+function lignesSnapParPub(stats: any, pubs: any, groupes: any, campagnes: any, devise: unknown) {
+  const nomsCampagnes = new Map<string, string>();
+  for (const c of enListe(campagnes)?.campaigns ?? []) if (c.campaign?.id) nomsCampagnes.set(c.campaign.id, c.campaign.name);
+  const lesGroupes = new Map<string, { nom: string; campagne: string }>();
+  for (const g of enListe(groupes)?.adsquads ?? []) if (g.adsquad?.id) lesGroupes.set(g.adsquad.id, { nom: g.adsquad.name, campagne: g.adsquad.campaign_id });
+  const lesPubs = new Map<string, { nom: string; groupe: string }>();
+  for (const p of enListe(pubs)?.ads ?? []) if (p.ad?.id) lesPubs.set(p.ad.id, { nom: p.ad.name, groupe: p.ad.ad_squad_id });
+  const lignes: Record<string, unknown>[] = [];
+  for (const s of enListe(stats)?.timeseries_stats ?? []) {
+    for (const t of s.timeseries_stat?.breakdown_stats?.ad ?? []) {
+      const pub = lesPubs.get(t.id);
+      const groupe = pub ? lesGroupes.get(pub.groupe) : undefined;
+      for (const j of t.timeseries ?? []) {
+        const montant = Number(j.stats?.spend ?? 0) / 1_000_000;
+        if (!montant) continue;
+        lignes.push({
+          jour: String(j.start_time).slice(0, 10),
+          pub_id: t.id,
+          pub: pub?.nom ?? null,
+          groupe_id: pub?.groupe ?? null,
+          groupe: groupe?.nom ?? null,
+          campagne_id: groupe?.campagne ?? null,
+          campagne: groupe ? nomsCampagnes.get(groupe.campagne) ?? null : null,
+          montant,
+          impressions: j.stats?.impressions ?? 0,
+          clics: j.stats?.swipes ?? 0,
+          devise,
+        });
+      }
+    }
+  }
+  return lignes;
+}
 
 // Réponse de /adaccounts/{id}/stats (granularity=DAY, breakdown=campaign). La dépense est
 // en micro-unités, et le jour est celui du fuseau du compte (UTC+4 pour Ethicarena).
@@ -89,16 +148,25 @@ serve(async (req) => {
   }
 
   const brut = await req.text();
-  if (brut.length > TAILLE_MAX) return json({ erreur: "Envoi trop volumineux." }, 413);
+  if (brut.length > TAILLE_MAX_PUB) return json({ erreur: "Envoi trop volumineux." }, 413);
 
   let plateforme = "";
   let compte = "";
+  let parPub = false;
   let lignes: Record<string, unknown>[];
   try {
     const corps = JSON.parse(brut);
     plateforme = String(corps.plateforme ?? "").toLowerCase();
     compte = String(corps.compte ?? "").trim();
-    lignes = corps.snap_stats ? lignesSnap(corps.snap_stats, corps.snap_campagnes, corps.devise) : enListe(corps.lignes);
+    parPub = corps.niveau === "pub";
+    if (parPub) {
+      lignes = corps.snap_stats
+        ? lignesSnapParPub(corps.snap_stats, corps.snap_pubs, corps.snap_groupes, corps.snap_campagnes, corps.devise)
+        : enListe(corps.lignes);
+    } else {
+      if (brut.length > TAILLE_MAX) return json({ erreur: "Envoi trop volumineux." }, 413);
+      lignes = corps.snap_stats ? lignesSnap(corps.snap_stats, corps.snap_campagnes, corps.devise) : enListe(corps.lignes);
+    }
   } catch {
     return json({ erreur: "JSON invalide." }, 400);
   }
@@ -106,10 +174,14 @@ serve(async (req) => {
   if (!Array.isArray(lignes)) return json({ erreur: "« lignes » attendu (liste)." }, 400);
 
   // Une campagne sans activité renvoie parfois une ligne vide : elle ne compte pas.
-  const propres = lignes.map(normaliser).filter((l) => l.jour && l.campagne_id);
-  const { data, error } = await supabase.rpc("importer_depenses_pub", { p_plateforme: plateforme, p_compte: compte, p_lignes: propres });
+  const propres = parPub
+    ? lignes.map(normaliserPub).filter((l) => l.jour && l.pub_id)
+    : lignes.map(normaliser).filter((l) => l.jour && l.campagne_id);
+  const { data, error } = await supabase.rpc(parPub ? "importer_depenses_pub_par_pub" : "importer_depenses_pub", {
+    p_plateforme: plateforme, p_compte: compte, p_lignes: propres,
+  });
   if (error) {
-    await supabase.from("ads_imports").insert({ plateforme, compte_id: compte, erreur: error.message });
+    await supabase.from("ads_imports").insert({ plateforme, compte_id: compte, erreur: error.message, niveau: parPub ? "pub" : "campagne" });
     return json({ erreur: error.message }, 500);
   }
   return json(data);

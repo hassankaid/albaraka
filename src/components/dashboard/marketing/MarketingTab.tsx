@@ -4,6 +4,8 @@
 // Deux lectures, et une seule source de chiffres derrière les deux :
 //   • par conférence — la maille naturelle de l'acquisition ici,
 //   • par mois — la maille de pilotage, avec M-1, objectif et écart.
+// Une troisième, par créa (03/11/2026), descend au niveau de la pub : ce que
+// chaque vidéo a coûté, amené et vendu.
 //
 // L'analyse « meilleur / pire » par canal, par tunnel et par combinaison est
 // rattachée à chacune des deux : c'est la même question posée sur deux
@@ -18,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ConferenceFilter } from "@/lib/marketing/conferenceFilter";
 import VueConference from "./VueConference";
 import VueMensuelle from "./VueMensuelle";
+import VueCreas from "./VueCreas";
 import MarketingTabLegacy from "./MarketingTabLegacy";
 import { useNomsSources } from "@/lib/leadSources";
 
@@ -29,7 +32,7 @@ export interface MarketingTabProps {
   onPeriodeChange?: (f: ConferenceFilter) => void;
 }
 
-type Vue = "conference" | "mensuel" | "ancien";
+type Vue = "conference" | "mensuel" | "creas" | "ancien";
 
 export default function MarketingTab({ onPeriodeChange }: MarketingTabProps = {}) {
   // noms des canaux et tunnels tels que réglés dans « Gérer les sources »
@@ -46,6 +49,7 @@ export default function MarketingTab({ onPeriodeChange }: MarketingTabProps = {}
       <TabsList>
         <TabsTrigger value="conference">Par conférence</TabsTrigger>
         <TabsTrigger value="mensuel">Mensuel</TabsTrigger>
+        <TabsTrigger value="creas">Par créa</TabsTrigger>
         <TabsTrigger value="ancien" className="text-muted-foreground">Détail (ancien)</TabsTrigger>
       </TabsList>
 
@@ -55,6 +59,10 @@ export default function MarketingTab({ onPeriodeChange }: MarketingTabProps = {}
 
       <TabsContent value="mensuel" className="mt-0">
         <VueMensuelle onPeriodeChange={setPeriode} />
+      </TabsContent>
+
+      <TabsContent value="creas" className="mt-0">
+        <VueCreas />
       </TabsContent>
 
       <TabsContent value="ancien" className="mt-0">
