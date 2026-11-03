@@ -71,6 +71,8 @@ export interface TunnelAttribution {
   fbclid: string | null;
   /** Clic Google Ads (gclid, ou gbraid/wbraid sur iOS) : ajouté par Google seul. */
   gclid: string | null;
+  /** Clic Snapchat Ads (ScCid) : ajouté par Snap au lien de la pub. */
+  sccid?: string | null;
   referrer: string | null;
   landedAt: string; // ISO
 }
@@ -140,8 +142,9 @@ export function captureAttribution(cfg: TunnelConfig): TunnelAttribution {
   // ordinaire — le dispositif peut rester branché en permanence.
   const abCode = readParam(params, "ab");
   const gclid = readParam(params, "gclid") ?? readParam(params, "gbraid") ?? readParam(params, "wbraid");
+  const sccid = readParam(params, "ScCid") ?? readParam(params, "sccid");
 
-  if (!src && !utm_source && !variant && !abCode && !gclid && existing) return existing;
+  if (!src && !utm_source && !variant && !abCode && !gclid && !sccid && existing) return existing;
 
   const attrib: TunnelAttribution = {
     src,
@@ -155,6 +158,7 @@ export function captureAttribution(cfg: TunnelConfig): TunnelAttribution {
     utm_term: readParam(params, "utm_term"),
     fbclid: readParam(params, "fbclid"),
     gclid,
+    sccid,
     referrer: typeof document !== "undefined" ? document.referrer || null : null,
     landedAt: new Date().toISOString(),
   };

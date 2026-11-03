@@ -14,8 +14,9 @@
 //     | webi_wa_youtube_organic (whitelist ; défaut webi_wa_direct).
 //     status = 'a_qualifier' OBLIGATOIRE
 //     (le default 'nouveau' violerait leads_status_check).
-//   - UTM stockés dans les colonnes utm_* ; fbclid/referrer (pas de colonne
-//     dédiée) consignés dans notes.
+//   - UTM stockés dans les colonnes utm_* ; fbclid/referrer consignés dans
+//     notes ; identifiants de clic des régies dans clic_pub, appli d'origine
+//     dans app_origine (03/11/2026).
 //   - visitor_id + ab_test_code + tunnel_variant : rattachent l'inscrit à son
 //     test A/B et à la page par laquelle il est passé, donc permettent de
 //     relier une VENTE à la variante qui l'a précédée.
@@ -190,6 +191,31 @@ function clip(v: unknown, max = 300): string | null {
   return t ? t.slice(0, max) : null;
 }
 
+// Identifiants de clic des régies (03/11/2026) : de quoi renvoyer plus tard la
+// vente à Meta et à Snap. Le user-agent vient de l'en-tête, pas du navigateur :
+// c'est lui qui dit par quelle appli le prospect est arrivé.
+function clicPub(brut: unknown, userAgent: string | null): Record<string, string> | null {
+  const b = (brut && typeof brut === "object" ? brut : {}) as Record<string, unknown>;
+  const clic: Record<string, string> = {};
+  for (const champ of ["fbclid", "fbc", "fbp", "sccid", "scid", "gclid"]) {
+    const v = clip(b[champ], 500);
+    if (v) clic[champ] = v;
+  }
+  if (userAgent) clic.user_agent = userAgent.slice(0, 500);
+  return Object.keys(clic).length ? clic : null;
+}
+
+/** Appli dont le navigateur intégré a servi à l'inscription. */
+function appOrigine(ua: string | null): string | null {
+  if (!ua) return null;
+  if (/snapchat/i.test(ua)) return "snapchat";
+  if (/instagram/i.test(ua)) return "instagram";
+  if (/FBAN|FBAV|FB_IAB|FBIOS/i.test(ua)) return "facebook";
+  if (/musical_ly|bytedance|tiktok/i.test(ua)) return "tiktok";
+  if (/whatsapp/i.test(ua)) return "whatsapp";
+  return "navigateur";
+}
+
 function extractErrorMessage(error: unknown): string {
   if (!error) return "unknown";
   if (error instanceof Error) return error.message;
@@ -290,6 +316,9 @@ serve(async (req) => {
     const fbclid = clip(body?.fbclid, 255);
     const gclid = clip(body?.gclid, 255);
     const referrer = clip(body?.referrer, 300);
+    const userAgent = req.headers.get("user-agent");
+    const clic_pub = clicPub(body?.clic_pub, userAgent);
+    const app_origine = appOrigine(userAgent);
     // A/B testing : le visiteur, le test et la variante de landing suivent
     // l'inscrit. `tunnel_variant` n'est renseigné que sur un test de LANDING —
     // c'est la page par laquelle l'inscrit est passé, et elle n'a de sens que
@@ -374,7 +403,7 @@ serve(async (req) => {
     // doit voir son inscription reussir, pas une erreur.
     const { data: fichesDuJour } = await supabase
       .from("leads")
-      .select("id, utm_source, utm_medium, utm_campaign, utm_content, utm_term, visitor_id, ab_test_code, tunnel_variant, notes")
+      .select("id, utm_source, utm_medium, utm_campaign, utm_content, utm_term, visitor_id, ab_test_code, tunnel_variant, clic_pub, app_origine, notes")
       .eq("contact_id", contactId)
       .eq("source", source)
       .gte("created_at", new Date(Date.now() - 86_400_000).toISOString())
@@ -389,6 +418,8 @@ serve(async (req) => {
         visitor_id: visitorIdBrut,
         ab_test_code: abTestCode ? abTestCode.toUpperCase() : null,
         tunnel_variant: varianteLanding,
+        clic_pub,
+        app_origine,
       };
       for (const [champ, valeur] of Object.entries(nouveau)) {
         if (valeur != null && (dejaLa as Record<string, unknown>)[champ] == null) combler[champ] = valeur;
@@ -415,6 +446,8 @@ serve(async (req) => {
         visitor_id: visitorIdBrut,
         ab_test_code: abTestCode ? abTestCode.toUpperCase() : null,
         tunnel_variant: varianteLanding,
+        clic_pub,
+        app_origine,
         ...utm,
       })
       .select("id")

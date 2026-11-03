@@ -11,6 +11,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { captureAttribution } from "./source";
+import { clicsPub } from "./api";
 import { WA_TUNNEL, VSL_TUNNEL, LIBERTY_TUNNEL } from "../config";
 
 const FONCTION = readFileSync(resolve(process.cwd(), "supabase/functions/tunnel-lead-submit/index.ts"), "utf-8");
@@ -98,5 +99,31 @@ describe("Google Ads (04/10/2026)", () => {
   it("une visite sans paramètre ne remplace pas une arrivée par clic Google", () => {
     sourcePour(WA_TUNNEL, "?gclid=abc");
     expect(sourcePour(WA_TUNNEL, "")).toBe("webi_wa_google_ads");
+  });
+});
+
+describe("identifiants de clic des régies (03/11/2026)", () => {
+  // Gardés sur le lead pour renvoyer plus tard la vente à Meta et à Snap.
+  it("capte le ScCid de Snap et le fbclid de Meta", () => {
+    window.history.pushState({}, "", "/x?src=snap_ads&ScCid=abc-123");
+    expect(captureAttribution(WA_TUNNEL).sccid).toBe("abc-123");
+    sessionStorage.clear();
+    window.history.pushState({}, "", "/x?src=ads&fbclid=IwAR0");
+    const a = captureAttribution(WA_TUNNEL);
+    expect(a.fbclid).toBe("IwAR0");
+    expect(a.sccid).toBeNull();
+  });
+
+  it("reconstruit le fbc au format Meta quand le cookie _fbc manque", () => {
+    window.history.pushState({}, "", "/x?src=ads&fbclid=IwAR0");
+    const a = captureAttribution(WA_TUNNEL);
+    const clic = clicsPub(a);
+    expect(clic.fbc).toBe(`fb.1.${Date.parse(a.landedAt)}.IwAR0`);
+    expect(clicsPub(null)).toEqual({ fbclid: null, fbc: null, fbp: null, sccid: null, scid: null, gclid: null });
+  });
+
+  it("tunnel-lead-submit enregistre clic_pub et app_origine", () => {
+    expect(FONCTION).toContain("clic_pub,");
+    expect(FONCTION).toContain("app_origine,");
   });
 });

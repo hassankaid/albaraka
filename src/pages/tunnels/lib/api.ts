@@ -27,6 +27,34 @@ export interface TunnelLeadResult {
   scoring_token?: string | null;
 }
 
+function lireCookie(nom: string): string | null {
+  if (typeof document === "undefined") return null;
+  const m = document.cookie.match(new RegExp(`(?:^|; )${nom}=([^;]*)`));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+/**
+ * Identifiants de clic des régies (03/11/2026). Gardés sur le lead pour pouvoir
+ * renvoyer plus tard la VENTE à Meta et à Snap, qui reconnaissent l'acheteur à
+ * ces valeurs. Les cookies sont lus à l'envoi, pas à l'arrivée : les pixels
+ * (GTM) les posent après le chargement de la page.
+ */
+export function clicsPub(a: ReturnType<typeof getAttribution>) {
+  const fbclid = a?.fbclid ?? null;
+  // Sans cookie _fbc (pixel bloqué ou pas encore chargé), on le reconstruit au
+  // format de Meta à partir du fbclid et de l'heure d'arrivée.
+  const arrivee = a?.landedAt ? Date.parse(a.landedAt) : NaN;
+  const fbc = lireCookie("_fbc") ?? (fbclid ? `fb.1.${Number.isFinite(arrivee) ? arrivee : Date.now()}.${fbclid}` : null);
+  return {
+    fbclid,
+    fbc,
+    fbp: lireCookie("_fbp"),
+    sccid: a?.sccid ?? null,
+    scid: lireCookie("_scid"),
+    gclid: a?.gclid ?? null,
+  };
+}
+
 export async function submitTunnelLead(input: TunnelLeadInput, cfg: TunnelConfig): Promise<TunnelLeadResult> {
   const a = getAttribution(cfg);
   const body = {
@@ -47,6 +75,7 @@ export async function submitTunnelLead(input: TunnelLeadInput, cfg: TunnelConfig
     fbclid: a?.fbclid ?? null,
     gclid: a?.gclid ?? null,
     referrer: a?.referrer ?? null,
+    clic_pub: clicsPub(a),
     // Le visiteur et le test voyagent avec l'inscrit : c'est ce qui permettra
     // plus tard de rattacher une VENTE à la variante qui l'a précédée. La
     // variante elle-même n'est pas envoyée ici — elle n'est décidée qu'à la
