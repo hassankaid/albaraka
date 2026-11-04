@@ -164,7 +164,7 @@ export default function ApporteurOnboarding() {
               //   - Pass AL BARAKA → 1er chapitre du parcours "al-baraka"
               //     (masqué aux élèves depuis le 12/10/2026 : page Formation,
               //     où sont les parcours CM et Setting/Closing)
-              //   - Pass Liberty   → 1er chapitre du parcours "liberty" si défini
+              //   - Pass Liberty   → le nouveau parcours Liberty (04/11/2026)
               //   - Formation à la carte (aucun pass) → /training direct
               let targetPath = "/training";
               try {
@@ -180,7 +180,11 @@ export default function ApporteurOnboarding() {
                     ? "liberty"
                     : null;
 
-                if (parcoursSlug) {
+                // Pass Liberty seul (04/11/2026) : l'ancien parcours « liberty » est masqué,
+                // le nouveau est la formation parcours-liberty. On y va directement.
+                if (parcoursSlug === "liberty") {
+                  targetPath = "/training/parcours-liberty";
+                } else if (parcoursSlug) {
                   const { data: parc } = await (supabase as any)
                     .from("parcours")
                     .select(
