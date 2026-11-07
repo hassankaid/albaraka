@@ -1900,10 +1900,71 @@ async function handlePaymentIntentSucceeded(
   });
 }
 
+/**
+ * STUDIO — chaque facture Stripe encaissée d'un abonnement Studio
+ * (subscription metadata usage=studio) devient une échéance payée d'une vente
+ * « ABONNEMENT STUDIO », puis une facture client FAC-… (demande de Sidali,
+ * 07/11/2026 : le comptable doit tout retrouver dans les factures).
+ *
+ * Live uniquement : les évènements de test arrivent sur la même base.
+ * Idempotent côté SQL (verrou par abonnement + unicité de stripe_invoice_id).
+ * Renvoie true si la facture était une facture Studio (traitée ou non).
+ */
+async function handleStudioInvoicePaid(
+  supabase: SupabaseClient,
+  invoice: Record<string, unknown>,
+  livemode: boolean,
+): Promise<boolean> {
+  const parent = (invoice.parent as Record<string, any>) || {};
+  const meta: Record<string, string> =
+    ((invoice.subscription_details as Record<string, any>)?.metadata as Record<string, string>) ||
+    (parent.subscription_details?.metadata as Record<string, string>) || {};
+  if (meta.usage !== "studio") return false;
+
+  const subscriptionId = extractId(invoice.subscription) || extractId(parent.subscription_details?.subscription);
+  const invoiceId = typeof invoice.id === "string" ? invoice.id : null;
+  const amountPaid = typeof invoice.amount_paid === "number" ? invoice.amount_paid : 0;
+  if (!livemode) {
+    console.log(`[studio] facture de test ${invoiceId} ignorée (même base que la production)`);
+    return true;
+  }
+  if (!subscriptionId || !invoiceId || amountPaid <= 0) return true;
+
+  const transitions = (invoice.status_transitions as Record<string, unknown>) || {};
+  const paidUnix = typeof transitions.paid_at === "number" ? transitions.paid_at : null;
+  const payeLe = paidUnix ? new Date(paidUnix * 1000).toISOString().slice(0, 10) : todayISO();
+
+  const { data: res, error } = await supabase.rpc("enregistrer_paiement_studio", {
+    p_user_id: meta.user_id || null,
+    p_email: typeof invoice.customer_email === "string" ? invoice.customer_email : null,
+    p_nom: typeof invoice.customer_name === "string" ? invoice.customer_name : null,
+    p_montant: Math.round(amountPaid) / 100,
+    p_paye_le: payeLe,
+    p_subscription: subscriptionId,
+    p_invoice: invoiceId,
+    p_payment_intent: extractId(invoice.payment_intent),
+  });
+  const paymentId = (res as { payment_id?: string } | null)?.payment_id;
+  if (error || !paymentId) {
+    console.error(`[studio] enregistrement impossible pour ${invoiceId}:`, error);
+    return true;
+  }
+  if ((res as { cree?: boolean }).cree !== true) {
+    console.log(`[studio] facture ${invoiceId} déjà enregistrée (payment ${paymentId}), skip`);
+    return true;
+  }
+  console.log(`[studio] facture ${invoiceId} → payment ${paymentId}`);
+  triggerClientInvoice(paymentId);
+  return true;
+}
+
 async function handleInvoicePaid(
   supabase: SupabaseClient,
   invoice: Record<string, unknown>,
+  livemode = true,
 ): Promise<void> {
+  if (await handleStudioInvoicePaid(supabase, invoice, livemode)) return;
+
   const metadata = (invoice.metadata as Record<string, string>) || {};
 
   // Legacy systeme.io path
@@ -2307,7 +2368,7 @@ Deno.serve(async (req) => {
 
         case "invoice.paid":
         case "invoice.payment_succeeded": {
-          await handleInvoicePaid(supabase, event.data.object);
+          await handleInvoicePaid(supabase, event.data.object, event.livemode === true);
           // Sprint O (17/05/2026) : si on vient de payer l'avant-derniere
           // invoice d'une sub avec metadata Sprint O, ajoute un invoice_item
           // a la prochaine (= derniere) invoice pour que Stripe encaisse le

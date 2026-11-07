@@ -128,6 +128,8 @@ export function useClosingPlan(userId?: string | null) {
         .from("sales")
         .select("id, sold_at, amount_ht, product, closed_by, contact_id, call_id")
         .is("closed_by", null)
+        // L'abonnement Studio n'est pas une vente à rattacher à un closer.
+        .or("sale_type.is.null,sale_type.neq.studio")
         .in("contact_id", contactIds)
         .gte("sold_at", startedAt!)
         .lte("sold_at", `${planEnd!}T23:59:59+01:00`)

@@ -1,4 +1,7 @@
-// generate-client-invoice v17 — Génération PDF côté Deno + email Resend.
+// generate-client-invoice v18 — Génération PDF côté Deno + email Resend.
+//
+// v18 : Abonnement Studio (sale_type studio, 07/11/2026) : libellé « Abonnement
+//   Studio Al Baraka (mensuel) » et « Abonnement mensuel » au lieu de « Mensualité n/N ».
 //
 // v17 : en-tête droit aligné sur la marge droite (FACTURE, numéro, dates)
 //   - Avant, FACTURE / numéro / dates étaient à des x fixes différents, ce
@@ -143,6 +146,7 @@ function libelleFacture(produit: string | null | undefined): string {
   const cle = p.toUpperCase();
   if (cle === "PASS AL BARAKA") return "Accès à la plateforme : Pass Al Baraka";
   if (cle === "PASS LIBERTY" || cle === "LIBERTY") return "Accès à la plateforme : Pass Liberty";
+  if (cle === "ABONNEMENT STUDIO") return "Abonnement Studio Al Baraka (mensuel)";
   return p;
 }
 
@@ -317,7 +321,10 @@ async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Array> {
   y -= 26;
 
   // Row 1 : Description + montant
-  const mensLabel = data.paymentNumber && data.totalPayments
+  // Studio : un abonnement sans fin prévue, pas une mensualité « n/N ».
+  const mensLabel = data.saleType === "studio"
+    ? "Abonnement mensuel"
+    : data.paymentNumber && data.totalPayments
     ? `Mensualite ${data.paymentNumber}/${data.totalPayments}`
     : "Paiement";
 

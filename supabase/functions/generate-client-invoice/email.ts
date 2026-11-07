@@ -43,7 +43,9 @@ export function buildInvoiceEmailHtml(params: {
 }): string {
   const prenom = firstName(params.clientName);
   const isAcompte = params.saleType === "acompte";
-  const mensInfo = !isAcompte && params.paymentNumber && params.totalPayments
+  const mensInfo = params.saleType === "studio"
+    ? "(abonnement mensuel)"
+    : !isAcompte && params.paymentNumber && params.totalPayments
     ? `(mensualité ${params.paymentNumber}/${params.totalPayments})`
     : "";
 

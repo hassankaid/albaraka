@@ -298,7 +298,7 @@ export function useMarketingDashboardData(filter: ConferenceFilter) {
       // Résolution des contacts (pour orphelines)
       const contactIdsToFetch = new Set<string>();
       for (const s of (saleRowsRaw ?? []) as any[]) {
-        if (s.sale_type !== "acompte" && !s.lead_id && s.contact_id)
+        if (s.sale_type !== "acompte" && s.sale_type !== "studio" && !s.lead_id && s.contact_id)
           contactIdsToFetch.add(s.contact_id);
       }
       for (const c of rawCalls) {
@@ -327,7 +327,8 @@ export function useMarketingDashboardData(filter: ConferenceFilter) {
       }
 
       const rawSales: MarketingSale[] = ((saleRowsRaw ?? []) as any[])
-        .filter((s) => s.sale_type !== "acompte")
+        // Ni les acomptes ni l'abonnement Studio ne sont des ventes marketing.
+        .filter((s) => s.sale_type !== "acompte" && s.sale_type !== "studio")
         .map((s) => {
           const ct = s.contact_id ? contactMap.get(s.contact_id) : null;
           return {
