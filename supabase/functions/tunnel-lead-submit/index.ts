@@ -194,14 +194,24 @@ function clip(v: unknown, max = 300): string | null {
 // Identifiants de clic des régies (03/11/2026) : de quoi renvoyer plus tard la
 // vente à Meta et à Snap. Le user-agent vient de l'en-tête, pas du navigateur :
 // c'est lui qui dit par quelle appli le prospect est arrivé.
-function clicPub(brut: unknown, userAgent: string | null): Record<string, string> | null {
+function clicPub(brut: unknown, userAgent: string | null): Record<string, unknown> | null {
   const b = (brut && typeof brut === "object" ? brut : {}) as Record<string, unknown>;
-  const clic: Record<string, string> = {};
+  const clic: Record<string, unknown> = {};
   for (const champ of ["fbclid", "fbc", "fbp", "sccid", "scid", "gclid"]) {
     const v = clip(b[champ], 500);
     if (v) clic[champ] = v;
   }
   if (userAgent) clic.user_agent = userAgent.slice(0, 500);
+  // Diagnostic du navigateur (10/11/2026) : où l'attribution a été relue, noms des
+  // paramètres à l'arrivée et à l'envoi. Aucune donnée personnelle ; taille bornée.
+  if (b.diag && typeof b.diag === "object" && !Array.isArray(b.diag)) {
+    try {
+      const s = JSON.stringify(b.diag);
+      if (s.length <= 1000) clic.diag = JSON.parse(s);
+    } catch {
+      /* ignoré */
+    }
+  }
   return Object.keys(clic).length ? clic : null;
 }
 

@@ -10,7 +10,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { captureAttribution } from "./source";
+import { captureAttribution, getAttribution, lireAttribution, oublierAttributions, estMarquee } from "./source";
 import { clicsPub } from "./api";
 import { WA_TUNNEL, VSL_TUNNEL, LIBERTY_TUNNEL } from "../config";
 
@@ -21,7 +21,10 @@ function sourcePour(cfg: typeof WA_TUNNEL, recherche: string): string {
   return captureAttribution(cfg).source;
 }
 
-beforeEach(() => sessionStorage.clear());
+beforeEach(() => {
+  sessionStorage.clear();
+  oublierAttributions();
+});
 
 describe("liens d'entrée des régies publicitaires", () => {
   it.each([
@@ -125,5 +128,53 @@ describe("identifiants de clic des régies (03/11/2026)", () => {
   it("tunnel-lead-submit enregistre clic_pub et app_origine", () => {
     expect(FONCTION).toContain("clic_pub,");
     expect(FONCTION).toContain("app_origine,");
+  });
+});
+
+// 10/11/2026 : sur iPhone, dans les navigateurs de Snapchat/Instagram/Facebook, des
+// clics de pub arrivaient « sans source » ; seul sessionStorage gardait l'attribution.
+describe("attribution gardée hors sessionStorage", () => {
+  it("se relit depuis le cookie quand sessionStorage et la mémoire sont vides", () => {
+    window.history.pushState({}, "", "/webinaire?src=snap_ads&utm_source=snapchat&utm_content=pub42&ScCid=abc");
+    captureAttribution(WA_TUNNEL);
+    sessionStorage.clear();
+    // la mémoire de la page vit encore : on la vide pour simuler une page rechargée
+    const c = document.cookie;
+    oublierAttributions();
+    document.cookie = c.split("; ").find((x) => x.startsWith("alb_attr_"))! + "; path=/";
+    const { a, origine } = lireAttribution(WA_TUNNEL);
+    expect(origine).toBe("cookie");
+    expect(a?.source).toBe("webi_wa_snap_ads");
+    expect(a?.utm_content).toBe("pub42");
+    expect(a?.sccid).toBe("abc");
+  });
+
+  it("se relit depuis la mémoire quand sessionStorage est vidé", () => {
+    window.history.pushState({}, "", "/webinaire?src=ads&utm_source=ig&fbclid=xyz");
+    captureAttribution(WA_TUNNEL);
+    sessionStorage.clear();
+    expect(lireAttribution(WA_TUNNEL).origine).toBe("memoire");
+    expect(getAttribution(WA_TUNNEL)?.fbclid).toBe("xyz");
+  });
+
+  it("garde le clic de pub quand la personne revient par le lien nu", () => {
+    window.history.pushState({}, "", "/webinaire?src=snap_ads&utm_source=snapchat");
+    captureAttribution(WA_TUNNEL);
+    window.history.pushState({}, "", "/webinaire");
+    expect(captureAttribution(WA_TUNNEL).source).toBe("webi_wa_snap_ads");
+  });
+
+  it("note les noms des paramètres vus à l'arrivée", () => {
+    window.history.pushState({}, "", "/webinaire?src=ads&utm_source=fb");
+    expect(captureAttribution(WA_TUNNEL).paramsVus).toEqual(["src", "utm_source"]);
+  });
+
+  it("estMarquee : lien nu non marqué, clic de régie marqué", () => {
+    window.history.pushState({}, "", "/webinaire");
+    expect(estMarquee(captureAttribution(WA_TUNNEL))).toBe(false);
+    oublierAttributions();
+    sessionStorage.clear();
+    window.history.pushState({}, "", "/webinaire?fbclid=abc");
+    expect(estMarquee(captureAttribution(WA_TUNNEL))).toBe(true);
   });
 });

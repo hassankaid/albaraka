@@ -75,6 +75,8 @@ export interface TunnelAttribution {
   sccid?: string | null;
   referrer: string | null;
   landedAt: string; // ISO
+  /** Noms des paramètres présents dans l'adresse à l'arrivée (diagnostic, 10/11/2026). */
+  paramsVus?: string[];
 }
 
 function storageKey(cfg: TunnelConfig): string {
@@ -163,21 +165,82 @@ export function captureAttribution(cfg: TunnelConfig): TunnelAttribution {
     landedAt: new Date().toISOString(),
   };
 
-  try {
-    sessionStorage.setItem(storageKey(cfg), JSON.stringify(attrib));
-  } catch {
-    /* mode privé strict : l'attribution vivra juste en mémoire */
-  }
+  attrib.paramsVus = [...params.keys()].slice(0, 15);
+  memoriser(cfg, attrib);
   return attrib;
 }
 
-export function getAttribution(cfg: TunnelConfig): TunnelAttribution | null {
+// ─── Où l'attribution est gardée (10/11/2026) ────────────────────────────
+// Constat : sur iPhone, dans les navigateurs de Snapchat, Instagram et Facebook,
+// 20 à 30 % des inscrits arrivaient « sans source » alors qu'ils venaient d'un
+// clic de pub (le cookie de clic Meta le prouvait) ; 0 cas sur Android. Seul
+// sessionStorage la gardait, et rien d'autre. On la garde maintenant à trois
+// endroits : sessionStorage, la mémoire de la page, et un cookie de 7 jours
+// (les cookies, eux, survivent : _fbp et _fbc étaient toujours là).
+const memoire = new Map<string, TunnelAttribution>();
+const COOKIE_JOURS = 7;
+
+function cookieKey(cfg: TunnelConfig): string {
+  return `alb_attr_${cfg.key}`;
+}
+
+function memoriser(cfg: TunnelConfig, attrib: TunnelAttribution): void {
+  memoire.set(cfg.key, attrib);
+  try {
+    sessionStorage.setItem(storageKey(cfg), JSON.stringify(attrib));
+  } catch {
+    /* mode privé strict : la mémoire et le cookie prennent le relais */
+  }
+  try {
+    // Le referrer et les noms de paramètres ne servent qu'au diagnostic : hors cookie (taille).
+    const { referrer: _r, paramsVus: _p, ...court } = attrib;
+    document.cookie = `${cookieKey(cfg)}=${encodeURIComponent(JSON.stringify(court))}; max-age=${COOKIE_JOURS * 86400}; path=/; SameSite=Lax`;
+  } catch {
+    /* cookies refusés : tant pis */
+  }
+}
+
+/** Efface l'attribution gardée en mémoire et en cookie (tests). */
+export function oublierAttributions(): void {
+  memoire.clear();
+  try {
+    for (const c of document.cookie.split("; ")) {
+      const nom = c.split("=")[0];
+      if (nom.startsWith("alb_attr_")) document.cookie = `${nom}=; max-age=0; path=/`;
+    }
+  } catch {
+    /* rien */
+  }
+}
+
+/** D'où vient l'attribution relue (diagnostic envoyé avec le lead). */
+export type OrigineAttribution = "session" | "memoire" | "cookie" | "aucune";
+
+export function lireAttribution(cfg: TunnelConfig): { a: TunnelAttribution | null; origine: OrigineAttribution } {
   try {
     const raw = sessionStorage.getItem(storageKey(cfg));
-    return raw ? (JSON.parse(raw) as TunnelAttribution) : null;
+    if (raw) return { a: JSON.parse(raw) as TunnelAttribution, origine: "session" };
   } catch {
-    return null;
+    /* on essaie la suite */
   }
+  const m = memoire.get(cfg.key);
+  if (m) return { a: m, origine: "memoire" };
+  try {
+    const c = document.cookie.match(new RegExp(`(?:^|; )${cookieKey(cfg)}=([^;]*)`));
+    if (c) return { a: JSON.parse(decodeURIComponent(c[1])) as TunnelAttribution, origine: "cookie" };
+  } catch {
+    /* cookie illisible */
+  }
+  return { a: null, origine: "aucune" };
+}
+
+export function getAttribution(cfg: TunnelConfig): TunnelAttribution | null {
+  return lireAttribution(cfg).a;
+}
+
+/** L'attribution porte-t-elle une vraie origine (lien ou clic de régie) ? */
+export function estMarquee(a: TunnelAttribution | null): boolean {
+  return !!a && !!(a.src || a.utm_source || a.utm_content || a.fbclid || a.gclid || a.sccid);
 }
 
 // ─── Pré-remplissage (coordonnées saisies à l'opt-in) ────────────────────

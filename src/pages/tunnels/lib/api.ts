@@ -5,7 +5,7 @@
 // même quand verify_jwt=false). URL + clé anon = constantes publiques du projet
 // (partagées, pas de la logique métier funnel).
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
-import { getAttribution } from "./source";
+import { captureAttribution, estMarquee, getAttribution, lireAttribution, type OrigineAttribution } from "./source";
 import { visitorId, varianteLandingRetenue } from "./abtest";
 import type { TunnelConfig } from "../config";
 
@@ -55,8 +55,58 @@ export function clicsPub(a: ReturnType<typeof getAttribution>) {
   };
 }
 
+/** Le stockage de session répond-il ? (diagnostic iPhone, 10/11/2026) */
+function sessionOk(): boolean {
+  try {
+    sessionStorage.setItem("alb_t", "1");
+    sessionStorage.removeItem("alb_t");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Ce qu'on sait du parcours au moment de l'envoi, sans aucune donnée personnelle :
+ * de quoi trouver pourquoi des clics de pub arrivent sans marquage sur iPhone.
+ */
+function diagnostic(a: ReturnType<typeof getAttribution>, origine: OrigineAttribution, recapture: boolean) {
+  let paramsEnvoi: string[] = [];
+  let nav: string | null = null;
+  try {
+    paramsEnvoi = [...new URLSearchParams(window.location.search).keys()].slice(0, 15);
+    nav = (performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined)?.type ?? null;
+  } catch {
+    /* navigateur ancien */
+  }
+  let ref: string | null = null;
+  try {
+    ref = a?.referrer ? new URL(a.referrer).host : null;
+  } catch {
+    ref = null;
+  }
+  return {
+    origine,
+    recapture,
+    session: sessionOk(),
+    params_arrivee: a?.paramsVus ?? null,
+    params_envoi: paramsEnvoi,
+    ref,
+    nav,
+    historique: typeof history !== "undefined" ? history.length : null,
+    arrivee_il_y_a_s: a?.landedAt ? Math.round((Date.now() - Date.parse(a.landedAt)) / 1000) : null,
+  };
+}
+
 export async function submitTunnelLead(input: TunnelLeadInput, cfg: TunnelConfig): Promise<TunnelLeadResult> {
-  const a = getAttribution(cfg);
+  const lu = lireAttribution(cfg);
+  let a = lu.a;
+  // Rien de marqué en mémoire : on relit l'adresse actuelle, au cas où elle porte encore le lien.
+  const recapture = !estMarquee(a);
+  if (recapture) {
+    const b = captureAttribution(cfg);
+    if (estMarquee(b) || !a) a = b;
+  }
   const body = {
     first_name: input.first_name,
     email: input.email,
@@ -75,7 +125,7 @@ export async function submitTunnelLead(input: TunnelLeadInput, cfg: TunnelConfig
     fbclid: a?.fbclid ?? null,
     gclid: a?.gclid ?? null,
     referrer: a?.referrer ?? null,
-    clic_pub: clicsPub(a),
+    clic_pub: { ...clicsPub(a), diag: diagnostic(a, lu.origine, recapture) },
     // Le visiteur et le test voyagent avec l'inscrit : c'est ce qui permettra
     // plus tard de rattacher une VENTE à la variante qui l'a précédée. La
     // variante elle-même n'est pas envoyée ici — elle n'est décidée qu'à la
