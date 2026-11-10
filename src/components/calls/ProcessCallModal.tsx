@@ -10,10 +10,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { AlertTriangle, Save } from "lucide-react";
+import { AlertTriangle, Save, UserCheck } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { formatDateTime } from "@/lib/formatDate";
 
 type CallEnriched = Tables<"calls_enriched">;
+
+// Fonctions ajoutées le 10/11/2026, absentes des types générés.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as any;
+
+interface CloserPossible {
+  id: string;
+  full_name: string;
+  habituel: boolean;
+}
 
 export const CALL_STATUS_COLORS: Record<string, string> = {
   planifie: "bg-blue-500/20 text-blue-300 border-blue-500/30",
@@ -75,11 +86,27 @@ export default function ProcessCallModal({ call, open, onClose, onSuccess, onOpe
   const [saving, setSaving] = useState(false);
   const [otherLeadsCount, setOtherLeadsCount] = useState(0);
   const [otherCallsCount, setOtherCallsCount] = useState(0);
+  const [changement, setChangement] = useState(false);
+  const [nouveauCloser, setNouveauCloser] = useState("");
+  const [confiage, setConfiage] = useState(false);
+
+  const { data: closers } = useQuery({
+    queryKey: ["closers-possibles"],
+    enabled: open && changement,
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<CloserPossible[]> => {
+      const { data, error } = await db.rpc("closers_possibles");
+      if (error) throw error;
+      return (data ?? []) as CloserPossible[];
+    },
+  });
 
   useEffect(() => {
     if (call && open) {
       setStatus(call.status || "planifie");
       setNote("");
+      setChangement(false);
+      setNouveauCloser("");
       if (call.contact_id) {
         Promise.all([
           supabase
@@ -153,6 +180,31 @@ export default function ProcessCallModal({ call, open, onClose, onSuccess, onOpe
 
   const userTz = user?.timezone || "Europe/Paris";
   const canEdit = call.assigned_to === user?.id || user?.role === "ceo";
+  // Confier le call à un autre closer (10/11/2026) : le CEO, ou le closer actuel du call.
+  const peutConfier = canEdit;
+
+  const confier = async () => {
+    if (!call.id || !nouveauCloser) return;
+    setConfiage(true);
+    try {
+      const { error } = await db.rpc("changer_closer_call", { p_call_id: call.id, p_nouveau: nouveauCloser });
+      if (error) throw error;
+      const nom = closers?.find((c) => c.id === nouveauCloser)?.full_name ?? "le nouveau closer";
+      toast({ title: `Call confié à ${nom}` });
+      setChangement(false);
+      setNouveauCloser("");
+      onSuccess();
+      onClose();
+    } catch (e) {
+      toast({
+        title: "Impossible de changer le closer",
+        description: e instanceof Error ? e.message : (e as { message?: string })?.message,
+        variant: "destructive",
+      });
+    } finally {
+      setConfiage(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -177,9 +229,64 @@ export default function ProcessCallModal({ call, open, onClose, onSuccess, onOpe
             <span className="text-foreground">{call.event_type_label || call.event_type || "—"}</span>
             <span className="text-muted-foreground">Date</span>
             <span className="text-foreground">{call.scheduled_at ? formatDateTime(call.scheduled_at, userTz) : "—"}</span>
-            <span className="text-muted-foreground">Collaborateur</span>
-            <span className="text-foreground">{call.assigned_to_name || "—"}</span>
+            <span className="text-muted-foreground">Closer</span>
+            <span className="text-foreground flex items-center gap-2">
+              {call.assigned_to_name || "—"}
+              {peutConfier && !changement && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs"
+                  onClick={() => setChangement(true)}
+                >
+                  Changer
+                </Button>
+              )}
+            </span>
           </div>
+
+          {changement && (
+            <div className="rounded-md border border-border bg-muted/30 p-3 space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Confier ce call à un autre closer. Le rendez-vous Calendly et le lien Zoom ne changent pas : pense à
+                transmettre le lien.
+              </p>
+              <Select value={nouveauCloser} onValueChange={setNouveauCloser}>
+                <SelectTrigger className="bg-background" aria-label="Nouveau closer">
+                  <SelectValue placeholder="Choisir le nouveau closer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(closers ?? [])
+                    .filter((c) => c.id !== call.assigned_to)
+                    .map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.full_name}
+                        {c.habituel ? "" : " (pas de call récent)"}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setChangement(false);
+                    setNouveauCloser("");
+                  }}
+                  disabled={confiage}
+                >
+                  Annuler
+                </Button>
+                <Button type="button" size="sm" className="gap-2" onClick={confier} disabled={!nouveauCloser || confiage}>
+                  <UserCheck className="h-4 w-4" />
+                  {confiage ? "En cours..." : "Confier le call"}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <Separator />

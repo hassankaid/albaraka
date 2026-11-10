@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, BellOff, CheckCheck, Megaphone, ClipboardList } from "lucide-react";
+import { Bell, BellOff, CheckCheck, Megaphone, ClipboardList, PhoneForwarded } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -16,6 +16,8 @@ function typeIcon(type: string) {
       return Megaphone;
     case "activity_reminder":
       return ClipboardList;
+    case "call_confie":
+      return PhoneForwarded;
     default:
       return Bell;
   }

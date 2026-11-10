@@ -194,7 +194,11 @@ export default function ContactSheet({
     });
 
     (callActivitiesRes.data || []).forEach((a: any) => {
-      const enriched = { ...a, _resolved_name: profileNamesMap[a.new_value] || null };
+      const enriched = {
+        ...a,
+        _resolved_name: profileNamesMap[a.new_value] || null,
+        _resolved_old_name: profileNamesMap[a.old_value] || null,
+      };
       events.push({ type: "call_activity", id: a.id, date: a.created_at || "", data: enriched });
     });
 
@@ -606,7 +610,10 @@ function CallActivityEvent({ data, userTz }: { data: any; userTz: string }) {
     return (
       <div className="flex items-center gap-2 flex-wrap">
         <UserCheck className="w-4 h-4 text-gold-400 shrink-0" />
-        <p className="text-sm text-foreground">Call réaffecté à <strong>{data._resolved_name || data.new_value || "—"}</strong></p>
+        <p className="text-sm text-foreground">
+          Call confié à <strong>{data._resolved_name || data.new_value || "—"}</strong>
+          {data._resolved_old_name && <> (au lieu de {data._resolved_old_name})</>}
+        </p>
         <span className="text-xs text-muted-foreground">par {userName}</span>
       </div>
     );
