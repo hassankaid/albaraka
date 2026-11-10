@@ -303,7 +303,10 @@ serve(async (req) => {
       return json({ ok: true });
     }
 
-    const firstName = normalizeName(body?.first_name as string);
+    // Prénom borné à 60 caractères (10/11/2026) : un prospect avait collé un texte
+    // de 8 000 caractères à la place de son prénom, ce qui élargissait le tableau
+    // des leads au point de cacher le bouton « M'affecter » aux setters.
+    const firstName = normalizeName(clip(body?.first_name, 60));
     const email = normalizeEmail(body?.email as string);
     const rawPhone = body?.phone as string | undefined;
 

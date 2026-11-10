@@ -182,6 +182,7 @@ export default function OptInModal({ open, onClose, tunnel, titre, dateLigne, bo
             onChange={(e) => setFirstName(e.target.value)}
             placeholder="Prénom"
             autoComplete="given-name"
+            maxLength={60}
             style={inputStyle}
           />
           <input

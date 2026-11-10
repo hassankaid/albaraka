@@ -1258,8 +1258,10 @@ export default function Leads() {
                     )}
                     {/* Contact */}
                     <TableCell>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground text-sm truncate">{lead.raw_full_name || lead.contact_full_name || "—"}</p>
+                      {/* Largeur bornée (10/11/2026) : un nom de 8 000 caractères élargissait tout le
+                          tableau et poussait « M'affecter » hors de l'écran. */}
+                      <div className="min-w-0 max-w-[240px]">
+                        <p className="font-semibold text-foreground text-sm truncate" title={lead.raw_full_name || lead.contact_full_name || undefined}>{lead.raw_full_name || lead.contact_full_name || "—"}</p>
                         {/* Badge "fiches multiples" : ce contact a plusieurs leads,
                             certains peut-être traités par d'autres setters. Clic =
                             ouvre la timeline complète du contact (ContactSheet). */}
