@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllQuery } from "@/lib/fetchAllRows";
 import type { ConferenceFilter } from "@/lib/marketing/conferenceFilter";
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -201,15 +202,14 @@ export function useMarketingDashboardData(filter: ConferenceFilter) {
     queryKey: ["marketing-dashboard", JSON.stringify(filter)],
     queryFn: async (): Promise<MarketingDashboardData> => {
       // ─── 1. Budget Ads (par date, fenêtre antérieure qui alimente la conf) ──
-      let adsQuery = (supabase as any).from("ads").select("channel, amount_spent, date");
+      // Lectures COMPLÈTES (au-delà de 1000 lignes) depuis l'audit du 11/11/2026 :
+      // en mode « tout », les leads et calls étaient tronqués à 1000.
       const adsRange = conferenceToAdsDateRange(filter);
-      if (adsRange) {
-        adsQuery = adsQuery
-          .gte("date", adsRange.fromYmd)
-          .lte("date", adsRange.toYmd);
-      }
-      const { data: adsRows, error: adsErr } = await adsQuery;
-      if (adsErr) throw adsErr;
+      const adsRows = await fetchAllQuery<any>(() => {
+        let q = (supabase as any).from("ads").select("channel, amount_spent, date");
+        if (adsRange) q = q.gte("date", adsRange.fromYmd).lte("date", adsRange.toYmd);
+        return q;
+      });
 
       const budget = (adsRows ?? []).reduce(
         (acc: number, r: any) => acc + Number(r.amount_spent ?? 0),
@@ -232,16 +232,15 @@ export function useMarketingDashboardData(filter: ConferenceFilter) {
       };
 
       // Leads
-      let leadsQuery = (supabase as any)
-        .from("leads")
-        .select(
-          "id, source, created_at, conference_date, raw_full_name, raw_email, raw_phone, contact_id, utm_source",
-        );
-      leadsQuery = applyConferenceFilter(leadsQuery);
-      const { data: leadRows, error: leadErr } = await leadsQuery.order("created_at", {
-        ascending: false,
-      });
-      if (leadErr) throw leadErr;
+      const leadRows = await fetchAllQuery<any>(() =>
+        applyConferenceFilter(
+          (supabase as any)
+            .from("leads")
+            .select(
+              "id, source, created_at, conference_date, raw_full_name, raw_email, raw_phone, contact_id, utm_source",
+            ),
+        ).order("created_at", { ascending: false }),
+      );
       const rawLeads: MarketingLead[] = ((leadRows ?? []) as any[]).map((l) => ({
         ...l,
         ad_channel: classifyAdChannel(l.utm_source),
@@ -255,14 +254,15 @@ export function useMarketingDashboardData(filter: ConferenceFilter) {
       );
 
       // Calls
-      let callsQuery = (supabase as any)
-        .from("calls")
-        .select(
-          "id, lead_id, scheduled_at, status, outcome, event_type, created_at, conference_date, raw_full_name, raw_email, raw_phone, contact_id",
-        );
-      callsQuery = applyConferenceFilter(callsQuery);
-      const { data: callRowsRaw, error: callErr } = await callsQuery;
-      if (callErr) throw callErr;
+      const callRowsRaw = await fetchAllQuery<any>(() =>
+        applyConferenceFilter(
+          (supabase as any)
+            .from("calls")
+            .select(
+              "id, lead_id, scheduled_at, status, outcome, event_type, created_at, conference_date, raw_full_name, raw_email, raw_phone, contact_id",
+            ),
+        ),
+      );
 
       const rawCalls: MarketingCall[] = ((callRowsRaw ?? []) as any[]).map((c) => ({
         ...c,

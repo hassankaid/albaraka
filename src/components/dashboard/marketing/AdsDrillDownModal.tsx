@@ -8,6 +8,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllQuery } from "@/lib/fetchAllRows";
 import {
   Dialog,
   DialogContent,
@@ -99,18 +100,15 @@ export default function AdsDrillDownModal({ open, onClose, filter }: Props) {
     queryKey: ["ads-drill-down", JSON.stringify(filter)],
     enabled: open,
     queryFn: async (): Promise<AdsRow[]> => {
-      let q = (supabase as any)
-        .from("ads")
-        .select(
-          "id, date, campaign_name, campaign_id, channel, amount_spent, impressions, clicks",
-        );
+      // Toutes les lignes (911 au 11/11/2026, bientôt plus de 1000).
       const range = conferenceToAdsDateRange(filter);
-      if (range) {
-        q = q.gte("date", range.fromYmd).lte("date", range.toYmd);
-      }
-      const { data, error } = await q.order("date", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as AdsRow[];
+      return fetchAllQuery<AdsRow>(() => {
+        let q = (supabase as any)
+          .from("ads")
+          .select("id, date, campaign_name, campaign_id, channel, amount_spent, impressions, clicks");
+        if (range) q = q.gte("date", range.fromYmd).lte("date", range.toYmd);
+        return q.order("date", { ascending: false });
+      });
     },
   });
 

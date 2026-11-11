@@ -57,3 +57,37 @@ export async function fetchAllRows<T = Record<string, unknown>>(
 
   return allData;
 }
+
+/**
+ * Même chose que fetchAllRows, pour une requête déjà FILTRÉE : `construire`
+ * renvoie une requête neuve (select + filtres + tri éventuel) à chaque appel,
+ * on y ajoute l'ordre stable par `id` et la tranche de lignes. Lit donc toutes
+ * les lignes au lieu des 1000 premières (audit 11/11/2026).
+ */
+export async function fetchAllQuery<T = Record<string, unknown>>(
+  construire: () => any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  batchSize = 1000,
+): Promise<T[]> {
+  const enParallele = 4;
+  const allData: T[] = [];
+  let page = 0;
+  let hasMore = true;
+  while (hasMore) {
+    const vague = await Promise.all(
+      Array.from({ length: enParallele }, (_, i) => {
+        const offset = (page + i) * batchSize;
+        return construire().order("id", { ascending: true }).range(offset, offset + batchSize - 1);
+      }),
+    );
+    for (const { data, error } of vague) {
+      if (error) throw error;
+      if (data && data.length > 0) allData.push(...(data as T[]));
+      if (!data || data.length < batchSize) {
+        hasMore = false;
+        break;
+      }
+    }
+    page += enParallele;
+  }
+  return allData;
+}

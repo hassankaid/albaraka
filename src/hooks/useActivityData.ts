@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllQuery } from "@/lib/fetchAllRows";
 import { startOfWeek, startOfMonth, endOfMonth, format, addDays, subDays, isAfter, isSameDay } from "date-fns";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -368,11 +369,11 @@ export function useActivityLeaderboards(objectives: Objectives, objectivesDaily:
   const { data: allTimeRows = [] } = useQuery({
     queryKey: ["activity-leaderboard", "all-time"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("activity_daily_kpis")
-        .select("*, profiles:user_id(full_name, avatar_url)");
-      if (error) throw error;
-      return data || [];
+      // Toutes les saisies (plus de 1000 depuis novembre 2026 : le classement
+      // « depuis toujours » était tronqué).
+      return fetchAllQuery<any>(() =>
+        supabase.from("activity_daily_kpis").select("*, profiles:user_id(full_name, avatar_url)"),
+      );
     },
   });
 

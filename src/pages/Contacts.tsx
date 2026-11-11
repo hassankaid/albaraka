@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useToast } from "@/hooks/use-toast";
 import { phoneMatches } from "@/lib/phoneSearch";
 import { Badge } from "@/components/ui/badge";
@@ -34,18 +34,26 @@ export default function Contacts() {
   const [page, setPage] = useState(0);
 
   const fetchContacts = useCallback(async () => {
-    const { data: contactsData, error } = await supabase
-      .from("contacts")
-      .select("id, full_name, email, phone_normalized, created_at")
-      .order("created_at", { ascending: false });
-
-    if (error || !contactsData) {
+    // Toutes les lignes (pas seulement les 1000 premières, limite du serveur :
+    // la page n'affichait que 1000 contacts sur ~7 000 et des compteurs
+    // faussés), et les trois lectures EN MÊME TEMPS (audit perf 11/11/2026).
+    let contactsData: Omit<ContactRow, "lead_count" | "call_count" | "last_activity">[];
+    let leadsData: { contact_id: string | null }[];
+    let callsData: { contact_id: string | null; scheduled_at: string | null }[];
+    try {
+      [contactsData, leadsData, callsData] = await Promise.all([
+        fetchAllRows<Omit<ContactRow, "lead_count" | "call_count" | "last_activity">>(
+          "contacts",
+          "id, full_name, email, phone_normalized, created_at",
+          { order: { column: "created_at", ascending: false } },
+        ),
+        fetchAllRows<{ contact_id: string | null }>("leads", "contact_id"),
+        fetchAllRows<{ contact_id: string | null; scheduled_at: string | null }>("calls", "contact_id, scheduled_at"),
+      ]);
+    } catch {
       setLoading(false);
       return;
     }
-
-    const { data: leadsData } = await supabase.from("leads").select("contact_id");
-    const { data: callsData } = await supabase.from("calls").select("contact_id, scheduled_at");
 
     const leadCounts: Record<string, number> = {};
     const callCounts: Record<string, number> = {};

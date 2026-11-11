@@ -9,6 +9,7 @@ import { RapportScoring } from "@/components/scoring/RapportScoring";
 import { GrilleScoring } from "@/components/scoring/GrilleScoring";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllQuery } from "@/lib/fetchAllRows";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -115,10 +116,10 @@ function ReponsesQuestionnaire() {
     setLoading(true);
     try {
       const [{ data: respData }, { data: funnelData }] = await Promise.all([
-        supabase
-          .from("lead_scoring_responses")
-          .select("*")
-          .order("completed_at", { ascending: false }),
+        // Toutes les réponses (plus de 1000 : la liste était tronquée).
+        fetchAllQuery<any>(() =>
+          supabase.from("lead_scoring_responses").select("*").order("completed_at", { ascending: false }),
+        ).then((data) => ({ data })),
         supabase
           .from("quiz_funnel_configs")
           .select("*")
