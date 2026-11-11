@@ -41,12 +41,16 @@ const regles = config.rewrites;
 const hote = (conds?: Condition[]) => conds?.find((c) => c.type === "host")?.value;
 const correspond = (motif: string, h: string) => new RegExp(`^(?:${motif})$`).test(h);
 
+// Les « tout vers… » excluent /assets/ (11/11/2026) : un fichier de page
+// disparu après une mise en ligne doit répondre 404, pas app.html.
+const TOUT = "/((?!assets/).*)";
+
 describe("routage du site vitrine", () => {
   const regleDomaine = regles.find((r) => r.destination === "/vitrine.html" && hote(r.has));
 
   it("le domaine principal et www servent vitrine.html, et aucun autre domaine", () => {
     expect(regleDomaine).toBeDefined();
-    expect(regleDomaine!.source).toBe("/(.*)");
+    expect(regleDomaine!.source).toBe(TOUT);
     const motif = hote(regleDomaine!.has)!;
     for (const h of ["albarakaecosysteme.com", "www.albarakaecosysteme.com"]) expect(correspond(motif, h)).toBe(true);
     for (const h of [
@@ -58,9 +62,20 @@ describe("routage du site vitrine", () => {
       expect(correspond(motif, h), h).toBe(false);
   });
 
+  it("aucune règle « tout vers… » ne réécrit les fichiers /assets", () => {
+    expect(regles.filter((r) => r.source === "/(.*)")).toHaveLength(0);
+    const toutes = regles.filter((r) => r.source === TOUT);
+    expect(toutes.length).toBeGreaterThan(0);
+    for (const r of toutes) {
+      const re = new RegExp(`^${r.source}$`);
+      expect(re.test("/assets/Calls-ancien.js"), r.destination).toBe(false);
+      expect(re.test("/leads"), r.destination).toBe(true);
+    }
+  });
+
   it("la règle du site précède le « tout vers app.html »", () => {
     const iSite = regles.indexOf(regleDomaine!);
-    const iTout = regles.findIndex((r) => r.source === "/(.*)" && !r.has && r.destination === "/app.html");
+    const iTout = regles.findIndex((r) => r.source === TOUT && !r.has && r.destination === "/app.html");
     expect(iTout).toBeGreaterThan(iSite);
   });
 
