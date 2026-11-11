@@ -3,7 +3,8 @@ import SpaceSwitcher from "./SpaceSwitcher";
 import { Home, Users, Phone, BookUser, BadgeEuro, CreditCard, User, Sun, Moon, LogOut, ChevronDown, Menu, X, FileText, FileSignature, Percent, Database, PlusCircle, ArrowLeftRight, Receipt, UsersRound, GraduationCap, BookOpen, Settings2, Briefcase, MessageSquare, MessageCircle, FolderDown, Sparkles, Bot, TrendingUp, CalendarDays, Megaphone, Ticket, Map, Webhook, Link2, Video, Film, Hash, Mail, FlaskConical, ClipboardList, Globe, Gauge, AudioLines } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { ChargementPage } from "@/components/ChargementPage";
 import { useAuth } from "@/hooks/useAuth";
 import { useStudioAcces } from "@/hooks/useStudioAcces";
 import { useUserPass } from "@/hooks/useUserPass";
@@ -369,7 +370,10 @@ export default function DashboardLayout() {
         </header>
 
         <main className="flex-1 p-6">
-          <Outlet />
+          {/* Les pages sont chargées à la demande : le menu reste affiché pendant ce temps. */}
+          <Suspense fallback={<ChargementPage />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

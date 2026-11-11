@@ -7,7 +7,8 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { ChargementPage } from "@/components/ChargementPage";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPass } from "@/hooks/useUserPass";
 import { useFeatureUnlocks, type FeatureKey } from "@/hooks/useFeatureUnlock";
@@ -293,7 +294,10 @@ export default function ApporteurLayout() {
         </header>
 
         <main className="flex-1 p-6">
-          {suspendu && !pageAutoriseeSiSuspendu ? <AccesSuspendu /> : <Outlet />}
+          {/* Les pages sont chargées à la demande : le menu reste affiché pendant ce temps. */}
+          <Suspense fallback={<ChargementPage />}>
+            {suspendu && !pageAutoriseeSiSuspendu ? <AccesSuspendu /> : <Outlet />}
+          </Suspense>
         </main>
       </div>
     </div>

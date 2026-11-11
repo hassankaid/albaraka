@@ -57,27 +57,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, email, full_name, role, phone, is_also_apporteur, can_add_instagram_leads, can_assign_leads, avatar_url, timezone, onboarding_completed, collaborateur_level, is_active, is_coach, address, postal_code, city, country, siret, bank_rib_url, bank_details, early_access, origin, discord_joined_at, welcome_video_completed_at")
-      .eq("id", userId)
-      .maybeSingle();
+    // Profil et contrats en attente lus EN MÊME TEMPS (avant : l'un après
+    // l'autre, ce qui retardait l'affichage de chaque ouverture de l'app).
+    // Phase 5 — le compte des contrats en attente de signature : RLS garantit
+    // qu'il ne voit que les siens (buyer_profile_id = auth.uid()). Si le rôle
+    // n'est pas susceptible d'avoir un contrat (CEO, collab pur), count reste
+    // 0 → no-op côté ProtectedRoute.
+    const [{ data }, contrats] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, email, full_name, role, phone, is_also_apporteur, can_add_instagram_leads, can_assign_leads, avatar_url, timezone, onboarding_completed, collaborateur_level, is_active, is_coach, address, postal_code, city, country, siret, bank_rib_url, bank_details, early_access, origin, discord_joined_at, welcome_video_completed_at")
+        .eq("id", userId)
+        .maybeSingle(),
+      Promise.resolve(
+        supabase
+          .from("client_contracts")
+          .select("id", { count: "exact", head: true })
+          .eq("buyer_profile_id", userId)
+          .eq("status", "pending_signature"),
+      ).catch(() => ({ count: 0 })),
+    ]);
     setProfile(data);
-
-    // Phase 5 — compte les contrats en attente de signature pour ce user.
-    // RLS garantit qu'il ne voit que les siens (buyer_profile_id = auth.uid()).
-    // Si le rôle n'est pas susceptible d'avoir un contrat (CEO, collab pur),
-    // count restera 0 → no-op côté ProtectedRoute.
-    try {
-      const { count } = await supabase
-        .from("client_contracts")
-        .select("id", { count: "exact", head: true })
-        .eq("buyer_profile_id", userId)
-        .eq("status", "pending_signature");
-      setUnsignedContractsCount(count ?? 0);
-    } catch {
-      setUnsignedContractsCount(0);
-    }
+    setUnsignedContractsCount((contrats as { count: number | null }).count ?? 0);
   }, []);
 
   useEffect(() => {
@@ -114,6 +115,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(newSession?.user ?? null);
 
         if (newSession?.user) {
+          // Renouvellement du jeton (toutes les heures) : le profil n'a pas
+          // changé, inutile de le relire et de redessiner toute l'application.
+          if (event === "TOKEN_REFRESHED") return;
           // Use setTimeout to avoid Supabase deadlock
           setTimeout(() => fetchProfile(newSession.user.id), 0);
         } else {

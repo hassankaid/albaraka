@@ -82,9 +82,10 @@ describe("routage des pages de nurturing", () => {
   });
 
   it("déclare aussi les trois routes dans l'application", () => {
-    const app = readFileSync(resolve(process.cwd(), "src/App.tsx"), "utf-8");
+    // Les routes des tunnels vivent dans routesPartagees.tsx depuis le 11/11/2026.
+    const app = readFileSync(resolve(process.cwd(), "src/routesPartagees.tsx"), "utf-8");
     for (const chemin of chemins) {
-      expect(app, `la route ${chemin} manque dans App.tsx`).toContain(`path="${chemin}"`);
+      expect(app, `la route ${chemin} manque dans routesPartagees.tsx`).toContain(`path="${chemin}"`);
     }
   });
 });

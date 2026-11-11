@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
+/* Polices Inter et Cormorant Garamond : chargées dans index.html (préconnexion +
+   une seule feuille), plus en @import ici, qui bloquait l'affichage. */
 
 /* Impersonation banner: pousse tout le contenu sous le bandeau (40px) */
 body.impersonation-active {

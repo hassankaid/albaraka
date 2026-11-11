@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Tables } from "@/integrations/supabase/types";
@@ -95,12 +96,12 @@ export default function Calls() {
   const [contactSheetId, setContactSheetId] = useState<string | null>(null);
 
   const fetchCalls = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("calls_enriched")
-      .select("*")
-      .order("scheduled_at", { ascending: false });
-
-    if (!error && data) setCalls(data);
+    // Toutes les lignes, pas seulement les 1000 premières (limite du serveur) :
+    // au-delà de 1000 calls, les plus anciens disparaissaient (audit 11/11/2026).
+    const data = await fetchAllRows<CallEnriched>("calls_enriched", "*", {
+      order: { column: "scheduled_at", ascending: false },
+    });
+    setCalls(data);
     setLoading(false);
   }, []);
 
