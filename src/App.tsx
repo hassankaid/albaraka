@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect } from "react";
+import { Suspense, useEffect } from "react";
+import { lazyPage } from "@/lib/lazyPage";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { suivrePageGtm } from "./pages/tunnels/lib/gtm";
 import PiedDePageLegal from "./components/legal/PiedDePageLegal";
@@ -6,7 +7,7 @@ import { isTunnelHost } from "./lib/hosts";
 import { routesLegales, tunnelRoutes, TunnelFallback, TunnelNotFound } from "./routesPartagees";
 
 // La plateforme n'est téléchargée que hors du domaine des tunnels.
-const FullApp = lazy(() => import("./FullApp"));
+const FullApp = lazyPage(() => import("./FullApp"));
 
 // Sur le domaine des tunnels : application MINIMALE. Ni AuthProvider, ni thème
 // CRM, ni la moindre route de la plateforme — rien à quoi se connecter.

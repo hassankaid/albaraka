@@ -2,34 +2,35 @@
 // pages des tunnels (chargées à la demande) et pages légales. Sorties de
 // App.tsx le 11/11/2026 pour que le domaine des tunnels ne télécharge plus
 // la plateforme (audit performance).
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
+import { lazyPage } from "@/lib/lazyPage";
 import { Route } from "react-router-dom";
 import { MENTIONS_LEGALES, POLITIQUE_CONFIDENTIALITE, CGV } from "./pages/legal/textes";
 import { WA_TUNNEL, VSL_TUNNEL } from "./pages/tunnels/config";
 
 // ── Module « tunnels » (funnels natifs) — chargé en lazy pour que le trafic
 // froid des pubs ne télécharge PAS tout le bundle CRM/coaching. ──
-const TunnelLanding = lazy(() => import("./pages/tunnels/components/TunnelLanding"));
-const WebinaireMerci = lazy(() => import("./pages/tunnels/whatsapp/WebinaireMerci"));
-const VslMerci = lazy(() => import("./pages/tunnels/vsl/VslMerci"));
-const VslConfirmation = lazy(() => import("./pages/tunnels/vsl/VslConfirmation"));
+const TunnelLanding = lazyPage(() => import("./pages/tunnels/components/TunnelLanding"));
+const WebinaireMerci = lazyPage(() => import("./pages/tunnels/whatsapp/WebinaireMerci"));
+const VslMerci = lazyPage(() => import("./pages/tunnels/vsl/VslMerci"));
+const VslConfirmation = lazyPage(() => import("./pages/tunnels/vsl/VslConfirmation"));
 // Page indépendante de réservation d'appel (partagée pendant/après la conf).
-const AppelConference = lazy(() => import("./pages/tunnels/appel/AppelConference"));
-const AppelConfirmation = lazy(() => import("./pages/tunnels/appel/AppelConfirmation"));
+const AppelConference = lazyPage(() => import("./pages/tunnels/appel/AppelConference"));
+const AppelConfirmation = lazyPage(() => import("./pages/tunnels/appel/AppelConfirmation"));
 // Page indépendante de témoignages (preuve sociale → CTA Calendly).
-const Temoignages = lazy(() => import("./pages/tunnels/temoignages/Temoignages"));
-const NurturingVideo = lazy(() => import("./pages/tunnels/nurturing/NurturingVideo"));
+const Temoignages = lazyPage(() => import("./pages/tunnels/temoignages/Temoignages"));
+const NurturingVideo = lazyPage(() => import("./pages/tunnels/nurturing/NurturingVideo"));
 // Pages légales : servies sur LES DEUX domaines. Le pied de page des tunnels
 // y renvoie, et un lien qui sort du domaine au milieu d'un tunnel publicitaire
 // est exactement ce qu'un examen Meta sanctionne.
-const PageLegale = lazy(() => import("./pages/legal/PageLegale"));
-const AlBaraka200 = lazy(() => import("./pages/tunnels/albaraka200/AlBaraka200"));
-const AlBaraka200Confirmation = lazy(() => import("./pages/tunnels/albaraka200/AlBaraka200Confirmation"));
-const LibertyLanding = lazy(() => import("./pages/tunnels/liberty/LibertyLanding"));
-const LibertyMerci = lazy(() => import("./pages/tunnels/liberty/LibertyMerci"));
-const LibertyConfirmation = lazy(() => import("./pages/tunnels/liberty/LibertyConfirmation"));
-export const TunnelNotFound = lazy(() => import("./pages/tunnels/components/TunnelNotFound"));
-const TunnelQuiz = lazy(() => import("./pages/tunnels/components/TunnelQuiz"));
+const PageLegale = lazyPage(() => import("./pages/legal/PageLegale"));
+const AlBaraka200 = lazyPage(() => import("./pages/tunnels/albaraka200/AlBaraka200"));
+const AlBaraka200Confirmation = lazyPage(() => import("./pages/tunnels/albaraka200/AlBaraka200Confirmation"));
+const LibertyLanding = lazyPage(() => import("./pages/tunnels/liberty/LibertyLanding"));
+const LibertyMerci = lazyPage(() => import("./pages/tunnels/liberty/LibertyMerci"));
+const LibertyConfirmation = lazyPage(() => import("./pages/tunnels/liberty/LibertyConfirmation"));
+export const TunnelNotFound = lazyPage(() => import("./pages/tunnels/components/TunnelNotFound"));
+const TunnelQuiz = lazyPage(() => import("./pages/tunnels/components/TunnelQuiz"));
 export const TunnelFallback = () => (
   <div style={{ minHeight: "100vh", background: "#060504" }} aria-hidden />
 );
