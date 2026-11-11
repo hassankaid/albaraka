@@ -101,7 +101,7 @@ export default function AdminLeadScoring() {
 }
 
 function ReponsesQuestionnaire() {
-  const { profile, loading: authLoading } = useAuth();
+  const { profile, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [responses, setResponses] = useState<ScoringResponse[]>([]);
   const [funnels, setFunnels] = useState<FunnelConfig[]>([]);

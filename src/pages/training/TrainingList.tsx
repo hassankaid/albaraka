@@ -90,36 +90,23 @@ export default function TrainingList() {
             : f.access_mode !== "liberty_only" || hasLiberty || sources.has(f.id),
         );
       }
-      return Promise.all(
-        visibles.map(async (f) => {
-          const [{ data: progress }, { data: chapters }] = await Promise.all([
-            supabase.rpc("get_formation_progress", {
-              p_user_id: userId!,
-              p_formation_id: f.id,
-            }),
-            supabase
-              .from("formation_chapitres")
-              .select("id, status, formation_modules!inner(formation_id, status)")
-              .eq("formation_modules.formation_id", f.id),
-          ]);
-          const published = (chapters ?? []).filter(
-            (c: any) =>
-              c.status === "published" && c.formation_modules?.status === "published"
-          );
-          const total = published.length;
-          const { count: done } = await supabase
-            .from("chapitre_progress")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", userId!)
-            .in("chapitre_id", published.map((c: any) => c.id));
-          return {
-            ...f,
-            progress: Number(progress ?? 0),
-            nbChapitresDone: done ?? 0,
-            nbChapitresTotal: total,
-          };
-        })
+      // Progression de toutes les formations en UN appel (avant : 3 requêtes
+      // par formation). Mêmes calculs que get_formation_progress (audit perf
+      // 11/11/2026).
+      const { data: progressions, error: errProgression } = await (supabase as any).rpc("progression_formations");
+      if (errProgression) throw errProgression;
+      const parFormation = new Map<string, { total: number; faits: number; progression: number }>(
+        ((progressions ?? []) as any[]).map((p) => [p.formation_id, p]),
       );
+      return visibles.map((f) => {
+        const p = parFormation.get(f.id);
+        return {
+          ...f,
+          progress: Number(p?.progression ?? 0),
+          nbChapitresDone: p?.faits ?? 0,
+          nbChapitresTotal: p?.total ?? 0,
+        };
+      });
     },
   });
 

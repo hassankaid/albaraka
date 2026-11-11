@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllQuery } from "@/lib/fetchAllRows";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { anyPhoneMatches } from "@/lib/phoneSearch";
@@ -329,32 +330,18 @@ export default function Leads() {
   const PAGE_SIZE = 50;
 
   const fetchLeads = useCallback(async () => {
-    // Pages de 1000 (limite du serveur) demandées 4 PAR 4 EN PARALLÈLE au lieu
-    // d'une après l'autre : ~7 500 leads arrivent en 2 allers-retours au lieu
-    // de 8 (audit perf 11/11/2026).
+    // Toutes les lignes en UN appel (fonction leads_enriched_toutes, ~0,4 s) au
+    // lieu de 8 tranches de 1000 qui recalculaient chacune toute la vue
+    // (audit perf 11/11/2026). Repli sur la lecture par tranches si l'appel
+    // échoue.
     let allLeads: LeadEnriched[] = [];
-    const batchSize = 1000;
-    const enParallele = 4;
-    let page = 0;
-    let hasMore = true;
-
-    while (hasMore) {
-      const vague = await Promise.all(
-        Array.from({ length: enParallele }, (_, i) => {
-          const from = (page + i) * batchSize;
-          return supabase
-            .from("leads_enriched")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .range(from, from + batchSize - 1);
-        }),
+    const { data: toutes, error: errToutes } = await (supabase as any).rpc("leads_enriched_toutes");
+    if (!errToutes && Array.isArray(toutes)) {
+      allLeads = toutes as LeadEnriched[];
+    } else {
+      allLeads = await fetchAllQuery<LeadEnriched>(() =>
+        supabase.from("leads_enriched").select("*").order("created_at", { ascending: false }),
       );
-      for (const { data, error } of vague) {
-        if (error || !data) { hasMore = false; break; }
-        allLeads = allLeads.concat(data as LeadEnriched[]);
-        if (data.length < batchSize) { hasMore = false; break; }
-      }
-      page += enParallele;
     }
 
     setLeads(allLeads);

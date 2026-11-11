@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAllRows } from "@/lib/fetchAllRows";
@@ -144,9 +145,26 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     },
   });
 
+  // Seuls les contacts des VENTES servent (nom du client à côté d'une vente) :
+  // ~270 au lieu des 7 000 contacts de la base (audit perf 11/11/2026). Lus par
+  // paquets de 150 identifiants, en parallèle, une fois les ventes arrivées.
+  const contactIdsVentes = useMemo(
+    () => Array.from(new Set((salesQuery.data || []).map((s) => s.contact_id).filter(Boolean) as string[])).sort(),
+    [salesQuery.data],
+  );
   const contactsQuery = useQuery({
-    queryKey: ["financial-contacts"],
-    queryFn: () => fetchAllRows<Contact>("contacts", "id, full_name, email, phone_normalized"),
+    queryKey: ["financial-contacts", contactIdsVentes],
+    enabled: salesQuery.isSuccess,
+    queryFn: async () => {
+      const paquets: string[][] = [];
+      for (let i = 0; i < contactIdsVentes.length; i += 150) paquets.push(contactIdsVentes.slice(i, i + 150));
+      const reponses = await Promise.all(
+        paquets.map((ids) => supabase.from("contacts").select("id, full_name, email, phone_normalized").in("id", ids)),
+      );
+      const erreur = reponses.find((r) => r.error)?.error;
+      if (erreur) throw erreur;
+      return reponses.flatMap((r) => (r.data || []) as Contact[]);
+    },
   });
 
   const fixedChargesQuery = useQuery({
@@ -171,7 +189,7 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
   const allPayments = paymentsQuery.data || [];
   const allCommissions = commissionsQuery.data || [];
   const profiles = profilesQuery.data || [];
-  const contacts = contactsQuery.data || [];
+  const contacts = useMemo(() => contactsQuery.data || [], [contactsQuery.data]);
   const fixedCharges = fixedChargesQuery.data || [];
   const salaryPeriods = salaryPeriodsQuery.data || [];
   const allAds = adsQuery.data || [];
@@ -217,7 +235,7 @@ export function useFinancialData(dateRange?: FinancialDateRange | null) {
     : allCommissions;
 
   // Build contact map for quick lookup
-  const contactMap = new Map(contacts.map((c) => [c.id, c]));
+  const contactMap = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts]);
 
   // KPI: CA Généré
   const caGenere = sales.reduce((sum, s) => sum + (s.amount_ht || 0), 0);
