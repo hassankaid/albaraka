@@ -142,6 +142,20 @@ export default function ReschedulePaymentsModal({
   const [generatingLink, setGeneratingLink] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // ── Reprogrammation directe sur la carte enregistrée (depuis le 12/11/2026) ──
+  // Avant, le plan attendait que le client rouvre un lien : lien jamais utilisé
+  // = plus aucun prélèvement, sans alerte (Imène Bachir, Lahcen Liatim, Ouissam
+  // Fares). Le lien ne sert plus qu'en dernier recours, raison affichée.
+  type CarteInfo = {
+    carte: string;
+    premierPrelevement: string;
+    arret: string | null;
+    nombre: number;
+    mensuel: number;
+  };
+  const [carteInfo, setCarteInfo] = useState<CarteInfo | null>(null);
+  const [raisonLien, setRaisonLien] = useState<string | null>(null);
+
   // ── Reset à l'ouverture ──
   useEffect(() => {
     if (open) {
@@ -153,6 +167,8 @@ export default function ReschedulePaymentsModal({
       setStartDate(firstPending ? new Date(firstPending.due_date) : addMonths(new Date(), 1));
       // reset success state
       setSuccessInfo(null);
+      setCarteInfo(null);
+      setRaisonLien(null);
       setCopied(false);
     }
   }, [open, pendingPayments]);
@@ -305,7 +321,34 @@ export default function ReschedulePaymentsModal({
       //    Comme on vient de créer de nouveaux pending, la vente repasse à 'in_progress'.
       await supabase.from("sales").update({ payment_status: "in_progress" }).eq("id", saleId);
 
-      // 7. Génère (ou récupère) le rebill_token pour pouvoir transmettre un lien
+      // 7. Recrée l'abonnement sur la carte déjà enregistrée du client. Si c'est
+      //    possible, c'est terminé : aucun lien à envoyer, rien à attendre.
+      const { data: reprog, error: reprogErr } = await supabase.functions.invoke(
+        "reprogrammer-sur-carte",
+        { body: { sale_id: saleId, ancienne_subscription_id: stripeSubId } },
+      );
+      if (!reprogErr && reprog?.ok) {
+        setCarteInfo({
+          carte: reprog.carte,
+          premierPrelevement: reprog.premier_prelevement,
+          arret: reprog.arret ?? null,
+          nombre: reprog.nombre,
+          mensuel: reprog.mensuel,
+        });
+        toast({
+          title: "Prélèvements reprogrammés ✓",
+          description: `Sur la ${reprog.carte} du client — 1er le ${format(new Date(reprog.premier_prelevement), "dd/MM/yyyy", { locale: fr })}.`,
+        });
+        onSuccess();
+        return;
+      }
+      setRaisonLien(
+        reprogErr
+          ? "la reprogrammation sur la carte n'a pas répondu"
+          : (reprog?.raison as string | undefined) || "carte non réutilisable",
+      );
+
+      // 8. Dernier recours : génère (ou récupère) le rebill_token pour transmettre un lien
       //    de re-paiement au client. L'edge function create-payment-intent
       //    s'appuie sur ce token pour reconstruire la subscription.
       setGeneratingLink(true);
@@ -421,6 +464,54 @@ export default function ReschedulePaymentsModal({
     window.open(`https://wa.me/?text=${text}`, "_blank");
   }
 
+  // ── Vue succès : prélèvements reprogrammés sur la carte enregistrée ──
+  if (carteInfo) {
+    const dateFr = (d: string) => format(new Date(d), "dd/MM/yyyy", { locale: fr });
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+              Prélèvements reprogrammés
+            </DialogTitle>
+            <DialogDescription>
+              Sur la carte déjà enregistrée de <strong>{contactName}</strong>. Il n'a rien à faire.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-1.5 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Carte</span>
+              <span className="font-medium text-foreground capitalize">{carteInfo.carte}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Prélèvements</span>
+              <span className="font-medium text-foreground tabular-nums">
+                {carteInfo.nombre} × {carteInfo.mensuel.toFixed(2).replace(".", ",")} €
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">1er prélèvement</span>
+              <span className="font-bold text-emerald-300">{dateFr(carteInfo.premierPrelevement)}</span>
+            </div>
+            {carteInfo.arret && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Arrêt automatique</span>
+                <span className="font-medium text-foreground">après le prélèvement de {format(addMonths(new Date(carteInfo.premierPrelevement), carteInfo.nombre - 1), "MMMM yyyy", { locale: fr })}</span>
+              </div>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Chaque prélèvement sera marqué payé automatiquement, avec sa facture envoyée au client.
+          </p>
+          <DialogFooter>
+            <Button onClick={() => onOpenChange(false)}>Fermer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   // ── Vue succès : plan replanifié + lien rebill généré ──
   if (successInfo) {
     return (
@@ -516,6 +607,15 @@ export default function ReschedulePaymentsModal({
               <ExternalLink className="h-3.5 w-3.5" />
               Tester
             </Button>
+          </div>
+
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-[11px] text-foreground/90 flex gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-amber-300">Aucun prélèvement n'est programmé tant que le client n'a pas utilisé ce lien.</strong>
+              {raisonLien && <> La carte enregistrée n'a pas pu être reprise : {raisonLien}.</>}
+              {" "}Tu recevras une alerte si le lien n'est pas utilisé sous 48 h.
+            </div>
           </div>
 
           <div className="rounded-md border border-blue-500/20 bg-blue-500/5 p-2.5 text-[11px] text-foreground/80">
@@ -649,7 +749,9 @@ export default function ReschedulePaymentsModal({
                 </PopoverContent>
               </Popover>
               <p className="text-[10px] text-muted-foreground">
-                Date estimée. Les vraies dates s'aligneront sur le jour où le client autorise sa carte via le lien.
+                Date du 1er prélèvement. Si la carte enregistrée du client est réutilisable, les prélèvements sont
+                reprogrammés directement à ces dates (une date passée = prélevée dans le quart d'heure). Sinon, un lien
+                lui est envoyé et les dates s'aligneront sur le jour où il l'utilise.
               </p>
             </div>
           </div>

@@ -51,10 +51,12 @@ interface PaymentRow {
   closed_by: string | null;
   sale_type: string | null;
   payment_code: string | null;
+  /** Abonnement Stripe qui prélèvera cette échéance (null = rien de programmé). */
+  stripe_subscription_id: string | null;
   _isUserInvolved: boolean;
 }
 
-const getPaymentStatusInfo = (status: string, dueDate: string) => {
+const getPaymentStatusInfo = (status: string, dueDate: string, subscriptionId?: string | null) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const due = new Date(dueDate);
@@ -64,6 +66,11 @@ const getPaymentStatusInfo = (status: string, dueDate: string) => {
   if (status === "cancelled" || status === "lost") return { label: "Perdu", className: "bg-zinc-700/50 text-zinc-400 border-zinc-600/30", key: "lost" };
   if (status === "late") return { label: "En retard", className: "bg-red-500/20 text-red-300 border-red-500/30", key: "late" };
   if (status === "pending" && due < today) return { label: "En retard", className: "bg-red-500/20 text-red-300 border-red-500/30", key: "late" };
+  // Échéance à venir sans abonnement Stripe derrière : rien ne la prélèvera
+  // (cas des replanifications dont le lien n'a pas été utilisé, 12/11/2026).
+  if (status === "pending" && subscriptionId === null) {
+    return { label: "Sans prélèvement", className: "bg-orange-500/20 text-orange-300 border-orange-500/40", key: "pending" };
+  }
   return { label: "En attente", className: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30", key: "pending" };
 };
 
@@ -317,7 +324,7 @@ export default function Payments() {
       const { data } = await supabase
         .from("payments")
         .select(`
-          id, payment_number, total_payments, amount, due_date, paid_at, status, notes, sale_id,
+          id, payment_number, total_payments, amount, due_date, paid_at, status, notes, sale_id, stripe_subscription_id,
           contacts!payments_contact_id_fkey(full_name, email, phone_normalized, payment_code),
           sales!payments_sale_id_fkey(closed_by, sale_type)
         `)
@@ -360,6 +367,7 @@ export default function Payments() {
         closed_by: p.sales?.closed_by || null,
         sale_type: p.sales?.sale_type || null,
         payment_code: p.contacts?.payment_code || null,
+        stripe_subscription_id: p.stripe_subscription_id ?? null,
         _isUserInvolved: userSaleIds ? (p.sale_id ? userSaleIds.has(p.sale_id) : false) : true,
       }))
     );
@@ -1073,7 +1081,7 @@ export default function Payments() {
               </TableHeader>
               <TableBody>
                 {paginatedPayments.map((p) => {
-                    const statusInfo = getPaymentStatusInfo(p.status, p.due_date);
+                    const statusInfo = getPaymentStatusInfo(p.status, p.due_date, p.stripe_subscription_id);
                     return (
                         <TableRow className={`border-border hover:bg-secondary/50 transition-colors ${p.status === "lost" ? "opacity-60" : ""}`}>
                       <TableCell>
