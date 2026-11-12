@@ -115,7 +115,10 @@ export function remplacerMots(texte: string, carte: Map<string, string>): string
     .map((mot) => {
       const [avant, c, apres] = coeur(mot);
       const voulu = c ? carte.get(c.toLowerCase()) : undefined;
-      return voulu !== undefined ? avant + voulu + apres : mot;
+      if (voulu === undefined) return mot;
+      // mot écrit en majuscules (bouton, titre de liste) : la correction aussi (12/11/2026)
+      const majuscules = Array.from(c).length > 1 && c === c.toUpperCase() && c !== c.toLowerCase();
+      return avant + (majuscules ? voulu.toUpperCase() : voulu) + apres;
     })
     .join(" ");
 }

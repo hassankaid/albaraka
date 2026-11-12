@@ -1109,7 +1109,12 @@ def rendre(dossier, liens, reglages, travail):
         plan = travail.get("plan")
         if plan is None:  # montage préparé avant la phase 2
             plan = travail["plan"] = plan_animation(mots_gardes(travail), travail["duree_sortie"])
-        scene = {"plan": plan, "design": design, "coupes": travail["coupes"], "duree": travail["duree_sortie"]}
+        # le plan est calculé ici, après les corrections du haut : sans cette ligne, les mots
+        # corrigés n'arrivaient pas dans le motion design classique (bouton, listes), alors que
+        # le guide élève le promet (12/11/2026)
+        if st.get("corrections"):
+            plan = C.corriger_plan(plan, st["corrections"])
+        scene ={"plan": plan, "design": design, "coupes": travail["coupes"], "duree": travail["duree_sortie"]}
     stats = None
     etape_video = cut
     if flou or scene:

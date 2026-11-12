@@ -74,7 +74,12 @@ def remplacer_mots(texte, carte):
     out = []
     for mot in str(texte).split(" "):
         avant, coeur, apres = _coeur(mot)
-        out.append(avant + carte[coeur.lower()] + apres if coeur and coeur.lower() in carte else mot)
+        if coeur and coeur.lower() in carte:
+            voulu = carte[coeur.lower()]
+            # mot écrit en majuscules (bouton, titre de liste) : la correction aussi (12/11/2026)
+            out.append(avant + (voulu.upper() if len(coeur) > 1 and coeur.isupper() else voulu) + apres)
+        else:
+            out.append(mot)
     return " ".join(out)
 
 

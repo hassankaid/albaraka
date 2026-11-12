@@ -8,6 +8,7 @@ import {
   indexAuTemps,
   motsCorriges,
   nettoyer,
+  remplacerMots,
   sousTitreVide,
   type SousTitre,
 } from "./sousTitres";
@@ -117,5 +118,13 @@ describe("reprise des corrections après un changement de coupes (12/11/2026)", 
     const autre = [{ small: "pour remonter toute la", big: "pente.", start: 17, end: 18.2 }];
     expect(appliquer(autre, corr)[0]).toMatchObject({ small: "pour remonter toute la", big: "pente." });
     expect(corrigesOrphelins(autre, corr)).toBe(1);
+  });
+});
+
+describe("mot corrigé dans un texte en majuscules (12/11/2026)", () => {
+  it("garde les majuscules du bouton ou du titre", () => {
+    const carte = new Map([["sidaly", "Sidali"]]);
+    expect(remplacerMots("ÉCRIS À SIDALY !", carte)).toBe("ÉCRIS À SIDALI !");
+    expect(remplacerMots("merci Sidaly,", carte)).toBe("merci Sidali,");
   });
 });
