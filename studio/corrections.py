@@ -36,6 +36,13 @@ def _normal(mot):
     return _coeur(mot)[1].lower()
 
 
+def _cle_souple(petit, grand):
+    """Clé sans casse ni ponctuation (12/11/2026) : après un changement de coupes, l'IA rajoute
+    souvent un point ou une virgule (« pente » → « pente. ») ; la correction est quand même
+    reprise. Même calcul que cleSouple (src/lib/studio/sousTitres.ts)."""
+    return tuple(" ".join(k for k in (_normal(m) for m in str(t or "").split()) if k) for t in (petit, grand))
+
+
 def corrections_valides(corrections):
     out = []
     for c in (corrections or [])[:MAX_CORRECTIONS]:
@@ -77,10 +84,13 @@ def appliquer(sous_titres, corrections):
     if not corrections:
         return [dict(c) for c in sous_titres]
     exactes = {_cle(c["small_ia"], c["big_ia"]): c for c in corrections}
+    souples = {_cle_souple(c["small_ia"], c["big_ia"]): c for c in corrections}
     carte = mots_corriges(corrections)
     out = []
     for c in sous_titres:
         k = exactes.get(_cle(c.get("small"), c.get("big")))
+        if k is None:
+            k = souples.get(_cle_souple(c.get("small"), c.get("big")))
         if k is not None and (k["small"] or k["big"]):
             out.append({**c, "small": k["small"], "big": k["big"]})
         else:

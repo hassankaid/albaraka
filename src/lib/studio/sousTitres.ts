@@ -56,6 +56,23 @@ function coeur(mot: string): [string, string, string] {
 
 const mots = (t: string) => t.split(/\s+/).filter(Boolean);
 
+/** Clé sans casse ni ponctuation (12/11/2026) : après un changement de coupes, l'IA regroupe les
+ * sous-titres et rajoute souvent un point ou une virgule (« pente » → « pente. ») ; la correction
+ * de l'élève doit quand même être reprise. Même calcul que _cle_souple (studio/corrections.py). */
+const cleSouple = (petit: string | null | undefined, grand: string | null | undefined) =>
+  [petit, grand]
+    .map((t) =>
+      mots(String(t ?? ""))
+        .map((m) => coeur(m)[1].toLowerCase())
+        .filter(Boolean)
+        .join(" "),
+    )
+    .join("\u0000");
+
+/** Cette correction vise-t-elle ce sous-titre de l'IA (texte exact, ou au moins mêmes mots) ? */
+const vise = (c: CorrectionSousTitre, ia: { small?: string | null; big?: string | null }) =>
+  cle(c.small_ia, c.big_ia) === cle(ia.small, ia.big) || cleSouple(c.small_ia, c.big_ia) === cleSouple(ia.small, ia.big);
+
 export function correctionsValides(corrections: unknown): CorrectionSousTitre[] {
   if (!Array.isArray(corrections)) return [];
   return corrections
@@ -108,9 +125,10 @@ export function appliquer(sousTitres: SousTitre[], corrections: unknown): SousTi
   const valides = correctionsValides(corrections);
   if (!valides.length) return sousTitres.map((c) => ({ ...c }));
   const exactes = new Map(valides.map((c) => [cle(c.small_ia, c.big_ia), c]));
+  const souples = new Map(valides.map((c) => [cleSouple(c.small_ia, c.big_ia), c]));
   const carte = motsCorriges(valides);
   return sousTitres.map((c) => {
-    const k = exactes.get(cle(c.small, c.big));
+    const k = exactes.get(cle(c.small, c.big)) ?? souples.get(cleSouple(c.small, c.big));
     if (k && (k.small || k.big)) return { ...c, small: k.small, big: k.big };
     return { ...c, small: remplacerMots(c.small ?? "", carte), big: remplacerMots(c.big ?? "", carte) };
   });
@@ -119,7 +137,7 @@ export function appliquer(sousTitres: SousTitre[], corrections: unknown): SousTi
 /** La correction (brute, telle que saisie) qui vise ce sous-titre de l'IA, s'il y en a une. */
 export function correctionDe(ia: SousTitre, corrections: CorrectionSousTitre[]): CorrectionSousTitre | undefined {
   const k = cle(ia.small, ia.big);
-  return corrections.find((c) => cle(c.small_ia, c.big_ia) === k);
+  return corrections.find((c) => cle(c.small_ia, c.big_ia) === k) ?? corrections.find((c) => vise(c, ia));
 }
 
 /** L'élève modifie un sous-titre : sa correction remplace la précédente (ou disparaît si le texte revient à celui de l'IA). */
@@ -129,7 +147,7 @@ export function corriger(
   texte: { small: string; big: string },
 ): CorrectionSousTitre[] {
   const k = cle(ia.small, ia.big);
-  const autres = corrections.filter((c) => cle(c.small_ia, c.big_ia) !== k);
+  const autres = corrections.filter((c) => !vise(c, ia));
   if (cle(texte.small, texte.big) === k) return autres;
   return [...autres, { small_ia: ia.small, big_ia: ia.big, small: texte.small, big: texte.big }];
 }
@@ -137,15 +155,21 @@ export function corriger(
 /** À enregistrer : corrections nettoyées, seulement celles qui visent un sous-titre de la vidéo et changent quelque chose. */
 export function corrigesAEnregistrer(sousTitres: SousTitre[], corrections: CorrectionSousTitre[]): CorrectionSousTitre[] {
   const presents = new Set(sousTitres.map((c) => cle(c.small, c.big)));
+  const souples = new Set(sousTitres.map((c) => cleSouple(c.small, c.big)));
   return correctionsValides(corrections).filter(
-    (c) => presents.has(cle(c.small_ia, c.big_ia)) && cle(c.small, c.big) !== cle(c.small_ia, c.big_ia),
+    (c) =>
+      (presents.has(cle(c.small_ia, c.big_ia)) || souples.has(cleSouple(c.small_ia, c.big_ia))) &&
+      cle(c.small, c.big) !== cle(c.small_ia, c.big_ia),
   );
 }
 
 /** Corrections enregistrées qui ne visent plus aucun sous-titre (regroupés après un changement de coupes). */
 export function corrigesOrphelins(sousTitres: SousTitre[], corrections: unknown): number {
   const presents = new Set(sousTitres.map((c) => cle(c.small, c.big)));
-  return correctionsValides(corrections).filter((c) => !presents.has(cle(c.small_ia, c.big_ia))).length;
+  const souples = new Set(sousTitres.map((c) => cleSouple(c.small, c.big)));
+  return correctionsValides(corrections).filter(
+    (c) => !presents.has(cle(c.small_ia, c.big_ia)) && !souples.has(cleSouple(c.small_ia, c.big_ia)),
+  ).length;
 }
 
 /** Sous-titre affiché au temps t (le dernier commencé). */

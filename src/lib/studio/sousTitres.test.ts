@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   appliquer,
+  correctionDe,
   corriger,
   corrigesAEnregistrer,
   corrigesOrphelins,
@@ -98,4 +99,23 @@ describe("indexAuTemps", () => {
 it("sousTitreVide", () => {
   expect(sousTitreVide({ small: " ", big: "" })).toBe(true);
   expect(sousTitreVide({ small: "", big: "vie" })).toBe(false);
+});
+
+describe("reprise des corrections après un changement de coupes (12/11/2026)", () => {
+  const corr = [{ small_ia: "pour remonter la", big_ia: "pente", small: "pour remonter", big: "la pente" }];
+  const st = [{ small: "pour remonter la", big: "pente.", start: 17, end: 18.2 }];
+  it("reprend une correction quand l'IA a seulement ajouté de la ponctuation", () => {
+    expect(appliquer(st, corr)[0]).toMatchObject({ small: "pour remonter", big: "la pente" });
+    expect(corrigesOrphelins(st, corr)).toBe(0);
+    expect(corrigesAEnregistrer(st, corr)).toHaveLength(1);
+    expect(correctionDe(st[0], corr)).toEqual(corr[0]);
+  });
+  it("revenir au texte d'origine retire la correction reprise", () => {
+    expect(corriger(corr, st[0], { small: st[0].small, big: st[0].big })).toEqual([]);
+  });
+  it("ne reprend pas une correction dont les mots ont changé", () => {
+    const autre = [{ small: "pour remonter toute la", big: "pente.", start: 17, end: 18.2 }];
+    expect(appliquer(autre, corr)[0]).toMatchObject({ small: "pour remonter toute la", big: "pente." });
+    expect(corrigesOrphelins(autre, corr)).toBe(1);
+  });
 });
