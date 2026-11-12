@@ -16,7 +16,10 @@ La chaîne a été mise au point sur un vrai appel de Sabrina (banc d'essai du 2
   3. les tours sont recalés sur les mots horodatés de Whisper (temps de parole, silences) ;
   4. Claude Haiku note l'appel avec le référentiel du type d'appel (en base, pas dans ce dépôt) et
      les exemples de référence validés par les coachs (exemples_de_reference) ;
-  5. le code vérifie chaque citation (mot pour mot) et calcule la note avec les poids de la grille.
+  5. le code vérifie chaque citation (mot pour mot) et calcule la note avec les poids de la grille ;
+     une étape munie d'une « liste » (P5/P6 depuis la v0.5 : les 8 explications de fin d'appel
+     validées par Sabrina le 12/11/2026) est notée par le code, avec le barème du référentiel,
+     à partir des points que l'IA a cochés.
 Coût mesuré : environ 0,06 $ pour un appel de 6 min. Chaque appel à l'IA va au journal
 ia_consommations (appel_job_cout), jamais sur la ligne de l'appel : les coûts sont réservés à l'admin.
 """
@@ -338,9 +341,61 @@ def exemples_de_reference(exemples):
             + "\n\n".join(blocs) + "\n\n")
 
 
+def listes_a_cocher(grille):
+    """Les étapes notées par une liste (consigne + forme JSON attendue), ou ("", "")."""
+    etapes = [g for g in grille if g.get("liste")]
+    if not etapes:
+        return "", ""
+    blocs = []
+    for g in etapes:
+        lignes = "\n".join(f"{k}. {p.get('detail') or p.get('court')}" for k, p in enumerate(g["liste"], 1))
+        blocs.append(f"# Liste à cocher : étape {g['code']} ({g.get('nom', '')})\n{lignes}")
+    consigne = ("\n\n".join(blocs) + "\nPour CHAQUE point numéroté, indique dans « listes » : fait = oui (dit clairement), partiel "
+                "(abordé mais incomplet ou inexact) ou non (absent), avec le tour et une citation mot pour mot si oui ou partiel. "
+                "La note de ces étapes est calculée à partir de cette liste : mets 0 dans leur « note ».\n")
+    forme = ' "listes": [' + ", ".join(
+        f'{{"code":"{g["code"]}","points":[{{"n":1,"fait":"oui|partiel|non","tour":0,"citation":""}}]}}' for g in etapes) + "],\n"
+    return consigne, forme
+
+
+def noter_liste(g, donnees, ok):
+    """Note d'une étape à liste : points faits (un partiel compte pour moitié) → barème du référentiel."""
+    recus = {}
+    for p in (donnees or {}).get("points") or []:
+        try:
+            recus[int(p.get("n"))] = p
+        except (TypeError, ValueError):
+            continue
+    points, score = [], 0.0
+    for k, item in enumerate(g["liste"], 1):
+        p = dict(recus.get(k) or {})
+        fait = str(p.get("fait") or "non").strip().lower()
+        fait = fait if fait in ("oui", "partiel", "non") else "non"
+        if fait != "non" and not ok(p, "liste " + g["code"]):
+            p["citation"] = ""
+        score += {"oui": 1.0, "partiel": 0.5, "non": 0.0}[fait]
+        points.append({"n": k, "libelle": item.get("court") or item.get("detail"), "fait": fait,
+                       "tour": p.get("tour"), "citation": p.get("citation") or "", "horodatage": p.get("horodatage")})
+    note = 0.0
+    for seuil, valeur in sorted(g.get("bareme") or [], key=lambda b: -b[0]):
+        if score >= seuil:
+            note = float(valeur)
+            break
+    nombre = (f"{score:g}").replace(".", ",")
+    manque = [p["libelle"] for p in points if p["fait"] == "non"]
+    partiels = [p["libelle"] for p in points if p["fait"] == "partiel"]
+    texte = f"{nombre} explication{'s' if score > 1 else ''} sur {len(points)} donnée{'s' if score > 1 else ''} au prospect."
+    if manque:
+        texte += " Il manquait : " + ", ".join(manque) + "."
+    if partiels:
+        texte += " À compléter : " + ", ".join(partiels) + "."
+    return note, points, texte
+
+
 def consigne_analyse(ctx, tours, mesures):
     ref = ctx["referentiel"]
     codes = ", ".join(e["code"] for e in ref["grille"])
+    listes, forme_listes = listes_a_cocher(ref["grille"])
     transcript = "\n".join(f"T{t['n']} [{mmss(t['t0'])}] {t['loc']} : {t['texte']}" for t in tours)
     silences = "; ".join(f"T{q['tour']} {q['silence_s']} s" for q in mesures["questions_setter"]) or "aucune question mesurée"
     return f"""Tu es l'outil d'analyse d'appels d'AL BARAKA. Tu produis le BROUILLON de retour qu'un coach validera avant qu'il n'arrive à l'élève.
@@ -348,6 +403,7 @@ Type d'appel déclaré : {ctx['type_appel']}. Le SETTER est l'élève évalué (
 
 {ref['contenu']}
 
+{listes}
 {exemples_de_reference(ctx.get('exemples'))}# Mesures calculées par le code
 Durée totale : {mmss(mesures['duree_s'])}. Temps de parole mesuré : setter {mesures['parole_s']['SETTER']} s ({mesures['part_setter_pct']} %), prospect {mesures['parole_s']['PROSPECT']} s ({mesures['part_prospect_pct']} %). La transcription automatique rate une partie des réponses très courtes du prospect : la part réelle du setter est un peu plus basse que la mesure.
 Silences entre la fin d'une question du setter et la réponse du prospect : {silences}
@@ -356,15 +412,28 @@ Silences entre la fin d'une question du setter et la réponse du prospect : {sil
 {transcript}
 
 Réponds UNIQUEMENT avec un objet JSON valide de cette forme (toutes les étapes {codes} ; toutes les règles R1 à R7). Tutoie l'élève. Dans tes textes, écris toujours « Salamou ‘alaykoum » en entier, jamais « Salam » ni « Salem » ; seules les citations de la transcription restent mot pour mot. N'écris AUCUNE note globale chiffrée (sur 100) dans les textes : la note est calculée et affichée à part. Les textes sont lus par l'élève : ne parle jamais du « code », des mesures automatiques ni de l'IA. Les citations sont copiées MOT POUR MOT depuis la transcription. Dans les valeurs texte, n'utilise jamais le caractère " (guillemet droit) : utilise « ».
-{SCHEMA}"""
+{SCHEMA.replace(' "analyse_globale"', forme_listes + ' "analyse_globale"', 1)}"""
 
 
-def analyser(ctx, tours, mesures):
-    d = openrouter("/chat/completions", {
-        "model": ANALYSE, "temperature": 0.2, "max_tokens": 24000, "reasoning": {"max_tokens": 3000},
-        "messages": [{"role": "user", "content": consigne_analyse(ctx, tours, mesures)}], "usage": {"include": True}}, delai=600)
-    noter_cout(ANALYSE, [d], "analyse")
-    return objet_json(d["choices"][0]["message"]["content"])
+def analyser(ctx, tours, mesures, essais=3):
+    # Banc d'essai du 12/11/2026 : la réflexion du modèle dépasse son budget (11 000 à 14 000 jetons
+    # pour 3 000 demandés) et partage le plafond avec la réponse ; à 24 000, un retour sur trois
+    # était coupé en plein JSON. Plafond relevé (seuls les jetons utilisés sont payés), et une
+    # réponse coupée ou illisible est redemandée au lieu de faire échouer l'analyse.
+    consigne = consigne_analyse(ctx, tours, mesures)
+    for k in range(essais):
+        d = openrouter("/chat/completions", {
+            "model": ANALYSE, "temperature": 0.2, "max_tokens": 48000, "reasoning": {"max_tokens": 3000},
+            "messages": [{"role": "user", "content": consigne}], "usage": {"include": True}}, delai=600)
+        noter_cout(ANALYSE, [d], "analyse")
+        try:
+            if d["choices"][0].get("finish_reason") == "length":
+                raise ValueError("réponse coupée")
+            return objet_json(d["choices"][0]["message"]["content"])
+        except ValueError:  # json.JSONDecodeError en est une
+            if k == essais - 1:
+                raise ValueError("L'analyse n'a pas pu être lue. Relance-la.")
+            print(f"réponse coupée ou illisible (essai {k + 1}), nouvel essai", flush=True)
 
 
 # ---------------------------------------------------------------- 5. vérification et note
@@ -409,6 +478,13 @@ def verifier(analyse, tours, ctx, mesures):
                          for g in ref["grille"]]
     for e in analyse["etapes"]:
         e["note"] = max(0.0, min(10.0, float(e.get("note") or 0)))
+    # étapes à liste (fin d'appel) : la note vient des points cochés, jamais de l'IA
+    recues = {l.get("code"): l for l in analyse.get("listes") or [] if isinstance(l, dict)}
+    for e in analyse["etapes"]:
+        g = poids[e["code"]]
+        if g.get("liste"):
+            e["note"], e["liste"], e["justification"] = noter_liste(g, recues.get(e["code"]), ok)
+    analyse.pop("listes", None)
     note_etapes = sum(e["note"] * e["poids"] for e in analyse["etapes"]) / 10
     informe = bool(ctx.get("prospect_informe")) or bool(analyse.get("prospect_informe"))
     penalite = 0 if informe else float(ref.get("penalite_enregistrement") or 0)

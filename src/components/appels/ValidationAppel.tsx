@@ -13,7 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { CitationEcoute } from "@/components/appels/PanneauEcoute";
-import { compterCorrections, pointsEnMoins, recalculer, texteEleve, type Analyse, type Axe, type PointFort } from "@/lib/appels/retour";
+import { compterCorrections, mmss, pointsEnMoins, recalculer, texteEleve, type Analyse, type Axe, type PointFort, type PointListe } from "@/lib/appels/retour";
 import { enregistrerCorrections, validerAppel } from "@/hooks/useAppels";
 
 /** Un texte qu'on corrige sur place : crayon → zone de saisie → OK. */
@@ -288,6 +288,7 @@ export function ValidationAppel({
                     }
                   />
                   {e.citations?.[0] && <CitationEcoute texte={e.citations[0].texte} horodatage={e.citations[0].horodatage} onEcouter={onEcouter} />}
+                  {e.liste?.length ? <ListeCochee points={e.liste} onEcouter={onEcouter} /> : null}
                 </div>
               </div>
             );
@@ -463,5 +464,40 @@ export function ValidationAppel({
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/** Les explications de fin d'appel, telles que l'outil les a cochées (lecture seule : le coach
+ * corrige la note avec − / + et le texte au-dessus). Référentiel v0.5, 12/11/2026. */
+function ListeCochee({ points, onEcouter }: { points: PointListe[]; onEcouter: (t: number) => void }) {
+  const signe = { oui: "✓", partiel: "½", non: "✗" } as const;
+  const couleur = {
+    oui: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    partiel: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+    non: "bg-red-500/10 text-red-600 dark:text-red-300",
+  } as const;
+  return (
+    <ul className="mt-2 space-y-1" data-testid="liste-fin-appel">
+      {points.map((p) => (
+        <li key={p.n} className="flex items-start gap-2 text-[13px]">
+          <span className={cn("mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold", couleur[p.fait])}>
+            {signe[p.fait]}
+          </span>
+          <div className="min-w-0 flex-1">
+            <span className={cn(p.fait === "non" && "text-muted-foreground")}>{p.libelle}</span>
+            {p.citation && (
+              <button
+                type="button"
+                onClick={() => p.horodatage != null && onEcouter(p.horodatage)}
+                disabled={p.horodatage == null}
+                className="ml-1.5 text-xs italic text-primary hover:underline disabled:no-underline"
+              >
+                {p.horodatage != null ? `▶ ${mmss(p.horodatage)} ` : ""}« {p.citation} »
+              </button>
+            )}
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

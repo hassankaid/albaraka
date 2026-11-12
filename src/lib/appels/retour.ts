@@ -12,6 +12,13 @@ export interface Citation {
   horodatage?: number;
 }
 
+/** Un point d'une liste à cocher (les 8 explications de fin d'appel, référentiel v0.5). */
+export interface PointListe extends Citation {
+  n: number;
+  libelle: string;
+  fait: "oui" | "partiel" | "non";
+}
+
 export interface Etape {
   code: string;
   nom: string;
@@ -19,6 +26,8 @@ export interface Etape {
   note: number;
   justification: string;
   citations?: Citation[];
+  /** étape notée par une liste (fin d'appel) : la note vient des points cochés */
+  liste?: PointListe[];
 }
 
 export interface Regle extends Citation {
@@ -204,7 +213,11 @@ export function texteEleve(a: Analyse, prenom: string): string {
   }
   if (a.conseil_prioritaire?.texte?.trim()) lignes.push("", `Ton conseil prioritaire : ${a.conseil_prioritaire.texte.trim()}`);
   lignes.push("", "Le détail par étape :");
-  for (const e of a.etapes) lignes.push(`• ${e.code} ${e.nom} : ${e.note.toLocaleString("fr-FR")}/10`);
+  for (const e of a.etapes) {
+    // étape à liste (fin d'appel) : l'élève voit ce qui manquait, pas seulement la note
+    const detail = e.liste?.length && e.justification?.trim() ? ` (${e.justification.trim().replace(/\.$/, "")})` : "";
+    lignes.push(`• ${e.code} ${e.nom} : ${e.note.toLocaleString("fr-FR")}/10${detail}`);
+  }
   if (a.encouragement?.trim()) lignes.push("", a.encouragement.trim());
   return lignes.join("\n");
 }

@@ -96,6 +96,13 @@ function RetourAppelPdf({ a, eleve, typeAppel, dureeS, date }: { a: Analyse; ele
             <Text style={s.gras}>{e.note.toLocaleString("fr-FR")}/10</Text>
           </View>
         ))}
+        {a.etapes
+          .filter((e) => e.liste?.length && e.justification?.trim())
+          .map((e) => (
+            <Text key={`detail-${e.code}`} style={[s.texte, { marginTop: 4 }]}>
+              {e.code} {e.nom} : {sansFleche(e.justification.trim())}
+            </Text>
+          ))}
 
         {a.encouragement ? <Text style={[s.texte, { marginTop: 12, fontFamily: "Times-Italic" }]}>{sansFleche(a.encouragement)}</Text> : null}
 

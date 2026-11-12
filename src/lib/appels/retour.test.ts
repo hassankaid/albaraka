@@ -77,3 +77,22 @@ describe("outils", () => {
     expect(tourA(tours, 1)).toBe(-1);
   });
 });
+
+describe("étape à liste (fin d'appel, référentiel v0.5)", () => {
+  it("le texte de l'élève dit ce qui manquait", () => {
+    const base = texteEleve(ia, "Yanis");
+    const avec = texteEleve(
+      {
+        ...ia,
+        etapes: ia.etapes.map((e, i) =>
+          i === ia.etapes.length - 1
+            ? { ...e, note: 3, justification: "3 explications sur 8 données au prospect. Il manquait : application Zoom.", liste: [{ n: 1, libelle: "application Zoom", fait: "non" as const }] }
+            : e,
+        ),
+      },
+      "Yanis",
+    );
+    expect(base).not.toContain("Il manquait");
+    expect(avec).toContain(": 3/10 (3 explications sur 8 données au prospect. Il manquait : application Zoom)");
+  });
+});
