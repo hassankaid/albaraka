@@ -377,7 +377,11 @@ def coupes_reglees(reglages, duree):
             a, b = max(0.0, float(p[0])), min(float(duree), float(p[1]))
         except (TypeError, ValueError, IndexError):
             continue
-        a, b = np.floor(a * P.OUT_FPS) / P.OUT_FPS, np.ceil(b * P.OUT_FPS) / P.OUT_FPS
+        # sur les images ; la tolérance absorbe l'arrondi à la milliseconde du navigateur
+        # (0,933 s = image 28 : sans elle, chaque coupe réglée gagnait une image de chaque
+        # côté, 12/11/2026). Même calcul que plagesDuMoteur (src/lib/studio/coupes.ts).
+        a = np.floor(a * P.OUT_FPS + 0.02) / P.OUT_FPS
+        b = np.ceil(b * P.OUT_FPS - 0.02) / P.OUT_FPS
         if b - a >= 0.1:
             plages.append([round(float(a), 3), round(float(min(b, duree)), 3)])
     plages.sort()

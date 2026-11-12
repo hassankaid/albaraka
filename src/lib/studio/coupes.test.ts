@@ -7,6 +7,8 @@ import {
   dureeGardee,
   garderCoupe,
   memesPlages,
+  coupesAppliquees,
+  plagesDuMoteur,
   minutage,
   natureCoupe,
   normaliser,
@@ -108,5 +110,20 @@ describe("vérification des coupes", () => {
       { text: "C'est", start: 0, end: 0.4 },
       { text: "le", start: 0.5, end: 0.6 },
     ]);
+  });
+});
+
+describe("coupesAppliquees (12/11/2026, montage de Hayet Saadi)", () => {
+  const voulues: [number, number][] = [[0.933, 2.533], [8.4, 10.067], [10.633, 11.6], [23.2, 23.767], [24, 27], [50.133, 54.333]];
+  it("reconnaît les coupes recalées par l'ancien moteur (une image de plus de chaque côté)", () => {
+    const ancien: [number, number][] = [[0.9, 2.533], [8.4, 10.1], [10.6, 11.6], [23.2, 23.8], [24, 27], [50.1, 54.333]];
+    expect(coupesAppliquees(voulues, ancien)).toBe(true);
+  });
+  it("reconnaît les coupes du moteur corrigé (images exactes)", () => {
+    expect(plagesDuMoteur(voulues)).toEqual(voulues);
+    expect(coupesAppliquees(voulues, voulues)).toBe(true);
+  });
+  it("voit une coupe déplacée d'une seule image", () => {
+    expect(coupesAppliquees(voulues, [[0.967, 2.533], ...voulues.slice(1)])).toBe(false);
   });
 });

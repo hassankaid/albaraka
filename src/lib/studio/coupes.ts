@@ -165,6 +165,22 @@ export const IMAGE = 1 / 30;
 /** Ramène un temps sur l'image la plus proche, comme le moteur. */
 export const surImage = (t: number) => arrondi(Math.round(t / IMAGE) * IMAGE);
 
+/** Les plages telles que le moteur les garde (`coupes_reglees` dans studio/travail.py) : début
+ * ramené à l'image d'avant, fin à l'image d'après. `tolerance` (en images) absorbe l'arrondi à la
+ * milliseconde (0,933 s = image 28) ; le moteur l'applique depuis le 12/11/2026, à 0 avant. */
+export function plagesDuMoteur(plages: Plage[], tolerance = 0.02): Plage[] {
+  return plages.map(([a, b]) => [
+    arrondi(Math.floor(a / IMAGE + tolerance) * IMAGE),
+    arrondi(Math.ceil(b / IMAGE - tolerance) * IMAGE),
+  ]);
+}
+
+/** Les coupes voulues sont-elles celles de la préparation gardée ? (12/11/2026 : sans le calage
+ * du moteur, « Tu as changé les coupes » restait affiché même après un nouveau rendu.) */
+export function coupesAppliquees(voulues: Plage[], travail: Plage[] | null | undefined): boolean {
+  return memesPlages(plagesDuMoteur(voulues), travail) || memesPlages(plagesDuMoteur(voulues, 0), travail);
+}
+
 /** Le son, réduit à son niveau toutes les 10 ms, pour le dessiner et trouver où la voix s'arrête. */
 export interface Enveloppe {
   /** niveau en dB par tranche de `pas` secondes, lissé sur 30 ms */

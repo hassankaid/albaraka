@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { lienStudio } from "@/hooks/useStudio";
-import { memesPlages, minutage, type Plage } from "@/lib/studio/coupes";
+import { coupesAppliquees, minutage, type Plage } from "@/lib/studio/coupes";
 import { chargerPolices, dessinerSousTitreFinal, H, W } from "@/lib/studio/apercu";
 import { type Montage, type Reglages } from "@/lib/studio/reglages";
 import { useStudioAcces } from "@/hooks/useStudioAcces";
@@ -119,7 +119,7 @@ export function CorrigerSousTitres({ open, onOpenChange, montage, reglages, onVa
   const coupesChangees = useMemo(() => {
     if (!travail) return false;
     const voulues = reglages.coupes.plages;
-    if (voulues?.length) return !memesPlages(voulues, travail.plages);
+    if (voulues?.length) return !coupesAppliquees(voulues, travail.plages);
     return !!travail.plages?.length || (travail.rythme ?? "dynamique") !== reglages.coupes.rythme;
   }, [travail, reglages.coupes]);
 
