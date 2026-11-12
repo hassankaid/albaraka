@@ -98,6 +98,17 @@ def back_out(x, s=1.7):
 _polices = {}
 
 
+def couper_au_mot(texte, n):
+    """Raccourcit un texte à n caractères sans jamais couper un mot (12/11/2026 : « MESSAGE »
+    devenait « MESSAG » sur le bouton d'appel à l'action). Un mot trop long pour tenir seul
+    est gardé entier : c'est le dessin qui réduit la police si besoin."""
+    texte = " ".join(str(texte or "").split())
+    if len(texte) <= n:
+        return texte
+    coupe = texte[:n + 1].rsplit(" ", 1)[0].rstrip(" ,;:-–")
+    return coupe if " " in texte[:n + 1] and coupe else texte.split(" ")[0]
+
+
 def police(nom, taille):
     cle = (nom, int(taille))
     if cle not in _polices:
@@ -167,13 +178,13 @@ Règles :
 @ICONES@
   Pour "horloge", ajoute "heure" (« 23:00 ») si une heure précise est dite.
 - "listes" : seulement si l'orateur ÉNUMÈRE 2 à 4 éléments. Titre court en majuscules (28 caractères max),
-  chaque point en 24 caractères max, avec l'index du mot où il commence à être dit.
+  chaque point en 24 caractères max (mots entiers), avec l'index du mot où il commence à être dit.
 - "compteurs" : seulement si un nombre précis est prononcé (« 3 000 élèves ») : valeur numérique,
   texte du nombre tel qu'affiché, libellé court (18 caractères max).
 - "parties" : index du premier mot de chaque changement de partie (problème, solution, appel à l'action),
   3 au plus, jamais le mot 0.
 - "cta" : seulement si un appel à l'action est dit dans les 8 dernières secondes : texte du bouton
-  en majuscules (20 caractères max) et index du mot. Sinon null.
+  en majuscules (28 caractères max, mots entiers) et index du mot. Sinon null.
 N'invente rien qui ne soit pas dit. Une rubrique sans rien qui convienne reste vide.
 
 Mots :
@@ -224,11 +235,11 @@ def nettoyer_plan(brut: dict, mots, duree) -> dict:
         points = []
         for p in li.get("points") or []:
             i = idx(p.get("mot"))
-            texte = str(p.get("texte") or "").strip()[:24]
+            texte = couper_au_mot(p.get("texte"), 24)
             if i is not None and texte and (not points or mots[i]["start"] > points[-1]["debut"]):
                 points.append({"texte": texte, "debut": mots[i]["start"]})
         if 2 <= len(points) <= 4:
-            plan["listes"].append({"titre": str(li.get("titre") or "").strip().upper()[:28], "points": points,
+            plan["listes"].append({"titre": couper_au_mot(li.get("titre"), 28).upper(), "points": points,
                                    "fin": min(duree, points[-1]["debut"] + 3.0)})
     plan["listes"] = plan["listes"][:2]
 
@@ -240,8 +251,8 @@ def nettoyer_plan(brut: dict, mots, duree) -> dict:
             continue
         if i is not None and valeur > 0:
             plan["compteurs"].append({"debut": mots[i]["start"], "valeur": valeur,
-                                      "texte": str(c.get("texte") or "")[:12],
-                                      "libelle": str(c.get("libelle") or "")[:18]})
+                                      "texte": couper_au_mot(c.get("texte"), 12),
+                                      "libelle": couper_au_mot(c.get("libelle"), 18)})
     plan["compteurs"] = plan["compteurs"][:3]
 
     for v in brut.get("parties") or []:
@@ -253,7 +264,7 @@ def nettoyer_plan(brut: dict, mots, duree) -> dict:
     cta = brut.get("cta") or None
     if isinstance(cta, dict):
         i = idx(cta.get("mot"))
-        texte = str(cta.get("texte") or "").strip().upper()[:20]
+        texte = couper_au_mot(cta.get("texte"), 28).upper()
         if i is not None and texte and mots[i]["start"] >= duree - 8:
             plan["cta"] = {"texte": texte, "debut": mots[i]["start"]}
     return plan
@@ -543,7 +554,9 @@ def bouton(texte, t, c: Couleurs):
     """Bouton d'appel à l'action qui pulse, avec une flèche qui rebondit."""
     k = back_out(t / 0.45)
     s = k * (1 + 0.035 * math.sin(t * 2 * math.pi * 1.4))
-    f = police("titre", 46)
+    # le texte tient toujours dans le bouton : au-delà de 860 px, la police rétrécit
+    taille = min(46.0, 46.0 * 860 / max(1.0, police("titre", 46).getlength(texte)))
+    f = police("titre", taille)
     bw0 = max(420, int(f.getlength(texte) + 120))
     bw, bh = int(bw0 * s), int(120 * s)
     if bw < 20:
@@ -552,7 +565,7 @@ def bouton(texte, t, c: Couleurs):
     d = ImageDraw.Draw(im)
     cx = im.width // 2
     d.rounded_rectangle((cx - bw // 2, 20, cx + bw // 2, 20 + bh), bh // 2, fill=c.principale + (255,))
-    fs = police("titre", max(10, 46 * s))
+    fs = police("titre", max(10, taille * s))
     d.text((cx, 20 + bh / 2), texte, font=fs, fill=c.sur_principale + (255,), anchor="mm")
     rebond = abs(math.sin(t * math.pi * 2.2)) * 26
     ay, a = 20 + bh + 40 + rebond, int(255 * min(1, k))

@@ -38,7 +38,7 @@ interface TravailSousTitres {
 interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  montage: Pick<Montage, "id" | "user_id">;
+  montage: Pick<Montage, "id" | "user_id" | "version">;
   reglages: Reglages;
   onValider: (corrections: CorrectionSousTitre[]) => void;
   libelleValider: string;
@@ -71,9 +71,15 @@ export function CorrigerSousTitres({ open, onOpenChange, montage, reglages, onVa
     chargerPolices().then(() => setPolices(true)).catch(() => setPolices(true));
   }, []);
 
-  // chargement : les sous-titres de l'IA et la vidéo montée (sans sous-titres)
+  // chargement : les sous-titres de l'IA et la vidéo montée (sans sous-titres).
+  // Rechargés à CHAQUE ouverture (12/11/2026, Hayet Saadi) : chargés une seule fois, ils
+  // restaient ceux d'avant un changement de coupes tant que la page n'était pas rechargée,
+  // même après plusieurs nouveaux rendus (le passage remis n'apparaissait jamais).
   useEffect(() => {
-    if (!open || travail) return;
+    if (!open) return;
+    setTravail(null);
+    setErreur(null);
+    setVideo(null);
     let actif = true;
     (async () => {
       try {
@@ -90,7 +96,7 @@ export function CorrigerSousTitres({ open, onOpenChange, montage, reglages, onVa
     return () => {
       actif = false;
     };
-  }, [open, travail, dossier]);
+  }, [open, dossier, montage.version]);
 
   // à chaque ouverture, on repart des corrections enregistrées
   useEffect(() => {
