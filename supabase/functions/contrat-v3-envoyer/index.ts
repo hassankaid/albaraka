@@ -70,14 +70,27 @@ function htmlEmail(prenom: string, numero: string, objet: string): string {
 
 // ─── Fichiers joints : CGV datées et police, servies par le site ────────────
 // Repli sur le stockage privé (contracts/_modeles/) si le site ne les sert pas.
+/** Le fichier est-il bien un PDF ou une police (et pas une page web renvoyée à la place) ? */
+function estFichierAttendu(octets: Uint8Array, sorte: "pdf" | "police"): boolean {
+  if (octets.length < 8) return false;
+  const debut = new TextDecoder().decode(octets.subarray(0, 4));
+  if (sorte === "pdf") return debut === "%PDF";
+  return (octets[0] === 0 && octets[1] === 1 && octets[2] === 0 && octets[3] === 0) || debut === "true" || debut === "OTTO";
+}
+
 // deno-lint-ignore no-explicit-any
-async function lireFichier(supabase: any, url: string, cheminStockage: string): Promise<Uint8Array | null> {
+async function lireFichier(supabase: any, url: string, cheminStockage: string, sorte: "pdf" | "police"): Promise<Uint8Array | null> {
   try {
     const r = await fetch(url);
-    if (r.ok) return new Uint8Array(await r.arrayBuffer());
+    if (r.ok) {
+      const octets = new Uint8Array(await r.arrayBuffer());
+      if (estFichierAttendu(octets, sorte)) return octets;
+    }
   } catch { /* repli ci-dessous */ }
   const { data } = await supabase.storage.from("contracts").download(cheminStockage);
-  return data ? new Uint8Array(await data.arrayBuffer()) : null;
+  if (!data) return null;
+  const octets = new Uint8Array(await data.arrayBuffer());
+  return estFichierAttendu(octets, sorte) ? octets : null;
 }
 
 async function fabriquer(
@@ -87,9 +100,9 @@ async function fabriquer(
   extra: { navigateur: string | null; accesActiveLe: string | null; envoyeLe: string },
 ): Promise<Uint8Array> {
   const [cgv, normale, grasse] = await Promise.all([
-    lireFichier(supabase, `${SITE}${PDF_CGV_V3}`, `_modeles${PDF_CGV_V3.replace("/cgv", "")}`),
-    lireFichier(supabase, POLICES_CONTRAT.normale, "_modeles/Lato-Regular.ttf"),
-    lireFichier(supabase, POLICES_CONTRAT.grasse, "_modeles/Lato-Bold.ttf"),
+    lireFichier(supabase, `${SITE}${PDF_CGV_V3}`, `_modeles${PDF_CGV_V3.replace("/cgv", "")}`, "pdf"),
+    lireFichier(supabase, POLICES_CONTRAT.normale, "_modeles/Lato-Regular.ttf", "police"),
+    lireFichier(supabase, POLICES_CONTRAT.grasse, "_modeles/Lato-Bold.ttf", "police"),
   ]);
   if (!cgv) throw new Error(`CGV introuvables : ${SITE}${PDF_CGV_V3}`);
   return await construirePdfContratV3(d, extra, cgv, normale && grasse ? { normale, grasse } : null);
@@ -103,7 +116,18 @@ Deno.serve(async (req) => {
 
   // Accès : la clé service (stripe-webhook) ou un CEO connecté (renvoi manuel).
   const jeton = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
-  if (jeton !== SERVICE_ROLE) {
+  // Une clé de service peut se présenter sous deux formats (ancien JWT ou nouvelle
+  // clé secrète) : on la reconnaît à ce qu'elle ouvre l'administration des comptes.
+  const estCleService = async (cle: string) => {
+    if (!cle || cle === SERVICE_ROLE) return !!cle;
+    try {
+      const { error } = await createClient(SUPABASE_URL, cle).auth.admin.listUsers({ page: 1, perPage: 1 });
+      return !error;
+    } catch {
+      return false;
+    }
+  };
+  if (!(await estCleService(jeton))) {
     const { data: u } = await supabase.auth.getUser(jeton);
     const { data: prof } = u?.user ? await supabase.from("profiles").select("role").eq("id", u.user.id).maybeSingle() : { data: null };
     if ((prof as { role?: string } | null)?.role !== "ceo") return json({ error: "forbidden" }, 403);
