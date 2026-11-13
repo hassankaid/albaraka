@@ -57,6 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   const fetchProfile = useCallback(async (userId: string) => {
+    // Historique de connexion (contrats v3, 13/11/2026) : preuve que l'accès a été
+    // mis à disposition et utilisé. Sans attendre ; la base dédoublonne (30 min).
+    void (supabase as unknown as { rpc: (fn: string) => PromiseLike<unknown> })
+      .rpc("enregistrer_connexion")
+      .then(() => undefined, () => undefined);
     // Profil et contrats en attente lus EN MÊME TEMPS (avant : l'un après
     // l'autre, ce qui retardait l'affichage de chaque ouverture de l'app).
     // Phase 5 — le compte des contrats en attente de signature : RLS garantit

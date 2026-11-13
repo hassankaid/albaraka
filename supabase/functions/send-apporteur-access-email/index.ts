@@ -54,8 +54,11 @@ type PassType = "al_baraka" | "liberty";
 const PDF_CGV_PAR_VERSION: Record<string, string> = {
   "25/09/2026": "https://plateforme.albarakaecosysteme.com/cgv/cgv-2026-09-25.pdf",
   "02/11/2026": "https://plateforme.albarakaecosysteme.com/cgv/cgv-2026-11-02.pdf",
+  // Version 3 (contrats v3) : le contrat accepté, l'attestation et ces CGV partent
+  // aussi, dans un seul PDF, par l'e-mail « Ton contrat … » (contrat-v3-envoyer).
+  "13/11/2026": "https://plateforme.albarakaecosysteme.com/cgv/cgv-2026-11-13.pdf",
 };
-const URL_CGV_PDF = PDF_CGV_PAR_VERSION["02/11/2026"];
+const URL_CGV_PDF = PDF_CGV_PAR_VERSION["13/11/2026"];
 const urlCgv = (version: string | null) => (version && PDF_CGV_PAR_VERSION[version]) || URL_CGV_PDF;
 
 /** Texte imposé par le cahier des charges. Ne pas reformuler. */

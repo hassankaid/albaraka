@@ -21,8 +21,8 @@ describe("les deux cases exigées par la loi", () => {
   const cases = initAgreements("PASS AL BARAKA");
 
   it("sont les deux premières, juste au-dessus du bouton", () => {
-    expect(cases[0].id).toBe("accepte_cgv");
-    expect(cases[1].id).toBe("wants_immediate_access");
+    expect(cases[0].id).toBe("contrat_cgv");
+    expect(cases[1].id).toBe("acces_immediat");
     expect(cases[0].obligatoireLegalement).toBe(true);
     expect(cases[1].obligatoireLegalement).toBe(true);
   });
@@ -37,7 +37,7 @@ describe("les deux cases exigées par la loi", () => {
     // Sans la référence à L. 221-28, la renonciation au droit de rétractation
     // n'est pas valablement recueillie.
     expect(cases[1].text).toContain("L. 221-28");
-    expect(cases[1].text).toContain("renoncer");
+    expect(cases[1].text).toContain("perdre mon droit de rétractation");
     expect(cases[1].text).toContain("accès immédiat");
   });
 
@@ -53,7 +53,7 @@ describe("le bouton reste bloqué tant que tout n'est pas coché", () => {
   it("refuse une liste partiellement cochée", () => {
     let cases = initAgreements("PASS AL BARAKA");
     expect(allAgreed(cases)).toBe(false);
-    cases = toggleAgreement(cases, "accepte_cgv");
+    cases = toggleAgreement(cases, "contrat_cgv");
     expect(allAgreed(cases)).toBe(false);
   });
 
@@ -72,8 +72,8 @@ describe("le bouton reste bloqué tant que tout n'est pas coché", () => {
   });
 
   it("horodate chaque consentement", () => {
-    const cases = toggleAgreement(initAgreements("PASS AL BARAKA"), "accepte_cgv");
-    const cgv = cases.find((c) => c.id === "accepte_cgv")!;
+    const cases = toggleAgreement(initAgreements("PASS AL BARAKA"), "contrat_cgv");
+    const cgv = cases.find((c) => c.id === "contrat_cgv")!;
     expect(cgv.checked).toBe(true);
     expect(cgv.checked_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });

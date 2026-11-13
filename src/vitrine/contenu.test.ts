@@ -53,6 +53,7 @@ describe("textes repris mot pour mot du cahier", () => {
         if (["maison", "cible", "coche"].includes(t)) continue; // noms d'icônes
         if (["histoire", "mission", "retours"].includes(t)) continue; // ancres
         if (C.TEXTES_HORS_CAHIER.includes(t)) continue; // réécrits le 29/09/2026 (agenda Calendly)
+        if (C.TEXTES_CONTRATS_V3.includes(t)) continue; // réécrits le 13/11/2026 (contrats v3 : plus de « formation »)
         expect(CAHIER.includes(t), `absent du cahier : « ${t} »`).toBe(true);
       }
     });
@@ -79,8 +80,13 @@ describe("textes repris mot pour mot du cahier", () => {
     expect(CAHIER).toContain(`« ${phrase} »`);
   });
 
-  it("l'étiquette mobile de l'accueil est celle du cahier", () => {
-    expect(CAHIER).toContain(`${C.ACCUEIL.etiquette} (mobile : ${C.ACCUEIL.etiquetteMobile})`);
+  it("l'étiquette de l'accueil ne vend plus de « formation » (contrats v3, 13/11/2026)", () => {
+    // Le cahier du site disait « Formation & accompagnement entrepreneurial » : réécrit
+    // pour coller au contrat (accès au programme vendu, accompagnement offert).
+    expect(C.ACCUEIL.etiquette).toBe("Programme & communauté entrepreneuriale");
+    expect(C.ACCUEIL.etiquetteMobile).toBe("Programme entrepreneurial");
+    const tout = [C.ACCUEIL.etiquette, C.ACCUEIL.sousTitre, C.MISSION.phrase, C.REFERENCEMENT.titre, C.REFERENCEMENT.description].join(" ");
+    expect(tout).not.toMatch(/formation/i);
   });
 
   it("la raison sociale n'est jamais « AL BARAKA » dans le consentement", () => {

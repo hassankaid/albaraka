@@ -51,31 +51,22 @@ export const DATE_MISE_A_JOUR = "02/11/2026";
  * page et le PDF ne peuvent donc pas diverger. Publier une version 2 suppose
  * de régénérer le PDF sous un nouveau nom et de laisser l'ancien en place.
  */
-export const PDF_CGV = "/cgv/cgv-2026-11-02.pdf";
+export const PDF_CGV = "/cgv/cgv-2026-11-13.pdf";
 
-// ─────────────────────────────────────────────────────────────────────────
-// CGV version 2 du 02/11/2026 (demande de Sidali, validée par Hassan).
-//
-// La version 1 disait que les contenus se « déverrouillent progressivement »
-// (article 3) et, en paiement fractionné, « au fur et à mesure du règlement des
-// échéances » (article 7.4). Ce n'est plus vrai : le client a accès à tout dès
-// l'ouverture de son accès, et l'accès n'est suspendu qu'en cas d'impayé
-// (article 8). Seules ces trois lignes changent ; la version 1 reste en ligne
-// (/cgv/cgv-2026-09-25.pdf), c'est elle que les clients d'avant ont acceptée.
-// ─────────────────────────────────────────────────────────────────────────
-const CGV_V2_ARTICLE_3_OBJET =
-  "Le Vendeur commercialise un accès à la Plateforme AL BARAKA. Dès l'ouverture de son accès, le Client accède à la totalité des contenus et des outils mis à sa disposition dans le cadre de l'offre souscrite.";
-const CGV_V2_ARTICLE_3_PRESENTATION =
-  "Les contenus et outils accessibles ainsi que le prix de chaque offre sont présentés sur sa page de présentation et rappelés avant la validation de la commande, conformément aux articles L. 111-1 et L. 221-5 du Code de la consommation.";
-const CGV_V2_ARTICLE_7_4 =
-  "7.4. Paiement en plusieurs fois : lorsqu'il est proposé, le paiement fractionné est accordé sans frais ni intérêts. L'échéancier (nombre, montants et dates des débits) est communiqué avant la validation de la commande. L'accès à la totalité de la Plateforme est ouvert dès le règlement de la première échéance ; il peut être suspendu en cas d'échéance impayée, dans les conditions de l'article 8. Le Client autorise le débit automatique de chaque échéance sur la carte bancaire enregistrée.";
+/** Date de la version des CGV en ligne (version 3). La politique de confidentialité garde la sienne. */
+export const DATE_CGV = "13/11/2026";
 
-/** Les lignes réécrites par la version 2 des CGV : `textes.test.ts` les exempte, elles seules. */
-export const LIGNES_CGV_V2: readonly string[] = [
-  CGV_V2_ARTICLE_3_OBJET,
-  CGV_V2_ARTICLE_3_PRESENTATION,
-  CGV_V2_ARTICLE_7_4,
-];
+// ─────────────────────────────────────────────────────────────────
+// CGV version 3 du 13/11/2026 (cahier des charges de Sidali du 12/11/2026,
+// contrats v3) : le texte des CGV corrigées de Sidali, repris MOT POUR MOT
+// (fixture __fixtures__/cgv-v3-sidali-2026-11-12.txt, comparée par
+// textes.test.ts). Ce qui change : accompagnement et communauté offerts hors
+// prix (3.3), plus de garantie de chiffre d'affaires (4), plus d'indemnité de
+// 50 € (8), rétractation fermée dès l'accès avec renonciation obligatoire (10),
+// conformité islamique de la vente (18), et plus de mot « formation ».
+// Les versions 1 (/cgv/cgv-2026-09-25.pdf) et 2 (/cgv/cgv-2026-11-02.pdf)
+// restent en ligne : c'est ce que les clients d'avant ont accepté.
+// ─────────────────────────────────────────────────────────────────
 
 export const MENTIONS_LEGALES: PageLegale = {
   chemin: "/mentions-legales",
@@ -214,6 +205,7 @@ export const CGV: PageLegale = {
   titre: "Conditions générales de vente",
   titreOnglet: "Conditions générales de vente — AL BARAKA",
   dateDeMiseAJour: true,
+  miseAJour: DATE_CGV,
   lignes: [
     "Article 1 – Identification du vendeur",
     "Les présentes conditions générales de vente (« CGV ») s'appliquent aux ventes conclues avec ETHICARENA L.L.C-FZ, propriétaire et exploitante de la marque et de la plateforme AL BARAKA :",
@@ -230,44 +222,49 @@ export const CGV: PageLegale = {
     "2.4. Lorsqu'une offre fait l'objet d'un contrat spécifique signé par le Client, les stipulations de ce contrat prévalent sur les présentes CGV en cas de contradiction, sous réserve des droits impératifs dont bénéficie le Client consommateur.",
     "2.5. Les dispositions protectrices des consommateurs prévues par la loi s'appliquent au Client consommateur. Elles s'appliquent aussi au Client professionnel employant cinq salariés au plus, lorsque l'objet du contrat n'entre pas dans le champ de son activité principale.",
     "Article 3 – Objet de la vente",
-    CGV_V2_ARTICLE_3_OBJET,
-    CGV_V2_ARTICLE_3_PRESENTATION,
+    "3.1. Le Vendeur commercialise un accès à des contenus numériques fournis sans support matériel sur la Plateforme AL BARAKA. Dès l'ouverture de son accès, le Client accède à la totalité des contenus et des outils prévus par l'offre souscrite.",
+    "3.2. Les contenus et outils accessibles, la durée d'accès garantie et le prix de chaque offre sont présentés sur sa page de présentation, détaillés dans le contrat de l'offre et rappelés avant la validation de la commande, conformément aux articles L. 111-1 et L. 221-5 du Code de la consommation.",
+    "3.3. Certaines offres s'accompagnent d'éléments offerts à titre gracieux : accompagnement en groupe, accès à la communauté, disponibilité des accompagnants. Ces éléments ne sont pas inclus dans le prix et ne constituent pas une prestation due au titre de la vente. Leur utilisation ou leur non-utilisation est sans effet sur le prix et sur les obligations de paiement du Client.",
     "Article 4 – Résultats non garantis",
-    "L'accès à la Plateforme relève d'une obligation de moyens. Il ne garantit aucun résultat, notamment financier. Les résultats dépendent de l'implication du Client, de ses compétences, de sa situation de départ et du contexte de marché. Les éventuelles garanties spécifiques prévues par un contrat signé s'appliquent dans les conditions strictement définies par ce contrat.",
+    "L'accès à la Plateforme relève d'une obligation de moyens. Il ne garantit aucun résultat, notamment financier. Les résultats dépendent de l'implication du Client, de ses compétences, de sa situation de départ et du contexte de marché. La seule garantie accordée est la garantie d'accès prévue au contrat de l'offre souscrite.",
     "Article 5 – Prix",
     "5.1. Les prix sont indiqués en euros. TVA non applicable.",
-    "5.2. Le Vendeur peut modifier ses prix à tout moment. Les commandes déjà validées ne sont pas concernées.",
-    "5.3. Les éventuels frais bancaires ou de change facturés par la banque du Client restent à sa charge.",
+    "5.2. Le prix d'une offre est identique quel que soit le mode de paiement choisi.",
+    "5.3. Le Vendeur peut modifier ses prix à tout moment. Les commandes déjà validées ne sont pas concernées.",
+    "5.4. Les éventuels frais bancaires ou de change facturés par la banque du Client restent à sa charge.",
     "Article 6 – Commande",
     "6.1. La commande est passée sur la Plateforme ou via un lien de paiement sécurisé transmis par le Vendeur. Avant de valider, le Client peut vérifier le détail de sa commande et son prix total, et corriger d'éventuelles erreurs.",
-    "6.2. La validation de la commande implique une obligation de paiement. Le Vendeur confirme la commande par email. Cet email constitue la confirmation du contrat sur support durable et reprend l'accord du Client pour l'accès immédiat à la Plateforme ainsi que sa renonciation au droit de rétractation (article 10).",
+    "6.2. La validation de la commande implique une obligation de paiement. Le Vendeur confirme la commande par email, avec en pièce jointe le contrat signé, l'attestation de demande d'accès immédiat et de renonciation, et les présentes CGV. Cet envoi constitue la confirmation du contrat sur support durable et reprend l'accord du Client pour l'accès immédiat et sa renonciation au droit de rétractation (article 10).",
     "6.3. Le Vendeur peut refuser une commande en cas de litige de paiement antérieur avec le Client ou de manquement grave de celui-ci aux présentes CGV.",
     "Article 7 – Paiement",
     "7.1. Le paiement s'effectue exclusivement par carte bancaire, via notre prestataire de paiement sécurisé Stripe. Les données bancaires sont chiffrées et traitées par Stripe. Le Vendeur n'y a jamais accès en intégralité.",
     "7.2. Paiement comptant : sauf mention contraire, le prix est exigible en totalité à la commande.",
-    "7.3. Paiement mensuel avec engagement : lorsqu'une offre est proposée sous forme d'abonnement avec durée d'engagement, le Client s'engage à régler chaque mensualité jusqu'au terme de la durée d'engagement indiquée avant la commande.",
-    CGV_V2_ARTICLE_7_4,
+    "7.3. Paiement en plusieurs fois : lorsqu'il est proposé, le paiement fractionné est une facilité accordée sans frais, sans intérêt et sans majoration. Ce n'est pas un abonnement : le Client est redevable de la totalité du prix dès la conclusion du contrat, qu'il se connecte ou non à la Plateforme : la mise à disposition de l'accès suffit. L'échéancier (nombre, montants et dates des débits) est communiqué avant la validation de la commande. Le Client autorise le débit automatique de chaque échéance sur la carte bancaire enregistrée.",
+    "7.4. Le Client qui prévoit une difficulté de paiement peut demander, avant la date d'une échéance, un ajustement de son échéancier. Un ajustement peut modifier les dates ou les montants des échéances, jamais le prix total.",
     "7.5. Le Client garantit être titulaire du moyen de paiement utilisé ou autorisé à l'utiliser.",
     "Article 8 – Retard ou défaut de paiement",
-    "8.1. Aucun intérêt de retard n'est appliqué.",
-    "8.2. En cas d'échec d'un paiement, le Client en est informé et dispose d'un délai pour régulariser. À défaut, une mise en demeure lui est adressée par email ou par courrier. Si la somme due n'est pas réglée dans un délai de 15 jours suivant la mise en demeure :",
-    "l'accès du Client à la Plateforme peut être suspendu jusqu'à régularisation ;",
-    "une indemnité forfaitaire de 50 € correspondant aux frais administratifs de traitement peut être réclamée ;",
-    "le Vendeur peut engager toute procédure de recouvrement amiable ou judiciaire des sommes restant dues.",
+    "8.1. Aucune pénalité, aucun intérêt de retard, aucune indemnité et aucun frais ne sont mis à la charge du Client en cas de retard.",
+    "8.2. En cas d'échec d'un paiement, le Client en est informé et dispose d'un délai pour régulariser. À défaut, une mise en demeure lui est adressée par email ou par courrier. Si la somme due n'est pas réglée dans un délai de 15 jours suivant la mise en demeure, le Vendeur peut :",
+    "suspendre l'accès du Client à la Plateforme et aux éléments offerts jusqu'à régularisation ;",
+    "exiger le paiement immédiat du solde restant dû ;",
+    "engager toute procédure de recouvrement amiable ou judiciaire des sommes restant dues.",
     "8.3. Les frais de recouvrement restent à la charge du Vendeur, sauf décision de justice contraire.",
     "Article 9 – Accès à la Plateforme",
-    "9.1. Ouverture de l'accès : l'accès est ouvert après la validation du paiement ou de la première échéance, au moyen d'identifiants personnels créés par le Client ou transmis par email.",
-    "9.2. Durée d'accès : la durée d'accès est indiquée sur la page de chaque offre. À défaut de précision, l'accès est accordé pour la durée de l'offre souscrite.",
+    "9.1. Ouverture de l'accès : l'accès est ouvert après la validation du paiement ou de la première échéance, au moyen d'identifiants personnels créés par le Client ou transmis par email, sous réserve de l'article 10.",
+    "9.2. Durée d'accès : la durée d'accès garantie est indiquée dans le contrat de chaque offre. Pour le Pass AL BARAKA, elle est de douze (12) mois à compter de l'activation de l'accès.",
     "9.3. Accès personnel : l'accès est strictement personnel, incessible et intransmissible. Le partage des identifiants, la revente ou la diffusion des accès est interdit. En cas de manquement constaté, le Vendeur peut, après une mise en demeure restée sans effet sous 8 jours, suspendre ou résilier l'accès du Client. En cas de manquement grave (revente, diffusion publique des contenus), la suspension peut être immédiate.",
     "9.4. Disponibilité : la Plateforme est accessible 24 h/24 et 7 j/7, sauf maintenance, mise à jour ou incident technique. Le Vendeur s'efforce de rétablir l'accès dans les meilleurs délais.",
     "9.5. Équipement : le Client doit disposer d'un équipement et d'une connexion internet permettant d'utiliser la Plateforme (ordinateur, tablette ou smartphone récent, navigateur à jour).",
     "9.6. Mises à jour : les contenus de la Plateforme peuvent être mis à jour ou enrichis. Le Client accède à la version en vigueur, sans que cela réduise les caractéristiques essentielles de l'offre souscrite.",
-    "Article 10 – Renonciation au droit de rétractation – Absence de remboursement",
-    "Avant la validation de sa commande, le Client demande expressément l'accès immédiat à la Plateforme et reconnaît renoncer à son droit de rétractation, en cochant la case prévue à cet effet, conformément à l'article L. 221-28 du Code de la consommation. Cette renonciation est également prévue dans son contrat et confirmée dans l'email de confirmation de commande.",
-    "En conséquence, aucune rétractation ni aucun remboursement n'est accordé une fois la commande validée et l'accès ouvert, sauf disposition légale impérative contraire.",
+    "Article 10 – Droit de rétractation – Accès immédiat – Absence de remboursement",
+    "10.1. Le droit de rétractation de quatorze (14) jours prévu pour les contrats conclus à distance ne s'applique pas aux offres AL BARAKA. Elles portent sur des contenus numériques fournis sans support matériel, dont l'accès est ouvert immédiatement à la demande du Client.",
+    "10.2. Conformément à l'article L. 221-28, 13° du Code de la consommation, ce droit ne peut pas être exercé pour la fourniture de contenus numériques sans support matériel dont l'exécution a commencé après l'accord préalable et exprès du Client et sa renonciation expresse à son droit de rétractation.",
+    "10.3. Avant la validation de sa commande, le Client demande l'accès immédiat à la Plateforme et reconnaît perdre son droit de rétractation dès l'activation de cet accès, en cochant la case prévue à cet effet. Cet accord est repris dans son contrat et confirmé dans l'email de confirmation de commande.",
+    "10.4. Cette case est obligatoire : aucune commande ne peut être validée sans cet accord. L'accès est ouvert dès la validation du premier paiement.",
+    "10.5. En conséquence, aucune rétractation ni aucun remboursement n'est accordé une fois l'accès ouvert à la demande du Client, sauf disposition légale impérative contraire. Les éléments offerts mentionnés à l'article 3.3 n'étant pas inclus dans le prix, leur utilisation ou leur abandon est sans effet sur ce point.",
     "Article 11 – Garantie légale de conformité",
     "11.1. Le Vendeur est tenu de fournir des contenus et services numériques conformes au contrat. Le Client consommateur bénéficie de la garantie légale de conformité prévue aux articles L. 224-25-1 et suivants du Code de la consommation.",
-    "11.2. En cas de défaut de conformité, le Client peut obtenir la mise en conformité du contenu ou du service. À défaut, il peut obtenir une réduction du prix ou la résolution du contrat, dans les conditions prévues par la loi. Pour une fourniture continue (abonnement, accès sur une durée), la garantie s'applique pendant toute la durée de fourniture.",
+    "11.2. En cas de défaut de conformité, le Client peut obtenir la mise en conformité du contenu ou du service. À défaut, il peut obtenir une réduction du prix ou la résolution du contrat, dans les conditions prévues par la loi. Pour une fourniture continue (accès sur une durée), la garantie s'applique pendant toute la durée de fourniture.",
     "11.3. Pour signaler un défaut, le Client écrit à contact@ethicarena.com en décrivant le problème rencontré.",
     "Article 12 – Propriété intellectuelle et confidentialité",
     "12.1. L'ensemble des contenus de la Plateforme (vidéos, textes, méthodes, outils, modules, visuels, marque AL BARAKA) est la propriété exclusive d'ETHICARENA L.L.C-FZ.",
@@ -277,7 +274,7 @@ export const CGV: PageLegale = {
     "Le Client s'engage à :",
     "fournir des informations exactes lors de sa commande et les tenir à jour ;",
     "utiliser la Plateforme dans le respect des lois en vigueur et des droits des tiers ;",
-    "respecter les règles de courtoisie dans l'espace communautaire et dans ses échanges avec les autres membres et l'équipe. Le harcèlement, les propos haineux, la sollicitation commerciale non autorisée des membres et toute manipulation d'autrui sont interdits ;",
+    "respecter les règles de courtoisie dans l'espace communautaire et dans ses échanges avec les autres membres et l'équipe ; le harcèlement, les propos haineux, la sollicitation commerciale non autorisée des membres et toute manipulation d'autrui sont interdits ;",
     "accomplir lui-même les formalités administratives, fiscales et sociales liées à sa propre activité ;",
     "sauvegarder, s'il le souhaite, les documents mis à sa disposition.",
     "En cas de manquement grave à ces obligations, le Vendeur peut, après mise en demeure restée sans effet, suspendre ou résilier l'accès du Client à l'espace communautaire ou à la Plateforme. Si le manquement le justifie, la suspension peut être immédiate.",
@@ -292,8 +289,17 @@ export const CGV: PageLegale = {
     "Pour toute question ou réclamation : contact@ethicarena.com. Le Vendeur s'engage à répondre dans les meilleurs délais.",
     "Article 17 – Droit applicable et juridiction",
     "17.1. Les présentes CGV sont soumises au droit français. Le Client consommateur conserve en tout état de cause le bénéfice des dispositions impératives de la loi de son pays de résidence habituelle (article 6 du Règlement (CE) n° 593/2008 « Rome I »).",
-    "17.2. En cas de litige, les parties rechercheront d'abord une solution amiable. À défaut, le Client consommateur peut saisir, à son choix, la juridiction du lieu où il demeurait au moment de la conclusion du contrat ou celle du lieu de survenance du fait dommageable. Pour les Clients professionnels, les tribunaux de Paris sont compétents.",
-    "Article 18 – Divers",
+    "17.2. En cas de litige, les parties recherchent d'abord une solution amiable.",
+    "17.3. À défaut d'accord amiable, le Client consommateur peut saisir, à son choix, la juridiction du lieu où il demeurait au moment de la conclusion du contrat ou celle du lieu de survenance du fait dommageable. Pour les Clients professionnels, les tribunaux de Paris sont compétents.",
+    "Article 18 – Conformité de la vente",
+    "Le Vendeur entend proposer des ventes conformes aux règles islamiques des transactions. À cette fin :",
+    "la vente est conclue par l'offre et l'acceptation des deux parties ;",
+    "l'objet vendu et sa durée d'accès garantie sont déterminés ;",
+    "le prix est déterminé et connu dès la commande, et identique quel que soit le mode de paiement ;",
+    "aucun intérêt, aucune majoration et aucune pénalité ne s'ajoutent au prix, y compris en cas de retard ;",
+    "les éléments offerts mentionnés à l'article 3.3 sont un don du Vendeur et non une contrepartie du prix ;",
+    "les sommes restant à payer constituent une dette du Client envers le Vendeur.",
+    "Article 19 – Divers",
     "Si une clause des présentes CGV était déclarée nulle, les autres clauses resteraient en vigueur. Le fait pour le Vendeur de ne pas se prévaloir d'une clause ne vaut pas renonciation à s'en prévaloir ultérieurement.",
   ],
 };

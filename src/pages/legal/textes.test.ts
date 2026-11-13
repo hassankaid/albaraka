@@ -23,7 +23,7 @@ import {
   PAGES_LEGALES,
   DATE_MISE_A_JOUR,
   LIGNES_HORS_DOCUMENT,
-  LIGNES_CGV_V2,
+  DATE_CGV,
 } from "./textes";
 
 const source = readFileSync(
@@ -32,6 +32,13 @@ const source = readFileSync(
 );
 const lignesSource = source.split("\n").map((l) => l.trim()).filter(Boolean);
 
+// CGV version 3 (13/11/2026) : le document de Sidali (CGV corrigées du 12/11/2026).
+const sourceCgvV3 = readFileSync(
+  resolve(process.cwd(), "src/pages/legal/__fixtures__/cgv-v3-sidali-2026-11-12.txt"),
+  "utf-8",
+);
+const lignesCgvV3 = sourceCgvV3.split("\n").map((l) => l.trim().replace(/^•\s*/, "").trim()).filter(Boolean);
+
 /** Le document contient-il cette ligne, telle quelle ? */
 const presente = (ligne: string) => lignesSource.includes(ligne);
 
@@ -39,17 +46,23 @@ describe("fidélité au document d'Ethicarena", () => {
   it.each([
     ["mentions légales", MENTIONS_LEGALES],
     ["politique de confidentialité", POLITIQUE_CONFIDENTIALITE],
-    ["conditions générales de vente", CGV],
   ])("chaque ligne des %s figure mot pour mot dans le document", (_nom, page) => {
-    // Exemptées, elles seules : les lignes réécrites le 30/09/2026 (retrait du bandeau
-    // cookies) et les trois lignes de la version 2 des CGV (02/11/2026).
-    const absentes = page.lignes.filter((l) => !presente(l) && !LIGNES_HORS_DOCUMENT.includes(l) && !LIGNES_CGV_V2.includes(l));
+    // Exemptées, elles seules : les lignes réécrites le 30/09/2026 (retrait du bandeau cookies).
+    const absentes = page.lignes.filter((l) => !presente(l) && !LIGNES_HORS_DOCUMENT.includes(l));
     expect(absentes, `lignes introuvables dans le document source :\n${absentes.join("\n")}`)
       .toEqual([]);
   });
 
-  it("ne perd aucun article des CGV — de 1 à 18", () => {
-    for (let n = 1; n <= 18; n++) {
+  it("chaque ligne des CGV (version 3) figure mot pour mot dans le document de Sidali, et rien n'y manque", () => {
+    const absentes = CGV.lignes.filter((l) => !lignesCgvV3.includes(l));
+    expect(absentes, `lignes introuvables dans les CGV corrigées :\n${absentes.join("\n")}`).toEqual([]);
+    const debut = lignesCgvV3.findIndex((l) => l.startsWith("Article 1 –"));
+    const fin = lignesCgvV3.findIndex((l) => l.startsWith("ETHICARENA L.L.C-FZ — Licence"));
+    expect(CGV.lignes).toEqual(lignesCgvV3.slice(debut, fin));
+  });
+
+  it("ne perd aucun article des CGV — de 1 à 19", () => {
+    for (let n = 1; n <= 19; n++) {
       const trouve = CGV.lignes.some((l) => l.startsWith(`Article ${n} `));
       expect(trouve, `l'article ${n} des CGV manque`).toBe(true);
     }
@@ -76,7 +89,7 @@ describe("ce qui rendrait les pages juridiquement fausses", () => {
     const texte = CGV.lignes.join("\n");
     expect(texte).not.toMatch(/déverrouill|au fur et à mesure|progressivement/);
     expect(texte).toContain("la totalité des contenus et des outils");
-    expect(DATE_MISE_A_JOUR).toBe("02/11/2026");
+    expect(DATE_CGV).toBe("13/11/2026");
   });
 
   it("ne promet plus un consentement aux cookies que le site ne demande plus", () => {

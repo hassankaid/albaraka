@@ -87,3 +87,7 @@ verify_jwt = false
 
 [functions.organisation-remarque]
 verify_jwt = false
+
+[functions.contrat-v3-envoyer]
+# Contrats v3 (13/11/2026) : appelée par stripe-webhook (clé service) ou par le CEO ; le code vérifie lui-même qui appelle.
+verify_jwt = false

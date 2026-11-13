@@ -126,7 +126,10 @@ type TemplateFilter =
   | "pass_standard"
   | "pass_conference"
   | "liberty_standard"
-  | "liberty_conference";
+  | "liberty_conference"
+  | "pass_v3"
+  | "liberty_v3"
+  | "carte_v3";
 type DateRange = "all" | "today" | "7d" | "30d" | "90d";
 
 const PAGE_SIZE = 50;
@@ -152,13 +155,20 @@ function templateLabel(key: string): string {
       return "Liberty";
     case "liberty_conference":
       return "Liberty (conf.)";
+    // Contrats v3 (13/11/2026) : acceptés au paiement, PDF unique envoyé au client.
+    case "pass_v3":
+      return "Pass AL BARAKA (v3)";
+    case "liberty_v3":
+      return "Liberty (v3)";
+    case "carte_v3":
+      return "Module à la carte (v3)";
     default:
       return key;
   }
 }
 
 function templateToPassType(key: string): "al_baraka" | "liberty" {
-  return key.startsWith("pass") ? "al_baraka" : "liberty";
+  return key.startsWith("pass") || key === "carte_v3" ? "al_baraka" : "liberty";
 }
 
 function relativeFr(iso: string | null): string {
@@ -501,6 +511,9 @@ export default function AdminContracts() {
             <SelectItem value="pass_conference">Pass AL BARAKA (conf.)</SelectItem>
             <SelectItem value="liberty_standard">Liberty</SelectItem>
             <SelectItem value="liberty_conference">Liberty (conf.)</SelectItem>
+            <SelectItem value="pass_v3">Pass AL BARAKA (v3)</SelectItem>
+            <SelectItem value="liberty_v3">Liberty (v3)</SelectItem>
+            <SelectItem value="carte_v3">Module à la carte (v3)</SelectItem>
           </SelectContent>
         </Select>
         <Select

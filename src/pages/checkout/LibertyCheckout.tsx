@@ -31,6 +31,7 @@ import { EngagementChecklist } from "@/components/checkout/EngagementChecklist";
 import { MentionsPaiement } from "@/components/checkout/MentionsPaiement";
 import { MentionFormulaire } from "@/components/legal/MentionFormulaire";
 import { initAgreements, allAgreed, type AgreementItem, LIBELLE_BOUTON_PAIEMENT } from "@/lib/checkout-agreements";
+import { ApercuContratV3 } from "@/components/checkout/ApercuContratV3";
 import { verifierEmail } from "@/lib/emailValide";
 
 const TOTAL_EUR = 5000;
@@ -1337,7 +1338,7 @@ function CheckoutForm({
     if (!billing.postal_code.trim()) return "Code postal requis";
     if (!billing.city.trim()) return "Ville requise";
     if (!billing.country.trim()) return "Pays requis";
-    if (!allAgreed(agreements)) return "Tu dois cocher les 5 engagements avant de continuer";
+    if (!allAgreed(agreements)) return "Tu dois cocher tous les engagements avant de continuer";
     return null;
   }
 
@@ -1842,6 +1843,18 @@ function CheckoutForm({
         couleur={THEME.creamMuted}
         couleurLien={THEME.cream}
         taille={10.5}
+      />
+      {/* Contrats v3 (13/11/2026) : le paiement vaut signature, le client voit
+          donc le contrat pré-rempli avant de cocher la case 1. */}
+      <ApercuContratV3
+        offre="liberty"
+        client={billing}
+        prixTotal={totalAfterDiscount}
+        prixCatalogue={TOTAL_EUR}
+        codePromo={coupon.status === "valid" ? coupon.code : null}
+        nbEcheances={installments}
+        montantAEcheancer={payableTotal}
+        theme={{ gold: THEME.gold, goldBright: THEME.goldBright, cream: THEME.cream, creamMuted: THEME.creamMuted }}
       />
       <EngagementChecklist
         agreements={agreements}

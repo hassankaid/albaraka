@@ -10,7 +10,7 @@
 //
 // Publier une version 2 des CGV :
 //   1. modifier les textes dans src/pages/legal/textes.ts ;
-//   2. changer DATE_MISE_A_JOUR et PDF_CGV (nouveau nom de fichier daté) ;
+//   2. changer DATE_CGV et PDF_CGV (nouveau nom de fichier daté) ;
 //   3. relancer ce script ;
 //   4. LAISSER l'ancien PDF en place — c'est l'archive, et elle sert à
 //      prouver ce qu'un client a accepté avant la mise à jour.
@@ -35,7 +35,7 @@ function constante(nom) {
   return m[1];
 }
 
-const dateVersion = constante("DATE_MISE_A_JOUR");
+const dateVersion = constante("DATE_CGV");
 const chemin = constante("PDF_CGV");
 
 /** Les lignes des CGV, dans l'ordre, telles qu'elles sont publiées. */

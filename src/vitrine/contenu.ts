@@ -28,11 +28,11 @@ export const MENU = {
 } as const;
 
 export const ACCUEIL = {
-  etiquette: "Formation & accompagnement entrepreneurial",
-  etiquetteMobile: "Accompagnement entrepreneurial",
+  etiquette: "Programme & communauté entrepreneuriale",
+  etiquetteMobile: "Programme entrepreneurial",
   titre: "Bâtissez une activité qui vous {ressemble.}",
   sousTitre:
-    "Un accompagnement d’exception pour construire, lancer et développer votre activité digitale, de l’offre jusqu’à la vente.",
+    "Un programme d’exception pour construire, lancer et développer votre activité digitale, de l’offre jusqu’à la vente, avec une communauté et un accompagnement offerts.",
   boutonPrincipal: "Prendre rendez-vous",
   boutonSecondaire: "Notre histoire",
   preuveForte: "Plus de 340 membres",
@@ -61,7 +61,7 @@ export const HISTOIRE = {
 export const MISSION = {
   etiquette: "Notre mission",
   phrase:
-    "Transmettre des compétences concrètes, avec éthique, et accompagner chaque membre {jusqu’au résultat.}",
+    "Transmettre des compétences concrètes, avec éthique, et faire grandir chaque membre {au sein de la communauté.}",
   piliers: [
     {
       icone: "maison",
@@ -180,9 +180,9 @@ export const PIED_DE_PAGE = {
 
 /** Chapitre 8.2 et 8.3. */
 export const REFERENCEMENT = {
-  titre: "AL BARAKA Écosystème – Formation et accompagnement entrepreneurial",
+  titre: "AL BARAKA Écosystème – Programme et communauté entrepreneuriale",
   description:
-    "Construisez, lancez et développez votre activité digitale avec un accompagnement éthique et exigeant. Plus de 340 membres accompagnés.",
+    "Construisez, lancez et développez votre activité digitale avec un programme éthique et exigeant. Plus de 340 membres.",
   altPortrait: "Portrait de Sidali, fondateur d’AL BARAKA Écosystème",
   altLogo: "AL BARAKA Écosystème by Ethicarena",
 } as const;
@@ -193,6 +193,21 @@ export const REFERENCEMENT = {
  * formulaire. `contenu.test.ts` les exempte de la comparaison mot pour mot —
  * et n'exempte qu'eux.
  */
+/**
+ * Contrats v3 (13/11/2026, demande de Sidali) : le site ne vend plus de « formation »
+ * et présente l'accompagnement comme offert, pour dire la même chose que le contrat
+ * (accès au programme vendu, accompagnement et communauté offerts hors prix).
+ * Réécrits hors du cahier du site ; `contenu.test.ts` les exempte, eux seuls.
+ */
+export const TEXTES_CONTRATS_V3: readonly string[] = [
+  ACCUEIL.etiquette,
+  ACCUEIL.etiquetteMobile,
+  ACCUEIL.sousTitre,
+  MISSION.phrase,
+  REFERENCEMENT.titre,
+  REFERENCEMENT.description,
+];
+
 export const TEXTES_HORS_CAHIER: readonly string[] = [
   RENDEZ_VOUS.texte,
   MERCI.etiquette,

@@ -1,4 +1,13 @@
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  contratDepuisCommande,
+  estCompactV3,
+  numeroContratV3,
+  offreDeFormule,
+  VERSION_CGV_V3,
+  VERSION_CONTRAT_V3,
+  type OffreV3,
+} from "../_shared/contrat_v3.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -187,6 +196,166 @@ function expandAgreementsCompact(compact: string, formula: string): AgreementSna
     .filter((a): a is AgreementSnapshot => a !== null);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// CONTRATS V3 (13/11/2026) — le paiement vaut signature.
+//
+// Une commande v3 se reconnaît à sa case 1 « contrat_cgv » (snapshot compact).
+// Le contrat est créé directement « signé » : le client l'a vu pré-rempli sur la
+// page de paiement, a coché « J'ai lu et j'accepte le contrat et les CGV » puis
+// cliqué « Commander avec obligation de paiement ». L'accès, la dette et la
+// renonciation démarrent à ce premier paiement. Le PDF unique (contrat +
+// attestation de renonciation + CGV) est produit et envoyé par la fonction
+// `contrat-v3-envoyer`. Textes : supabase/functions/_shared/contrat_v3.ts.
+// ═══════════════════════════════════════════════════════════════════════════
+interface ArgsContratV3 {
+  saleId: string;
+  contactId: string | null;
+  buyerProfileId: string | null;
+  offre: OffreV3;
+  module?: string | null;
+  couponCode: string | null;
+  amountTotal: number;
+  amountOriginal: number;
+  discountAmount: number;
+  /** Montants des échéances, en euros, dans l'ordre. */
+  echeances: number[];
+  paymentModality: string;
+  firstPaymentDate: string;
+  customer: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    address: string;
+    postal_code: string;
+    city: string;
+    country: string;
+  };
+  agreementsCompact: string;
+  intentId?: string | null;
+}
+
+async function creerContratV3(
+  supabase: SupabaseClient,
+  args: ArgsContratV3,
+): Promise<{ id: string; contract_number: string } | null> {
+  const { data: existing } = await supabase
+    .from("client_contracts")
+    .select("id, contract_number")
+    .eq("sale_id", args.saleId)
+    .maybeSingle();
+  if (existing) return existing as { id: string; contract_number: string };
+
+  const now = new Date();
+  const { data: numberData, error: numberErr } = await supabase.rpc("next_contract_number", {
+    p_year: now.getUTCFullYear(),
+    p_month: now.getUTCMonth() + 1,
+  });
+  if (numberErr || !numberData) {
+    console.error("[contrat-v3] next_contract_number failed", numberErr);
+    return null;
+  }
+  const numero = numeroContratV3(args.offre, numberData as string);
+
+  // Preuve enregistrée par create-payment-intent (IP, navigateur) : par l'intent
+  // quand on l'a, sinon la plus récente de cet email (abonnement, lien différé).
+  type Preuve = { adresse_ip: string | null; navigateur: string | null };
+  let preuve: Preuve | null = null as Preuve | null;
+  if (args.intentId) {
+    const { data } = await supabase
+      .from("preuves_consentement")
+      .select("adresse_ip, navigateur")
+      .eq("stripe_intent_id", args.intentId)
+      .maybeSingle();
+    preuve = (data as Preuve | null) ?? null;
+  }
+  if (!preuve) {
+    const { data } = await supabase
+      .from("preuves_consentement")
+      .select("adresse_ip, navigateur")
+      .eq("email", args.customer.email)
+      .gte("cree_le", new Date(Date.now() - 12 * 3600 * 1000).toISOString())
+      .order("cree_le", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    preuve = (data as Preuve | null) ?? null;
+  }
+
+  const { cases, accepteLe, donnees } = contratDepuisCommande({
+    offre: args.offre,
+    module: args.module ?? null,
+    numero,
+    couponCode: args.couponCode,
+    amountTotal: args.amountTotal,
+    discountAmount: args.discountAmount,
+    echeances: args.echeances,
+    firstPaymentDate: args.firstPaymentDate,
+    customer: args.customer,
+    agreementsCompact: args.agreementsCompact,
+    ip: preuve?.adresse_ip ?? null,
+    maintenant: now.toISOString(),
+  });
+  const n = Math.max(1, args.echeances.length);
+
+  const { data: inserted, error } = await supabase
+    .from("client_contracts")
+    .insert({
+      contract_number: numero,
+      sale_id: args.saleId,
+      contact_id: args.contactId,
+      buyer_profile_id: args.buyerProfileId,
+      template_key: `${args.offre}_v3`,
+      client_first_name: args.customer.first_name,
+      client_last_name: args.customer.last_name,
+      client_email: args.customer.email,
+      client_phone: args.customer.phone,
+      client_address: args.customer.address,
+      client_postal_code: args.customer.postal_code,
+      client_city: args.customer.city,
+      client_country: args.customer.country,
+      amount_total: args.amountTotal,
+      amount_original: args.amountOriginal,
+      discount_amount: args.discountAmount,
+      coupon_code: args.couponCode,
+      payment_modality: args.paymentModality,
+      installments_count: n,
+      first_payment_date: args.firstPaymentDate,
+      agreements_snapshot: cases,
+      status: "signed",
+      signed_at: accepteLe,
+      signature_ip: preuve?.adresse_ip ?? null,
+      signature_user_agent: preuve?.navigateur ?? null,
+      contrat_version: VERSION_CONTRAT_V3,
+      acces_active_le: now.toISOString(),
+      donnees_contrat: { ...donnees, version_cgv: VERSION_CGV_V3, navigateur: preuve?.navigateur ?? null },
+    })
+    .select("id, contract_number")
+    .single();
+  if (error) {
+    console.error("[contrat-v3] insert failed", error);
+    return null;
+  }
+  const row = inserted as { id: string; contract_number: string };
+  console.log(`[contrat-v3] ${row.contract_number} créé (accepté au paiement) pour la vente ${args.saleId}`);
+
+  // PDF unique + e-mail. Attendu (borné) : le runtime peut s'arrêter dès la réponse.
+  try {
+    const envoi = fetch(`${SUPABASE_URL}/functions/v1/contrat-v3-envoyer`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ contract_id: row.id }),
+    }).then(async (r) => {
+      if (!r.ok) console.error(`[contrat-v3] envoi ${row.contract_number} : ${r.status} ${await r.text()}`);
+    });
+    const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime;
+    if (runtime?.waitUntil) runtime.waitUntil(envoi);
+    else await Promise.race([envoi, new Promise((r) => setTimeout(r, 25000))]);
+  } catch (e) {
+    console.error("[contrat-v3] déclenchement de l'envoi impossible", e);
+  }
+  return row;
+}
+
 /**
  * Déduit le template_key à utiliser pour générer la row client_contracts :
  *   - pass_standard / pass_conference (selon coupon is_conference)
@@ -267,8 +436,31 @@ async function ensureClientContract(
     };
     agreementsCompact: string;
     agreementsFormula: string;
+    /** Contrats v3 : montants des échéances (euros) et intent pour retrouver la preuve. */
+    echeances?: number[];
+    intentId?: string | null;
   },
 ): Promise<{ id: string; contract_number: string } | null> {
+  // Contrats v3 (13/11/2026) : commande passée avec les nouvelles cases → contrat
+  // accepté au paiement (le paiement vaut signature), PDF unique envoyé.
+  if (estCompactV3(args.agreementsCompact)) {
+    return await creerContratV3(supabase, {
+      saleId: args.saleId,
+      contactId: args.contactId,
+      buyerProfileId: args.buyerProfileId,
+      offre: args.productType === "pass_liberty" ? "liberty" : "pass",
+      couponCode: args.couponCode,
+      amountTotal: args.amountTotal,
+      amountOriginal: args.amountOriginal,
+      discountAmount: args.discountAmount,
+      echeances: args.echeances && args.echeances.length ? args.echeances : [args.amountTotal],
+      paymentModality: args.paymentModality,
+      firstPaymentDate: args.firstPaymentDate,
+      customer: args.customer,
+      agreementsCompact: args.agreementsCompact,
+      intentId: args.intentId ?? null,
+    });
+  }
   // Idempotence : sale_id UNIQUE sur client_contracts
   const { data: existing } = await supabase
     .from("client_contracts")
@@ -683,6 +875,8 @@ async function ensureBonCommandeOrder(
       },
       agreementsCompact: String(metadata.agreements_compact || ""),
       agreementsFormula: String(metadata.agreements_formula || ""),
+      echeances: breakdownCents.map((c) => c / 100),
+      intentId: ids.paymentIntentId ?? null,
     });
   } catch (e) {
     console.error(`${productCfg.logTag} ensureClientContract failed:`, e);
@@ -1006,6 +1200,47 @@ async function ensureCustomLinkOrder(
         `[custom_link/grants] applyPaymentLinkGrants failed for sale=${sale.id} link=${linkId}:`,
         e,
       );
+    }
+  }
+
+  // ── Contrats v3 (13/11/2026) : Pass, Liberty ou module à la carte vendu par lien ──
+  // Avant, une vente par lien ne produisait aucun contrat. Désormais, si le client
+  // a coché les cases v3, son contrat accepté et l'attestation lui sont envoyés.
+  const offreV3 = offreDeFormule(metadata.agreements_formula);
+  if (offreV3 && estCompactV3(metadata.agreements_compact)) {
+    try {
+      const { data: venteRow } = await supabase.from("sales").select("buyer_profile_id").eq("id", sale.id).maybeSingle();
+      const firstSpace = fullName.indexOf(" ");
+      const discount = (Number(metadata.discount_cents) || 0) / 100;
+      const echeances = breakdownCents.map((c) => c / 100);
+      await creerContratV3(supabase, {
+        saleId: sale.id,
+        contactId: contactId as string,
+        buyerProfileId: (venteRow as { buyer_profile_id?: string | null } | null)?.buyer_profile_id ?? null,
+        offre: offreV3,
+        module: offreV3 === "carte" ? productLabel : null,
+        couponCode: String(metadata.coupon_code || "") || null,
+        amountTotal: totalCents / 100,
+        amountOriginal: totalCents / 100 + discount,
+        discountAmount: discount,
+        echeances,
+        paymentModality: formatPaymentModality(installments, breakdownCents[0] ?? totalCents, breakdownCents[breakdownCents.length - 1] ?? totalCents),
+        firstPaymentDate: addMonthsISO(baseDate, 0),
+        customer: {
+          first_name: firstSpace > 0 ? fullName.slice(0, firstSpace).trim() : fullName,
+          last_name: firstSpace > 0 ? fullName.slice(firstSpace + 1).trim() : "",
+          email,
+          phone: String(metadata.customer_phone || ""),
+          address: String(metadata.customer_address || ""),
+          postal_code: String(metadata.customer_postal_code || ""),
+          city: String(metadata.customer_city || ""),
+          country: normalizeCountryToFrName(metadata.customer_country) || String(metadata.customer_country || ""),
+        },
+        agreementsCompact: String(metadata.agreements_compact || ""),
+        intentId: ids.paymentIntentId ?? null,
+      });
+    } catch (e) {
+      console.error(`[custom_link] contrat v3 non créé pour la vente ${sale.id}:`, e);
     }
   }
 

@@ -37,16 +37,16 @@ interface OfferLookup {
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
-  offer_not_found: "Cette formation n'existe pas dans le catalogue.",
+  offer_not_found: "Ce module n'existe pas dans le catalogue.",
   offer_not_a_la_carte: "Cette offre n'est pas disponible à l'achat à la carte.",
-  offer_not_active: "Cette formation n'est plus disponible à l'achat.",
-  offer_no_formation_link: "Erreur de configuration : la formation n'est pas correctement liée au catalogue. Contacte le support.",
+  offer_not_active: "Ce module n'est plus disponible à l'achat.",
+  offer_no_formation_link: "Erreur de configuration : le module n'est pas correctement lié au catalogue. Contacte le support.",
   deferred_start_must_be_future: "La date de démarrage différé doit être dans le futur.",
   deferred_start_too_far: "La date de démarrage ne peut pas être à plus de 6 mois.",
-  invalid_installments: "Le nombre de mensualités demandé n'est pas autorisé pour cette formation.",
+  invalid_installments: "Le nombre de mensualités demandé n'est pas autorisé pour ce module.",
   installments_required_in_url: "Lien invalide : le nombre de mensualités doit être précisé dans l'URL (/checkout/formation/<slug>/1, /2 ou /3).",
   rpc_failed: "Impossible de préparer le paiement. Réessaie dans quelques instants.",
-  slug_required: "URL invalide : la formation n'est pas précisée.",
+  slug_required: "URL invalide : le module n'est pas précisé.",
 };
 
 const THEME = {
@@ -119,7 +119,7 @@ export default function FormationCheckout() {
         if (installments < offer.min_installments_count || installments > offer.max_installments_count) {
           setError({
             code: "invalid_installments",
-            message: `Cette formation accepte ${offer.min_installments_count}× à ${offer.max_installments_count}× mensualités. Le lien demande ${installments}×.`,
+            message: `Ce module accepte ${offer.min_installments_count}× à ${offer.max_installments_count}× mensualités. Le lien demande ${installments}×.`,
           });
           return;
         }

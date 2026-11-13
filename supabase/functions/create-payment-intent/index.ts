@@ -20,6 +20,7 @@
 // à Stripe SANS coupon Stripe (pour précision et cohérence d'affichage).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { VERSION_CGV_V3 } from "../_shared/contrat_v3.ts";
 
 /**
  * La version des CGV acceptée, fixée CÔTÉ SERVEUR.
@@ -28,7 +29,14 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  * déclarer lui-même quelle version il a acceptée. À tenir à jour avec
  * `src/lib/checkout-agreements.ts`.
  */
-const VERSION_CGV = "02/11/2026";
+// Contrats v3 (13/11/2026) : une commande dont la case 1 est « contrat_cgv » a
+// accepté les CGV v3 ; une ancienne page encore ouverte envoie l'ancienne case.
+const VERSION_CGV_V2 = "02/11/2026";
+function versionCgvDe(snapshot: unknown): string {
+  return Array.isArray(snapshot) && snapshot.some((x) => (x as { id?: unknown })?.id === "contrat_cgv")
+    ? VERSION_CGV_V3
+    : VERSION_CGV_V2;
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -153,7 +161,7 @@ async function enregistrerPreuve(
       produit: infos.produit ?? null,
       montant_total: infos.montantTotal ?? null,
       mensualites: infos.mensualites ?? null,
-      version_cgv: VERSION_CGV,
+      version_cgv: versionCgvDe(infos.snapshot),
       engagements: infos.snapshot,
       adresse_ip: ip,
       navigateur: req.headers.get("user-agent"),
@@ -1316,7 +1324,9 @@ Deno.serve(async (req) => {
           ? "PASS AL BARAKA"
           : linkExpectedCategory === "liberty"
             ? "LIBERTY"
-            : "";
+            : linkExpectedCategory === "a_la_carte"
+              ? "A LA CARTE"
+              : "";
 
       const customMetadata: Record<string, string> = {
         product: productLabel,

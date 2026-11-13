@@ -37,6 +37,7 @@ import { EngagementChecklist } from "@/components/checkout/EngagementChecklist";
 import { MentionsPaiement } from "@/components/checkout/MentionsPaiement";
 import { MentionFormulaire } from "@/components/legal/MentionFormulaire";
 import { initAgreements, allAgreed, type AgreementItem, type CheckoutFormula, LIBELLE_BOUTON_PAIEMENT } from "@/lib/checkout-agreements";
+import { ApercuContratV3 } from "@/components/checkout/ApercuContratV3";
 import { verifierEmail } from "@/lib/emailValide";
 
 const THEME = {
@@ -913,7 +914,7 @@ function PaymentLinkForm({
   const [submitting, setSubmitting] = useState(false);
 
   // Refonte Sidali 19/05/2026 : 5 cases d'engagement pour les ventes Pass / Liberty
-  // uniquement (pas pour les formations à la carte). On déduit la formule de
+  // et, depuis les contrats v3 (13/11/2026), pour les modules à la carte. On déduit la formule de
   // `lookup.expected_coupon_category` qui est défini à la création du lien.
   // `al_baraka_200` a sa propre catégorie (pour isoler les codes promo du Pass
   // à 3 000 €) mais vend bien le Pass AL BARAKA : mêmes engagements.
@@ -923,9 +924,11 @@ function PaymentLinkForm({
       ? "PASS AL BARAKA"
       : lookup.expected_coupon_category === "liberty"
         ? "LIBERTY"
-        : null;
+        : lookup.expected_coupon_category === "a_la_carte"
+          ? "A LA CARTE"
+          : null;
   const [agreements, setAgreements] = useState<AgreementItem[]>(() =>
-    formula ? initAgreements(formula) : [],
+    formula ? initAgreements(formula, lookup.product_label) : [],
   );
   const needsAgreements = formula !== null;
   const agreementsOk = !needsAgreements || allAgreed(agreements);
@@ -987,7 +990,7 @@ function PaymentLinkForm({
           coupon_code: couponCode || undefined,
           client_chosen_start_at: clientChosenStartDate || undefined,
           // Snapshot des 5 engagements (uniquement pour les Pass / Liberty,
-          // pas pour les formations à la carte). Sidali 19/05/2026.
+          // et modules à la carte depuis les contrats v3 du 13/11/2026).
           agreements_snapshot: needsAgreements ? agreements : undefined,
           customer: {
             email: billing.email.trim().toLowerCase(),
@@ -1295,6 +1298,22 @@ function PaymentLinkForm({
           couleurLien={THEME.cream}
           taille={10.5}
         />
+
+        {/* Contrats v3 (13/11/2026) : le paiement vaut signature, le client voit
+            donc le contrat pré-rempli avant de cocher la case 1. */}
+        {formula && (
+          <ApercuContratV3
+            offre={formula === "LIBERTY" ? "liberty" : formula === "A LA CARTE" ? "carte" : "pass"}
+            module={formula === "A LA CARTE" ? lookup.product_label : null}
+            client={billing}
+            prixTotal={Math.round((schedule.monthly * (schedule.installments - 1) + schedule.firstMonthly) * 100) / 100}
+            prixCatalogue={Number(lookup.total_amount)}
+            codePromo={couponCode}
+            nbEcheances={schedule.installments}
+            datePremierPaiement={schedule.isDeferred ? clientChosenStartDate || lookup.deferred_start_date : null}
+            theme={{ gold: THEME.gold, goldBright: THEME.goldBright, cream: THEME.cream, creamMuted: THEME.creamMuted }}
+          />
+        )}
 
         {needsAgreements && (
           <EngagementChecklist

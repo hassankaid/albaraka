@@ -110,9 +110,9 @@ describe("routage du site vitrine", () => {
   it("vitrine.html porte le référencement du cahier (§8.2)", () => {
     const html = readFileSync(resolve(racine, "vitrine.html"), "utf-8");
     expect(html).toContain('<html lang="fr">');
-    expect(html).toContain("<title>AL BARAKA Écosystème – Formation et accompagnement entrepreneurial</title>");
+    expect(html).toContain("<title>AL BARAKA Écosystème – Programme et communauté entrepreneuriale</title>");
     expect(html).toContain(
-      'content="Construisez, lancez et développez votre activité digitale avec un accompagnement éthique et exigeant. Plus de 340 membres accompagnés."',
+      'content="Construisez, lancez et développez votre activité digitale avec un programme éthique et exigeant. Plus de 340 membres."',
     );
     expect(html).toContain('property="og:image"');
     // Aucune police ni aucun traceur chargé depuis un tiers.
