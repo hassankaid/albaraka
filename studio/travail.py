@@ -23,6 +23,8 @@ les corrections de la plateforme sont ici :
   8. rythme des coupes réglable, et coupes ajustées à la main (vocal de Sidali, 12/10) : le
      moteur supprimait toute pause de plus de 120 ms. Changer les coupes ne refait ni la
      transcription ni les phrases ratées (voir monter et coupes_a_refaire).
+  10. prises de 22 s au plus et trous de transcription comblés (voir recouper et
+     combler_trous) : un élève qui parle d'une traite ne perd plus de mots à la 30e seconde.
 
   preparation : son (réglage « normal »), aperçu, transcription, phrases ratées,
                 coupes, montage brut, sous-titres. Si l'élève a déjà lancé le
@@ -460,8 +462,35 @@ def casse_mot_cle(texte):
     return texte
 
 
+# Correctif 10 (Mohammed Vincent, 16/11/2026) : Whisper écoute par tranches de 30 s et perd
+# parfois les derniers mots avant la limite. Un élève qui parle d'une traite, sans pause
+# d'une demi-seconde, donnait une seule prise de 34 s : « Et peut-être qu'un jour, ton
+# pourquoi moi laissera » disparaissait des sous-titres (10 montages sur 115 en 3 semaines,
+# dont 7 de Mohammed, trou toujours fini pile à 30 s). L'outil s'adapte à l'élève : une
+# prise trop longue est recoupée là où la voix est la plus faible (une respiration entre
+# deux mots), et les passages où l'on entend une voix sans aucun mot reconnu sont
+# retranscrits (combler_trous).
+PRISE_MAX = 22.0        # s envoyées à Whisper d'un coup, bien en deçà de ses 30 s
+PRISE_MIN = 8.0         # jamais de recoupe à moins de 8 s du début d'une prise
+
+
+def recouper(a, b, db, longueur=PRISE_MAX):
+    """[a, b) en images de 10 ms → morceaux de PRISE_MAX s au plus, coupés au point le plus
+    calme (moyenne sur 150 ms) entre PRISE_MIN s et PRISE_MAX s de chaque début."""
+    lisse = np.convolve(db, np.ones(15) / 15, mode="same")
+    out = []
+    while (b - a) / 100 > longueur:
+        lo, hi = a + int(PRISE_MIN * 100), min(b - int(PRISE_MIN * 100) // 2, a + int(longueur * 100))
+        c = lo + int(np.argmin(lisse[lo:hi])) if hi > lo else a + int(longueur * 100)
+        out.append([a, c])
+        a = c
+    out.append([a, b])
+    return out
+
+
 def prises(wav, pause=0.45):
-    """Plages de voix séparées par une pause de plus de 0,45 s."""
+    """Plages de voix séparées par une pause de plus de 0,45 s, de PRISE_MAX s au plus.
+    Marge de 0,2 s autour de la voix, sauf aux recoupes (rien n'y est entendu deux fois)."""
     db = P.energy_db(wav)
     voix = db > P.speech_threshold(db)
     out, i, n = [], 0, len(voix)
@@ -477,27 +506,113 @@ def prises(wav, pause=0.45):
             i = j
         else:
             i += 1
-    return [(max(0, a / 100 - 0.2), min(n / 100, b / 100 + 0.2)) for a, b in out if b - a >= 8]
+    res = []
+    for a, b in out:
+        if b - a < 8:
+            continue
+        morceaux = recouper(a, b, db)
+        for k, (x, y) in enumerate(morceaux):
+            debut = x / 100 - (0.2 if k == 0 else 0)
+            fin = y / 100 + (0.2 if k == len(morceaux) - 1 else 0)
+            res.append((round(max(0, debut), 2), round(min(n / 100, fin), 2)))
+    return res
+
+
+# Phrases que Whisper invente sur un bruit ou un souffle : jamais reprises dans un trou.
+HALLUCINATIONS = re.compile(r"sous-titr|radio-canada|amara|merci d'avoir regard|abonnez|n'oubliez pas de|♪", re.I)
+# Génériques de sous-titrage appris par Whisper (« Sous-titrage Société Radio-Canada »),
+# retirés partout : sortis tels quels dans les sous-titres d'une élève (constaté le 16/11).
+GENERIQUE = re.compile(r"^(sous-titr\w*|radio-canada\W*|amara\.org\W*|société)$", re.I)
+
+
+def sans_generique(words):
+    """Retire « Sous-titrage », « Radio-Canada »… (et « Société » collé à eux)."""
+    marque = [bool(GENERIQUE.match(w.text)) and w.text.lower() != "société" for w in words]
+    for i, w in enumerate(words):
+        if w.text.lower().startswith("société") and ((i > 0 and marque[i - 1]) or (i + 1 < len(words) and marque[i + 1])):
+            marque[i] = True
+    return [w for w, m in zip(words, marque) if not m]
+
+
+def whisper(audio, sr, debut, fin):
+    """Mots de [debut, fin] (s), datés dans la vidéo."""
+    buf = io.BytesIO()
+    sf.write(buf, audio[int(debut * sr):int(fin * sr)], sr, format="WAV", subtype="PCM_16")
+    d = openrouter("/audio/transcriptions", {
+        "model": STT, "language": "fr", "response_format": "verbose_json", "timestamp_granularities": ["word"],
+        "input_audio": {"data": base64.b64encode(buf.getvalue()).decode(), "format": "wav"}})
+    COUT["transcription"] += (d.get("usage") or {}).get("cost") or 0
+    # recollés d'abord : Whisper rend « Sous » + « -titrage », « Radio » + « -Canada »
+    return sans_generique(recoller_mots([P.Word(w["word"].strip(), round(debut + w["start"], 3),
+                                                round(debut + w["end"], 3))
+                                         for w in d.get("words") or [] if w.get("word", "").strip()]))
+
+
+def trous(words, db, duree, ecart=0.6, voix_min=0.45):
+    """Passages où l'on entend une voix (au moins voix_min s au-dessus du seuil) sans aucun
+    mot reconnu, entre deux mots, avant le premier ou après le dernier."""
+    voix = db > P.speech_threshold(db)
+    bornes = [0.0] + [x for w in words for x in (w.start, w.end)] + [duree]
+    out = []
+    for k in range(0, len(bornes), 2):
+        a, b = bornes[k] + 0.1, bornes[k + 1] - 0.1
+        if b - a >= ecart and voix[int(a * 100):int(b * 100)].sum() / 100 >= voix_min:
+            out.append((bornes[k], bornes[k + 1]))
+    return out
+
+
+def combler_trous(words, audio, sr, db, duree):
+    """Retranscrit chaque trou avec 2 s de contexte avant et 1 s après (Whisper reconnaît mal
+    un fragment isolé), et ne garde que les mots nouveaux, tombés dans le trou."""
+    manquants = trous(words, db, duree)
+    if not manquants:
+        return words, 0
+
+    def un(t):
+        a, b = t
+        ws = whisper(audio, sr, max(0.0, a - 2.0), min(duree, b + 1.0))
+        dedans = [w for w in ws if a - 0.05 <= (w.start + w.end) / 2 <= b + 0.05]
+        if not any(re.search(r"\w", w.text) for w in dedans):  # « ... » seul : rien d'entendu
+            return []
+        texte = " ".join(w.text for w in dedans)
+        # un « Merci. » seul dans un trou : l'invention la plus fréquente de Whisper sur un souffle
+        if HALLUCINATIONS.search(texte) or re.sub(r"\W", "", texte.lower()) == "merci":
+            return []
+        return dedans
+
+    def norm(t):
+        return re.sub(r"[^\w]", "", t.lower())
+
+    with cf.ThreadPoolExecutor(8) as ex:
+        ajouts = [w for ws in ex.map(un, manquants) for w in ws]
+    # un mot voisin daté un peu autrement par la seconde écoute n'est pas un mot nouveau
+    ajouts = [w for w in ajouts if not any(norm(w.text) == norm(v.text) and abs(w.start - v.start) < 0.8
+                                           for v in words)]
+    if ajouts:
+        print(f"trous comblés : {len(manquants)} passage(s), {len(ajouts)} mot(s) retrouvé(s)", flush=True)
+    return sorted(words + ajouts, key=lambda w: w.start), len(ajouts)
 
 
 def transcrire_par_prises(wav):
     """Correctif 1 : transcrite d'un bloc, la voix perdait ses phrases recommencées
     (Whisper fondait 5 tentatives dans un seul mot étiré sur 10 s). Chaque prise est
-    transcrite seule : Whisper ne voit jamais deux tentatives ensemble."""
+    transcrite seule : Whisper ne voit jamais deux tentatives ensemble.
+    Correctif 10 : prises de PRISE_MAX s au plus, puis trous comblés."""
     audio, sr = sf.read(wav, dtype="float32")
-
-    def une(p):
-        buf = io.BytesIO()
-        sf.write(buf, audio[int(p[0] * sr):int(p[1] * sr)], sr, format="WAV", subtype="PCM_16")
-        d = openrouter("/audio/transcriptions", {
-            "model": STT, "language": "fr", "response_format": "verbose_json", "timestamp_granularities": ["word"],
-            "input_audio": {"data": base64.b64encode(buf.getvalue()).decode(), "format": "wav"}})
-        COUT["transcription"] += (d.get("usage") or {}).get("cost") or 0
-        return [P.Word(w["word"].strip(), round(p[0] + w["start"], 3), round(p[0] + w["end"], 3))
-                for w in d.get("words") or [] if w.get("word", "").strip()]
-
+    if audio.ndim > 1:
+        audio = audio.mean(axis=1)
+    duree = len(audio) / sr
+    pr = prises(wav)
     with cf.ThreadPoolExecutor(8) as ex:
-        return [w for ws in ex.map(une, prises(wav)) for w in ws]
+        par_prise = list(ex.map(lambda p: whisper(audio, sr, *p), pr))
+    # un bruit isolé de moins d'1 s au milieu de la vidéo, entendu « Merci. » (souffle, clic) :
+    # 5 sur une seule vidéo le 16/11. Gardé en fin de vidéo, où l'élève remercie vraiment.
+    words = [w for k, (p, ws) in enumerate(zip(pr, par_prise))
+             if not (p[1] - p[0] < 1.0 and k < len(pr) - 1
+                     and re.sub(r"\W", "", " ".join(x.text for x in ws).lower()) == "merci")
+             for w in ws]
+    words, _ = combler_trous(words, audio, sr, P.energy_db(wav), duree)
+    return words
 
 
 # ---------------------------------------------------------------- floutage naturel
@@ -688,6 +803,30 @@ def recoller_mots(words):
     return out
 
 
+# Mots que Whisper écrit mal ou tronque (« Alhamdoulil. »), avec l'orthographe des scripts
+# de la plateforme (16/11/2026). Clé : le mot sans ponctuation, en minuscules.
+ORTHOGRAPHE = [
+    (re.compile(r"^(?:al|el)[-\s]?hamd[ou]u?li+l*a*h?$", re.I), "Alhamdoulilah"),
+]
+
+
+def orthographe(words):
+    out = []
+    for w in words:
+        t = w.text
+        debut = len(t) - len(t.lstrip(".,;:!?«»\"'’()…-"))
+        fin = len(t.rstrip(".,;:!?«»\"'’()…-"))
+        coeur = t[debut:fin]
+        for motif, voulu in ORTHOGRAPHE:
+            if coeur and motif.match(coeur):
+                if coeur[:1].islower() and voulu[:1].isupper():
+                    voulu = voulu[:1].lower() + voulu[1:]
+                w = dataclasses.replace(w, text=t[:debut] + voulu + t[fin:])
+                break
+        out.append(w)
+    return out
+
+
 def preparer(src, dossier, liens, reglages, avec_apercu):
     chrono = {}
 
@@ -720,7 +859,7 @@ def preparer(src, dossier, liens, reglages, avec_apercu):
     P.enhance_audio(src, clean, wav, son)
     t = top("son", t)
     etape("transcription")
-    words = recoller_mots(transcrire_par_prises(wav))
+    words = orthographe(recoller_mots(transcrire_par_prises(wav)))
     if not words:
         raise ValueError("Aucune parole n'a été entendue dans la vidéo.")
     cales = None
