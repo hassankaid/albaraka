@@ -29,6 +29,9 @@ interface Profile {
   origin: string | null;
   discord_joined_at: string | null;
   welcome_video_completed_at: string | null;
+  // Setter DM (16/11/2026) : relance par message des leads de Lead Setting DM
+  is_setter_dm?: boolean | null;
+  charte_dm_acceptee_le?: string | null;
 }
 
 interface AuthContextType {
@@ -71,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [{ data }, contrats] = await Promise.all([
       supabase
         .from("profiles")
-        .select("id, email, full_name, role, phone, is_also_apporteur, can_add_instagram_leads, can_assign_leads, avatar_url, timezone, onboarding_completed, collaborateur_level, is_active, is_coach, address, postal_code, city, country, siret, bank_rib_url, bank_details, early_access, origin, discord_joined_at, welcome_video_completed_at")
+        .select("id, email, full_name, role, phone, is_also_apporteur, can_add_instagram_leads, can_assign_leads, avatar_url, timezone, onboarding_completed, collaborateur_level, is_active, is_coach, address, postal_code, city, country, siret, bank_rib_url, bank_details, early_access, origin, discord_joined_at, welcome_video_completed_at, is_setter_dm, charte_dm_acceptee_le")
         .eq("id", userId)
         .maybeSingle(),
       Promise.resolve(
@@ -82,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .eq("status", "pending_signature"),
       ).catch(() => ({ count: 0 })),
     ]);
-    setProfile(data);
+    setProfile(data as unknown as Profile | null);
     setUnsignedContractsCount((contrats as { count: number | null }).count ?? 0);
   }, []);
 

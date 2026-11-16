@@ -25,7 +25,7 @@ import {
 import {
   Users, UserPlus, RefreshCw, Search, Phone, Inbox, ChevronDown, Instagram, Pencil, Eye, Info, Copy,
   ChevronLeft, ChevronRight, PartyPopper, CheckSquare, UserMinus, CalendarRange, Recycle,
-  Settings2,
+  Settings2, MessageCircle,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialogAction } from "@/components/ui/alert-dialog";
@@ -43,7 +43,7 @@ import {
   LEAD_STATUS_COLORS,
   LEAD_STATUS_LABELS,
   STATUS_FILTER_OPTIONS,
-  isAdsSource,
+  isAdsSource, estStatutDm,
 } from "@/lib/leadConfig";
 import { badgeCanal, estAds, GROUPES, libelleCanal, libelleTunnel, useCanaux, useTunnels } from "@/lib/leadSources";
 import { GestionSources } from "@/components/leads/GestionSources";
@@ -62,6 +62,12 @@ import {
 // Les types Supabase régénérés ne reflètent pas encore ces colonnes — on type-
 // cast côté usage. À synchroniser avec types.ts à la prochaine régénération.
 type LeadEnriched = Tables<"leads_enriched"> & {
+  // Parcours Setter DM (16/11/2026)
+  dm_depuis?: string | null;
+  dm_perdu_par?: string | null;
+  dm_perdu_par_name?: string | null;
+  dm_contact_reussi_par?: string | null;
+  contact_deja_perdu_dm?: boolean | null;
   // canal / tunnel / précision calculés en base (lead_attribution, 28/10/2026)
   canal?: string | null;
   tunnel?: string | null;
@@ -110,8 +116,8 @@ const dateToYMD = (d: Date): string => {
 //  - by the daily cron (recycle-stale-leads) for organic leads unassigned > 14 days
 // The lead's status column remains unchanged — it still reflects the pipeline stage,
 // the reason for recycling lives in the activity log (action: 'recycled').
-const isRecycled = (l: Pick<LeadEnriched, "assigned_to" | "recycled_at">): boolean =>
-  !l.assigned_to && !!l.recycled_at;
+const isRecycled = (l: Pick<LeadEnriched, "assigned_to" | "recycled_at" | "status">): boolean =>
+  !l.assigned_to && !!l.recycled_at && !estStatutDm(l.status);
 
 // ─────────────────────────────────────────────────────────────────
 // Combobox d'affectation : liste searchable d'utilisateurs (CEO,
@@ -124,10 +130,14 @@ type Assignee = {
   full_name: string;
   role: string;
   collaborateur_level: string | null;
+  // Setter DM (16/11/2026) : apporteur qui relance par message ; charte obligatoire
+  is_setter_dm?: boolean;
+  charte_dm_ok?: boolean;
 };
 
 const ROLE_BADGE_LABEL = (a: Assignee): string => {
   if (a.role === "ceo") return "CEO";
+  if (a.is_setter_dm) return a.charte_dm_ok ? "Setter DM" : "Setter DM · charte à accepter";
   if (a.role === "apporteur") return "Apporteur";
   if (a.collaborateur_level === "confirme") return "Collab confirmé";
   if (a.collaborateur_level === "intermediaire") return "Collab intermédiaire";
@@ -240,6 +250,7 @@ const COLLAB_INTERMEDIAIRE_TABS = [
 const CEO_TABS = [
   { value: "a_affecter", label: "À affecter" },
   { value: "a_recycler", label: "À recycler" },
+  { value: "lead_setting_dm", label: "Lead Setting DM" },
   { value: "mes_leads", label: "Mes leads" },
   { value: "tous", label: "Tous" },
 ] as const;
@@ -280,6 +291,9 @@ export default function Leads() {
   // leads publicitaires des leads organiques pour ne plus mélanger les
   // compteurs (cf. demande CEO 20/05/2026).
   const [aAffecterSegment, setAAffecterSegment] = useState<"ads" | "organique">("ads");
+  // Sous-onglet de « Lead Setting DM » (16/11/2026) : leads à attribuer à un Setter DM,
+  // ou déjà chez un Setter DM (suivi de leur avancement).
+  const [dmSegment, setDmSegment] = useState<"a_attribuer" | "chez_dm">("a_attribuer");
   // Filtre source = affinage optionnel (popover). Vide par défaut : c'est le
   // sous-onglet Ads/Organique qui fait la séparation principale.
   const [sourceFilter, setSourceFilter] = useState<string[]>([]);
@@ -293,12 +307,9 @@ export default function Leads() {
   // Liste fusionnée des "assignables" : CEO + collaborateurs (tous niveaux)
   // + apporteurs actifs. Sert à la fois au dropdown d'affectation (CEO + délégués
   // peuvent affecter à n'importe qui) et aux filtres dérivés (collabs/apporteurs).
-  const [assignables, setAssignables] = useState<{
-    id: string;
-    full_name: string;
-    role: string;
-    collaborateur_level: string | null;
-  }[]>([]);
+  const [assignables, setAssignables] = useState<Assignee[]>([]);
+  // Setters DM actifs : seuls destinataires possibles d'un lead de Lead Setting DM
+  const settersDm = useMemo(() => assignables.filter((a) => a.is_setter_dm), [assignables]);
   const collaborateurs = useMemo(
     () => assignables.filter((a) => a.role !== "apporteur"),
     [assignables]
@@ -368,19 +379,21 @@ export default function Leads() {
   // affectés à un lead (CEO + collabs + apporteurs actifs). Le tri par nom
   // facilite la recherche dans le combobox.
   const fetchAssignables = useCallback(async () => {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from("profiles")
-      .select("id, full_name, role, collaborateur_level, is_active")
+      .select("id, full_name, role, collaborateur_level, is_active, is_setter_dm, charte_dm_acceptee_le")
       .in("role", ["ceo", "collaborateur", "apporteur"])
       .eq("is_active", true)
       .order("full_name");
     if (data) {
       setAssignables(
-        data.map((p) => ({
+        (data as any[]).map((p) => ({
           id: p.id,
           full_name: p.full_name,
           role: p.role,
           collaborateur_level: p.collaborateur_level,
+          is_setter_dm: !!p.is_setter_dm,
+          charte_dm_ok: !!p.charte_dm_acceptee_le,
         }))
       );
     }
@@ -498,6 +511,29 @@ export default function Leads() {
       fetchLeads();
     }
   };
+
+  // Lead Setting DM (16/11/2026) : attribution à un Setter DM par la fonction du serveur
+  // (garde le statut DM, refuse un Setter DM sans charte, prévient le Setter DM).
+  const handleAttribuerDm = async (ids: string[], setterId: string) => {
+    if (ids.length === 0) return;
+    setBulkAssigning(true);
+    const { data, error } = await (supabase as any).rpc("attribuer_leads_dm", { p_lead_ids: ids, p_setter: setterId });
+    setBulkAssigning(false);
+    if (error) {
+      toast({ title: "Attribution impossible", description: error.message, variant: "destructive" });
+      return;
+    }
+    const n = (data as { attribues?: number } | null)?.attribues ?? 0;
+    const nom = settersDm.find((a) => a.id === setterId)?.full_name ?? "le Setter DM";
+    toast({ title: n === 0 ? "Rien à attribuer" : `${n} lead${n > 1 ? "s" : ""} attribué${n > 1 ? "s" : ""} à ${nom}` });
+    setSelectedIds(new Set());
+    fetchLeads();
+  };
+
+  useEffect(() => {
+    setPage(0);
+    setSelectedIds(new Set());
+  }, [dmSegment]);
 
   const handleBulkAssign = async (newUserId: string) => {
     if (!realUser || selectedIds.size === 0) return;
@@ -618,8 +654,11 @@ export default function Leads() {
       !l.assigned_to
       && !l.recycled_at
       && !["call_booke", "renvoi_pole_vente", "close", "perdu"].includes(l.status || "")
+      && !estStatutDm(l.status)
     );
     const aAffecterAds = aAffecter.filter(leadAds).length;
+    const dmAAttribuer = leads.filter((l) => l.status === "dm_a_contacter" && !l.assigned_to).length;
+    const dmChezSetters = leads.filter((l) => !!l.dm_depuis && !!l.assigned_to).length;
     return {
       total: scopedLeads.length,
       aQualifier: scopedLeads.filter((l) => l.status === "a_qualifier").length,
@@ -629,6 +668,8 @@ export default function Leads() {
       a_recycler: leads.filter((l) => isRecycled(l)).length,
       call_booke: scopedLeads.filter((l) => l.status === "call_booke").length,
       mes_leads: myLeadsCount,
+      dm_a_attribuer: dmAAttribuer,
+      dm_chez_setters: dmChezSetters,
     };
   }, [scopedLeads, leads, myLeadsCount, leadAds]);
 
@@ -654,6 +695,7 @@ export default function Leads() {
         !l.assigned_to
         && !l.recycled_at
         && !["call_booke", "renvoi_pole_vente", "close", "perdu"].includes(l.status || "")
+        && !estStatutDm(l.status)
       );
       result = result.filter((l) =>
         aAffecterSegment === "ads" ? leadAds(l) : !leadAds(l),
@@ -661,6 +703,11 @@ export default function Leads() {
     } else if (tab === "a_recycler") {
       // Logical "À recycler" queue: unassigned leads with recycled_at set
       result = leads.filter((l) => isRecycled(l));
+    } else if (tab === "lead_setting_dm") {
+      // Lead Setting DM (16/11/2026) : à attribuer, ou déjà chez un Setter DM
+      result = dmSegment === "a_attribuer"
+        ? leads.filter((l) => l.status === "dm_a_contacter" && !l.assigned_to)
+        : leads.filter((l) => !!l.dm_depuis && !!l.assigned_to);
     } else if (tab === "mes_leads") {
       result = user ? leads.filter((l) => l.assigned_to === user.id) : [];
     } else {
@@ -698,7 +745,7 @@ export default function Leads() {
     }
 
     return result;
-  }, [leads, scopedLeads, tab, aAffecterSegment, statusFilter, prioriteFilter, sourceFilter, tunnelFilter, collabFilter, apporteurFilter, search, dateRange, userTz, user, leadAds]);
+  }, [leads, scopedLeads, tab, aAffecterSegment, dmSegment, statusFilter, prioriteFilter, sourceFilter, tunnelFilter, collabFilter, apporteurFilter, search, dateRange, userTz, user, leadAds]);
 
   // Nombre de leads à chaque étape de relance, pour le sous-filtre
   const nbParEtape = useMemo(() => {
@@ -728,6 +775,7 @@ export default function Leads() {
     setPage(0);
     setSelectedIds(new Set());
     setAAffecterSegment("ads");
+    setDmSegment("a_attribuer");
     setTri(triParDefaut(tab));
     setSourceFilter([]);
     setCollabFilter("all");
@@ -764,6 +812,19 @@ export default function Leads() {
             {aAffecterSegment === "ads"
               ? "Pense à traiter aussi l'onglet « Organique »."
               : "Pense à vérifier l'onglet « Ads »."}
+          </p>
+        </div>
+      );
+    }
+    if (tab === "lead_setting_dm") {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <MessageCircle className="h-12 w-12 text-muted-foreground mb-4" />
+          <p className="text-lg font-semibold text-foreground">
+            {dmSegment === "a_attribuer" ? "Aucun lead à attribuer" : "Aucun lead chez les Setters DM"}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Un lead de publicité arrive ici quand un setter intermédiaire le met en « Perdu », ou après la Relance 6.
           </p>
         </div>
       );
@@ -869,6 +930,7 @@ export default function Leads() {
               {t.value === "a_affecter"
                 ? ` (${aAffecterSegment === "ads" ? counts.a_affecter_ads : counts.a_affecter_organique})`
                 : t.value === "a_recycler" ? ` (${counts.a_recycler})`
+                : t.value === "lead_setting_dm" ? ` (${counts.dm_a_attribuer})`
                 : t.value === "mes_leads" ? ` (${counts.mes_leads})`
                 : t.value === "tous" ? ` (${counts.total})`
                 : ""}
@@ -911,6 +973,34 @@ export default function Leads() {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Sous-onglets de « Lead Setting DM » (16/11/2026) */}
+      {tab === "lead_setting_dm" && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center bg-card border border-border rounded-lg p-0.5">
+            {([
+              { id: "a_attribuer", label: "À attribuer", count: counts.dm_a_attribuer },
+              { id: "chez_dm", label: "Chez les Setters DM", count: counts.dm_chez_setters },
+            ] as const).map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setDmSegment(s.id)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  dmSegment === s.id
+                    ? "gradient-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {s.label} ({s.count})
+              </button>
+            ))}
+          </div>
+          <span className="text-xs text-muted-foreground">
+            Leads de publicité perdus par un setter : coche-les puis attribue-les à un Setter DM, qui les relance par message.
+            {settersDm.length === 0 && " Aucun Setter DM pour l'instant : coche la case « Setter DM » d'un apporteur dans Équipe."}
+          </span>
         </div>
       )}
 
@@ -1173,7 +1263,20 @@ export default function Leads() {
             <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20">
               <CheckSquare className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-foreground">{selectedIds.size} lead{selectedIds.size > 1 ? "s" : ""} sélectionné{selectedIds.size > 1 ? "s" : ""}</span>
-              {tab === "a_recycler" ? (
+              {tab === "lead_setting_dm" ? (
+                <AssigneeCombobox
+                  assignees={settersDm}
+                  onSelect={(id) => handleAttribuerDm(Array.from(selectedIds), id)}
+                  searchPlaceholder="Rechercher un Setter DM..."
+                  triggerNode={
+                    <Button size="sm" className="gap-1.5 text-xs" disabled={bulkAssigning || settersDm.length === 0}>
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      Attribuer à un Setter DM
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
+                  }
+                />
+              ) : tab === "a_recycler" ? (
                 <AssigneeCombobox
                   assignees={assignables}
                   onSelect={handleBulkAssign}
@@ -1442,6 +1545,14 @@ export default function Leads() {
                     <TableCell>
                       <div className="flex flex-col items-start gap-1">
                         <StatutLead lead={lead} className="text-[10px]" />
+                        {lead.contact_deja_perdu_dm && !estStatutDm(lead.status) && (
+                          <span
+                            className="rounded-full border border-red-500/40 bg-red-500/10 px-1.5 text-[9px] font-semibold text-red-300"
+                            title="Une fiche précédente de cette personne a été classée « Perdu définitivement » après les relances par message"
+                          >
+                            Déjà perdu en DM
+                          </span>
+                        )}
                         {etapeRelance(lead) && (lead.assigned_to === user?.id || isCeo) && (
                           <BoutonRelanceFaite
                             lead={lead}
@@ -1456,7 +1567,32 @@ export default function Leads() {
                     </TableCell>
                     {/* Setter */}
                     <TableCell>
-                      {lead.assigned_to ? (
+                      {estStatutDm(lead.status) ? (
+                        // Lead Setting DM : seulement des Setters DM, par la fonction du serveur
+                        <div className="flex flex-col items-start gap-1">
+                          {lead.assigned_to ? (
+                            <span className="text-xs text-foreground">{lead.assigned_to_name}</span>
+                          ) : (
+                            <span className="text-[11px] text-muted-foreground">
+                              {lead.dm_perdu_par_name ? `Perdu par ${lead.dm_perdu_par_name}` : "À attribuer"}
+                            </span>
+                          )}
+                          {canAssign && lead.status !== "perdu_definitif" && settersDm.length > 0 && (
+                            <AssigneeCombobox
+                              assignees={settersDm.filter((a) => a.id !== lead.assigned_to)}
+                              onSelect={(id) => handleAttribuerDm([lead.id!], id)}
+                              searchPlaceholder="Rechercher un Setter DM..."
+                              triggerNode={
+                                <Button size="sm" variant="outline" className="gap-1 text-[11px] h-7 px-2">
+                                  <MessageCircle className="h-3 w-3" />
+                                  {lead.assigned_to ? "Changer" : "Setter DM"}
+                                  <ChevronDown className="h-3 w-3" />
+                                </Button>
+                              }
+                            />
+                          )}
+                        </div>
+                      ) : lead.assigned_to ? (
                         (lead.assigned_to === user?.id || canAssign) ? (
                           // Combobox de réassign avec option "Libérer" en plus
                           <Popover>

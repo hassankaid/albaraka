@@ -37,6 +37,7 @@ type LeadEnriched = Tables<"leads_enriched"> & {
 import { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS, getLeadStatusListForLevel } from "@/lib/leadConfig";
 import { SuiviRelances } from "@/components/leads/Relances";
 import { STATUT_RELANCE } from "@/lib/relances";
+import { estAds, useCanaux } from "@/lib/leadSources";
 import { delaiTraitement } from "@/lib/delaiTraitement";
 
 export { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS };
@@ -71,6 +72,8 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
   // courant. Les collaborateurs intermédiaires n'ont pas accès à "Pas de réponse"
   // (réservé aux confirmés car déclenche un recyclage instantané du lead).
   const statusList = getLeadStatusListForLevel(user?.role, user?.collaborateur_level);
+  const { data: canaux } = useCanaux();
+  const estLeadPub = !!lead && (canaux ? estAds(lead as unknown as Parameters<typeof estAds>[0], canaux) : false);
 
   useEffect(() => {
     if (lead && open) {
@@ -158,8 +161,12 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
 
       const shouldInstantRecycle =
         statusChanged && (INSTANT_RECYCLE_STATUSES as readonly string[]).includes(status);
+      // « Perdu » d'un setter (16/11/2026) : un lead de publicité perdu par un intermédiaire
+      // part dans Lead Setting DM et n'est plus visible par lui. La modification passe donc
+      // par la fonction du serveur, en DERNIER (note et tags enregistrés avant).
+      const perduParServeur = statusChanged && status === "perdu" && user.role === "collaborateur";
 
-      if (statusChanged) {
+      if (statusChanged && !perduParServeur) {
         if (shouldInstantRecycle) {
           // Recyclage atomique via RPC SECURITY DEFINER
           // (contourne un edge case RLS qui bloquait l'UPDATE direct quand
@@ -256,6 +263,15 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
         setOriginalTagKeys(new Set(selectedTagKeys));
       }
 
+      if (perduParServeur) {
+        const { error: perduErr } = await (supabase as any).rpc("apporteur_update_lead_status", {
+          p_lead_id: lead.id,
+          p_new_status: "perdu",
+          p_note: null,
+        });
+        if (perduErr) throw new Error(perduErr.message || "Erreur mise à jour du statut");
+      }
+
       toast({ title: "Lead mis à jour" });
       onSuccess();
       onClose();
@@ -334,6 +350,11 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
               ))}
             </SelectContent>
           </Select>
+          {lead.status !== "perdu" && status === "perdu" && user?.collaborateur_level === "intermediaire" && estLeadPub && (
+            <p className="text-xs text-muted-foreground">
+              Lead de publicité : il part dans « Lead Setting DM » pour être relancé par message par un Setter DM, et sort de tes leads.
+            </p>
+          )}
           {lead.status !== STATUT_RELANCE && status === STATUT_RELANCE && (
             <p className="text-xs text-muted-foreground">
               Le lead démarre le suivi des relances : Relance 1 à 3 puis recyclage s'il ne répond pas. S'il a déjà été recyclé sans réponse, il démarre à la Relance 4 et passe en « Perdu » après la 6ᵉ.

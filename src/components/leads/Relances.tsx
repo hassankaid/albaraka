@@ -92,7 +92,7 @@ function ConfirmerRecyclage({
           <AlertDialogTitle>Dernière relance</AlertDialogTitle>
           <AlertDialogDescription>
             {perdu
-              ? "C'est la 6ᵉ relance sans réponse : en la validant, ce lead passe en «\u00a0Perdu\u00a0». Il a été relancé 6 fois au total et ne retournera pas dans «\u00a0À recycler\u00a0»."
+              ? "C'est la 6ᵉ relance sans réponse : en la validant, ce lead passe en «\u00a0Perdu\u00a0» (un lead de publicité part dans «\u00a0Lead Setting DM\u00a0», pour être relancé par message). Il a été relancé 6 fois au total et ne retournera pas dans «\u00a0À recycler\u00a0»."
               : "C'est la 3ᵉ relance sans réponse : en la validant, ce lead quitte ta liste et part dans «\u00a0À recycler\u00a0», avec le statut «\u00a0Pas de réponse\u00a0»."}
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -231,7 +231,7 @@ export function SuiviRelances({
       <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
         <Recycle className="mt-0.5 h-3 w-3 shrink-0" />
         {finitEnPerdu(etape)
-          ? "Dernière relance : sans réponse, le lead passera en « Perdu » (6 relances au total)."
+          ? "Dernière relance : sans réponse, le lead passera en « Perdu » (6 relances au total), ou dans « Lead Setting DM » si c'est un lead de publicité."
           : etapeFinale(etape)
             ? "Dernière relance : sans réponse, le lead partira dans « À recycler »."
             : "Le prospect a répondu ? Change simplement son statut : le suivi des relances s'arrête."}

@@ -42,6 +42,12 @@ const STATUS_COLORS: Record<string, string> = {
   call_booke: "bg-gold-400/20 text-gold-200 border-gold-400/30",
   converti: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   perdu: "bg-red-500/20 text-red-300 border-red-500/30",
+  // Parcours Setter DM (16/11/2026)
+  dm_a_contacter: "bg-sky-500/20 text-sky-300 border-sky-500/30",
+  contact_dm1: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  relance_dm1: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+  relance_dm2: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+  perdu_definitif: "bg-red-500/20 text-red-300 border-red-500/30",
   planifie: "bg-blue-500/20 text-blue-300 border-blue-500/30",
   effectue: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   no_show: "bg-red-500/20 text-red-300 border-red-500/30",
@@ -71,6 +77,8 @@ const STATUS_LABELS: Record<string, string> = {
   non_close: "Non close", renvoye_pole_vente: "Renvoi Pôle Vente",
   renvoye_conference: "Renvoi Conférence", rediffusion: "Rediffusion",
   follow_up: "Follow up",
+  dm_a_contacter: "À contacter (DM)", contact_dm1: "Contact DM1", relance_dm1: "Relance DM1",
+  relance_dm2: "Relance DM2", perdu_definitif: "Perdu définitivement",
   pending: "En attente", paid: "Payé", failed: "Échoué",
 };
 
@@ -494,6 +502,19 @@ function LeadActivityEvent({ data, userTz }: { data: any; userTz: string }) {
         <RefreshCw className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
         <div>
           <p className="text-sm text-foreground">Lead recyclé</p>
+          {data.note && <p className="text-xs text-muted-foreground italic mt-1">{data.note}</p>}
+        </div>
+      </div>
+    );
+  }
+
+  // Parcours Setter DM (16/11/2026) : le lead part dans Lead Setting DM
+  if (data.action === "dm_bascule") {
+    return (
+      <div className="flex items-start gap-2">
+        <RefreshCw className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm text-foreground">Envoyé dans Lead Setting DM</p>
           {data.note && <p className="text-xs text-muted-foreground italic mt-1">{data.note}</p>}
         </div>
       </div>

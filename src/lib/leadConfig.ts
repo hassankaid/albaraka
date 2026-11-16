@@ -122,6 +122,12 @@ export const leadStatusConfig: Record<string, { label: string; color: string }> 
   call_booke: { label: "Call booké", color: "purple" },
   renvoi_pole_vente: { label: "Renvoi Pôle Vente", color: "cyan" },
   close: { label: "Close", color: "emerald" },
+  // Parcours Setter DM (16/11/2026) : relance par message des leads de publicité perdus
+  dm_a_contacter: { label: "À contacter (DM)", color: "sky" },
+  contact_dm1: { label: "Contact DM1", color: "yellow" },
+  relance_dm1: { label: "Relance DM1", color: "amber" },
+  relance_dm2: { label: "Relance DM2", color: "orange" },
+  perdu_definitif: { label: "Perdu définitivement", color: "red" },
   // Legacy
   nouveau: { label: "Nouveau", color: "gray" },
   contacte: { label: "Contacté", color: "sky" },
@@ -157,6 +163,29 @@ export const LEAD_STATUS_LIST = LEAD_MANUAL_STATUSES.map((key) => ({
   label: leadStatusConfig[key].label,
 }));
 
+// ── Parcours Setter DM (16/11/2026) ──
+// Un lead de publicité perdu par un setter intermédiaire (ou arrivé au bout de la
+// Relance 6) part dans « Lead Setting DM » ; un Setter DM le relance par message.
+// La base vérifie les mêmes règles (trigger tg_leads_dm) : ces listes ne servent
+// qu'à ne proposer que ce qui sera accepté.
+export const STATUTS_DM = ["dm_a_contacter", "contact_dm1", "relance_dm1", "relance_dm2", "perdu_definitif"] as const;
+
+/** Le lead est dans le parcours DM (Lead Setting DM ou chez un Setter DM). */
+export function estStatutDm(status: string | null | undefined): boolean {
+  return !!status && (STATUTS_DM as readonly string[]).includes(status);
+}
+
+/** Statuts proposés au Setter DM sur un lead DM (Sidali, 12 et 16/11/2026). */
+export const DM_EDITABLE_STATUSES = [
+  "contact_dm1",
+  "relance_dm1",
+  "relance_dm2",
+  "inscrit_conference",
+  "pas_qualifie",
+  "faux_numero",
+  "perdu_definitif",
+] as const;
+
 // Statuts qu'un collaborateur intermédiaire ne peut pas appliquer manuellement.
 // Raison métier : ces statuts déclenchent un recyclage instantané (le lead
 // quitte le pipeline du collab et part au pot "À recycler" du CEO), donc
@@ -181,6 +210,15 @@ export function getLeadStatusListForLevel(
 ): { value: string; label: string }[] {
   if (role === "collaborateur" && collaborateurLevel === "intermediaire") {
     return LEAD_STATUS_LIST.filter((s) => !RESTRICTED_FOR_INTERMEDIAIRE.has(s.value));
+  }
+  // « Perdu » réservé aux setters intermédiaires (Sidali, 16/11/2026) : un lead sans
+  // issue chez un confirmé suit les relances, et part en DM après la Relance 6.
+  if (role === "collaborateur") {
+    return LEAD_STATUS_LIST.filter((s) => s.value !== "perdu");
+  }
+  // Le CEO a tout, statuts DM compris (il est le seul à rouvrir un « Perdu définitivement »).
+  if (role === "ceo") {
+    return [...LEAD_STATUS_LIST, ...STATUTS_DM.map((k) => ({ value: k, label: leadStatusConfig[k].label }))];
   }
   return LEAD_STATUS_LIST;
 }

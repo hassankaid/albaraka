@@ -24,6 +24,11 @@ import {
   SOURCE_GROUPS,
   isAdsSource,
   getSourceLabel,
+  getLeadStatusListForLevel,
+  STATUTS_DM,
+  DM_EDITABLE_STATUSES,
+  estStatutDm,
+  LEAD_STATUS_LABELS,
 } from "./leadConfig";
 
 /** Les sources que l'edge fn accepte d'écrire dans `leads.source`. */
@@ -178,5 +183,40 @@ describe("Google Ads (04/10/2026)", () => {
     expect(meta).toBeGreaterThan(google);
     expect(base.indexOf("then 'tiktok_ads'")).toBeGreaterThan(0);
     expect(base.indexOf("then 'snap_ads'")).toBeGreaterThan(0);
+  });
+});
+
+describe("statuts selon le niveau (Setter DM, 16/11/2026)", () => {
+  const valeurs = (role: string, niveau: string | null) => getLeadStatusListForLevel(role, niveau).map((s) => s.value);
+
+  it("l'intermédiaire garde « Perdu », sans les statuts DM", () => {
+    const v = valeurs("collaborateur", "intermediaire");
+    expect(v).toContain("perdu");
+    expect(v).not.toContain("perdu_definitif");
+    expect(v).not.toContain("pas_de_reponse");
+  });
+
+  it("le confirmé n'a ni « Perdu » ni « Perdu définitivement »", () => {
+    const v = valeurs("collaborateur", "confirme");
+    expect(v).not.toContain("perdu");
+    expect(v).not.toContain("perdu_definitif");
+    expect(v).toContain("a_relancer");
+  });
+
+  it("le CEO a tout, statuts DM compris", () => {
+    const v = valeurs("ceo", null);
+    expect(v).toContain("perdu");
+    for (const s of STATUTS_DM) expect(v).toContain(s);
+  });
+
+  it("le Setter DM n'a pas « Perdu », mais a « Perdu définitivement »", () => {
+    expect(DM_EDITABLE_STATUSES).not.toContain("perdu" as never);
+    expect(DM_EDITABLE_STATUSES).toContain("perdu_definitif");
+    expect(estStatutDm("contact_dm1")).toBe(true);
+    expect(estStatutDm("inscrit_conference")).toBe(false);
+  });
+
+  it("chaque statut DM a un libellé", () => {
+    for (const s of STATUTS_DM) expect(LEAD_STATUS_LABELS[s]).toBeTruthy();
   });
 });

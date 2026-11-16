@@ -14,8 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Search, RefreshCw, Users, UserCheck, UserX, ArrowUpRight,
   ShieldCheck, ShieldAlert, MoreHorizontal, ChevronDown, ChevronUp,
-  ToggleLeft, ToggleRight, Eye, EyeOff,
-} from "lucide-react";
+  ToggleLeft, ToggleRight, Eye, EyeOff, MessageCircle } from "lucide-react";
 
 /** Montant en euros, sans decimales inutiles a l'ecran. */
 const eur = (n?: number) =>
@@ -32,6 +31,9 @@ interface TeamMember {
   is_also_apporteur: boolean | null;
   collaborateur_level: string | null;
   created_at: string | null;
+  /** Setter DM (16/11/2026) : relance par message les leads de Lead Setting DM */
+  is_setter_dm?: boolean | null;
+  charte_dm_acceptee_le?: string | null;
   /** Leads assignés, et parmi eux ceux réellement travaillés (statut autre
    *  que « a_qualifier »). L'écart entre les deux est l'information utile. */
   leads_recus?: number;
@@ -77,9 +79,9 @@ export default function AdminTeam() {
 
   const fetchMembers = async () => {
     setLoading(true);
-    const { data: profiles } = await supabase
+    const { data: profiles } = await (supabase as any)
       .from("profiles")
-      .select("id, full_name, email, role, phone, avatar_url, is_also_apporteur, created_at, collaborateur_level, is_active")
+      .select("id, full_name, email, role, phone, avatar_url, is_also_apporteur, created_at, collaborateur_level, is_active, is_setter_dm, charte_dm_acceptee_le")
       .in("role", ["collaborateur", "apporteur"])
       .order("full_name");
 
@@ -203,6 +205,22 @@ export default function AdminTeam() {
       }
     );
   };
+
+  // Setter DM (16/11/2026) : un apporteur qui reçoit des leads de « Lead Setting DM »
+  // à relancer par message. Il accepte d'abord la charte de confidentialité.
+  const toggleSetterDm = (m: TeamMember) => confirmAction(
+    m.is_setter_dm ? "Retirer « Setter DM »" : "Faire de cette personne un Setter DM",
+    m.is_setter_dm
+      ? `${m.full_name} ne pourra plus recevoir de leads de Lead Setting DM. Les leads qu'il a déjà restent chez lui : réattribue-les depuis la page Leads si besoin.`
+      : `${m.full_name} pourra recevoir des leads de Lead Setting DM, après avoir accepté la charte de confidentialité dans « Mes leads ».`,
+    async () => {
+      const { error } = await (supabase as any).from("profiles")
+        .update({ is_setter_dm: !m.is_setter_dm })
+        .eq("id", m.id);
+      if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      else toast({ title: m.is_setter_dm ? `${m.full_name} n'est plus Setter DM` : `${m.full_name} est Setter DM` });
+    }
+  );
 
   const getInitials = (name: string) =>
     name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
@@ -339,6 +357,15 @@ export default function AdminTeam() {
                             Inactif
                           </Badge>
                         )}
+                        {member.is_setter_dm && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] px-1.5 py-0 border-sky-500/40 text-sky-300"
+                            title={member.charte_dm_acceptee_le ? "Charte de confidentialité acceptée" : "Charte de confidentialité pas encore acceptée"}
+                          >
+                            Setter DM{member.charte_dm_acceptee_le ? "" : " · charte à accepter"}
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground truncate">{member.email}</p>
                     </div>
@@ -448,6 +475,12 @@ export default function AdminTeam() {
                         <DropdownMenuItem onClick={() => promoteToCollab(member)}>
                           <ArrowUpRight className="h-4 w-4 mr-2 text-blue-400" />
                           Promouvoir collaborateur
+                        </DropdownMenuItem>
+                      )}
+                      {member.role === "apporteur" && (
+                        <DropdownMenuItem onClick={() => toggleSetterDm(member)}>
+                          <MessageCircle className="h-4 w-4 mr-2 text-sky-400" />
+                          {member.is_setter_dm ? "Retirer « Setter DM »" : "Faire Setter DM"}
                         </DropdownMenuItem>
                       )}
                       {member.role === "collaborateur" && (

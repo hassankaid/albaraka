@@ -16,7 +16,8 @@ import LeadScoringPanel from "@/components/leads/LeadScoringPanel";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import { LEAD_STATUS_LABELS } from "@/lib/leadConfig";
+import { LEAD_STATUS_LABELS, DM_EDITABLE_STATUSES, estStatutDm } from "@/lib/leadConfig";
+import { CharteSetterDm } from "@/components/apporteur/CharteSetterDm";
 import { BoutonRelanceFaite, StatutLead, SuiviRelances } from "@/components/leads/Relances";
 import { apresRelance, etapeRelance, STATUT_RELANCE } from "@/lib/relances";
 import { leadSourceConfig, getSourceLabel, getSourceBadgeClass } from "@/lib/leadConfig";
@@ -26,7 +27,12 @@ import "react-phone-number-input/style.css";
 import { messageErreurLead } from "@/lib/leadDoublon";
 
 // relance_* : système de relances (15/10/2026), pas encore dans les types générés
-type LeadEnriched = Tables<"leads_enriched"> & { relance_etape?: number | null; relance_derniere_le?: string | null };
+// dm_* : parcours Setter DM (16/11/2026), pas encore dans les types générés
+type LeadEnriched = Tables<"leads_enriched"> & {
+  relance_etape?: number | null;
+  relance_derniere_le?: string | null;
+  dm_depuis?: string | null;
+};
 
 const APPORTEUR_SOURCES = [
   { value: "apporteur_facebook", label: "Facebook" },
@@ -59,6 +65,16 @@ const APPORTEUR_EDITABLE_STATUSES = [
   { value: "pas_de_reponse", label: "Pas de réponse" },
   { value: "pas_de_reponse_post_conference", label: "Pas de réponse post-conf" },
 ];
+
+// Setter DM (16/11/2026) : sur un lead DM, seulement le parcours DM ; sur ses autres
+// leads, la liste habituelle sans « Perdu » (réservé aux setters intermédiaires).
+// La base vérifie les mêmes règles (tg_leads_dm).
+const DM_STATUS_OPTIONS = DM_EDITABLE_STATUSES.map((k) => ({ value: k as string, label: LEAD_STATUS_LABELS[k] }));
+function statutsProposes(lead: LeadEnriched | null, setterDm: boolean) {
+  if (setterDm && lead && (lead.dm_depuis || estStatutDm(lead.status))) return DM_STATUS_OPTIONS;
+  if (setterDm) return APPORTEUR_EDITABLE_STATUSES.filter((o) => o.value !== "perdu");
+  return APPORTEUR_EDITABLE_STATUSES;
+}
 
 // Statuts qui déclenchent un recyclage instantané du lead
 // (désaffectation du commercial + retour dans le pot "À recycler" du CEO).
@@ -96,7 +112,11 @@ export default function ApporteurLeads() {
   const [formOpen, setFormOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState<LeadTab>("apportes");
+  // Setter DM (16/11/2026) : ses leads à contacter d'abord, après acceptation de la charte
+  const estSetterDm = !!profile?.is_setter_dm;
+  const [charteAcceptee, setCharteAcceptee] = useState(false);
+  const charteOk = !!profile?.charte_dm_acceptee_le || charteAcceptee;
+  const [activeTab, setActiveTab] = useState<LeadTab>(estSetterDm ? "a_traiter" : "apportes");
   // Sous-filtre "Source" (onglet "Mes leads apportés"). "all" = toutes sources.
   const [sourceFilter, setSourceFilter] = useState<string>("all");
 
@@ -322,7 +342,8 @@ export default function ApporteurLeads() {
   // (assigned_to=moi). Un lead auto-assigné à son apporteur peut figurer dans
   // les deux (comportement attendu).
   const apportesLeads = leads.filter((l) => l.apporteur_id === profile?.id);
-  const aTraiterLeads = leads.filter((l) => l.assigned_to === profile?.id);
+  // Setter DM sans charte acceptée : aucun lead à traiter affiché
+  const aTraiterLeads = estSetterDm && !charteOk ? [] : leads.filter((l) => l.assigned_to === profile?.id);
   const activeLeads = activeTab === "apportes" ? apportesLeads : aTraiterLeads;
 
   // Sources présentes dans les leads APPORTÉS (options dynamiques du sous-filtre).
@@ -338,6 +359,8 @@ export default function ApporteurLeads() {
     // Sous-filtre source : uniquement dans l'onglet "Mes leads apportés".
     if (activeTab === "apportes" && sourceFilter !== "all" && l.source !== sourceFilter) return false;
     if (statusFilter !== "all" && l.status !== statusFilter) return false;
+    // « Perdu définitivement » : terminé, masqué des leads à traiter sauf si on le filtre
+    if (activeTab === "a_traiter" && statusFilter === "all" && l.status === "perdu_definitif") return false;
     if (search) {
       const q = search.toLowerCase();
       const match = [l.contact_full_name, l.contact_phone, l.contact_email]
@@ -376,6 +399,8 @@ export default function ApporteurLeads() {
           Ajouter un lead
         </Button>
       </div>
+
+      {estSetterDm && !charteOk && <CharteSetterDm onAcceptee={() => setCharteAcceptee(true)} />}
 
       {/* Onglets : "Mes leads apportés" vs "Mes leads à traiter (affectés)" */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as LeadTab)}>
@@ -759,7 +784,7 @@ export default function ApporteurLeads() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {APPORTEUR_EDITABLE_STATUSES.map((opt) => (
+                    {statutsProposes(editLead, estSetterDm).map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
                         {opt.label}
                       </SelectItem>
