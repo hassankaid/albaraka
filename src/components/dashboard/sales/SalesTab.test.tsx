@@ -38,6 +38,25 @@ vi.mock("@/hooks/useSalesDashboard", () => ({
   useSalesDashboard: (f: unknown) => ({ data: f ? donnees : undefined, isLoading: false, isError: false, error: null }),
 }));
 
+vi.mock("@/hooks/useSalesSources", () => ({
+  useSalesSources: (f: unknown) => ({
+    data: f ? {
+      ventes: [{
+        vente_id: "v1", vendu_le: "2026-11-15T15:00:00Z", conference_date: "2026-11-15", montant_ht: 2000, encaisse: 2000,
+        perdue: false, nb_echeances: 1, lead_cree_le: "2026-11-10T10:00:00Z", canal: "snap_ads", canal_libelle: "Snap Ads",
+        tunnel: null, plateforme: "snap", campagne_id: "c1", campagne_nom: "Campagne froide", groupe_id: "g1", groupe_nom: "Groupe 1",
+        pub_id: "p1", pub_nom: "Vidéo 20", quiz_priorite: "A", reinscrit: false, signal_jeu_ven: false,
+      }],
+      entonnoir: [{
+        canal: "snap_ads", canal_libelle: "Snap Ads", plateforme: "snap", campagne_id: "c1", campagne_nom: "Campagne froide",
+        groupe_id: null, groupe_nom: null, pub_id: null, pub_nom: null, quiz_priorite: null,
+        leads: 0, inscrits: 0, rdv: 0, rdv_tenus: 0, depense_campagne: 500, depense_pub: 0,
+      }],
+    } : undefined,
+    isLoading: false, isError: false, error: null,
+  }),
+}));
+
 describe("SalesTab", () => {
   it("affiche la synthèse, les perdues, les classements et ce qui est à corriger", async () => {
     render(
@@ -55,5 +74,9 @@ describe("SalesTab", () => {
     expect(screen.getByText(/vente\(s\) sans setter/)).toBeTruthy();
     expect(screen.getByText(/call\(s\) passé\(s\) sans résultat/)).toBeTruthy();
     expect(screen.getAllByText("Client Deux")).toHaveLength(2); // bloc des perdues + liste
+    expect(screen.getByText("Ventes par source")).toBeTruthy();
+    expect(screen.getAllByText("Snap Ads").length).toBeGreaterThan(0);
+    expect(screen.getByText("Profil des acheteurs")).toBeTruthy();
+    expect(screen.getAllByText("×4").length).toBeGreaterThan(0); // 2 000 € de CA pour 500 € de dépense
   });
 });

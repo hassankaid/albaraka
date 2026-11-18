@@ -5,8 +5,8 @@
 // setté. Les calls servent au taux de closing, l'activité d'appel des setters
 // vient du même calcul que l'onglet Équipe.
 //
-// Lot 2 (à venir) : performance par canal, campagne et créa, entonnoir, profil
-// des acheteurs, ouverts aussi à l'agence.
+// Lot 2 (18/11/2026) : ventes par source jusqu'à la créa, entonnoir, profil des
+// acheteurs (PerformanceSources, ouvert aussi à l'agence).
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle, Download, Loader2, Target, Trophy, Users, XCircle } from "lucide-react";
@@ -23,6 +23,7 @@ import { fmtEuros, fmtNombre } from "@/lib/marketing/perf";
 import { classeurXlsx } from "@/lib/classeurXlsx";
 import { cn } from "@/lib/utils";
 import { useSalesDashboard } from "@/hooks/useSalesDashboard";
+import PerformanceSources from "./PerformanceSources";
 import {
   aCorriger, classementClosers, classementParRole, classementSetters, estPerdue, evolution,
   LIBELLES_STATUT_VENTE, nomsDe, synthese, taux,
@@ -204,6 +205,12 @@ export default function SalesTab() {
               </CardContent>
             </Card>
           )}
+
+          {/* ─── Ventes par source et profil des acheteurs (lot 2) ─ */}
+          <PerformanceSources
+            filtre={filtre}
+            suffixeExport={filtre?.mode === "single" ? filtre.date : filtre?.mode === "range" ? `${filtre.from}_${filtre.to}` : "tout"}
+          />
 
           {/* ─── Closers ────────────────────────────────────────── */}
           <Card>
