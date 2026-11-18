@@ -54,7 +54,7 @@ describe("synthese", () => {
 });
 
 describe("classementClosers", () => {
-  it("croise les ventes saisies et les calls, taux de closing sur les calls tenus", () => {
+  it("croise les ventes saisies et les calls, closing = calls tenus suivis d'un achat", () => {
     const l = classementClosers(
       [vente({ intervenants: [closer("hedi")] }), vente({ intervenants: [closer("sabrina")] })],
       [
@@ -71,11 +71,14 @@ describe("classementClosers", () => {
     expect(hedi.noShow).toBe(1);
     expect(hedi.aRenseigner).toBe(1);
     expect(hedi.aVenir).toBe(1);
+    expect(hedi.tenusAchetes).toBe(1);
     expect(hedi.tauxClosing).toBe(0.5);
+    expect(hedi.ventesSansCall).toBe(0);
     const sabrina = l.find((x) => x.cle === "sabrina")!;
     expect(sabrina.ventes).toBe(1);
     expect(sabrina.callsPris).toBe(0);
     expect(sabrina.tauxClosing).toBeNull();
+    expect(sabrina.ventesSansCall).toBe(1);
   });
 });
 

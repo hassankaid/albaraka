@@ -228,8 +228,8 @@ export default function SalesTab() {
                         <Entete className="text-right" titre="Tenus" aide="Calls qui ont eu lieu : closé, non closé, follow-up, disqualifié, renvoyé." />
                         <Entete className="text-right" titre="No-show" aide="Nombre de no-show (et part parmi les calls passés)." />
                         <Entete className="text-right" titre="À renseigner" aide="Calls passés encore « planifié » : le résultat n'a pas été saisi. Le taux de closing est surestimé tant qu'il en reste." />
-                        <Entete className="text-right" titre="Ventes" />
-                        <Entete className="text-right" titre="Closing" aide="Ventes divisées par calls tenus." />
+                        <Entete className="text-right" titre="Ventes" aide="Ventes où il a une commission de closer, avec ou sans call Calendly (vente en direct, après la rediffusion…)." />
+                        <Entete className="text-right" titre="Closing" aide="Part des calls tenus suivis d'un achat de la personne. Surestimé tant que des calls restent à renseigner." />
                         <TableHead className="text-right">CA signé</TableHead>
                         <TableHead className="text-right">Encaissé</TableHead>
                         <TableHead className="text-right">Panier</TableHead>
@@ -251,9 +251,13 @@ export default function SalesTab() {
                           </TableCell>
                           <TableCell className="text-right font-medium text-foreground">
                             {fmtNombre(l.ventes)}
+                            {l.ventesSansCall > 0 && <span className="block text-[10px] text-muted-foreground">dont {l.ventesSansCall} sans call</span>}
                             {l.perdues > 0 && <span className="block text-[10px] text-red-400">dont {l.perdues} perdue{l.perdues > 1 ? "s" : ""}</span>}
                           </TableCell>
-                          <TableCell className="text-right font-bold text-primary">{taux(l.tauxClosing)}</TableCell>
+                          <TableCell className="text-right font-bold text-primary">
+                            {taux(l.tauxClosing)}
+                            {l.tenus > 0 && <span className="block text-[10px] font-normal text-muted-foreground">{l.tenusAchetes} / {l.tenus}</span>}
+                          </TableCell>
                           <TableCell className="text-right">{fmtEuros(l.caSigne)}</TableCell>
                           <TableCell className="text-right">{fmtEuros(l.encaisse)}</TableCell>
                           <TableCell className="text-right">{fmtEuros(l.panierMoyen)}</TableCell>

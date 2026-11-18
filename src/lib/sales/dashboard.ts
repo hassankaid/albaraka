@@ -186,19 +186,26 @@ export interface LigneCloser extends LigneClassement {
   noShow: number;
   aRenseigner: number;
   aVenir: number;
-  /** Ventes / calls tenus. Surestimé tant que des calls restent à renseigner. */
+  /** Calls tenus suivis d'un achat de la personne. */
+  tenusAchetes: number;
+  /** Calls tenus suivis d'un achat / calls tenus. Surestimé tant que des calls restent à renseigner. */
   tauxClosing: number | null;
+  /** Ventes saisies à son nom sans call Calendly tenu par lui (vente en direct, rediffusion…). */
+  ventesSansCall: number;
   tauxNoShow: number | null;
 }
 
 export function classementClosers(ventes: VenteDashboard[], calls: CallDashboard[], maintenant = new Date()): LigneCloser[] {
   const base = new Map(classementParRole(ventes, "closer").map((l) => [l.cle, l]));
-  const stats = new Map<string, { nom: string; pris: number; tenus: number; noShow: number; aRenseigner: number; aVenir: number }>();
+  const stats = new Map<string, { nom: string; pris: number; tenus: number; tenusAchetes: number; noShow: number; aRenseigner: number; aVenir: number }>();
   for (const c of calls) {
     if (c.statut === "annule" || !c.closer_id) continue;
-    const s = stats.get(c.closer_id) ?? { nom: c.closer ?? "?", pris: 0, tenus: 0, noShow: 0, aRenseigner: 0, aVenir: 0 };
+    const s = stats.get(c.closer_id) ?? { nom: c.closer ?? "?", pris: 0, tenus: 0, tenusAchetes: 0, noShow: 0, aRenseigner: 0, aVenir: 0 };
     s.pris += 1;
-    if (CALL_TENU.has(c.statut)) s.tenus += 1;
+    if (CALL_TENU.has(c.statut)) {
+      s.tenus += 1;
+      if (c.achete || c.statut === "close") s.tenusAchetes += 1;
+    }
     else if (c.statut === "no_show") s.noShow += 1;
     else if (c.statut === "planifie") {
       if (c.prevu_le && new Date(c.prevu_le) < maintenant) s.aRenseigner += 1;
@@ -227,7 +234,9 @@ export function classementClosers(ventes: VenteDashboard[], calls: CallDashboard
       noShow: s?.noShow ?? 0,
       aRenseigner: s?.aRenseigner ?? 0,
       aVenir: s?.aVenir ?? 0,
-      tauxClosing: s && s.tenus > 0 ? ventesN / s.tenus : null,
+      tenusAchetes: s?.tenusAchetes ?? 0,
+      tauxClosing: s && s.tenus > 0 ? s.tenusAchetes / s.tenus : null,
+      ventesSansCall: Math.max(0, ventesN - (s?.tenusAchetes ?? 0)),
       tauxNoShow: passes > 0 ? (s as { noShow: number }).noShow / passes : null,
     };
   }).sort((a, b) => b.ventes - a.ventes || b.caSigne - a.caSigne || b.callsPris - a.callsPris);
