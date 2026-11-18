@@ -249,6 +249,13 @@ function distinguerHomonymes(groupes: NoeudSource[]) {
     const creas = [...g.enfants].sort((a, b) => b.depense - a.depense || b.leads - a.leads).map((c) => c.nom);
     g.nom = `${g.nom} · ${creas.slice(0, 2).join(", ")}${creas.length > 2 ? ` +${creas.length - 2}` : ""}`;
   }
+  // Toujours identiques (mêmes créas) : la fin de l'identifiant du groupe départage.
+  const encore = new Map<string, number>();
+  for (const g of groupes) encore.set(g.nom, (encore.get(g.nom) ?? 0) + 1);
+  for (const g of groupes) {
+    const id = g.cle.split("/").pop() ?? "";
+    if ((encore.get(g.nom) ?? 0) > 1 && id && id !== "?") g.nom = `${g.nom} (#${id.slice(-4)})`;
+  }
 }
 
 /** Plus de ventes d'abord, puis plus de dépense. */

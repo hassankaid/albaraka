@@ -49,15 +49,20 @@ const COLONNES: Colonne[] = [
   { cle: "cpl", entete: "CPL", aide: "Dépense ÷ leads.", rendu: (l) => fmtEuros(l.cpl, 2) },
   {
     cle: "inscrits", entete: "Inscrits", aide: "Leads passés par « Inscrit conférence », et part des leads.",
-    rendu: (l) => <>{fmtNombre(l.inscrits)} <span className="text-[10px] text-muted-foreground">{pct(l.tauxInscription)}</span></>,
+    rendu: (l) => <>{fmtNombre(l.inscrits)}<span className="block text-[10px] text-muted-foreground">{pct(l.tauxInscription)}</span></>,
   },
   {
     cle: "rdv", entete: "RDV", aide: "Leads qui ont pris un rendez-vous (non annulé) ; en petit, ceux dont le rendez-vous a eu lieu.",
-    rendu: (l) => <>{fmtNombre(l.rdv)} {l.rdv > 0 && <span className="text-[10px] text-muted-foreground">{l.rdvTenus} tenus</span>}</>,
+    rendu: (l) => (
+      <>
+        {fmtNombre(l.rdv)}
+        {l.rdv > 0 && <span className="block text-[10px] text-muted-foreground">{l.rdvTenus} tenu{l.rdvTenus > 1 ? "s" : ""}</span>}
+      </>
+    ),
   },
   {
     cle: "coutParRdv", entete: "Coût / RDV", aide: "Dépense ÷ rendez-vous pris.",
-    rendu: (l, ref) => <span className={cn(TON[tendance(l.coutParRdv, ref.coutParRdv, true, l.faibleVolume) ?? "x"])}>{fmtEuros(l.coutParRdv)}</span>,
+    rendu: (l, ref) => <span className={cn(TON[tendance(l.coutParRdv, ref.coutParRdv, true, l.rdv < SEUIL_VENTES) ?? "x"])}>{fmtEuros(l.coutParRdv)}</span>,
   },
   {
     cle: "ventes", entete: "Ventes", aide: "Ventes PASS rattachées à la conférence et dont le lead vient de cette source. En petit : part des leads qui ont acheté.",
@@ -72,12 +77,12 @@ const COLONNES: Colonne[] = [
   { cle: "caNet", entete: "CA net", aide: "Chiffre d'affaires HT signé, hors ventes perdues.", rendu: (l) => fmtEuros(l.caNet) },
   { cle: "encaisse", entete: "Encaissé", aide: "Échéances déjà payées sur ces ventes.", rendu: (l) => fmtEuros(l.encaisse) },
   {
-    cle: "cpa", entete: "Coût / vente", aide: "Dépense ÷ ventes hors ventes perdues. Vert : 20 % moins cher que la moyenne ; rouge : 25 % plus cher.",
-    rendu: (l, ref) => <span className={cn("font-medium", TON[tendance(l.cpa, ref.cpa, true, l.faibleVolume) ?? "x"])}>{fmtEuros(l.cpa)}</span>,
+    cle: "cpa", entete: "Coût / vente", aide: "Dépense ÷ ventes hors ventes perdues. Vert : 20 % moins cher que la moyenne ; rouge : 25 % plus cher (à partir de 3 ventes).",
+    rendu: (l, ref) => <span className={cn("font-medium", TON[tendance(l.cpa, ref.cpa, true, l.ventes - l.perdues < SEUIL_VENTES) ?? "x"])}>{fmtEuros(l.cpa)}</span>,
   },
   {
     cle: "roas", entete: "ROAS", aide: "CA net ÷ dépense : ×3 = 3 € de CA pour 1 € de pub. Vert / rouge : par rapport à la moyenne.",
-    rendu: (l, ref) => <span className={cn("font-bold", TON[tendance(l.roas, ref.roas, false, l.faibleVolume) ?? "x"])}>{fmtRoas(l.roas)}</span>,
+    rendu: (l, ref) => <span className={cn("font-bold", TON[tendance(l.roas, ref.roas, false, l.ventes - l.perdues < SEUIL_VENTES) ?? "x"])}>{fmtRoas(l.roas)}</span>,
   },
 ];
 
@@ -178,22 +183,22 @@ export default function PerformanceSources({ filtre, suffixeExport }: { filtre: 
           className={cn("border-b last:border-0 hover:bg-muted/30", depliable && "cursor-pointer", profondeur === 0 && "font-medium")}
           onClick={depliable ? () => basculer(n.cle) : undefined}
         >
-          <td className="p-2.5">
-            <div className="flex items-center gap-1.5" style={{ paddingLeft: profondeur * 18 }}>
+          <td className="p-2.5 align-top min-w-[300px]">
+            <div className="flex items-start gap-1.5" style={{ paddingLeft: profondeur * 18 }}>
               {depliable ? (
-                ouvert ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                ouvert ? <ChevronDown className="h-3.5 w-3.5 shrink-0 mt-0.5" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0 mt-0.5" />
               ) : (
                 <span className="w-3.5 shrink-0" />
               )}
               {vue === "crea" && n.plateforme && (
                 <Badge variant="outline" className="text-[10px] font-normal">{NOM_PLATEFORME[n.plateforme] ?? n.plateforme}</Badge>
               )}
-              {profondeur > 0 && <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{LIBELLE_NIVEAU[n.niveau]}</span>}
+              {profondeur > 0 && <span className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5 shrink-0">{LIBELLE_NIVEAU[n.niveau]}</span>}
               <span className={cn("text-foreground", profondeur > 0 && "font-normal")}>{n.nom}</span>
               {n.faibleVolume && (n.leads > 0 || n.ventes > 0 || n.depense > 0) && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="ml-1 rounded border border-border px-1 text-[9px] uppercase tracking-wide text-muted-foreground">peu de données</span>
+                    <span className="ml-1 mt-0.5 shrink-0 whitespace-nowrap rounded border border-border px-1 text-[9px] uppercase tracking-wide text-muted-foreground">peu de données</span>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs text-xs">
                     Moins de {SEUIL_VENTES} ventes et moins de {SEUIL_LEADS} leads : trop peu pour conclure, les couleurs sont désactivées.
@@ -203,7 +208,7 @@ export default function PerformanceSources({ filtre, suffixeExport }: { filtre: 
             </div>
           </td>
           {COLONNES.map((c) => (
-            <td key={c.cle} className="p-2.5 text-right tabular-nums align-top">{c.rendu(n, reference!)}</td>
+            <td key={c.cle} className="p-2.5 text-right tabular-nums align-top whitespace-nowrap">{c.rendu(n, reference!)}</td>
           ))}
         </tr>
         {ouvert && n.enfants.map((e) => rendreLigne(e, profondeur + 1))}
@@ -266,7 +271,7 @@ export default function PerformanceSources({ filtre, suffixeExport }: { filtre: 
                     <tr className="bg-muted/40 font-semibold">
                       <td className="p-2.5">Total</td>
                       {COLONNES.map((c) => (
-                        <td key={c.cle} className="p-2.5 text-right tabular-nums align-top">{c.rendu({ ...reference, faibleVolume: true }, reference)}</td>
+                        <td key={c.cle} className="p-2.5 text-right tabular-nums align-top whitespace-nowrap">{c.rendu(reference, reference)}</td>
                       ))}
                     </tr>
                   )}
@@ -278,7 +283,7 @@ export default function PerformanceSources({ filtre, suffixeExport }: { filtre: 
           <p className="text-xs text-muted-foreground mt-3">
             Même période que le reste de l'onglet : ventes rattachées aux conférences choisies, leads de ces conférences, dépense des
             jours qui les précèdent. Une source sans dépense (Instagram, apporteurs…) n'a ni coût par vente ni ROAS. Couleurs : comparaison
-            à la moyenne du tableau, seulement au-delà de {SEUIL_VENTES} ventes ou {SEUIL_LEADS} leads.
+            à la moyenne du tableau, seulement à partir de {SEUIL_VENTES} ventes ({SEUIL_VENTES} rendez-vous pour le coût par RDV).
           </p>
         </CardContent>
       </Card>
