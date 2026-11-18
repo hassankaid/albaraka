@@ -183,7 +183,7 @@ export default function PerformanceSources({ filtre, suffixeExport }: { filtre: 
           className={cn("border-b last:border-0 hover:bg-muted/30", depliable && "cursor-pointer", profondeur === 0 && "font-medium")}
           onClick={depliable ? () => basculer(n.cle) : undefined}
         >
-          <td className="p-2.5 align-top min-w-[300px]">
+          <td className="px-2 py-2.5 align-top min-w-[260px]">
             <div className="flex items-start gap-1.5" style={{ paddingLeft: profondeur * 18 }}>
               {depliable ? (
                 ouvert ? <ChevronDown className="h-3.5 w-3.5 shrink-0 mt-0.5" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0 mt-0.5" />
@@ -194,21 +194,23 @@ export default function PerformanceSources({ filtre, suffixeExport }: { filtre: 
                 <Badge variant="outline" className="text-[10px] font-normal">{NOM_PLATEFORME[n.plateforme] ?? n.plateforme}</Badge>
               )}
               {profondeur > 0 && <span className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5 shrink-0">{LIBELLE_NIVEAU[n.niveau]}</span>}
-              <span className={cn("text-foreground", profondeur > 0 && "font-normal")}>{n.nom}</span>
-              {n.faibleVolume && (n.leads > 0 || n.ventes > 0 || n.depense > 0) && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="ml-1 mt-0.5 shrink-0 whitespace-nowrap rounded border border-border px-1 text-[9px] uppercase tracking-wide text-muted-foreground">peu de données</span>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs text-xs">
-                    Moins de {SEUIL_VENTES} ventes et moins de {SEUIL_LEADS} leads : trop peu pour conclure, les couleurs sont désactivées.
-                  </TooltipContent>
-                </Tooltip>
-              )}
+              <div className="min-w-0">
+                <span className={cn("text-foreground", profondeur > 0 && "font-normal")}>{n.nom}</span>
+                {n.faibleVolume && (n.leads > 0 || n.ventes > 0 || n.depense > 0) && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="block w-fit mt-1 whitespace-nowrap rounded border border-border px-1 text-[9px] uppercase tracking-wide text-muted-foreground">peu de données</span>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs text-xs">
+                      Moins de {SEUIL_VENTES} ventes et moins de {SEUIL_LEADS} leads : trop peu pour conclure, les couleurs sont désactivées.
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
             </div>
           </td>
           {COLONNES.map((c) => (
-            <td key={c.cle} className="p-2.5 text-right tabular-nums align-top whitespace-nowrap">{c.rendu(n, reference!)}</td>
+            <td key={c.cle} className="px-2 py-2.5 text-right tabular-nums align-top whitespace-nowrap">{c.rendu(n, reference!)}</td>
           ))}
         </tr>
         {ouvert && n.enfants.map((e) => rendreLigne(e, profondeur + 1))}
@@ -271,7 +273,7 @@ export default function PerformanceSources({ filtre, suffixeExport }: { filtre: 
                     <tr className="bg-muted/40 font-semibold">
                       <td className="p-2.5">Total</td>
                       {COLONNES.map((c) => (
-                        <td key={c.cle} className="p-2.5 text-right tabular-nums align-top whitespace-nowrap">{c.rendu(reference, reference)}</td>
+                        <td key={c.cle} className="px-2 py-2.5 text-right tabular-nums align-top whitespace-nowrap">{c.rendu(reference, reference)}</td>
                       ))}
                     </tr>
                   )}
@@ -407,7 +409,7 @@ function EnTete({
 }) {
   const actif = tri.col === col;
   return (
-    <th className={cn("font-medium p-2.5 whitespace-nowrap", align === "left" ? "text-left" : "text-right")}>
+    <th className={cn("font-medium px-2 py-2.5 whitespace-nowrap", align === "left" ? "text-left" : "text-right")}>
       <Tooltip>
         <TooltipTrigger asChild>
           <button type="button" onClick={() => onTri(col)} className={cn("inline-flex items-center gap-1 uppercase", actif && "text-foreground")}>
