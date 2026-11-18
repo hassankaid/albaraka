@@ -13,6 +13,7 @@ import PeriodSalesCard from "@/components/dashboard/PeriodSalesCard";
 import PeriodFilter, { type DateRange } from "@/components/dashboard/PeriodFilter";
 import MarketingTab from "@/components/dashboard/marketing/MarketingTab";
 import TeamTab from "@/components/dashboard/team/TeamTab";
+import SalesTab from "@/components/dashboard/sales/SalesTab";
 import AgencyDashboard from "@/pages/agency/AgencyDashboard";
 import { Loader2 } from "lucide-react";
 
@@ -173,7 +174,7 @@ const Dashboard = () => {
         <TabsTrigger value="financier">💰 Financier</TabsTrigger>
         <TabsTrigger value="marketing">📣 Marketing</TabsTrigger>
         <TabsTrigger value="equipe">👥 Équipe</TabsTrigger>
-        <TabsTrigger value="sales" disabled>🎯 Sales</TabsTrigger>
+        <TabsTrigger value="sales">🎯 Sales</TabsTrigger>
       </TabsList>
 
       <TabsContent value="financier">
@@ -186,7 +187,7 @@ const Dashboard = () => {
         <TeamTab />
       </TabsContent>
       <TabsContent value="sales">
-        <p className="text-muted-foreground text-sm py-10 text-center">Pôle Sales — À venir</p>
+        <SalesTab />
       </TabsContent>
     </Tabs>
   );

@@ -121,8 +121,10 @@ describe("statuts de fiche proposés dans le menu", () => {
 
   // Témoin, comme pour les sources : une lecture cassée renverrait une liste
   // vide et les vérifications suivantes passeraient sans rien prouver.
-  it("la base en accepte 12 depuis l'ajout d'« Envoi rediffusion » le 10/09/2026", () => {
-    expect(acceptes).toHaveLength(12);
+  // 12 depuis l'ajout d'« Envoi rediffusion » le 10/09/2026, 17 depuis les
+  // cinq statuts du Setter DM le 16/11/2026.
+  it("la base en accepte 17 depuis les statuts du Setter DM (16/11/2026)", () => {
+    expect(acceptes).toHaveLength(17);
   });
 
   it.each([...LEAD_MANUAL_STATUSES])("« %s » est accepté par la base et a un libellé", (statut) => {
