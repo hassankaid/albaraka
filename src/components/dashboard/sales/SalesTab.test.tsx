@@ -57,6 +57,17 @@ vi.mock("@/hooks/useSalesSources", () => ({
   }),
 }));
 
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ profile: { role: "ceo" } }) }));
+
+vi.mock("@/hooks/useSalesPilotage", () => ({
+  useReglagesPilotage: () => ({
+    data: { cpa_cible: null, couper_multiple: 2, pousser_ratio: 0.7, ventes_min: 3, fenetre_conferences: 4 }, isLoading: false,
+  }),
+  useEnregistrerReglages: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useObjectifsSemaine: () => ({ data: [{ conference_date: null, ventes: 8, ca: null, rdv: null, budget: null }] }),
+  useEnregistrerObjectif: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
+
 describe("SalesTab", () => {
   it("affiche la synthèse, les perdues, les classements et ce qui est à corriger", async () => {
     render(
@@ -66,7 +77,7 @@ describe("SalesTab", () => {
         </TooltipProvider>
       </MemoryRouter>,
     );
-    expect(await screen.findByText("Ventes PASS")).toBeTruthy();
+    expect((await screen.findAllByText("Ventes PASS")).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Ventes perdues").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Closer A").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Setter B").length).toBeGreaterThan(0);
@@ -77,6 +88,9 @@ describe("SalesTab", () => {
     expect(screen.getByText("Ventes par source")).toBeTruthy();
     expect(screen.getAllByText("Snap Ads").length).toBeGreaterThan(0);
     expect(screen.getByText("Profil des acheteurs")).toBeTruthy();
-    expect(screen.getAllByText("×4").length).toBeGreaterThan(0); // 2 000 € de CA pour 500 € de dépense
+    expect(screen.getAllByText("×4").length).toBeGreaterThan(0);
+    expect(screen.getByText(/Objectifs de la semaine/)).toBeTruthy();
+    expect(screen.getByText("Recommandations par créa")).toBeTruthy();
+    expect(screen.getByText("RDV tenus")).toBeTruthy(); // entonnoir // 2 000 € de CA pour 500 € de dépense
   });
 });

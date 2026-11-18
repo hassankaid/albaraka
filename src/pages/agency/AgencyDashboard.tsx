@@ -4,7 +4,8 @@
 //   1. MarketingTab — performance par conférence et mensuelle, objectifs,
 //      analyse par canal / tunnel / combinaison.
 //   2. PerformanceSources — ventes par source jusqu'à la créa, profil des
-//      acheteurs (dashboard Sales, lot 2 : sans nom de client ni commission).
+//      acheteurs (dashboard Sales, lot 2 : sans nom de client ni commission),
+//      objectifs de la semaine et recommandations par créa (lot 3, lecture seule).
 //   3. AgencyCommissionsBlock — commissions de l'agence : collectées, à venir, ROI.
 //
 // La période n'est plus choisie ici : c'est l'onglet Marketing qui la remonte,
@@ -15,6 +16,8 @@ import { useState } from "react";
 import MarketingTab from "@/components/dashboard/marketing/MarketingTab";
 import AgencyCommissionsBlock from "@/components/dashboard/agency/AgencyCommissionsBlock";
 import PerformanceSources from "@/components/dashboard/sales/PerformanceSources";
+import ObjectifsSemaine from "@/components/dashboard/sales/ObjectifsSemaine";
+import Recommandations from "@/components/dashboard/sales/Recommandations";
 import {
   currentOrPrevSunday,
   type ConferenceFilter as ConferenceFilterValue,
@@ -43,6 +46,9 @@ export default function AgencyDashboard() {
         filtre={filter}
         suffixeExport={filter.mode === "single" ? filter.date : filter.mode === "range" ? `${filter.from}_${filter.to}` : "tout"}
       />
+
+      <ObjectifsSemaine filtre={filter} />
+      <Recommandations />
 
       {/* Section 3 : Commissions (collectées, à venir, ROI) */}
       <AgencyCommissionsBlock filter={filter} />

@@ -20,6 +20,7 @@ import type { ConferenceFilter } from "@/lib/marketing/conferenceFilter";
 import { classeurXlsx } from "@/lib/classeurXlsx";
 import { cn } from "@/lib/utils";
 import { useSalesSources } from "@/hooks/useSalesSources";
+import { entonnoir } from "@/lib/sales/pilotage";
 import {
   aplatir, arborescence, NOM_PLATEFORME, parCrea, profilDelai, profilPriorite, SEUIL_LEADS, SEUIL_VENTES,
   signaux, tendance, totalNoeuds, type Derives, type LigneProfil, type Mesures, type NoeudSource,
@@ -244,6 +245,8 @@ export default function PerformanceSources({ filtre, suffixeExport }: { filtre: 
           ) : lignes.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">Aucun lead, aucune dépense et aucune vente sur la période.</p>
           ) : (
+            <>
+            {calc && <Entonnoir t={calc.total} />}
             <div className="rounded-lg border overflow-x-auto">
               <table className="w-full text-sm min-w-[1150px]">
                 <thead>
@@ -270,6 +273,7 @@ export default function PerformanceSources({ filtre, suffixeExport }: { filtre: 
                 </tbody>
               </table>
             </div>
+            </>
           )}
           <p className="text-xs text-muted-foreground mt-3">
             Même période que le reste de l'onglet : ventes rattachées aux conférences choisies, leads de ces conférences, dépense des
@@ -309,6 +313,33 @@ export default function PerformanceSources({ filtre, suffixeExport }: { filtre: 
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+function Entonnoir({ t }: { t: Mesures }) {
+  const etapes = entonnoir(t);
+  return (
+    <div className="mb-4 grid grid-cols-5 gap-1 rounded-lg border p-3">
+      {etapes.map((e, i) => (
+        <div key={e.cle} className="relative text-center">
+          {i > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="absolute -left-3 top-1 text-[10px] text-muted-foreground tabular-nums cursor-help">
+                  {e.taux === null ? "" : pct(e.taux, e.taux < 0.1 ? 1 : 0)} →
+                </span>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs">
+                Passage depuis « {etapes[i - 1].libelle} ».
+                {e.cle === "ventes" && " Les ventes de la période ne viennent pas toutes de ses leads (achats plus tardifs, ventes sans lead) : c'est un ordre de grandeur."}
+              </TooltipContent>
+            </Tooltip>
+          )}
+          <p className="font-heading text-xl text-foreground tabular-nums">{fmtNombre(e.valeur)}</p>
+          <p className="text-[11px] text-muted-foreground">{e.libelle}</p>
+        </div>
+      ))}
     </div>
   );
 }

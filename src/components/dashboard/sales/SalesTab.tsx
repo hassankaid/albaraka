@@ -7,6 +7,8 @@
 //
 // Lot 2 (18/11/2026) : ventes par source jusqu'à la créa, entonnoir, profil des
 // acheteurs (PerformanceSources, ouvert aussi à l'agence).
+// Lot 3 (18/11/2026) : objectifs par semaine, recommandations par créa
+// (couper / pousser, seuils réglés par le CEO), entonnoir.
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle, Download, Loader2, Target, Trophy, Users, XCircle } from "lucide-react";
@@ -24,6 +26,8 @@ import { classeurXlsx } from "@/lib/classeurXlsx";
 import { cn } from "@/lib/utils";
 import { useSalesDashboard } from "@/hooks/useSalesDashboard";
 import PerformanceSources from "./PerformanceSources";
+import ObjectifsSemaine from "./ObjectifsSemaine";
+import Recommandations from "./Recommandations";
 import {
   aCorriger, classementClosers, classementParRole, classementSetters, estPerdue, evolution,
   LIBELLES_STATUT_VENTE, nomsDe, synthese, taux,
@@ -206,11 +210,17 @@ export default function SalesTab() {
             </Card>
           )}
 
+          {/* ─── Objectifs de la semaine (lot 3) ───────────────── */}
+          <ObjectifsSemaine filtre={filtre} />
+
           {/* ─── Ventes par source et profil des acheteurs (lot 2) ─ */}
           <PerformanceSources
             filtre={filtre}
             suffixeExport={filtre?.mode === "single" ? filtre.date : filtre?.mode === "range" ? `${filtre.from}_${filtre.to}` : "tout"}
           />
+
+          {/* ─── Recommandations par créa (lot 3) ──────────────── */}
+          <Recommandations />
 
           {/* ─── Closers ────────────────────────────────────────── */}
           <Card>
