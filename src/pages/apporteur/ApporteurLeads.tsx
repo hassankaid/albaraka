@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Tables } from "@/integrations/supabase/types";
@@ -111,7 +112,13 @@ export default function ApporteurLeads() {
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [search, setSearch] = useState("");
+  // Lien d'une notification (« Rappel demandé », 22/11/2026) : ?q=<téléphone>
+  const [searchParams] = useSearchParams();
+  const qParam = searchParams.get("q");
+  const [search, setSearch] = useState(qParam ?? "");
+  useEffect(() => {
+    if (qParam) setSearch(qParam);
+  }, [qParam]);
   // Setter DM (16/11/2026) : ses leads à contacter d'abord, après acceptation de la charte
   const estSetterDm = !!profile?.is_setter_dm;
   const [charteAcceptee, setCharteAcceptee] = useState(false);

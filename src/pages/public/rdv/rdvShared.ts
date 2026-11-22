@@ -83,6 +83,13 @@ export type DisqualConfig = {
   questionIndex: 1 | 2 | 3 | 4 | 5;
   title: string;
   message: string;
+  /**
+   * Page « Parlons-en » au lieu d'un refus (22/11/2026, décision de Sidali) :
+   * la personne peut demander à être rappelée par l'équipe. `reserver` ajoute
+   * « Ça me convient, je réserve mon appel » (question 5 : le paiement en
+   * plusieurs fois peut lever le frein).
+   */
+  rappel?: { accroche: string; message: string; reserver?: boolean };
 };
 
 export const DISQUALIFICATIONS: Record<"a" | "b" | "c" | "d" | "e", DisqualConfig> = {
@@ -96,9 +103,10 @@ export const DISQUALIFICATIONS: Record<"a" | "b" | "c" | "d" | "e", DisqualConfi
   b: {
     slug: "b",
     questionIndex: 2,
-    title: "Décision non actée",
+    title: "Parlons-en",
     message:
-      "Désolé, seules les personnes ayant acté leur décision peuvent prendre rendez-vous afin d'éviter la perte de temps pour chacun.",
+      "C'est normal d'avoir encore des questions avant de vous décider. Un membre de l'équipe peut vous rappeler pour y répondre.",
+    rappel: { accroche: "Pas encore décidé(e) ?", message: "Un membre de l'équipe vous rappelle pour répondre à vos questions." },
   },
   c: {
     slug: "c",
@@ -117,14 +125,19 @@ export const DISQUALIFICATIONS: Record<"a" | "b" | "c" | "d" | "e", DisqualConfi
   e: {
     slug: "e",
     questionIndex: 5,
-    title: "Pas de budget",
-    message:
-      "Désolé, sans budget, ce genre d'accompagnement ne sera pas accessible.",
+    title: "Parlons-en",
+    message: "Le paiement est possible en plusieurs fois, dès 250 € par mois.",
+    rappel: {
+      accroche: "Le budget vous freine ?",
+      message: "Un membre de l'équipe vous rappelle pour en parler avec vous.",
+      reserver: true,
+    },
   },
 };
 
-// Rappel global affiché sur toutes les pages de disqualification (texte exact du brief).
-export const RDV_4_CONDITIONS = `Pour réserver un rendez-vous, vous devez : avoir regardé la totalité de la conférence, être décidé(e) à rejoindre l'écosystème, avoir pris connaissance de l'investissement nécessaire, et disposer d'un budget raisonnable. Si l'une de ces conditions n'est pas remplie, merci de ne pas prendre rendez-vous.`;
+// L'encadré « Pour rappel » des 4 conditions a été retiré le 22/11/2026 : il
+// parlait d'investissement et de budget à des personnes refusées pour une
+// tout autre raison (cas d'une lead arrêtée à la question 2).
 
 // ─── Helpers sessionStorage ──────────────────────────────────────────────
 export function getStoredLeadId(): string | null {

@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // rdv-funnel-submit
 // Edge function publique (verify_jwt=false) appelee par le funnel /rdv.
-// Trois actions possibles dans un seul handler pour minimiser les deploys :
+// Quatre actions possibles dans un seul handler pour minimiser les deploys :
 //
 //   POST { action: "coords", first_name, last_name, email, phone, phone_country? }
 //     -> Insert un row dans rdv_funnel_leads avec status='coords_only'.
@@ -20,6 +20,11 @@
 //        question_index), puis passe status='qualified' et qualified_at=now().
 //     -> Idempotent : si deja qualified ou booked, retourne ok sans changer.
 //     -> Retourne { ok: true, already_qualified?: true }.
+//
+//   POST { action: "rappel", lead_id, question_index (2|5) }   (22/11/2026)
+//     -> « Être rappelé(e) » apres un « Non » a la question 2 ou 5 : la
+//        fonction SQL rdv_demande_rappel transmet la demande au CRM.
+//     -> Retourne { ok: true, deja?: true }.
 //
 // Pas d'auth Supabase : le funnel est public. La securite repose sur :
 //   - service_role utilise cote serveur uniquement (jamais expose)
@@ -297,6 +302,47 @@ Deno.serve(async (req) => {
       }
 
       return json({ ok: true });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // ACTION : rappel — « Être rappelé(e) » (22/11/2026)
+    //   Proposé après un « Non » à la question 2 (pas encore décidé(e)) ou 5
+    //   (budget). Le CRM prend le relais : fiche « À relancer », note dans
+    //   l'historique, notification à la personne assignée (ou au CEO). Toute
+    //   la logique est dans la fonction SQL rdv_demande_rappel (idempotente).
+    // ─────────────────────────────────────────────────────────────────────
+    if (action === "rappel") {
+      const leadId = String(body?.lead_id || "").trim();
+      const questionIndex = Number(body?.question_index);
+      if (!leadId || !UUID_RX.test(leadId)) return json({ error: "invalid_lead_id" }, 400);
+      if (questionIndex !== 2 && questionIndex !== 5) return json({ error: "invalid_question_index" }, 400);
+
+      // La dernière réponse à cette question doit être un « Non » : on ne
+      // propose le rappel qu'à ceux qui ont vu la page « Parlons-en ».
+      const { data: derniere, error: answErr } = await supabase
+        .from("rdv_funnel_answers")
+        .select("answer")
+        .eq("lead_id", leadId)
+        .eq("question_index", questionIndex)
+        .order("answered_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (answErr) {
+        console.error("[rdv-funnel-submit] select answer error", answErr);
+        return json({ error: "internal" }, 500);
+      }
+      if (!derniere) return json({ error: "lead_not_found" }, 404);
+      if (derniere.answer !== "no") return json({ error: "not_eligible" }, 400);
+
+      const { data: res, error: rpcErr } = await supabase.rpc("rdv_demande_rappel", {
+        p_rdv_lead_id: leadId,
+        p_question: questionIndex,
+      });
+      if (rpcErr) {
+        console.error("[rdv-funnel-submit] rappel error", rpcErr);
+        return json({ error: "rappel_failed" }, 500);
+      }
+      return json({ ok: true, deja: (res as any)?.deja === true });
     }
 
     return json({ error: "unknown_action", action }, 400);

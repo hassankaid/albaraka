@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAllQuery } from "@/lib/fetchAllRows";
 import { useAuth } from "@/hooks/useAuth";
@@ -277,7 +278,11 @@ export default function Leads() {
   // ne pas "griller" une cartouche prévue pour un confirmé).
   const isIntermediaire =
     user?.role === "collaborateur" && user?.collaborateur_level === "intermediaire";
-  const [tab, setTab] = useState<string>(isIntermediaire ? "mes_leads" : "a_affecter");
+  // Lien d'une notification (« Rappel demandé », 22/11/2026) : /leads?q=<téléphone>
+  // ouvre la liste déjà filtrée sur la fiche, onglet « Tous ».
+  const [searchParams] = useSearchParams();
+  const qParam = searchParams.get("q");
+  const [tab, setTab] = useState<string>(isIntermediaire ? "mes_leads" : qParam ? "tous" : "a_affecter");
   const [statusFilter, setStatusFilter] = useState("all");
   // Sous-filtre de « À relancer » : toutes les étapes, ou Relance 1 à 6 (4 à 6 = 2e passage)
   const [relanceFilter, setRelanceFilter] = useState("all");
@@ -303,7 +308,12 @@ export default function Leads() {
   const { data: tunnels } = useTunnels();
   // Lead publicitaire : d'après son canal (géré en base) ; l'ancienne liste en dur sert le temps du chargement.
   const leadAds = useCallback((l: LeadEnriched) => (canaux ? estAds(l, canaux) : isAdsSource(l.source)), [canaux]);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(qParam ?? "");
+  useEffect(() => {
+    if (!qParam) return;
+    setSearch(qParam);
+    if (!isIntermediaire) setTab("tous");
+  }, [qParam, isIntermediaire]);
   // Liste fusionnée des "assignables" : CEO + collaborateurs (tous niveaux)
   // + apporteurs actifs. Sert à la fois au dropdown d'affectation (CEO + délégués
   // peuvent affecter à n'importe qui) et aux filtres dérivés (collabs/apporteurs).

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import PubOrigine from "@/components/PubOrigine";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Card, CardContent } from "@/components/ui/card";
-import { RefreshCw, UserCheck, MessageSquare, UserPlus, Sparkles } from "lucide-react";
+import { RefreshCw, UserCheck, MessageSquare, UserPlus, Sparkles, PhoneCall } from "lucide-react";
 import { formatDateTime, formatDateOnly } from "@/lib/formatDate";
 import { QUIZ_QUESTIONS } from "@/lib/leadScoring";
 import { BlocPriorite, type ScoringAffiche } from "@/components/leads/BlocPriorite";
@@ -383,6 +383,9 @@ function TimelineDot({ type, action }: { type: string; action?: string }) {
     } else if (action === "relance_faite") {
       className = "bg-yellow-500/20 border-yellow-500/40";
       icon = "🔁";
+    } else if (action === "rappel_demande") {
+      className = "bg-amber-500/20 border-amber-500/40";
+      icon = "📲";
     } else {
       className = "bg-cyan-500/20 border-cyan-500/40";
       icon = "🔄";
@@ -509,6 +512,21 @@ function LeadActivityEvent({ data, userTz }: { data: any; userTz: string }) {
   }
 
   // Parcours Setter DM (16/11/2026) : le lead part dans Lead Setting DM
+  // Formulaire de rendez-vous : la personne a demandé à être rappelée (22/11/2026)
+  if (data.action === "rappel_demande") {
+    const passe = data.new_value && data.new_value !== data.old_value;
+    return (
+      <div className="flex items-start gap-2">
+        <PhoneCall className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm text-foreground">Rappel demandé depuis le formulaire de rendez-vous</p>
+          {data.note && <p className="text-xs text-muted-foreground italic mt-1">{data.note}</p>}
+          {passe && <p className="text-xs text-muted-foreground mt-1">Fiche passée « À relancer »</p>}
+        </div>
+      </div>
+    );
+  }
+
   if (data.action === "dm_bascule") {
     return (
       <div className="flex items-start gap-2">
