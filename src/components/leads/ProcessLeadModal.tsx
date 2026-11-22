@@ -34,7 +34,8 @@ type LeadEnriched = Tables<"leads_enriched"> & {
   premiere_action_le?: string | null;
 };
 
-import { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS, getLeadStatusListForLevel } from "@/lib/leadConfig";
+import { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS, getLeadStatusListForLevel, STATUT_FOLLOW_UP, MOTIFS_FOLLOW_UP, aujourdhuiParis } from "@/lib/leadConfig";
+import { Input } from "@/components/ui/input";
 import { SuiviRelances } from "@/components/leads/Relances";
 import { STATUT_RELANCE } from "@/lib/relances";
 import { estAds, useCanaux } from "@/lib/leadSources";
@@ -65,6 +66,11 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
   const [selectedTagKeys, setSelectedTagKeys] = useState<Set<string>>(new Set());
   const [originalTagKeys, setOriginalTagKeys] = useState<Set<string>>(new Set());
   const [saisieOuverte, setSaisieOuverte] = useState(false);
+  // Follow-up (22/11/2026) : date de relance obligatoire + motif
+  const [fuLe, setFuLe] = useState("");
+  const [fuMotif, setFuMotif] = useState<string>(MOTIFS_FOLLOW_UP[0]);
+  const [fuPrecision, setFuPrecision] = useState("");
+  const [fuInitial, setFuInitial] = useState<{ le: string; motif: string }>({ le: "", motif: "" });
 
   const canEdit = !!lead && (lead.assigned_to === user?.id || user?.role === "ceo");
 
@@ -79,6 +85,29 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
     if (lead && open) {
       setStatus(lead.status || "nouveau");
       setNote("");
+      setFuLe("");
+      setFuMotif(MOTIFS_FOLLOW_UP[0]);
+      setFuPrecision("");
+      setFuInitial({ le: "", motif: "" });
+      // Date et motif du follow-up en cours (colonnes récentes, hors vue enrichie)
+      if (lead.id && lead.status === STATUT_FOLLOW_UP) {
+        (supabase as any)
+          .from("leads")
+          .select("follow_up_le, follow_up_motif")
+          .eq("id", lead.id)
+          .maybeSingle()
+          .then(({ data }: { data: { follow_up_le: string | null; follow_up_motif: string | null } | null }) => {
+            const le = data?.follow_up_le ?? "";
+            const motif = data?.follow_up_motif ?? "";
+            setFuLe(le);
+            setFuInitial({ le, motif });
+            if ((MOTIFS_FOLLOW_UP as readonly string[]).includes(motif)) setFuMotif(motif);
+            else if (motif) {
+              setFuMotif("Autre");
+              setFuPrecision(motif);
+            }
+          });
+      }
       // Check other leads for this contact
       if (lead.contact_id) {
         supabase
@@ -140,7 +169,17 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
       const tagsToRemove = Array.from(originalTagKeys).filter((k) => !selectedTagKeys.has(k));
       const tagsChanged = tagsToAdd.length > 0 || tagsToRemove.length > 0;
 
-      if (!statusChanged && !hasNote && !tagsChanged) {
+      // Follow-up : date obligatoire, enregistré par la fonction du serveur (droits + historique)
+      const motifFollowUp = fuMotif === "Autre" ? fuPrecision.trim() || "Autre" : fuMotif;
+      const followUp = status === STATUT_FOLLOW_UP;
+      const followUpChange = followUp && (statusChanged || fuLe !== fuInitial.le || motifFollowUp !== fuInitial.motif);
+      if (followUp && !fuLe) {
+        toast({ title: "Date de relance obligatoire", description: "Choisis la date à laquelle recontacter ce lead.", variant: "destructive" });
+        setSaving(false);
+        return;
+      }
+
+      if (!statusChanged && !hasNote && !tagsChanged && !followUpChange) {
         toast({ title: "Aucune modification" });
         setSaving(false);
         return;
@@ -166,7 +205,15 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
       // par la fonction du serveur, en DERNIER (note et tags enregistrés avant).
       const perduParServeur = statusChanged && status === "perdu" && user.role === "collaborateur";
 
-      if (statusChanged && !perduParServeur) {
+      if (followUpChange) {
+        const { error: fuErr } = await (supabase as any).rpc("mettre_en_follow_up", {
+          p_lead_id: lead.id,
+          p_le: fuLe,
+          p_motif: motifFollowUp,
+          p_note: null,
+        });
+        if (fuErr) throw new Error(fuErr.message || "Erreur follow-up");
+      } else if (statusChanged && !perduParServeur) {
         if (shouldInstantRecycle) {
           // Recyclage atomique via RPC SECURITY DEFINER
           // (contourne un edge case RLS qui bloquait l'UPDATE direct quand
@@ -354,6 +401,31 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
             <p className="text-xs text-muted-foreground">
               Lead de publicité : il part dans « Lead Setting DM » pour être relancé par message par un Setter DM, et sort de tes leads.
             </p>
+          )}
+          {status === STATUT_FOLLOW_UP && (
+            <div className="rounded-md border border-pink-500/30 bg-pink-500/5 p-3 space-y-2" data-testid="bloc-follow-up">
+              <p className="text-xs text-muted-foreground">
+                Lead intéressé, à recontacter à une date précise. Il sort du suivi des relances et reste chez toi jusqu'à cette date : tu seras prévenu le matin même.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium" htmlFor="fu-le">Date de relance</label>
+                  <Input id="fu-le" type="date" value={fuLe} min={aujourdhuiParis()} onChange={(e) => setFuLe(e.target.value)} disabled={!canEdit} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium">Motif</label>
+                  <Select value={fuMotif} onValueChange={setFuMotif} disabled={!canEdit}>
+                    <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {MOTIFS_FOLLOW_UP.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {fuMotif === "Autre" && (
+                <Input placeholder="Précise le motif (ex. attend l'accord de son conjoint)" value={fuPrecision} onChange={(e) => setFuPrecision(e.target.value)} disabled={!canEdit} />
+              )}
+            </div>
           )}
           {lead.status !== STATUT_RELANCE && status === STATUT_RELANCE && (
             <p className="text-xs text-muted-foreground">

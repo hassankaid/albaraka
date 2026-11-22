@@ -6,7 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import PubOrigine from "@/components/PubOrigine";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Card, CardContent } from "@/components/ui/card";
-import { RefreshCw, UserCheck, MessageSquare, UserPlus, Sparkles, PhoneCall } from "lucide-react";
+import { RefreshCw, UserCheck, MessageSquare, UserPlus, Sparkles, PhoneCall, CalendarClock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { aujourdhuiParis } from "@/lib/leadConfig";
+import { dateCourte } from "@/components/leads/FollowUp";
 import { formatDateTime, formatDateOnly } from "@/lib/formatDate";
 import { QUIZ_QUESTIONS } from "@/lib/leadScoring";
 import { BlocPriorite, type ScoringAffiche } from "@/components/leads/BlocPriorite";
@@ -98,6 +104,13 @@ export default function ContactSheet({
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [scoring, setScoring] = useState<ScoringResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  // Suivi sans RDV d'un closer (22/11/2026, demande de Sabrina)
+  const [dernierLeadId, setDernierLeadId] = useState<string | null>(null);
+  const [suiviOuvert, setSuiviOuvert] = useState(false);
+  const [suiviLe, setSuiviLe] = useState("");
+  const [suiviNote, setSuiviNote] = useState("");
+  const [suiviEnvoi, setSuiviEnvoi] = useState(false);
+  const estCloser = authProfile?.role === "ceo" || authProfile?.role === "collaborateur";
 
   const fetchData = useCallback(async () => {
     if (!contactId) return;
@@ -111,6 +124,7 @@ export default function ContactSheet({
     ]);
 
     if (contactRes.data) setContact(contactRes.data);
+    setDernierLeadId((leadsRes.data?.[0]?.id as string | undefined) ?? null);
 
     // ── Scoring : dernière réponse au quiz pour cet email ───────────
     setScoring(null);
@@ -260,9 +274,51 @@ export default function ContactSheet({
                       Contact créé le {formatDateOnly(contact.created_at, userTz)}
                     </p>
                   )}
+                  {estCloser && dernierLeadId && (
+                    <Button size="sm" variant="outline" className="mt-2 h-7 text-xs" onClick={() => { setSuiviLe(""); setSuiviNote(""); setSuiviOuvert(true); }}>
+                      <CalendarClock className="h-3.5 w-3.5 mr-1" /> Ajouter à mes follow-up
+                    </Button>
+                  )}
                 </div>
               </div>
             </SheetHeader>
+            <Dialog open={suiviOuvert} onOpenChange={setSuiviOuvert}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Ajouter à mes follow-up</DialogTitle>
+                  <DialogDescription>
+                    Pour un lead transmis sans RDV booké. Il apparaît dans « Mes follow-up » à cette date, et tu es prévenu le matin même. Le setter qui le suivait est informé.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium" htmlFor="suivi-le">Date de relance</label>
+                    <Input id="suivi-le" type="date" min={aujourdhuiParis()} value={suiviLe} onChange={(e) => setSuiviLe(e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium" htmlFor="suivi-note">Note</label>
+                    <Textarea id="suivi-note" rows={3} placeholder="Ex. : paie le 30, prêt à payer en une fois" value={suiviNote} onChange={(e) => setSuiviNote(e.target.value)} />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setSuiviOuvert(false)}>Annuler</Button>
+                  <Button
+                    disabled={!suiviLe || suiviEnvoi}
+                    onClick={async () => {
+                      setSuiviEnvoi(true);
+                      const { error } = await (supabase as any).rpc("ajouter_suivi_closer", { p_lead_id: dernierLeadId, p_le: suiviLe, p_note: suiviNote || null });
+                      setSuiviEnvoi(false);
+                      if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return; }
+                      toast({ title: "Ajouté à tes follow-up", description: `Relance le ${dateCourte(suiviLe)}.` });
+                      setSuiviOuvert(false);
+                      fetchData();
+                    }}
+                  >
+                    Ajouter
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             <div className="border-b border-border" />
 
@@ -512,6 +568,20 @@ function LeadActivityEvent({ data, userTz }: { data: any; userTz: string }) {
   }
 
   // Parcours Setter DM (16/11/2026) : le lead part dans Lead Setting DM
+  // Follow-up (22/11/2026) : report de date, ou lead ajouté aux follow-up d'un closer
+  if (data.action === "follow_up_reporte" || data.action === "suivi_closer") {
+    return (
+      <div className="flex items-start gap-2">
+        <CalendarClock className="w-4 h-4 text-pink-300 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm text-foreground">{data.action === "suivi_closer" ? "Ajouté aux follow-up d'un closer" : "Follow-up reporté"}</p>
+          {data.note && <p className="text-xs text-muted-foreground italic mt-1">{data.note}</p>}
+          <span className="text-xs text-muted-foreground">par {userName}</span>
+        </div>
+      </div>
+    );
+  }
+
   // Formulaire de rendez-vous : la personne a demandé à être rappelée (22/11/2026)
   if (data.action === "rappel_demande") {
     const passe = data.new_value && data.new_value !== data.old_value;
