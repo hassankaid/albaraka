@@ -6,8 +6,8 @@
  *    page « Parlons-en », plus à « Réservation impossible » ;
  *  • « Être rappelé(e) » envoie l'action « rappel » avec la bonne question, puis
  *    confirme à la personne ;
- *  • le paiement en plusieurs fois n'apparaît QUE sur la page de la question 5,
- *    avec « Ça me convient, je réserve mon appel » qui mène à Calendly ;
+ *  • aucun prix ni modalité de paiement sur les pages « Parlons-en » ; la question 5
+ *    propose en plus « Je réserve mon appel » qui mène à Calendly ;
  *  • les autres refus (1, 3, 4) restent des refus, sans l'encadré « Pour rappel ».
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -59,7 +59,7 @@ describe("question 2 : pas encore décidé(e)", () => {
     expect(screen.getByText("Pas encore décidé(e) ?")).toBeTruthy();
     expect(screen.queryByText("Réservation impossible")).toBeNull();
     expect(screen.queryByText(/250 €/)).toBeNull();
-    expect(screen.queryByText(/je réserve mon appel/)).toBeNull();
+    expect(screen.queryByText(/réserve mon appel/)).toBeNull();
     expect(screen.queryByText("Pour rappel")).toBeNull();
   });
 
@@ -82,18 +82,18 @@ describe("question 2 : pas encore décidé(e)", () => {
 });
 
 describe("question 5 : budget", () => {
-  it("annonce le paiement en plusieurs fois et les deux choix", () => {
+  it("propose les deux choix, sans aucun prix ni modalité de paiement", () => {
     monter("e");
     expect(screen.getByText("Le budget vous freine ?")).toBeTruthy();
-    expect(screen.getByText("Le paiement est possible en plusieurs fois, dès 250 € par mois.")).toBeTruthy();
-    expect(screen.getByText("Ça me convient, je réserve mon appel")).toBeTruthy();
+    expect(screen.getByText("Je réserve mon appel")).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/€|plusieurs fois|par mois|paiement/i);
     expect(screen.getByText("Être rappelé(e) par l'équipe")).toBeTruthy();
     expect(screen.queryByText("Pas de budget")).toBeNull();
   });
 
   it("« je réserve » enregistre Oui à la question 5, qualifie et ouvre Calendly", async () => {
     monter("e");
-    fireEvent.click(screen.getByText("Ça me convient, je réserve mon appel"));
+    fireEvent.click(screen.getByText("Je réserve mon appel"));
     await waitFor(() => expect(screen.getByTestId("ici").textContent).toBe("/rdv/calendly"));
     expect(invoke).toHaveBeenNthCalledWith(1, "rdv-funnel-submit", {
       body: { action: "answer", lead_id: "11111111-2222-3333-4444-555555555555", question_index: 5, answer: "yes" },

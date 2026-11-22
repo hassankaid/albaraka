@@ -82,12 +82,14 @@ export type DisqualConfig = {
   slug: "a" | "b" | "c" | "d" | "e";
   questionIndex: 1 | 2 | 3 | 4 | 5;
   title: string;
+  /** Vide = aucun texte sous le titre (question 5 depuis le 22/11/2026). */
   message: string;
   /**
    * Page « Parlons-en » au lieu d'un refus (22/11/2026, décision de Sidali) :
    * la personne peut demander à être rappelée par l'équipe. `reserver` ajoute
-   * « Ça me convient, je réserve mon appel » (question 5 : le paiement en
-   * plusieurs fois peut lever le frein).
+   * « Je réserve mon appel » (question 5). Aucun montant ni modalité de
+   * paiement n'est affiché : le prix se discute uniquement pendant l'appel
+   * (retour de Sabrina, 22/11/2026 — un montant affiché sert d'ancre).
    */
   rappel?: { accroche: string; message: string; reserver?: boolean };
 };
@@ -126,7 +128,7 @@ export const DISQUALIFICATIONS: Record<"a" | "b" | "c" | "d" | "e", DisqualConfi
     slug: "e",
     questionIndex: 5,
     title: "Parlons-en",
-    message: "Le paiement est possible en plusieurs fois, dès 250 € par mois.",
+    message: "",
     rappel: {
       accroche: "Le budget vous freine ?",
       message: "Un membre de l'équipe vous rappelle pour en parler avec vous.",

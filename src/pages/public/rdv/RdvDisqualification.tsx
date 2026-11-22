@@ -9,8 +9,9 @@
 //   - « Parlons-en » (questions 2 et 5, depuis le 22/11/2026, décision de
 //     Sidali) : plus de refus, la personne peut demander à être rappelée
 //     (action « rappel » de rdv-funnel-submit → fiche CRM « À relancer », note
-//     et notification). Question 5 : le paiement en plusieurs fois est annoncé
-//     ici seulement, avec « Ça me convient, je réserve mon appel ».
+//     et notification). Question 5 : « Je réserve mon appel » en plus, sans
+//     aucun montant ni modalité de paiement (le prix reste pour l'appel,
+//     retour de Sabrina du 22/11/2026).
 //
 // L'encadré « Pour rappel » des 4 conditions a été retiré le 22/11/2026.
 //
@@ -122,7 +123,7 @@ export default function RdvDisqualification() {
     setRappel(error || !data?.ok ? "erreur" : "ok");
   }
 
-  // Question 5 : le paiement en plusieurs fois lève le frein → on enregistre
+  // Question 5 : la personne réserve quand même → on enregistre
   // « Oui » à la question 5 et on qualifie, comme en fin de questionnaire.
   async function reserver() {
     const leadId = getStoredLeadId();
@@ -195,24 +196,7 @@ export default function RdvDisqualification() {
           {config.title}
         </h1>
 
-        {parlonsEn && config.rappel!.reserver ? (
-          <div
-            style={{
-              margin: "0 auto",
-              maxWidth: 420,
-              padding: "14px 18px",
-              borderRadius: 12,
-              border: `1px solid ${THEME.goldLine}`,
-              background: "rgba(201,160,78,0.08)",
-              color: THEME.goldBright,
-              fontSize: 15.5,
-              fontWeight: 600,
-              lineHeight: 1.5,
-            }}
-          >
-            {config.message}
-          </div>
-        ) : (
+        {config.message && (
           <p style={{ color: THEME.creamMuted, fontSize: 15, lineHeight: 1.6, margin: "0 auto", maxWidth: 460 }}>
             {config.message}
           </p>
@@ -258,7 +242,7 @@ export default function RdvDisqualification() {
               {config.rappel!.reserver && (
                 <button type="button" onClick={reserver} disabled={reservation === "envoi"} style={boutonPrincipal}>
                   {reservation === "envoi" ? <Loader2 size={16} className="animate-spin" /> : <CalendarCheck size={16} />}
-                  Ça me convient, je réserve mon appel
+                  Je réserve mon appel
                 </button>
               )}
               <button
