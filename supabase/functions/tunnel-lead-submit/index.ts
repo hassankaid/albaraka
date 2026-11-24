@@ -32,6 +32,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decisionSnap, envoyerASnap, evenementSignUp, idEvenement, DOMAINE_PIXEL_SNAP } from "./snap.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -202,6 +203,9 @@ function clicPub(brut: unknown, userAgent: string | null): Record<string, unknow
     if (v) clic[champ] = v;
   }
   if (userAgent) clic.user_agent = userAgent.slice(0, 500);
+  // Identifiant de l'inscription, partagé avec le pixel Snap (24/11/2026)
+  const eventId = idEvenement(b.event_id);
+  if (eventId) clic.event_id = eventId;
   // Diagnostic du navigateur (10/11/2026) : où l'attribution a été relue, noms des
   // paramètres à l'arrivée et à l'envoi. Aucune donnée personnelle ; taille bornée.
   if (b.diag && typeof b.diag === "object" && !Array.isArray(b.diag)) {
@@ -280,6 +284,53 @@ async function journaliserConsentement(
   } catch (e) {
     console.warn("[consentement-marketing] non journalise :", e);
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// API de conversion Snap (24/11/2026) : la règle et l'évènement sont dans
+// snap.ts. Envoi en arrière-plan, après la réponse au navigateur : une panne
+// de Snap ne retarde ni ne fait échouer une inscription. Le résultat est
+// noté dans clic_pub.snap_capi du lead (code HTTP et heure).
+// ─────────────────────────────────────────────────────────────────────────
+function envoyerInscriptionSnap(
+  supabase: any,
+  req: Request,
+  p: { leadId: string; source: string; email: string; telephoneE164: string; prenom: string | null; page: string | null; clic: Record<string, unknown> | null },
+): void {
+  const eventId = idEvenement(p.clic?.event_id);
+  const decision = decisionSnap({ source: p.source, origine: req.headers.get("origin"), telephoneE164: p.telephoneE164, eventId });
+  if (!decision.envoyer) return;
+  const jeton = Deno.env.get("SNAP_CAPI_TOKEN");
+  if (!jeton) {
+    console.warn("[snap-capi] SNAP_CAPI_TOKEN absent, inscription non envoyée");
+    return;
+  }
+  const tache = (async () => {
+    try {
+      const corps = await evenementSignUp({
+        eventId: eventId!,
+        email: p.email,
+        telephoneE164: p.telephoneE164,
+        prenom: p.prenom,
+        urlPage: `https://${DOMAINE_PIXEL_SNAP}${p.page?.startsWith("/") ? p.page : "/webinaire"}`,
+        ip: (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || null,
+        userAgent: req.headers.get("user-agent"),
+        sccid: typeof p.clic?.sccid === "string" ? p.clic.sccid : null,
+        scid: typeof p.clic?.scid === "string" ? p.clic.scid : null,
+      });
+      const r = await envoyerASnap(jeton, corps);
+      if (r.http >= 300) console.warn(`[snap-capi] lead ${p.leadId} : HTTP ${r.http} ${r.reponse}`);
+      const { data } = await supabase.from("leads").select("clic_pub").eq("id", p.leadId).maybeSingle();
+      await supabase.from("leads").update({
+        clic_pub: { ...(data?.clic_pub ?? {}), snap_capi: { http: r.http, le: new Date().toISOString() } },
+      }).eq("id", p.leadId);
+    } catch (e) {
+      console.warn(`[snap-capi] lead ${p.leadId} : envoi impossible (non bloquant)`, e);
+    }
+  })();
+  // deno-lint-ignore no-explicit-any
+  const er = (globalThis as any).EdgeRuntime;
+  if (er?.waitUntil) er.waitUntil(tache);
 }
 
 serve(async (req) => {
@@ -441,6 +492,10 @@ serve(async (req) => {
       combler.notes = dejaLa.notes ? `${dejaLa.notes} ${trace}` : trace;
       await supabase.from("leads").update(combler).eq("id", dejaLa.id);
       console.log(`[tunnel-lead-submit] doublon fusionne dans le lead ${dejaLa.id}`);
+      // Le navigateur renvoie un « Lead » au pixel : le serveur fait de même, avec le même identifiant
+      envoyerInscriptionSnap(supabase, req, {
+        leadId: dejaLa.id, source, email, telephoneE164: phoneE164, prenom: firstName, page: clip(body?.page, 200), clic: clic_pub,
+      });
       const scoring_token = await jetonQuiz(supabase, source, { email, firstName, phone: phoneE164 ?? "" });
       return json({ ok: true, lead_id: dejaLa.id, contact_id: contactId, fusionne: true, scoring_token });
     }
@@ -506,6 +561,10 @@ serve(async (req) => {
         console.error("[tunnel-lead-submit] conversion A/B non enregistree (non bloquant):", e);
       }
     }
+
+    envoyerInscriptionSnap(supabase, req, {
+      leadId: lead.id, source, email, telephoneE164: phoneE164, prenom: firstName, page: clip(body?.page, 200), clic: clic_pub,
+    });
 
     const scoring_token = await jetonQuiz(supabase, source, { email, firstName, phone: phoneE164 ?? "" });
     return json({ ok: true, lead_id: lead.id, contact_id: contactId, scoring_token });
