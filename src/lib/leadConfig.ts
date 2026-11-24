@@ -124,6 +124,9 @@ export const leadStatusConfig: Record<string, { label: string; color: string }> 
   // validé par Sabrina) : lead chaud, à appeler en priorité. Posé uniquement par le
   // formulaire (rdv_demande_rappel), donc absent des statuts manuels.
   rappel_demande: { label: "Rappel demandé", color: "rose" },
+  // Follow-up (22/11/2026, demande de Sabrina) : intéressé, à recontacter à une date
+  // précise (ex. paiement en fin de mois). Hors du circuit des relances.
+  follow_up: { label: "Follow-up", color: "pink" },
   perdu: { label: "Perdu", color: "red" },
   call_booke: { label: "Call booké", color: "purple" },
   renvoi_pole_vente: { label: "Renvoi Pôle Vente", color: "cyan" },
@@ -159,6 +162,7 @@ export const LEAD_MANUAL_STATUSES = [
   "pas_de_reponse",
   "pas_qualifie",
   "a_relancer",
+  "follow_up",
   "perdu",
   "renvoi_pole_vente",
   "close",
@@ -320,3 +324,21 @@ export const STATUS_FILTER_OPTIONS = [
     .filter(([k]) => !["nouveau", "contacte", "converti"].includes(k))
     .map(([key, cfg]) => ({ value: key, label: cfg.label })),
 ];
+
+// ── Follow-up (22/11/2026) ──
+export const STATUT_FOLLOW_UP = "follow_up";
+export const MOTIFS_FOLLOW_UP = ["Paiement en fin de mois", "Attend une rentrée d'argent", "Autre"] as const;
+
+/** Échéance d'un follow-up par rapport à aujourd'hui (dates AAAA-MM-JJ, heure de Paris). */
+export function echeanceFollowUp(le: string | null | undefined, aujourdhui: string): "retard" | "aujourdhui" | "a_venir" | null {
+  if (!le) return null;
+  const d = le.slice(0, 10);
+  if (d < aujourdhui) return "retard";
+  if (d === aujourdhui) return "aujourdhui";
+  return "a_venir";
+}
+
+/** Date du jour à Paris, AAAA-MM-JJ. */
+export function aujourdhuiParis(maintenant: Date = new Date()): string {
+  return new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(maintenant);
+}

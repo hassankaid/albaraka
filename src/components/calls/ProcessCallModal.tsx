@@ -13,6 +13,8 @@ import { Separator } from "@/components/ui/separator";
 import { AlertTriangle, Save, UserCheck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { formatDateTime } from "@/lib/formatDate";
+import { Input } from "@/components/ui/input";
+import { aujourdhuiParis } from "@/lib/leadConfig";
 
 type CallEnriched = Tables<"calls_enriched">;
 
@@ -82,6 +84,8 @@ export default function ProcessCallModal({ call, open, onClose, onSuccess, onOpe
   const { profile: user } = useAuth();
   const { toast } = useToast();
   const [status, setStatus] = useState("");
+  const [fuLe, setFuLe] = useState("");
+  const [fuInitial, setFuInitial] = useState("");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [otherLeadsCount, setOtherLeadsCount] = useState(0);
@@ -105,6 +109,16 @@ export default function ProcessCallModal({ call, open, onClose, onSuccess, onOpe
     if (call && open) {
       setStatus(call.status || "planifie");
       setNote("");
+      // Follow-up (22/11/2026) : date de relance du call
+      setFuLe("");
+      setFuInitial("");
+      if (call.id && call.status === "follow_up") {
+        (supabase as any).from("calls").select("follow_up_le").eq("id", call.id).maybeSingle()
+          .then(({ data }: { data: { follow_up_le: string | null } | null }) => {
+            setFuLe(data?.follow_up_le ?? "");
+            setFuInitial(data?.follow_up_le ?? "");
+          });
+      }
       setChangement(false);
       setNouveauCloser("");
       if (call.contact_id) {
@@ -137,7 +151,15 @@ export default function ProcessCallModal({ call, open, onClose, onSuccess, onOpe
       const statusChanged = status !== oldStatus;
       const hasNote = note.trim().length > 0;
 
-      if (!statusChanged && !hasNote) {
+      const followUp = status === "follow_up";
+      const dateChangee = followUp && fuLe !== fuInitial;
+      if (followUp && !fuLe) {
+        toast({ title: "Date de relance obligatoire", description: "Choisis la date à laquelle recontacter ce prospect.", variant: "destructive" });
+        setSaving(false);
+        return;
+      }
+
+      if (!statusChanged && !hasNote && !dateChangee) {
         toast({ title: "Aucune modification" });
         setSaving(false);
         return;
@@ -146,8 +168,20 @@ export default function ProcessCallModal({ call, open, onClose, onSuccess, onOpe
       const updatePayload: Record<string, any> = { updated_at: new Date().toISOString() };
       if (statusChanged) updatePayload.status = status;
       if (hasNote) updatePayload.closer_notes = note.trim();
+      if (followUp) updatePayload.follow_up_le = fuLe;
+      else if (statusChanged && oldStatus === "follow_up") updatePayload.follow_up_le = null;
 
       await supabase.from("calls").update(updatePayload).eq("id", call.id);
+
+      if (dateChangee && !statusChanged) {
+        await supabase.from("call_activities").insert({
+          call_id: call.id,
+          user_id: user.id,
+          action: "follow_up_reporte",
+          old_value: fuInitial || null,
+          new_value: fuLe,
+        });
+      }
 
       if (statusChanged) {
         await supabase.from("call_activities").insert({
@@ -331,6 +365,13 @@ export default function ProcessCallModal({ call, open, onClose, onSuccess, onOpe
               ))}
             </SelectContent>
           </Select>
+          {status === "follow_up" && (
+            <div className="rounded-md border border-pink-500/30 bg-pink-500/5 p-3 space-y-1" data-testid="bloc-follow-up-call">
+              <label className="text-xs font-medium" htmlFor="fu-call-le">Date de relance</label>
+              <Input id="fu-call-le" type="date" value={fuLe} min={aujourdhuiParis()} onChange={(e) => setFuLe(e.target.value)} disabled={!canEdit} />
+              <p className="text-xs text-muted-foreground">Le call apparaît dans « Mes follow-up » à cette date, et tu es prévenu le matin même.</p>
+            </div>
+          )}
         </div>
 
         <Separator />

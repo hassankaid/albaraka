@@ -34,8 +34,9 @@ type LeadEnriched = Tables<"leads_enriched"> & {
   premiere_action_le?: string | null;
 };
 
-import { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS, STATUT_RAPPEL, getLeadStatusListForLevel } from "@/lib/leadConfig";
+import { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS, STATUT_RAPPEL, getLeadStatusListForLevel, STATUT_FOLLOW_UP, MOTIFS_FOLLOW_UP } from "@/lib/leadConfig";
 import { SuiviRelances } from "@/components/leads/Relances";
+import { ChampsFollowUp } from "@/components/leads/FollowUp";
 import { STATUT_RELANCE } from "@/lib/relances";
 import { estAds, useCanaux } from "@/lib/leadSources";
 import { delaiTraitement } from "@/lib/delaiTraitement";
@@ -66,6 +67,11 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
   const [originalTagKeys, setOriginalTagKeys] = useState<Set<string>>(new Set());
   const [saisieOuverte, setSaisieOuverte] = useState(false);
   const [demandeRappel, setDemandeRappel] = useState<{ le: string; note: string | null } | null>(null);
+  // Follow-up (22/11/2026) : date de relance obligatoire + motif
+  const [fuLe, setFuLe] = useState("");
+  const [fuMotif, setFuMotif] = useState<string>(MOTIFS_FOLLOW_UP[0]);
+  const [fuPrecision, setFuPrecision] = useState("");
+  const [fuInitial, setFuInitial] = useState<{ le: string; motif: string }>({ le: "", motif: "" });
 
   const canEdit = !!lead && (lead.assigned_to === user?.id || user?.role === "ceo");
 
@@ -93,6 +99,29 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
           .then(({ data }) => {
             const d = data?.[0];
             if (d) setDemandeRappel({ le: d.created_at, note: d.note });
+          });
+      }
+      setFuLe("");
+      setFuMotif(MOTIFS_FOLLOW_UP[0]);
+      setFuPrecision("");
+      setFuInitial({ le: "", motif: "" });
+      // Date et motif du follow-up en cours (colonnes récentes, hors vue enrichie)
+      if (lead.id && lead.status === STATUT_FOLLOW_UP) {
+        (supabase as any)
+          .from("leads")
+          .select("follow_up_le, follow_up_motif")
+          .eq("id", lead.id)
+          .maybeSingle()
+          .then(({ data }: { data: { follow_up_le: string | null; follow_up_motif: string | null } | null }) => {
+            const le = data?.follow_up_le ?? "";
+            const motif = data?.follow_up_motif ?? "";
+            setFuLe(le);
+            setFuInitial({ le, motif });
+            if ((MOTIFS_FOLLOW_UP as readonly string[]).includes(motif)) setFuMotif(motif);
+            else if (motif) {
+              setFuMotif("Autre");
+              setFuPrecision(motif);
+            }
           });
       }
       // Check other leads for this contact
@@ -156,7 +185,17 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
       const tagsToRemove = Array.from(originalTagKeys).filter((k) => !selectedTagKeys.has(k));
       const tagsChanged = tagsToAdd.length > 0 || tagsToRemove.length > 0;
 
-      if (!statusChanged && !hasNote && !tagsChanged) {
+      // Follow-up : date obligatoire, enregistré par la fonction du serveur (droits + historique)
+      const motifFollowUp = fuMotif === "Autre" ? fuPrecision.trim() || "Autre" : fuMotif;
+      const followUp = status === STATUT_FOLLOW_UP;
+      const followUpChange = followUp && (statusChanged || fuLe !== fuInitial.le || motifFollowUp !== fuInitial.motif);
+      if (followUp && !fuLe) {
+        toast({ title: "Date de relance obligatoire", description: "Choisis la date à laquelle recontacter ce lead.", variant: "destructive" });
+        setSaving(false);
+        return;
+      }
+
+      if (!statusChanged && !hasNote && !tagsChanged && !followUpChange) {
         toast({ title: "Aucune modification" });
         setSaving(false);
         return;
@@ -182,7 +221,15 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
       // par la fonction du serveur, en DERNIER (note et tags enregistrés avant).
       const perduParServeur = statusChanged && status === "perdu" && user.role === "collaborateur";
 
-      if (statusChanged && !perduParServeur) {
+      if (followUpChange) {
+        const { error: fuErr } = await (supabase as any).rpc("mettre_en_follow_up", {
+          p_lead_id: lead.id,
+          p_le: fuLe,
+          p_motif: motifFollowUp,
+          p_note: null,
+        });
+        if (fuErr) throw new Error(fuErr.message || "Erreur follow-up");
+      } else if (statusChanged && !perduParServeur) {
         if (shouldInstantRecycle) {
           // Recyclage atomique via RPC SECURITY DEFINER
           // (contourne un edge case RLS qui bloquait l'UPDATE direct quand
@@ -391,6 +438,12 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
             <p className="text-xs text-muted-foreground">
               Lead de publicité : il part dans « Lead Setting DM » pour être relancé par message par un Setter DM, et sort de tes leads.
             </p>
+          )}
+          {status === STATUT_FOLLOW_UP && (
+            <ChampsFollowUp
+              le={fuLe} onLe={setFuLe} motif={fuMotif} onMotif={setFuMotif}
+              precision={fuPrecision} onPrecision={setFuPrecision} disabled={!canEdit}
+            />
           )}
           {lead.status !== STATUT_RELANCE && status === STATUT_RELANCE && (
             <p className="text-xs text-muted-foreground">

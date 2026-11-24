@@ -17,7 +17,8 @@ import LeadScoringPanel from "@/components/leads/LeadScoringPanel";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import { LEAD_STATUS_LABELS, DM_EDITABLE_STATUSES, estStatutDm } from "@/lib/leadConfig";
+import { LEAD_STATUS_LABELS, DM_EDITABLE_STATUSES, estStatutDm, MOTIFS_FOLLOW_UP, STATUT_FOLLOW_UP } from "@/lib/leadConfig";
+import { BadgeFollowUp, ChampsFollowUp } from "@/components/leads/FollowUp";
 import { CharteSetterDm } from "@/components/apporteur/CharteSetterDm";
 import { BoutonRelanceFaite, StatutLead, SuiviRelances } from "@/components/leads/Relances";
 import { apresRelance, etapeRelance, STATUT_RELANCE } from "@/lib/relances";
@@ -72,8 +73,12 @@ const APPORTEUR_EDITABLE_STATUSES = [
 // La base vérifie les mêmes règles (tg_leads_dm).
 const DM_STATUS_OPTIONS = DM_EDITABLE_STATUSES.map((k) => ({ value: k as string, label: LEAD_STATUS_LABELS[k] }));
 function statutsProposes(lead: LeadEnriched | null, setterDm: boolean) {
-  if (setterDm && lead && (lead.dm_depuis || estStatutDm(lead.status))) return DM_STATUS_OPTIONS;
-  const base = setterDm ? APPORTEUR_EDITABLE_STATUSES.filter((o) => o.value !== "perdu") : APPORTEUR_EDITABLE_STATUSES;
+  if (setterDm && lead && (lead.dm_depuis || estStatutDm(lead.status))) return [...DM_STATUS_OPTIONS, { value: STATUT_FOLLOW_UP as string, label: "Follow-up" }];
+  // Follow-up ouvert au Setting DM (décision 3A de Sabrina, 24/11/2026)
+  const followUp = { value: STATUT_FOLLOW_UP as string, label: "Follow-up" };
+  const base = setterDm
+    ? [...APPORTEUR_EDITABLE_STATUSES.filter((o) => o.value !== "perdu"), followUp]
+    : lead?.status === STATUT_FOLLOW_UP ? [...APPORTEUR_EDITABLE_STATUSES, followUp] : APPORTEUR_EDITABLE_STATUSES;
   // « Rappel demandé » (24/11/2026) : posé par le formulaire, il reste affiché tant
   // que l'appel n'a pas eu lieu, mais ne se choisit pas à la main.
   if (lead?.status === "rappel_demande") return [{ value: "rappel_demande", label: "Rappel demandé (à appeler)" }, ...base];
@@ -154,6 +159,11 @@ export default function ApporteurLeads() {
   const [editSourceDetail, setEditSourceDetail] = useState("");
   const [editNote, setEditNote] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+  // Follow-up (24/11/2026) : date obligatoire + motif, enregistrés par mettre_en_follow_up
+  const [followUps, setFollowUps] = useState<Map<string, { le: string; motif: string | null }>>(new Map());
+  const [fuLe, setFuLe] = useState("");
+  const [fuMotif, setFuMotif] = useState<string>(MOTIFS_FOLLOW_UP[0]);
+  const [fuPrecision, setFuPrecision] = useState("");
 
   // Le caller peut-il modifier la SOURCE ? Oui ssi il EST l'apporteur du lead.
   // C'est sa donnée à lui (il l'a saisie au départ), donc il peut la corriger
@@ -191,6 +201,11 @@ export default function ApporteurLeads() {
     setEditSource(isInWhitelist ? currentSource : "");
     setEditSourceDetail(lead.source_detail || "");
     setEditNote("");
+    const fu = lead.id ? followUps.get(lead.id) : undefined;
+    const motif = fu?.motif || "";
+    setFuLe(fu?.le || "");
+    setFuMotif((MOTIFS_FOLLOW_UP as readonly string[]).includes(motif) ? motif : motif ? "Autre" : MOTIFS_FOLLOW_UP[0]);
+    setFuPrecision((MOTIFS_FOLLOW_UP as readonly string[]).includes(motif) ? "" : motif);
   }
 
   async function handleSaveEdit() {
@@ -202,7 +217,23 @@ export default function ApporteurLeads() {
       //    collab, l'apporteur ne peut PAS toucher au statut (l'assigné le
       //    pilote). Cf. canEditStatus.
       let statusResult: { ok: boolean; changed: boolean; recycled?: boolean } | null = null;
-      if (canEditStatus) {
+      const fu = editLead.id ? followUps.get(editLead.id) : undefined;
+      const motifFollowUp = fuMotif === "Autre" ? fuPrecision.trim() || "Autre" : fuMotif;
+      const followUpChange = canEditStatus && editStatus === STATUT_FOLLOW_UP
+        && (editLead.status !== STATUT_FOLLOW_UP || fuLe !== (fu?.le || "") || motifFollowUp !== (fu?.motif || ""));
+      if (canEditStatus && editStatus === STATUT_FOLLOW_UP && !fuLe) {
+        throw new Error("Choisis la date à laquelle recontacter ce lead.");
+      }
+      if (followUpChange) {
+        const { error: fuErr } = await (supabase as any).rpc("mettre_en_follow_up", {
+          p_lead_id: editLead.id,
+          p_le: fuLe,
+          p_motif: motifFollowUp,
+          p_note: editNote.trim() || null,
+        });
+        if (fuErr) throw new Error(fuErr.message);
+        statusResult = { ok: true, changed: true };
+      } else if (canEditStatus) {
         const { data: statusData, error: statusErr } = await (supabase as any).rpc(
           "apporteur_update_lead_status",
           {
@@ -279,6 +310,12 @@ export default function ApporteurLeads() {
       .or(`apporteur_id.eq.${profile.id},assigned_to.eq.${profile.id}`)
       .order("created_at", { ascending: false });
     setLeads(data || []);
+    const ids = (data || []).filter((l) => l.status === STATUT_FOLLOW_UP).map((l) => l.id!);
+    if (ids.length) {
+      const { data: fus } = await (supabase as any).from("leads").select("id, follow_up_le, follow_up_motif").in("id", ids);
+      setFollowUps(new Map(((fus || []) as { id: string; follow_up_le: string; follow_up_motif: string | null }[])
+        .map((f) => [f.id, { le: f.follow_up_le, motif: f.follow_up_motif }])));
+    } else setFollowUps(new Map());
     setLoading(false);
   }, [profile]);
 
@@ -551,6 +588,7 @@ export default function ApporteurLeads() {
                     <TableCell>
                       <div className="flex flex-col items-start gap-1">
                         <StatutLead lead={lead} className="text-xs" />
+                      {lead.status === STATUT_FOLLOW_UP && <BadgeFollowUp le={followUps.get(lead.id!)?.le} motif={followUps.get(lead.id!)?.motif} />}
                         {etapeRelance(lead) && peutRelancer(lead) && (
                           <BoutonRelanceFaite
                             lead={lead}
@@ -611,6 +649,7 @@ export default function ApporteurLeads() {
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <StatutLead lead={lead} className="text-xs" />
+                        {lead.status === STATUT_FOLLOW_UP && <BadgeFollowUp le={followUps.get(lead.id!)?.le} motif={followUps.get(lead.id!)?.motif} />}
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setScoringLead(lead); }}
@@ -802,6 +841,13 @@ export default function ApporteurLeads() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {canEditStatus && editStatus === STATUT_FOLLOW_UP && (
+                <ChampsFollowUp
+                  le={fuLe} onLe={setFuLe} motif={fuMotif} onMotif={setFuMotif}
+                  precision={fuPrecision} onPrecision={setFuPrecision}
+                />
+              )}
 
               {editLead.status === STATUT_RELANCE && editStatus === STATUT_RELANCE && (
                 <SuiviRelances

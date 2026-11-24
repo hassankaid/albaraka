@@ -4,6 +4,7 @@ import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Tables } from "@/integrations/supabase/types";
+import MesFollowUps from "@/components/calls/MesFollowUps";
 import { anyPhoneMatches } from "@/lib/phoneSearch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,6 +77,8 @@ const BASE_TABS = [
 ] as const;
 
 const MES_CALLS_TAB = { value: "mes_calls", label: "Mes calls" } as const;
+// Follow-up (22/11/2026, demande de Sabrina) : calls « Follow up » + suivis sans RDV, triés par date
+const FOLLOW_UP_TAB = { value: "mes_follow_up", label: "Mes follow-up" } as const;
 
 const PAGE_SIZE = 50;
 
@@ -133,6 +136,12 @@ export default function Calls() {
     if (!profile) return [];
     return calls.filter(c => c.assigned_to === profile.id);
   }, [calls, profile, isCeo]);
+
+  // « Mes follow-up » : les calls en follow-up de la personne (le CEO voit les siens aussi)
+  const mesFollowUpCalls = useMemo(
+    () => calls.filter((c) => c.status === "follow_up" && (!profile || c.assigned_to === profile.id || (isCeo && !c.assigned_to))),
+    [calls, profile, isCeo],
+  );
 
   const counts = useMemo(() => ({
     today: scopedCalls.filter((c) => c.scheduled_at && isToday(new Date(c.scheduled_at)) && c.status === "planifie").length,
@@ -239,7 +248,7 @@ export default function Calls() {
       {/* Tabs + filters row */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center bg-card border border-border rounded-lg p-0.5">
-          {[...BASE_TABS, ...(isCeo ? [MES_CALLS_TAB] : [])].map((t) => (
+          {[...BASE_TABS, ...(isCeo ? [MES_CALLS_TAB] : []), FOLLOW_UP_TAB].map((t) => (
             <button
               key={t.value}
               onClick={() => setTab(t.value)}
@@ -289,7 +298,13 @@ export default function Calls() {
       </div>
 
       {/* Table */}
-      {loading ? (
+      {tab === "mes_follow_up" ? (
+        <MesFollowUps
+          calls={mesFollowUpCalls}
+          onTraiterCall={(c) => setProcessCall(c)}
+          onOuvrirContact={(id) => setContactSheetId(id)}
+        />
+      ) : loading ? (
         <div className="flex items-center justify-center py-16">
           <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>

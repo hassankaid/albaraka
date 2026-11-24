@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
+import { BadgeFollowUp } from "@/components/leads/FollowUp";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAllQuery } from "@/lib/fetchAllRows";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,6 +43,7 @@ import { cn } from "@/lib/utils";
 import ContactSheet from "@/components/ContactSheet";
 import {
   LEAD_STATUS_COLORS,
+  aujourdhuiParis,
   LEAD_STATUS_LABELS,
   STATUS_FILTER_OPTIONS,
   isAdsSource, estStatutDm, STATUT_RAPPEL,
@@ -242,10 +244,12 @@ function AssigneeCombobox({
 const COLLAB_CONFIRME_TABS = [
   { value: "a_affecter", label: "À affecter" },
   { value: "mes_leads", label: "Mes leads" },
+  { value: "follow_up", label: "Follow-up" },
 ] as const;
 
 const COLLAB_INTERMEDIAIRE_TABS = [
   { value: "mes_leads", label: "Mes leads" },
+  { value: "follow_up", label: "Follow-up" },
 ] as const;
 
 const CEO_TABS = [
@@ -253,6 +257,7 @@ const CEO_TABS = [
   { value: "a_recycler", label: "À recycler" },
   { value: "lead_setting_dm", label: "Lead Setting DM" },
   { value: "mes_leads", label: "Mes leads" },
+  { value: "follow_up", label: "Follow-up" },
   { value: "tous", label: "Tous" },
 ] as const;
 
@@ -309,6 +314,7 @@ export default function Leads() {
   // Lead publicitaire : d'après son canal (géré en base) ; l'ancienne liste en dur sert le temps du chargement.
   const leadAds = useCallback((l: LeadEnriched) => (canaux ? estAds(l, canaux) : isAdsSource(l.source)), [canaux]);
   const [search, setSearch] = useState(qParam ?? "");
+  const [followUps, setFollowUps] = useState<Map<string, { le: string; motif: string | null }>>(new Map());
   useEffect(() => {
     if (!qParam) return;
     setSearch(qParam);
@@ -366,6 +372,14 @@ export default function Leads() {
     }
 
     setLeads(allLeads);
+
+    // Follow-up (22/11/2026) : date et motif, colonnes récentes hors vue enrichie
+    const { data: fus } = await (supabase as any)
+      .from("leads")
+      .select("id, follow_up_le, follow_up_motif")
+      .eq("status", "follow_up");
+    setFollowUps(new Map(((fus || []) as { id: string; follow_up_le: string; follow_up_motif: string | null }[])
+      .map((f) => [f.id, { le: f.follow_up_le, motif: f.follow_up_motif }])));
 
     // Fetch de l'index des contacts à fiches multiples (RPC scopée, bypasse
     // RLS uniquement pour count + date/statut/setter). Permet aux collab
@@ -678,10 +692,12 @@ export default function Leads() {
       a_recycler: leads.filter((l) => isRecycled(l)).length,
       call_booke: scopedLeads.filter((l) => l.status === "call_booke").length,
       mes_leads: myLeadsCount,
+      follow_up: scopedLeads.filter((l) => l.status === "follow_up").length,
+      follow_up_retard: scopedLeads.filter((l) => l.status === "follow_up" && (followUps.get(l.id!)?.le || "9999") < aujourdhuiParis()).length,
       dm_a_attribuer: dmAAttribuer,
       dm_chez_setters: dmChezSetters,
     };
-  }, [scopedLeads, leads, myLeadsCount, leadAds]);
+  }, [scopedLeads, leads, myLeadsCount, leadAds, followUps]);
 
   // « Rappel demandé » (24/11/2026) : personnes qui ont demandé un appel au formulaire
   // de rendez-vous. Bandeau en haut de page tant qu'il en reste : les siennes pour un
@@ -726,6 +742,9 @@ export default function Leads() {
       result = dmSegment === "a_attribuer"
         ? leads.filter((l) => l.status === "dm_a_contacter" && !l.assigned_to)
         : leads.filter((l) => !!l.dm_depuis && !!l.assigned_to);
+    } else if (tab === "follow_up") {
+      // Follow-up : les leads à recontacter à une date précise, de la personne (ou de tous pour le CEO)
+      result = scopedLeads.filter((l) => l.status === "follow_up");
     } else if (tab === "mes_leads") {
       result = user ? leads.filter((l) => l.assigned_to === user.id) : [];
     } else {
@@ -782,8 +801,11 @@ export default function Leads() {
         : leadsAvantEtape;
     // Les leads arrivent du plus récent au plus ancien : seul l'ordre d'appel re-trie.
     const jeuVenEnTete = !!reglagesScoring?.jeu_ven_tri;
+    if (tab === "follow_up") {
+      return [...liste].sort((a, b) => (followUps.get(a.id!)?.le || "9999").localeCompare(followUps.get(b.id!)?.le || "9999"));
+    }
     return tri === "appel" ? [...liste].sort((a, b) => comparerOrdreAppel(a, b, jeuVenEnTete)) : liste;
-  }, [leadsAvantEtape, statusFilter, relanceFilter, tri, reglagesScoring]);
+  }, [leadsAvantEtape, statusFilter, relanceFilter, tri, reglagesScoring, tab, followUps]);
 
   useEffect(() => {
     if (statusFilter !== STATUT_RELANCE) setRelanceFilter("all");
@@ -950,6 +972,7 @@ export default function Leads() {
                 : t.value === "a_recycler" ? ` (${counts.a_recycler})`
                 : t.value === "lead_setting_dm" ? ` (${counts.dm_a_attribuer})`
                 : t.value === "mes_leads" ? ` (${counts.mes_leads})`
+                : t.value === "follow_up" ? ` (${counts.follow_up}${counts.follow_up_retard ? ` · ${counts.follow_up_retard} en retard` : ""})`
                 : t.value === "tous" ? ` (${counts.total})`
                 : ""}
             </button>
@@ -1581,6 +1604,9 @@ export default function Leads() {
                     <TableCell>
                       <div className="flex flex-col items-start gap-1">
                         <StatutLead lead={lead} className="text-[10px]" />
+                        {lead.status === "follow_up" && (
+                          <BadgeFollowUp le={followUps.get(lead.id!)?.le} motif={followUps.get(lead.id!)?.motif} />
+                        )}
                         {lead.contact_deja_perdu_dm && !estStatutDm(lead.status) && (
                           <span
                             className="rounded-full border border-red-500/40 bg-red-500/10 px-1.5 text-[9px] font-semibold text-red-300"
