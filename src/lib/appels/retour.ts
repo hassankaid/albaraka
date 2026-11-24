@@ -256,19 +256,19 @@ export function texteRetourCoach(r: RetourCoach, prenom: string): string {
   if (r.verdict?.trim()) l.push(r.verdict.trim(), "");
   const pp = r.point_principal;
   if (pp && !pp.retire && pp.titre?.trim()) l.push(`⚠️ Le point principal : ${pp.titre.trim()}`, (pp.texte ?? "").trim(), "");
-  const reussites = r.reussites.filter((x) => !x.retire && x.texte.trim());
-  if (reussites.length) l.push("✅ Ce qui a bien marché", ...reussites.map((x) => `• ${x.texte.trim()}`), "");
-  const points = r.points.filter((p) => !p.retire);
+  const reussites = (r.reussites ?? []).filter((x) => !x.retire && (x.texte ?? "").trim());
+  if (reussites.length) l.push("✅ Ce qui a bien marché", ...reussites.map((x) => `• ${(x.texte ?? "").trim()}`), "");
+  const points = (r.points ?? []).filter((p) => !p.retire);
   if (points.length) l.push("⚠️ Points à travailler", "");
   points.forEach((p, i) => {
-    const titre = p.titre.trim();
+    const titre = (p.titre ?? "").trim();
     l.push(`${i + 1}. ${titre}${p.moins_grave && !/moins grave/i.test(titre) ? " (moins grave)" : ""}`);
     if (p.constat?.trim()) l.push(p.constat.trim());
     if (p.formulation?.trim()) l.push(`👉 ${entreGuillemets(p.formulation)}`);
     if (p.suite?.trim()) l.push(p.suite.trim());
     l.push("");
   });
-  const priorites = r.priorites.filter((x) => x.trim());
+  const priorites = (r.priorites ?? []).filter((x) => (x ?? "").trim());
   if (priorites.length) l.push("🎯 Pour ton prochain appel, en priorité", ...priorites.map((x, i) => `${i + 1}. ${x.trim()}`));
   return l.join("\n").trim();
 }
@@ -281,18 +281,18 @@ export function texteEleve(a: Analyse, prenom: string): string {
   let entete = `Note : ${note}/100`;
   if (a.penalite) entete += ` (${Math.round(a.note_etapes)} sur les étapes, −${a.penalite} car le prospect n'a pas été prévenu de l'enregistrement)`;
   lignes.push(entete + "." + (a.alerte_duree ? ` ${a.alerte_duree}.` : ""));
-  lignes.push("", `Salamou ‘alaykoum ${prenom}, voici le retour sur ton appel.`, "", a.analyse_globale.trim());
-  const forts = a.points_forts.filter((p) => !p.retire);
+  lignes.push("", `Salamou ‘alaykoum ${prenom}, voici le retour sur ton appel.`, "", (a.analyse_globale ?? "").trim());
+  const forts = (a.points_forts ?? []).filter((p) => !p.retire);
   if (forts.length) {
     lignes.push("", "Ce que tu as bien fait :");
-    for (const p of forts) lignes.push(`• ${p.titre} : ${p.pourquoi.trim()}${p.citation ? ` (« ${p.citation} »)` : ""}`);
+    for (const p of forts) lignes.push(`• ${p.titre ?? ""} : ${(p.pourquoi ?? "").trim()}${p.citation ? ` (« ${p.citation} »)` : ""}`);
   }
-  const axes = a.axes.filter((x) => !x.retire);
+  const axes = (a.axes ?? []).filter((x) => !x.retire);
   if (axes.length) {
     lignes.push("", "À améliorer :");
     axes.forEach((x, i) => {
-      lignes.push(`${i + 1}. ${x.titre} : ${x.probleme.trim()}`);
-      if (x.formulation_ideale.trim()) lignes.push(`   À dire la prochaine fois : « ${x.formulation_ideale.trim().replace(/^«\s*|\s*»$/g, "")} »`);
+      lignes.push(`${i + 1}. ${x.titre ?? ""}${(x.probleme ?? "").trim() ? ` : ${(x.probleme ?? "").trim()}` : ""}`);
+      if ((x.formulation_ideale ?? "").trim()) lignes.push(`   À dire la prochaine fois : « ${(x.formulation_ideale ?? "").trim().replace(/^«\s*|\s*»$/g, "")} »`);
     });
   }
   if (a.conseil_prioritaire?.texte?.trim()) lignes.push("", `Ton conseil prioritaire : ${a.conseil_prioritaire.texte.trim()}`);

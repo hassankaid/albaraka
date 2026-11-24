@@ -104,13 +104,13 @@ function RetourAppelPdf({ a, eleve, typeAppel, dureeS, date }: { a: Analyse; ele
             {a.alerte_duree && `${sansFleche(a.alerte_duree)}.`}
           </Text>
         )}
-        <Text style={s.texte}>{sansFleche(a.analyse_globale)}</Text>
+        {a.analyse_globale ? <Text style={s.texte}>{sansFleche(a.analyse_globale)}</Text> : null}
 
         {forts.length > 0 && <Text style={s.h2}>Ce que tu as bien fait</Text>}
         {forts.map((p, i) => (
           <View key={i} style={s.bloc} wrap={false}>
             <Text style={s.gras}>{sansFleche(p.titre)}</Text>
-            <Text>{sansFleche(p.pourquoi)}</Text>
+            {p.pourquoi ? <Text>{sansFleche(p.pourquoi)}</Text> : null}
             {p.citation ? <Text style={s.citation}>« {sansFleche(p.citation)} »</Text> : null}
           </View>
         ))}
@@ -121,7 +121,7 @@ function RetourAppelPdf({ a, eleve, typeAppel, dureeS, date }: { a: Analyse; ele
             <Text style={s.gras}>
               {i + 1}. {sansFleche(x.titre)}
             </Text>
-            <Text>{sansFleche(x.probleme)}</Text>
+            {x.probleme ? <Text>{sansFleche(x.probleme)}</Text> : null}
             {x.formulation_ideale ? (
               <Text style={s.ideal}>À dire la prochaine fois : « {sansFleche(x.formulation_ideale).replace(/^«\s*|\s*»$/g, "")} »</Text>
             ) : null}

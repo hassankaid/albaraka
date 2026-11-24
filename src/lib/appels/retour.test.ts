@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { avecVoix, compterCorrections, duree, mmss, prenom, recalculer, texteEleve, tourA, type Analyse, type Tour } from "./retour";
+import { avecVoix, compterCorrections, duree, mmss, prenom, recalculer, texteEleve, tourA, type Analyse, type Axe, type Tour } from "./retour";
 
 const ia: Analyse = {
   erreurs_critiques: [],
@@ -143,5 +143,13 @@ describe("format de la coach (référentiel v0.6, 24/11/2026)", () => {
     r.points.push({ titre: "Son accent", constat: "À aborder directement." });
     r.priorites[2] = "Pas de blanc.";
     expect(compterCorrections(coach, { ...coach, retour: r })).toBe(4);
+  });
+});
+
+describe("analyses incomplètes de l'IA", () => {
+  it("un axe sans « problème » ne fait plus planter la page (appel du 04/11)", () => {
+    const axe = { titre: "Garder l'offre pour après", formulation_ideale: "Tu le verras en conférence." } as unknown as Axe;
+    const t = texteEleve({ ...ia, axes: [axe] }, "Samira");
+    expect(t).toContain("1. Garder l'offre pour après\n   À dire la prochaine fois : « Tu le verras en conférence. »");
   });
 });
