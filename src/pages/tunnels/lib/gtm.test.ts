@@ -133,7 +133,8 @@ describe("GTM actif : chargement et évènements", () => {
     const { trackTypLead } = await import("./pixel");
     await trackTypLead();
     for (const e of window.dataLayer ?? []) {
-      expect(Object.keys(e).filter((k) => !["event", "tunnel", "page_path", "gtm.start"].includes(k))).toEqual([]);
+      // zone_lead (« cible » / « hors_zone ») et event_id (aléatoire) : rien qui identifie la personne
+      expect(Object.keys(e).filter((k) => !["event", "tunnel", "page_path", "zone_lead", "event_id", "gtm.start"].includes(k))).toEqual([]);
     }
   });
 });
@@ -240,5 +241,36 @@ describe("la confirmation de /appel-conference compte le rendez-vous", () => {
     const code = readFileSync(`${process.cwd()}/src/pages/tunnels/appel/AppelConfirmation.tsx`, "utf-8");
     expect(code).not.toMatch(/trackCalendlyBooked\(\s*\)/);
     expect(code).toMatch(/event_start_time[\s\S]*invitee_email/);
+  });
+});
+
+describe("zone du lead et identifiant d'inscription (media buyer, 24/11/2026)", () => {
+  it("l'inscription porte la zone et l'identifiant, une seule fois", async () => {
+    await gtmActif();
+    allerSur("/webinaire/merci");
+    const { markLeadPending, trackTypLead } = await import("./pixel");
+    markLeadPending({ eventId: "evt-123", zone: "hors_zone" });
+    await trackTypLead();
+    await trackTypLead();
+    const leads = window.dataLayer!.filter((e) => e.event === "alb_lead");
+    expect(leads).toHaveLength(1);
+    expect(leads[0]).toMatchObject({ zone_lead: "hors_zone", event_id: "evt-123" });
+  });
+
+  it("la zone suit les évènements suivants de la session, sans l'identifiant de l'inscription", async () => {
+    await gtmActif();
+    allerSur("/webinaire/merci");
+    const { markLeadPending, trackTypLead, trackWhatsappJoin } = await import("./pixel");
+    markLeadPending({ eventId: "evt-456", zone: "cible" });
+    await trackTypLead();
+    trackWhatsappJoin();
+    const wa = window.dataLayer!.find((e) => e.event === "alb_whatsapp_join");
+    expect(wa).toMatchObject({ zone_lead: "cible", event_id: "" });
+  });
+
+  it("avant toute inscription, la zone est « inconnue »", async () => {
+    const { pousserGtm } = await gtmActif();
+    pousserGtm("alb_page_view", "/webinaire");
+    expect(window.dataLayer!.at(-1)).toMatchObject({ event: "alb_page_view", zone_lead: "inconnue", event_id: "" });
   });
 });

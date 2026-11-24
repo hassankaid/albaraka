@@ -54,7 +54,7 @@ export function pixelCourant(chemin?: string, hote?: string): string {
 }
 
 import { getTunnelPrefill } from "./source";
-import { EVENEMENTS_GTM, estPageGtm, gtmChargeLaPage, gtmGereLaPage, pousserGtm } from "./gtm";
+import { EVENEMENTS_GTM, estPageGtm, gtmChargeLaPage, gtmGereLaPage, memoriserZoneLead, pousserGtm, type ZoneLead } from "./gtm";
 
 declare global {
   interface Window {
@@ -280,6 +280,18 @@ function empreinte(texte: string): string {
 
 /** Marqueur d'inscription en attente, posé à la validation du formulaire. */
 const LEAD_EN_ATTENTE = "alb_tunnel_lead_pending";
+/** Identifiant de l'évènement d'inscription (dédoublonnage avec l'envoi serveur, 24/11/2026). */
+const LEAD_EVENT_ID = "alb_tunnel_lead_event_id";
+
+/** Un identifiant d'évènement unique, partagé entre le navigateur et le serveur. */
+export function nouvelIdEvenement(): string {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  } catch {
+    /* repli ci-dessous */
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+}
 
 /**
  * À appeler à la validation du formulaire, APRÈS l'écriture en base : pose un
@@ -291,9 +303,11 @@ const LEAD_EN_ATTENTE = "alb_tunnel_lead_pending";
  * conversion. D'où ce marqueur à usage unique — l'event part bien depuis la
  * page de remerciement, mais seulement pour qui vient VRAIMENT de s'inscrire.
  */
-export function markLeadPending(): void {
+export function markLeadPending(suivi?: { eventId: string; zone: ZoneLead }): void {
+  if (suivi) memoriserZoneLead(suivi.zone);
   try {
     sessionStorage.setItem(LEAD_EN_ATTENTE, "1");
+    if (suivi) sessionStorage.setItem(LEAD_EVENT_ID, suivi.eventId);
   } catch {
     /* mode privé strict : on perdra le Lead, jamais on n'en inventera un */
   }
@@ -326,12 +340,17 @@ export async function trackTypLead(): Promise<void> {
     }
 
     let enAttente = false;
+    let eventId: string | undefined;
     try {
       enAttente = sessionStorage.getItem(LEAD_EN_ATTENTE) === "1";
-      if (enAttente) sessionStorage.removeItem(LEAD_EN_ATTENTE);
+      if (enAttente) {
+        sessionStorage.removeItem(LEAD_EN_ATTENTE);
+        eventId = sessionStorage.getItem(LEAD_EVENT_ID) ?? undefined;
+        sessionStorage.removeItem(LEAD_EVENT_ID);
+      }
     } catch { /* pas de stockage : pas de Lead */ }
 
-    if (enAttente) pousserGtm(EVENEMENTS_GTM.inscription); // conférence ou Liberty
+    if (enAttente) pousserGtm(EVENEMENTS_GTM.inscription, undefined, eventId); // conférence ou Liberty
     if (!meta) return;
 
     const id = pixelCourant();

@@ -15,7 +15,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { T, CONFERENCE } from "../theme";
 import { useConference } from "../lib/conference";
-import { markLeadPending } from "../lib/pixel";
+import { markLeadPending, nouvelIdEvenement } from "../lib/pixel";
+import { zoneDuTelephone } from "@/lib/zoneLead";
 import { CaseMarketing, MentionFormulaire } from "@/components/legal/MentionFormulaire";
 import { submitTunnelLead } from "../lib/api";
 import { getAttribution, setTunnelPrefill } from "../lib/source";
@@ -91,8 +92,11 @@ export default function OptInModal({ open, onClose, tunnel, titre, dateLigne, bo
     setSubmitting(true);
     try {
       // 1) Création du lead dans le CRM (edge function), avec la source du tunnel.
+      // Zone du téléphone et identifiant de l'inscription (24/11/2026) : le
+      // même identifiant part au serveur et au pixel, Snap ne compte qu'une fois.
+      const suivi = { eventId: nouvelIdEvenement(), zone: zoneDuTelephone(phone) };
       const lead = await submitTunnelLead(
-        { first_name: firstName.trim(), email: email.trim(), phone, consentement_marketing: accepteMarketing },
+        { first_name: firstName.trim(), email: email.trim(), phone, consentement_marketing: accepteMarketing, event_id: suivi.eventId },
         tunnel,
       );
       // Mémorise les coordonnées pour pré-remplir le Calendly (tunnel VSL).
@@ -101,7 +105,7 @@ export default function OptInModal({ open, onClose, tunnel, titre, dateLigne, bo
       //    par le client). On pose ici un marqueur a usage unique : sans lui,
       //    ces pages etant accessibles par URL directe, chaque rechargement
       //    compterait une conversion.
-      markLeadPending();
+      markLeadPending(suivi);
       // 3) Tunnels WhatsApp et VSL : le quiz de lead scoring d'abord,
       //    obligatoire (04/10/2026). Sinon, ou sans jeton, la page de
       //    remerciement propre au tunnel. La variante A/B suit dans les deux cas.

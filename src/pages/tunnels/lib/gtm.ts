@@ -167,15 +167,53 @@ function charger(chemin: string): boolean {
 }
 
 /**
+ * Zone du lead (demande du media buyer, 24/11/2026) : « cible » (+33, +32),
+ * « hors_zone » ou « inconnue » (pas encore inscrit). Mémorisée pour la
+ * session à l'inscription, elle accompagne chaque évènement : la balise Snap
+ * ne se déclenche que pour « cible » (réglage dans GTM).
+ */
+export type ZoneLead = "cible" | "hors_zone" | "inconnue";
+const ZONE_LEAD = "alb_zone_lead";
+
+export function memoriserZoneLead(zone: ZoneLead): void {
+  try {
+    sessionStorage.setItem(ZONE_LEAD, zone);
+  } catch {
+    /* pas de stockage : la zone restera « inconnue » */
+  }
+}
+
+export function lireZoneLead(): ZoneLead {
+  try {
+    const z = sessionStorage.getItem(ZONE_LEAD);
+    return z === "cible" || z === "hors_zone" ? z : "inconnue";
+  } catch {
+    return "inconnue";
+  }
+}
+
+/**
  * Pousse un évènement dans le dataLayer — sans effet hors du périmètre.
  * Ne lève jamais : un suivi en panne ne doit pas casser une page de vente.
+ *
+ * `event_id` (24/11/2026) : identifiant unique de l'inscription, partagé avec
+ * l'envoi serveur (API de conversion Snap) pour que Snap ne la compte qu'une
+ * fois. Toujours écrit, vide sauf pour l'inscription : GTM garde les valeurs
+ * d'un évènement à l'autre, un ancien identifiant ne doit pas suivre un autre
+ * évènement.
  */
-export function pousserGtm(evenement: NomEvenement, chemin?: string): void {
+export function pousserGtm(evenement: NomEvenement, chemin?: string, eventId?: string): void {
   try {
     const p = chemin ?? window.location.pathname;
     if (!actif(p)) return;
     if (!charger(p)) return;
-    window.dataLayer!.push({ event: evenement, tunnel: tunnelDe(p), page_path: p });
+    window.dataLayer!.push({
+      event: evenement,
+      tunnel: tunnelDe(p),
+      page_path: p,
+      zone_lead: lireZoneLead(),
+      event_id: eventId ?? "",
+    });
   } catch (err) {
     console.warn("[tunnel-gtm] évènement non transmis (non bloquant):", err);
   }

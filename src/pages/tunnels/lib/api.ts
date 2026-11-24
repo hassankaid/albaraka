@@ -17,6 +17,8 @@ export interface TunnelLeadInput {
   phone: string; // E.164
   /** Case « je veux recevoir vos offres ». Jamais requise pour s'inscrire. */
   consentement_marketing?: boolean;
+  /** Identifiant de l'évènement d'inscription, partagé avec le pixel (24/11/2026). */
+  event_id?: string;
 }
 
 export interface TunnelLeadResult {
@@ -125,7 +127,7 @@ export async function submitTunnelLead(input: TunnelLeadInput, cfg: TunnelConfig
     fbclid: a?.fbclid ?? null,
     gclid: a?.gclid ?? null,
     referrer: a?.referrer ?? null,
-    clic_pub: { ...clicsPub(a), diag: diagnostic(a, lu.origine, recapture) },
+    clic_pub: { ...clicsPub(a), event_id: input.event_id ?? null, diag: diagnostic(a, lu.origine, recapture) },
     // Le visiteur et le test voyagent avec l'inscrit : c'est ce qui permettra
     // plus tard de rattacher une VENTE à la variante qui l'a précédée. La
     // variante elle-même n'est pas envoyée ici — elle n'est décidée qu'à la
