@@ -170,8 +170,8 @@ export async function envoyerAppel(
   return id;
 }
 
-/** Lance (ou relance) l'analyse, ou la refait après inversion des voix. */
-export async function demarrerAppel(id: string, action: "lancer" | "inverser_voix") {
+/** Lance (ou relance) l'analyse, la refait après inversion des voix, ou la refait seule (sans retranscrire). */
+export async function demarrerAppel(id: string, action: "lancer" | "inverser_voix" | "reanalyser") {
   const { data: session } = await supabase.auth.getSession();
   const rep = await fetch("/api/appels/demarrer", {
     method: "POST",

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowLeftRight, Copy, FileDown, Loader2, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, Copy, FileDown, Loader2, RefreshCw, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -31,6 +31,7 @@ export default function AnalyseAppel() {
   const { data: audio } = useAudioAppel(a && !a.audio_supprime_le ? a.audio_path : null);
   const lecteur = useLecteur();
   const [inversion, setInversion] = useState(false);
+  const [reanalyse, setReanalyse] = useState(false);
   const [action, setAction] = useState(false);
 
   if (profile && !(profile.is_coach || profile.role === "ceo")) return <Navigate to="/dashboard" replace />;
@@ -73,9 +74,14 @@ export default function AnalyseAppel() {
         </p>
       </div>
       {a.statut === "a_valider" && (
-        <Button variant="outline" size="sm" className="ml-auto gap-2 sm:ml-0" onClick={() => setInversion(true)} disabled={action} data-testid="inverser-voix">
-          <ArrowLeftRight className="h-4 w-4" /> Inverser les voix
-        </Button>
+        <div className="ml-auto flex flex-wrap gap-2 sm:ml-0">
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setReanalyse(true)} disabled={action} data-testid="refaire-analyse">
+            <RefreshCw className="h-4 w-4" /> Refaire l'analyse
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setInversion(true)} disabled={action} data-testid="inverser-voix">
+            <ArrowLeftRight className="h-4 w-4" /> Inverser les voix
+          </Button>
+        </div>
       )}
     </div>
   );
@@ -192,6 +198,21 @@ export default function AnalyseAppel() {
           </div>
         </aside>
       </div>
+
+      <AlertDialog open={reanalyse} onOpenChange={setReanalyse}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Refaire l'analyse ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              L'IA refait le retour avec la grille et le format actuels, sans retranscrire l'appel (environ 1 minute). Tes corrections actuelles sont effacées.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={() => agir(() => demarrerAppel(a.id, "reanalyser"), "Analyse relancée")}>Refaire l'analyse</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={inversion} onOpenChange={setInversion}>
         <AlertDialogContent>

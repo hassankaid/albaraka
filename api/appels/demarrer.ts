@@ -4,6 +4,7 @@
 // POST /api/appels/demarrer   Authorization: Bearer <jeton Supabase du coach>
 //   { appel_id, action: "lancer" }          après le dépôt du fichier (ou pour relancer)
 //   { appel_id, action: "inverser_voix" }   l'IA a confondu l'élève et le prospect : on refait l'analyse
+//   { appel_id, action: "reanalyser" }      refaire l'analyse seule (nouveau référentiel), sans retranscrire
 //
 // La fonction agit avec les droits du coach (son jeton Supabase), jamais avec la clé de
 // service : elle signe les liens du fichier de l'appel et passe par appel_lancer /
@@ -48,7 +49,7 @@ export async function POST(request: Request): Promise<Response> {
     return repondre(400, { error: "Requête illisible" });
   }
   const { appel_id: id, action } = corps;
-  if (!id || (action !== "lancer" && action !== "inverser_voix")) return repondre(400, { error: "Paramètres manquants" });
+  if (!id || !["lancer", "inverser_voix", "reanalyser"].includes(action ?? "")) return repondre(400, { error: "Paramètres manquants" });
 
   const sb = createClient(url, anon, {
     global: { headers: { Authorization: `Bearer ${jwt}` } },
@@ -64,9 +65,9 @@ export async function POST(request: Request): Promise<Response> {
 
   const mode = action === "lancer" ? "complet" : "analyse";
   const { data: jeton, error: eJ } =
-    action === "lancer"
-      ? await sb.rpc("appel_lancer", { p_id: id, p_mode: "complet" })
-      : await sb.rpc("appel_inverser_voix", { p_id: id });
+    action === "inverser_voix"
+      ? await sb.rpc("appel_inverser_voix", { p_id: id })
+      : await sb.rpc("appel_lancer", { p_id: id, p_mode: mode });
   if (eJ || !jeton) return repondre(409, { error: eJ?.message ?? "Impossible de lancer l'analyse" });
 
   const echouer = async (message: string) => {
