@@ -56,6 +56,15 @@ export function StatutLead({ lead, className }: { lead: LeadRelance; className?:
       {LEAD_STATUS_LABELS[lead.status] || lead.status}
     </Badge>
   );
+  // « Rappel demandé » (24/11/2026) : la personne attend l'appel, ce n'est pas une relance
+  if (lead.status === "rappel_demande") {
+    return (
+      <span className="inline-flex flex-col items-start gap-0.5" data-testid="statut-rappel">
+        {badge}
+        <span className="text-[10px] text-rose-300/90">à appeler en priorité</span>
+      </span>
+    );
+  }
   if (!etape) return badge;
   const derniere = derniereRelance(lead.relance_derniere_le, new Date(), profile?.timezone || "Europe/Paris");
   return (

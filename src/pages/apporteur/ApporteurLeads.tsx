@@ -73,8 +73,11 @@ const APPORTEUR_EDITABLE_STATUSES = [
 const DM_STATUS_OPTIONS = DM_EDITABLE_STATUSES.map((k) => ({ value: k as string, label: LEAD_STATUS_LABELS[k] }));
 function statutsProposes(lead: LeadEnriched | null, setterDm: boolean) {
   if (setterDm && lead && (lead.dm_depuis || estStatutDm(lead.status))) return DM_STATUS_OPTIONS;
-  if (setterDm) return APPORTEUR_EDITABLE_STATUSES.filter((o) => o.value !== "perdu");
-  return APPORTEUR_EDITABLE_STATUSES;
+  const base = setterDm ? APPORTEUR_EDITABLE_STATUSES.filter((o) => o.value !== "perdu") : APPORTEUR_EDITABLE_STATUSES;
+  // « Rappel demandé » (24/11/2026) : posé par le formulaire, il reste affiché tant
+  // que l'appel n'a pas eu lieu, mais ne se choisit pas à la main.
+  if (lead?.status === "rappel_demande") return [{ value: "rappel_demande", label: "Rappel demandé (à appeler)" }, ...base];
+  return base;
 }
 
 // Statuts qui déclenchent un recyclage instantané du lead

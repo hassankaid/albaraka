@@ -37,6 +37,7 @@ const STATUS_COLORS: Record<string, string> = {
   pas_de_reponse: "bg-orange-500/20 text-orange-300 border-orange-500/30",
   pas_qualifie: "bg-muted text-muted-foreground border-border",
   a_relancer: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  rappel_demande: "bg-rose-500/25 text-rose-200 border-rose-400/70",
   a_recycler: "bg-amber-500/20 text-amber-300 border-amber-500/30",
   contacte: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
   call_booke: "bg-gold-400/20 text-gold-200 border-gold-400/30",
@@ -72,7 +73,7 @@ const STATUS_LABELS: Record<string, string> = {
   a_qualifier: "À qualifier", inscrit_conference: "Inscrit conférence", envoi_rediffusion: "Envoi rediffusion",
   faux_numero: "Faux numéro",
   pas_de_reponse: "Pas de réponse", pas_qualifie: "Pas qualifié",
-  a_relancer: "À relancer", a_recycler: "À recycler",
+  a_relancer: "À relancer", a_recycler: "À recycler", rappel_demande: "Rappel demandé",
   close: "Close", disqualifie: "Disqualifié", pas_interesse: "Pas intéressé",
   non_close: "Non close", renvoye_pole_vente: "Renvoi Pôle Vente",
   renvoye_conference: "Renvoi Conférence", rediffusion: "Rediffusion",
@@ -521,7 +522,12 @@ function LeadActivityEvent({ data, userTz }: { data: any; userTz: string }) {
         <div>
           <p className="text-sm text-foreground">Rappel demandé depuis le formulaire de rendez-vous</p>
           {data.note && <p className="text-xs text-muted-foreground italic mt-1">{data.note}</p>}
-          {passe && <p className="text-xs text-muted-foreground mt-1">Fiche passée « À relancer »</p>}
+          {passe && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Fiche passée « {STATUS_LABELS[data.new_value] || data.new_value} »
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground mt-1">Automatique : la personne a cliqué « Être rappelé(e) »</p>
         </div>
       </div>
     );

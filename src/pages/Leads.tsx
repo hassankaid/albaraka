@@ -26,7 +26,7 @@ import {
 import {
   Users, UserPlus, RefreshCw, Search, Phone, Inbox, ChevronDown, Instagram, Pencil, Eye, Info, Copy,
   ChevronLeft, ChevronRight, PartyPopper, CheckSquare, UserMinus, CalendarRange, Recycle,
-  Settings2, MessageCircle,
+  Settings2, MessageCircle, PhoneCall,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialogAction } from "@/components/ui/alert-dialog";
@@ -44,7 +44,7 @@ import {
   LEAD_STATUS_COLORS,
   LEAD_STATUS_LABELS,
   STATUS_FILTER_OPTIONS,
-  isAdsSource, estStatutDm,
+  isAdsSource, estStatutDm, STATUT_RAPPEL,
 } from "@/lib/leadConfig";
 import { badgeCanal, estAds, GROUPES, libelleCanal, libelleTunnel, useCanaux, useTunnels } from "@/lib/leadSources";
 import { GestionSources } from "@/components/leads/GestionSources";
@@ -683,6 +683,14 @@ export default function Leads() {
     };
   }, [scopedLeads, leads, myLeadsCount, leadAds]);
 
+  // « Rappel demandé » (24/11/2026) : personnes qui ont demandé un appel au formulaire
+  // de rendez-vous. Bandeau en haut de page tant qu'il en reste : les siennes pour un
+  // setter, toutes pour qui répartit les leads.
+  const rappelsDemandes = useMemo(
+    () => leads.filter((l) => l.status === STATUT_RAPPEL && (canAssign || l.assigned_to === user?.id)),
+    [leads, canAssign, user?.id],
+  );
+
   // Groupes de sources affichés dans le popover « Sources ». Sur « À affecter »,
   // on ne montre que le groupe du sous-onglet actif (Ads ou Organique) pour
   // éviter un état de filtre incohérent avec le sous-onglet.
@@ -958,6 +966,24 @@ export default function Leads() {
           />
         </div>
       </div>
+
+      {rappelsDemandes.length > 0 && !(statusFilter === STATUT_RAPPEL && tab === (canAssign ? "tous" : "mes_leads")) && (
+        <button
+          type="button"
+          data-testid="bandeau-rappels"
+          onClick={() => { setTab(canAssign ? "tous" : "mes_leads"); setStatusFilter(STATUT_RAPPEL); }}
+          className="flex w-full items-center gap-3 rounded-lg border border-rose-400/60 bg-rose-500/15 px-4 py-2.5 text-left hover:bg-rose-500/25 transition-colors"
+        >
+          <PhoneCall className="h-4 w-4 shrink-0 text-rose-300" />
+          <span className="text-sm text-rose-100">
+            <strong>
+              {rappelsDemandes.length} {rappelsDemandes.length > 1 ? "personnes ont demandé" : "personne a demandé"} à être rappelée{rappelsDemandes.length > 1 ? "s" : ""}
+            </strong>{" "}
+            au formulaire de rendez-vous : à appeler en priorité.
+          </span>
+          <span className="ml-auto text-xs font-medium text-rose-200 underline underline-offset-2">Voir la liste</span>
+        </button>
+      )}
 
       {/* Sous-onglets Ads / Organique — uniquement sur « À affecter ».
           Le sous-onglet fait la séparation principale ; le filtre « Sources »

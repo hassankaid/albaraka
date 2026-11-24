@@ -255,7 +255,9 @@ export function infosScoring(flags: string[] | null | undefined): InfosScoring {
   return { alertes, infos };
 }
 
-// Ordre de la file d'appel : d'abord les leads à qualifier des 14 derniers jours, de la priorité A à D puis
+// Ordre de la file d'appel : en tout premier les « Rappel demandé » (la personne a
+// demandé elle-même un appel au formulaire de rendez-vous, 24/11/2026), du plus ancien
+// au plus récent ; puis les leads à qualifier des 14 derniers jours, de la priorité A à D puis
 // les non scorés ; à priorité égale, les « Réinscrit » en tête (une réinscription est
 // un signal d'intérêt), puis les « Jeu-Ven » si le réglage le demande (décision 2 :
 // désactivé au départ), puis le plus ancien. Ensuite les autres leads, du plus récent
@@ -274,6 +276,9 @@ export interface LeadOrdonnable {
 export const FILE_APPEL_JOURS = 14;
 
 export function comparerOrdreAppel(a: LeadOrdonnable, b: LeadOrdonnable, jeuVenEnTete = false, maintenant = Date.now()): number {
+  const rappel = (l: LeadOrdonnable) => (l.status === "rappel_demande" ? 0 : 1);
+  if (rappel(a) !== rappel(b)) return rappel(a) - rappel(b);
+  if (rappel(a) === 0) return (a.created_at ?? "").localeCompare(b.created_at ?? "");
   const limite = new Date(maintenant - FILE_APPEL_JOURS * 86_400_000).toISOString();
   const aTraiter = (l: LeadOrdonnable) => (l.status === "a_qualifier" && (l.created_at ?? "") >= limite ? 0 : 1);
   if (aTraiter(a) !== aTraiter(b)) return aTraiter(a) - aTraiter(b);

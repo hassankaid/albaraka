@@ -78,6 +78,8 @@ const COLOR_CLASSES: Record<string, string> = {
   violet: "bg-gold-600/20 text-gold-300 border-gold-600/30",
   zinc: "bg-zinc-600/20 text-zinc-400 border-zinc-600/30",
   "red-light": "bg-red-300/20 text-red-300 border-red-300/30",
+  // « Rappel demandé » (24/11/2026) : doit sauter aux yeux dans la liste
+  rose: "bg-rose-500/25 text-rose-200 border-rose-400/70 font-semibold",
 };
 
 /** Classes du badge pour une couleur (sources gérées en base : lead_canaux.couleur). */
@@ -118,6 +120,10 @@ export const leadStatusConfig: Record<string, { label: string; color: string }> 
   pas_de_reponse: { label: "Pas de réponse", color: "orange" },
   pas_qualifie: { label: "Pas qualifié", color: "zinc" },
   a_relancer: { label: "À relancer", color: "yellow" },
+  // La personne a cliqué « Être rappelé(e) » au formulaire de rendez-vous (24/11/2026,
+  // validé par Sabrina) : lead chaud, à appeler en priorité. Posé uniquement par le
+  // formulaire (rdv_demande_rappel), donc absent des statuts manuels.
+  rappel_demande: { label: "Rappel demandé", color: "rose" },
   perdu: { label: "Perdu", color: "red" },
   call_booke: { label: "Call booké", color: "purple" },
   renvoi_pole_vente: { label: "Renvoi Pôle Vente", color: "cyan" },
@@ -157,6 +163,9 @@ export const LEAD_MANUAL_STATUSES = [
   "renvoi_pole_vente",
   "close",
 ] as const;
+
+/** Statut posé par le formulaire /rdv quand la personne demande à être rappelée. */
+export const STATUT_RAPPEL = "rappel_demande";
 
 export const LEAD_STATUS_LIST = LEAD_MANUAL_STATUSES.map((key) => ({
   value: key,

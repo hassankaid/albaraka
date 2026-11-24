@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { AlertTriangle, Save } from "lucide-react";
+import { AlertTriangle, PhoneCall, Save } from "lucide-react";
 import { formatDateTime } from "@/lib/formatDate";
 import {
   LEAD_TAGS,
@@ -34,7 +34,7 @@ type LeadEnriched = Tables<"leads_enriched"> & {
   premiere_action_le?: string | null;
 };
 
-import { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS, getLeadStatusListForLevel } from "@/lib/leadConfig";
+import { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS, STATUT_RAPPEL, getLeadStatusListForLevel } from "@/lib/leadConfig";
 import { SuiviRelances } from "@/components/leads/Relances";
 import { STATUT_RELANCE } from "@/lib/relances";
 import { estAds, useCanaux } from "@/lib/leadSources";
@@ -65,6 +65,7 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
   const [selectedTagKeys, setSelectedTagKeys] = useState<Set<string>>(new Set());
   const [originalTagKeys, setOriginalTagKeys] = useState<Set<string>>(new Set());
   const [saisieOuverte, setSaisieOuverte] = useState(false);
+  const [demandeRappel, setDemandeRappel] = useState<{ le: string; note: string | null } | null>(null);
 
   const canEdit = !!lead && (lead.assigned_to === user?.id || user?.role === "ceo");
 
@@ -79,6 +80,21 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
     if (lead && open) {
       setStatus(lead.status || "nouveau");
       setNote("");
+      // « Rappel demandé » (24/11/2026) : quand et pourquoi la personne a demandé l'appel
+      setDemandeRappel(null);
+      if (lead.id && lead.status === STATUT_RAPPEL) {
+        supabase
+          .from("lead_activities")
+          .select("created_at, note")
+          .eq("lead_id", lead.id)
+          .eq("action", "rappel_demande")
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .then(({ data }) => {
+            const d = data?.[0];
+            if (d) setDemandeRappel({ le: d.created_at, note: d.note });
+          });
+      }
       // Check other leads for this contact
       if (lead.contact_id) {
         supabase
@@ -335,6 +351,24 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
           </>
         )}
 
+        {lead.status === STATUT_RAPPEL && (
+          <>
+            <Alert className="border-rose-400/60 bg-rose-500/15" data-testid="encadre-rappel">
+              <PhoneCall className="h-4 w-4 text-rose-300" />
+              <AlertDescription className="text-rose-100 text-xs space-y-1">
+                <p className="font-semibold">
+                  Cette personne a demandé à être rappelée
+                  {demandeRappel ? ` le ${formatDateTime(demandeRappel.le, user?.timezone || "Europe/Paris")}` : ""} au formulaire de rendez-vous.
+                </p>
+                {demandeRappel?.note && /question 2/.test(demandeRappel.note) && <p>Motif : pas encore décidé(e).</p>}
+                {demandeRappel?.note && /question 5/.test(demandeRappel.note) && <p>Motif : le budget est un frein.</p>}
+                <p>À appeler en priorité, puis choisis le résultat de l'appel ci-dessous. Pas de réponse : « À relancer ».</p>
+              </AlertDescription>
+            </Alert>
+            <Separator />
+          </>
+        )}
+
         {/* Section 3: Status change */}
         <div className="space-y-2">
           <h4 className="text-sm font-semibold text-foreground">Statut</h4>
@@ -343,6 +377,9 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              {lead.status === STATUT_RAPPEL && (
+                <SelectItem value={STATUT_RAPPEL}>{LEAD_STATUS_LABELS[STATUT_RAPPEL]} (à appeler)</SelectItem>
+              )}
               {statusList.map((item) => (
                 <SelectItem key={item.value} value={item.value}>
                   {item.label}

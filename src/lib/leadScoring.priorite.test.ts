@@ -25,6 +25,17 @@ describe("ordre de la file d'appel", () => {
 
   const l = (status: string, quiz_priorite: string | null, created_at: string) => ({ status, quiz_priorite, created_at });
 
+  it("les « Rappel demandé » passent devant tout le monde, le plus ancien en premier", () => {
+    const leads = [
+      l("a_qualifier", "A", "2026-10-28T09:00:00Z"),
+      l("rappel_demande", "D", "2026-10-27T10:00:00Z"),
+      l("a_relancer", "A", "2026-10-25T10:00:00Z"),
+      l("rappel_demande", null, "2026-09-01T10:00:00Z"),
+    ];
+    const tries = [...leads].sort((a, b) => comparerOrdreAppel(a, b, false, NOW)).map((x) => `${x.status}/${x.created_at.slice(5, 10)}`);
+    expect(tries).toEqual(["rappel_demande/09-01", "rappel_demande/10-27", "a_qualifier/10-28", "a_relancer/10-25"]);
+  });
+
   it("à qualifier d'abord, de A à D puis non scoré, le plus ancien en premier", () => {
     const leads = [
       l("a_qualifier", "B", "2026-10-27T10:00:00Z"),
