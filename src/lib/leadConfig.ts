@@ -171,6 +171,15 @@ export const LEAD_MANUAL_STATUSES = [
 /** Statut posé par le formulaire /rdv quand la personne demande à être rappelée. */
 export const STATUT_RAPPEL = "rappel_demande";
 
+/**
+ * Statut d'une fiche « À recycler » au moment où on la confie à un setter
+ * (24/11/2026, Sabrina) : « À qualifier », sauf une demande de rappel encore en
+ * attente, qui garde « Rappel demandé » pour rester prioritaire chez le setter.
+ */
+export function statutApresRecyclage(status: string | null | undefined): string {
+  return status === STATUT_RAPPEL ? STATUT_RAPPEL : "a_qualifier";
+}
+
 export const LEAD_STATUS_LIST = LEAD_MANUAL_STATUSES.map((key) => ({
   value: key,
   label: leadStatusConfig[key].label,

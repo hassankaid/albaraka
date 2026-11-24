@@ -48,7 +48,7 @@ import {
   aujourdhuiParis,
   LEAD_STATUS_LABELS,
   STATUS_FILTER_OPTIONS,
-  isAdsSource, estStatutDm, STATUT_RAPPEL,
+  isAdsSource, estStatutDm, STATUT_RAPPEL, statutApresRecyclage,
 } from "@/lib/leadConfig";
 import { badgeCanal, estAds, GROUPES, libelleCanal, libelleTunnel, useCanaux, useTunnels } from "@/lib/leadSources";
 import { GestionSources } from "@/components/leads/GestionSources";
@@ -455,8 +455,9 @@ export default function Leads() {
       assigned_to: realUser.id,
       assigned_at: new Date().toISOString(),
     };
+    const statutCible = statutApresRecyclage(leadRow?.status ?? currentStatus);
     if (fromRecycled) {
-      updatePayload.status = "a_qualifier";
+      updatePayload.status = statutCible;
       updatePayload.recycled_at = null;
     }
     const { error } = await supabase
@@ -474,10 +475,10 @@ export default function Leads() {
       old_value: null, new_value: realUser.id,
       note: fromRecycled ? "Réaffectation depuis recyclage" : null,
     });
-    if (fromRecycled && currentStatus !== "a_qualifier") {
+    if (fromRecycled && currentStatus !== statutCible) {
       await supabase.from("lead_activities").insert({
         lead_id: leadId, user_id: realUser.id, action: "status_change",
-        old_value: currentStatus || null, new_value: "a_qualifier",
+        old_value: currentStatus || null, new_value: statutCible,
         note: "Réinitialisation après auto-affectation depuis recyclage",
       });
     }
@@ -493,8 +494,9 @@ export default function Leads() {
       assigned_to: newUserId,
       assigned_at: new Date().toISOString(),
     };
+    const statutCible = statutApresRecyclage(leadRow?.status ?? currentStatus);
     if (fromRecycled) {
-      updatePayload.status = "a_qualifier";
+      updatePayload.status = statutCible;
       updatePayload.recycled_at = null;
     }
     const { error } = await supabase
@@ -510,10 +512,10 @@ export default function Leads() {
         old_value: oldAssignedTo, new_value: newUserId,
         note: fromRecycled ? "Réaffectation depuis recyclage" : null,
       });
-      if (fromRecycled && currentStatus !== "a_qualifier") {
+      if (fromRecycled && currentStatus !== statutCible) {
         await supabase.from("lead_activities").insert({
           lead_id: leadId, user_id: realUser.id, action: "status_change",
-          old_value: currentStatus || null, new_value: "a_qualifier",
+          old_value: currentStatus || null, new_value: statutCible,
           note: "Réinitialisation après redistribution depuis recyclage",
         });
       }
@@ -594,15 +596,24 @@ export default function Leads() {
     // Capture statuses BEFORE update so we can log the transition per lead
     const leadsBefore = leads.filter((l) => l.id && ids.includes(l.id));
 
-    const { error } = await supabase
-      .from("leads")
-      .update({
-        assigned_to: newUserId,
-        assigned_at: new Date().toISOString(),
-        status: "a_qualifier",
-        recycled_at: null,
-      })
-      .in("id", ids);
+    // Une demande de rappel en attente garde « Rappel demandé » (24/11/2026) :
+    // la redistribution ne la remet plus « À qualifier ».
+    const maintenant = new Date().toISOString();
+    const idsRappel = leadsBefore.filter((l) => statutApresRecyclage(l.status) === STATUT_RAPPEL).map((l) => l.id!);
+    const idsQualifier = ids.filter((id) => !idsRappel.includes(id));
+    let error: { message: string } | null = null;
+    if (idsQualifier.length > 0) {
+      ({ error } = await supabase
+        .from("leads")
+        .update({ assigned_to: newUserId, assigned_at: maintenant, status: "a_qualifier", recycled_at: null })
+        .in("id", idsQualifier));
+    }
+    if (!error && idsRappel.length > 0) {
+      ({ error } = await supabase
+        .from("leads")
+        .update({ assigned_to: newUserId, assigned_at: maintenant, recycled_at: null })
+        .in("id", idsRappel));
+    }
 
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
@@ -615,10 +626,10 @@ export default function Leads() {
           note: "Affectation en masse depuis recyclage",
         });
         // Log the status transition if it actually changes
-        if (l.status && l.status !== "a_qualifier") {
+        if (l.status && l.status !== statutApresRecyclage(l.status)) {
           activities.push({
             lead_id: l.id, user_id: realUser.id, action: "status_change",
-            old_value: l.status, new_value: "a_qualifier",
+            old_value: l.status, new_value: statutApresRecyclage(l.status),
             note: "Réinitialisation après redistribution depuis recyclage",
           });
         }

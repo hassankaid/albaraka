@@ -29,6 +29,7 @@ import {
   DM_EDITABLE_STATUSES,
   estStatutDm,
   LEAD_STATUS_LABELS,
+  statutApresRecyclage,
 } from "./leadConfig";
 
 /** Les sources que l'edge fn accepte d'écrire dans `leads.source`. */
@@ -221,5 +222,16 @@ describe("statuts selon le niveau (Setter DM, 16/11/2026)", () => {
 
   it("chaque statut DM a un libellé", () => {
     for (const s of STATUTS_DM) expect(LEAD_STATUS_LABELS[s]).toBeTruthy();
+  });
+});
+
+describe("fiche « À recycler » confiée à un setter (24/11/2026, Sabrina)", () => {
+  it("repasse « À qualifier » dans le cas général", () => {
+    expect(statutApresRecyclage("pas_de_reponse")).toBe("a_qualifier");
+    expect(statutApresRecyclage("pas_de_reponse_post_conference")).toBe("a_qualifier");
+    expect(statutApresRecyclage(null)).toBe("a_qualifier");
+  });
+  it("garde « Rappel demandé » : une demande de rappel ne se perd plus à la redistribution", () => {
+    expect(statutApresRecyclage("rappel_demande")).toBe("rappel_demande");
   });
 });
