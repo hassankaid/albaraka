@@ -111,7 +111,7 @@ export const POLITIQUE_CONFIDENTIALITE: PageLegale = {
   titre: "Politique de confidentialité",
   titreOnglet: "Politique de confidentialité — AL BARAKA",
   dateDeMiseAJour: true,
-  miseAJour: "30/09/2026",
+  miseAJour: "24/11/2026",
   lignes: [
     "La présente politique explique comment ETHICARENA L.L.C-FZ collecte, utilise, conserve et protège les données personnelles des utilisateurs de la plateforme AL BARAKA, accessible à l'adresse https://plateforme.albarakaecosysteme.com (ci-après la « Plateforme »). Elle couvre aussi l'ensemble des services de l'écosystème AL BARAKA : formations, accompagnements, communauté et rendez-vous.",
     "Elle est établie conformément au Règlement (UE) 2016/679 (RGPD), à la directive 2002/58/CE (« ePrivacy ») et, pour les utilisateurs résidant en France, à la loi Informatique et Libertés du 6 janvier 1978 modifiée.",
@@ -186,6 +186,7 @@ export const POLITIQUE_CONFIDENTIALITE: PageLegale = {
     "Cookies de mesure d'audience : pour comprendre l'utilisation de la Plateforme et l'améliorer.",
     "Cookies publicitaires : pour mesurer l'efficacité de nos publicités et vous proposer des contenus adaptés sur les réseaux sociaux.",
     "Les cookies publicitaires sont déposés dès votre arrivée sur nos pages, sans demande de consentement préalable : le pixel de Meta Platforms et, sur certaines pages, Google Tag Manager, par lequel peuvent être chargés les outils publicitaires de TikTok et de Snap. Ils transmettent à ces sociétés des informations sur votre visite (pages consultées, inscription, prise de rendez-vous), qui servent à mesurer et à cibler nos publicités.",
+    "Lorsque vous vous inscrivez, certaines de vos coordonnées (adresse e-mail, téléphone, prénom) peuvent également être partagées avec Meta Platforms et Snap, sous une forme sécurisée par chiffrement qui ne permet pas de les lire. Ce partage nous aide à mesurer et à améliorer l'efficacité de nos publicités.",
     "Vous pouvez vous y opposer à tout moment : en bloquant les cookies tiers dans les réglages de votre navigateur, en utilisant une extension de blocage des traceurs, ou en réglant vos préférences publicitaires dans vos comptes Meta, TikTok et Snapchat. Ces réglages n'ont aucune incidence sur votre accès à la Plateforme. Vous pouvez aussi nous écrire à contact@ethicarena.com.",
     "10. Mineurs",
     "Les services AL BARAKA sont réservés aux personnes majeures. Nous ne collectons pas sciemment de données concernant des mineurs. Si nous apprenons qu'un mineur nous a transmis des données, nous les supprimons dans les meilleurs délais.",
@@ -327,5 +328,6 @@ export const LIGNES_HORS_DOCUMENT: readonly string[] = [
   "Cookies et traceurs : 13 mois maximum.",
   "Cookies strictement nécessaires : connexion, sécurité, mémorisation de vos choix.",
   "Les cookies publicitaires sont déposés dès votre arrivée sur nos pages, sans demande de consentement préalable : le pixel de Meta Platforms et, sur certaines pages, Google Tag Manager, par lequel peuvent être chargés les outils publicitaires de TikTok et de Snap. Ils transmettent à ces sociétés des informations sur votre visite (pages consultées, inscription, prise de rendez-vous), qui servent à mesurer et à cibler nos publicités.",
+  "Lorsque vous vous inscrivez, certaines de vos coordonnées (adresse e-mail, téléphone, prénom) peuvent également être partagées avec Meta Platforms et Snap, sous une forme sécurisée par chiffrement qui ne permet pas de les lire. Ce partage nous aide à mesurer et à améliorer l'efficacité de nos publicités.",
   "Vous pouvez vous y opposer à tout moment : en bloquant les cookies tiers dans les réglages de votre navigateur, en utilisant une extension de blocage des traceurs, ou en réglant vos préférences publicitaires dans vos comptes Meta, TikTok et Snapchat. Ces réglages n'ont aucune incidence sur votre accès à la Plateforme. Vous pouvez aussi nous écrire à contact@ethicarena.com.",
 ];

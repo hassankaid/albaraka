@@ -99,7 +99,9 @@ describe("ce qui rendrait les pages juridiquement fausses", () => {
     expect(texte).not.toMatch(/qu'après votre consentement|uniquement avec votre consentement|Gérer les cookies|bandeau/);
     expect(texte).toContain("sans demande de consentement préalable");
     expect(texte).toContain("Meta Platforms");
-    expect(POLITIQUE_CONFIDENTIALITE.miseAJour).toBe("30/09/2026");
+    // 24/11/2026 : envoi chiffré de l'e-mail, du téléphone et du prénom à Meta et Snap (API de conversion)
+    expect(POLITIQUE_CONFIDENTIALITE.miseAJour).toBe("24/11/2026");
+    expect(texte).toMatch(/partagées avec Meta Platforms et Snap, sous une forme sécurisée par chiffrement/);
   });
 
   it("n'appelle jamais AL BARAKA une société", () => {
