@@ -96,3 +96,52 @@ describe("étape à liste (fin d'appel, référentiel v0.5)", () => {
     expect(avec).toContain(": 3/10 (3 explications sur 8 données au prospect. Il manquait : application Zoom)");
   });
 });
+
+describe("format de la coach (référentiel v0.6, 24/11/2026)", () => {
+  const coach: Analyse = {
+    ...ia,
+    points_forts: [],
+    axes: [],
+    analyse_globale: "",
+    retour: {
+      verdict: "Globalement, ton appel est plutôt pas mal 👏",
+      point_principal: null,
+      reussites: [{ texte: "La question du temps est bien amenée." }, { texte: "Retirée", retire: true }],
+      points: [
+        { titre: "Le conjoint", constat: "Tu as demandé « il est au courant ? ».", formulation: "👉 « Est-ce qu'aujourd'hui ton époux te soutient dans ce projet ? »" },
+        { titre: "Pas de phrases administratives", constat: "Évite « je vais reprendre le dossier ».", formulation: "", moins_grave: true },
+        { titre: "Point retiré", constat: "x", retire: true },
+      ],
+      priorites: ["Le conjoint.", "Une discussion fluide.", "Finir par une question."],
+    },
+  };
+
+  it("le texte de l'élève suit sa structure, sans note ni étapes (décision 1)", () => {
+    const t = texteEleve(coach, "Yanis");
+    expect(t.startsWith("📞 Analyse de ton appel\n\nSalamou ‘alaykoum Yanis,\n\nGlobalement, ton appel est plutôt pas mal 👏")).toBe(true);
+    expect(t).toContain("✅ Ce qui a bien marché\n• La question du temps est bien amenée.");
+    expect(t).not.toContain("Retirée");
+    expect(t).toContain("1. Le conjoint\nTu as demandé « il est au courant ? ».\n👉 « Est-ce qu'aujourd'hui ton époux te soutient dans ce projet ? »");
+    expect(t).not.toContain("👉 👉");
+    expect(t).toContain("2. Pas de phrases administratives (moins grave)");
+    expect(t).not.toContain("Point retiré");
+    expect(t).toContain("🎯 Pour ton prochain appel, en priorité\n1. Le conjoint.");
+    expect(t).not.toMatch(/\/100|\/10|Note/);
+  });
+
+  it("le point principal remplace le verdict seul quand il domine l'appel", () => {
+    const t = texteEleve({ ...coach, retour: { ...coach.retour!, verdict: "", reussites: [], point_principal: { titre: "il y avait des signaux de disqualification", texte: "Son budget." } } }, "Yanis");
+    expect(t).toContain("⚠️ Le point principal : il y avait des signaux de disqualification\nSon budget.");
+    expect(t).not.toContain("Ce qui a bien marché");
+  });
+
+  it("compte les corrections du coach dans le retour", () => {
+    expect(compterCorrections(coach, coach)).toBe(0);
+    const r = structuredClone(coach.retour!);
+    r.verdict = "L'appel est très déstructuré.";
+    r.points[1].retire = true;
+    r.points.push({ titre: "Son accent", constat: "À aborder directement." });
+    r.priorites[2] = "Pas de blanc.";
+    expect(compterCorrections(coach, { ...coach, retour: r })).toBe(4);
+  });
+});

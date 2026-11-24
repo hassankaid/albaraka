@@ -20,7 +20,10 @@ La chaîne a été mise au point sur un vrai appel de Sabrina (banc d'essai du 2
      une étape munie d'une « liste » (P5/P6 depuis la v0.5 : les 8 explications de fin d'appel
      validées par Sabrina le 12/11/2026) est notée par le code, avec le barème du référentiel,
      à partir des points que l'IA a cochés.
-Coût mesuré : environ 0,06 $ pour un appel de 6 min. Chaque appel à l'IA va au journal
+Depuis le 24/11/2026 (référentiel v0.6, format « coach ») : le retour suit la structure de Sabrina
+(verdict, réussites, points à travailler avec la phrase exacte, 3 priorités), sans note pour l'élève ;
+les retours des exemples de référence arrivent à l'IA mot pour mot ; modèle Claude Sonnet.
+Coût mesuré : environ 0,06 $ pour un appel de 6 min (format v1, Haiku), 0,12 à 0,20 $ en format coach. Chaque appel à l'IA va au journal
 ia_consommations (appel_job_cout), jamais sur la ligne de l'appel : les coûts sont réservés à l'admin.
 """
 import base64
@@ -43,6 +46,8 @@ import numpy as np
 STT = "openai/whisper-large-v3-turbo"
 VOIX = "google/gemini-3.8-flash"
 ANALYSE = "anthropic/claude-haiku-5.5"
+# Format « coach » (24/11/2026) : Sonnet, le plus proche du ton de Sabrina au banc d'essai du 22/11
+ANALYSE_COACH = "anthropic/claude-sonnet-5.5"
 # Whisper accepte le zéro conservation ; Gemini et Claude : pas de collecte des données
 PRIVE = {"zdr": True, "data_collection": "deny"}
 SANS_COLLECTE = {"data_collection": "deny"}
@@ -304,13 +309,84 @@ SCHEMA = """{
  "fiche_closer": {"prenom":"","ville_ou_pays":"","situation":"","budget":"","score_couleur":"VERT|ORANGE|ROUGE","motivations":"","conjoint":"","notes_closer":""}
 }"""
 
+# Format « coach » (référentiel v0.6, 24/11/2026) : la structure des retours de Sabrina. Les étapes
+# restent notées pour le coach (la note n'est plus montrée à l'élève, décision 1) ; les règles R1-R7,
+# les objections et les mots de faiblesse ne sont plus demandés.
+SCHEMA_COACH = """{
+ "type_coherent": true, "remarque_type": "", "prospect_informe": false,
+ "prospect_absent": false, "clos_sans_budget": false,
+ "erreurs_critiques": [{"titre":"","explication":"","tour":0,"citation":""}],
+ "etapes": [{"code":"P1","nom":"","note":0,"justification":"","citations":[{"tour":0,"texte":""}]}],
+ "retour": {
+  "verdict": "",
+  "point_principal": null,
+  "reussites": [""],
+  "points": [{"titre":"","constat":"","formulation":"","suite":"","moins_grave":false,"tour":0,"citation":""}],
+  "priorites": ["","",""]
+ },
+ "fiche_closer": {"prenom":"","ville_ou_pays":"","situation":"","budget":"","score_couleur":"VERT|ORANGE|ROUGE","motivations":"","conjoint":"","notes_closer":""}
+}"""
+
+CONSIGNE_COACH = """# Ce que tu rends
+- « etapes » : une note sur 10 et une justification courte par étape. Elles sont pour le coach seulement, l'élève ne voit pas de note.
+- « prospect_absent » : true si le prospect a dit qu'il ne pourra pas être présent à la conférence.
+- « clos_sans_budget » : true si le setter a clos l'appel parce que le prospect n'a pas de budget (un appel court pour cette raison est un BON appel).
+- « retour » : le retour que l'élève lira, EXACTEMENT au format des retours de la coach (section « Format du retour » du référentiel et ses modèles) :
+  - « verdict » : une phrase d'ouverture, comme le fait la coach ;
+  - « point_principal » : null, sauf s'il y a UN problème qui domine tout l'appel (alors {"titre": "", "texte": ""}) ;
+  - « reussites » : puces courtes de 4 à 10 mots, sans explication ; liste VIDE si l'appel est faible ;
+  - « points » : dans l'ORDRE de l'appel, autant que nécessaire (souvent 4 à 8), les points mineurs en dernier avec "moins_grave": true. Pour chacun : « constat » = ce que l'élève a dit ou fait (ses mots entre « ») et pourquoi ça ne va pas, en 1 à 3 phrases ; « formulation » = la phrase exacte à dire la prochaine fois, sans 👉 (ou chaîne vide) ; « suite » = une phrase après la formulation si utile (sinon chaîne vide) ; « tour » et « citation » = le passage de la transcription concerné, copié mot pour mot ;
+  - « priorites » : exactement 3 priorités pour le prochain appel, une ligne chacune.
+- Style : tutoiement, phrases courtes et directes, aucun jargon (« axe », « levier », « point à consolider »…), aucun numéro de tour ni horodatage dans les textes, aucune note chiffrée, jamais « le code », « les mesures » ou « l'IA ».
+- Tu n'entends pas la voix : ne juge ni l'intonation, ni l'énergie, ni le rythme, ni l'accent. Le coach les ajoutera s'il le souhaite.
+"""
+
 mmss = lambda s: f"{int(s // 60)}:{int(s % 60):02d}"
+
+
+def texte_retour(r, prenom=""):
+    """Le retour au format coach, tel que l'élève le lit (même texte que texteEleve côté site)."""
+    lignes = ["📞 Analyse de ton appel", ""]
+    if prenom:
+        lignes += [f"Salamou ‘alaykoum {prenom},", ""]
+    if (r.get("verdict") or "").strip():
+        lignes += [r["verdict"].strip(), ""]
+    pp = r.get("point_principal") or {}
+    if (pp.get("titre") or "").strip() and not pp.get("retire"):
+        lignes += [f"⚠️ Le point principal : {pp['titre'].strip()}", (pp.get("texte") or "").strip(), ""]
+    reussites = [x.get("texte") if isinstance(x, dict) else x for x in r.get("reussites") or []
+                 if not (isinstance(x, dict) and x.get("retire"))]
+    reussites = [x.strip() for x in reussites if (x or "").strip()]
+    if reussites:
+        lignes += ["✅ Ce qui a bien marché"] + [f"• {x}" for x in reussites] + [""]
+    points = [p for p in r.get("points") or [] if not p.get("retire")]
+    if points:
+        lignes += ["⚠️ Points à travailler", ""]
+    for i, p in enumerate(points, 1):
+        titre = (p.get("titre") or "").strip()
+        lignes.append(f"{i}. {titre}" + (" (moins grave)" if p.get("moins_grave") and "moins grave" not in titre else ""))
+        if (p.get("constat") or "").strip():
+            lignes.append(p["constat"].strip())
+        f = (p.get("formulation") or "").strip()
+        if f:
+            lignes.append(f"👉 {f if f.startswith('«') else '« ' + f.strip('« »') + ' »'}")
+        if (p.get("suite") or "").strip():
+            lignes.append(p["suite"].strip())
+        lignes.append("")
+    priorites = [x.strip() for x in r.get("priorites") or [] if (x or "").strip()]
+    if priorites:
+        lignes.append("🎯 Pour ton prochain appel, en priorité")
+        lignes += [f"{i}. {x}" for i, x in enumerate(priorites, 1)]
+    return "\n".join(lignes).strip()
 
 
 def exemples_de_reference(exemples):
     """Les retours validés et cochés « exemple de référence » par les coachs (4 au plus, les plus
     récents) : la version corrigée, avec ce que le coach a changé par rapport à l'IA. C'est ainsi
-    que l'outil s'aligne sur la méthode des coachs (cahier des charges, section 6)."""
+    que l'outil s'aligne sur la méthode des coachs (cahier des charges, section 6).
+    Depuis le 24/11/2026, le TEXTE écrit par le coach est transmis mot pour mot (retour au format
+    coach, ou analyse globale réécrite dans l'ancien format) : avant, seuls les notes et les titres
+    arrivaient à l'IA, qui apprenait donc de ses propres phrases (« pas assez humain », Sabrina)."""
     blocs = []
     for k, x in enumerate(exemples or [], 1):
         coach, ia = x.get("analyse_coach") or {}, x.get("analyse_ia") or {}
@@ -321,6 +397,15 @@ def exemples_de_reference(exemples):
             avant = notes_ia.get(e.get("code"))
             corrige = f" (l'IA avait mis {avant}/10, le coach a corrigé)" if avant is not None and avant != e.get("note") else ""
             lignes.append(f"- {e.get('code')} {e.get('nom', '')} : {e.get('note')}/10{corrige}. {e.get('justification', '')}")
+        if coach.get("retour"):
+            lignes.append("### Le retour envoyé à l'élève, mot pour mot (ton, longueur et formulations à reproduire)")
+            lignes.append(texte_retour(coach["retour"]))
+            blocs.append("\n".join(lignes))
+            continue
+        texte_coach = (coach.get("analyse_globale") or "").strip()
+        if texte_coach and texte_coach != (ia.get("analyse_globale") or "").strip():
+            lignes.append("### Retour écrit par le coach lui-même, mot pour mot (ton et formulations à reproduire)")
+            lignes.append(texte_coach)
         gardes = [a for a in coach.get("axes") or [] if not a.get("retire")]
         retires = [a for a in coach.get("axes") or [] if a.get("retire")]
         if gardes:
@@ -337,8 +422,22 @@ def exemples_de_reference(exemples):
         return ""
     return ("# Exemples de référence validés par les coachs\n"
             "Voici des retours que les coachs ont validés comme modèles, avec leurs corrections. Aligne ta façon de noter, "
-            "ton niveau d'exigence et ton ton sur eux. Ne recopie pas leur contenu : l'appel à analyser est différent.\n\n"
+            "ton niveau d'exigence, ton ton et ta façon d'écrire sur eux. Ne recopie pas leur contenu : l'appel à analyser est différent.\n\n"
             + "\n\n".join(blocs) + "\n\n")
+
+
+def _cas_liste(p):
+    if p.get("absent"):
+        return " (seulement si le prospect a dit qu'il ne pourra pas être présent)"
+    if p.get("presence"):
+        return " (seulement si le prospect sera présent)"
+    return ""
+
+
+def points_applicables(g, absent):
+    """Les points d'une liste qui comptent : un prospect absent à la conférence n'a pas besoin du
+    Zoom, du lien ou de l'horaire, mais du replay (décision 4 de Sabrina, 24/11/2026)."""
+    return [(k, p) for k, p in enumerate(g["liste"], 1) if not (p.get("presence") if absent else p.get("absent"))]
 
 
 def listes_a_cocher(grille):
@@ -348,7 +447,7 @@ def listes_a_cocher(grille):
         return "", ""
     blocs = []
     for g in etapes:
-        lignes = "\n".join(f"{k}. {p.get('detail') or p.get('court')}" for k, p in enumerate(g["liste"], 1))
+        lignes = "\n".join(f"{k}. {p.get('detail') or p.get('court')}" + _cas_liste(p) for k, p in enumerate(g["liste"], 1))
         blocs.append(f"# Liste à cocher : étape {g['code']} ({g.get('nom', '')})\n{lignes}")
     consigne = ("\n\n".join(blocs) + "\nPour CHAQUE point numéroté, indique dans « listes » : fait = oui (dit clairement), partiel "
                 "(abordé mais incomplet ou inexact) ou non (absent), avec le tour et une citation mot pour mot si oui ou partiel. "
@@ -358,16 +457,20 @@ def listes_a_cocher(grille):
     return consigne, forme
 
 
-def noter_liste(g, donnees, ok):
-    """Note d'une étape à liste : points faits (un partiel compte pour moitié) → barème du référentiel."""
+def noter_liste(g, donnees, ok, absent=False):
+    """Note d'une étape à liste : points faits (un partiel compte pour moitié) → barème du référentiel.
+    Seuls les points applicables comptent (prospect présent ou absent) ; le barème, écrit pour la
+    liste complète d'un prospect présent, s'applique à proportion."""
     recus = {}
     for p in (donnees or {}).get("points") or []:
         try:
             recus[int(p.get("n"))] = p
         except (TypeError, ValueError):
             continue
+    applicables = points_applicables(g, absent)
+    base = len(points_applicables(g, False)) or 1
     points, score = [], 0.0
-    for k, item in enumerate(g["liste"], 1):
+    for k, item in applicables:
         p = dict(recus.get(k) or {})
         fait = str(p.get("fait") or "non").strip().lower()
         fait = fait if fait in ("oui", "partiel", "non") else "non"
@@ -376,15 +479,18 @@ def noter_liste(g, donnees, ok):
         score += {"oui": 1.0, "partiel": 0.5, "non": 0.0}[fait]
         points.append({"n": k, "libelle": item.get("court") or item.get("detail"), "fait": fait,
                        "tour": p.get("tour"), "citation": p.get("citation") or "", "horodatage": p.get("horodatage")})
+    rapporte = score * base / (len(applicables) or 1)
     note = 0.0
     for seuil, valeur in sorted(g.get("bareme") or [], key=lambda b: -b[0]):
-        if score >= seuil:
+        if rapporte >= seuil - 1e-9:
             note = float(valeur)
             break
     nombre = (f"{score:g}").replace(".", ",")
     manque = [p["libelle"] for p in points if p["fait"] == "non"]
     partiels = [p["libelle"] for p in points if p["fait"] == "partiel"]
     texte = f"{nombre} explication{'s' if score > 1 else ''} sur {len(points)} donnée{'s' if score > 1 else ''} au prospect."
+    if absent:
+        texte = "Prospect absent à la conférence : le replay remplace le Zoom, le lien et l'horaire. " + texte
     if manque:
         texte += " Il manquait : " + ", ".join(manque) + "."
     if partiels:
@@ -392,8 +498,14 @@ def noter_liste(g, donnees, ok):
     return note, points, texte
 
 
+def format_coach(ctx):
+    return (ctx.get("referentiel") or {}).get("format") == "coach"
+
+
 def consigne_analyse(ctx, tours, mesures):
     ref = ctx["referentiel"]
+    if format_coach(ctx):
+        return consigne_coach(ctx, tours, mesures)
     codes = ", ".join(e["code"] for e in ref["grille"])
     listes, forme_listes = listes_a_cocher(ref["grille"])
     transcript = "\n".join(f"T{t['n']} [{mmss(t['t0'])}] {t['loc']} : {t['texte']}" for t in tours)
@@ -415,17 +527,45 @@ Réponds UNIQUEMENT avec un objet JSON valide de cette forme (toutes les étapes
 {SCHEMA.replace(' "analyse_globale"', forme_listes + ' "analyse_globale"', 1)}"""
 
 
+def consigne_coach(ctx, tours, mesures):
+    ref = ctx["referentiel"]
+    codes = ", ".join(e["code"] for e in ref["grille"])
+    listes, forme_listes = listes_a_cocher(ref["grille"])
+    transcript = "\n".join(f"T{t['n']} [{mmss(t['t0'])}] {t['loc']} : {t['texte']}" for t in tours)
+    blancs = "; ".join(f"T{a['n']} : {round(b['t0'] - a['t1'], 1)} s de blanc après « {a['texte'][-80:]} »"
+                       for a, b in zip(tours, tours[1:]) if a["loc"] == "SETTER" and b["t0"] - a["t1"] >= 3) or "aucun"
+    return f"""Tu es l'outil d'analyse d'appels d'AL BARAKA. Tu rédiges le BROUILLON du retour qu'un coach validera, puis enverra à l'élève ({ctx.get('eleve') or "l'élève"}).
+Type d'appel déclaré : {ctx['type_appel']}. Le SETTER est l'élève évalué. Le PROSPECT est la personne appelée.
+
+{ref['contenu']}
+
+{listes}
+{exemples_de_reference(ctx.get('exemples'))}# Mesures
+Durée totale : {mmss(mesures['duree_s'])}. Part de parole du setter : {mesures['part_setter_pct']} % (la transcription rate une partie des réponses très courtes du prospect).
+Blancs de 3 s ou plus après une phrase du setter : {blancs}
+
+# Transcription (voix séparées automatiquement, numéros de tour T1…)
+{transcript}
+
+{CONSIGNE_COACH}
+Réponds UNIQUEMENT avec un objet JSON valide de cette forme (toutes les étapes {codes}). Dans tes textes, écris toujours « Salamou ‘alaykoum » en entier, jamais « Salam » ni « Salem » ; écris « AL BARAKA ». Les citations sont copiées MOT POUR MOT depuis la transcription. Dans les valeurs texte, n'utilise jamais le caractère " (guillemet droit) : utilise « ».
+{SCHEMA_COACH.replace(' "retour"', forme_listes + ' "retour"', 1)}"""
+
+
 def analyser(ctx, tours, mesures, essais=3):
     # Banc d'essai du 12/11/2026 : la réflexion du modèle dépasse son budget (11 000 à 14 000 jetons
     # pour 3 000 demandés) et partage le plafond avec la réponse ; à 24 000, un retour sur trois
     # était coupé en plein JSON. Plafond relevé (seuls les jetons utilisés sont payés), et une
     # réponse coupée ou illisible est redemandée au lieu de faire échouer l'analyse.
     consigne = consigne_analyse(ctx, tours, mesures)
+    coach = format_coach(ctx)
+    modele = ANALYSE_COACH if coach else ANALYSE
     for k in range(essais):
         d = openrouter("/chat/completions", {
-            "model": ANALYSE, "temperature": 0.2, "max_tokens": 48000, "reasoning": {"max_tokens": 3000},
+            "model": modele, "temperature": 0.3 if coach else 0.2, "max_tokens": 48000,
+            "reasoning": {"max_tokens": 6000 if coach else 3000},
             "messages": [{"role": "user", "content": consigne}], "usage": {"include": True}}, delai=600)
-        noter_cout(ANALYSE, [d], "analyse")
+        noter_cout(modele, [d], "analyse")
         try:
             if d["choices"][0].get("finish_reason") == "length":
                 raise ValueError("réponse coupée")
@@ -461,10 +601,34 @@ def verifier(analyse, tours, ctx, mesures):
         retirees.append({"ou": ou, "tour": t, "citation": c})
         return False
 
+    coach = format_coach(ctx)
+    if coach:
+        # les champs de l'ancien format restent présents (vides) : l'écran du coach les lit
+        for cle in ("regles", "mots_faiblesse", "objections", "points_forts", "axes"):
+            analyse[cle] = []
+        analyse.update({"analyse_globale": "", "conseil_prioritaire": {"etape": "", "texte": ""}, "encouragement": ""})
+        r = analyse.get("retour") if isinstance(analyse.get("retour"), dict) else {}
+        pp = r.get("point_principal")
+        r["point_principal"] = pp if isinstance(pp, dict) and (pp.get("titre") or "").strip() else None
+        r["verdict"] = (r.get("verdict") or "").strip()
+        r["reussites"] = [{"texte": (x.get("texte") if isinstance(x, dict) else str(x or "")).strip()}
+                          for x in r.get("reussites") or [] if (x.get("texte") if isinstance(x, dict) else x)]
+        r["points"] = [p for p in r.get("points") or [] if isinstance(p, dict) and (p.get("titre") or p.get("constat"))]
+        for p in r["points"]:
+            p["moins_grave"] = bool(p.get("moins_grave"))
+            for c in ("titre", "constat", "formulation", "suite"):
+                p[c] = (p.get(c) or "").strip()
+            # le 👉 est ajouté à l'affichage : l'IA l'écrit parfois elle-même (essai du 24/11)
+            p["formulation"] = re.sub(r"^(👉\s*)+", "", p["formulation"]).strip()
+        r["priorites"] = [str(x).strip() for x in r.get("priorites") or [] if str(x or "").strip()][:3]
+        analyse["retour"] = r
     for cle in ("erreurs_critiques", "regles", "mots_faiblesse", "objections", "points_forts", "axes"):
         for o in analyse.get(cle) or []:
             if not ok(o, cle):
                 o["citation"] = ""
+    for o in (analyse.get("retour") or {}).get("points") or []:
+        if not ok(o, "retour"):
+            o["citation"] = ""
     analyse["mots_faiblesse"] = [o for o in analyse.get("mots_faiblesse") or [] if o.get("citation")]
     for e in analyse.get("etapes") or []:
         e["citations"] = [c for c in e.get("citations") or [] if ok(c, "etape " + str(e.get("code")))]
@@ -480,23 +644,28 @@ def verifier(analyse, tours, ctx, mesures):
         e["note"] = max(0.0, min(10.0, float(e.get("note") or 0)))
     # étapes à liste (fin d'appel) : la note vient des points cochés, jamais de l'IA
     recues = {l.get("code"): l for l in analyse.get("listes") or [] if isinstance(l, dict)}
+    absent = bool(analyse.get("prospect_absent"))
+    analyse["prospect_absent"] = absent
     for e in analyse["etapes"]:
         g = poids[e["code"]]
         if g.get("liste"):
-            e["note"], e["liste"], e["justification"] = noter_liste(g, recues.get(e["code"]), ok)
+            e["note"], e["liste"], e["justification"] = noter_liste(g, recues.get(e["code"]), ok, absent)
     analyse.pop("listes", None)
     note_etapes = sum(e["note"] * e["poids"] for e in analyse["etapes"]) / 10
     informe = bool(ctx.get("prospect_informe")) or bool(analyse.get("prospect_informe"))
     penalite = 0 if informe else float(ref.get("penalite_enregistrement") or 0)
     duree = mesures["duree_s"]
     alerte = None
-    if ref.get("duree_min_s") and duree < ref["duree_min_s"]:
+    # pas de budget = on clôt l'appel : un appel court pour cette raison est un bon appel (Sabrina)
+    clos_sans_budget = bool(analyse.get("clos_sans_budget"))
+    analyse["clos_sans_budget"] = clos_sans_budget
+    if ref.get("duree_min_s") and duree < ref["duree_min_s"] and not clos_sans_budget:
         alerte = f"Appel de {mmss(duree).replace(':', ' min ')} : trop court (norme {ref['duree_min_s'] // 60} à {ref['duree_max_s'] // 60} min)"
     elif ref.get("duree_max_s") and duree > ref["duree_max_s"]:
         alerte = f"Appel de {int(duree // 60)} min : trop long (norme {ref['duree_min_s'] // 60} à {ref['duree_max_s'] // 60} min)"
     analyse.update({"note_etapes": round(note_etapes, 1), "penalite": penalite, "prospect_informe": informe,
                     "note_globale": round(max(0.0, note_etapes - penalite), 1), "alerte_duree": alerte,
-                    "_verif": {"citations_retirees": retirees}, "_modele": ANALYSE,
+                    "_verif": {"citations_retirees": retirees}, "_modele": ANALYSE_COACH if coach else ANALYSE,
                     "_exemples": [x.get("id") for x in ctx.get("exemples") or []]})
     return analyse
 

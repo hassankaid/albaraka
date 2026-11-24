@@ -13,7 +13,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { CitationEcoute } from "@/components/appels/PanneauEcoute";
-import { compterCorrections, mmss, pointsEnMoins, recalculer, texteEleve, type Analyse, type Axe, type PointFort, type PointListe } from "@/lib/appels/retour";
+import {
+  compterCorrections, mmss, pointsEnMoins, recalculer, texteEleve,
+  type Analyse, type Axe, type PointFort, type PointListe, type PointRetour, type Reussite, type RetourCoach,
+} from "@/lib/appels/retour";
 import { enregistrerCorrections, validerAppel } from "@/hooks/useAppels";
 
 /** Un texte qu'on corrige sur place : crayon → zone de saisie → OK. */
@@ -96,8 +99,8 @@ function Section({ titre, aide, children }: { titre: string; aide?: string; chil
   );
 }
 
-/** Un point fort ou un axe : ses textes se corrigent sur place, et il peut être retiré. */
-function ElementListe<T extends PointFort | Axe>({
+/** Un point fort, un axe ou un point à travailler : ses textes se corrigent sur place, et il peut être retiré. */
+function ElementListe<T extends { retire?: boolean; citation?: string; horodatage?: number }>({
   x,
   onChanger,
   onEcouter,
@@ -171,6 +174,12 @@ export function ValidationAppel({
   }, [a, appelId, corrections]);
 
   const maj = (f: (x: Analyse) => Analyse) => setA((x) => recalculer(f(structuredClone(x))));
+  // format coach (v0.6) : on modifie le retour en place, sur une copie
+  const majRetour = (f: (r: RetourCoach) => void) =>
+    maj((x) => {
+      if (x.retour) f(x.retour);
+      return x;
+    });
   const noter = (i: number, delta: number) =>
     maj((x) => {
       x.etapes[i].note = Math.max(0, Math.min(10, Math.round((x.etapes[i].note + delta) * 2) / 2));
@@ -217,11 +226,24 @@ export function ValidationAppel({
             {a.alerte_duree && <Pastille ton="ambre">{a.alerte_duree}</Pastille>}
             {a.type_coherent === false && <Pastille ton="rouge">Type d'appel à vérifier</Pastille>}
           </div>
-          <TexteModifiable
-            valeur={a.analyse_globale}
-            onChange={(v) => maj((x) => ({ ...x, analyse_globale: v }))}
-            className="text-sm text-foreground/90"
-          />
+          {a.retour ? (
+            <>
+              <p className="text-xs text-muted-foreground">Note pour toi seulement : l'élève ne la voit pas. Son retour commence par ce verdict :</p>
+              <TexteModifiable
+                valeur={a.retour.verdict}
+                onChange={(v) => majRetour((r) => (r.verdict = v))}
+                className="text-sm font-medium text-foreground/90"
+              />
+              {a.prospect_absent && <Pastille ton="neutre">Prospect absent à la conférence : replay</Pastille>}
+              {a.clos_sans_budget && <Pastille ton="neutre">Appel clos faute de budget</Pastille>}
+            </>
+          ) : (
+            <TexteModifiable
+              valeur={a.analyse_globale}
+              onChange={(v) => maj((x) => ({ ...x, analyse_globale: v }))}
+              className="text-sm text-foreground/90"
+            />
+          )}
           {a.type_coherent === false && a.remarque_type && <p className="text-xs text-red-600 dark:text-red-300">{a.remarque_type}</p>}
           {penaliteIA > 0 && (
             <button
@@ -247,7 +269,7 @@ export function ValidationAppel({
         </div>
       )}
 
-      <Section titre="Notes par étape" aide="− / + pour corriger, la note globale se recalcule">
+      <Section titre="Notes par étape" aide={a.retour ? "pour toi seulement · − / + pour corriger" : "− / + pour corriger, la note globale se recalcule"}>
         <div className="divide-y divide-border rounded-xl border border-border bg-card" data-testid="notes-etapes">
           {a.etapes.map((e, i) => {
             const noteIA = ia.etapes[i]?.note;
@@ -296,6 +318,10 @@ export function ValidationAppel({
         </div>
       </Section>
 
+      {a.retour ? (
+        <RetourCoachEdition r={a.retour} changer={majRetour} onEcouter={onEcouter} />
+      ) : (
+        <>
       <Section titre="Ce qui est bien fait" aide="chaque texte est modifiable">
         <div className="space-y-2">
           {a.points_forts.map((p, i) => (
@@ -364,9 +390,12 @@ export function ValidationAppel({
         </div>
       </Section>
 
+        </>
+      )}
+
       <Collapsible>
         <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold">
-          Les 7 règles, les objections et la fiche pour le closer
+          {a.retour ? "La fiche pour le closer" : "Les 7 règles, les objections et la fiche pour le closer"}
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-2 space-y-3">
@@ -499,5 +528,125 @@ function ListeCochee({ points, onEcouter }: { points: PointListe[]; onEcouter: (
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Le retour au format de la coach (référentiel v0.6, 24/11/2026) : ce que l'élève lira, dans
+ * l'ordre. Chaque texte se corrige sur place ; un point peut être retiré, marqué « moins grave »
+ * ou ajouté (par exemple l'accent, que seul le coach relève). */
+function RetourCoachEdition({
+  r,
+  changer,
+  onEcouter,
+}: {
+  r: RetourCoach;
+  changer: (f: (r: RetourCoach) => void) => void;
+  onEcouter: (t: number) => void;
+}) {
+  return (
+    <div className="space-y-6" data-testid="retour-coach">
+      {r.point_principal && (
+        <Section titre="⚠️ Le point principal" aide="il remplace les réussites quand il domine tout l'appel">
+          <div className={cn("space-y-1 rounded-xl border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm", r.point_principal.retire && "opacity-50")}>
+            <div className="flex items-start justify-between gap-2">
+              <TexteModifiable valeur={r.point_principal.titre} onChange={(v) => changer((x) => x.point_principal && (x.point_principal.titre = v))} className="flex-1 font-semibold" />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 shrink-0 gap-1 text-xs text-muted-foreground"
+                onClick={() => changer((x) => x.point_principal && (x.point_principal.retire = !x.point_principal.retire))}
+              >
+                {r.point_principal.retire ? <RotateCcw className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
+                {r.point_principal.retire ? "Remettre" : "Retirer"}
+              </Button>
+            </div>
+            <TexteModifiable valeur={r.point_principal.texte} onChange={(v) => changer((x) => x.point_principal && (x.point_principal.texte = v))} className="text-foreground/85" />
+          </div>
+        </Section>
+      )}
+
+      <Section titre="✅ Ce qui a bien marché" aide="des puces courtes ; aucune si l'appel est faible">
+        <div className="space-y-2">
+          {r.reussites.map((x, i) => (
+            <ElementListe<Reussite>
+              key={i}
+              x={x}
+              onEcouter={onEcouter}
+              onChanger={(c) => changer((y) => Object.assign(y.reussites[i], c))}
+              rendu={(x, maj) => <TexteModifiable valeur={x.texte} onChange={(v) => maj({ texte: v })} vide="Écris la réussite" />}
+            />
+          ))}
+          <Button variant="outline" size="sm" className="h-8 gap-1" onClick={() => changer((y) => y.reussites.push({ texte: "" }))}>
+            <Plus className="h-3.5 w-3.5" /> Ajouter une réussite
+          </Button>
+        </div>
+      </Section>
+
+      <Section titre="⚠️ Points à travailler" aide="dans l'ordre de l'appel ; chaque texte est modifiable">
+        <div className="space-y-2" data-testid="points-a-travailler">
+          {r.points.map((p, i) => (
+            <ElementListe<PointRetour>
+              key={i}
+              x={p}
+              onEcouter={onEcouter}
+              onChanger={(c) => changer((y) => Object.assign(y.points[i], c))}
+              rendu={(x, maj) => (
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-start gap-2">
+                    <span className="pt-0.5 font-semibold text-muted-foreground">{i + 1}.</span>
+                    <TexteModifiable valeur={x.titre} onChange={(v) => maj({ titre: v })} className="min-w-0 flex-1 font-semibold" vide="Titre du point" />
+                    <button
+                      type="button"
+                      onClick={() => maj({ moins_grave: !x.moins_grave })}
+                      className={cn(
+                        "rounded-full border px-2 py-0.5 text-[11px]",
+                        x.moins_grave ? "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300" : "border-border text-muted-foreground",
+                      )}
+                    >
+                      {x.moins_grave ? "Moins grave" : "Marquer moins grave"}
+                    </button>
+                  </div>
+                  <TexteModifiable valeur={x.constat} onChange={(v) => maj({ constat: v })} className="text-foreground/85" vide="Ce que l'élève a dit ou fait" />
+                  <div className="rounded-md bg-emerald-500/10 px-2.5 py-1.5">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">👉 La phrase à dire</p>
+                    <TexteModifiable valeur={x.formulation ?? ""} onChange={(v) => maj({ formulation: v })} vide="Aucune (facultatif)" />
+                  </div>
+                  <TexteModifiable valeur={x.suite ?? ""} onChange={(v) => maj({ suite: v })} className="text-foreground/85" vide="Phrase après la formulation (facultatif)" />
+                </div>
+              )}
+            />
+          ))}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1"
+            onClick={() => changer((y) => y.points.push({ titre: "", constat: "", formulation: "", suite: "", moins_grave: false }))}
+          >
+            <Plus className="h-3.5 w-3.5" /> Ajouter un point
+          </Button>
+        </div>
+      </Section>
+
+      <Section titre="🎯 Les 3 priorités pour le prochain appel">
+        <ol className="space-y-2 rounded-xl border border-border bg-card px-4 py-3 text-sm">
+          {[0, 1, 2].map((k) => (
+            <li key={k} className="flex items-start gap-2">
+              <span className="pt-0.5 font-semibold text-muted-foreground">{k + 1}.</span>
+              <TexteModifiable
+                valeur={r.priorites[k] ?? ""}
+                onChange={(v) =>
+                  changer((y) => {
+                    while (y.priorites.length <= k) y.priorites.push("");
+                    y.priorites[k] = v;
+                  })
+                }
+                className="min-w-0 flex-1"
+                vide="Priorité à écrire"
+              />
+            </li>
+          ))}
+        </ol>
+      </Section>
+    </div>
   );
 }

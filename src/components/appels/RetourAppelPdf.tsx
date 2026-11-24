@@ -6,7 +6,7 @@
 import { createElement } from "react";
 import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
 import logo from "@/assets/scripts-appel/logo-al-baraka-or.jpg";
-import { duree, pointsEnMoins, type Analyse } from "@/lib/appels/retour";
+import { duree, entreGuillemets, pointsEnMoins, type Analyse, type RetourCoach } from "@/lib/appels/retour";
 
 const OR = "#9A740B";
 const OR_BORDURE = "#C9A84C";
@@ -35,6 +35,50 @@ const s = StyleSheet.create({
 
 const sansFleche = (t: string) => t.replace(/[−–]/g, "-").replace(/[▶→]/g, "");
 
+/** Format de la coach (référentiel v0.6) : pas de note, verdict, réussites, points, priorités.
+ * Times n'a pas les émojis du texte copié (✅ ⚠️ 👉 🎯) : ils sont remplacés par des titres. */
+function CorpsCoach({ r }: { r: RetourCoach }) {
+  const reussites = r.reussites.filter((x) => !x.retire && x.texte.trim());
+  const points = r.points.filter((p) => !p.retire);
+  const priorites = r.priorites.filter((x) => x.trim());
+  const pp = r.point_principal && !r.point_principal.retire && r.point_principal.titre?.trim() ? r.point_principal : null;
+  return (
+    <>
+      {r.verdict?.trim() ? <Text style={[s.texte, s.gras]}>{sansFleche(r.verdict.trim())}</Text> : null}
+      {pp && (
+        <View style={[s.bloc, { marginTop: 6 }]} wrap={false}>
+          <Text style={s.gras}>Le point principal : {sansFleche(pp.titre.trim())}</Text>
+          <Text>{sansFleche((pp.texte ?? "").trim())}</Text>
+        </View>
+      )}
+      {reussites.length > 0 && <Text style={s.h2}>Ce qui a bien marché</Text>}
+      {reussites.map((x, i) => (
+        <Text key={i} style={s.texte}>
+          •  {sansFleche(x.texte.trim())}
+        </Text>
+      ))}
+      {points.length > 0 && <Text style={s.h2}>Points à travailler</Text>}
+      {points.map((p, i) => (
+        <View key={i} style={s.bloc} wrap={false}>
+          <Text style={s.gras}>
+            {i + 1}. {sansFleche(p.titre.trim())}
+            {p.moins_grave && !/moins grave/i.test(p.titre) ? " (moins grave)" : ""}
+          </Text>
+          {p.constat?.trim() ? <Text>{sansFleche(p.constat.trim())}</Text> : null}
+          {p.formulation?.trim() ? <Text style={s.ideal}>À dire : {sansFleche(entreGuillemets(p.formulation))}</Text> : null}
+          {p.suite?.trim() ? <Text>{sansFleche(p.suite.trim())}</Text> : null}
+        </View>
+      ))}
+      {priorites.length > 0 && <Text style={s.h2}>Pour ton prochain appel, en priorité</Text>}
+      {priorites.map((x, i) => (
+        <Text key={i} style={s.texte}>
+          {i + 1}. {sansFleche(x.trim())}
+        </Text>
+      ))}
+    </>
+  );
+}
+
 function RetourAppelPdf({ a, eleve, typeAppel, dureeS, date }: { a: Analyse; eleve: string; typeAppel: string; dureeS: number | null; date: string }) {
   const forts = a.points_forts.filter((p) => !p.retire);
   const axes = a.axes.filter((x) => !x.retire);
@@ -46,6 +90,10 @@ function RetourAppelPdf({ a, eleve, typeAppel, dureeS, date }: { a: Analyse; ele
         <Text style={s.sousTitre}>
           {eleve} · {typeAppel} · {duree(dureeS)} · {date}
         </Text>
+        {a.retour ? (
+          <CorpsCoach r={a.retour} />
+        ) : (
+          <>
         <View style={s.note}>
           <Text style={s.noteChiffre}>{Math.round(a.note_globale)}</Text>
           <Text style={s.noteSur}>/100</Text>
@@ -105,6 +153,9 @@ function RetourAppelPdf({ a, eleve, typeAppel, dureeS, date }: { a: Analyse; ele
           ))}
 
         {a.encouragement ? <Text style={[s.texte, { marginTop: 12, fontFamily: "Times-Italic" }]}>{sansFleche(a.encouragement)}</Text> : null}
+
+          </>
+        )}
 
         <View style={s.pied} fixed>
           <Text>AL BARAKA · retour validé par ton coach</Text>

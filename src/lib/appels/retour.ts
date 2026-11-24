@@ -76,6 +76,31 @@ export interface FicheCloser {
   notes_closer?: string;
 }
 
+/** Un point à travailler au format de la coach (référentiel v0.6, 24/11/2026). */
+export interface PointRetour extends Citation {
+  titre: string;
+  constat: string;
+  /** la phrase exacte à dire la prochaine fois (affichée avec 👉) */
+  formulation?: string;
+  suite?: string;
+  moins_grave?: boolean;
+  retire?: boolean;
+}
+
+export interface Reussite {
+  texte: string;
+  retire?: boolean;
+}
+
+/** Le retour au format de Sabrina : verdict, réussites, points à travailler, 3 priorités. */
+export interface RetourCoach {
+  verdict: string;
+  point_principal?: { titre: string; texte: string; retire?: boolean } | null;
+  reussites: Reussite[];
+  points: PointRetour[];
+  priorites: string[];
+}
+
 export interface Analyse {
   type_coherent?: boolean;
   remarque_type?: string;
@@ -95,6 +120,10 @@ export interface Analyse {
   penalite: number;
   note_globale: number;
   alerte_duree?: string | null;
+  /** format « coach » (v0.6) : le retour lu par l'élève, sans note */
+  retour?: RetourCoach;
+  prospect_absent?: boolean;
+  clos_sans_budget?: boolean;
 }
 
 export interface Tour {
@@ -165,6 +194,30 @@ export function recalculer(a: Analyse): Analyse {
 
 const meme = (x?: string, y?: string) => (x ?? "").trim() === (y ?? "").trim();
 
+/** Combien de corrections dans le retour au format coach (verdict, réussites, points, priorités). */
+function correctionsRetour(ia: RetourCoach | undefined, coach: RetourCoach | undefined): number {
+  if (!ia || !coach) return 0;
+  let n = 0;
+  if (!meme(coach.verdict, ia.verdict)) n++;
+  const pc = coach.point_principal;
+  const pi = ia.point_principal;
+  if (!!pc?.retire !== !!pi?.retire || !meme(pc?.titre, pi?.titre) || !meme(pc?.texte, pi?.texte)) n++;
+  const comparer = <T extends { retire?: boolean }>(c: T[], i: T[]) => {
+    c.forEach((x, k) => {
+      const y = i[k];
+      if (!y) n++; // ajouté par le coach
+      else if (!!x.retire !== !!y.retire) n++;
+      else if (JSON.stringify({ ...x, retire: undefined }) !== JSON.stringify({ ...y, retire: undefined })) n++;
+    });
+  };
+  comparer(coach.reussites, ia.reussites);
+  comparer(coach.points, ia.points);
+  coach.priorites.forEach((p, k) => {
+    if (!meme(p, ia.priorites[k])) n++;
+  });
+  return n;
+}
+
 /** Combien de corrections le coach a faites par rapport au brouillon de l'IA. */
 export function compterCorrections(ia: Analyse, coach: Analyse): number {
   let n = 0;
@@ -187,11 +240,42 @@ export function compterCorrections(ia: Analyse, coach: Analyse): number {
   if (!meme(coach.conseil_prioritaire?.texte, ia.conseil_prioritaire?.texte)) n++;
   if (!meme(coach.encouragement, ia.encouragement)) n++;
   if ((coach.penalite || 0) !== (ia.penalite || 0)) n++;
+  n += correctionsRetour(ia.retour, coach.retour);
   return n;
+}
+
+/** La phrase exacte entre « » (l'IA l'écrit parfois sans). */
+export const entreGuillemets = (f: string) => {
+  const t = f.trim().replace(/^(👉\s*)+/u, "");
+  return t.startsWith("«") ? t : `« ${t.replace(/^«\s*|\s*»$/g, "")} »`;
+};
+
+/** Le retour au format de la coach (v0.6) : pas de note, pas de détail par étape (décision 1). */
+export function texteRetourCoach(r: RetourCoach, prenom: string): string {
+  const l: string[] = ["📞 Analyse de ton appel", "", `Salamou ‘alaykoum ${prenom},`, ""];
+  if (r.verdict?.trim()) l.push(r.verdict.trim(), "");
+  const pp = r.point_principal;
+  if (pp && !pp.retire && pp.titre?.trim()) l.push(`⚠️ Le point principal : ${pp.titre.trim()}`, (pp.texte ?? "").trim(), "");
+  const reussites = r.reussites.filter((x) => !x.retire && x.texte.trim());
+  if (reussites.length) l.push("✅ Ce qui a bien marché", ...reussites.map((x) => `• ${x.texte.trim()}`), "");
+  const points = r.points.filter((p) => !p.retire);
+  if (points.length) l.push("⚠️ Points à travailler", "");
+  points.forEach((p, i) => {
+    const titre = p.titre.trim();
+    l.push(`${i + 1}. ${titre}${p.moins_grave && !/moins grave/i.test(titre) ? " (moins grave)" : ""}`);
+    if (p.constat?.trim()) l.push(p.constat.trim());
+    if (p.formulation?.trim()) l.push(`👉 ${entreGuillemets(p.formulation)}`);
+    if (p.suite?.trim()) l.push(p.suite.trim());
+    l.push("");
+  });
+  const priorites = r.priorites.filter((x) => x.trim());
+  if (priorites.length) l.push("🎯 Pour ton prochain appel, en priorité", ...priorites.map((x, i) => `${i + 1}. ${x.trim()}`));
+  return l.join("\n").trim();
 }
 
 /** Le texte que le coach transmet à l'élève (copier ou PDF). */
 export function texteEleve(a: Analyse, prenom: string): string {
+  if (a.retour) return texteRetourCoach(a.retour, prenom);
   const note = Math.round(a.note_globale);
   const lignes: string[] = [];
   let entete = `Note : ${note}/100`;
