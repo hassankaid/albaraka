@@ -16,6 +16,7 @@ import { dateCourte } from "@/components/leads/FollowUp";
 import { formatDateTime, formatDateOnly } from "@/lib/formatDate";
 import { QUIZ_QUESTIONS } from "@/lib/leadScoring";
 import { BlocPriorite, type ScoringAffiche } from "@/components/leads/BlocPriorite";
+import { BadgeHorsZone } from "@/components/leads/HorsZone";
 
 type ScoringResponse = ScoringAffiche & { id: string };
 
@@ -269,6 +270,7 @@ export default function ContactSheet({
                         {contact.phone_normalized}
                       </a>
                     )}
+                    <BadgeHorsZone tel={contact.phone_normalized} className="mt-1" />
                   </div>
                   {contact.created_at && (
                     <p className="text-xs text-muted-foreground mt-1">

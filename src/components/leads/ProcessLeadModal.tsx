@@ -40,6 +40,7 @@ import { ChampsFollowUp } from "@/components/leads/FollowUp";
 import { STATUT_RELANCE } from "@/lib/relances";
 import { estAds, useCanaux } from "@/lib/leadSources";
 import { delaiTraitement } from "@/lib/delaiTraitement";
+import { BadgeHorsZone } from "@/components/leads/HorsZone";
 
 export { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS };
 
@@ -369,7 +370,10 @@ export default function ProcessLeadModal({ lead, open, onClose, onSuccess, onOpe
             <span className="text-muted-foreground">Email</span>
             <span className="text-foreground truncate">{lead.raw_email || "—"}</span>
             <span className="text-muted-foreground">Téléphone</span>
-            <span className="text-foreground">{lead.raw_phone || "—"}</span>
+            <span className="flex items-center gap-1.5 text-foreground">
+              {lead.raw_phone || "—"}
+              <BadgeHorsZone tel={lead.raw_phone || lead.contact_phone} />
+            </span>
             <span className="text-muted-foreground">Source</span>
             <span className="text-foreground">{lead.source_label || "—"}</span>
             <span className="text-muted-foreground">Date d'entrée</span>

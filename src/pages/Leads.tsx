@@ -39,6 +39,8 @@ import ProcessLeadModal from "@/components/leads/ProcessLeadModal";
 import { BoutonRelanceFaite, StatutLead } from "@/components/leads/Relances";
 import { apresRelance, etapeRelance, RELANCES_MAX, STATUT_RELANCE } from "@/lib/relances";
 import { delaiTraitement } from "@/lib/delaiTraitement";
+import { estHorsZone } from "@/lib/zoneLead";
+import { BadgeHorsZone } from "@/components/leads/HorsZone";
 import { cn } from "@/lib/utils";
 import ContactSheet from "@/components/ContactSheet";
 import {
@@ -292,6 +294,8 @@ export default function Leads() {
   // Sous-filtre de « À relancer » : toutes les étapes, ou Relance 1 à 6 (4 à 6 = 2e passage)
   const [relanceFilter, setRelanceFilter] = useState("all");
   const [prioriteFilter, setPrioriteFilter] = useState("all");
+  // Zone des pubs (24/11/2026) : « hors zone » = indicatif autre que +33 et +32
+  const [zoneFilter, setZoneFilter] = useState<"all" | "hors_zone" | "cible">("all");
   const [saisie, setSaisie] = useState<LeadEnriched | null>(null);
   const { data: reglagesScoring } = useScoringReglages();
   // Les files de travail s'ouvrent dans l'ordre d'appel (cahier des charges du 27/10).
@@ -757,6 +761,8 @@ export default function Leads() {
       result = result.filter((l) => (prioriteFilter === "non_score" ? !l.quiz_priorite : l.quiz_priorite === prioriteFilter));
     if (sourceFilter.length > 0) result = result.filter((l) => !!l.canal && sourceFilter.includes(l.canal));
     if (tunnelFilter.length > 0) result = result.filter((l) => !!l.tunnel && tunnelFilter.includes(l.tunnel));
+    if (zoneFilter !== "all")
+      result = result.filter((l) => estHorsZone(l.raw_phone || l.contact_phone) === (zoneFilter === "hors_zone"));
     if (collabFilter !== "all") result = result.filter((l) => l.assigned_to === collabFilter);
     if (apporteurFilter !== "all") result = result.filter((l) => l.apporteur_id === apporteurFilter);
 
@@ -782,7 +788,7 @@ export default function Leads() {
     }
 
     return result;
-  }, [leads, scopedLeads, tab, aAffecterSegment, dmSegment, statusFilter, prioriteFilter, sourceFilter, tunnelFilter, collabFilter, apporteurFilter, search, dateRange, userTz, user, leadAds]);
+  }, [leads, scopedLeads, tab, aAffecterSegment, dmSegment, statusFilter, prioriteFilter, sourceFilter, tunnelFilter, zoneFilter, collabFilter, apporteurFilter, search, dateRange, userTz, user, leadAds]);
 
   // Nombre de leads à chaque étape de relance, pour le sous-filtre
   const nbParEtape = useMemo(() => {
@@ -831,7 +837,7 @@ export default function Leads() {
     setSourceFilter([]);
   }, [aAffecterSegment]);
 
-  useEffect(() => { setPage(0); }, [statusFilter, relanceFilter, prioriteFilter, tri, sourceFilter.length, tunnelFilter.length, search, collabFilter, apporteurFilter, dateRange]);
+  useEffect(() => { setPage(0); }, [statusFilter, relanceFilter, prioriteFilter, tri, sourceFilter.length, tunnelFilter.length, zoneFilter, search, collabFilter, apporteurFilter, dateRange]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
   const paginatedLeads = useMemo(
@@ -1234,6 +1240,17 @@ export default function Leads() {
           </SelectContent>
         </Select>
 
+        <Select value={zoneFilter} onValueChange={(v) => setZoneFilter(v as typeof zoneFilter)}>
+          <SelectTrigger className="w-[150px] h-7 text-xs bg-card" data-testid="filtre-zone">
+            <SelectValue placeholder="Zone" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Zone : Toutes</SelectItem>
+            <SelectItem value="cible">France / Belgique</SelectItem>
+            <SelectItem value="hors_zone">Hors zone</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Select value={tri} onValueChange={setTri}>
           <SelectTrigger className="w-[170px] h-7 text-xs bg-card" data-testid="tri-leads">
             <SelectValue />
@@ -1288,7 +1305,7 @@ export default function Leads() {
           </>
         )}
 
-        {(statusFilter !== "all" || prioriteFilter !== "all" || collabFilter !== "all" || apporteurFilter !== "all" || sourceFilter.length > 0 || tunnelFilter.length > 0 || dateRange?.from) && (
+        {(statusFilter !== "all" || prioriteFilter !== "all" || collabFilter !== "all" || apporteurFilter !== "all" || sourceFilter.length > 0 || tunnelFilter.length > 0 || zoneFilter !== "all" || dateRange?.from) && (
           <Button
             variant="ghost"
             size="sm"
@@ -1300,6 +1317,7 @@ export default function Leads() {
               setApporteurFilter("all");
               setSourceFilter([]);
               setTunnelFilter([]);
+              setZoneFilter("all");
               setDateRange(undefined);
             }}
           >
@@ -1471,6 +1489,7 @@ export default function Leads() {
                               >
                                 <Copy className="h-3 w-3" />
                               </button>
+                              {estHorsZone(phone) && <BadgeHorsZone tel={phone} />}
                             </div>
                           );
                         })()}
