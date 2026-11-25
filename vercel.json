@@ -53,9 +53,70 @@
           "value": "noindex, nofollow"
         }
       ]
+    },
+    {
+      "source": "/data/autoriser",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
     }
   ],
   "rewrites": [
+    {
+      "source": "/data/mcp",
+      "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/connecteur-equipe/mcp"
+    },
+    {
+      "source": "/data/register",
+      "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/connecteur-equipe/register"
+    },
+    {
+      "source": "/data/token",
+      "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/connecteur-equipe/token"
+    },
+    {
+      "source": "/data/api/autoriser",
+      "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/connecteur-equipe/autoriser"
+    },
+    {
+      "source": "/data/api/client",
+      "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/connecteur-equipe/client"
+    },
+    {
+      "source": "/data/autoriser",
+      "destination": "/connecteur.html"
+    },
+    {
+      "source": "/.well-known/oauth-protected-resource",
+      "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/connecteur-equipe/.well-known/oauth-protected-resource"
+    },
+    {
+      "source": "/.well-known/oauth-protected-resource/:chemin*",
+      "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/connecteur-equipe/.well-known/oauth-protected-resource"
+    },
+    {
+      "source": "/.well-known/oauth-authorization-server",
+      "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/connecteur-equipe/.well-known/oauth-authorization-server"
+    },
+    {
+      "source": "/.well-known/oauth-authorization-server/:chemin*",
+      "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/connecteur-equipe/.well-known/oauth-authorization-server"
+    },
+    {
+      "source": "/.well-known/openid-configuration",
+      "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/connecteur-equipe/.well-known/oauth-authorization-server"
+    },
     {
       "source": "/s/:token/:seq",
       "destination": "https://ktvszjzryabjgxyobtyc.supabase.co/functions/v1/r-sms?t=:token&s=:seq"

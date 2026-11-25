@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Connexion au connecteur Data — AL BARAKA</title>
+<style>
+  body { margin:0; background:#f5f3ee; color:#1a1a1a;
+         font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; }
+  .boite { max-width:480px; margin:0 auto; padding:56px 16px; }
+  .carte { background:#fff; border-radius:12px; padding:36px 28px; }
+  .marque { font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#C9A84C; font-weight:700; }
+  h1 { font-size:22px; margin:14px 0 10px; }
+  p { font-size:15px; line-height:1.6; color:#555; margin:0 0 14px; }
+  label { display:block; font-size:14px; font-weight:600; margin:22px 0 8px; }
+  input { box-sizing:border-box; width:100%; font-size:16px; padding:12px 14px; border:1px solid #d8d4ca;
+          border-radius:10px; font-family:ui-monospace,Menlo,monospace; }
+  input:focus { outline:2px solid #C9A84C; border-color:#C9A84C; }
+  .actions { display:flex; gap:10px; margin-top:22px; flex-wrap:wrap; }
+  button { border:0; border-radius:999px; padding:13px 24px; font-size:15px; font-weight:600; cursor:pointer; }
+  .principal { background:#1a1a1a; color:#fff; }
+  .secondaire { background:#eee9dd; color:#1a1a1a; }
+  button[disabled] { opacity:.5; cursor:default; }
+  .erreur { color:#a3261b; font-size:14px; margin-top:14px; min-height:20px; }
+  .petit { font-size:13px; color:#888; margin-top:22px; }
+</style>
+</head>
+<body>
+<div class="boite"><div class="carte">
+  <div class="marque">AL BARAKA · DATA</div>
+  <h1 id="titre">Connexion au connecteur Data</h1>
+  <p id="message">Vérification de la demande…</p>
+  <form id="formulaire" hidden>
+    <label for="code">Ton code d'accès personnel</label>
+    <input id="code" name="code" type="password" autocomplete="off" spellcheck="false" required placeholder="alb_…">
+    <div class="actions">
+      <button class="principal" id="autoriser" type="submit">Autoriser l'accès</button>
+      <button class="secondaire" id="refuser" type="button">Refuser</button>
+    </div>
+    <div class="erreur" id="erreur" role="alert"></div>
+    <p class="petit">L'accès est en lecture seule. Chaque question posée via le connecteur est enregistrée à ton nom. Ne partage jamais ton code.</p>
+  </form>
+</div></div>
+<script>
+  // Page autonome (sans le hub). Elle appelle elle-même la fonction : la passerelle des
+  // fonctions Supabase sert le HTML en texte brut, la page ne peut donc pas venir de là.
+  var q = new URLSearchParams(location.search);
+  var demande = {
+    client_id: q.get("client_id") || "", redirect_uri: q.get("redirect_uri") || "",
+    response_type: q.get("response_type") || "", state: q.get("state") || "",
+    code_challenge: q.get("code_challenge") || "", code_challenge_method: q.get("code_challenge_method") || "",
+    resource: q.get("resource") || "", scope: q.get("scope") || ""
+  };
+  var titre = document.getElementById("titre"), message = document.getElementById("message");
+  var formulaire = document.getElementById("formulaire"), erreur = document.getElementById("erreur");
+  var bAutoriser = document.getElementById("autoriser"), bRefuser = document.getElementById("refuser");
+
+  function stop(t, m) { titre.textContent = t; message.textContent = m; formulaire.hidden = true; }
+
+  function envoyer(extra) {
+    bAutoriser.disabled = bRefuser.disabled = true; erreur.textContent = "";
+    var corps = Object.assign({}, demande, extra);
+    fetch("/data/api/autoriser", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corps) })
+      .then(function (r) { return r.json().catch(function () { return {}; }); })
+      .then(function (d) {
+        if (d.redirection) {
+          stop(extra.refuser ? "Accès refusé" : "Connexion réussie", extra.refuser ? "Tu peux fermer cette page." : "Retour vers Claude…");
+          location.href = d.redirection; return;
+        }
+        erreur.textContent = d.erreur || "Une erreur est survenue, réessaie.";
+        bAutoriser.disabled = bRefuser.disabled = false;
+      })
+      .catch(function () { erreur.textContent = "Connexion impossible, vérifie ta connexion internet."; bAutoriser.disabled = bRefuser.disabled = false; });
+  }
+
+  if (!demande.client_id || !demande.redirect_uri) {
+    stop("Lien incomplet", "Cette page s'ouvre automatiquement quand tu ajoutes le connecteur Data Al Baraka dans Claude ou Claude Code.");
+  } else {
+    fetch("/data/api/client?client_id=" + encodeURIComponent(demande.client_id) + "&redirect_uri=" + encodeURIComponent(demande.redirect_uri))
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.valide) { stop("Demande invalide", "Relance la connexion depuis Claude ou Claude Code."); return; }
+        message.textContent = "« " + (d.nom || "Une application") + " » demande un accès en lecture seule aux données Al Baraka. Saisis le code d'accès que tu as reçu.";
+        formulaire.hidden = false; document.getElementById("code").focus();
+      })
+      .catch(function () { stop("Erreur", "Impossible de vérifier la demande. Réessaie dans un instant."); });
+    formulaire.addEventListener("submit", function (e) { e.preventDefault(); envoyer({ code_acces: document.getElementById("code").value }); });
+    bRefuser.addEventListener("click", function () { envoyer({ refuser: true }); });
+  }
+</script>
+</body>
+</html>
