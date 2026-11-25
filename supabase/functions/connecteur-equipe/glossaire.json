@@ -1,0 +1,516 @@
+{
+ "glossaire": [
+  {
+   "terme": "Lead (fiche)",
+   "definition": "Une ligne de leads = une inscription par une source. Une même personne peut avoir plusieurs fiches. Pour compter des personnes : COUNT(DISTINCT contact_id) ; pour des inscriptions : COUNT(*).",
+   "domaine": "crm"
+  },
+  {
+   "terme": "Contact",
+   "definition": "La personne physique, dédoublonnée par e-mail et téléphone (contacts). Clé commune entre leads, calls et ventes : contact_id.",
+   "domaine": "crm"
+  },
+  {
+   "terme": "Fiche principale",
+   "definition": "leads.fiche_principale_id renseigné = fiche secondaire d'une personne qui en a une principale. Rempli sur une partie seulement des doublons : pour dédoublonner sûrement, passer par contact_id.",
+   "domaine": "crm"
+  },
+  {
+   "terme": "Canal",
+   "definition": "D'où vient le trafic (Meta Ads, Snap Ads, Instagram organique, Apporteur, Sans source…). Non stocké : colonne canal de leads_enriched_base (fonction lead_attribution). Groupe ads/organique dans lead_canaux.groupe.",
+   "domaine": "crm"
+  },
+  {
+   "terme": "Tunnel",
+   "definition": "Page d'inscription : whatsapp (tunnel conférence), vsl, liberty, quiz_apporteur, site_vitrine, saisie_manuelle. Colonne tunnel de leads_enriched_base ; libellés dans lead_tunnels.",
+   "domaine": "crm"
+  },
+  {
+   "terme": "Sans source / Sans paramètres",
+   "definition": "canal = sans_source : lien nu sans jeton ?src=. canal_precision = 'Sans paramètres' : lien nu reclassé en Snap Ads (ouvert dans Snapchat) ou Meta Ads (pub retrouvée via clic_pub.meta_adid).",
+   "domaine": "crm"
+  },
+  {
+   "terme": "Hors zone",
+   "definition": "Lead dont le téléphone a un indicatif lisible autre que +33 ou +32 (outre-mer compris). Calculé sur coalesce(leads.raw_phone, contacts.phone_normalized) ; numéro sans + ni 00 = jamais hors zone. Rien en base, règle du code.",
+   "domaine": "crm"
+  },
+  {
+   "terme": "Conférence",
+   "definition": "Webinaire du dimanche (conferences). leads.conference_date = conférence suivant l'inscription (bascule à l'heure de début) ; c'est la cohorte de référence pour le suivi par conférence.",
+   "domaine": "crm"
+  },
+  {
+   "terme": "Setter / closer",
+   "definition": "Setter = qualifie le lead au téléphone, en charge via leads.assigned_to. Closer = tient le call de vente, calls.assigned_to. Apporteur = a apporté le lead, leads.apporteur_id.",
+   "domaine": "crm"
+  },
+  {
+   "terme": "Call",
+   "definition": "Rendez-vous Calendly (calls). Honoré = status hors annule, no_show, planifie. Un call planifie dans le passé n'a pas encore été traité par le closer.",
+   "domaine": "crm"
+  },
+  {
+   "terme": "Recyclage",
+   "definition": "Lead désaffecté et mis au pot « À recycler » : recycled_at renseigné et assigned_to NULL. Déclenché par pas_de_reponse, 3 relances sans réponse, ou lead organique non pris en 14 jours. recycled_at repasse à NULL à la réattribution.",
+   "domaine": "crm"
+  },
+  {
+   "terme": "Relances",
+   "definition": "Lead en a_relancer : compteur relance_etape 1→3 puis recyclage en pas_de_reponse ; 2e passage 4→6 puis perdu (ou Lead Setting DM). Journal : lead_activities.action = 'relance_faite'.",
+   "domaine": "crm"
+  },
+  {
+   "terme": "Lead Setting DM",
+   "definition": "Leads de pub perdus relancés par message par un Setter DM : dm_depuis non NULL, statuts dm_a_contacter, contact_dm1, relance_dm1, relance_dm2, perdu_definitif (terminal).",
+   "domaine": "crm"
+  },
+  {
+   "terme": "Priorité scoring",
+   "definition": "A, B, C ou D tirée du score /100 du questionnaire (lead_scoring_responses.priorite, ou quiz_priorite dans leads_enriched_base). NULL = questionnaire absent ou incomplet.",
+   "domaine": "crm"
+  },
+  {
+   "terme": "Rappel demandé",
+   "definition": "leads.status = 'rappel_demande' : la personne a cliqué « Être rappelé(e) » au formulaire /rdv (Q2 ou Q5). Lead chaud, à appeler en priorité ; détail dans rdv_funnel_leads.",
+   "domaine": "crm"
+  },
+  {
+   "terme": "Parcours (actuel)",
+   "definition": "Setting/Closing, Community Management et Parcours Liberty sont stockés comme des formations : formations.slug = 'parcours-setter-closer', 'parcours-community-management', 'parcours-liberty'. Progression dans chapitre_progress.",
+   "domaine": "formation_coaching"
+  },
+  {
+   "terme": "Ancien parcours",
+   "definition": "Parcours Al Baraka et ancien Liberty (M1-M20), dans les tables parcours, parcours_phases, parcours_chapitres, parcours_chapitre_progress. Masqués aux élèves ; données conservées.",
+   "domaine": "formation_coaching"
+  },
+  {
+   "terme": "Partie",
+   "definition": "Module d'un parcours actuel (formation_modules). Setting/Closing : ordre 1 = Setting, 2 = Closing. Une partie terminée = ligne dans parcours_parties_terminees.",
+   "domaine": "formation_coaching"
+  },
+  {
+   "terme": "Chapitre terminé",
+   "definition": "Ligne dans chapitre_progress (formations) ou parcours_chapitre_progress (ancien parcours). Ne compter que les chapitres published de modules published.",
+   "domaine": "formation_coaching"
+  },
+  {
+   "terme": "Quiz réussi",
+   "definition": "Au moins une ligne quiz_attempts avec validated = true pour (user_id, quiz_id). Compter les élèves distincts, pas les tentatives.",
+   "domaine": "formation_coaching"
+  },
+  {
+   "terme": "Inscription active",
+   "definition": "formation_enrollments avec revoked_at IS NULL. Source auto_pass = accès donné par un Pass actif.",
+   "domaine": "formation_coaching"
+  },
+  {
+   "terme": "Élève / user_id",
+   "definition": "user_id vaut l'id du compte (auth.users.id = profiles.id). Joindre profiles pour le nom et le rôle.",
+   "domaine": "formation_coaching"
+  },
+  {
+   "terme": "Masqué aux élèves",
+   "definition": "formations.masquee_eleves ou parcours.masque_eleves = true : invisible des élèves mais données conservées. Ne pas confondre avec status.",
+   "domaine": "formation_coaching"
+  },
+  {
+   "terme": "Correspondance (chapitre jumeau)",
+   "definition": "Chapitre ou quiz copié dans un parcours et relié à son origine (parcours_correspondances_*). La progression est recopiée des deux côtés : risque de double comptage entre formations.",
+   "domaine": "formation_coaching"
+  },
+  {
+   "terme": "Coaching collectif",
+   "definition": "Séance hebdomadaire récurrente (coaching_weekly_slots) ; chaque date réelle = coaching_occurrences ; présence = clic « Rejoindre » (coaching_attendance) ; replay vu = coaching_replay_views.",
+   "domaine": "formation_coaching"
+  },
+  {
+   "terme": "Coaching individuel noté",
+   "definition": "Séance coach/élève notée sur une grille (coach_types → coach_steps → coach_criteria) : coaching_sessions + coaching_scores, notes sur 5.",
+   "domaine": "formation_coaching"
+  },
+  {
+   "terme": "Coaching individuel payant",
+   "definition": "Réservation Calendly après paiement : coaching_reservations (statut planifie/annule, paye).",
+   "domaine": "formation_coaching"
+  },
+  {
+   "terme": "Mon Activité (KPIs déclarés)",
+   "definition": "Saisie quotidienne de l'élève : activity_daily_kpis (somme hebdo : activity_weekly_totals). Chiffres déclaratifs, distincts des ventes réelles (sales).",
+   "domaine": "formation_coaching"
+  },
+  {
+   "terme": "RP Découverte / RP Closing",
+   "definition": "Role plays d'entraînement comptés par jour dans closing_daily_logs.rp_d et rp_c ; objectifs dans closing_plans.targets (4 et 3 par défaut).",
+   "domaine": "formation_coaching"
+  },
+  {
+   "terme": "Certificat valide",
+   "definition": "formation_certificates avec revoked_at IS NULL ; issue_source auto ou manual.",
+   "domaine": "formation_coaching"
+  },
+  {
+   "terme": "Agent IA Setting",
+   "definition": "Assistant qui propose une réponse à un DM de prospect (/working/agent). Usage : agent_messages (role = 'user') ; coût : ia_consommations.fonctionnalite = 'agent_setting'.",
+   "domaine": "ia_studio"
+  },
+  {
+   "terme": "Base de connaissance",
+   "definition": "Fiches scripts/objections injectées dans l'Agent IA Setting : agent_knowledge_base (category).",
+   "domaine": "ia_studio"
+  },
+  {
+   "terme": "Analyse d'appel",
+   "definition": "Appel d'élève déposé par un coach, noté par l'IA puis validé : appels_analyses. Un appel « traité » = statut 'valide'.",
+   "domaine": "ia_studio"
+  },
+  {
+   "terme": "Référentiel",
+   "definition": "Méthode et grille de notation d'un type d'appel, versionnée : appels_referentiels ; version utilisée dans appels_analyses.referentiel_version.",
+   "domaine": "ia_studio"
+  },
+  {
+   "terme": "Note IA / note finale",
+   "definition": "Notes sur 100 : note_ia = calcul initial, note_finale = après corrections du coach. Écart = qualité de l'IA ; nb_corrections compte les retouches.",
+   "domaine": "ia_studio"
+  },
+  {
+   "terme": "Exemple de référence",
+   "definition": "Retour validé marqué comme modèle (appels_analyses.exemple_reference) : les 4 plus récents guident l'IA.",
+   "domaine": "ia_studio"
+  },
+  {
+   "terme": "Consommation IA",
+   "definition": "Toute dépense IA, en dollars US : ia_consommations.cout_usd, par fonctionnalite et user_id. Exclure ou isoler statut = 'reprise' selon la question.",
+   "domaine": "ia_studio"
+  },
+  {
+   "terme": "Fonctionnalité IA",
+   "definition": "Code de ce qui a appelé l'IA (ia_consommations.fonctionnalite) : groupe Studio = codes commençant par studio_, sinon plateforme.",
+   "domaine": "ia_studio"
+  },
+  {
+   "terme": "Montage",
+   "definition": "Une vidéo importée dans le Studio et ses rendus : studio_montages (une ligne, plusieurs rendus via version). Purgé après 30 jours.",
+   "domaine": "ia_studio"
+  },
+  {
+   "terme": "Vidéo comptée",
+   "definition": "Vidéo décomptée du quota du jour : studio_montages.compte_le non null, jour = (compte_le at time zone 'Europe/Paris')::date. Corrections et nouveaux rendus ne recomptent pas.",
+   "domaine": "ia_studio"
+  },
+  {
+   "terme": "Outil du Studio",
+   "definition": "studio_montages.outil : face_camera, voix_off, hybride. Dans ia_consommations, hybride est compté sous studio_face_camera.",
+   "domaine": "ia_studio"
+  },
+  {
+   "terme": "Banque de plans",
+   "definition": "Rushs du Studio : studio_banque_videos (vidéo, catégorie = dossier) → studio_banque_plans (plans indexés). Plan utilisable : non exclu, vidéo non exclue et statut 'indexee'.",
+   "domaine": "ia_studio"
+  },
+  {
+   "terme": "Formule gratuite / abonnée",
+   "definition": "Quota Studio : 1 vidéo/jour gratuite, 5/jour avec l'abonnement (valeurs dans studio_config : quota_gratuit, quota_abonne) ; le CEO est illimité.",
+   "domaine": "ia_studio"
+  },
+  {
+   "terme": "Script en ligne",
+   "definition": "Scripts setting/closing consultés par les membres : scripts (status = 'published') + script_phases + script_extras. Différent de studio_scripts (scripts vidéo) et de scripts_appel (outil élève).",
+   "domaine": "ia_studio"
+  },
+  {
+   "terme": "Dépense pub (totaux)",
+   "definition": "Toujours sum(ads.amount_spent) sur ads.date. ads_pubs donne le détail par créa mais ne doit pas être additionné à ads.",
+   "domaine": "marketing_admin"
+  },
+  {
+   "terme": "Plateforme",
+   "definition": "Régie publicitaire : ads.plateforme / ads_pubs.plateforme = meta, snap ou google. Dans les leads, le canal équivalent est meta_ads, snap_ads, google_ads.",
+   "domaine": "marketing_admin"
+  },
+  {
+   "terme": "Dépenses connues jusqu'au",
+   "definition": "Dernier jour complet remonté : veille de la dernière réception réussie (ads_imports, niveau campagne, erreur NULL), le plus ancien des comptes actifs (ads_comptes.actif). La dépense du jour n'arrive que le lendemain matin.",
+   "domaine": "marketing_admin"
+  },
+  {
+   "terme": "Créa / pub",
+   "definition": "Une annonce précise : ads_pubs.pub_id, qui correspond à leads.utm_content pour les leads Meta et Snap. Google n'a pas de niveau pub.",
+   "domaine": "marketing_admin"
+  },
+  {
+   "terme": "Campagne pub",
+   "definition": "ads.campaign_id (= ads_pubs.campagne_id), retrouvé dans leads.utm_campaign. Le tunnel d'une campagne ne se lit plus dans ads.channel.",
+   "domaine": "marketing_admin"
+  },
+  {
+   "terme": "Campagne e-mail / SMS",
+   "definition": "Identifiée par campaign_slug : conf_AAAA_MM_JJ (e-mail) et conf_AAAA_MM_JJ_sms (SMS) pour la séquence d'une conférence ; autres slugs pour les séquences ponctuelles (albaraka_200_lancement, tunnel_liberty…).",
+   "domaine": "marketing_admin"
+  },
+  {
+   "terme": "Séquence (seq)",
+   "definition": "Numéro du message dans une campagne : email_seq ou sms_seq. Conférence : e-mail 10 = J-1, 8 = M-30, 9 = ouverture, 11-15 = après ; SMS 6 = M-10, 7 = M+15.",
+   "domaine": "marketing_admin"
+  },
+  {
+   "terme": "Ouverture humaine",
+   "definition": "Événement email.opened dont public.evenement_machine(user_agent) est false. Sans ce filtre, environ un tiers des ouvertures sont des robots.",
+   "domaine": "marketing_admin"
+  },
+  {
+   "terme": "Témoins",
+   "definition": "Adresses/numéros internes ajoutés en tête de chaque liste de conférence pour contrôler l'envoi ; ils gonflent légèrement les volumes d'envoi.",
+   "domaine": "marketing_admin"
+  },
+  {
+   "terme": "Désabonné",
+   "definition": "E-mail présent dans email_unsubscribes ou numéro dans sms_unsubscribes. email_unsubscribe_tokens n'est PAS une liste de désabonnés.",
+   "domaine": "marketing_admin"
+  },
+  {
+   "terme": "Élève",
+   "definition": "Profil role = 'apporteur' ayant un pass ou une inscription (user_passes, formation_enrollments). Le rôle apporteur regroupe élèves et apporteurs d'affaires.",
+   "domaine": "marketing_admin"
+  },
+  {
+   "terme": "Équipe interne",
+   "definition": "profiles.role in ('ceo','collaborateur') et is_active ; niveau dans collaborateur_level, coach si is_coach, Setter DM si is_setter_dm.",
+   "domaine": "marketing_admin"
+  },
+  {
+   "terme": "Dérogation d'accès",
+   "definition": "Ligne active de acces_manuels (revoque_le NULL et expire_le NULL ou futur) ; elle prime sur les règles automatiques.",
+   "domaine": "marketing_admin"
+  },
+  {
+   "terme": "Activation de l'accès",
+   "definition": "profiles.access_opened_at non NULL ; le détail des essais est dans activation_journal.",
+   "domaine": "marketing_admin"
+  },
+  {
+   "terme": "Vente",
+   "definition": "Définition officielle (validée par Hassan le 25/11/2026) : une vente = une ligne de sales dont sale_type n'est ni 'studio' ni 'acompte' (Pass ou offre vendu par checkout, lien de paiement, saisie manuelle ou systeme.io). Les acomptes ne comptent pas comme ventes mais leur montant entre dans le CA ; l'abonnement Studio se compte à part. Les ventes perdues (payment_status='lost') restent des ventes, à montrer à part.",
+   "domaine": "ventes_finance"
+  },
+  {
+   "terme": "Vente PASS / bon de commande",
+   "definition": "sales.sale_type = 'bon_commande' : Pass AL BARAKA ou Liberty payé sur la page de checkout. C'est le périmètre du Dashboard Sales. Les Pass vendus par lien de paiement sont en 'custom_link'.",
+   "domaine": "ventes_finance"
+  },
+  {
+   "terme": "Acompte",
+   "definition": "Vente sale_type='acompte' (somme versée avant le Pass). Le bon de commande qui suit a parent_sale_id = l'acompte et son amount_ht n'inclut pas l'acompte : CA client = les deux.",
+   "domaine": "ventes_finance"
+  },
+  {
+   "terme": "Vente Studio",
+   "definition": "sale_type='studio' : abonnement Studio, une vente par abonnement, une échéance payée par mois. amount_ht = cumul encaissé. Exclue des ventes, du marketing et des commissions.",
+   "domaine": "ventes_finance"
+  },
+  {
+   "terme": "Montant / CA",
+   "definition": "Tous les montants sont en euros (jamais en centimes). Société hors UE : TVA 0 %, donc HT = TTC. CA vendu (hors Studio) = somme de sales.amount_ht où sale_type n'est pas 'studio' (acomptes compris, car le bon de commande n'inclut pas l'acompte). CA encaissé = somme de payments.amount où status='paid' (date : paid_at).",
+   "domaine": "ventes_finance"
+  },
+  {
+   "terme": "Échéance",
+   "definition": "Ligne de payments (mensualité). Payée : status='paid', date paid_at. En retard : status='pending' AND due_date < current_date (ou 'late'). Perdue : 'lost'.",
+   "domaine": "ventes_finance"
+  },
+  {
+   "terme": "Vente perdue",
+   "definition": "sales.payment_status='lost' : impayé définitif. Les échéances suivantes passent en lost, les commissions liées en cancelled et le Pass de l'élève est retiré.",
+   "domaine": "ventes_finance"
+  },
+  {
+   "terme": "Closer / setter d'une vente",
+   "definition": "Lire commissions.role ('closer', 'setter') et beneficiary_user_id. sales.closed_by est souvent vide (ventes par checkout).",
+   "domaine": "ventes_finance"
+  },
+  {
+   "terme": "Commission acquise / à verser / versée",
+   "definition": "commissions.status : due (ou invoiced) = à verser ; paid = versée ; pending = échéance client pas encore payée ; cancelled = annulée. Générée = status <> 'cancelled'.",
+   "domaine": "ventes_finance"
+  },
+  {
+   "terme": "Conférence d'une vente",
+   "definition": "sales.conference_date : dimanche (heure de Paris) de la conférence à laquelle la vente est rattachée. Clé de période des onglets Sales et Équipe.",
+   "domaine": "ventes_finance"
+  },
+  {
+   "terme": "Lead d'origine / attribution",
+   "definition": "Vue marketing_ventes_attribuees (lead_id, mode_attribution) jointe à leads_enriched pour le canal, le tunnel et la pub. sales.lead_origine_id est figé à la création.",
+   "domaine": "ventes_finance"
+  },
+  {
+   "terme": "Facture FAC / REC",
+   "definition": "FAC = client_invoices, une par échéance encaissée, envoyée au client. REC = factures_recouvrement, une par échéance impayée transmise au cabinet, jamais envoyée au client.",
+   "domaine": "ventes_finance"
+  },
+  {
+   "terme": "Pass actif",
+   "definition": "user_passes avec revoked_at IS NULL (pass_type al_baraka ou liberty). Droit d'accès, pas une vente.",
+   "domaine": "ventes_finance"
+  },
+  {
+   "terme": "Remboursement",
+   "definition": "Aucun flux ne suit les remboursements Stripe : payment_status 'refunded' n'est jamais posé. Un remboursement ne se voit pas en base ; vérifier dans Stripe.",
+   "domaine": "ventes_finance"
+  }
+ ],
+ "requetes_types": [
+  {
+   "question": "Combien de leads par canal et par tunnel sur une période ?",
+   "reponse": "SELECT canal, tunnel, count(*) AS fiches, count(DISTINCT contact_id) AS personnes FROM leads_enriched_base WHERE (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN :du AND :au GROUP BY 1,2 ORDER BY 3 DESC; — ne pas utiliser leads.source brut, ni leads_enriched (filtrée par rôle).",
+   "domaine": "crm"
+  },
+  {
+   "question": "Combien d'inscrits et de calls pour la conférence du dimanche X ?",
+   "reponse": "Leads : SELECT count(*) FROM leads WHERE conference_date = :dimanche (exclure source = 'site_vitrine' pour les envois). Calls de cette cohorte : joindre calls ↔ leads par contact_id et filtrer sur leads.conference_date (calls.conference_date suit la date du RDV, décalée pour les rediffusions).",
+   "domaine": "crm"
+  },
+  {
+   "question": "Résultats des calls par closer sur une période ?",
+   "reponse": "SELECT assigned_to_name, count(*) AS rdv, count(*) FILTER (WHERE status='no_show') AS absents, count(*) FILTER (WHERE status NOT IN ('annule','no_show','planifie')) AS tenus, count(*) FILTER (WHERE status='close') AS closes FROM calls_enriched_base WHERE (scheduled_at AT TIME ZONE 'Europe/Paris')::date BETWEEN :du AND :au GROUP BY 1; — les ventes réelles se comptent dans la table des ventes.",
+   "domaine": "crm"
+  },
+  {
+   "question": "Quels leads sont hors zone (+33/+32) ?",
+   "reponse": "WITH t AS (SELECT l.id, regexp_replace(coalesce(l.raw_phone, c.phone_normalized), '[\\s.()/-]', '', 'g') AS tel FROM leads l LEFT JOIN contacts c ON c.id = l.contact_id) SELECT count(*) FROM t WHERE tel ~ '^(\\+|00)[0-9]{6,}$' AND tel !~ '^(\\+|00)(33|32)';",
+   "domaine": "crm"
+  },
+  {
+   "question": "Répartition des priorités de scoring A-D par conférence ?",
+   "reponse": "SELECT conference_date, quiz_priorite, count(*) FROM leads_enriched_base WHERE conference_date >= :depuis GROUP BY 1,2 ORDER BY 1,2; — quiz_priorite NULL = pas de questionnaire ; quiz_saisi_par non NULL = saisi par le setter.",
+   "domaine": "crm"
+  },
+  {
+   "question": "Où en sont les relances et les leads recyclés ?",
+   "reponse": "SELECT relance_etape, count(*) FROM leads WHERE status='a_relancer' GROUP BY 1; pot à recycler : SELECT count(*) FROM leads WHERE recycled_at IS NOT NULL AND assigned_to IS NULL; historique : lead_activities WHERE action IN ('relance_faite','recycled').",
+   "domaine": "crm"
+  },
+  {
+   "question": "Où en est chaque élève dans le parcours Setting/Closing (pourcentage de chapitres terminés) ?",
+   "reponse": "WITH ch AS (SELECT c.id FROM formation_chapitres c JOIN formation_modules m ON m.id=c.module_id JOIN formations f ON f.id=m.formation_id WHERE f.slug='parcours-setter-closer' AND c.status='published' AND m.status='published') SELECT e.user_id, round(100.0*count(cp.chapitre_id)/(SELECT count(*) FROM ch),1) AS pct FROM formation_enrollments e JOIN formations f ON f.id=e.formation_id AND f.slug='parcours-setter-closer' LEFT JOIN chapitre_progress cp ON cp.user_id=e.user_id AND cp.chapitre_id IN (SELECT id FROM ch) WHERE e.revoked_at IS NULL GROUP BY e.user_id;",
+   "domaine": "formation_coaching"
+  },
+  {
+   "question": "Combien d'élèves ont terminé la partie Setting (ou Closing) ?",
+   "reponse": "SELECT m.ordre, m.titre, count(*) FROM parcours_parties_terminees p JOIN formation_modules m ON m.id=p.module_id JOIN formations f ON f.id=m.formation_id WHERE f.slug='parcours-setter-closer' GROUP BY m.ordre, m.titre; (ordre 1 = Setting, 2 = Closing).",
+   "domaine": "formation_coaching"
+  },
+  {
+   "question": "Quel est le taux de réussite d'un quiz et le nombre moyen de tentatives ?",
+   "reponse": "Par quiz : SELECT q.titre, count(DISTINCT a.user_id) AS eleves, count(DISTINCT a.user_id) FILTER (WHERE a.validated) AS reussis, round(count(*)::numeric/NULLIF(count(DISTINCT a.user_id),0),2) AS tentatives_moy FROM quiz_attempts a JOIN quizzes q ON q.id=a.quiz_id GROUP BY q.titre. Attention : les recopies entre quiz jumeaux gonflent les réussites.",
+   "domaine": "formation_coaching"
+  },
+  {
+   "question": "Quelle est l'assiduité aux coachings collectifs par créneau sur les 30 derniers jours ?",
+   "reponse": "SELECT o.slot_id, o.occurrence_date, count(DISTINCT a.user_id) AS presents, count(DISTINCT r.user_id) AS replays_vus FROM coaching_occurrences o LEFT JOIN coaching_attendance a ON a.occurrence_id=o.id LEFT JOIN coaching_replay_views r ON r.occurrence_id=o.id WHERE o.occurrence_date >= current_date-30 GROUP BY 1,2 ORDER BY 2; (présent = clic « Rejoindre »).",
+   "domaine": "formation_coaching"
+  },
+  {
+   "question": "Quels élèves ont saisi leur activité cette semaine et avec quels totaux ?",
+   "reponse": "SELECT t.*, p.full_name FROM activity_weekly_totals t JOIN profiles p ON p.id=t.user_id WHERE t.week_start=date_trunc('week', current_date)::date ORDER BY t.messages_sent DESC; à comparer à activity_objectives (weekly_target par kpi_key). Ventes déclarées, pas réelles.",
+   "domaine": "formation_coaching"
+  },
+  {
+   "question": "Quel est le NPS du questionnaire de satisfaction ?",
+   "reponse": "SELECT round(100.0*(count(*) FILTER (WHERE q26>=9) - count(*) FILTER (WHERE q26<=6))/count(*),1) AS nps, count(*) AS repondants FROM questionnaire_resultats; (la vue exclut déjà les tests et les brouillons).",
+   "domaine": "formation_coaching"
+  },
+  {
+   "question": "Combien a coûté l'IA ce mois-ci, par fonctionnalité ?",
+   "reponse": "select fonctionnalite, count(*) appels, round(sum(cout_usd),2) usd from ia_consommations where cree_le >= date_trunc('month', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris' group by 1 order by 3 desc; — montants en dollars US.",
+   "domaine": "ia_studio"
+  },
+  {
+   "question": "Quels utilisateurs consomment le plus d'IA (30 derniers jours) ?",
+   "reponse": "select p.full_name, p.role, round(sum(c.cout_usd),2) usd, count(*) from ia_consommations c left join profiles p on p.id = c.user_id where c.cree_le >= now() - interval '30 days' group by 1,2 order by 3 desc; (user_id null = tâche de fond).",
+   "domaine": "ia_studio"
+  },
+  {
+   "question": "Combien de vidéos Studio ont été faites par jour et par outil ?",
+   "reponse": "select (compte_le at time zone 'Europe/Paris')::date jour, outil, count(*) from studio_montages where compte_le is not null group by 1,2 order by 1 desc; — seulement ≈30 derniers jours (purge). Plus ancien : compter ia_consommations où reference like 'montage:%' (approximatif).",
+   "domaine": "ia_studio"
+  },
+  {
+   "question": "Coût IA moyen d'un montage Studio terminé ?",
+   "reponse": "select m.outil, count(*), round(avg(c.cout_ia_usd),3) from studio_montages m join studio_montages_couts c on c.montage_id = m.id where m.statut = 'termine' and c.cout_ia_usd > 0 group by 1; (dollars US, ≈30 derniers jours).",
+   "domaine": "ia_studio"
+  },
+  {
+   "question": "Où en sont les analyses d'appels et quel écart entre l'IA et les coachs ?",
+   "reponse": "select statut, count(*), round(avg(note_ia),1), round(avg(note_finale),1), round(avg(nb_corrections),1) from appels_analyses group by statut; — pour l'écart, filtrer statut = 'valide' ; joindre profiles sur coach_id ou eleve_id pour le détail.",
+   "domaine": "ia_studio"
+  },
+  {
+   "question": "Qui utilise l'Agent IA Setting et combien de questions par semaine ?",
+   "reponse": "select date_trunc('week', m.created_at) semaine, c.user_id, count(*) questions from agent_messages m join agent_conversations c on c.id = m.conversation_id where m.role = 'user' group by 1,2 order by 1 desc, 3 desc; (conversations supprimées par l'utilisateur absentes).",
+   "domaine": "ia_studio"
+  },
+  {
+   "question": "Combien a-t-on dépensé en pub par plateforme sur une période ?",
+   "reponse": "select plateforme, sum(amount_spent) as depense, sum(impressions) as impressions, sum(clicks) as clics from ads where date between :du and :au group by plateforme; — le jour en cours et souvent la veille ne sont pas encore remontés (vérifier ads_imports).",
+   "domaine": "marketing_admin"
+  },
+  {
+   "question": "Quelles créas ont le plus dépensé, et combien de leads ont-elles amenés ?",
+   "reponse": "Dépense : select plateforme, pub_id, max(pub_nom), sum(depense) from ads_pubs where date between :du and :au group by 1,2. Leads : joindre leads sur leads.utm_content = ads_pubs.pub_id (leads Meta/Snap de la période, date de création en heure de Paris).",
+   "domaine": "marketing_admin"
+  },
+  {
+   "question": "Les dépenses pub sont-elles à jour ?",
+   "reponse": "select c.plateforme, c.nom, max(i.recu_le) as dernier_import from ads_comptes c left join ads_imports i on i.plateforme = c.plateforme and i.compte_id = c.compte_id and i.niveau = 'campagne' and i.erreur is null where c.actif group by 1,2; — en retard si plus de 36 h.",
+   "domaine": "marketing_admin"
+  },
+  {
+   "question": "Quel est le taux d'ouverture et de clic réel d'un e-mail de conférence ?",
+   "reponse": "Partir des envois dédoublonnés : select distinct on (recipient_email) resend_email_id from email_campaign_sends where campaign_slug = 'conf_AAAA_MM_JJ' and email_seq = :seq and status = 'sent'; puis compter dans email_campaign_events les email.delivered, et les email.opened / email.clicked avec not evenement_machine(user_agent). email_campaign_stats donne un aperçu rapide (filtrage des robots non garanti).",
+   "domaine": "marketing_admin"
+  },
+  {
+   "question": "Combien de clics et quel coût pour les SMS d'une conférence ?",
+   "reponse": "select * from sms_campaign_stats where campaign_slug = 'conf_AAAA_MM_JJ_sms'; — coût en dollars US, complet seulement après twilio-sync-prix ; clics = événements sms.clicked.",
+   "domaine": "marketing_admin"
+  },
+  {
+   "question": "Combien de membres de l'équipe actifs par rôle, et combien d'élèves n'ont jamais activé leur accès ?",
+   "reponse": "select role, collaborateur_level, count(*) from profiles where is_active group by 1,2; Non activés : select count(*) from profiles where role = 'apporteur' and access_opened_at is null (croiser avec user_passes pour ne garder que les élèves ayant un pass).",
+   "domaine": "marketing_admin"
+  },
+  {
+   "question": "Combien de ventes et quel CA par conférence ?",
+   "reponse": "SELECT conference_date, count(*) AS ventes, sum(amount_ht) AS ca_eur, count(*) FILTER (WHERE payment_status='lost') AS perdues FROM sales WHERE sale_type IS DISTINCT FROM 'studio' AND sale_type IS DISTINCT FROM 'acompte' GROUP BY 1 ORDER BY 1 DESC; — définition officielle d'une vente. Pour les seuls Pass par checkout (périmètre du Dashboard Sales) : sale_type='bon_commande'. Ajouter les acomptes liés (parent_sale_id) pour le CA client complet.",
+   "domaine": "ventes_finance"
+  },
+  {
+   "question": "Combien a-t-on encaissé par mois ?",
+   "reponse": "SELECT date_trunc('month', p.paid_at)::date AS mois, sum(p.amount) AS encaisse_eur FROM payments p JOIN sales s ON s.id = p.sale_id WHERE p.status='paid' GROUP BY 1 ORDER BY 1; — ajouter AND s.sale_type IS DISTINCT FROM 'studio' pour exclure le Studio. paid_at est une date (pas de fuseau).",
+   "domaine": "ventes_finance"
+  },
+  {
+   "question": "Quels sont les impayés en retard ?",
+   "reponse": "SELECT s.id, s.product, p.payment_number, p.amount, p.due_date FROM payments p JOIN sales s ON s.id = p.sale_id WHERE (p.status='late' OR (p.status='pending' AND p.due_date < current_date)) AND s.payment_status <> 'lost' ORDER BY p.due_date; — les montants perdus : p.status='lost'.",
+   "domaine": "ventes_finance"
+  },
+  {
+   "question": "Combien de ventes et de CA par closer (ou setter) ?",
+   "reponse": "WITH v AS (SELECT DISTINCT c.beneficiary_user_id AS u, s.id, s.amount_ht FROM commissions c JOIN sales s ON s.id = c.sale_id WHERE c.role = 'closer' AND c.status <> 'cancelled' AND s.sale_type IS DISTINCT FROM 'studio' AND s.sale_type IS DISTINCT FROM 'acompte') SELECT u, count(*) AS ventes, sum(amount_ht) AS ca_eur FROM v GROUP BY u; — role='setter' pour les setters ; ne pas utiliser sales.closed_by.",
+   "domaine": "ventes_finance"
+  },
+  {
+   "question": "Combien reste-t-il de commissions à verser par personne ?",
+   "reponse": "SELECT coalesce(pr.full_name, c.beneficiary_external) AS beneficiaire, c.role, sum(c.amount) AS a_verser_eur FROM commissions c LEFT JOIN profiles pr ON pr.id = c.beneficiary_user_id WHERE c.status IN ('due','invoiced') GROUP BY 1,2 ORDER BY 3 DESC;",
+   "domaine": "ventes_finance"
+  },
+  {
+   "question": "D'où viennent les ventes (canal, pub) ?",
+   "reponse": "SELECT le.canal, le.tunnel, count(*) AS ventes, sum(va.amount_ht) AS ca_eur FROM marketing_ventes_attribuees va JOIN sales s ON s.id = va.vente_id LEFT JOIN leads_enriched_base le ON le.id = va.lead_id WHERE s.sale_type IS DISTINCT FROM 'studio' AND s.sale_type IS DISTINCT FROM 'acompte' GROUP BY 1,2 ORDER BY 3 DESC; — pub : leads.utm_content (id de la pub) jointe à ads_pubs.",
+   "domaine": "ventes_finance"
+  }
+ ]
+}
