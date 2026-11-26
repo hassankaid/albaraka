@@ -18,6 +18,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export const PIXEL_SNAP = "b0f831b6-1982-4430-929b-e1417e4ac700";
+// Second pixel (26/11/2026, demande du media buyer) : nouvelle campagne qui
+// n'apprend que sur la zone cible. Même évènement, même event_id ; chaque
+// pixel a son propre jeton d'accès (SNAP_CAPI_TOKEN_FR_BE).
+export const PIXEL_SNAP_FR_BE = "ac23d601-2f64-4e24-ad8e-d4c20e1eb551";
+
+/** Pixels destinataires et le secret qui porte le jeton de chacun. */
+export const PIXELS_CAPI: { cle: string; pixel: string; secret: string }[] = [
+  { cle: "ancien", pixel: PIXEL_SNAP, secret: "SNAP_CAPI_TOKEN" },
+  { cle: "fr_be", pixel: PIXEL_SNAP_FR_BE, secret: "SNAP_CAPI_TOKEN_FR_BE" },
+];
 export const DOMAINE_PIXEL_SNAP = "event.albarakaecosysteme.com";
 const INDICATIFS_ZONE = ["+33", "+32"];
 
@@ -105,8 +115,9 @@ export async function envoyerASnap(
   jeton: string,
   corps: unknown,
   valider = false,
+  pixel: string = PIXEL_SNAP,
 ): Promise<{ http: number; reponse: string }> {
-  const url = `https://tr.snapchat.com/v3/${PIXEL_SNAP}/events${valider ? "/validate" : ""}?access_token=${encodeURIComponent(jeton)}`;
+  const url = `https://tr.snapchat.com/v3/${pixel}/events${valider ? "/validate" : ""}?access_token=${encodeURIComponent(jeton)}`;
   const r = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

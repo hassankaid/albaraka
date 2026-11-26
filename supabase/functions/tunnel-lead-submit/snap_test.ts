@@ -51,3 +51,10 @@ Deno.test("évènement SIGN_UP : identifiant partagé, données chiffrées, clic
   assertEquals(u.sc_cookie1, "def");
   assertEquals(u.client_ip_address, "1.2.3.4");
 });
+
+Deno.test("deux pixels servis par la CAPI, chacun avec son jeton (26/11/2026)", async () => {
+  const { PIXELS_CAPI, PIXEL_SNAP, PIXEL_SNAP_FR_BE } = await import("./snap.ts");
+  assertEquals(PIXELS_CAPI.map((c) => c.pixel), [PIXEL_SNAP, PIXEL_SNAP_FR_BE]);
+  assertEquals(new Set(PIXELS_CAPI.map((c) => c.secret)).size, 2);
+  assertEquals(PIXELS_CAPI[0].secret, "SNAP_CAPI_TOKEN");
+});

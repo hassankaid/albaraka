@@ -32,7 +32,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { decisionSnap, envoyerASnap, evenementSignUp, idEvenement, DOMAINE_PIXEL_SNAP } from "./snap.ts";
+import { decisionSnap, envoyerASnap, evenementSignUp, idEvenement, DOMAINE_PIXEL_SNAP, PIXELS_CAPI } from "./snap.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -300,11 +300,10 @@ function envoyerInscriptionSnap(
   const eventId = idEvenement(p.clic?.event_id);
   const decision = decisionSnap({ source: p.source, origine: req.headers.get("origin"), telephoneE164: p.telephoneE164, eventId });
   if (!decision.envoyer) return;
-  const jeton = Deno.env.get("SNAP_CAPI_TOKEN");
-  if (!jeton) {
-    console.warn("[snap-capi] SNAP_CAPI_TOKEN absent, inscription non envoyée");
-    return;
-  }
+  const cibles = PIXELS_CAPI.map((c) => ({ ...c, jeton: Deno.env.get(c.secret) }));
+  for (const c of cibles) if (!c.jeton) console.warn(`[snap-capi] ${c.secret} absent : pixel ${c.cle} non servi`);
+  const servis = cibles.filter((c) => c.jeton);
+  if (!servis.length) return;
   const tache = (async () => {
     try {
       const corps = await evenementSignUp({
@@ -318,11 +317,23 @@ function envoyerInscriptionSnap(
         sccid: typeof p.clic?.sccid === "string" ? p.clic.sccid : null,
         scid: typeof p.clic?.scid === "string" ? p.clic.scid : null,
       });
-      const r = await envoyerASnap(jeton, corps);
-      if (r.http >= 300) console.warn(`[snap-capi] lead ${p.leadId} : HTTP ${r.http} ${r.reponse}`);
+      // Un envoi par pixel : l'échec de l'un n'empêche pas l'autre
+      const resultats = await Promise.all(servis.map(async (c) => {
+        try {
+          const r = await envoyerASnap(c.jeton!, corps, false, c.pixel);
+          if (r.http >= 300) console.warn(`[snap-capi] lead ${p.leadId}, pixel ${c.cle} : HTTP ${r.http} ${r.reponse}`);
+          return [c.cle, r.http] as const;
+        } catch (e) {
+          console.warn(`[snap-capi] lead ${p.leadId}, pixel ${c.cle} : envoi impossible`, e);
+          return [c.cle, 0] as const;
+        }
+      }));
+      const parPixel = Object.fromEntries(resultats);
+      // « http » = le pire résultat : différent de 200 dès qu'un pixel a échoué
+      const pire = Math.max(...resultats.map(([, h]) => (h === 0 ? 999 : h)));
       const { data } = await supabase.from("leads").select("clic_pub").eq("id", p.leadId).maybeSingle();
       await supabase.from("leads").update({
-        clic_pub: { ...(data?.clic_pub ?? {}), snap_capi: { http: r.http, le: new Date().toISOString() } },
+        clic_pub: { ...(data?.clic_pub ?? {}), snap_capi: { http: pire === 999 ? 0 : pire, le: new Date().toISOString(), pixels: parPixel } },
       }).eq("id", p.leadId);
     } catch (e) {
       console.warn(`[snap-capi] lead ${p.leadId} : envoi impossible (non bloquant)`, e);
