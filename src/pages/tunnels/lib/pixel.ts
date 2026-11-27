@@ -54,6 +54,7 @@ export function pixelCourant(chemin?: string, hote?: string): string {
 }
 
 import { getTunnelPrefill } from "./source";
+import { zoneDuTelephone } from "@/lib/zoneLead";
 import { EVENEMENTS_GTM, estPageGtm, gtmChargeLaPage, gtmGereLaPage, memoriserZoneLead, pousserGtm, type ZoneLead } from "./gtm";
 
 declare global {
@@ -232,9 +233,15 @@ const RDV_COMPTE = "alb_rdv_compte_";
  * confirmation rouvert demain, dans un autre onglet, désigne la même
  * réservation et ne doit pas la recompter.
  */
-export function trackCalendlyBooked(reservation?: string | null): void {
+export function trackCalendlyBooked(reservation?: string | null, telephone?: string | null): void {
   if (!isProdHost()) return;
-  if (!consentementObtenu(() => trackCalendlyBooked(reservation))) return;
+  if (!consentementObtenu(() => trackCalendlyBooked(reservation, telephone))) return;
+  // Zone du numéro saisi dans Calendly (27/11/2026) : une personne qui réserve
+  // sans être passée par le formulaire dans cette session avait une zone
+  // « inconnue ». Le numéro de la réservation la donne : GTM n'envoie la
+  // conversion à Snap que pour la zone ciblée.
+  const zoneResa = zoneDuTelephone(telephone);
+  if (zoneResa !== "inconnue") memoriserZoneLead(zoneResa);
   try {
     // Tunnel conférence, GTM actif : le garde-fou reste ICI, seul le
     // destinataire change (le conteneur au lieu du pixel).

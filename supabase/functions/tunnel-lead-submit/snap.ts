@@ -10,7 +10,8 @@
 //     pixel Snap), ni le site vitrine ;
 //   - inscription faite sur le domaine historique, le seul qui charge le pixel
 //     Snap (GTM-K3VGV2PX) ; le domaine des pubs Meta n'a pas Snap ;
-//   - téléphone +33 ou +32 (zone ciblée), comme la balise Snap dans GTM ;
+//   - téléphone +33, +32, +41 ou +352 (zone ciblée, Suisse et Luxembourg
+//     ajoutés le 27/11/2026), comme la balise Snap dans GTM ;
 //   - avec l'identifiant d'évènement du navigateur : c'est le client_dedup_id
 //     du pixel, Snap ne compte l'inscription qu'une fois.
 //
@@ -29,7 +30,12 @@ export const PIXELS_CAPI: { cle: string; pixel: string; secret: string }[] = [
   { cle: "fr_be", pixel: PIXEL_SNAP_FR_BE, secret: "SNAP_CAPI_TOKEN_FR_BE" },
 ];
 export const DOMAINE_PIXEL_SNAP = "event.albarakaecosysteme.com";
-const INDICATIFS_ZONE = ["+33", "+32"];
+export const INDICATIFS_ZONE = ["+33", "+32", "+41", "+352"];
+
+/** Le numéro E.164 est-il dans la zone ciblée ? */
+export function dansLaZone(telephoneE164: string | null | undefined): boolean {
+  return !!telephoneE164 && INDICATIFS_ZONE.some((i) => telephoneE164.startsWith(i));
+}
 
 /** Identifiant d'évènement accepté : celui que génère le navigateur (UUID ou repli). */
 export function idEvenement(v: unknown): string | null {
@@ -56,7 +62,7 @@ export function decisionSnap(p: {
 }): Decision {
   if (!/^webi_(wa|vsl)_/.test(p.source)) return { envoyer: false, raison: "hors tunnel conférence" };
   if (hoteDe(p.origine) !== DOMAINE_PIXEL_SNAP) return { envoyer: false, raison: "domaine sans pixel Snap" };
-  if (!p.telephoneE164 || !INDICATIFS_ZONE.some((i) => p.telephoneE164!.startsWith(i))) {
+  if (!dansLaZone(p.telephoneE164)) {
     return { envoyer: false, raison: "hors zone" };
   }
   if (!p.eventId) return { envoyer: false, raison: "sans identifiant d'évènement" };

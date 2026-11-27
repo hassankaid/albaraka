@@ -16,7 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { T, CONFERENCE } from "../theme";
 import { useConference } from "../lib/conference";
 import { markLeadPending, nouvelIdEvenement } from "../lib/pixel";
-import { zoneDuTelephone } from "@/lib/zoneLead";
+import { MESSAGE_HORS_ZONE, zoneDuTelephone } from "@/lib/zoneLead";
 import { CaseMarketing, MentionFormulaire } from "@/components/legal/MentionFormulaire";
 import { submitTunnelLead } from "../lib/api";
 import { getAttribution, setTunnelPrefill } from "../lib/source";
@@ -88,6 +88,8 @@ export default function OptInModal({ open, onClose, tunnel, titre, dateLigne, bo
     if (!firstName.trim()) return setError("Ton prénom est requis.");
     if (!EMAIL_RE.test(email.trim())) return setError("Ton email ne semble pas valide.");
     if (!phone || !isValidPhoneNumber(phone)) return setError("Ton numéro de téléphone n'est pas valide.");
+    // Tunnels pub : France, Belgique, Suisse et Luxembourg seulement (27/11/2026).
+    if (zoneDuTelephone(phone) !== "cible") return setError(MESSAGE_HORS_ZONE);
 
     setSubmitting(true);
     try {
@@ -115,7 +117,9 @@ export default function OptInModal({ open, onClose, tunnel, titre, dateLigne, bo
     } catch (err) {
       console.warn("[tunnel] soumission échouée :", err);
       setSubmitting(false);
-      setError("Une erreur est survenue. Réessaie dans un instant.");
+      setError(err instanceof Error && err.message === "hors_zone"
+        ? MESSAGE_HORS_ZONE
+        : "Une erreur est survenue. Réessaie dans un instant.");
     }
   }
 

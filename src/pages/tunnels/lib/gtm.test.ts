@@ -167,6 +167,18 @@ describe("GTM actif : le pixel Meta du code se tait sur le tunnel conférence", 
   });
 });
 
+describe("rendez-vous Calendly : la zone vient du numéro saisi (27/11/2026)", () => {
+  it("hors zone pour un +213, cible pour un +41, même sans inscription dans la session", async () => {
+    await gtmActif();
+    const { trackCalendlyBooked } = await import("./pixel");
+    allerSur("/vsl/confirmation");
+    trackCalendlyBooked("2026-12-01T10:00|a@example.com", "+213 551 23 45 67");
+    trackCalendlyBooked("2026-12-01T11:00|b@example.com", "+41 79 123 45 67");
+    const rdv = (window.dataLayer ?? []).filter((e) => e.event === "alb_schedule");
+    expect(rdv.map((e) => e.zone_lead)).toEqual(["hors_zone", "cible"]);
+  });
+});
+
 describe("Liberty (09/10/2026) : les trois évènements du media buyer", () => {
   it("ViewContent, Lead et rendez-vous partent vers le conteneur Liberty, avec les mêmes garde-fous", async () => {
     await gtmActif();

@@ -77,7 +77,8 @@ export default function RendezVousConfirme({ tunnel }: { tunnel?: TunnelConfig }
     const sp = new URLSearchParams(window.location.search);
     const reservation = [param(sp, "event_start_time"), param(sp, "invitee_email")]
       .filter(Boolean).join("|");
-    trackCalendlyBooked(reservation); // event Meta « Schedule » (prod uniquement)
+    // Le numéro saisi dans Calendly donne la zone du lead (suivi Snap, 27/11/2026).
+    trackCalendlyBooked(reservation, param(sp, "answer_1") || getTunnelPrefill()?.phone || null); // event Meta « Schedule » (prod uniquement)
     // La conversion du tunnel : le rendez-vous est pris. C'est l'étape que la
     // vidéo de la page précédente cherche à déclencher, donc ce que le test
     // A/B mesure. Sans test en cours, l'appel ne part pas.

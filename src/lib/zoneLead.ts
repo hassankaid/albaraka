@@ -1,5 +1,7 @@
-// Zone ciblée par les pubs (demande du media buyer, 24/11/2026) : la France (+33)
-// et la Belgique (+32). Un lead dont le téléphone a un autre indicatif est
+// Zone ciblée par les pubs : la France (+33) et la Belgique (+32) depuis le
+// 24/11/2026 (demande du media buyer), plus la Suisse (+41) et le Luxembourg
+// (+352) depuis le 27/11/2026 (demande de Sidali). Un lead dont le téléphone a
+// un autre indicatif est
 // « hors zone » : il est signalé dans le CRM (rien d'autre ne change pour les
 // setters) et le site n'envoie pas de conversion à Snap pour lui.
 //
@@ -7,7 +9,14 @@
 // hors zone. Un numéro sans indicatif lisible (vieux formats sans « + ») n'est
 // jamais marqué : on ne signale que ce dont on est sûr.
 
-export const INDICATIFS_ZONE = ["33", "32"] as const;
+export const INDICATIFS_ZONE = ["33", "32", "41", "352"] as const;
+
+/** Pays proposés dans les formulaires des tunnels pub (mêmes indicatifs). */
+export const PAYS_ZONE = ["FR", "BE", "CH", "LU"] as const;
+
+/** Message affiché quand un numéro hors zone est saisi dans un formulaire de tunnel pub. */
+export const MESSAGE_HORS_ZONE =
+  "L'inscription est réservée aux numéros de France, Belgique, Suisse et Luxembourg.";
 
 /** Chiffres du numéro après l'indicatif international (« + » ou « 00 »), ou null si format inconnu. */
 function international(tel: string | null | undefined): string | null {
@@ -17,7 +26,7 @@ function international(tel: string | null | undefined): string | null {
   return m ? m[1] : null;
 }
 
-/** Le lead est-il hors zone (indicatif lisible, autre que +33 et +32) ? */
+/** Le lead est-il hors zone (indicatif lisible, autre que +33, +32, +41 et +352) ? */
 export function estHorsZone(tel: string | null | undefined): boolean {
   const n = international(tel);
   if (!n) return false;

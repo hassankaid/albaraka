@@ -32,7 +32,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { decisionSnap, envoyerASnap, evenementSignUp, idEvenement, DOMAINE_PIXEL_SNAP, PIXELS_CAPI } from "./snap.ts";
+import { dansLaZone, decisionSnap, envoyerASnap, evenementSignUp, idEvenement, DOMAINE_PIXEL_SNAP, PIXELS_CAPI } from "./snap.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -406,6 +406,12 @@ serve(async (req) => {
     const varianteLanding = clip(body?.tunnel_variant, 8);
 
     const estVitrine = source === "site_vitrine";
+    // Tunnels pub (conférence et Liberty) : seuls les numéros de France,
+    // Belgique, Suisse et Luxembourg sont acceptés (décision de Sidali du
+    // 27/11/2026). Le formulaire le vérifie déjà ; le serveur le refait pour
+    // qu'une page en cache ou un envoi direct ne contourne pas la règle.
+    // Le site vitrine n'est pas un tunnel pub : il n'est pas concerné.
+    if (!estVitrine && !dansLaZone(phoneE164)) return json({ error: "hors_zone" }, 400);
     // Le site vitrine demande le nom de famille ; les tunnels non.
     const lastName = normalizeName(clip(body?.last_name, 80));
     if (estVitrine && (!lastName || lastName.length < 2)) return json({ error: "invalid_last_name" }, 400);

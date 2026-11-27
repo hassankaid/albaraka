@@ -63,7 +63,10 @@ export default function AppelConfirmation() {
     // confirmation du tunnel VSL : sans elle, rien n'est compté, et avec elle,
     // un rechargement ne recompte pas.
     const sp = new URLSearchParams(window.location.search);
-    trackCalendlyBooked([param(sp, "event_start_time"), param(sp, "invitee_email")].filter(Boolean).join("|"));
+    trackCalendlyBooked(
+      [param(sp, "event_start_time"), param(sp, "invitee_email")].filter(Boolean).join("|"),
+      param(sp, "answer_1"), // zone du lead pour le suivi Snap (27/11/2026)
+    );
     ensureTunnelFonts();
     document.title = "Appel confirmé — Al Baraka";
   }, []);

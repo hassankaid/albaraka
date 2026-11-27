@@ -11,6 +11,7 @@ import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import frLocale from "react-phone-number-input/locale/fr.json";
 import "react-phone-number-input/style.css";
 import { T } from "../theme";
+import { PAYS_ZONE } from "@/lib/zoneLead";
 
 export { isValidPhoneNumber };
 
@@ -41,9 +42,14 @@ export default function PhoneField({ value, onChange }: Props) {
         .albt-phone input.PhoneInputInput::placeholder { color:rgba(26,18,6,0.44); }
         .albt-phone select.PhoneInputCountrySelect option { color:#111; }
       `}</style>
+      {/* Tunnels pub : seuls les pays de la zone ciblée sont proposés
+          (France, Belgique, Suisse, Luxembourg — 27/11/2026). Un numéro
+          d'un autre pays tapé à la main est refusé à la validation. */}
       <PhoneInput
         international
         defaultCountry="FR"
+        countries={[...PAYS_ZONE]}
+        addInternationalOption={false}
         labels={frLocale}
         value={value}
         onChange={onChange}

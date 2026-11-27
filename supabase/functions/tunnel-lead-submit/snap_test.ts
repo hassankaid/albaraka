@@ -1,6 +1,6 @@
 // deno test supabase/functions/tunnel-lead-submit/snap_test.ts
 import { assertEquals, assert } from "https://deno.land/std@0.168.0/testing/asserts.ts";
-import { decisionSnap, evenementSignUp, idEvenement, normaliser } from "./snap.ts";
+import { dansLaZone, decisionSnap, evenementSignUp, idEvenement, normaliser } from "./snap.ts";
 
 const base = { source: "webi_wa_snap_ads", origine: "https://event.albarakaecosysteme.com", telephoneE164: "+33612345678", eventId: "0b6c1d2e-aaaa-bbbb-cccc-123456789abc" };
 
@@ -57,4 +57,15 @@ Deno.test("deux pixels servis par la CAPI, chacun avec son jeton (26/11/2026)", 
   assertEquals(PIXELS_CAPI.map((c) => c.pixel), [PIXEL_SNAP, PIXEL_SNAP_FR_BE]);
   assertEquals(new Set(PIXELS_CAPI.map((c) => c.secret)).size, 2);
   assertEquals(PIXELS_CAPI[0].secret, "SNAP_CAPI_TOKEN");
+});
+
+Deno.test("zone élargie à la Suisse et au Luxembourg (27/11/2026)", () => {
+  assertEquals(decisionSnap({ ...base, telephoneE164: "+41791234567" }), { envoyer: true });
+  assertEquals(decisionSnap({ ...base, telephoneE164: "+352621123456" }), { envoyer: true });
+  // +351 (Portugal) ne doit pas passer pour +352 (Luxembourg).
+  for (const hors of ["+213551234567", "+212612345678", "+225071234567", "+351912345678"]) {
+    assertEquals(decisionSnap({ ...base, telephoneE164: hors }), { envoyer: false, raison: "hors zone" });
+  }
+  assert(dansLaZone("+33612345678") && dansLaZone("+32470123456") && dansLaZone("+41791234567") && dansLaZone("+352621123456"));
+  assert(!dansLaZone("+213551234567") && !dansLaZone(null) && !dansLaZone(""));
 });
